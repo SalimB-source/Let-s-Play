@@ -5,7 +5,14 @@ import { createServer } from 'vite';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
-test('each player can edit an audited deck, with live size, colour and copy validation', async () => {
+// Les scénarios d’interface historiques partent avec les côtés à mi-vie.
+// Les PV initiaux réels sont vérifiés dans rpg-moba-decks-choix.test.js.
+function voiesLateralesBlessees(duel) {
+  for (const lane of duel.moba.lanes) if (lane.id !== 'center') lane.hp = { joueur: 10, sorcier: 10 };
+  return duel;
+}
+
+test('the player can edit an audited deck, with live size, colour and copy validation', async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -66,10 +73,7 @@ test('each player can edit an audited deck, with live size, colour and copy vali
     assert.match(document.querySelector('.moba__editor-summary').textContent, /Deck valide/);
     await click(save());
     assert.match(document.querySelector('.moba__deck-choice').textContent, /Deck personnalisé/);
-    await click(byText('.moba__deck-choice button', 'de l’IA'));
-    await click(document.querySelector('[aria-label="Retirer Viking des neiges"]'));
-    await click(byText('.moba__editor-actions button', 'Annuler'));
-    assert.equal(document.querySelectorAll('.moba__deck-choice')[1].textContent.includes('Deck personnalisé'), false);
+    assert.match(document.querySelectorAll('.moba__deck-choice')[1].textContent, /deck de tour.*aléatoire/i);
     await click(byText('[role=dialog] button', 'Commencer'));
     assert.match(document.querySelector('[role=dialog]').getAttribute('aria-label'), /Votre main de départ/);
   } finally {
@@ -123,7 +127,7 @@ test('solo game keeps the AI hand private and allows human responses', async () 
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => {
-      duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 });
+      duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
       return duel;
     };
     root = createRoot(document.getElementById('root'));
@@ -187,7 +191,7 @@ test('AI responds to a human declaration and assigns mandatory blocks automatica
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => {
-      duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('jarl-au-marteau-de-guerre'), sorcierDeck: Array(30).fill('loup-des-neiges'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 });
+      duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('jarl-au-marteau-de-guerre'), sorcierDeck: Array(30).fill('loup-des-neiges'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 }));
       return duel;
     };
     const props = { onQuitter: () => {}, initialiser };
@@ -233,7 +237,7 @@ test('human chooses the Veilleuse shield target through the solo board', async (
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => {
-      duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('veilleuse-des-citernes'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['eau', 'braise'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 });
+      duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('veilleuse-des-citernes'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['eau', 'braise'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
       duel.joueur.mana.eau = 5;
       return duel;
     };
@@ -276,7 +280,7 @@ test('Ténèbres targeted spell exposes only creatures within its printed cost r
     const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => {
-      duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'tenebres', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 });
+      duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'tenebres', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 }));
       return duel;
     };
     root = createRoot(document.getElementById('root'));
@@ -318,7 +322,7 @@ test('a human selects a targeted attacker and an enemy only in its own lane', as
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => {
-      duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('feriel'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 });
+      duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('feriel'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 }));
       return duel;
     };
     const props = { onQuitter: () => {}, initialiser };
@@ -373,7 +377,7 @@ test('AI discard effect pauses its turn for the human to choose a card, then res
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => {
-      duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('nom-efface'), joueurCouleurs: ['braise'], sorcierCouleurs: ['tenebres'], rng: () => .5 });
+      duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('nom-efface'), joueurCouleurs: ['braise'], sorcierCouleurs: ['tenebres'], rng: () => .5 }));
       return duel;
     };
     const props = { onQuitter: () => {}, initialiser };
@@ -413,7 +417,7 @@ test('drawing then discarding from an arrival leaves the human in the main phase
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ibis-des-comptes'), sorcierDeck: Array(30).fill('ibis-des-comptes'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['tenebres'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ibis-des-comptes'), sorcierDeck: Array(30).fill('ibis-des-comptes'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['tenebres'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -448,7 +452,7 @@ for (const [id, name] of [['valkyrie-des-neuf-nuits', 'Valkyrie des neuf nuits']
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'tenebres', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'tenebres', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -496,7 +500,7 @@ test('Appât displays its forced blocker and the AI obeys during combat', async 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -543,7 +547,7 @@ test('Kraken highlights only enemy ships for its arrival', async () => {
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['eau', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['eau', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -586,7 +590,7 @@ test('Butin after human combat opens a discard choice and does not end the turn'
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('fennec-des-decombres'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('fennec-des-decombres'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -624,7 +628,7 @@ test('human deck search shows eligible cards and transfers the selected spell', 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser, rendu: { ApercuCarteAppuiLong: RPG_RENDU_MOBA.ApercuCarteAppuiLong } };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -664,7 +668,7 @@ test('AI search resolves privately, without rendering its deck contents', async 
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -699,7 +703,7 @@ test('human can trigger a Harakiri lane conquest and see the victory screen', as
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -737,7 +741,7 @@ test('Le Poids lets the player choose a lane and updates both HP counters', asyn
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -774,7 +778,7 @@ test('La Grande Pesée asks for a payment lane before a separate transfer lane',
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -818,7 +822,7 @@ test('Tarek summons dogs into visible lane slots and the player can select them 
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('tarek'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('tarek'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -853,7 +857,7 @@ test('Guetteur shows its Hour counters on the MOBA board', async () => {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('guetteur-du-beffroi'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('guetteur-du-beffroi'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -884,7 +888,7 @@ test('board explains lane rules, identifies card location and confirms leaving a
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel, exited = 0;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => { exited += 1; }, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -929,7 +933,7 @@ test('exit confirmation pauses the AI without rendering its hidden hand', async 
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -962,7 +966,7 @@ test('Braisier can be played from the hand and shows its lane damage', async () 
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('braisier-du-souk'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('braisier-du-souk'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -992,7 +996,7 @@ test('Valkyrie des glaces can be played and its global arrival updates the board
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('valkyrie-des-glaces'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('valkyrie-des-glaces'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1026,7 +1030,7 @@ test('hand pagination preserves the real index when discarding a card on the nex
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1066,7 +1070,7 @@ test('the journal exposes older events with buttons rather than a scrolling pane
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1094,7 +1098,7 @@ test('classic zones expose public graveyards and both mana tracks without reveal
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel, toggles = 0;
-    const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 })));
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA, onToggleFullscreen: () => { toggles++; } })));
     const click = async (element) => { assert.ok(element); await act(async () => element.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -1156,7 +1160,7 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('djinn-des-braises-voilees'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('djinn-des-braises-voilees'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 })));
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA })));
     const click = async (element) => { assert.ok(element); await act(async () => element.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))); };
@@ -1235,7 +1239,7 @@ test('classic combat arrows follow lane HP and live blocking assignments on the 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => .5 }));
     const props = { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA, onPlaySfx: (name) => sounds.push(name) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1307,7 +1311,7 @@ test('classic mana chooser and tracks work across solo turns without bypassing p
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'sable', 'braise'], sorcierCouleurs: ['neige', 'sable', 'braise'], rng: () => .5 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'sable', 'braise'], sorcierCouleurs: ['neige', 'sable', 'braise'], rng: () => .5 }));
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA, onPlaySfx: (sound) => sounds.push(sound) })));
     const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -1365,7 +1369,7 @@ test('classic audio settings pause the solo AI, preserve state and play arrival 
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const arrivals = [], preloads = [], changes = [];
-    const initialiser = () => duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 });
+    const initialiser = () => duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
     function Harness() {
       const [sound, setSound] = React.useState(true);
       const [sfx, setSfx] = React.useState(.8), [voice, setVoice] = React.useState(.6), [music, setMusic] = React.useState(.4);
@@ -1436,7 +1440,7 @@ test('creatures can be dragged to legal slots without losing click, cancellation
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
     const props = { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (node) => act(async () => node.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true })));
@@ -1490,7 +1494,7 @@ test('missed targeted attacks show the classic miss and do not announce melee st
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('feriel'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => 0 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('feriel'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['neige', 'braise'], rng: () => 0 }));
     const props = { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA, onPlaySfx: (name) => sounds.push(name) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -1533,7 +1537,7 @@ test('Kagutsuchi critical shows its classic glyph after the actual combat result
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('kagutsuchi-flamme-originelle'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => 0 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('kagutsuchi-flamme-originelle'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => 0 }));
     const props = { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -1566,7 +1570,7 @@ test('combat journal reuses classic public event cards and paginates without exp
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('feriel'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('feriel'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }));
     const props = { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -1606,7 +1610,7 @@ test('end screen reports lane result, plays one result sound, traps focus and re
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel, sorties = 0; const sounds = [];
-    const initialiser = () => duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('feriel'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 });
+    const initialiser = () => duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('feriel'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }));
     const props = { onQuitter: () => { sorties++; }, initialiser, onPlaySfx: (name) => sounds.push(name) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -1652,7 +1656,7 @@ test('AI announces a targeted spell; the player sees its target and can shield b
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour, rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('jarl-au-marteau-de-guerre'), sorcierDeck: Array(30).fill('loup-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('jarl-au-marteau-de-guerre'), sorcierDeck: Array(30).fill('loup-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1697,7 +1701,7 @@ test('human targeted spell gives the AI an automatic response without revealing 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1741,7 +1745,7 @@ test('a sorcery announces its target; passing resolves the return and its delaye
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('jarl-au-marteau-de-guerre'), sorcierDeck: Array(30).fill('loup-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('jarl-au-marteau-de-guerre'), sorcierDeck: Array(30).fill('loup-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, onPlaySfx: (sound) => sounds.push(sound), initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1785,7 +1789,7 @@ test('AI lane spell is announced; player can transfer life before passing and se
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1831,7 +1835,7 @@ test('human lane spell waits for the hidden AI response before showing damage', 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1873,7 +1877,7 @@ test('AI announces a friendly shield and the player can bounce its target in res
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -1916,7 +1920,7 @@ test('player shield announcement lets AI remove the friendly target before the s
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2004,7 +2008,7 @@ test('human lane heal is announced, then shows its animation and sound only afte
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2046,7 +2050,7 @@ test('AI responds to the human lane heal before it resolves and hidden cards sta
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2134,7 +2138,7 @@ test('human La Grande Pesée pays its chosen lane before AI passes and only then
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2175,7 +2179,7 @@ test('human Festin announces global healing and animates injured allies only aft
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const TableCard = ({ entite, soin, moba }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, 'data-entity': entite.id, 'data-soin': soin?.montant ?? 0 }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2219,7 +2223,7 @@ test('AI Festin still heals surviving creatures after the player conquers its an
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const TableCard = ({ entite, soin, moba }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, 'data-entity': entite.id, 'data-soin': soin?.montant ?? 0 }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2304,7 +2308,7 @@ test('AI announces Rapport and the human may play Papyrus before the private AI 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2346,7 +2350,7 @@ test('human Les feuillets announces the AI deck, then mills only after AI passes
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2382,7 +2386,7 @@ test('human Rapport reveals only the public deck target and plays draw audio aft
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2416,7 +2420,7 @@ test('AI announces a hostile wave, human shields one ally and sees the wave effe
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const TableCard = ({ entite, bouclierFx, actionFx, moba, onClick }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, onClick, 'data-entity': entite.id, 'data-shield-break': bouclierFx?.montant ?? 0, 'data-hit': actionFx?.type ?? '' }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2460,7 +2464,7 @@ test('AI shields its injured ally in response to the human hostile wave', async 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2498,7 +2502,7 @@ test('AI announces Verglas: human shield blocks damage and freeze on one creatur
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const TableCard = ({ entite, bouclierFx, actionFx, moba, onClick }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, onClick, 'data-entity': entite.id, 'data-shield-break': bouclierFx?.montant ?? 0, 'data-hit': actionFx?.type ?? '', 'data-frozen': Boolean(entite.gelToursRestants) }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2539,7 +2543,7 @@ test('human announces Nuage: AI shields before the first wave and echo is only s
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2576,7 +2580,7 @@ test('AI announces a symmetric lightning wave; the human shields one creature an
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const TableCard = ({ entite, bouclierFx, actionFx, moba, onClick }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, onClick, 'data-entity': entite.id, 'data-shield-break': bouclierFx?.montant ?? 0, 'data-hit': actionFx?.type ?? '' }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2619,7 +2623,7 @@ test('human announces Grand Hiver to both camps and AI shields its injured creat
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2656,7 +2660,7 @@ test('AI announces La Dernière Pesée; human shields one ally before global des
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const TableCard = ({ entite, bouclierFx, moba, onClick }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, onClick, 'data-entity': entite.id, 'data-shield-break': bouclierFx?.montant ?? 0 }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2695,7 +2699,7 @@ test('human announces Ressac global; AI shields and return audio waits for actua
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2733,7 +2737,7 @@ test('an empty global Ressac resolves without a spurious return sound', async ()
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2761,7 +2765,7 @@ test('AI announces Serment on its creatures; human returns one before the buff r
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const TableCard = ({ entite, moba, onClick }) => React.createElement('button', { className: moba.className, disabled: moba.disabled, 'aria-label': moba.ariaLabel, onClick, 'data-entity': entite.id }, entite.name);
     const props = { onQuitter: () => {}, initialiser, rendu: { TableCard }, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
@@ -2799,7 +2803,7 @@ test('human Offrande pays its selected lane before AI passes on the allied group
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2833,7 +2837,7 @@ test('human Embuscade is announced and AI can shield against the debuff', async 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('jarl-au-marteau-de-guerre'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('jarl-au-marteau-de-guerre'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2868,7 +2872,7 @@ test('AI uses Rempart in response to Tempête without playing a healing sound', 
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
@@ -2901,7 +2905,7 @@ test('AI announces Nom effacé without revealing hands; human responds then priv
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('papyrus'), sorcierDeck: Array(30).fill('nom-efface'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['tenebres'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('papyrus'), sorcierDeck: Array(30).fill('nom-efface'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['tenebres'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -2935,7 +2939,7 @@ test('human Le Routier draws only after the AI passes and then prompts the human
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds=[];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('le-routier'), sorcierDeck: Array(30).fill('verglas'), joueurCouleurs: ['eau'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('le-routier'), sorcierDeck: Array(30).fill('verglas'), joueurCouleurs: ['eau'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: sound => sounds.push(sound) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -2965,7 +2969,7 @@ test('human Neige noire pays first, announces both camps and AI shields before d
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds=[];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: sound => sounds.push(sound) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -2999,7 +3003,7 @@ test('human Nom effacé announces the AI hand without exposing its cards while t
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('nom-efface'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('nom-efface'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -3027,7 +3031,7 @@ test('human Papyrus announces the deck after paying, then plays draw feedback on
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel; const sounds = [];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('papyrus'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('papyrus'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['tenebres'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: sound => sounds.push(sound) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -3057,7 +3061,7 @@ test('human Grand Voile announces both camps before fog begins and AI passes', a
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('grand-voile-blanc'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('grand-voile-blanc'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -3088,7 +3092,7 @@ test('human counters an AI spell, with sound and without letting its effect reso
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel; const sounds=[];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['sable'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: sound => sounds.push(sound) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -3122,7 +3126,7 @@ test('AI counters a lethal announced lane spell and the human turn resumes', asy
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
     let duel; const sounds=[];
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('viking-des-neiges'), joueurCouleurs: ['neige'], sorcierCouleurs: ['neige'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser, onPlaySfx: sound => sounds.push(sound) };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
@@ -3154,7 +3158,7 @@ test('Feux de kitsune : selection reversible et annonce de deux cibles', async (
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const classic = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['braise'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['braise'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async button => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
@@ -3195,7 +3199,7 @@ test('Défi du Jarl : champion allié puis adversaire, annulation et annonce des
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const classic = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('viking-des-neiges'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['neige'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async button => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
@@ -3235,7 +3239,7 @@ test('Réanimation : choix de case, annonce du cimetière puis retour dans la vo
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async button => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
@@ -3269,7 +3273,7 @@ test('IA annonce Réanimation puis le joueur passe et voit la créature revenir'
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const classic = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser };
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async button => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
@@ -3297,7 +3301,7 @@ test('Annonce de créature du joueur : IA contre avec Écueil avant la pose', as
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js'); let duel;
-    const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
     const props = { onQuitter: () => {}, initialiser }; root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
     const click = async button => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
@@ -3326,7 +3330,7 @@ test('Annonce de créature IA : le joueur voit la voie et peut contrer ou passer
       const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
       const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
       const classic = await server.ssrLoadModule('/src/games/rpgDuel.js'); let duel;
-      const initialiser = () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+      const initialiser = () => (duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 })));
       const props = { onQuitter: () => {}, initialiser }; root = createRoot(document.getElementById('root'));
       await act(async () => root.render(React.createElement(Board, props)));
       const click = async button => { assert.ok(button); assert.equal(button.disabled,false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
@@ -3358,7 +3362,7 @@ test('Sabre et Mémoire : ciblage allié, annonce, équipement visible et récup
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
-    let duel; const initialiser=()=>duel=engine.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});
+    let duel; const initialiser=()=>duel=voiesLateralesBlessees(engine.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));
     const props={onQuitter:()=>{},initialiser}; root=createRoot(document.getElementById('root')); await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const spell=name=>[...document.querySelectorAll('.moba__card')].find(card=>card.textContent.includes(name));
@@ -3388,7 +3392,7 @@ test('Brise-lame : seule une créature adverse équipée est ciblable sur le pla
   const oldWindow=globalThis.window,oldDocument=globalThis.document; globalThis.window=dom.window; globalThis.document=dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT=true; let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx'); const engine=await server.ssrLoadModule('/src/games/rpgMobaLocal.js'); const classic=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel; const initialiser=()=>duel=engine.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});
+    let duel; const initialiser=()=>duel=voiesLateralesBlessees(engine.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));
     const props={onQuitter:()=>{},initialiser};root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));classic.rpgFinDeTour(duel);duel.sorcier.mana.sable=20;
@@ -3412,7 +3416,7 @@ test('IA annonce Sabre maudit et le joueur peut contrer avant son attachement', 
   const oldWindow=globalThis.window,oldDocument=globalThis.document; globalThis.window=dom.window; globalThis.document=dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT=true; let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx'); const engine=await server.ssrLoadModule('/src/games/rpgMobaLocal.js'); const classic=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=engine.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(engine.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));
     const props={onQuitter:()=>{},initialiser};root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary')); classic.rpgFinDeTour(duel);duel.sorcier.mana.sable=20;
@@ -3431,7 +3435,7 @@ test('Lettre et Débarquement : le joueur choisit la prise, voit la cale et anno
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const card=name=>[...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes(name));const slot=id=>document.querySelector(`[data-moba-entity="${id}"] button.moba__slot`);
@@ -3455,7 +3459,7 @@ test('Arrivée ciblée après Abordage : choix successifs sans bloquer le platea
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const slot=id=>document.querySelector(`[data-moba-entity="${id}"] button.moba__slot`);
@@ -3479,7 +3483,7 @@ test('IA annonce la Lettre, accoste puis choisit une prise après les réponses 
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const pass=()=>[...document.querySelectorAll('.moba__controls button')].find(x=>x.textContent.includes('Passer'));
@@ -3499,7 +3503,7 @@ test('Abordage imprimé : le plateau demande et affiche la prise du navire', asy
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const card=name=>[...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes(name));const slot=id=>document.querySelector(`[data-moba-entity="${id}"] button.moba__slot`);
@@ -3520,7 +3524,7 @@ test('Cavalier sans nom : seules les cibles de coût 4 ou moins sont disponibles
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    const sounds=[];let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser,onPlaySfx:(sound)=>sounds.push(sound)};
+    const sounds=[];let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser,onPlaySfx:(sound)=>sounds.push(sound)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const card=name=>[...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes(name));const slot=id=>document.querySelector(`[data-moba-entity="${id}"] button.moba__slot`);
@@ -3540,7 +3544,7 @@ test('Oni : deux cibles distinctes et premier choix réversible sur le plateau',
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const card=name=>[...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes(name));const slot=id=>document.querySelector(`[data-moba-entity="${id}"] button.moba__slot`);
@@ -3563,7 +3567,7 @@ test('IA : Oni choisit deux cibles après la réponse à sa créature', async ()
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const pass=()=>[...document.querySelectorAll('.moba__controls button')].find(x=>x.textContent.includes('Passer'));
@@ -3582,7 +3586,7 @@ test('Cavalier de vapeur : un blocage adverse renvoie la carte et joue le son ap
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    const sounds=[];let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('jarl-au-marteau-de-guerre'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['neige'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser,onPlaySfx:(sound)=>sounds.push(sound)};
+    const sounds=[];let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('jarl-au-marteau-de-guerre'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['neige'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser,onPlaySfx:(sound)=>sounds.push(sound)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.mana.neige=30;duel.joueur.main=['jarl-au-marteau-de-guerre'];
@@ -3601,7 +3605,7 @@ test('Bakunawa : le plateau permet de choisir le combat sur une autre voie', asy
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.mana.neige=30;duel.sorcier.main=['jarl-au-marteau-de-guerre'];
@@ -3618,7 +3622,7 @@ test('IA : Cavalier amazigh choisit un duel après la réponse à sa créature',
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['gardienne-des-portes-de-sable'];duel.joueur.mana.sable=30;
@@ -3634,7 +3638,7 @@ test('Barbe Noire et Le Poids : prise, malédiction et cible du Lien sur le plat
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     const slot=id=>document.querySelector(`[data-moba-entity="${id}"] button.moba__slot`);
@@ -3656,7 +3660,7 @@ test('IA : Barbe Noire arrive, maudit et choisit sa prise', async () => {
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async button=>{assert.ok(button);assert.equal(button.disabled,false);await act(async()=>button.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['gardienne-des-portes-de-sable','jarl-au-marteau-de-guerre'];duel.joueur.mana.sable=30;duel.joueur.mana.neige=30;
@@ -3673,7 +3677,7 @@ test('Brûlot : dégâts de mort et son affichés après une arrivée ciblée', 
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const sounds=[];const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
+    let duel;const sounds=[];const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['le-brulot'];duel.sorcier.mana.braise=30;
@@ -3690,7 +3694,7 @@ test('Barbe-Rousse : la Contre-attaque d’un sort annoncé est affichée dans s
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const sounds=[];const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
+    let duel;const sounds=[];const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['la-barbe-rousse'];duel.sorcier.mana.sable=30;duel.sorcier.mana.eau=30;
@@ -3707,7 +3711,7 @@ test('Barbe-Rousse : annonce, Corsaire, prise et Lien du Débarquement au platea
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.mana.neige=30;duel.sorcier.main=['jarl-au-marteau-de-guerre'];const prise=e.rpgMobaJouerCreature(duel,'sorcier','jarl-au-marteau-de-guerre','right',0).entite;
@@ -3726,7 +3730,7 @@ test('Eirik : Compagnie et Contre-attaque sont visibles dans la bonne voie', asy
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['eirik-du-premier-serment','viking-des-neiges'];duel.sorcier.mana.neige=30;
     const eirik=e.rpgMobaJouerCreature(duel,'sorcier','eirik-du-premier-serment','center',0).entite;e.rpgMobaJouerCreature(duel,'sorcier','viking-des-neiges','right',0);assert.equal(eirik.atk,2);c.rpgFinDeTour(duel);
@@ -3742,7 +3746,7 @@ test('Kusayla : annonce, Guépard prêt et attaque depuis la voie sur le plateau
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['kusayla-roi-des-imazighen'];duel.joueur.mana.sable=30;duel.joueur.mana.tenebres=30;duel.sorcier.main=[];
     await act(async()=>root.render(React.createElement(Board,props)));await click([...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes('Le roi Kusayla')));
@@ -3759,7 +3763,7 @@ test('Festin : Lien Eirik soigne les alliés et la voie sélectionnée sur le pl
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const {mobaInfliger}=await server.ssrLoadModule('/src/games/rpgMoba.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['eirik-du-premier-serment','gardienne-des-portes-de-sable'];duel.joueur.mana.neige=30;duel.joueur.mana.sable=30;
     e.rpgMobaJouerCreature(duel,'joueur','eirik-du-premier-serment','left',0);const allie=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','center',0).entite;allie.pv=1;allie.def=1;mobaInfliger(duel.moba,'sorcier','right',5);
@@ -3775,7 +3779,7 @@ test('Salem : annonce, parade visible et cible immédiate dans sa voie', async (
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['mousse-des-galiotes'];duel.sorcier.mana.sable=30;
     const cible=e.rpgMobaJouerCreature(duel,'sorcier','mousse-des-galiotes','right',0).entite;c.rpgFinDeTour(duel);duel.sorcier.main=[];duel.joueur.main=['salem'];duel.joueur.mana.sable=30;
@@ -3793,7 +3797,7 @@ test('Dame : bouclier de lumière et Lien du Rempart visibles, soin de mort dans
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const {mobaInfliger}=await server.ssrLoadModule('/src/games/rpgMoba.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:(name)=>sounds.push(name)};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:(name)=>sounds.push(name)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['gardienne-des-portes-de-sable','dame-aux-ailes-d-or'];duel.joueur.mana.sable=30;
     const allie=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;duel.joueur.main=['dame-aux-ailes-d-or'];duel.sorcier.main=[];
@@ -3813,7 +3817,7 @@ test('Dame : la magie annoncée brise la lumière au moment de sa résolution', 
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];
     const TableCard=({entite,bouclierFx,moba,onClick})=>React.createElement('button',{className:moba.className,disabled:moba.disabled,'aria-label':moba.ariaLabel,'data-shield-break':bouclierFx?.montant??0,onClick},entite.name);const props={onQuitter:()=>{},initialiser,onPlaySfx:(name)=>sounds.push(name),rendu:{TableCard}};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['dame-aux-ailes-d-or'];duel.sorcier.mana.sable=30;const dame=e.rpgMobaJouerCreature(duel,'sorcier','dame-aux-ailes-d-or','right',0).entite;c.rpgFinDeTour(duel);
@@ -3829,7 +3833,7 @@ test('Dame : le combat brise la lumière et déclenche le retour visuel et sonor
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];
     const TableCard=({entite,bouclierFx,moba,onClick})=>React.createElement('button',{className:moba.className,disabled:moba.disabled,'aria-label':moba.ariaLabel,'data-shield-break':bouclierFx?.montant??0,onClick},entite.name);const props={onQuitter:()=>{},initialiser,onPlaySfx:(name)=>sounds.push(name),rendu:{TableCard}};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['dame-aux-ailes-d-or'];duel.sorcier.mana.sable=30;const dame=e.rpgMobaJouerCreature(duel,'sorcier','dame-aux-ailes-d-or','right',0).entite;c.rpgFinDeTour(duel);
@@ -3844,7 +3848,7 @@ test('Dame : une magie jouée en réponse brise immédiatement sa lumière', asy
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');const {mobaInfliger}=await server.ssrLoadModule('/src/games/rpgMoba.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];
     const TableCard=({entite,bouclierFx,moba,onClick})=>React.createElement('button',{className:moba.className,disabled:moba.disabled,'aria-label':moba.ariaLabel,'data-shield-break':bouclierFx?.montant??0,onClick},entite.name);const props={onQuitter:()=>{},initialiser,onPlaySfx:(name)=>sounds.push(name),rendu:{TableCard}};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));mobaInfliger(duel.moba,'joueur','center',8);c.rpgFinDeTour(duel);duel.sorcier.main=['dame-aux-ailes-d-or'];duel.sorcier.mana.sable=30;
@@ -3860,7 +3864,7 @@ test('Dame : l’écho brise la lumière au passage du tour avec feedback', asyn
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];
     const TableCard=({entite,bouclierFx,moba,onClick})=>React.createElement('button',{className:moba.className,disabled:moba.disabled,'aria-label':moba.ariaLabel,'data-shield-break':bouclierFx?.montant??0,onClick},entite.name);const props={onQuitter:()=>{},initialiser,onPlaySfx:(name)=>sounds.push(name),rendu:{TableCard}};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['nuage-de-cendres'];duel.sorcier.mana.braise=30;assert.equal(e.rpgMobaLancerMagie(duel,'sorcier','nuage-de-cendres').ok,true);c.rpgFinDeTour(duel);
@@ -3875,7 +3879,7 @@ test('Ghul : après une vague, le plateau impose une cible adverse dans une autr
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;const cible=e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','right',0).entite;c.rpgFinDeTour(duel);
     duel.sorcier.main=[];duel.joueur.main=['ghul-des-cendres','grand-hiver'];duel.joueur.mana.braise=30;duel.joueur.mana.neige=30;const ghul=e.rpgMobaJouerCreature(duel,'joueur','ghul-des-cendres','left',0).entite;
@@ -3891,7 +3895,7 @@ test('Ghul : une mort en réponse interrompt la fenêtre jusqu’au choix puis l
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;const cible=e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','right',0).entite;c.rpgFinDeTour(duel);
     duel.joueur.main=['ghul-des-cendres','parade-du-verre'];duel.joueur.mana.braise=30;duel.joueur.mana.eau=30;const ghul=e.rpgMobaJouerCreature(duel,'joueur','ghul-des-cendres','left',0).entite;ghul.atk=6;duel.sorcier.main=['trait-de-braise'];duel.sorcier.mana.braise=30;
@@ -3908,7 +3912,7 @@ test('Ghul : l’écho de début de tour suspend l’IA avant ses décisions', a
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['nuage-de-cendres','gardienne-des-portes-de-sable'];duel.sorcier.mana.braise=30;duel.sorcier.mana.sable=30;const cible=e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','right',0).entite;assert.equal(e.rpgMobaLancerMagie(duel,'sorcier','nuage-de-cendres').ok,true);c.rpgFinDeTour(duel);
     duel.joueur.main=['ghul-des-cendres'];duel.joueur.mana.braise=30;const ghul=e.rpgMobaJouerCreature(duel,'joueur','ghul-des-cendres','left',0).entite;duel.sorcier.main=[];await act(async()=>root.render(React.createElement(Board,props)));
@@ -3922,7 +3926,7 @@ test('Chercheuse : annonce et arrivée au plateau sans choix d’arme indisponib
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['chercheuse-des-armes-ensevelies'];duel.joueur.deck=['sabre-maudit'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.sorcier.main=[];await act(async()=>root.render(React.createElement(Board,props)));
     await click([...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes('Chercheuse des armes ensevelies')));await click(document.querySelector('button[aria-label="Voie droite, Vous, emplacement 1, invoquer"]'));
@@ -3936,7 +3940,7 @@ test('Javelot : choisir le porteur, annoncer, cibler dans sa voie et perdre l’
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:(sound)=>sounds.push(sound)};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:(sound)=>sounds.push(sound)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;const cible=e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','left',0).entite;c.rpgFinDeTour(duel);
     duel.joueur.main=['gardienne-des-portes-de-sable','javelot-du-beffroi'];duel.joueur.mana.sable=30;duel.sorcier.main=[];const porteur=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;porteur.ready=true;await act(async()=>root.render(React.createElement(Board,props)));
@@ -3952,7 +3956,7 @@ test('Javelot : l’IA annonce son arme et seul le contre de carte est disponibl
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable','javelot-du-beffroi'];duel.sorcier.mana.sable=30;const porteur=e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','left',0).entite;
     duel.joueur.main=['silence-decume','ecueil','contresort-des-abimes'];duel.joueur.mana.eau=30;await act(async()=>root.render(React.createElement(Board,props)));await act(async()=>new Promise(resolve=>setTimeout(resolve,520)));
@@ -3967,7 +3971,7 @@ test('Cuirasse et Braise : liens intervoies, armure visible et remplacement au p
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['gardienne-des-portes-de-sable','bouchra-guerriere-des-cretes','cavalier-des-deux-sabres','cuirasse-de-sel','braise-et-sable'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.sorcier.main=[];
     const porteur=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;assert.ok(e.rpgMobaJouerCreature(duel,'joueur','bouchra-guerriere-des-cretes','right',0).entite);assert.ok(e.rpgMobaJouerCreature(duel,'joueur','cavalier-des-deux-sabres','center',0).entite);await act(async()=>root.render(React.createElement(Board,props)));
@@ -3995,7 +3999,7 @@ test('Licou : la pioche déclenchée en combat est audible sur le plateau', asyn
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');
-    let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:sound=>sounds.push(sound)};
+    let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:sound=>sounds.push(sound)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));c.rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','left',0);c.rpgFinDeTour(duel);
     duel.joueur.main=['chien-du-guet','licou-du-chien-de-sable'];duel.joueur.mana.sable=30;duel.sorcier.main=[];const porteur=e.rpgMobaJouerCreature(duel,'joueur','chien-du-guet','left',0).entite;assert.equal(e.rpgMobaJouerArme(duel,'joueur','licou-du-chien-de-sable',porteur.id).ok,true);porteur.ready=true;duel.joueur.deck=['gardienne-des-portes-de-sable'];sounds.length=0;await act(async()=>root.render(React.createElement(Board,props)));
@@ -4007,7 +4011,7 @@ test('Licou : la pioche déclenchée en combat est audible sur le plateau', asyn
 test('Masque : deux défausses après contact avec un porteur Butin', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
-    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
+    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['chien-du-guet','masque-du-guetteur','verglas'];duel.joueur.deck=['mousse-des-galiotes','gardienne-des-portes-de-sable'];duel.joueur.mana.sable=30;duel.sorcier.main=[];const p=e.rpgMobaJouerCreature(duel,'joueur','chien-du-guet','left',0).entite;assert.equal(e.rpgMobaJouerArme(duel,'joueur','masque-du-guetteur',p.id).ok,true);p.ready=true;await act(async()=>root.render(React.createElement(Board,props)));
     await click(document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`));await click([...document.querySelectorAll('.moba__controls button')].find(b=>b.textContent.includes('Déclarer')));await act(async()=>new Promise(resolve=>setTimeout(resolve,520)));assert.equal(duel.defausseEnAttente?.restant,2);assert.match(document.querySelector('.moba__hint').textContent,/Choisissez 2 cartes à défausser/);assert.ok(sounds.includes('card_draw'));
@@ -4018,7 +4022,7 @@ test('Masque : deux défausses après contact avec un porteur Butin', async () =
 test('Jitte : parade Ténèbres annoncée au porteur sur le plateau', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
-    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.main=['gardienne-des-portes-de-sable','jitte-d-amayas'];duel.joueur.mana.sable=30;duel.sorcier.main=[];const p=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;await act(async()=>root.render(React.createElement(Board,props)));
     await click([...document.querySelectorAll('.moba__card')].find(b=>b.textContent.includes('Jitte d’Amayas')));await click(document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`));await act(async()=>new Promise(resolve=>setTimeout(resolve,520)));assert.equal(p.arme.carteId,'jitte-d-amayas');assert.match(document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`).getAttribute('aria-label'),/Bouclier contre les sorts : tenebres.*Équipée : Jitte d’Amayas/);assert.equal(e.rpgMobaPlacementCoherent(duel),true);
@@ -4029,7 +4033,7 @@ test('Lance et Sandales : édition, équipement et indications accessibles', asy
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;
-    const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,{onQuitter:()=>{}})));
     const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__deck-choice button'));for(const nom of ['Lance de la lune givrée','Sandales de Tislit'])assert.ok(document.querySelector(`[aria-label="Ajouter ${nom}"]`));
@@ -4046,7 +4050,7 @@ test('Grappin : après réponse, le plateau demande la prise et éclaire les cib
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const d=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;
-    const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('mousse-des-galiotes'),sorcierDeck:Array(30).fill('mousse-des-galiotes'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('mousse-des-galiotes'),sorcierDeck:Array(30).fill('mousse-des-galiotes'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));d.rpgFinDeTour(duel);duel.sorcier.main=['mousse-des-galiotes','gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;
     const victime=e.rpgMobaJouerCreature(duel,'sorcier','mousse-des-galiotes','right',0).entite;const cher=e.rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','center',0).entite;d.rpgFinDeTour(duel);
@@ -4062,7 +4066,7 @@ test('Tours : atelier, bouclier sur soi et règles de Mur annoncées', async () 
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;dom.window.HTMLElement.prototype.attachEvent=()=>{};dom.window.HTMLElement.prototype.detachEvent=()=>{};globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;
-    const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,{onQuitter:()=>{}})));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__deck-choice button'));for(const nom of ['Tour de Braise','Tour des Flots','Tour de Sable','Tour de Neige','Tour des Ténèbres'])assert.ok(document.querySelector(`[aria-label="Ajouter ${nom}"]`));
     await act(async()=>root.render(React.createElement(Board,{...props,key:'partie'})));await click(document.querySelector('.moba__mulligan .moba__primary'));
@@ -4077,7 +4081,7 @@ test('Bâton : équipement annoncé puis serpents placés sur les voies disponib
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;
-    const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['gardienne-des-portes-de-sable','baton-des-citernes'];duel.joueur.mana.sable=30;duel.joueur.mana.eau=30;duel.sorcier.main=[];
     const p=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;await act(async()=>root.render(React.createElement(Board,props)));
@@ -4090,7 +4094,7 @@ test('Lame des ergs : choix visible entre un porteur et une case pour créer le 
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;
-    const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['gardienne-des-portes-de-sable','lame-des-ergs'];duel.joueur.mana.sable=30;duel.sorcier.main=[];
     const allié=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;await act(async()=>root.render(React.createElement(Board,props)));
@@ -4105,7 +4109,7 @@ test('Trésor de Lima : choix de la case, compteur et statut de Site', async () 
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;
-    const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.main=['le-tresor-de-lima'];duel.joueur.mana.sable=30;duel.joueur.mana.eau=30;duel.sorcier.main=[];await act(async()=>root.render(React.createElement(Board,props)));
     await click([...document.querySelectorAll('.moba__card')].find(b=>b.textContent.includes('Trésor de Lima')));assert.match(document.querySelector('.moba__hint').textContent,/case libre pour installer le Site/);
@@ -4117,7 +4121,7 @@ test('Trésor de Lima : choix de la case, compteur et statut de Site', async () 
 test('Trésor de Lima : la découverte au début du tour joue le son de pioche', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
-    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
+    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const sounds=[];const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};await click(document.querySelector('.moba__mulligan .moba__primary'));
     c.rpgFinDeTour(duel);duel.sorcier.main=['le-tresor-de-lima'];duel.sorcier.mana.eau=30;duel.sorcier.mana.sable=30;const site=e.rpgMobaJouerCreature(duel,'sorcier','le-tresor-de-lima','left',0).entite;assert.ok(site);c.rpgFinDeTour(duel);site.heures.restants=1;duel.sorcier.main=[];sounds.length=0;await act(async()=>root.render(React.createElement(Board,props)));
     await click([...document.querySelectorAll('.moba__controls button')].find(b=>b.textContent.includes('Fin du tour')));await act(async()=>new Promise(resolve=>setTimeout(resolve,520)));
@@ -4128,7 +4132,7 @@ test('Trésor de Lima : la découverte au début du tour joue le son de pioche',
 test('Source de Bimini : sélection obligatoire de la créature alliée et illustration du Site', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
-    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;const sounds=[];const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
+    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;const sounds=[];const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser,onPlaySfx:s=>sounds.push(s)};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.main=['gardienne-des-portes-de-sable','source-de-bimini'];duel.joueur.mana.sable=30;duel.joueur.mana.eau=30;const cible=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;const site=e.rpgMobaJouerCreature(duel,'joueur','source-de-bimini','left',0).entite;cible.pv=1;cible.def=1;site.heures.restants=1;c.rpgFinDeTour(duel);c.rpgFinDeTour(duel);assert.equal(duel.siteEnAttente.entiteId,site.id);sounds.length=0;await act(async()=>root.render(React.createElement(Board,props)));
     assert.match(document.querySelector('.moba__hint').textContent,/Source de Bimini.*créature alliée/);const cibleButton=document.querySelector(`[data-moba-entity="${cible.id}"] button.moba__slot`);const siteButton=document.querySelector(`[data-moba-entity="${site.id}"] button.moba__slot`);assert.equal(siteButton.disabled,true);assert.match(siteButton.querySelector('img').src,/source-de-bimini-0/);assert.match(cibleButton.getAttribute('aria-label'),/cible de la Source/);assert.equal(document.querySelector('.moba__controls .moba__primary'),null);assert.ok([...document.querySelectorAll('.moba__card')].every(b=>b.disabled));
@@ -4139,7 +4143,7 @@ test('Source de Bimini : sélection obligatoire de la créature alliée et illus
 test('Source de Bimini : fin du tour adverse, choix du joueur, puis reprise normale', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
-    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;const initialiser=()=>duel=e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5});const props={onQuitter:()=>{},initialiser};
+    const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');const c=await server.ssrLoadModule('/src/games/rpgDuel.js');let duel;const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
     root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.main=['gardienne-des-portes-de-sable','source-de-bimini'];duel.joueur.mana.sable=30;duel.joueur.mana.eau=30;const cible=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;const source=e.rpgMobaJouerCreature(duel,'joueur','source-de-bimini','left',0).entite;source.heures.restants=1;c.rpgFinDeTour(duel);duel.sorcier.main=[];duel.sorcier.deck=[];await act(async()=>root.render(React.createElement(Board,props)));await act(async()=>new Promise(resolve=>setTimeout(resolve,520)));
     assert.equal(duel.finDeTour?.cote,'sorcier');await click([...document.querySelectorAll('.moba__controls button')].find(b=>b.textContent.includes('Passer et commencer mon tour')));assert.equal(duel.tour,'joueur');assert.equal(duel.phase,'debut');assert.equal(duel.siteEnAttente?.entiteId,source.id);assert.match(document.querySelector('.moba__hint').textContent,/Source de Bimini/);

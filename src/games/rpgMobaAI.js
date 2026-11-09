@@ -1,6 +1,7 @@
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, lienSatisfait } from './rpgCards.js';
+import { mobaVieMax } from './rpgMoba.js';
 import { choisirBloqueursIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgReglerHasard } from './rpgDuel.js';
 import {
@@ -218,7 +219,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
 export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
   const enemy = autre(side);
   const lanes = duel.moba.lanes.filter((l) => l.active).sort((a, b) => {
-    const score = (l) => (10 - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
+    const score = (l) => (mobaVieMax(l.id) - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
     return score(b) - score(a);
   });
   const cards = [...new Set(duel[side].main)].map(cardById)
@@ -348,12 +349,12 @@ export function rpgMobaChoisirAttaquantsIA(duel, side = 'sorcier') {
     if (!rpgMobaLancerAttaque(simulation, side, ids, blocs, { declaree: true }).ok) continue;
     resoudreDestructionsSurCopie(simulation);
     let score = valeurPosition(simulation, side) - initial;
-    // With an empty deck, passive walls can otherwise lock the AI forever:
-    // favour a real, incremental breach even when a sacrifice is necessary.
+    // Sans pioche ni fatigue, deux défenses équivalentes peuvent se figer :
+    // encourager les blessures réelles permet de tenter une percée graduelle.
     if (!duel[side].deck.length) {
-      for (const mur of duel[autre(side)].creatures.filter((e) => e.mur)) {
-        const apres = simulation[autre(side)].creatures.find((e) => e.id === mur.id);
-        const dommages = Math.max(0, mur.pv - (apres?.pv ?? 0));
+      for (const defenseur of duel[autre(side)].creatures) {
+        const apres = simulation[autre(side)].creatures.find((e) => e.id === defenseur.id);
+        const dommages = Math.max(0, defenseur.pv - (apres?.pv ?? 0));
         score += dommages * 4;
       }
     }

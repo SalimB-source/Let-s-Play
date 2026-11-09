@@ -11,7 +11,7 @@ test('three lanes have six health values and five slots per side', () => {
   const state = mobaNouveau();
   assert.deepEqual(state.lanes.map((l) => l.id), ['left', 'center', 'right']);
   for (const lane of state.lanes) {
-    assert.deepEqual(lane.hp, { joueur: 10, sorcier: 10 });
+    assert.deepEqual(lane.hp, { joueur: lane.id === 'center' ? 10 : 20, sorcier: lane.id === 'center' ? 10 : 20 });
     assert.equal(lane.active, true);
     assert.equal(lane.conqueredBy, null);
   }
@@ -53,13 +53,13 @@ test('resolved damage is clamped and conquest clears both sides exactly once', (
   place(state, 'joueur', 'left', 0, 'a');
   place(state, 'sorcier', 'left', 1, 'b');
   assert.equal(mobaInfliger(state, 'joueur', 'left', 4).damage, 4);
-  assert.equal(mobaVoie(state, 'left').hp.sorcier, 6);
+  assert.equal(mobaVoie(state, 'left').hp.sorcier, 16);
   const result = mobaInfliger(state, 'joueur', 'left', 100);
   assert.deepEqual(result.removed, { joueur: ['a'], sorcier: ['b'] });
-  assert.equal(result.damage, 6);
+  assert.equal(result.damage, 16);
   assert.equal(result.conquered, true);
   assert.equal(mobaVoie(state, 'left').hp.sorcier, 0);
-  assert.equal(mobaVoie(state, 'left').hp.joueur, 10);
+  assert.equal(mobaVoie(state, 'left').hp.joueur, 20);
   assert.equal(mobaVoie(state, 'left').active, false);
   assert.equal(mobaVoie(state, 'left').conqueredBy, 'joueur');
   assert.deepEqual(mobaVoie(state, 'left').slots, { joueur: [null, null], sorcier: [null, null] });
@@ -73,7 +73,7 @@ test('resolved damage is clamped and conquest clears both sides exactly once', (
 
 test('two conquests win immediately and freeze lane actions', () => {
   const state = mobaNouveau();
-  mobaInfliger(state, 'sorcier', 'right', 10);
+  mobaInfliger(state, 'sorcier', 'right', 20);
   assert.equal(state.winner, null);
   const result = mobaInfliger(state, 'sorcier', 'center', 10);
   assert.equal(result.winner, 'sorcier');
@@ -85,7 +85,7 @@ test('two conquests win immediately and freeze lane actions', () => {
   assert.equal(JSON.stringify(state), before);
 });
 
-test('healing caps at 10, invalid amounts and inactive lanes are rejected', () => {
+test('healing caps at the lane maximum, invalid amounts and inactive lanes are rejected', () => {
   const state = mobaNouveau();
   mobaInfliger(state, 'sorcier', 'left', 4);
   assert.equal(mobaSoigner(state, 'joueur', 'left', 99).healing, 4);
@@ -93,26 +93,26 @@ test('healing caps at 10, invalid amounts and inactive lanes are rejected', () =
     assert.equal(mobaInfliger(state, 'sorcier', 'center', amount).ok, false);
     assert.equal(mobaSoigner(state, 'joueur', 'center', amount).ok, false);
   }
-  assert.equal(mobaVoie(state, 'left').hp.joueur, 10);
+  assert.equal(mobaVoie(state, 'left').hp.joueur, 20);
 });
 
 test('a caller iterating active lanes can apply a global event without reopening conquered lanes', () => {
   const state = mobaNouveau();
   mobaInfliger(state, 'joueur', 'center', 10);
   for (const lane of state.lanes.filter((item) => item.active)) mobaInfliger(state, 'sorcier', lane.id, 2);
-  assert.deepEqual(state.lanes.map((l) => l.hp.joueur), [8, 10, 8]);
-  assert.deepEqual(state.lanes.map((l) => l.hp.sorcier), [10, 0, 10]);
+  assert.deepEqual(state.lanes.map((l) => l.hp.joueur), [18, 10, 18]);
+  assert.deepEqual(state.lanes.map((l) => l.hp.sorcier), [20, 0, 20]);
 });
 
 test('a life cost can only be paid by an active friendly lane above the cost', () => {
   const state = mobaNouveau();
-  mobaInfliger(state, 'sorcier', 'left', 8);
+  mobaInfliger(state, 'sorcier', 'left', 18);
   const before = JSON.stringify(state);
   assert.equal(mobaPayerPrix(state, 'joueur', 'left', 2).raison, 'prix');
   assert.equal(JSON.stringify(state), before);
   assert.deepEqual(mobaPayerPrix(state, 'joueur', 'center', 2), { ok: true, paid: 2 });
   assert.equal(mobaVoie(state, 'center').hp.joueur, 8);
   assert.equal(mobaVoie(state, 'center').hp.sorcier, 10);
-  mobaInfliger(state, 'sorcier', 'right', 10);
+  mobaInfliger(state, 'sorcier', 'right', 20);
   assert.equal(mobaPayerPrix(state, 'joueur', 'right', 2).raison, 'voie-inactive');
 });

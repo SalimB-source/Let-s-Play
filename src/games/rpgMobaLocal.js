@@ -638,14 +638,14 @@ function infligerDansVoie(duel, side, laneId, amount, damageEvents, details = {}
   return { recus: damage.damage, sourceExileeParConquete: damage.conquered };
 }
 
-/** An Attaque ciblée can only see enemies in its own lane. Defenders in
- * other lanes do not attract it. Protected creatures still prevent a face
- * attack, even when none of them is a legal target. */
+/** La créature centrale peut cibler toutes les voies actives ; les autres
+ * restent dans leur voie. Les créatures protégées empêchent encore la frappe
+ * directe, même lorsqu’aucune cible légale n’est disponible. */
 export function rpgMobaCiblesAttaque(duel, side, attackerId) {
   const attaquant = duel?.[side]?.creatures.find((e) => e.id === attackerId);
   if (!attaquant?.coupRapide) return { obligatoires: false, cibles: [] };
   const ennemi = side === 'joueur' ? 'sorcier' : 'joueur';
-  const adversaires = duel[ennemi].creatures.filter((e) => e.mobaLane === attaquant.mobaLane && duelCardById(e.carteId)?.kind !== 'site');
+  const adversaires = duel[ennemi].creatures.filter((e) => (attaquant.mobaLane === 'center' || e.mobaLane === attaquant.mobaLane) && mobaVoie(duel.moba, e.mobaLane)?.active && duelCardById(e.carteId)?.kind !== 'site');
   const couleurs = cardColors(duelCardById(attaquant.carteId));
   const cibles = ciblesDefenseur(adversaires.filter((e) => !rpgEstProtegee(e, couleurs)));
   return { obligatoires: adversaires.length > 0, cibles: cibles.map((e) => e.id) };

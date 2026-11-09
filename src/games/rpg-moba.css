@@ -290,15 +290,7 @@
   /* One continuous map keeps the central river aligned with the middle lane
      even on narrow screens; the side meadows remain visible on both sides. */
   background: #263d31 var(--moba-map) center / 100% 100% no-repeat;
-  --moba-card-size: min(10vw, 14vh, 132px);
-}
-.moba::before {
-  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(#0a121022, #09100e33);
-}
-.moba::after {
-  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(180deg, #09090d77 0%, transparent 24%, transparent 70%, #09090d9c 100%);
+  --moba-card-size: min(11vw, 15.5vh, 145px);
 }
 .moba > div[inert] { position: absolute; inset: 0; }
 .moba__header { position: absolute; z-index: 25; top: 8px; right: 1%; max-width: none; margin: 0; padding: 5px 8px; border: 1px solid #92774e; border-radius: 9px; background: #100e0ce8; gap: 12px; }
@@ -346,7 +338,10 @@
 .moba__frontline { display: none; }
 .moba__health { flex: none; gap: 4px; min-height: 0; margin: 0 0 4px; padding: 3px 5px; border-radius: 4px; background: #15120dc9; font-size: 10px; }
 .moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 8px; }
-.moba__slots { flex-wrap: nowrap; align-items: center; min-height: 0; gap: clamp(2px, .6vw, 8px); }
+/* Écarter les deux groupes latéraux de la rivière sans déplacer la voie centrale. */
+.moba__slots { flex-wrap: nowrap; align-items: center; min-height: 0; gap: clamp(8px, 1.2vw, 18px); }
+.moba__lane:first-child .moba__slots { transform: translateX(calc(-1 * clamp(2px, 1vw, 14px))); }
+.moba__lane:last-child .moba__slots { transform: translateX(clamp(2px, 1vw, 14px)); }
 .moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); min-width: 0; padding-bottom: 18px; }
 .moba .moba__real-slot > .moba__inspect { bottom: 0; min-width: 20px; min-height: 20px; font-size: 13px; }
 .moba .moba__ghost-zone, .moba .moba__ghost-zone--empty { inset: 0 0 18px; }
@@ -364,8 +359,8 @@
 .moba__hand-pages { display: flex; align-items: center; gap: 4px; font: 11px system-ui, sans-serif; }
 .moba__hand-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }
 .moba__hand-pages button:disabled { opacity: .45; }
-.moba .moba__hand-cards { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(2px, .5vw, 7px); overflow: visible; padding: 4px 2px; }
-.moba .moba__hand-item { position: relative; flex: 0 1 min(9vw, 15vh, 124px); min-width: 0; }
+.moba .moba__hand-cards { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(12px, 1.5vw, 22px); overflow: visible; padding: 4px 2px; }
+.moba .moba__hand-item { position: relative; flex: 0 1 min(7.65vw, 12.75vh, 105px); min-width: 0; max-width: calc(14.333% - clamp(8.6px, 1.075vw, 15.77px)); }
 .moba .moba__hand-item .moba__real-hand { width: 100%; }
 .moba .moba__hand-caption { position: absolute; right: 0; top: 0; z-index: 6; min-height: 0; }
 .moba .moba__hand-caption > span { display: none; }
@@ -377,7 +372,7 @@
 .moba__journal[open] { width: min(320px, 90vw); max-height: none; overflow: visible; }.moba__journal summary { min-height: 0; }
 .moba__journal-pages { display: flex; align-items: center; justify-content: center; gap: 8px; }.moba__journal-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }.moba__journal-pages button:disabled { opacity: .45; }
 @media (max-width: 700px) {
-  .moba { --moba-card-size: min(13vw, 15vh, 90px); }
+  .moba { --moba-card-size: min(14.3vw, 16.5vh, 99px); }
   .moba__header { top: 4px; right: 4px; padding: 3px 5px; gap: 5px; }.moba__brand > span { font-size: 7px; }.moba__brand h1 { font-size: 13px; }
   .moba__back { min-height: 25px; padding: 3px 5px; font-size: 9px !important; }
   .moba__intro { top: 4px; left: 4px; }.moba__rules summary { padding: 4px; font-size: 9px; }
@@ -390,13 +385,13 @@
   .moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); padding-bottom: 16px; }
   .moba__empty-label { font-size: 7px; }.moba__empty-label i { font-size: 14px; }
   .moba__controls { top: 61%; }.moba__phase strong { font-size: 9px; }.moba__buttons button { min-height: 25px; padding: 3px; font-size: 9px; }
-  .moba__hand { left: 18%; right: 18%; height: 19%; }.moba .moba__hand-item { flex-basis: min(10vw, 13vh, 88px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(10vw, 13vh, 88px); height: 16vh; }
+  .moba__hand { left: 18%; right: 18%; height: 19%; }.moba .moba__hand-item { flex-basis: min(8.5vw, 11.05vh, 75px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(10vw, 13vh, 88px); height: 16vh; }
   .moba__journal { bottom: 2%; padding: 4px; font-size: 9px; }.moba__choice { width: 18%; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   /* En portrait, les cases occupent presque toute la largeur : étaler la
      carte horizontalement pour garder les chemins sous les cases latérales. */
-  .moba { --moba-card-size: min(17vw, 11vh, 80px); background-size: 145% 100%; }
+  .moba { --moba-card-size: min(18.7vw, 12.1vh, 88px); background-size: 145% 100%; }
   .moba__header { max-width: 48%; }.moba__header-meta { flex-wrap: nowrap; }.moba__back span { white-space: nowrap; }
   .moba__hidden-hand { top: 5%; }.moba__hidden-hand > div { height: 4vh; }.moba__hidden-hand > div span { width: 24px; }
   .moba__scoreboard { top: 11%; bottom: auto; left: 2%; width: 96%; height: 33px; }
@@ -428,7 +423,7 @@
   .moba__journal { top: 4px; left: 105px; }
 }
 
-@media (max-width: 700px) and (orientation: portrait) { .moba .moba__hand-item { flex-basis: min(15vw, 11vh, 82px); } .moba .moba__card:not(.moba__real-hand) { flex-basis: min(15vw, 11vh, 82px); } }
+@media (max-width: 700px) and (orientation: portrait) { .moba .moba__hand-item { flex-basis: min(12.75vw, 9.35vh, 70px); } .moba .moba__card:not(.moba__real-hand) { flex-basis: min(15vw, 11vh, 82px); } }
 @media (max-width: 700px), (max-height: 500px) {
   .moba .moba__hand-caption .moba__inspect { min-width: 16px; min-height: 16px; font-size: 11px; }
 }
@@ -527,9 +522,14 @@
 /* `cqw` se mesure sur le conteneur : la mesure doit donc vivre sur les enfants
    de la carte, pas sur la carte elle-même. Les trois repères taillés héritent
    de la même valeur depuis chaque face. */
-.rpg-battle--moba .moba .rpg-hand__card--img > * { --rpg-card-marker-size: min(28px, 27cqw); }
+.rpg-battle--moba .moba .rpg-hand__card--img > * {
+  --rpg-card-marker-size: 27cqw;
+  --rpg-plaque-taille: 26cqw;
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
+}
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
-/* La main MOBA reprend la taille et le placement des pierres du duel classique. */
+/* Les pierres gardent leur forme et leur placement classiques, mais suivent
+   proportionnellement la taille réduite de la main MOBA. */
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main {
   width: var(--rpg-plaque-taille, 20px);
 }

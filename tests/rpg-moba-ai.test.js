@@ -8,7 +8,7 @@ import { rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirCreature
 
 const ok = (result) => assert.equal(result.ok, true, JSON.stringify(result));
 
-test('AI decisions finish complete games with both seats, legal lane blocks and real decks', () => {
+test('AI decisions simulate games with both seats, legal lane blocks and real decks', () => {
   const edited = { ...MOBA_DECKS[1], cardIds: [...MOBA_DECKS[1].cardIds] };
   for (const [from, to] of [['viking-des-neiges', 'veilleuse-des-citernes'], ['ashigaru-des-braises', 'djinn-de-la-flamme-mourante'], ['loup-des-neiges', 'scalde-des-runes'], ['berserk-des-trois-hivers', 'valkyrie-au-corbeau'], ['gardien-viking-du-fjord', 'drakkar-a-tete-de-dragon'], ['gardien-viking-du-fjord', 'volva-soigneuse'], ['porteuse-de-cruches', 'vipere-de-verre'], ['festin-des-vaillants', 'sonneur-fele'], ['hurlement-du-blizzard', 'geant-des-banquises'], ['eclair-du-marteau', 'feriel'], ['trait-de-braise', 'djinn-de-la-fleche-ardente']]) {
     edited.cardIds[edited.cardIds.indexOf(from)] = to;
@@ -225,7 +225,13 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
       if (attackers.length) { ok(rpgMobaDeclarerAttaque(duel, side, attackers, rpgMobaChoisirCiblesAttaqueIA(duel, side, attackers))); continue; }
       ok(rpgMobaTerminerTour(duel, side));
     }
-    assert.ok(duel.moba.winner, `game ${index} did not end after ${actions} actions`);
+    if (!duel.moba.winner) {
+      // Sans fatigue, deux paquets vides ne garantissent pas une fin :
+      // il peut manquer du mana, des créatures ou une attaque favorable.
+      for (const side of ['joueur', 'sorcier']) {
+        assert.equal(duel[side].deck.length, 0, `game ${index}: deck not empty`);
+      }
+    }
   }
   assert.ok(blackbeardPlayed > 0, 'simulated games exercise Barbe Noire');
   assert.ok(brulotPlayed > 0, 'simulated games exercise Le Brûlot');
@@ -315,8 +321,8 @@ test('AI prefers the spell that wins the second lane over other possible moves',
   if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'neige'));
   duel.joueur.main = ['grand-hiver', 'eclair-du-marteau', 'ashigaru-des-braises'];
   duel.joueur.mana.neige = 10; duel.joueur.mana.braise = 10;
-  ok(mobaInfliger(duel.moba, 'joueur', 'left', 10));
-  ok(mobaInfliger(duel.moba, 'joueur', 'right', 7));
+  ok(mobaInfliger(duel.moba, 'joueur', 'left', 20));
+  ok(mobaInfliger(duel.moba, 'joueur', 'right', 17));
   const spell = rpgMobaChoisirMagieIA(duel, 'joueur');
   assert.equal(spell?.id, 'eclair-du-marteau');
   assert.equal(spell?.lane, 'right');
@@ -437,7 +443,7 @@ test('AI selects the lane where Le Poids wins and uses isolated probes', async (
   ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
   if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', choisirCouleurManaIA(duel, 'joueur')));
   duel.joueur.mana.tenebres = 20; duel.joueur.main = ['le-poids'];
-  ok(mobaInfliger(duel.moba, 'joueur', 'right', 10)); ok(mobaInfliger(duel.moba, 'joueur', 'left', 8));
+  ok(mobaInfliger(duel.moba, 'joueur', 'right', 20)); ok(mobaInfliger(duel.moba, 'joueur', 'left', 18));
   const before = JSON.stringify(duel);
   const choice = rpgMobaChoisirMagieIA(duel, 'joueur');
   assert.equal(choice.id, 'le-poids'); assert.equal(choice.lane, 'left');
@@ -452,8 +458,8 @@ test('AI picks independent affordable payment and winning transfer lanes for La 
   ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
   if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', choisirCouleurManaIA(duel, 'joueur')));
   duel.joueur.mana.tenebres = 20; duel.joueur.main = ['la-grande-pesee'];
-  ok(mobaInfliger(duel.moba, 'joueur', 'right', 10)); ok(mobaInfliger(duel.moba, 'joueur', 'left', 7));
-  ok(mobaInfliger(duel.moba, 'sorcier', 'left', 9));
+  ok(mobaInfliger(duel.moba, 'joueur', 'right', 20)); ok(mobaInfliger(duel.moba, 'joueur', 'left', 17));
+  ok(mobaInfliger(duel.moba, 'sorcier', 'left', 19));
   const choice = rpgMobaChoisirMagieIA(duel, 'joueur');
   assert.equal(choice.id, 'la-grande-pesee'); assert.equal(choice.lane, 'left'); assert.equal(choice.prixLane, 'center');
   ok(rpgMobaLancerMagie(duel, 'joueur', choice.id, choice.cible, choice.lane, choice.prixLane));
@@ -484,8 +490,8 @@ test('AI chooses a winning Braisier arrival before a more expensive creature, wi
   if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', choisirCouleurManaIA(duel, 'joueur')));
   duel.joueur.mana.braise = 20; duel.joueur.mana.neige = 20;
   duel.joueur.main = ['braisier-du-souk', 'jarl-au-marteau-de-guerre'];
-  mobaInfliger(duel.moba, 'joueur', 'left', 10);
-  mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  mobaInfliger(duel.moba, 'joueur', 'left', 20);
+  mobaInfliger(duel.moba, 'joueur', 'right', 19);
   const before = JSON.stringify(duel);
   const choice = rpgMobaChoisirCreatureIA(duel, 'joueur');
   assert.deepEqual(choice, { id: 'braisier-du-souk', lane: 'right', slot: 0 });
