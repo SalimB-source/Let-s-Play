@@ -257,7 +257,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     // Her arrival hurts both camps. Avoid losing more board value than the
     // summon gains, instead of blindly choosing the most expensive creature.
     if (card.id === 'valkyrie-des-glaces' && valeurPosition(simulation, side) < valeurPosition(duel, side)) continue;
-    if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(card.id)) {
+    if (['bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire'].includes(card.id)) {
       // Boarding may be pending first; resolve both bounded choices on the
       // probe, with no mutations or RNG consumption in the live match.
       for (let i = 0; i < 2 && simulation.arriveeEnAttente; i++) {
@@ -290,7 +290,7 @@ export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
       .sort((a, b) => ((b.pv <= 3 && !b.bouclier ? 8 : 0) + valeurCreature(b))
         - ((a.pv <= 3 && !a.bouclier ? 8 : 0) + valeurCreature(a)))[0]?.id ?? null;
   }
-  if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(attente.carteId)) {
+  if (['bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire'].includes(attente.carteId)) {
     // Fight arrivals can kill either participant. Compare actual resolved
     // positions on copies rather than just picking the biggest opposing card.
     let best = null;
@@ -304,6 +304,16 @@ export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
       if (!best || score > best.score) best = { id: enemy.id, score };
     }
     return best?.id ?? null;
+  }
+  if (attente.carteId === 'guetteuse-des-marees') {
+    // A token will cease to exist, whereas a wounded card can return healed.
+    // Check legality on copies: sites and the Guetteuse herself are excluded.
+    const candidats = [...duel[side].creatures].sort((a, b) => {
+      const score = (e) => (e.jeton ? -100 : 0) + Math.max(0, (e.pvMax ?? 0) - (e.pv ?? 0)) * 3
+        + (cardById(e.carteId)?.arrivee ? 1 : 0) - (e.arme ? 3 : 0) - (e.armes?.length ?? 0) * 2;
+      return score(b) - score(a);
+    });
+    return candidats.find((e) => rpgMobaResoudreArrivee(copie(duel), side, e.id).ok)?.id ?? null;
   }
   const neutral = MOBA_ARRIVEES_NEUTRES.includes(attente.carteId);
   const cibleSide = MOBA_ARRIVEES_ALLIEES.includes(attente.carteId) ? side : autre(side);

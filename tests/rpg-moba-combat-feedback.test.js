@@ -21,3 +21,14 @@ test('combat feedback reads resolved outcomes, not declarations', () => {
   assert.match(result.annonce, /Guerrier : coup critique ×2/);
   assert.deepEqual(rpgMobaCombatFeedback({}, [], 18), { miss: {}, critiques: {}, annonce: '' });
 });
+
+test('a Sphere return identifies which combatant left without showing a miss', () => {
+  const summary = { coupsRapides: [
+    { attaquantId: 'a', attaquant: 'A', annule: true, rate: true, annulationSphere: 'attaquant' },
+    { attaquantId: 'b', attaquant: 'B', annule: true, annulationSphere: 'cible' },
+  ] };
+  const result = rpgMobaCombatFeedback(summary, [], 1);
+  assert.deepEqual(result.miss, {});
+  assert.match(result.annonce, /A : attaque ciblée annulée, attaquant renvoyé par la Sphère/);
+  assert.match(result.annonce, /B : attaque ciblée annulée, cible renvoyée par la Sphère/);
+});

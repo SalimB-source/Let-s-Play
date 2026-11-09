@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from '../src/games/rpgAI.js';
 import { mobaInfliger } from '../src/games/rpgMoba.js';
 import { rpgChoisirCouleurMana, rpgFinDeTour, rpgReglerHasard } from '../src/games/rpgDuel.js';
-import { MOBA_DECKS, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaResoudreSite, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaJouerArme, MOBA_ARMES, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
+import { MOBA_DECKS, rpgMobaChoisirVoieCentrale, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaResoudreSite, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaJouerArme, MOBA_ARMES, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA } from '../src/games/rpgMobaAI.js';
 
 const ok = (result) => assert.equal(result.ok, true, JSON.stringify(result));
@@ -121,6 +121,8 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
   editedLima.cardIds[editedLima.cardIds.indexOf('lettre-de-marque')] = 'le-tresor-de-lima';
   const editedBimini = { ...editedBoarding, cardIds:[...editedBoarding.cardIds] };
   editedBimini.cardIds[editedBimini.cardIds.indexOf('lettre-de-marque')] = 'source-de-bimini';
+  const editedSphere = { ...editedBoarding, cardIds: [...editedBoarding.cardIds] };
+  for (const from of ['mur-de-boucliers', 'brume-du-fjord']) editedSphere.cardIds[editedSphere.cardIds.indexOf(from)] = 'sphere-de-rotation';
   const decks = [...MOBA_DECKS, edited, editedNew, editedDiscard, editedSearch, editedHarakiri, editedTransfer, editedTokens, editedMomie, editedHeures, editedCorbeaux];
   let announcedSpells = 0;
   let announcedLaneSpells = 0;
@@ -153,17 +155,24 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
   let damePlayed = 0;
   let ghulPlayed = 0, ghulChoices = 0;
   const chercheusePlayed = new Set(), javelotPlayed = new Set(), armesNouvelles = new Set(), autresArmes = new Set(), armesTribut = new Set(), masquesJittes = new Set(), luneSandales = new Set();
-  for (let index = 0; index < 400; index++) {
+  const spherePlayed = new Set();
+  for (let index = 0; index < 440; index++) {
     let seed = index + 1;
     const rng = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-    const duel = rpgMobaCreerPartie(index >= 380 ? (index % 2 ? decks[0] : editedBimini) : index >= 360 ? (index % 2 ? decks[0] : editedLima) : index >= 340 ? (index % 2 ? decks[0] : editedLame) : index >= 320 ? editedTourTenebres : index >= 300 ? (index % 2 ? editedToursSable : editedToursFlots) : index < 45 ? decks[index % decks.length] : index < 50 ? editedArmes : index < 60 ? editedBoarding : index < 70 ? editedPirates : index < 80 ? editedRiders : index < 85 ? editedPyre : index < 95 ? editedOni : index < 100 ? editedSteam : index < 110 ? editedFights : index < 120 ? editedBlackbeard : index < 130 ? editedBrulot : index < 140 ? editedRousse : index < 150 ? editedCounters : index < 160 ? editedKings : index < 170 ? editedDame : index < 180 ? editedGhul : index < 190 ? (index % 2 ? decks[0] : editedChercheuse) : index < 200 ? (index % 2 ? decks[0] : editedJavelot) : index < 220 ? (index % 2 ? decks[0] : editedArmor) : (index % 2 ? decks[0] : index < 230 ? editedFive : index < 240 ? editedBlackSabre : index < 260 ? editedTributArmes : index < 280 ? editedMaskJitte : editedLuneSandales), index >= 380 && index % 2 ? editedBimini : index >= 360 && index < 380 && index % 2 ? editedLima : index >= 340 && index < 360 && index % 2 ? editedLame : index >= 300 ? decks[0] : index >= 220 && index % 2 ? (index < 230 ? editedFive : index < 240 ? editedBlackSabre : index < 260 ? editedTributArmes : index < 280 ? editedMaskJitte : editedLuneSandales) : index >= 200 && index < 220 && index % 2 ? editedArmor : index >= 190 && index < 200 && index % 2 ? editedJavelot : index >= 180 && index < 190 && index % 2 ? editedChercheuse : decks[(index + 2) % decks.length], { rng }).duel;
+    const duel = rpgMobaCreerPartie(index >= 400 ? (index % 2 ? decks[0] : editedSphere) : index >= 380 ? (index % 2 ? decks[0] : editedBimini) : index >= 360 ? (index % 2 ? decks[0] : editedLima) : index >= 340 ? (index % 2 ? decks[0] : editedLame) : index >= 320 ? editedTourTenebres : index >= 300 ? (index % 2 ? editedToursSable : editedToursFlots) : index < 45 ? decks[index % decks.length] : index < 50 ? editedArmes : index < 60 ? editedBoarding : index < 70 ? editedPirates : index < 80 ? editedRiders : index < 85 ? editedPyre : index < 95 ? editedOni : index < 100 ? editedSteam : index < 110 ? editedFights : index < 120 ? editedBlackbeard : index < 130 ? editedBrulot : index < 140 ? editedRousse : index < 150 ? editedCounters : index < 160 ? editedKings : index < 170 ? editedDame : index < 180 ? editedGhul : index < 190 ? (index % 2 ? decks[0] : editedChercheuse) : index < 200 ? (index % 2 ? decks[0] : editedJavelot) : index < 220 ? (index % 2 ? decks[0] : editedArmor) : (index % 2 ? decks[0] : index < 230 ? editedFive : index < 240 ? editedBlackSabre : index < 260 ? editedTributArmes : index < 280 ? editedMaskJitte : editedLuneSandales), index >= 400 ? (index % 2 ? editedSphere : decks[0]) : index >= 380 && index % 2 ? editedBimini : index >= 360 && index < 380 && index % 2 ? editedLima : index >= 340 && index < 360 && index % 2 ? editedLame : index >= 300 ? decks[0] : index >= 220 && index % 2 ? (index < 230 ? editedFive : index < 240 ? editedBlackSabre : index < 260 ? editedTributArmes : index < 280 ? editedMaskJitte : editedLuneSandales) : index >= 200 && index < 220 && index % 2 ? editedArmor : index >= 190 && index < 200 && index % 2 ? editedJavelot : index >= 180 && index < 190 && index % 2 ? editedChercheuse : decks[(index + 2) % decks.length], { rng }).duel;
     for (const side of ['joueur', 'sorcier']) ok(rpgMobaMulligan(duel, side, choisirMulliganIA(duel, side), rng));
     let actions = 0;
     while (!duel.moba.winner && actions++ < 1000) {
       assert.equal(rpgMobaPlacementCoherent(duel), true);
+      if (duel.moba.centerChoice) {
+        const flank = duel.moba.lanes.find((lane) => lane.active && lane.id !== 'center');
+        assert.ok(flank);
+        ok(rpgMobaChoisirVoieCentrale(duel, duel.moba.centerChoice, flank.id));
+        continue;
+      }
       const side = duel.tour, defense = side === 'joueur' ? 'sorcier' : 'joueur';
       if (duel.destructionsEnAttente?.length) { const controller = duel.destructionsEnAttente[0].cote; const cible = rpgMobaCiblesDestruction(duel, controller)[0]; assert.ok(cible); ok(rpgMobaResoudreDestruction(duel, controller, cible)); ghulChoices++; continue; }
-      if (duel.siteEnAttente && !duel.mobaRechercheEnAttente && !duel.defausseEnAttente) { const controller=duel.siteEnAttente.cote; const cible=rpgMobaChoisirSiteIA(duel,controller); assert.ok(cible); ok(rpgMobaResoudreSite(duel,controller,cible)); continue; }
+      if (duel.siteEnAttente && !duel.mobaRechercheEnAttente && !duel.defausseEnAttente) { const controller=duel.siteEnAttente.cote; const cible=rpgMobaChoisirSiteIA(duel,controller); assert.ok(cible, `Site sans cible : ${JSON.stringify({ attente: duel.siteEnAttente, lanes: duel.moba.lanes, creatures: duel[controller].creatures.map(({ id, carteId, mobaLane }) => ({ id, carteId, mobaLane })) })}`); ok(rpgMobaResoudreSite(duel,controller,cible)); continue; }
       if (duel[side].manaChoixEnAttente) { ok(rpgChoisirCouleurMana(duel, side, choisirCouleurManaIA(duel, side))); continue; }
       if (duel.mobaRechercheEnAttente) { const searchSide = duel.mobaRechercheEnAttente.cote; ok(rpgMobaResoudreRecherche(duel, searchSide, rpgMobaChoisirRechercheIA(duel, searchSide))); continue; }
       if (duel.defausseEnAttente) { const discardSide = duel.defausseEnAttente.cote; ok(rpgMobaDefausser(duel, discardSide, choisirDefausseIA(duel, discardSide))); continue; }
@@ -194,6 +203,7 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
           ? rpgMobaJouerArme(duel, side, magie.id, magie.cible, { ouvrirReponse: true, laneId: magie.lane, slot: magie.emplacementArme })
           : rpgMobaLancerMagie(duel, side, magie.id, magie.cible, magie.lane, magie.prixLane, { ouvrirReponse: true, cibleSecondaireId: magie.cibleSecondaire ?? null, emplacementReanimation: magie.emplacementReanimation ?? null });
         ok(result);
+        if (magie.id === 'sphere-de-rotation') spherePlayed.add(side);
         if (magie.id === 'javelot-du-beffroi') javelotPlayed.add(side);
         if (['cuirasse-de-sel','braise-et-sable'].includes(magie.id)) armesNouvelles.add(`${magie.id}:${side}`);
         if (['takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre'].includes(magie.id)) autresArmes.add(`${magie.id}:${side}`);
@@ -220,7 +230,7 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
         }
         continue;
       }
-      if (creature) { const result = rpgMobaJouerCreature(duel, side, creature.id, creature.lane, creature.slot, { ouvrirReponse: true }); ok(result); if (result.creatureEnAttente) { announcedCreatures++; if (creature.id === 'la-barbe-noire') blackbeardPlayed++; if (creature.id === 'le-brulot') brulotPlayed++; if (creature.id === 'la-barbe-rousse') roussePlayed++; if (['eirik-du-premier-serment','pourfendeur-des-djinns'].includes(creature.id)) countersJoues.add(creature.id); if (['salem','kusayla-roi-des-imazighen'].includes(creature.id)) kingsPlayed.add(creature.id); if (creature.id === 'source-de-bimini') biminiPlayed.add(side); if (creature.id === 'dame-aux-ailes-d-or') damePlayed++; if (creature.id === 'ghul-des-cendres') ghulPlayed++; if (creature.id === 'chercheuse-des-armes-ensevelies') chercheusePlayed.add(side); if (creature.id.startsWith('le-cavalier-')) cavaliersJoues.add(creature.id); if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(creature.id)) duelsArriveeJoues.add(creature.id); } continue; }
+      if (creature) { const result = rpgMobaJouerCreature(duel, side, creature.id, creature.lane, creature.slot, { ouvrirReponse: true, sacrificeIds: creature.sacrificeIds }); ok(result); if (result.creatureEnAttente) { announcedCreatures++; if (creature.id === 'la-barbe-noire') blackbeardPlayed++; if (creature.id === 'le-brulot') brulotPlayed++; if (creature.id === 'la-barbe-rousse') roussePlayed++; if (['eirik-du-premier-serment','pourfendeur-des-djinns'].includes(creature.id)) countersJoues.add(creature.id); if (['salem','kusayla-roi-des-imazighen'].includes(creature.id)) kingsPlayed.add(creature.id); if (creature.id === 'source-de-bimini') biminiPlayed.add(side); if (creature.id === 'dame-aux-ailes-d-or') damePlayed++; if (creature.id === 'ghul-des-cendres') ghulPlayed++; if (creature.id === 'chercheuse-des-armes-ensevelies') chercheusePlayed.add(side); if (creature.id.startsWith('le-cavalier-')) cavaliersJoues.add(creature.id); if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(creature.id)) duelsArriveeJoues.add(creature.id); } continue; }
       const attackers = duel.attaqueJouee !== side ? rpgMobaChoisirAttaquantsIA(duel, side) : [];
       if (attackers.length) { ok(rpgMobaDeclarerAttaque(duel, side, attackers, rpgMobaChoisirCiblesAttaqueIA(duel, side, attackers))); continue; }
       ok(rpgMobaTerminerTour(duel, side));
@@ -233,6 +243,7 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
       }
     }
   }
+  assert.deepEqual(spherePlayed, new Set(['joueur', 'sorcier']), 'simulated games play the Sphère in both seats');
   assert.ok(blackbeardPlayed > 0, 'simulated games exercise Barbe Noire');
   assert.ok(brulotPlayed > 0, 'simulated games exercise Le Brûlot');
   assert.ok(roussePlayed > 0, 'simulated games exercise Barbe-Rousse');
@@ -555,9 +566,9 @@ test('AI can counter an announced Javelot without exposing or changing its own s
   assert.equal(choix?.id,'contresort-des-abimes');assert.equal(JSON.stringify(duel),avant);assert.equal(appels,0);assert.equal(rpgMobaLancerMagie(duel,'sorcier',choix.id).contre,true);assert.equal(porteur.arme,null);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-for (const id of ['cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit']) test(`AI evaluates ${id} with isolated attachment probes`, () => {
+for (const id of ['cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit','takouba-de-tin-hinan','sphere-de-rotation']) test(`AI evaluates ${id} with isolated attachment probes`, () => {
   const duel=rpgMobaCreerPartie(MOBA_DECKS[0],MOBA_DECKS[0],{rng:()=>.5}).duel;ok(rpgMobaMulligan(duel,'joueur',[]));ok(rpgMobaMulligan(duel,'sorcier',[]));
-  if(duel.joueur.manaChoixEnAttente)ok(rpgChoisirCouleurMana(duel,'joueur',choisirCouleurManaIA(duel,'joueur')));duel.joueur.main=['gardienne-des-portes-de-sable',id];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.mana.tenebres=30;duel.joueur.mana.neige=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;
+  if(duel.joueur.manaChoixEnAttente)ok(rpgChoisirCouleurMana(duel,'joueur',choisirCouleurManaIA(duel,'joueur')));duel.joueur.main=['gardienne-des-portes-de-sable',id];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.mana.tenebres=30;duel.joueur.mana.neige=30;duel.joueur.mana.eau=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;
   let appels=0;rpgReglerHasard(duel,()=>{appels++;return .5;});const avant=JSON.stringify(duel);const choix=rpgMobaChoisirMagieIA(duel,'joueur');assert.equal(choix?.id,id);assert.equal(choix?.cible,porteur.id);assert.equal(JSON.stringify(duel),avant);assert.equal(appels,0);
   ok(rpgMobaJouerArme(duel,'joueur',choix.id,choix.cible));assert.equal(porteur.arme.carteId,id);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
@@ -654,4 +665,106 @@ test('IA MOBA : installe le Trésor légalement sans muter sa recherche', () => 
 test('IA MOBA : la Source de Bimini se pose et son choix reste légal sans mutation', () => {
   const duel=rpgMobaCreerPartie(MOBA_DECKS[0],MOBA_DECKS[0],{rng:()=>.5}).duel;ok(rpgMobaMulligan(duel,'joueur',[]));ok(rpgMobaMulligan(duel,'sorcier',[]));if(duel.joueur.manaChoixEnAttente)ok(rpgChoisirCouleurMana(duel,'joueur','sable'));
   duel.joueur.main=['gardienne-des-portes-de-sable','source-de-bimini'];duel.joueur.mana.sable=30;duel.joueur.mana.eau=30;const cible=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;const avant=JSON.stringify(duel);const pose=rpgMobaChoisirCreatureIA(duel,'joueur');assert.equal(pose?.id,'source-de-bimini');assert.equal(JSON.stringify(duel),avant);const site=rpgMobaJouerCreature(duel,'joueur',pose.id,pose.lane,pose.slot).entite;site.heures.restants=1;rpgFinDeTour(duel);if(duel.sorcier.manaChoixEnAttente)ok(rpgChoisirCouleurMana(duel,'sorcier',choisirCouleurManaIA(duel,'sorcier')));rpgFinDeTour(duel);assert.ok(duel.siteEnAttente);const etat=JSON.stringify(duel);assert.equal(rpgMobaChoisirSiteIA(duel,'joueur'),cible.id);assert.equal(JSON.stringify(duel),etat);ok(rpgMobaResoudreSite(duel,'joueur',cible.id));assert.equal(rpgMobaPlacementCoherent(duel),true);
+});
+
+test('IA MOBA : les nouvelles créatures sont jouables sans mutation pendant la simulation', () => {
+  const ids = ['djinn-des-cendres-vengeresses','scarabee-du-natron','lecteur-du-dernier-nom','general-du-croissant-noir','fleau-de-la-lune-noire','souverain-de-la-lune-noire','messagere-des-cendres','garde-du-voile','rodeuse-des-tombes','gerboise-des-ruines','gardien-des-sept-sceaux','veuve-des-urnes','porteur-de-la-plume','scarabee-des-sceaux','scorpion-du-seuil','manticore-des-dunes','vampire-des-braises','novice-des-cendres','chasseuse-de-braise','sentinelle-du-brasier','danseuse-des-ombres-de-dune','veilleur-du-dernier-crepuscule','archonte-du-sablier-noir'];
+  for (const side of ['joueur', 'sorcier']) for (const id of ids) {
+    const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+    ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+    if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+    if (side === 'sorcier') { rpgFinDeTour(duel); if (duel.sorcier.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'sorcier', 'sable')); }
+    duel[side].main = [id]; Object.assign(duel[side].mana, { sable: 30, tenebres: 30, braise: 30 });
+    let calls = 0; rpgReglerHasard(duel, () => { calls++; return .5; });
+    const before = JSON.stringify(duel), choice = rpgMobaChoisirCreatureIA(duel, side);
+    assert.equal(choice?.id, id); assert.equal(JSON.stringify(duel), before); assert.equal(calls, 0);
+    ok(rpgMobaJouerCreature(duel, side, id, choice.lane, choice.slot));
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('IA MOBA : le combat avec Infiltration et les dégâts préalables reste légal et isolé', () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+  duel.joueur.main = ['danseuse-des-ombres-de-dune', 'vampire-des-braises']; Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30, braise: 30 });
+  const danseuse = rpgMobaJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune', 'left', 0).entite;
+  const vampire = rpgMobaJouerCreature(duel, 'joueur', 'vampire-des-braises', 'right', 0).entite;
+  rpgFinDeTour(duel); if (duel.sorcier.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'sorcier', 'sable'));
+  duel.sorcier.main = ['chien-du-guet', 'scorpion-du-seuil']; duel.sorcier.mana.sable = 30;
+  const chien = rpgMobaJouerCreature(duel, 'sorcier', 'chien-du-guet', 'left', 0).entite;
+  rpgMobaJouerCreature(duel, 'sorcier', 'scorpion-du-seuil', 'right', 0);
+  rpgFinDeTour(duel); if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+  let calls = 0; rpgReglerHasard(duel, () => { calls++; return .5; });
+  const before = JSON.stringify(duel), ids = rpgMobaChoisirAttaquantsIA(duel, 'joueur');
+  assert.ok(ids.includes(danseuse.id)); assert.equal(JSON.stringify(duel), before); assert.equal(calls, 0);
+  ok(rpgMobaDeclarerAttaque(duel, 'joueur', [danseuse.id, vampire.id]));
+  const avantBlocage = JSON.stringify(duel), blocks = rpgMobaChoisirBlocagesIA(duel, 'joueur', [danseuse.id, vampire.id]);
+  assert.ok(!(blocks[danseuse.id] ?? []).includes(chien.id)); assert.equal(JSON.stringify(duel), avantBlocage); assert.equal(calls, 0);
+  ok(rpgMobaLancerAttaque(duel, 'joueur', [danseuse.id, vampire.id], blocks, { declaree: true }));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('IA MOBA : Souverain choisit un duel en simulant les deux coups et le Vol de vie', () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+  duel.joueur.main = ['dune-marchante', 'chien-du-guet']; duel.joueur.mana.sable = 30;
+  const dune = rpgMobaJouerCreature(duel, 'joueur', 'dune-marchante', 'left', 0).entite;
+  const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  rpgFinDeTour(duel); if (duel.sorcier.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'sorcier', 'sable'));
+  duel.sorcier.main = ['souverain-de-la-lune-noire']; Object.assign(duel.sorcier.mana, { sable: 30, tenebres: 30 });
+  const before = JSON.stringify(duel), choix = rpgMobaChoisirCreatureIA(duel, 'sorcier');
+  assert.equal(choix?.id, 'souverain-de-la-lune-noire'); assert.equal(JSON.stringify(duel), before);
+  const hero = rpgMobaJouerCreature(duel, 'sorcier', choix.id, choix.lane, choix.slot).entite;
+  const snapshot = JSON.stringify(duel); const cible = rpgMobaChoisirArriveeIA(duel, 'sorcier');
+  assert.ok([dune.id, chien.id].includes(cible)); assert.equal(JSON.stringify(duel), snapshot);
+  ok(rpgMobaResoudreArrivee(duel, 'sorcier', cible)); assert.ok(duel.sorcier.creatures.includes(hero));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`IA Guetteuse : choix isolé privilégie une alliée blessée plutôt qu’un jeton (${side})`, () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+  if (side === 'sorcier') { rpgFinDeTour(duel); if (duel.sorcier.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, side, 'sable')); }
+  Object.assign(duel[side].mana, { sable: 30, eau: 30 }); duel[side].main = ['tarek', 'chien-du-guet', 'guetteuse-des-marees'];
+  ok(rpgMobaJouerCreature(duel, side, 'tarek', 'right', 0));
+  const allie = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'center', 0).entite; allie.pv = 1;
+  const avantPose = JSON.stringify(duel), pose = rpgMobaChoisirCreatureIA(duel, side);
+  assert.equal(pose?.id, 'guetteuse-des-marees'); assert.equal(JSON.stringify(duel), avantPose);
+  assert.equal(rpgMobaJouerCreature(duel, side, pose.id, pose.lane, pose.slot).arriveeEnAttente, true);
+  const avant = JSON.stringify(duel); assert.equal(rpgMobaChoisirArriveeIA(duel, side), allie.id); assert.equal(JSON.stringify(duel), avant);
+  ok(rpgMobaResoudreArrivee(duel, side, allie.id)); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`IA Passeur : évalue et joue la réanimation sur une copie (${side})`, () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+  if (side === 'sorcier') { rpgFinDeTour(duel); if (duel.sorcier.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, side, 'sable')); }
+  duel[side].mana.tenebres = 30; duel[side].main = ['passeur-au-masque-de-chacal']; duel[side].cimetiere = ['chien-du-guet'];
+  let appels = 0; rpgReglerHasard(duel, () => { appels++; return .5; });
+  const avant = JSON.stringify(duel), choix = rpgMobaChoisirCreatureIA(duel, side);
+  assert.equal(choix?.id, 'passeur-au-masque-de-chacal'); assert.equal(JSON.stringify(duel), avant); assert.equal(appels, 0);
+  ok(rpgMobaJouerCreature(duel, side, choix.id, choix.lane, choix.slot));
+  assert.ok(duel[side].creatures.some(e => e.carteId === 'chien-du-guet')); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`IA Sphère : choix de combat sur copie sans consommer le hasard (${side})`, () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'sable'));
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  if (enemy === 'sorcier') { rpgFinDeTour(duel); if (duel.sorcier.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'sorcier', 'sable')); }
+  duel[enemy].main = ['gardienne-des-portes-de-sable']; duel[enemy].mana.sable = 30;
+  ok(rpgMobaJouerCreature(duel, enemy, 'gardienne-des-portes-de-sable', 'left', 0));
+  rpgFinDeTour(duel); if (duel[side].manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, side, 'sable'));
+  duel[side].main = ['chien-du-guet', 'sphere-de-rotation']; Object.assign(duel[side].mana, { sable: 30, eau: 30 });
+  const porteur = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'left', 0).entite;
+  ok(rpgMobaJouerArme(duel, side, 'sphere-de-rotation', porteur.id)); porteur.ready = true;
+  let appels = 0; rpgReglerHasard(duel, () => { appels++; return .14; });
+  const avant = JSON.stringify(duel); const attaquants = rpgMobaChoisirAttaquantsIA(duel, side);
+  rpgMobaChoisirCiblesAttaqueIA(duel, side, attaquants); rpgMobaChoisirBlocagesIA(duel, side, [porteur.id]);
+  assert.equal(JSON.stringify(duel), avant); assert.equal(appels, 0); assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
