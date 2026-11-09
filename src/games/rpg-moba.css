@@ -809,3 +809,36 @@
 
 .moba__center-choice { position: fixed; z-index: 300; top: 50%; left: 50%; width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); transform: translate(-50%, -50%); overflow-y: auto; display: grid; align-content: center; gap: 12px; padding: 22px; border: 2px solid #e4b968; border-radius: 12px; background: #1b1712f5; color: #fff0cd; text-align: center; box-shadow: 0 12px 32px #000b; }
 .moba__center-choice button { padding: 10px; border: 1px solid #e4b968; border-radius: 6px; background: #64401e; color: white; cursor: pointer; }
+
+/* Trois chemins réels sur la nouvelle carte. Après la conquête centrale, seul
+   le camp propriétaire unit visuellement sa moitié du centre à la voie choisie.
+   Les PV restent ceux de la voie latérale (20 max), jamais une somme fictive. */
+.moba__lanes { position: relative; --moba-lane-inset: 5px; }
+.moba__lanes[data-moba-joined-lane]::before {
+  content: ''; position: absolute; z-index: 0; width: 60%; height: 50%;
+  border: 2px solid #e5c681c4; border-radius: 12px;
+  background: linear-gradient(90deg, #d3a76d26, #e4c4853a, #d3a76d26);
+  box-shadow: inset 0 0 30px #e5c68128, 0 0 18px #eacb7942;
+  pointer-events: none;
+}
+.moba__lanes[data-moba-joined-lane="left"]::before { left: 0; }
+.moba__lanes[data-moba-joined-lane="right"]::before { right: 0; }
+.moba__lanes[data-moba-joined-side="joueur"]::before { bottom: 0; }
+.moba__lanes[data-moba-joined-side="sorcier"]::before { top: 0; }
+.moba .moba__lane + .moba__lane { border-left: 0; }
+.moba .moba__lane + .moba__lane .moba__side::before {
+  content: ''; position: absolute; left: calc(-1 * var(--moba-lane-inset)); top: 0; bottom: 0;
+  border-left: 1px solid #f4deb27a; pointer-events: none;
+}
+.moba .moba__lanes[data-moba-joined-lane="left"] .moba__lane:nth-child(2) .moba__side.is-joined-center::before,
+.moba .moba__lanes[data-moba-joined-lane="right"] .moba__lane:nth-child(3) .moba__side.is-joined-flank::before { display: none; }
+.moba .moba__lanes[data-moba-joined-lane] .moba__lane:nth-child(2).is-conquered { background: none; }
+.moba .moba__lane.is-conquered .moba__side:not(.is-joined-center) { background: #16100c66; }
+.moba .moba__side.is-joined-flank .moba__health {
+  position: absolute; z-index: 12; top: 0; left: 0; width: 150%; min-height: 24px;
+  padding: 4px 8px; border: 1px solid #e5c681; border-radius: 6px;
+  background: #17140ff2; box-shadow: 0 3px 16px #000b, 0 0 15px #e5c68170;
+}
+.moba .moba__lanes[data-moba-joined-lane="right"] .moba__side.is-joined-flank .moba__health { left: -50%; }
+.moba .moba__side.is-joined-flank .moba__health-bar { height: 8px; }
+@media (max-width: 420px) { .moba__lanes { --moba-lane-inset: 2px; } }

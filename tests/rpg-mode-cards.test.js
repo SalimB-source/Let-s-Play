@@ -79,12 +79,12 @@ test('trois bannières illustrées avec appel à jouer', () => {
 });
 
 test('la vignette MOBA présente la carte et le badge BETA, sans changer le mode en ligne', () => {
-  assert.match(grilleModesSeulement, /src=\{isOnlineModeEnabled\(\) \? cardArt\('bouchra-guerriere-des-cretes'\) : `\$\{import\.meta\.env\.BASE_URL\}sablier-moba\/champ-des-trois-voies-berges\.webp`\}/);
+  assert.match(grilleModesSeulement, /src=\{isOnlineModeEnabled\(\) \? cardArt\('bouchra-guerriere-des-cretes'\) : `\$\{import\.meta\.env\.BASE_URL\}sablier-moba\/champ-trois-voies-nouveau\.webp`\}/);
   assert.match(grilleModesSeulement, /!isOnlineModeEnabled\(\) && <span className="rpg-mode-carte__beta" aria-hidden="true">BETA<\/span>/);
   assert.match(grilleModesSeulement, /Jouer à MOBA — contre l’IA \(BETA\)/);
   assert.match(battleCss, /\.rpg-mode-carte__beta\s*\{[^}]*position:\s*absolute;[^}]*top:\s*6px;[^}]*left:\s*7px;/s);
   assert.match(battleCss, /\.rpg-mode-carte--moba \.rpg-mode-carte__texte\s*\{[^}]*padding-left:\s*60px;/s);
-  const image = readFileSync(new URL('../public/sablier-moba/champ-des-trois-voies-berges.webp', import.meta.url));
+  const image = readFileSync(new URL('../public/sablier-moba/champ-trois-voies-nouveau.webp', import.meta.url));
   assert.equal(image.toString('ascii', 8, 12), 'WEBP');
 });
 

@@ -18,7 +18,7 @@ import {
   rpgMobaChoisirVoieCentrale, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserFinDeTour, rpgMobaPeutPayer, rpgMobaResoudreArrivee, rpgMobaTerminerTour,
 } from './rpgMobaLocal.js';
 import RpgMobaDeckEditor from './RpgMobaDeckEditor.jsx';
-import { mobaVieMax, mobaVoieCombat } from './rpgMoba.js';
+import { mobaVieMaxPourCamp, mobaVoieCombat } from './rpgMoba.js';
 import { MOBA_DECKS_TOURS, rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from './rpgMobaDecks.js';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from './rpgAI.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA } from './rpgMobaAI.js';
@@ -290,6 +290,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     if (mainSide === 'joueur') setPageMain((page) => Math.min(page, nombrePagesMain - 1));
   }, [mainSide, nombrePagesMain]);
   const getEntity = (side, id) => duel[side].creatures.find((e) => e.id === id);
+  const rattachement = duel.moba.centerJoined;
   const scores = Object.fromEntries(['joueur', 'sorcier'].map((side) => [side, duel.moba.lanes.filter((lane) => lane.conqueredBy === side).length]));
   const decksDuJoueur = [...MOBA_DECKS, ...decksMaison.map(rpgMobaDeckMaison)];
   const deckPour = (side) => side === 'sorcier' ? (deckSorcier ?? MOBA_DECKS[0])
@@ -896,7 +897,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
             : etape === 'blocage' ? 'Défenseur : jouez une magie rapide ou choisissez un attaquant, puis ses bloqueurs dans la même voie.'
             : carte ? 'Choisissez une case illuminée pour invoquer votre créature.'
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
-  return <main className="moba" aria-label="MOBA, partie contre l’IA" style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-map': `url("${import.meta.env.BASE_URL}sablier-moba/champ-des-trois-voies-berges.webp")`, '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`, '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
+  return <main className="moba" aria-label="MOBA, partie contre l’IA" style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-map': `url("${import.meta.env.BASE_URL}sablier-moba/champ-trois-voies-nouveau.webp")`, '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`, '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
     {rendu && <EffetsSprite />}
     <p className="moba__sr-only moba__combat-result" role="status" aria-atomic="true">{combatFeedback?.annonce ?? ''}</p>
     <div inert={Boolean(etape === 'mulligan' || etape === 'choix' || fini || duel.moba.centerChoice || apercu || confirmerSortie || parametresOuverts || cimetiere || (recherche?.cote === 'joueur'))}>
@@ -908,7 +909,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
       <p className="moba__notice">Affrontez l’IA · Conquérez 2 voies pour gagner · Decks de 30 cartes adaptés au MOBA</p>
       <details className="moba__rules"><summary>Règles du plateau</summary><div>
         <p>Trois voies indépendantes : 20 / 10 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
-        <p>Une créature attaque sa voie et ne peut être bloquée que dans celle-ci. Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et bloquent. Une Attaque ciblée au centre peut viser les côtés avant la conquête.</p>
+        <p>Une créature attaque sa voie et ne peut être bloquée que dans celle-ci. Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et bloquent, et une seule barre réunit leurs PV (30 maximum). Une Attaque ciblée au centre peut viser les côtés avant la conquête.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -935,12 +936,14 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     {rendu?.BlockerArrows && <><rendu.BlockerArrows tableRef={terrainRef} assignments={indications.attackArrows} attaque resolveTarget={rpgMobaArrowTarget} /><rendu.BlockerArrows tableRef={terrainRef} assignments={indications.blockArrows} resolveTarget={rpgMobaArrowTarget} /></>}
     <p className="moba__sr-only" aria-live="polite">{indications.descriptions.join(' ; ')}</p>
 
-    <div className="moba__lanes">
+    <div className="moba__lanes" data-moba-joined-lane={rattachement?.laneId || undefined} data-moba-joined-side={rattachement?.side || undefined}>
       {duel.moba.lanes.map((lane) => <section key={lane.id} className={`moba__lane${lane.active ? '' : ' is-conquered'}`} aria-label={voies[lane.id]}>
         <div className="moba__lanehead"><span className="moba__lane-number">{glyphes[lane.id]}</span><strong>{voies[lane.id]}</strong><span className="moba__lane-state">{lane.active ? 'EN JEU' : `CONQUISE · ${noms[lane.conqueredBy]}${lane.id === 'center' && duel.moba.centerJoined ? ` → ${voies[duel.moba.centerJoined.laneId]}` : ''}`}</span></div>
-        {['sorcier', 'joueur'].map((side) => <div className={`moba__side moba__side--${side}`} key={side}>
+        {['sorcier', 'joueur'].map((side) => <div className={`moba__side moba__side--${side}${rattachement?.side === side && lane.id === 'center' ? ' is-joined-center' : ''}${rattachement?.side === side && lane.id === rattachement.laneId ? ' is-joined-flank' : ''}`} key={side}>
           {side === 'joueur' && <div className="moba__frontline" aria-hidden="true"><span>✦</span></div>}
-          <div className="moba__health" data-moba-lane-hp={`@moba:${lane.id}:${side}`}><span>{noms[side]}</span><div className="moba__health-bar" role="progressbar" aria-label={`${voies[lane.id]}, ${noms[side]}`} aria-valuemin={0} aria-valuemax={mobaVieMax(lane.id)} aria-valuenow={lane.hp[side]}><i style={{ width: `${lane.hp[side] / mobaVieMax(lane.id) * 100}%` }} /></div><strong key={`${lane.id}-${side}-${lane.hp[side]}`} className={events.some((e) => e.laneId === lane.id && e.targetSide === side && e.damage > 0) ? 'is-damaged' : soinsVoies.some((e) => e.laneId === lane.id && e.side === side && e.healing > 0) ? 'is-healed' : ''}>{lane.hp[side]}<small> / {mobaVieMax(lane.id)}</small></strong></div>
+          {/* Le centre conquis n’a plus de PV autonomes pour son vainqueur :
+              sa seule jauge active est celle de la voie latérale choisie. */}
+          {!(lane.id === 'center' && lane.conqueredBy === side) && <div className="moba__health" data-moba-lane-hp={`@moba:${lane.id}:${side}`}><span>{rattachement?.side === side && rattachement.laneId === lane.id ? `${noms[side]} · Centre + ${voies[lane.id]}` : noms[side]}</span><div className="moba__health-bar" role="progressbar" aria-label={`${rattachement?.side === side && rattachement.laneId === lane.id ? `Voie centrale et ${voies[lane.id].toLowerCase()}` : voies[lane.id]}, ${noms[side]}`} aria-valuemin={0} aria-valuemax={mobaVieMaxPourCamp(duel.moba, side, lane.id)} aria-valuenow={lane.hp[side]}><i style={{ width: `${lane.hp[side] / mobaVieMaxPourCamp(duel.moba, side, lane.id) * 100}%` }} /></div><strong key={`${lane.id}-${side}-${lane.hp[side]}`} className={events.some((e) => e.laneId === lane.id && e.targetSide === side && e.damage > 0) ? 'is-damaged' : soinsVoies.some((e) => e.laneId === lane.id && e.side === side && e.healing > 0) ? 'is-healed' : ''}>{lane.hp[side]}<small> / {mobaVieMaxPourCamp(duel.moba, side, lane.id)}</small></strong></div>}
           {['tour', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !destruction && side === autre(mainSide) && lane.active && carte && MOBA_MAGIES_VOIES.includes(carte) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte)) && <button type="button" className="moba__lane-target" aria-label={`Cibler ${voies[lane.id]} de ${noms[side]}`} onClick={() => lancerSurVoie(lane.id)}>✦ Cibler cette voie</button>}
           {['tour', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !destruction && side === mainSide && lane.active && carte && MOBA_MAGIES_PRIX.includes(carte) && (!MOBA_MAGIES_TRANSFERT.includes(carte) || !prixLane) && lane.hp[side] > cardById(carte).prixPv && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte)) && <button type="button" className="moba__lane-target" aria-label={`Payer ${cardById(carte).prixPv} PV de ${voies[lane.id]} de ${noms[side]}`} onClick={() => payerDepuisVoie(lane.id)}>✦ Payer {cardById(carte).prixPv} PV</button>}
           {['tour', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !destruction && side === autre(mainSide) && lane.active && carte && MOBA_MAGIES_TRANSFERT.includes(carte) && (!MOBA_MAGIES_PRIX.includes(carte) || prixLane) && (!poidsLie || cibleSortPrimaire) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte)) && <button type="button" className="moba__lane-target" aria-label={`Transférer les PV de ${voies[lane.id]}`} onClick={() => transfererVoie(lane.id)}>✦ Transférer les PV de cette voie</button>}
@@ -1042,7 +1045,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
       {!contenuJournal.length && <p>{vueJournal === 'combat' ? 'Aucun échange enregistré.' : 'Aucun événement enregistré.'}</p>}
       {pagesJournal > 1 && <div className="moba__journal-pages" aria-label="Pages du journal"><button type="button" aria-label="Page précédente du journal" disabled={pageJournalVisible === 0} onClick={() => setPageJournal(pageJournalVisible - 1)}>‹</button><span>{pageJournalVisible + 1} / {pagesJournal}</span><button type="button" aria-label="Page suivante du journal" disabled={pageJournalVisible >= pagesJournal - 1} onClick={() => setPageJournal(pageJournalVisible + 1)}>›</button></div>}</details>
     </div>
-    {duel.moba.centerChoice === 'joueur' && !fini && <div className="moba__center-choice" role="dialog" aria-modal="true" aria-label="Choisir une voie latérale"><strong>Centre conquis !</strong><p>Choisissez la voie que rejoignent vos créatures centrales. Elles pourront y attaquer et bloquer.</p>{duel.moba.lanes.filter((lane) => lane.active && lane.id !== 'center').map((lane) => <button type="button" key={lane.id} autoFocus={lane.id === 'left'} onClick={() => { if (afficherResultat(rpgMobaChoisirVoieCentrale(duel, 'joueur', lane.id))) { setAttaquants([]); setBlocages({}); setCible(null); } }}>Rejoindre la {voies[lane.id]}</button>)}</div>}
+    {duel.moba.centerChoice === 'joueur' && !fini && <div className="moba__center-choice" role="dialog" aria-modal="true" aria-label="Choisir une voie latérale"><strong>Centre conquis !</strong><p>Choisissez la voie que rejoignent vos créatures centrales. Elles y attaqueront et bloqueront ; leurs PV seront réunis sur une seule barre de vie (30 maximum).</p>{duel.moba.lanes.filter((lane) => lane.active && lane.id !== 'center').map((lane) => <button type="button" key={lane.id} autoFocus={lane.id === 'left'} onClick={() => { if (afficherResultat(rpgMobaChoisirVoieCentrale(duel, 'joueur', lane.id))) { setAttaquants([]); setBlocages({}); setCible(null); } }}>Rejoindre la {voies[lane.id]}</button>)}</div>}
     {cimetiere && <div className="moba__graveyard-layer" onKeyDown={(event) => {
       if (event.key === 'Escape') { event.stopPropagation(); fermerCimetiere(); }
       if (event.key === 'Tab') {
