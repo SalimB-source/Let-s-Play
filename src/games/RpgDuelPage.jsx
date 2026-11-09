@@ -8140,9 +8140,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
   const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
-  // Invocation : `sacrificeDemande` = la confirmation du prix en sacrifices, `sacrificeEnCours` (plus haut) = la carte
-  // dont on désigne la victime sur la table, `sacrificeFx` = la carte en
-  // train de se déchirer à sa place.
+  // Invocation : `sacrificeDemande` confirme le prix du joueur,
+  // `sacrificeEnCours` désigne ses victimes ; `sacrificeFx` montre les
+  // déchirures sur la table pour les deux camps.
   const [sacrificeDemande, setSacrificeDemande] = useState(null);
   const [sacrificeFx, setSacrificeFx] = useState(null);
   const sacrificeEnCoursRef = useRef(null);
@@ -9984,7 +9984,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const nbDeckJoueur = duel.joueur.deckCount ?? duel.joueur.deck.length;
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
-  const fenetreEffetCreature = Boolean(duel.effetCreatureEnAttente?.cote === 'sorcier' && !vainqueur);
+  const fenetreEffetCreature = Boolean(duel.effetCreatureEnAttente?.cote === 'sorcier' && !vainqueur && !sacrificeFx);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
   const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
   const sorcierArtId = etageHistoire
@@ -11642,6 +11642,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!enCours || enCours.token !== token) return;
     sacrificeEnCoursRef.current = null;
     setSacrificeFx(null);
+    if (enCours.cote === 'sorcier') {
+      // La résolution du moteur a déjà payé les victimes : la nouvelle carte
+      // n'apparaît qu'après leurs cercles et l'IA attend la fin du rituel.
+      force();
+      if (enCours.arriveeEnAttente) repriseSorcierRef.current = annoncerSuivantSorcier;
+      else later(annoncerSuivantSorcier, delaiReflexionSorcier());
+      return;
+    }
     // La voix de la nouvelle créature ne commence pas pendant le sacrifice.
     annoncerVoixArrivee(enCours.carteId);
     finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
@@ -12962,7 +12970,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const passerEffetCreature = () => {
-    if (!duel.effetCreatureEnAttente || duel.arriveeEnAttente) return;
+    if (!duel.effetCreatureEnAttente || duel.arriveeEnAttente || sacrificeFx) return;
     const res = rpgResoudreEffetCreatureEnAttente(duel, 'joueur');
     if (!res.ok) { jouerSfx('erreur'); return; }
     jouerSfx('pass');
@@ -13144,9 +13152,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok && carteAnnoncee?.kind !== 'magie') {
       declencherGelMasse(carteAnnoncee, 'sorcier');
     }
+    // Le moteur a bien payé l'invocation de l'IA. Montrer ses victimes dans
+    // les mêmes cercles et déchirures que celles du joueur, plutôt que de les
+    // faire disparaître sous un fantôme de destruction ordinaire. La créature
+    // invoquée attend la fin du rituel avant de devenir visible.
+    const prisesSacrifice = res.ok ? (res.sacrificeIds ?? [])
+      .map(id => champAvant.find(entite => entite.entityId === id)).filter(Boolean) : [];
+    const tokenSacrifice = prisesSacrifice.length ? ++sequenceAnimationRef.current : null;
+    const victimesSacrifice = prisesSacrifice.map(entite => ({
+      ...entite, effectId: `invocation-${tokenSacrifice}-${entite.entityId}`,
+    }));
+    if (victimesSacrifice.length) {
+      sacrificeEnCoursRef.current = {
+        cote: 'sorcier', token: tokenSacrifice,
+        attendus: victimesSacrifice.map(v => v.effectId),
+        termines: new Set(), finPlanifiee: false,
+        arriveeEnAttente: Boolean(duel.effetCreatureEnAttente),
+      };
+      setSacrificeFx({ victimes: victimesSacrifice, token: tokenSacrifice, entiteArriveeId: res.entite?.id });
+      jouerSfx('destruction');
+    }
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
-      [res.renvoiEntityId]);
+      [res.renvoiEntityId], victimesSacrifice.map(v => v.entityId));
     force();
+    if (victimesSacrifice.length) {
+      const duree = animationsReduites() ? SACRIFICE_ANIMATION.reduit
+        : dureeAnimation(SACRIFICE_ANIMATION.cercle + SACRIFICE_ANIMATION.pause + SACRIFICE_ANIMATION.secours);
+      later(() => terminerPoseSacrifice(tokenSacrifice), duree);
+      return;
+    }
     if (duel.effetCreatureEnAttente) repriseSorcierRef.current = annoncerSuivantSorcier;
     else later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
@@ -13946,6 +13980,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       cote="ennemi"
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
+                      sacrificeEnAnimation={sacrificeFx?.entiteArriveeId === entite.id}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}

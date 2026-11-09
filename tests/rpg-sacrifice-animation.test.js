@@ -81,6 +81,25 @@ test('les sacrifices déjà animés sont exclus des sorties, sans toucher aux vr
 });
 
 
+test('l’IA montre le même rituel pour chaque victime avant de révéler sa créature', () => {
+  const page = lire('RpgDuelPage.jsx');
+  const action = page.slice(page.indexOf('  const laisserPasser ='), page.indexOf('  // Phase d’attaque du sorcier', page.indexOf('  const laisserPasser =')));
+  assert.match(action, /res\.sacrificeIds \?\? \[\]/);
+  assert.match(action, /champAvant\.find\(entite => entite\.entityId === id\)/);
+  assert.match(action, /setSacrificeFx\(\{ victimes: victimesSacrifice, token: tokenSacrifice, entiteArriveeId: res\.entite\?\.id \}\)/);
+  assert.match(action, /\[res\.renvoiEntityId\], victimesSacrifice\.map\(v => v\.entityId\)/,
+    'le sacrifice ne rejoue pas le fantôme de destruction');
+  assert.match(action, /later\(\(\) => terminerPoseSacrifice\(tokenSacrifice\), duree\)/);
+  assert.match(page, /sacrificeEnAnimation=\{sacrificeFx\?\.entiteArriveeId === entite\.id\}/,
+    'la créature de l’IA reste cachée jusqu’à la fin du rituel');
+  assert.match(page, /const fenetreEffetCreature = Boolean\([^;]*&& !sacrificeFx\)/,
+    'une réponse à l’effet de la créature attend la fin du rituel');
+  const fin = page.slice(page.indexOf('  const terminerPoseSacrifice ='), page.indexOf('  const terminerCercleSacrifice ='));
+  assert.match(fin, /if \(enCours\.cote === 'sorcier'\)/);
+  assert.match(fin, /else later\(annoncerSuivantSorcier, delaiReflexionSorcier\(\)\)/,
+    'l’IA attend la fin des cercles pour annoncer sa carte suivante');
+});
+
 test('le filtrage préserve le journal des projectiles et les coordonnées des avatars', () => {
   const avant = [{ entityId: 'victime' }];
   avant.combatAnimationIds = new Set(['projectile-deja-joue']);

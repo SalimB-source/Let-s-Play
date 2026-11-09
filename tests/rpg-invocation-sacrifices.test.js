@@ -108,6 +108,47 @@ test('IA : ne propose pas une invocation sans victimes, choisit deux victimes fa
   assert.ok(d.sorcier.creatures.some(e => e.id === forte.id));
 });
 
+test('IA : chaque coût de 5 à 8 paie ses victimes et son mana avant la pose', () => {
+  for (const [id, nombre] of [
+    ['faucon-du-zenith', 1], ['cavalier-des-deux-sabres', 1],
+    ['maitre-des-corbeaux', 2], ['orochi', 2],
+  ]) {
+    const d = nouveau();
+    d.tour = 'sorcier';
+    d.sorcier.main = [id];
+    assert.equal(rpgSorcierAnnonceSuivante(d, () => .99), null, `${id} : sans victime, aucune annonce`);
+    const corps = Array.from({ length: nombre }, () => victime(d, 'sorcier'));
+    const manaAvant = { ...d.sorcier.mana };
+    assert.equal(rpgSorcierAnnonceSuivante(d, () => .99)?.carteId, id, `${id} : invocation annoncée`);
+    // Aucune créature ne meurt avant que le joueur laisse passer l'annonce.
+    assert.equal(corps.every(e => d.sorcier.creatures.includes(e)), true);
+    const r = rpgSorcierResoudreAnnonce(d);
+    assert.equal(r.ok, true, `${id} : ${r.raison ?? 'pose refusée'}`);
+    assert.deepEqual(new Set(r.sacrificeIds), new Set(corps.map(e => e.id)));
+    assert.equal(d.sorcier.creatures.some(e => e.carteId === id), true);
+    assert.equal(corps.some(e => d.sorcier.creatures.includes(e)), false);
+    assert.equal(d.sorcier.cimetiere.filter(c => c === 'chien-du-guet').length, nombre);
+    assert.notDeepEqual(d.sorcier.mana, manaAvant, 'le mana est payé en plus des victimes');
+    assert.equal(d.log.filter(ligne => ligne.includes('Le sorcier sacrifie') && ligne.includes('pour invoquer')).length, nombre);
+  }
+});
+
+test('IA : un site ne peut pas payer le sacrifice d’une créature de coût 5', () => {
+  const d = nouveau();
+  d.tour = 'sorcier';
+  const corps = victime(d, 'sorcier');
+  const site = { ...corps, id: 'site-ia', carteId: 'source-de-bimini' };
+  d.sorcier.creatures = [site];
+  d.sorcier.main = ['faucon-du-zenith'];
+  assert.equal(rpgSorcierAnnonceSuivante(d, () => .99), null);
+  const offrande = victime(d, 'sorcier');
+  assert.equal(rpgSorcierAnnonceSuivante(d, () => .99)?.carteId, 'faucon-du-zenith');
+  const r = rpgSorcierResoudreAnnonce(d);
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.sacrificeIds, [offrande.id]);
+  assert.ok(d.sorcier.creatures.some(e => e.id === site.id));
+});
+
 test('JcJ : transmet et revalide les deux sacrifices, sans choix automatique adverse', () => {
   const d = nouveau();
   d.pvp = true;
