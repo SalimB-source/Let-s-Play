@@ -4,7 +4,7 @@ import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js
 /** Prix d'invocation depuis la main, en plus du mana. Les effets qui créent
  * ou réaniment des créatures ne sont pas des invocations depuis la main. */
 export function sacrificesInvocation(carte, duel = null) {
-  if (duel?.moba || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return 0;
+  if (!['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return 0;
   const cout = Number(carte.cost) || 0;
   return cout >= 7 ? 2 : cout >= 5 ? 1 : 0;
 }

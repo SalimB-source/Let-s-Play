@@ -262,3 +262,11 @@ Validation for this update: **829/829** MOBA engine, AI, combat-feedback and edi
 ### Reconciliation with the current main branch
 
 The normal catalogue has since grown to **230 cards**. The MOBA pool remains **193/230**; the **37** unaudited cards, including all 16 newly added catalogue entries, remain gated. The 214-card denominators and validation counts above describe their respective historical updates. Main's invocation-sacrifice rules remain disabled in MOBA, while classic duels retain the new sacrifice prices. The shared damage resolver preserves both the source side used by MOBA light shields and the visual projectile source.
+
+### Centre réutilisable et sacrifices d'invocation
+
+Le centre conquis, une fois rattaché à une voie latérale active, garde sa case physique. Seul le vainqueur peut continuer à y invoquer : la nouvelle créature se bat et déclenche ses effets dans la voie latérale choisie, sans rouvrir les PV du centre. La case adverse reste fermée ; elle se ferme également si le flanc rattaché tombe.
+
+Le coût classique de sacrifice s'applique désormais aussi en MOBA aux invocations depuis la main : une créature pour un coût de 5 ou 6, deux dès 7 ; les Sites ne servent pas de victimes. Le joueur désigne ses créatures, puis choisit une case libre ou la case d'une victime ; l'IA choisit les siennes avant de jouer. Les victimes restent en place pendant la fenêtre de réponse à l'annonce et ne sont sacrifiées que si la créature entre effectivement. Un contresort ne sacrifie donc personne. Les autres phrases historiques ci-dessus décrivant le sacrifice comme désactivé ne s'appliquent plus.
+
+Le fond `champ-trois-voies-rapprochees.webp` rapproche les trois chemins en conservant leurs largeurs jouables ; il sert aussi à la vignette d'entrée du mode.

@@ -1,7 +1,7 @@
 import { sacrificesInvocation, victimesInvocation, invocationPossible } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
-import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie } from './rpgMoba.js';
+import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoieJouable } from './rpgMoba.js';
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
  *
@@ -4305,14 +4305,14 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const offsets = { left: 0, center: 2, right: 3 };
         for (let i = 0; i < nombre; i += 1) {
           const placement = i === 0 ? options?.mobaPlacementJeton : null;
-          const voie = placement ? voies.find((v) => v.active && v.id === placement.laneId
+          const voie = placement ? voies.find((v) => mobaVoieJouable(duel.moba, cote, v.id) && v.id === placement.laneId
             && Number.isInteger(placement.slot) && v.slots[cote][placement.slot] === null)
-            : voies.find((v) => v.active && v.slots[cote].includes(null));
+            : voies.find((v) => mobaVoieJouable(duel.moba, cote, v.id) && v.slots[cote].includes(null));
           if (!voie) break;
           const slot = placement ? placement.slot : voie.slots[cote].indexOf(null);
           const jeton = creerEntiteCreature(modele);
           if (effet.ephemere) jeton.detruireFinDuTour = true;
-          jeton.mobaLane = voie.id;
+          jeton.mobaLane = mobaVoieCombat(duel.moba, cote, voie.id);
           jeton.emplacement = offsets[voie.id] + slot;
           if (!mobaPlacer(duel.moba, cote, voie.id, slot, jeton.id).ok) throw new Error('Placement MOBA du jeton incohérent');
           duel[cote].creatures.push(jeton);
@@ -6162,7 +6162,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!dejaPayee && duel.moba && annoncerCreatureMoba) {
     payer(duel, cote, carte);
     camp.main.splice(camp.main.indexOf(carteId), 1);
-    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, ...annoncerCreatureMoba };
+    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
     duel.log.push(`${carte.name} est annoncée en ${annoncerCreatureMoba.nomVoie}, emplacement ${annoncerCreatureMoba.slot + 1} : réponse ou passage avant son arrivée.`);
     return { ok: true, creatureEnAttente: true };
