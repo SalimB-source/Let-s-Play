@@ -15844,6 +15844,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle .rpg-card-catalogue__art {
   overflow: visible;
   box-shadow: 0 10px 22px rgba(0, 0, 0, .38);
+  --rpg-card-marker-size: 28px;
+}
+/* Les vignettes du catalogue ont moins de place que la fiche ouverte : ses
+   effets, son coût et sa couleur rétrécissent ensemble, sans changer la table,
+   la main, l'atelier ni l'aperçu plein format. */
+.rpg-battle .rpg-card-catalogue__art > * {
+  --rpg-plaque-taille: clamp(16px, 16cqw, 28px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
 }
 .rpg-battle .rpg-card-catalogue__art > img { border-radius: inherit; }
 .rpg-battle .rpg-card-catalogue__art .rpg-card-icones--colonne.rpg-card-icones--catalogue {
