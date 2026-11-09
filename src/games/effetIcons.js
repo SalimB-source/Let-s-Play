@@ -302,6 +302,7 @@ export function pastillesPourCarte(carte) {
   };
 
   if (carte.reactionTourAdverse) ajouter('reactionTourAdverse', 'Embuscade');
+  if (carte.contreAnnonceCreature) ajouter('contresort', 'Contresort');
   if (carte.envol) ajouter('envol', 'Envol');
   // L'Envol que la Furie prête (le Maître du marteau) ne s'imprime pas : la
   // pastille dit d'où il vient, tant que la Furie n'est pas allumée.

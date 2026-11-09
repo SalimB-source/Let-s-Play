@@ -129,6 +129,7 @@ import RpgCardRules from './RpgCardRules.jsx';
 import { conditionEmbuscadeCourtePourApercu, regleCarteLongue, resumeCarte, texteApercuSansDoublons } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte, PlaqueForme, ELEMENT_TEINTES } from './effetIcons.jsx';
 import { definitionPastille, effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
+import { capacitesDuCatalogue, carteACapacite } from './rpgCatalogueCapacites.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -991,9 +992,12 @@ function CardElementBadge({ carte }) {
   );
 }
 
+const CAPACITES_CATALOGUE = capacitesDuCatalogue(RPG_DUEL_CARDS);
+
 // Même vignette illustrée dans le catalogue et dans la collection de l'atelier.
 // Les boutons de lecture/ajout restent propres à chaque écran ; les repères de
-// couleur, de coût, de sort et d'effets ne divergent pas entre les deux.
+// couleur, de coût, de sort et d'effets gardent les mêmes formes, même si le
+// catalogue les réduit pour laisser respirer sa grille.
 function CatalogueCardFace({ carte, exemplaires, verrouillee }) {
   return (
     <>
@@ -4674,6 +4678,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
   const [catalogueCollection, setCatalogueCollection] = useState('toutes');
   const [catalogueCout, setCatalogueCout] = useState('tous');
+  const [catalogueCapacite, setCatalogueCapacite] = useState('toutes');
   const [catalogueRecherche, setCatalogueRecherche] = useState('');
   const [openDeckId, setOpenDeckId] = useState(null);
   const [deckCouleur, setDeckCouleur] = useState('toutes');
@@ -4810,13 +4815,15 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
     || catalogueType !== 'tous'
     || catalogueRarete !== 'toutes'
     || catalogueCollection !== 'toutes'
-    || catalogueCout !== 'tous';
+    || catalogueCout !== 'tous'
+    || catalogueCapacite !== 'toutes';
   const reinitialiserFiltresCatalogue = () => {
     setCatalogueCouleur('toutes');
     setCatalogueType('tous');
     setCatalogueRarete('toutes');
     setCatalogueCollection('toutes');
     setCatalogueCout('tous');
+    setCatalogueCapacite('toutes');
     setCatalogueRecherche('');
   };
   const cartesCatalogue = RPG_DUEL_CARDS.filter((carte) => {
@@ -4848,6 +4855,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
       && rareteCorrespond
       && collectionCorrespond
       && coutCorrespond
+      && carteACapacite(carte, catalogueCapacite)
       && rechercheCorrespond;
   });
   // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
@@ -6061,6 +6069,13 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   <option value="0-2">0 à 2</option>
                   <option value="3-4">3 à 4</option>
                   <option value="5+">5 et plus</option>
+                </select>
+              </label>
+              <label>
+                <span>Capacité</span>
+                <select aria-label="Filtrer par capacité" value={catalogueCapacite} onChange={(event) => { play('menu'); setCatalogueCapacite(event.target.value); }}>
+                  <option value="toutes">Toutes les capacités</option>
+                  {CAPACITES_CATALOGUE.map(({ cle, label }) => <option key={cle} value={cle}>{label}</option>)}
                 </select>
               </label>
               <label>

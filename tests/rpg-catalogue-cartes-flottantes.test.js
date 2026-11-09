@@ -8,8 +8,12 @@ test('le catalogue montre seulement les faces avec coût et effets, en gardant l
   const page = lire('RpgDuelPage.jsx');
   const debut = page.indexOf('{cartesCatalogue.map((carte) => {');
   const catalogue = page.slice(debut, page.indexOf("{screen === 'parametres'", debut));
-  assert.match(catalogue, /<ManaCost carte=\{carte\} showElement=\{false\}/);
-  assert.match(catalogue, /<IconesCarte carte=\{carte\} className="rpg-card-icones--colonne rpg-card-icones--catalogue"/);
+  // La face est partagée avec l'atelier : ses repères vivent dans le composant,
+  // tandis que le bouton d'ouverture appartient à la grille du catalogue.
+  const debutFace = page.indexOf('function CatalogueCardFace(');
+  const face = page.slice(debutFace, page.indexOf('\nfunction ', debutFace + 1));
+  assert.match(face, /<ManaCost carte=\{carte\} showElement=\{false\}/);
+  assert.match(face, /<IconesCarte carte=\{carte\} className="rpg-card-icones--colonne rpg-card-icones--catalogue"/);
   assert.doesNotMatch(catalogue, /rpg-card-catalogue__details|rpg-card-catalogue__meta|<CarteIllustrationAlternative/);
   assert.match(catalogue, /aria-label=\{`Agrandir/);
   assert.match(catalogue, /onClick=\{\(\) => onOpenCardPreview\?\.\(carte\)\}/);
