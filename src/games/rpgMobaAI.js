@@ -6,7 +6,7 @@ import { mobaVieMaxPourCamp } from './rpgMoba.js';
 import { choisirBloqueursIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgReglerHasard } from './rpgDuel.js';
 import {
-  MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI,
+  MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
   rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaCiblesAttaque, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
@@ -144,17 +144,19 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
     else if (MOBA_MAGIES_REANIMATION.includes(id)) targets = lanes.flatMap((lane) => lane.slots[side].flatMap((entry, slot) => entry === null ? [[null, lane.id, null, null, slot]] : []));
     else if (MOBA_MAGIES_ALLIEES.includes(id)) targets = allies.map((e) => [e.id, null]);
     else if (MOBA_MAGIES_CIBLEES.includes(id)) {
-      targets = id === 'defi-du-jarl' ? creatures.flatMap((enemy) => allies.map((ally) => [enemy.id, null, null, ally.id])) : creatures.map((e) => [e.id, null]);
-      if (id === 'feux-de-kitsune') targets.push(...creatures.flatMap((a, i) => creatures.slice(i + 1).map((b) => [a.id, null, null, b.id])));
+      targets = id === 'defi-du-jarl' ? creatures.flatMap((target) => allies.filter((ally) => ally.mobaLane === target.mobaLane).map((ally) => [target.id, null, null, ally.id])) : creatures.map((e) => [e.id, null]);
+      if (id === 'feux-de-kitsune') targets.push(...creatures.flatMap((a, i) => creatures.slice(i + 1).filter((b) => b.mobaLane === a.mobaLane).map((b) => [a.id, null, null, b.id])));
       if (MOBA_MAGIES_VOIES.includes(id)) targets.push(...lanes.map((l) => ['sorcier', l.id]));
     } else if (MOBA_MAGIES_PRIX.includes(id) && MOBA_MAGIES_TRANSFERT.includes(id)) {
       targets = lanes.flatMap((target) => lanes.map((payment) => [null, target.id, payment.id]));
+    } else if (MOBA_MAGIES_PRIX.includes(id) && MOBA_MAGIES_SPATIALES.includes(id)) {
+      targets = lanes.flatMap((target) => lanes.map((payment) => [null, target.id, payment.id]));
     } else if (MOBA_MAGIES_SOINS.includes(id) || MOBA_MAGIES_PRIX.includes(id) || MOBA_MAGIES_TRANSFERT.includes(id)) {
       targets = id === 'le-poids' && lienSatisfait(cardById(id), allies)
-        ? lanes.flatMap((l) => creatures.map((e) => [e.id, l.id]))
+        ? lanes.flatMap((l) => creatures.filter((e) => e.mobaLane === l.id).map((e) => [e.id, l.id]))
         : lanes.map((l) => [null, l.id]);
     } else if (MOBA_MAGIES_ESSAI.includes(id) || MOBA_MAGIES_IMMEDIATES.includes(id) || (MOBA_CONTRESORTS.includes(id) && reaction && (duel.mobaSortEnAttente || duel.mobaCreatureEnAttente))) {
-      targets = [[null, null]];
+      targets = MOBA_MAGIES_SPATIALES.includes(id) ? lanes.map((l) => [null, l.id]) : [[null, null]];
     }
     for (const [cible, lane, prixLane = null, cibleSecondaire = null, emplacementReanimation = null] of targets) {
       const simulation = copie(duel);

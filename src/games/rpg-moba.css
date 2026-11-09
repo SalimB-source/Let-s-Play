@@ -852,3 +852,12 @@
 
 @media (max-width: 700px) and (orientation: portrait) { .moba__sacrifice-hint { top: 16%; left: 2%; right: 2%; padding: 3px 5px; font-size: 10px; } }
 @media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) { .moba__sacrifice-hint { top: 23%; } }
+
+/* Les emblèmes d'effets des créatures posées en MOBA sont plus discrets que
+   ceux de la main et de l'aperçu. Ne pas redimensionner la plaque de couleur,
+   le coût ou les autres marqueurs : seule la colonne d'effets hérite ici de
+   cette taille locale. */
+.rpg-battle--moba .moba .moba__slots .rpg-card--img .rpg-card-icones.rpg-card-icones--colonne {
+  --rpg-plaque-taille: clamp(11px, 12cqw, 19px);
+  gap: clamp(2px, 1cqw, 3px);
+}

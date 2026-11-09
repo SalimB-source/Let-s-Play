@@ -1491,6 +1491,7 @@ function compagnieEnJeu(duel, cote, entite, tribu) {
   if (!camp || !entite) return 0;
   return camp.creatures.filter((autre) => autre !== entite && autre.id !== entite.id
     && Number(autre.pv) > 0
+    && (!duel.moba || autre.mobaLane === entite.mobaLane)
     && cardHasPrintedType(duelCardById(autre.carteId), tribu)).length;
 }
 
@@ -1555,11 +1556,13 @@ function appliquerMaledictions(duel) {
       // Chaque source de malédiction est une capacité continue distincte.
       // Une parade la bloque pour toute sa présence, sans la réveiller à
       // chaque recalcul d'aura ; une nouvelle source constitue un nouvel effet.
-      const sourcesActives = new Set(sources.map((source) => source.id));
+      const sourcesActives = new Set(sources.filter((source) => !duel.moba || source.mobaLane === entite.mobaLane)
+        .map((source) => source.id));
       const dejaVues = (entite.maledictionsVues ?? []).filter((id) => sourcesActives.has(id));
       const bloquees = (entite.maledictionsBloquees ?? []).filter((id) => sourcesActives.has(id));
       if (!estSite(entite)) {
         for (const source of sources) {
+          if (duel.moba && source.mobaLane !== entite.mobaLane) continue;
           if (dejaVues.includes(source.id)) continue;
           dejaVues.push(source.id);
           if (paradeZoneBloque(duel, entite, 'capacite', opposant, cote)) bloquees.push(source.id);
@@ -1568,7 +1571,7 @@ function appliquerMaledictions(duel) {
       entite.maledictionsVues = dejaVues;
       entite.maledictionsBloquees = bloquees;
       const cible = estSite(entite) ? 0 : -sources.reduce((total, source) => {
-        if (bloquees.includes(source.id)) return total;
+        if (bloquees.includes(source.id) || (duel.moba && source.mobaLane !== entite.mobaLane)) return total;
         const effet = duelCardById(source.carteId).malediction;
         return total + Math.max(0, Number(effet.atk ?? effet) || 0);
       }, 0);
@@ -2477,6 +2480,7 @@ function majResonance(duel) {
       const sources = ['joueur', 'sorcier'].flatMap((camp) => duel[camp].creatures
         .filter((source) => source.pv > 0 && groupes.includes(cardResonanceGroup(duelCardById(source.carteId)))
           && Number(duelCardById(source.carteId)?.resonance) > 0
+          && !(duel.moba && source.mobaLane !== entite.mobaLane)
           && !(source.id === entite.id && carteEntite?.resonanceExclutSource))
         .map((source) => ({ source, camp, carte: duelCardById(source.carteId) })));
       const actives = new Set(sources.map(({ source }) => source.id));
@@ -2826,7 +2830,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
       && paradeZoneBloque(duel, entite, 'capacite', coup.cote, coup.effetSourceCote ?? coup.sourceCote)) continue;
     // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
     // les dégâts de capacité et de magie, eux, traversent le voile.
-    if (duel.brouillardCombat && coup.sourceType === 'attaque') continue;
+    if (coup.sourceType === 'attaque' && (duel.brouillardCombat || (duel.moba && duel.brouillardCombatVoies?.includes(duel[coup.sourceCote]?.creatures.find((e) => e.id === coup.sourceId)?.mobaLane)))) continue;
     if (entite.bouclierLumiere) {
       // En MOBA la lumière empêche aussi les dégâts d'une capacité et les
       // dégâts alliés, sans se briser. Seule une attaque ou magie ennemie
@@ -3702,6 +3706,7 @@ function controleurHumain(duel, cote) {
 function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement, sourceType = null, effet = null) {
   return ['joueur', 'sorcier'].flatMap((camp) => duel[camp].creatures
     .filter((entite) => entite.id !== cibleId && entite.pv > 0
+      && (!duel.moba || entite.mobaLane === duel[defenseur].creatures.find((e) => e.id === cibleId)?.mobaLane)
       && !(effet?.type === 'destruction-cible' && (estSite(entite) || !cibleRespecteCoutMax({ effet }, entite)))
       && !rpgEstProtegee(entite, sourceElement)
       && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType))
@@ -3713,11 +3718,18 @@ function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement, source
 function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null, cibleCamp = null, options = null) {
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
+  // A creature owns its lane; a spell uses the lane chosen at cast time.
+  const voieEffet = duel.moba ? (sourceType === 'capacite'
+    ? (options?.mobaLane ?? duel[cote].creatures.find((e) => e.id === sauf)?.mobaLane)
+    : sourceType === 'magie' ? options?.mobaLane : null) : null;
+  const dansVoie = (entite) => !voieEffet || entite.mobaLane === voieEffet;
   // Un effet relancé par le contresort de Boualem peut tomber sur une créature
   // des DEUX camps (`cibleCamp`). Par défaut, la cible est adverse.
   let campCible = cibleCamp ?? ((effet.type === 'exil' || effet.type === 'retour-main' || effet.type === 'destruction-cible')
     && duel[cote].creatures.some((entite) => entite.id === cibleId) ? cote : adv);
   const cibleDirecte = cibleId && duel[campCible]?.creatures.find((entite) => entite.id === cibleId);
+  // Targeted creature abilities cannot jump from their source lane.
+  if (duel.moba && sourceType === 'capacite' && voieEffet && cibleDirecte && !dansVoie(cibleDirecte)) return;
   const effetCible = Boolean(cibleId && (effet.cible === 'creature' || ['debuff', 'empeche-blocage', 'blocage-force'].includes(effet.type)));
   if (sourceType === 'capacite' && effetCible && effet.type !== 'degats' && cibleDirecte
     && !rpgEstProtegee(cibleDirecte, sourceElement)
@@ -3832,6 +3844,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const touchees = [];
       for (const camp of [cote, adv]) {
         for (const entite of duel[camp].creatures) {
+          if (!dansVoie(entite)) continue;
           if (rpgEstProtegee(entite, sourceElement)
             || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
           // La parade encaisse la vague : la créature n'est pas atteinte et
@@ -3874,6 +3887,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const touchees = [];
       for (const camp of camps) {
         for (const entite of duel[camp].creatures) {
+          if (!dansVoie(entite)) continue;
           // La source ne se vise jamais elle-même (Celui qui juge).
           if (entite.id === sauf) continue;
           // La protection de couleur et le Serpent du monde écartent la vague.
@@ -4080,7 +4094,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const touchees = [];
         for (const campCible of [cote, adv]) {
           for (const entite of [...duel[campCible].creatures]) {
-            if (entite.id === sauf || estSite(entite) || rpgEstProtegee(entite, sourceElement)
+            if (!dansVoie(entite) || entite.id === sauf || estSite(entite) || rpgEstProtegee(entite, sourceElement)
               || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
               || (effet.exclutType && cardHasPrintedType(entite.carteId, effet.exclutType))
               || paradeZoneBloque(duel, entite, sourceType, campCible, cote, sourceElement)) continue;
@@ -4190,7 +4204,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         : null;
       const beneficiaires = effet.cible === 'creature-amie'
         ? (visee ? [visee] : [])
-        : duel[cote].creatures;
+        : duel[cote].creatures.filter(dansVoie);
       for (const entite of beneficiaires) {
         const pvAvant = Number(entite.pv) || 0;
         // Un état restauré ou construit par un scénario peut avoir perdu son
@@ -4299,9 +4313,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         const sourceLane = options?.mobaLane ?? source?.mobaLane;
-        // Source lane first, then remaining active lanes left-to-right. Closed
-        // lanes have no usable slots, even if the classic field has room.
-        const voies = [...duel.moba.lanes].sort((a, b) => Number(b.id === sourceLane) - Number(a.id === sourceLane));
+        // Tokens never spill into a second lane when their source lane is full.
+        // Closed lanes have no usable slots, even if the classic field has room.
+        const voies = sourceLane ? duel.moba.lanes.filter((v) => v.id === sourceLane) : [];
         const offsets = { left: 0, center: 2, right: 3 };
         for (let i = 0; i < nombre; i += 1) {
           const placement = i === 0 ? options?.mobaPlacementJeton : null;
@@ -4371,6 +4385,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
         : campCible.creatures.filter((entite) => {
+          if (!dansVoie(entite)) return false;
           if ((!effet.inclutSource && entite.id === sauf) || estSite(entite)
             || (!(effet.ignoreProtectionAlliee && !contreAdversaire) && rpgEstProtegee(entite, sourceElement))) return false;
           if (effet.typeSeulement && !cardHasPrintedType(entite.carteId, effet.typeSeulement)) return false;
@@ -4462,7 +4477,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     case 'brouillard': {
       // Le Grand Voile blanc : aucun dégât de combat ce tour, des deux côtés.
       // Le voile meurt avec le tour en cours (voir `rpgFinDeTour`).
-      duel.brouillardCombat = true;
+      if (duel.moba && voieEffet) {
+        (duel.brouillardCombatVoies ??= []).push(voieEffet);
+      } else duel.brouillardCombat = true;
       duel.log.push('Un grand voile blanc couvre le champ : aucun dégât de combat ce tour.');
       return;
     }
@@ -4490,6 +4507,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const bonusDefense = effet.def ?? 0;
       const ouvreLaRoute = effet.cible === 'autres-allies';
       for (const entite of duel[cote].creatures) {
+        if (!dansVoie(entite)) continue;
         if (ouvreLaRoute && entite.id === sauf) continue;
         if (rpgEstProtegee(entite, sourceElement)
           || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
@@ -4562,6 +4580,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const atteintes = duel[adv].creatures
           .filter((entite) => !estSite(entite) && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+            && dansVoie(entite)
             && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
           .map((entite) => ({
             entiteId: entite.id, dernierEtat: { ...entite },
@@ -4581,7 +4600,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           journaliserAnimationCombat(duel, {
             type: 'tempete-foudre', sourceCarteId,
             cibles: [cote, adv].flatMap((camp) => duel[camp].creatures
-              .filter((entite) => !estSite(entite)).map((entite) => entite.id)),
+              .filter((entite) => !estSite(entite) && dansVoie(entite)).map((entite) => entite.id)),
           });
         }
         // Photographie des deux champs : la source est épargnée et les jetons
@@ -4590,7 +4609,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // tombe ; les créatures du camp du lanceur ne réveillent pas la leur.
         const atteintes = [cote, adv].flatMap((camp) => duel[camp].creatures
           .filter((entite) => entite.id !== sauf
-            && !estSite(entite)
+            && dansVoie(entite) && !estSite(entite)
             && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
             && !paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement))
@@ -4628,7 +4647,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           ? [cote, adv]
             .flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
             .filter(({ entite }) => !(effet.exclutSoi && entite.id === sauf))
-          : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
+          : duel[adv].creatures.map((entite) => ({ entite, camp: adv }))).filter(({ entite }) => dansVoie(entite))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
           .map((entite) => ({ entite, camp: campCible }));
       // MOBA's Oni reserves explicit targets before any impact. Never let
@@ -4653,7 +4672,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const deja = new Set(cibles.map(({ entite }) => entite.id));
         const besoin = Math.max(0, Math.floor(effet.nombre) - cibles.length);
         if (besoin > 0) {
-          const restantes = duel[adv].creatures.filter((entite) => !deja.has(entite.id));
+          const voieCible = voieEffet ?? cibles[0]?.entite.mobaLane;
+          const restantes = duel[adv].creatures.filter((entite) => !deja.has(entite.id)
+            && (!duel.moba || (voieCible && entite.mobaLane === voieCible)));
           // Si aucune cible initiale (résolution automatique sans désignation),
           // on complète jusqu’à `nombre` avec les adversaires disponibles.
           const aCompleter = cibles.length === 0 ? Math.floor(effet.nombre) : besoin;
@@ -4767,7 +4788,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // survivantes sont gelées — les mortes ne rejoignent pas la liste.
       const zoneGel = effet.cible === 'toutes-creatures';
       const cibles = zoneGel
-        ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
+        ? duel[adv].creatures.filter((entite) => dansVoie(entite) && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
           && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId
@@ -5471,7 +5492,8 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
     return;
   }
   duel.destructionsEnAttente = duel.destructionsEnAttente ?? [];
-  duel.destructionsEnAttente.push({ cote, carteId, sourceEntiteId: entite?.id ?? null });
+  duel.destructionsEnAttente.push({ cote, carteId, sourceEntiteId: entite?.id ?? null,
+    ...(duel.moba && entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}) });
   const amount = effet.amount ?? 0;
   duel.log.push(`${carte.name} : désignez la créature adverse qui subira ${amount} dégât${amount > 1 ? 's' : ''}.`);
 }
@@ -5930,8 +5952,10 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
   // « reste-t-il une AUTRE cible ? », sans quoi le sorcier écarterait son
   // Guerrier dès qu'il est seul.
   if (entiteId && carte?.arrivee?.cibleSoi) return true;
+  const sourceLane = duel.moba && duel[cote].creatures.find((e) => e.id === entiteId)?.mobaLane;
   return campsDePortee(cote, portee)
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
+      && (!sourceLane || entite.mobaLane === sourceLane)
       && (!['renvoi-ou-destruction', 'exil-temporaire'].includes(carte.arrivee?.type) || !estSite(entite))
       && (carte.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carte)))
       && cibleRespecteCoutMax(carte, entite)
@@ -6493,7 +6517,8 @@ export function rpgDissiperDestructionsSansCible(duel) {
     const carte = duelCardById(attente.carteId);
     const allie = carte?.destruction?.type === 'exil-temporaire';
     const legales = duel[allie ? attente.cote : autre(attente.cote)].creatures
-      .filter((entite) => allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte)));
+      .filter((entite) => (!duel.moba || !attente.mobaLane || entite.mobaLane === attente.mobaLane)
+        && (allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte))));
     if (legales.length) {
       restantes.push(attente);
       continue;
@@ -6519,7 +6544,8 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   const carte = duelCardById(attente.carteId);
   const adv = autre(cote);
   const allie = carte?.destruction?.type === 'exil-temporaire';
-  const legales = duel[allie ? cote : adv].creatures.filter((entite) => allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte)));
+  const legales = duel[allie ? cote : adv].creatures.filter((entite) => (!duel.moba || !attente.mobaLane || entite.mobaLane === attente.mobaLane)
+    && (allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte))));
   if (!legales.length) {
     duel.destructionsEnAttente.shift();
     return { ok: false, raison: 'aucune-cible' };
@@ -6529,7 +6555,7 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   duel.destructionsEnAttente.shift();
   if (allie) exilerPourFinDeTour(duel, cote, cible, attente.carteId);
   else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId, null,
-    { projectileSource: { cote, id: attente.sourceEntiteId } });
+    { mobaLane: attente.mobaLane, projectileSource: { cote, id: attente.sourceEntiteId } });
   rpgActionsEtat(duel);
   return { ok: true, cible };
 }
@@ -7399,6 +7425,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
       cote, carteId, cibleId,
       ...(doubleCible || carte.effet.type === 'equiper-cimetiere' ? { cibleSecondaireId: cibleAllieeId } : {}),
       ...(options.reanimationMoba ? { reanimationMoba: options.reanimationMoba } : {}),
+      ...(options.mobaLane ? { laneId: options.mobaLane } : {}),
       ...(cibleVoie ? { laneId: options.laneMoba, cibleCote } : { cibleNom, cibleCote: doubleCible && carte.effet.sourceCible === 'creature-amie' ? 'tous' : cibleCote }),
     };
     duel.fenetreReponse = true;
@@ -8207,7 +8234,7 @@ export function rpgLancerAttaque(
     // Contact triggers must read the attacker as it was when it struck.
     const sourceAuContact = duel.moba ? { ...sourceAvantFrappe } : sourceAvantFrappe;
     // Le Grand Voile blanc avale aussi les coups portés au sorcier.
-    if (duel.brouillardCombat) continue;
+    if (duel.brouillardCombat || (duel.moba && duel.brouillardCombatVoies?.includes(sourceAvantFrappe.mobaLane))) continue;
     resume.frappeSorcier += coup.amount;
     // Un mode de plateau peut router chaque coup direct vers une cible autre
     // que le sorcier. Sans adaptateur, le chemin classique est inchangé.
@@ -8850,6 +8877,7 @@ export function rpgFinDeTour(duel) {
   // Le Grand Voile blanc et le blocage forcé « ce tour » (l’Embuscade)
   // meurent avec le tour en cours.
   duel.brouillardCombat = false;
+  duel.brouillardCombatVoies = [];
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of [...duel[cote].creatures, ...prisonnieresMoba(duel, cote)]) {
       if (entite.blocageForce?.portee === 'tour') entite.blocageForce = null;
