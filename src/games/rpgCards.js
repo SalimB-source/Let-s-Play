@@ -1269,6 +1269,15 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Nul ne voit le pas qui l’éloigne.',
   },
   {
+    id: 'sorcier-du-ressac-noir', set: 'soldats-de-la-lune', name: 'Sorcier du ressac noir',
+    element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
+    cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
+    reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
+    contreAnnonceCreature: true, coupRapide: true,
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement en réponse à une carte de créature que cet adversaire joue depuis sa main. Si vous la jouez ainsi, contrez cette carte de créature. Le Sorcier du ressac noir arrive ensuite en jeu. Attaque ciblée — Lorsqu’il attaque, il doit viser une créature adverse si possible : il lui inflige ses dégâts d’attaque sans riposte, avec 15 % de chances de rater. Sans créature adverse, il peut attaquer le sorcier avec 100 % de chances de toucher.',
+    flavor: 'Il noie l’invocation avant qu’elle ne touche la rive.',
+  },
+  {
     id: 'sanguinaire-des-dunes', set: 'soldats-de-la-lune', name: 'Sanguinaire des dunes',
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
     cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',

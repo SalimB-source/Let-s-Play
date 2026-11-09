@@ -63,3 +63,16 @@ test('lane resolver finds the correct HP element without interpreting IDs as CSS
   assert.equal(rpgMobaArrowTarget(table, 'ordinary-creature'), null);
   dom.window.close();
 });
+
+test('les flèches des créatures centrales rattachées visent la voie latérale et ses combats', async () => {
+  const { mobaInfliger, mobaRattacherCentre } = await import('../src/games/rpgMoba.js');
+  const { duel, put } = fixture();
+  const ally = put('joueur', 'center', 0, 'allie');
+  put('sorcier', 'right', 0, 'ennemi', { coupRapide: true });
+  mobaInfliger(duel.moba, 'joueur', 'center', 10);
+  mobaRattacherCentre(duel.moba, 'joueur', 'right');
+  ally.mobaLane = 'right';
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['allie']).attackArrows, { '@moba:right:sorcier': ['allie'] });
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'sorcier', ['ennemi'], { ennemi: 'allie' }).attackArrows, { allie: ['ennemi'] });
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'sorcier', ['ennemi'], {}, { ennemi: ['allie'] }).blockArrows, { ennemi: ['allie'] });
+});

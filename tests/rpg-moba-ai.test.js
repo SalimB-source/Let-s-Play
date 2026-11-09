@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from '../src/games/rpgAI.js';
 import { mobaInfliger } from '../src/games/rpgMoba.js';
 import { rpgChoisirCouleurMana, rpgFinDeTour, rpgReglerHasard } from '../src/games/rpgDuel.js';
-import { MOBA_DECKS, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaResoudreSite, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaJouerArme, MOBA_ARMES, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
+import { MOBA_DECKS, rpgMobaChoisirVoieCentrale, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaResoudreSite, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaJouerArme, MOBA_ARMES, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA } from '../src/games/rpgMobaAI.js';
 
 const ok = (result) => assert.equal(result.ok, true, JSON.stringify(result));
@@ -164,9 +164,15 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
     let actions = 0;
     while (!duel.moba.winner && actions++ < 1000) {
       assert.equal(rpgMobaPlacementCoherent(duel), true);
+      if (duel.moba.centerChoice) {
+        const flank = duel.moba.lanes.find((lane) => lane.active && lane.id !== 'center');
+        assert.ok(flank);
+        ok(rpgMobaChoisirVoieCentrale(duel, duel.moba.centerChoice, flank.id));
+        continue;
+      }
       const side = duel.tour, defense = side === 'joueur' ? 'sorcier' : 'joueur';
       if (duel.destructionsEnAttente?.length) { const controller = duel.destructionsEnAttente[0].cote; const cible = rpgMobaCiblesDestruction(duel, controller)[0]; assert.ok(cible); ok(rpgMobaResoudreDestruction(duel, controller, cible)); ghulChoices++; continue; }
-      if (duel.siteEnAttente && !duel.mobaRechercheEnAttente && !duel.defausseEnAttente) { const controller=duel.siteEnAttente.cote; const cible=rpgMobaChoisirSiteIA(duel,controller); assert.ok(cible); ok(rpgMobaResoudreSite(duel,controller,cible)); continue; }
+      if (duel.siteEnAttente && !duel.mobaRechercheEnAttente && !duel.defausseEnAttente) { const controller=duel.siteEnAttente.cote; const cible=rpgMobaChoisirSiteIA(duel,controller); assert.ok(cible, `Site sans cible : ${JSON.stringify({ attente: duel.siteEnAttente, lanes: duel.moba.lanes, creatures: duel[controller].creatures.map(({ id, carteId, mobaLane }) => ({ id, carteId, mobaLane })) })}`); ok(rpgMobaResoudreSite(duel,controller,cible)); continue; }
       if (duel[side].manaChoixEnAttente) { ok(rpgChoisirCouleurMana(duel, side, choisirCouleurManaIA(duel, side))); continue; }
       if (duel.mobaRechercheEnAttente) { const searchSide = duel.mobaRechercheEnAttente.cote; ok(rpgMobaResoudreRecherche(duel, searchSide, rpgMobaChoisirRechercheIA(duel, searchSide))); continue; }
       if (duel.defausseEnAttente) { const discardSide = duel.defausseEnAttente.cote; ok(rpgMobaDefausser(duel, discardSide, choisirDefausseIA(duel, discardSide))); continue; }
@@ -224,7 +230,7 @@ test('AI decisions simulate games with both seats, legal lane blocks and real de
         }
         continue;
       }
-      if (creature) { const result = rpgMobaJouerCreature(duel, side, creature.id, creature.lane, creature.slot, { ouvrirReponse: true }); ok(result); if (result.creatureEnAttente) { announcedCreatures++; if (creature.id === 'la-barbe-noire') blackbeardPlayed++; if (creature.id === 'le-brulot') brulotPlayed++; if (creature.id === 'la-barbe-rousse') roussePlayed++; if (['eirik-du-premier-serment','pourfendeur-des-djinns'].includes(creature.id)) countersJoues.add(creature.id); if (['salem','kusayla-roi-des-imazighen'].includes(creature.id)) kingsPlayed.add(creature.id); if (creature.id === 'source-de-bimini') biminiPlayed.add(side); if (creature.id === 'dame-aux-ailes-d-or') damePlayed++; if (creature.id === 'ghul-des-cendres') ghulPlayed++; if (creature.id === 'chercheuse-des-armes-ensevelies') chercheusePlayed.add(side); if (creature.id.startsWith('le-cavalier-')) cavaliersJoues.add(creature.id); if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(creature.id)) duelsArriveeJoues.add(creature.id); } continue; }
+      if (creature) { const result = rpgMobaJouerCreature(duel, side, creature.id, creature.lane, creature.slot, { ouvrirReponse: true, sacrificeIds: creature.sacrificeIds }); ok(result); if (result.creatureEnAttente) { announcedCreatures++; if (creature.id === 'la-barbe-noire') blackbeardPlayed++; if (creature.id === 'le-brulot') brulotPlayed++; if (creature.id === 'la-barbe-rousse') roussePlayed++; if (['eirik-du-premier-serment','pourfendeur-des-djinns'].includes(creature.id)) countersJoues.add(creature.id); if (['salem','kusayla-roi-des-imazighen'].includes(creature.id)) kingsPlayed.add(creature.id); if (creature.id === 'source-de-bimini') biminiPlayed.add(side); if (creature.id === 'dame-aux-ailes-d-or') damePlayed++; if (creature.id === 'ghul-des-cendres') ghulPlayed++; if (creature.id === 'chercheuse-des-armes-ensevelies') chercheusePlayed.add(side); if (creature.id.startsWith('le-cavalier-')) cavaliersJoues.add(creature.id); if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(creature.id)) duelsArriveeJoues.add(creature.id); } continue; }
       const attackers = duel.attaqueJouee !== side ? rpgMobaChoisirAttaquantsIA(duel, side) : [];
       if (attackers.length) { ok(rpgMobaDeclarerAttaque(duel, side, attackers, rpgMobaChoisirCiblesAttaqueIA(duel, side, attackers))); continue; }
       ok(rpgMobaTerminerTour(duel, side));

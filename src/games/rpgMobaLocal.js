@@ -13,7 +13,8 @@ import {
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
-import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRetirer, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
+import { invocationPossible } from './rpgInvocation.js';
+import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRattacherCentre, mobaRetirer, mobaVoieCombat, mobaVoieJouable, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
 
 const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
 const NOMS_VOIES = Object.freeze({ left: 'la voie gauche', center: 'la voie centrale', right: 'la voie droite' });
@@ -36,7 +37,7 @@ const caleAuditee = (duel, cote, entite) => {
   const proprietaire = cote === 'joueur' ? 'sorcier' : 'joueur';
   return Boolean(prisonniere && prisonniere.id && prisonniere.carteId === entite.enCale.carteId
     && combatAudite(prisonniere) && equipementAudite(prisonniere) && !prisonniere.enCale
-    && duel.moba.assignments.some((a) => a.entityId === prisonniere.id && a.side === proprietaire && a.laneId === prisonniere.mobaLane)
+    && duel.moba.assignments.some((a) => a.entityId === prisonniere.id && a.side === proprietaire && mobaVoieCombat(duel.moba, proprietaire, a.laneId) === prisonniere.mobaLane)
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
@@ -57,8 +58,8 @@ export const MOBA_MAGIES_ESSAI = Object.freeze([
   'mur-de-boucliers', 'brume-du-fjord', 'hurlement-du-blizzard',
   'grand-voile-blanc', 'verglas', 'grand-hiver', 'tempete-de-foudre-et-de-givre', 'rempart-de-dunes',
 ]);
-// These effects have no lane choice. The board launches them directly; an
-// audited subset may still announce before resolving when responses are enabled.
+// Non-targeted effects; spatial ones choose a lane before casting, while
+// hand and deck effects still resolve directly.
 export const MOBA_MAGIES_IMMEDIATES = Object.freeze([
   'tempete-de-sable', 'brisure-de-verre', 'vent-rouge', 'rapport-du-greffier',
   'les-feuillets', 'la-derniere-pesee', 'ressac-de-la-lune-noire', 'nuage-de-cendres', 'serment-de-la-forge', 'nom-efface', 'le-routier', 'embuscade', 'lettre-de-marque', 'le-grand-debarquement',
@@ -74,6 +75,10 @@ export const MOBA_MAGIES_ZONE_REPONSE = Object.freeze([
   'tempete-de-sable', 'vent-rouge', 'brisure-de-verre',
   'brume-du-fjord', 'hurlement-du-blizzard', 'verglas', 'nuage-de-cendres', 'embuscade',
   ...MOBA_MAGIES_ZONE_TOTALE_REPONSE,
+]);
+// Spatial spells pick exactly one active lane, independently of any PV payment.
+export const MOBA_MAGIES_SPATIALES = Object.freeze([
+  ...MOBA_MAGIES_ZONE_REPONSE, ...MOBA_MAGIES_RENFORT_REPONSE, 'grand-voile-blanc',
 ]);
 export const MOBA_SORTS_REPONSE = Object.freeze([
   'poigne-de-givre', 'ressac', 'eclair-du-marteau', 'trait-de-braise',
@@ -157,7 +162,7 @@ export function rpgMobaCreerPartie(joueur, sorcier, options = {}) {
 /** Whether a displayed card can be paid, including the existence of a legal
  * lane for an audited life price. Timing and targets are checked separately. */
 export function rpgMobaPeutPayer(duel, side, carte) {
-  if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte) return false;
+  if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte || !invocationPossible(duel, side, carte)) return false;
   if (!MOBA_MAGIES_PRIX.includes(carte.id)) return rpgPeutPayer(duel[side], carte);
   return rpgPeutPayer(duel[side], carte, { ignorerPrixPv: true })
     && duel.moba.lanes.some((lane) => lane.active && lane.hp[side] > carte.prixPv);
@@ -271,7 +276,8 @@ export function rpgMobaDefausser(duel, side, index) {
 export function rpgMobaCiblesSite(duel, side) {
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul
     || !MOBA_SIDES.includes(side) || duel.siteEnAttente?.cote !== side) return [];
-  return duel[side].creatures.filter((entite) => duelCardById(entite.carteId)?.kind !== 'site'
+  const sourceLane = duel[side].creatures.find((e) => e.id === duel.siteEnAttente.entiteId)?.mobaLane;
+  return duel[side].creatures.filter((entite) => (!sourceLane || entite.mobaLane === sourceLane) && duelCardById(entite.carteId)?.kind !== 'site'
     && mobaVoie(duel.moba, entite.mobaLane)?.active).map((entite) => entite.id);
 }
 
@@ -316,9 +322,9 @@ export function rpgMobaPlacementCoherent(duel) {
       if (!Object.hasOwn(OFFSETS, lane.id) || !Array.isArray(lane.slots?.[side])) return false;
       for (const [slot, id] of lane.slots[side].entries()) {
         if (id === null) continue;
-        if (!lane.active || occupied.has(id)) return false;
+        if ((!lane.active && !(lane.id === 'center' && lane.conqueredBy === side && (duel.moba.centerChoice === side || duel.moba.centerJoined?.side === side))) || occupied.has(id)) return false;
         const entity = entities.find((candidate) => candidate.id === id);
-        if (!entity || entity.emplacement !== OFFSETS[lane.id] + slot || entity.mobaLane !== lane.id) return false;
+        if (!entity || entity.emplacement !== OFFSETS[lane.id] + slot || entity.mobaLane !== mobaVoieCombat(duel.moba, side, lane.id)) return false;
         occupied.add(id);
       }
     }
@@ -327,10 +333,23 @@ export function rpgMobaPlacementCoherent(duel) {
   return true;
 }
 
+/** Attach only the conqueror's surviving central creature to an active side lane.
+ * Its physical central slot and permanent original assignment remain intact. */
+export function rpgMobaChoisirVoieCentrale(duel, side, laneId) {
+  if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
+  const result = mobaRattacherCentre(duel.moba, side, laneId);
+  if (!result.ok) return result;
+  for (const id of mobaVoie(duel.moba, 'center').slots[side]) {
+    const entity = duel[side].creatures.find((item) => item.id === id);
+    if (entity) entity.mobaLane = laneId;
+  }
+  return result;
+}
+
 /** Place a creature from the active player's hand using the engine's payment,
  * restrictions, entity creation and aura recalculation. Effects requiring lane
  * semantics are temporarily rejected rather than executed incorrectly. */
-export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false } = {}) {
+export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, sacrificeIds = null } = {}) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
@@ -343,8 +362,10 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente) return fail('timing');
   const lane = mobaVoie(duel.moba, laneId);
-  if (!lane?.active) return fail('voie-inactive');
-  if (!Number.isInteger(slot) || slot < 0 || slot >= lane.slots[side].length || lane.slots[side][slot] !== null) return fail('emplacement');
+  if (!mobaVoieJouable(duel.moba, side, laneId)) return fail('voie-inactive');
+  const sacrificesDemandes = resoudreEnAttente ? attente.sacrificeIds : sacrificeIds;
+  if (!Number.isInteger(slot) || slot < 0 || slot >= lane.slots[side].length
+    || (lane.slots[side][slot] !== null && !sacrificesDemandes?.includes(lane.slots[side][slot]))) return fail('emplacement');
   const carte = duelCardById(cardId);
   if (!carte) return fail('carte');
   // A card with unaudited combat or leave-play abilities must never enter the
@@ -373,21 +394,24 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     rpgConsommerDegatsCapaciteMoba(duel);
     const result = rpgJouerCreature(duel, side, cardId, null, {
       emplacement: OFFSETS[laneId] + slot,
+      ...(sacrificesDemandes !== null ? { sacrificeIds: sacrificesDemandes } : {}),
       ...(ouvrirReponse && !resoudreEnAttente ? { annoncerCreatureMoba: { laneId, slot, nomVoie: NOMS_VOIES[laneId] } } : {}),
       ...(resoudreEnAttente ? { resoudreCreatureMoba: true } : {}),
+      peutPlacerApresSacrifices: () => !duel.moba.winner && mobaVoieJouable(duel.moba, side, laneId),
       onEntitePlacee: (entite) => {
-        entite.mobaLane = laneId;
+        entite.mobaLane = mobaVoieCombat(duel.moba, side, laneId);
+        synchroniserSorties(duel); // Release sacrificed physical slots before placement.
         if (!mobaPlacer(duel.moba, side, laneId, slot, entite.id).ok) throw new Error('Placement MOBA incohérent');
       },
       ...((arriveeCiblee || ((duel[side].prochaineArriveeAbordage || Number.isFinite(carte.abordage)) && (ouvrirReponse || resoudreEnAttente))) ? { cibleDifferee: true } : {}),
       ...(soinArrivee ? { resoudreSoinSorcier: ({ amount }) => {
-        const result = mobaSoigner(duel.moba, side, laneId, amount);
-        if (result.ok) healingEvents.push({ laneId, side, cardId, ...result });
+        const result = mobaSoigner(duel.moba, side, mobaVoieCombat(duel.moba, side, laneId), amount);
+        if (result.ok) healingEvents.push({ laneId: mobaVoieCombat(duel.moba, side, laneId), side, cardId, ...result });
         return result;
       } } : {}),
       ...(cardId === 'braisier-du-souk' ? { resoudreDegatsSorcier: ({ amount }) => {
         synchroniserSorties(duel);
-        return infligerDansVoie(duel, side, laneId, amount, damageEvents, { cardId });
+        return infligerDansVoie(duel, side, mobaVoieCombat(duel.moba, side, laneId), amount, damageEvents, { cardId });
       } } : {}),
     });
     // The supported path reaches no payment or other mutation when refused;
@@ -397,6 +421,10 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     if (!result.ok) return result;
     if (result.creatureEnAttente) return result;
     if (attente) { duel.mobaCreatureEnAttente = null; duel.fenetreReponse = false; }
+    if (result.dissipe) {
+      synchroniserSorties(duel);
+      return { ...result, damageEvents, healingEvents };
+    }
     // Only audited arrivals are permitted above; still fail closed if engine
     // state actions removed another entity or added an unexpected one.
     synchroniserSorties(duel);
@@ -423,7 +451,8 @@ export function rpgMobaPasserCreature(duel, side) {
   if (!attente || side !== (attente.cote === 'joueur' ? 'sorcier' : 'joueur') || attente.cote !== duel.tour
     || !duel.fenetreReponse || duel.defausseEnAttente || duel.mobaRechercheEnAttente || duel.destructionsEnAttente?.length || duel.moba.winner) return fail('aucune-creature');
   const lane = mobaVoie(duel.moba, attente.laneId);
-  if (!lane?.active || lane.slots[attente.cote][attente.slot] !== null) {
+  if (!mobaVoieJouable(duel.moba, attente.cote, attente.laneId)
+    || (lane.slots[attente.cote][attente.slot] !== null && !attente.sacrificeIds?.includes(lane.slots[attente.cote][attente.slot]))) {
     duel[attente.cote].cimetiere.push(attente.carteId);
     duel.log.push(`La case de ${duelCardById(attente.carteId)?.name ?? 'la créature'} n'est plus disponible : elle ne peut pas entrer.`);
     duel.mobaCreatureEnAttente = null; duel.fenetreReponse = false;
@@ -449,7 +478,8 @@ export function rpgMobaCiblesPrise(duel, side) {
   if (!source || source.enCale) return [];
   const ennemi = side === 'joueur' ? 'sorcier' : 'joueur';
   const couleurs = cardColors(duelCardById(attente.carteId));
-  return duel[ennemi].creatures.filter((e) => duel.moba.lanes.some((lane) => lane.active && lane.slots[ennemi].includes(e.id))
+  return duel[ennemi].creatures.filter((e) => e.mobaLane === source.mobaLane
+    && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, ennemi, lane.id) && lane.slots[ennemi].includes(e.id))
     && rpgPriseEnCaleLegale(e, couleurs, attente.abordage)).map((e) => e.id);
 }
 /** The Oni chooses distinct opposing creatures in active lanes. A shield is
@@ -457,11 +487,12 @@ export function rpgMobaCiblesPrise(duel, side) {
 export function rpgMobaCiblesOni(duel, side) {
   const attente = duel?.arriveeEnAttente;
   if (attente?.cote !== side || attente.carteId !== 'oni-de-la-fournaise' || Number.isFinite(attente.abordage)) return [];
-  if (!duel[side]?.creatures.some((entity) => entity.id === attente.entiteId)) return [];
+  const source = duel[side]?.creatures.find((entity) => entity.id === attente.entiteId);
+  if (!source) return [];
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
   const couleurs = cardColors(duelCardById(attente.carteId));
-  return duel[enemy].creatures.filter((entity) => !rpgEstProtegee(entity, couleurs)
-    && duel.moba.lanes.some((lane) => lane.active && lane.slots[enemy].includes(entity.id))).map((entity) => entity.id);
+  return duel[enemy].creatures.filter((entity) => entity.mobaLane === source.mobaLane && !rpgEstProtegee(entity, couleurs)
+    && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, enemy, lane.id) && lane.slots[enemy].includes(entity.id))).map((entity) => entity.id);
 }
 function normaliserArriveeMoba(duel) {
   const attente = duel.arriveeEnAttente;
@@ -494,6 +525,8 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
   if (Number.isFinite(attente.abordage) && !rpgMobaCiblesPrise(duel, side).includes(cibleId)) return fail('cible');
   const damageEvents = [];
   let options = null;
+  const sourceLane = duel[side].creatures.find((e) => e.id === attente.entiteId)?.mobaLane;
+  if (!sourceLane) return fail('cible');
   if (cibleId === 'sorcier' && attente.carteId === 'maitre-du-marteau') {
     const source = duel[side].creatures.find((entity) => entity.id === attente.entiteId);
     if (!source || !mobaVoie(duel.moba, source.mobaLane)?.active) return fail('cible');
@@ -501,8 +534,8 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
   } else {
     const cibleSides = Number.isFinite(attente.abordage) ? [side === 'joueur' ? 'sorcier' : 'joueur'] : MOBA_ARRIVEES_NEUTRES.includes(attente.carteId) ? MOBA_SIDES
       : [MOBA_ARRIVEES_ALLIEES.includes(attente.carteId) ? side : (side === 'joueur' ? 'sorcier' : 'joueur')];
-    const cibleSide = cibleSides.find((camp) => duel.moba.lanes.some((voie) => voie.active && voie.slots[camp].includes(cibleId)));
-    if (!cibleSide || !duel[cibleSide].creatures.some((entity) => entity.id === cibleId)) return fail('cible');
+    const cibleSide = cibleSides.find((camp) => duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, camp, voie.id) && voie.slots[camp].includes(cibleId)));
+    if (!cibleSide || !duel[cibleSide].creatures.some((entity) => entity.id === cibleId && entity.mobaLane === sourceLane)) return fail('cible');
   }
   if (attente.carteId === 'oni-de-la-fournaise' && !Number.isFinite(attente.abordage)) {
     const candidates = rpgMobaCiblesOni(duel, side);
@@ -577,6 +610,7 @@ export function rpgMobaPasserSort(duel, side) {
     ? rpgJouerArme(duel, attente.cote, attente.carteId, attente.cibleId, { resoudreArmeMoba: true, mobaPlacementArme: attente.placementArmeVivante })
     : rpgLancerMagie(duel, attente.cote, attente.carteId, attente.cibleId, attente.cibleSecondaireId ?? null, {
     resoudreSortMoba: true,
+    ...(attente.laneId ? { mobaLane: attente.laneId } : {}),
     ...(retour ? { placerReanimationMoba: placementReanimation(duel, attente.cote, retour.laneId, retour.slot), surEvenementRetourMoba: observerRetour(damageEvents, healingEvents) } : {}),
     ...(attente.carteId === 'feux-de-kitsune' && attente.cibleSecondaireId ? { ciblesIndependantesMoba: true } : {}),
     ...(transfertVoie ? { mobaLane: attente.laneId, surTransfertMoba: (event) => {
@@ -621,7 +655,7 @@ function infligerDansVoie(duel, side, laneId, amount, damageEvents, details = {}
     duel.fin = { gagnant: damage.winner, raison: 'conquete-moba' };
     return { recus: damage.damage, terminerCombat: true };
   }
-  return { recus: damage.damage, sourceExileeParConquete: damage.conquered };
+  return { recus: damage.damage, sourceExileeParConquete: damage.conquered && !(laneId === 'center' && duel.moba.centerChoice === side) };
 }
 
 /** La créature centrale peut cibler toutes les voies actives ; les autres
@@ -707,7 +741,7 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
 
   const lanesByAttacker = new Map();
   for (const lane of duel.moba.lanes) {
-    for (const id of lane.slots[side]) if (id !== null) lanesByAttacker.set(id, lane.id);
+    for (const id of lane.slots[side]) if (id !== null) lanesByAttacker.set(id, mobaVoieCombat(duel.moba, side, lane.id));
   }
   const damageEvents = [];
   const healingEvents = [];
@@ -750,7 +784,7 @@ function derniereCreatureReanimable(duel, side) {
 }
 function emplacementReanimationValide(duel, side, laneId, slot) {
   const voie = mobaVoie(duel.moba, laneId);
-  return Boolean(voie?.active && Number.isInteger(slot) && slot >= 0 && slot < voie.slots[side].length && voie.slots[side][slot] === null);
+  return Boolean(mobaVoieJouable(duel.moba, side, laneId) && Number.isInteger(slot) && slot >= 0 && slot < voie.slots[side].length && voie.slots[side][slot] === null);
 }
 function observerRetour(damageEvents, healingEvents) {
   return (event) => {
@@ -761,7 +795,7 @@ function observerRetour(damageEvents, healingEvents) {
 function placementReanimation(duel, side, laneId, slot) {
   return (entite) => {
     entite.emplacement = OFFSETS[laneId] + slot;
-    entite.mobaLane = laneId;
+    entite.mobaLane = mobaVoieCombat(duel.moba, side, laneId);
     if (!mobaPlacer(duel.moba, side, laneId, slot, entite.id).ok) throw new Error('Placement de Réanimation MOBA incohérent');
   };
 }
@@ -783,7 +817,7 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
   if (vivante) {
     if (!emplacementReanimationValide(duel, side, laneId, slot)) return fail('cible');
   } else {
-    if (!cible || cible.mur || !duel.moba.lanes.some((lane) => lane.active && lane.slots[side].includes(cibleId))) return fail('cible');
+    if (!cible || cible.mur || !duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, side, lane.id) && lane.slots[side].includes(cibleId))) return fail('cible');
     if (rpgEstProtegee(cible, cardColors(armeById(cardId)))) return fail('protection');
   }
   const result = rpgJouerArme(duel, side, cardId, cibleId, { annoncerArmeMoba: ouvrirReponse,
@@ -823,6 +857,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   const renfort = MOBA_MAGIES_RENFORT_REPONSE.includes(cardId);
   const contre = MOBA_CONTRESORTS.includes(cardId);
   const reanimation = MOBA_MAGIES_REANIMATION.includes(cardId);
+  const spatial = MOBA_MAGIES_SPATIALES.includes(cardId);
   if (!reanimation && emplacementReanimation !== null) return fail('cible');
   if (cardId === 'memoire-de-l-armurerie') {
     cibleSecondaireId ??= [...duel[side].cimetiere].reverse().find((id) => id === 'sabre-maudit') ?? null;
@@ -842,7 +877,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     // and a possibly different active lane receives the transfer.
     const lanePrix = prixLaneId ?? (transfert ? null : laneId);
     const lane = mobaVoie(duel.moba, lanePrix);
-    if (cibleId !== null || !lane?.active || (transfert && !mobaVoie(duel.moba, laneId)?.active)) return fail('cible');
+    if (cibleId !== null || !lane?.active || ((transfert || spatial) && !mobaVoie(duel.moba, laneId)?.active)) return fail('cible');
     if (lane.hp[side] <= magieById(cardId).prixPv) return fail('prix');
   } else if (soin || transfert) {
     const poidsLie = cardId === 'le-poids' && lienSatisfait(magieById(cardId), duel[side].creatures);
@@ -850,7 +885,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     if (poidsLie && (cibleId !== null || ouvrirReponse)) {
       const ennemi = side === 'joueur' ? 'sorcier' : 'joueur';
       const cible = duel[ennemi].creatures.find((entity) => entity.id === cibleId);
-      if (!cible || !duel.moba.lanes.some((voie) => voie.active && voie.slots[ennemi].includes(cibleId))) return fail('cible');
+      if (!cible || cible.mobaLane !== laneId || !duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, ennemi, voie.id) && voie.slots[ennemi].includes(cibleId))) return fail('cible');
       if (rpgEstProtegee(cible, cardColors(magieById(cardId))) || rpgEstProtegeeDesSorts(cible, cardColors(magieById(cardId)))) return fail('protection');
     } else if (!poidsLie && cibleId !== null) return fail('cible');
   } else if (ciblee && cibleId === 'sorcier') {
@@ -858,12 +893,13 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   } else if (ciblee) {
     const cotesCibles = MOBA_MAGIES_NEUTRES.includes(cardId) ? MOBA_SIDES
       : [MOBA_MAGIES_ALLIEES.includes(cardId) ? side : (side === 'joueur' ? 'sorcier' : 'joueur')];
-    const cibleSide = cotesCibles.find((cote) => duel.moba.lanes.some((voie) => voie.active && voie.slots[cote].includes(cibleId)));
+    const cibleSide = cotesCibles.find((cote) => duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, cote, voie.id) && voie.slots[cote].includes(cibleId)));
     if (laneId !== null || !cibleSide || !duel[cibleSide].creatures.some((entity) => entity.id === cibleId)) return fail('cible');
+    const voiePrimaire = duel[cibleSide].creatures.find((entity) => entity.id === cibleId)?.mobaLane;
     const coteSecondaire = cardId === 'defi-du-jarl' ? side : cibleSide;
     if (cardId === 'memoire-de-l-armurerie' && rpgEstProtegee(duel[side].creatures.find((e) => e.id === cibleId), cardColors(magieById(cibleSecondaireId)))) return fail('protection');
-    if (cibleSecondaireId !== null && cardId !== 'memoire-de-l-armurerie' && (cibleSecondaireId === cibleId || !duel.moba.lanes.some((voie) => voie.active && voie.slots[coteSecondaire].includes(cibleSecondaireId)) || !duel[coteSecondaire].creatures.some((entity) => entity.id === cibleSecondaireId))) return fail('cible');
-  } else if (cibleId !== null || laneId !== null) return fail('cible');
+    if (cibleSecondaireId !== null && cardId !== 'memoire-de-l-armurerie' && (cibleSecondaireId === cibleId || duel[coteSecondaire].creatures.find((entity) => entity.id === cibleSecondaireId)?.mobaLane !== voiePrimaire || !duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, coteSecondaire, voie.id) && voie.slots[coteSecondaire].includes(cibleSecondaireId)) || !duel[coteSecondaire].creatures.some((entity) => entity.id === cibleSecondaireId))) return fail('cible');
+  } else if (cibleId !== null || (spatial ? !mobaVoie(duel.moba, laneId)?.active : laneId !== null)) return fail('cible');
   const damageEvents = [];
   const healingEvents = [];
   const nomCible = (id, cote = side === 'joueur' ? 'sorcier' : 'joueur') => {
@@ -872,6 +908,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     return cible && voie ? `${cible.name} · ${NOMS_VOIES[voie.id]}${cardId === 'defi-du-jarl' ? ` · ${cote === 'joueur' ? 'Vous' : 'IA'}` : ''}` : null;
   };
   const options = {
+    ...((spatial || soin || transfert || cibleId === 'sorcier') && laneId ? { mobaLane: laneId } : {}),
     ...(cardId === 'lettre-de-marque' ? { nomsCiblesMoba: ['Pioche et prochaine arrivée avec Abordage'] } : {}),
     ...(cardId === 'le-grand-debarquement' ? { nomsCiblesMoba: ['Créatures alliées avec une prise en cale'] } : {}),
     ...(['feux-de-kitsune', 'defi-du-jarl'].includes(cardId) ? { nomsCiblesMoba: [nomCible(cibleId), nomCible(cibleSecondaireId, cardId === 'defi-du-jarl' ? side : undefined)] } : {}),
@@ -881,7 +918,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     ...(contre ? (contreCreature ? { contrerCreatureMoba: true } : { contrerSortMoba: true }) : {}),
     ...(ouvrirReponse && !reaction && !duel.fenetreReponse && MOBA_SORTS_REPONSE.includes(cardId)
       && (reanimation ? cibleId === null && !!laneId : renfort || (prix && (MOBA_MAGIES_ZONE_REPONSE.includes(cardId) || MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId))) ? cibleId === null && (prix ? (prixLaneId ?? laneId) !== null : laneId === null)
-        : MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId) || MOBA_MAGIES_MAIN_REPONSE.includes(cardId) || MOBA_MAGIES_ZONE_REPONSE.includes(cardId) || cardId === 'grand-voile-blanc' ? cibleId === null && laneId === null
+        : MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId) || MOBA_MAGIES_MAIN_REPONSE.includes(cardId) || spatial ? cibleId === null && (spatial ? !!laneId : laneId === null)
         : soin || transfert ? !!laneId && (cibleId === null || cardId === 'le-poids')
         : cibleId === 'sorcier' ? MOBA_MAGIES_VOIES.includes(cardId)
           : cibleId && MOBA_SIDES.some((cote) => duel[cote].creatures.some((entity) => entity.id === cibleId)))
@@ -938,8 +975,8 @@ export function rpgMobaCiblesDestruction(duel, side) {
   if (!duel?.moba || !MOBA_SIDES.includes(side) || !attente || attente.cote !== side || attente.carteId !== 'ghul-des-cendres' || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return [];
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
   const couleurs = cardColors(duelCardById(attente.carteId));
-  return duel[enemy].creatures.filter((entity) => !rpgEstProtegee(entity, couleurs)
-    && duel.moba.lanes.some((lane) => lane.active && lane.slots[enemy].includes(entity.id))).map((entity) => entity.id);
+  return duel[enemy].creatures.filter((entity) => (!attente.mobaLane || entity.mobaLane === attente.mobaLane) && !rpgEstProtegee(entity, couleurs)
+    && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, enemy, lane.id) && lane.slots[enemy].includes(entity.id))).map((entity) => entity.id);
 }
 
 function reconcilerCombatDeclare(duel) {

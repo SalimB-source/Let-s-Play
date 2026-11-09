@@ -8,6 +8,13 @@ export const SACRIFICE_ANIMATION = Object.freeze({
   reduit: 80,
 });
 
+/** Retrouve les victimes d'une invocation MOBA dans l'instantané pris avant
+ * la résolution : le moteur a déjà retiré leurs cartes de leurs cases. */
+export function victimesSacrificeSurVoies(avant, ids = []) {
+  const victimes = new Set(ids);
+  return (avant?.cartes ?? []).filter((entite) => victimes.has(entite.entityId));
+}
+
 /** Un sacrifice déjà joué ne doit devenir ni un renvoi, ni un exil, ni un
  * deuxième fantôme de mort. Les autres sorties de la même action restent. */
 export function instantaneSansSacrificesAnimes(avant, ids = []) {

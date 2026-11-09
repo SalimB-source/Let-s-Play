@@ -7,7 +7,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
 test('le terrain MOBA continu garde ses trois voies et ses commandes', async () => {
-  const image = await readFile(new URL('../public/sablier-moba/champ-des-trois-voies-berges.webp', import.meta.url));
+  const image = await readFile(new URL('../public/sablier-moba/champ-trois-voies-rapprochees.webp', import.meta.url));
   assert.equal(image.toString('ascii', 0, 4), 'RIFF');
   assert.equal(image.toString('ascii', 8, 12), 'WEBP');
   const css = await readFile(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
@@ -23,7 +23,7 @@ test('le terrain MOBA continu garde ses trois voies et ses commandes', async () 
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, { onQuitter: () => {} })));
-    assert.match(document.querySelector('.moba').style.getPropertyValue('--moba-map'), /sablier-moba\/champ-des-trois-voies-berges\.webp/);
+    assert.match(document.querySelector('.moba').style.getPropertyValue('--moba-map'), /sablier-moba\/champ-trois-voies-rapprochees\.webp/);
     const lanes = [...document.querySelectorAll('.moba__lane')];
     assert.deepEqual(lanes.map((lane) => lane.getAttribute('aria-label')), ['Voie gauche', 'Voie centrale', 'Voie droite']);
     assert.deepEqual(lanes.map((lane) => lane.querySelectorAll('[data-moba-position]').length), [4, 2, 4]);
@@ -74,8 +74,13 @@ test('une voie conquise affiche le sceau du bon camp sans désactiver les autres
     mobaInfliger(duel.moba, 'sorcier', 'center', 10);
     await act(async () => root.render(React.createElement(Board, props)));
     assert.ok(center.classList.contains('is-conquered--sorcier'));
-    assert.match(center.querySelector('.moba__conquest').textContent, /Voie conquise.*L’IA.*Voie fermée/);
-    assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie centrale conquise par IA ; voie fermée/);
+    assert.equal(center.querySelector('.moba__conquest'), null, 'le centre ne reçoit pas le sceau d’une voie définitivement fermée');
+    const { mobaRattacherCentre } = await server.ssrLoadModule('/src/games/rpgMoba.js');
+    assert.equal(mobaRattacherCentre(duel.moba, 'sorcier', 'right').ok, true);
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.equal(center.querySelector('.moba__side--sorcier').hasAttribute('inert'), false);
+    assert.equal(center.querySelector('.moba__side--joueur').getAttribute('aria-hidden'), 'true');
+    assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie centrale conquise par IA ; centre rattaché à Voie droite/);
     assert.ok(!right.querySelector('.moba__conquest'));
     assert.equal(duel.moba.winner, null, 'une voie par camp ne termine pas la partie');
   } finally {

@@ -1171,6 +1171,7 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     const click = async (element) => { assert.ok(element); await act(async () => element.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))); };
     const mouse = async (element, type) => act(async () => element.dispatchEvent(new dom.window.MouseEvent(type, { bubbles: true, cancelable: true })));
     const mulligan = document.querySelector('.moba__mulligan-item');
+    assert.equal(document.querySelector('.moba__inspect'), null, 'aucun i sur les cartes de départ');
     await mouse(mulligan, 'mouseover');
     assert.equal(document.querySelector('.moba > .rpg-hover-card-preview'), null, 'hover does not open a preview');
     assert.equal(document.querySelector('.moba__preview-layer'), null);
@@ -1198,7 +1199,13 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     assert.equal(document.activeElement.textContent, 'Fermer l’aperçu', 'focus stays in the preview');
     await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     assert.equal(document.querySelector('.moba__preview-layer'), null);
-    assert.equal(document.activeElement, hand.querySelector('.moba__inspect'));
+    assert.equal(document.activeElement, card);
+    assert.equal(document.querySelector('.moba__inspect'), null, 'aucun bouton i visible sur les cartes MOBA');
+    card.focus();
+    await act(async () => card.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'i', bubbles: true, cancelable: true })));
+    assert.ok(document.querySelector('.moba__preview-layer'), 'la fiche reste accessible au clavier');
+    await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    assert.equal(document.activeElement, card);
 
     // A long touch opens the preview and consumes the ensuing synthetic click.
     const down = new dom.window.MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 10, clientY: 10 });
@@ -1221,9 +1228,14 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     assert.ok(placed.querySelector('.rpg-card-icone'), 'classic effect icons appear on the field card');
     await mouse(placed, 'mouseover');
     assert.equal(document.querySelector('.moba > .rpg-hover-card-preview'), null);
+    assert.equal(document.querySelector('.moba__inspect'), null, 'aucun i sur les créatures posées');
     await mouse(placed, 'contextmenu');
     assert.ok(document.querySelector('.moba__preview-layer'));
     assert.equal(duel.joueur.creatures.length, 1, 'previewing a placed creature does not act');
+    await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    placed.focus();
+    await act(async () => placed.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'i', bubbles: true, cancelable: true })));
+    assert.ok(document.querySelector('.moba__preview-layer'), 'la créature posée reste consultable au clavier sans i visible');
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();

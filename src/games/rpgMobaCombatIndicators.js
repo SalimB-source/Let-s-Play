@@ -1,3 +1,4 @@
+import { mobaVoieCombat } from './rpgMoba.js';
 import { rpgMobaCiblesAttaque } from './rpgMobaLocal.js';
 
 /**
@@ -17,10 +18,11 @@ export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, b
   const defenders = duel[defense]?.creatures ?? [];
   for (const id of attackerIds ?? []) {
     const attacker = duel[side]?.creatures.find((entity) => entity.id === id);
-    const lane = duel.moba.lanes.find((item) => item.id === attacker?.mobaLane && item.active && item.slots[side].includes(id));
+    const origin = duel.moba.lanes.find((item) => item.slots[side].includes(id));
+    const lane = duel.moba.lanes.find((item) => item.id === mobaVoieCombat(duel.moba, side, origin?.id) && item.active);
     if (!attacker || !lane) continue;
     const targetId = targets[id];
-    const blockerIds = (blocks[id] ?? []).filter((blockerId) => lane.slots[defense].includes(blockerId) && defenders.some((entity) => entity.id === blockerId));
+    const blockerIds = (blocks[id] ?? []).filter((blockerId) => duel.moba.lanes.some((originLane) => originLane.slots[defense].includes(blockerId) && mobaVoieCombat(duel.moba, defense, originLane.id) === lane.id) && defenders.some((entity) => entity.id === blockerId));
     if (!targetId && blockerIds.length) {
       blockArrows[id] = blockerIds;
       for (const blockerId of blockerIds) {
@@ -30,7 +32,7 @@ export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, b
       continue;
     }
     if (targetId) {
-      const target = defenders.find((entity) => entity.id === targetId && duel.moba.lanes.some((targetLane) => targetLane.active && (lane.id === 'center' || targetLane.id === lane.id) && targetLane.slots[defense].includes(entity.id)));
+      const target = defenders.find((entity) => entity.id === targetId && duel.moba.lanes.some((targetLane) => (lane.id === 'center' && origin?.id === 'center' && targetLane.active || mobaVoieCombat(duel.moba, defense, targetLane.id) === lane.id) && targetLane.slots[defense].includes(entity.id)));
       // A lost target never becomes a direct attack.
       if (!target) continue;
       (attackArrows[target.id] ??= []).push(id);

@@ -72,7 +72,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
 
 test('les conditions d’Embuscade ont une version courte avec des mots clés à mettre en gras', () => {
   const embuscades = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse && carte.conditionEmbuscade);
-  assert.equal(embuscades.length, 9, "seules les neuf cartes encore dotées d’Embuscade sont concernées");
+  assert.equal(embuscades.length, 10, "les dix cartes dotées d’Embuscade sont concernées");
   for (const carte of embuscades) {
     const morceaux = conditionEmbuscadeCourtePourApercu(carte);
     assert.ok(morceaux?.length >= 2, carte.id);
@@ -92,11 +92,11 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
 test('la condition d’Embuscade de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
-  assert.equal(vampires.length, 9, "les sept Vampires privés d’Embuscade ne sont plus concernés");
+  assert.equal(vampires.length, 10, "le nouveau Vampire rejoint les Embuscades conditionnelles");
   for (const carte of vampires) {
     const condition = conditionEmbuscadePourApercu(carte);
     assert.ok(condition, `condition de ${carte.id} absente`);
-    assert.ok(carte.text.includes(`seulement si ${condition}.`), carte.id);
+    assert.ok(carte.text.includes(`seulement ${carte.contreAnnonceCreature ? 'en réponse à ' : 'si '}${condition}.`), carte.id);
   }
   assert.equal(conditionEmbuscadePourApercu(cardById('chien-du-guet')), null);
   assert.equal(conditionEmbuscadePourApercu(cardById('embuscade')), null,

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rpgChoisirCouleurMana, rpgConditionEmbuscadeRemplie, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgNouveauDuel, rpgPeutRepondre, rpgJouerCreature, rpgJouerArme, rpgLancerAttaque, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgReglerHasard, rpgVainqueur } from '../src/games/rpgDuel.js';
 import { cardById, magieById, RPG_MAGIE_CARDS } from '../src/games/rpgCards.js';
-import { rpgMobaNouveauDuel, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaNouveauDuel, rpgMobaChoisirVoieCentrale, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
 import { CARTES_COMBAT_AUDITEES } from '../src/games/rpgMobaAudit.js';
 import { validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
@@ -171,6 +171,7 @@ test('real engine direct damage conquers, removes both sides, and triggers secon
   const duel = partieCombat();
   const { attacker, blocker } = poserCombattants(duel, 'left');
   mobaInfliger(duel.moba, 'joueur', 'center', 10);
+  assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'right').ok, true);
   mobaInfliger(duel.moba, 'joueur', 'left', 9);
   const result = rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {});
   assert.equal(result.ok, true);
@@ -282,17 +283,19 @@ test('the experimental fixed deck respects the existing 30-card and copy rules',
   assert.equal(validerDeckManaEssai({ cardIds: MOBA_DECK_ESSAI, elements: ['braise', 'sable', 'neige'] }).ok, true);
 });
 
-test('a real global spell affects creatures in multiple active lanes and reconciles deaths', () => {
+test('a real zone spell affects only the chosen active lane and reconciles deaths', () => {
   const duel = partieCombat();
   const left = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
   const right = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
   duel.joueur.main.push('grand-hiver');
   duel.joueur.mana.neige = 10;
-  const result = rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver');
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver').raison, 'cible');
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver', null, 'left');
   assert.equal(result.ok, true);
-  assert.equal(duel.joueur.creatures.some((e) => e.id === left.id || e.id === right.id), false);
+  assert.equal(duel.joueur.creatures.some((e) => e.id === left.id), false);
+  assert.equal(duel.joueur.creatures.some((e) => e.id === right.id), true);
   assert.equal(mobaVoie(duel.moba, 'left').slots.joueur[0], null);
-  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[0], null);
+  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[0], right.id);
   assert.equal(mobaVoie(duel.moba, 'center').hp.joueur, 10);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
@@ -305,11 +308,11 @@ test('local engine can play through turns to conquer two lanes with printed stat
   const left = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'left', 0).entite;
   const center = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'center', 0).entite;
   assert.equal(left.atk, 3);
-  for (let turn = 0; turn < 7; turn += 1) {
+  for (let turn = 0; turn < 8 && !duel.moba.winner; turn += 1) {
     rpgFinDeTour(duel); rpgFinDeTour(duel);
     const result = rpgMobaLancerAttaque(duel, 'joueur', [left, center].filter((entity) => duel.joueur.creatures.includes(entity)).map((entity) => entity.id), {});
-    assert.equal(result.ok, true);
-    if (turn < 6) assert.equal(duel.moba.winner, null);
+    assert.equal(result.ok, true, JSON.stringify(result));
+    if (duel.moba.centerChoice) assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'left').ok, true);
   }
   assert.equal(duel.moba.winner, 'joueur');
   assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 0);
@@ -8737,7 +8740,7 @@ for (const side of ['joueur', 'sorcier']) test(`Guetteuse MOBA : exil allié et 
   const allie = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'right', 1).entite;
   assert.equal(rpgMobaJouerArme(duel, side, 'jitte-d-amayas', allie.id).ok, true);
   allie.pv = 1; allie.poison = { degats: 1, toursRestants: 2 };
-  const g = rpgMobaJouerCreature(duel, side, 'guetteuse-des-marees', 'left', 0, { ouvrirReponse: true });
+  const g = rpgMobaJouerCreature(duel, side, 'guetteuse-des-marees', 'right', 0, { ouvrirReponse: true });
   assert.equal(g.creatureEnAttente, true); const entree = rpgMobaPasserCreature(duel, enemy); assert.equal(entree.arriveeEnAttente, true);
   assert.equal(rpgMobaResoudreArrivee(duel, side, entree.entite.id).ok, false);
   assert.equal(rpgMobaResoudreArrivee(duel, side, allie.id).ok, true);
@@ -9357,8 +9360,8 @@ for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: announce
     if (duel.tour !== side) rpgFinDeTour(duel);
     duel[side].mana.sable = 20;
     duel[side].main = Array(3).fill('gardienne-des-portes-de-sable');
-    guardians[side] = ['left', 'center', 'right'].map((lane) =>
-      rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', lane, 0).entite);
+    guardians[side] = [['left', 0], ['left', 1], ['right', 0]].map(([lane, slot]) =>
+      rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', lane, slot).entite);
     assert.ok(guardians[side].every(Boolean));
   }
   if (duel.tour !== caster) rpgFinDeTour(duel);
@@ -9393,15 +9396,15 @@ for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${caster
   assert.equal(rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'left', 0).ok, true);
   if (duel.tour !== caster) rpgFinDeTour(duel);
   duel[caster].main = ['tempete-de-sable']; duel[caster].mana.sable = 20;
-  assert.equal(rpgMobaLancerMagie(duel, caster, 'tempete-de-sable', null, null, null, { ouvrirReponse: true }).sortEnAttente, true);
+  assert.equal(rpgMobaLancerMagie(duel, caster, 'tempete-de-sable', null, 'left', null, { ouvrirReponse: true }).sortEnAttente, true);
   assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, cardById('gardienne-du-croissant')), false);
   assert.equal(rpgMobaPasserSort(duel, defender).ok, true);
 });
 
-test('the ten unaudited creatures remain gated and cannot be summoned during their own turn', () => {
+test('the eleven unaudited creatures remain gated and cannot be summoned during their own turn', () => {
   const ids = ['sentinelle-des-sables', 'tojiro-le-pourfendeur', 'garde-du-trone-givre',
     'eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune',
-    'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree', 'boualem'];
+    'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree', 'boualem', 'sorcier-du-ressac-noir'];
   for (const side of ['joueur', 'sorcier']) {
     const duel = partie();
     if (side === 'sorcier') rpgFinDeTour(duel);
@@ -9423,10 +9426,13 @@ for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${caster
   duel[defender].main = ['gardienne-des-portes-de-sable']; duel[defender].mana.sable = 20;
   const target = rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'right', 0).entite;
   if (duel.tour !== caster) rpgFinDeTour(duel);
-  duel[caster].main = ['maitre-du-marteau']; duel[caster].mana.neige = 20;
+  duel[caster].main = ['gardienne-des-portes-de-sable', 'maitre-du-marteau'];
+  duel[caster].mana.sable = 20; duel[caster].mana.neige = 20;
+  const sacrifice = rpgMobaJouerCreature(duel, caster, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  assert.ok(sacrifice);
   duel[defender].main = ['parade-du-verre']; duel[defender].mana.eau = 20;
   const gardien = cardById('gardienne-du-croissant');
-  assert.equal(rpgMobaJouerCreature(duel, caster, 'maitre-du-marteau', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  assert.equal(rpgMobaJouerCreature(duel, caster, 'maitre-du-marteau', 'right', 0, { ouvrirReponse: true, sacrificeIds: [sacrifice.id] }).creatureEnAttente, true);
   assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
   assert.equal(rpgMobaPasserCreature(duel, defender).ok, true);
   assert.equal(rpgMobaResoudreArrivee(duel, caster, target.id).ok, true);
@@ -9464,10 +9470,13 @@ for (const caster of ['joueur', 'sorcier']) for (const instant of [false, true])
   duel[defender].main = ['gardienne-des-portes-de-sable']; duel[defender].mana.sable = 20;
   const target = rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'right', 0).entite;
   if (duel.tour !== caster) rpgFinDeTour(duel);
-  duel[caster].main = ['maitre-du-marteau']; duel[caster].mana.neige = 20;
+  duel[caster].main = ['gardienne-des-portes-de-sable', 'maitre-du-marteau'];
+  duel[caster].mana.sable = 20; duel[caster].mana.neige = 20;
+  const sacrifice = rpgMobaJouerCreature(duel, caster, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  assert.ok(sacrifice);
   duel[defender].main = ['gardienne-du-croissant', ...(instant ? ['parade-du-verre'] : [])];
   duel[defender].mana.sable = 20; duel[defender].mana.tenebres = 20; duel[defender].mana.eau = 20;
-  assert.equal(rpgMobaJouerCreature(duel, caster, 'maitre-du-marteau', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  assert.equal(rpgMobaJouerCreature(duel, caster, 'maitre-du-marteau', 'right', 0, { ouvrirReponse: true, sacrificeIds: [sacrifice.id] }).creatureEnAttente, true);
   assert.equal(rpgMobaPasserCreature(duel, defender).ok, true);
   const life = target.pv;
   const result = rpgMobaResoudreArrivee(duel, caster, target.id);

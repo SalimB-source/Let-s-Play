@@ -103,16 +103,11 @@
 .moba .moba__real-slot .rpg-card.moba__slot:disabled { filter: none; opacity: 1; }
 .moba .moba__real-slot .rpg-card.moba__slot.is-attacking { outline: 2px solid #f39a62; outline-offset: 2px; }
 .moba .moba__real-slot .rpg-card.moba__slot.is-blocking, .moba .moba__real-slot .rpg-card.moba__slot.is-target { outline: 2px solid #9edcf3; outline-offset: 2px; }
-.moba .moba__inspect { display: inline-grid; place-items: center; flex: none; min-width: 28px; min-height: 28px; padding: 0; border: 1px solid #a98a59; border-radius: 50%; background: #191815; color: #f4d8a1; font: 700 17px/1 system-ui,sans-serif; }
-.moba .moba__inspect:hover { background: #5c472c; }
-.moba .moba__real-slot > .moba__inspect { position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%); }
 .moba .moba__hand-cards { align-items: flex-start; padding-top: 14px; }
 .moba .moba__hand-item { flex: 0 0 138px; min-width: 0; }
 .moba .moba__hand-item .moba__real-hand { display: flex; width: 100%; height: auto; aspect-ratio: 4 / 5; min-height: 0; padding: 0; overflow: visible; overflow: clip; overflow-clip-margin: 40px; transform: none; }
 .moba .moba__hand-item .moba__real-hand:hover:not(:disabled) { transform: translateY(-7px); }
 .moba .moba__hand-item .moba__real-hand.is-selected { transform: translateY(-7px); outline: 2px solid #f0ca80; }
-.moba .moba__hand-caption { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 36px; color: #efdfc2; font: 600 11px/1.2 system-ui,sans-serif; }
-.moba .moba__hand-caption span { overflow: hidden; text-overflow: ellipsis; }
 @media(max-width: 650px) { .moba .moba__real-slot { flex-basis: 95px; width: 95px; }.moba .moba__hand-item { flex-basis: 115px; } }
 .moba .rpg-card-peek { z-index: 10020; }
 .moba .moba__mulligan-item { flex: 0 0 140px; min-width: 0; }
@@ -260,7 +255,6 @@
 .moba .moba__ghost-slot,
 .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); padding-bottom: 24px; }
 .moba .moba__ghost-zone--empty { inset: 0 0 24px; }
-.moba .moba__inspect { font-family: Georgia, serif; font-style: italic; }
 .moba__slots { min-height: calc(var(--moba-card-size) * 1.25 + 24px); }
 @media (min-width: 651px) and (max-height: 1000px) {
   .moba__brand h1 { font-size: 34px; }
@@ -340,10 +334,9 @@
 .moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 8px; }
 /* Écarter les deux groupes latéraux de la rivière sans déplacer la voie centrale. */
 .moba__slots { flex-wrap: nowrap; align-items: center; min-height: 0; gap: clamp(8px, 1.2vw, 18px); }
-.moba__lane:first-child .moba__slots { transform: translateX(calc(-1 * clamp(2px, 1vw, 14px))); }
-.moba__lane:last-child .moba__slots { transform: translateX(clamp(2px, 1vw, 14px)); }
+.moba__lane:first-child .moba__slots { transform: translateX(calc(-1 * clamp(4px, 1.6vw, 22px))); }
+.moba__lane:last-child .moba__slots { transform: translateX(clamp(4px, 1.6vw, 22px)); }
 .moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); min-width: 0; padding-bottom: 18px; }
-.moba .moba__real-slot > .moba__inspect { bottom: 0; min-width: 20px; min-height: 20px; font-size: 13px; }
 .moba .moba__ghost-zone, .moba .moba__ghost-zone--empty { inset: 0 0 18px; }
 .moba__slot.is-empty { border: 1px dashed #e9ddc062; border-radius: 8px; background: #17191c35; box-shadow: none; }
 .moba__slot.is-empty:not(:disabled) { background: #bb9b5544; }
@@ -362,9 +355,6 @@
 .moba .moba__hand-cards { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(12px, 1.5vw, 22px); overflow: visible; padding: 4px 2px; }
 .moba .moba__hand-item { position: relative; flex: 0 1 min(7.65vw, 12.75vh, 105px); min-width: 0; max-width: calc(14.333% - clamp(8.6px, 1.075vw, 15.77px)); }
 .moba .moba__hand-item .moba__real-hand { width: 100%; }
-.moba .moba__hand-caption { position: absolute; right: 0; top: 0; z-index: 6; min-height: 0; }
-.moba .moba__hand-caption > span { display: none; }
-.moba .moba__hand-caption .moba__inspect { min-width: 20px; min-height: 20px; font-size: 13px; }
 .moba .moba__card:not(.moba__real-hand) { flex: 0 1 min(9vw, 15vh, 124px); min-width: 0; height: min(18vh, 150px); }
 .moba__card-art { height: 55%; }.moba__card-info { padding: 3px; }.moba__cardtext { display: none; }
 .moba__opponent-hand { position: absolute; left: 25%; bottom: 5%; padding: 6px; background: #17130fd9; }.moba__opponent-hand > span { display: none; }
@@ -424,9 +414,6 @@
 }
 
 @media (max-width: 700px) and (orientation: portrait) { .moba .moba__hand-item { flex-basis: min(12.75vw, 9.35vh, 70px); } .moba .moba__card:not(.moba__real-hand) { flex-basis: min(15vw, 11vh, 82px); } }
-@media (max-width: 700px), (max-height: 500px) {
-  .moba .moba__hand-caption .moba__inspect { min-width: 16px; min-height: 16px; font-size: 11px; }
-}
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__journal { top: 5%; left: 4px; }
   .moba__directive { top: 69.5%; }
@@ -514,7 +501,6 @@
 
 .moba__search-item { position: relative; flex: 0 0 140px; min-width: 0; }
 .moba__search-item .moba__mulligan-card { width: 100%; }
-.moba .moba__search-item .moba__inspect { position: absolute; top: 4px; right: 4px; }
 @media (max-width: 650px) { .moba__search-item { flex-basis: 105px; } }
 /* La main conserve les proportions des marqueurs classiques même quand les
    six faces rétrécissent : aucun minimum fixe ne déborde de la carte. */
@@ -809,7 +795,7 @@
 
 /* A conquered lane becomes a quiet heraldic seal on the same Sablier table.
    The terrain stays visible; the tint and banner identify who owns the lane. */
-.moba .moba__lane.is-conquered {
+.moba .moba__lane.is-sealed {
   --conquest-accent: #c39c6b;
   --conquest-glow: #a7804652;
   background: linear-gradient(90deg, #100e0dc7, #12100dc2 50%, #100e0dc7);
@@ -817,9 +803,9 @@
 }
 .moba .moba__lane.is-conquered--joueur { --conquest-accent: #9cd4c6; --conquest-glow: #5aa99880; }
 .moba .moba__lane.is-conquered--sorcier { --conquest-accent: #e0a186; --conquest-glow: #b4543e80; }
-.moba__lane.is-conquered .moba__lane-state { display: none; }
-.moba__lane.is-conquered .moba__health,
-.moba__lane.is-conquered .moba__slot { visibility: hidden; }
+.moba__lane.is-sealed .moba__lane-state { display: none; }
+.moba__lane.is-sealed .moba__health,
+.moba__lane.is-sealed .moba__slot { visibility: hidden; }
 .moba__conquest {
   position: absolute; z-index: 2; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: clamp(4px, .7vh, 8px);
@@ -881,4 +867,82 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__pending-spell { top: 15%; left: auto; right: 2%; transform: none; width: min(280px, 62vw); }
+}
+.moba__center-choice { position: fixed; z-index: 300; top: 50%; left: 50%; width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); transform: translate(-50%, -50%); overflow-y: auto; display: grid; align-content: center; gap: 12px; padding: 22px; border: 2px solid #e4b968; border-radius: 12px; background: #1b1712f5; color: #fff0cd; text-align: center; box-shadow: 0 12px 32px #000b; }
+.moba__center-choice button { padding: 10px; border: 1px solid #e4b968; border-radius: 6px; background: #64401e; color: white; cursor: pointer; }
+
+/* Trois chemins réels sur la nouvelle carte. Après la conquête centrale, seul
+   le camp propriétaire unit visuellement sa moitié du centre à la voie choisie.
+   Les PV des deux voies alliées sont réunis (30 max), sans profiter à l’adversaire. */
+.moba__lanes { position: relative; --moba-lane-inset: 5px; }
+.moba__lanes[data-moba-joined-lane]::before {
+  content: ''; position: absolute; z-index: 0; width: 60%; height: 50%;
+  border: 2px solid #e5c681c4; border-radius: 12px;
+  background: linear-gradient(90deg, #d3a76d26, #e4c4853a, #d3a76d26);
+  box-shadow: inset 0 0 30px #e5c68128, 0 0 18px #eacb7942;
+  pointer-events: none;
+}
+.moba__lanes[data-moba-joined-lane="left"]::before { left: 0; }
+.moba__lanes[data-moba-joined-lane="right"]::before { right: 0; }
+.moba__lanes[data-moba-joined-side="joueur"]::before { bottom: 0; }
+.moba__lanes[data-moba-joined-side="sorcier"]::before { top: 0; }
+.moba .moba__lane + .moba__lane { border-left: 0; }
+.moba .moba__lane + .moba__lane .moba__side::before {
+  content: ''; position: absolute; left: calc(-1 * var(--moba-lane-inset)); top: 0; bottom: 0;
+  border-left: 1px solid #f4deb27a; pointer-events: none;
+}
+.moba .moba__lanes[data-moba-joined-lane="left"] .moba__lane:nth-child(2) .moba__side.is-joined-center::before,
+.moba .moba__lanes[data-moba-joined-lane="right"] .moba__lane:nth-child(3) .moba__side.is-joined-flank::before { display: none; }
+.moba .moba__lanes[data-moba-joined-lane] .moba__lane:nth-child(2).is-conquered { background: none; }
+.moba .moba__lane.is-conquered .moba__side:not(.is-joined-center) { background: #16100c66; }
+.moba .moba__side.is-joined-flank .moba__health {
+  position: absolute; z-index: 12; top: 0; left: 0; width: 150%; min-height: 24px;
+  padding: 4px 8px; border: 1px solid #e5c681; border-radius: 6px;
+  background: #17140ff2; box-shadow: 0 3px 16px #000b, 0 0 15px #e5c68170;
+}
+.moba .moba__lanes[data-moba-joined-lane="right"] .moba__side.is-joined-flank .moba__health { left: -50%; }
+.moba .moba__side.is-joined-flank .moba__health-bar { height: 8px; }
+@media (max-width: 420px) { .moba__lanes { --moba-lane-inset: 2px; } }
+
+/* Les PV du joueur suivent ses cartes ; les PV adverses restent au-dessus.
+   La jauge centre + côté garde sa largeur mais s'ancre au pied des cartes. */
+.moba .moba__side--joueur .moba__slots { order: 1; }
+.moba .moba__side--joueur .moba__health { order: 2; margin: 4px 0 0; }
+.moba .moba__side--joueur.is-joined-flank { padding-bottom: 28px; }
+.moba .moba__side--joueur.is-joined-flank .moba__health { top: auto; bottom: 0; }
+
+/* Le conteneur remplace le bouton « i » pour l'accès clavier à la fiche. */
+.moba .moba__real-slot:focus-visible,
+.moba .moba__hand-item:focus-visible,
+.moba .moba__mulligan-item:focus-visible,
+.moba .moba__search-item:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
+
+/* The victim remains visible for the first beat of the ritual, even when
+   the engine has already placed the new creature in its vacated slot. The
+   shared duel seal is anchored to the slot rather than to screen coordinates. */
+.moba .moba__slot.is-invoking { visibility: hidden; }
+.moba .moba__sacrifice-zone { position: absolute; inset: 0 0 24px; z-index: 60; pointer-events: none; overflow: visible; }
+.moba .moba__plain-slot .moba__sacrifice-zone,
+.moba .moba__ghost-slot .moba__sacrifice-zone { inset: 0; }
+.moba .moba__sacrifice-victim { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+  animation: moba-sacrifice-victim calc(1s * var(--rpg-anim-scale, 1)) ease-in forwards; }
+@keyframes moba-sacrifice-victim { 0%, 25% { opacity: 1; } 100% { opacity: 0; } }
+/* Conquered-center reuse and invocation sacrifices. */
+.moba__sacrifice-hint { position: absolute; z-index: 9; top: 10%; left: 22%; right: 22%; padding: 7px 12px; color: #fff0ce; background: #48301de8; font-size: 13px; text-align: center; }
+.moba__sacrifice-hint button { margin-left: 12px; padding: 4px 8px; color: #fff0ce; background: #292019; border: 1px solid #e7c88e; border-radius: 4px; cursor: pointer; }
+.moba__slot.is-sacrifice, .moba__real-slot .moba__slot.is-sacrifice { outline: 3px solid #e5aa5a; outline-offset: -3px; }
+.moba__lanes { grid-template-columns: 2fr 1fr 2fr; }
+.moba__lane:first-child .moba__slots { transform: translateX(clamp(4px, 1.2vw, 18px)); }
+.moba__lane:last-child .moba__slots { transform: translateX(calc(-1 * clamp(4px, 1.2vw, 18px))); }
+
+@media (max-width: 700px) and (orientation: portrait) { .moba__sacrifice-hint { top: 16%; left: 2%; right: 2%; padding: 3px 5px; font-size: 10px; } }
+@media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) { .moba__sacrifice-hint { top: 23%; } }
+
+/* Les emblèmes d'effets des créatures posées en MOBA sont plus discrets que
+   ceux de la main et de l'aperçu. Ne pas redimensionner la plaque de couleur,
+   le coût ou les autres marqueurs : seule la colonne d'effets hérite ici de
+   cette taille locale. */
+.rpg-battle--moba .moba .moba__slots .rpg-card--img .rpg-card-icones.rpg-card-icones--colonne {
+  --rpg-plaque-taille: clamp(11px, 12cqw, 19px);
+  gap: clamp(2px, 1cqw, 3px);
 }
