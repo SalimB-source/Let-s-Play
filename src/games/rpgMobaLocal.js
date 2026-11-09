@@ -12,7 +12,7 @@ import {
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
-import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRetirer, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
+import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRattacherCentre, mobaRetirer, mobaVoieCombat, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
 
 const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
 const NOMS_VOIES = Object.freeze({ left: 'la voie gauche', center: 'la voie centrale', right: 'la voie droite' });
@@ -55,7 +55,7 @@ const caleAuditee = (duel, cote, entite) => {
   const proprietaire = cote === 'joueur' ? 'sorcier' : 'joueur';
   return Boolean(prisonniere && prisonniere.id && prisonniere.carteId === entite.enCale.carteId
     && combatAudite(prisonniere) && equipementAudite(prisonniere) && !prisonniere.enCale
-    && duel.moba.assignments.some((a) => a.entityId === prisonniere.id && a.side === proprietaire && a.laneId === prisonniere.mobaLane)
+    && duel.moba.assignments.some((a) => a.entityId === prisonniere.id && a.side === proprietaire && mobaVoieCombat(duel.moba, proprietaire, a.laneId) === prisonniere.mobaLane)
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
@@ -333,15 +333,28 @@ export function rpgMobaPlacementCoherent(duel) {
       if (!Object.hasOwn(OFFSETS, lane.id) || !Array.isArray(lane.slots?.[side])) return false;
       for (const [slot, id] of lane.slots[side].entries()) {
         if (id === null) continue;
-        if (!lane.active || occupied.has(id)) return false;
+        if ((!lane.active && !(lane.id === 'center' && lane.conqueredBy === side && (duel.moba.centerChoice === side || duel.moba.centerJoined?.side === side))) || occupied.has(id)) return false;
         const entity = entities.find((candidate) => candidate.id === id);
-        if (!entity || entity.emplacement !== OFFSETS[lane.id] + slot || entity.mobaLane !== lane.id) return false;
+        if (!entity || entity.emplacement !== OFFSETS[lane.id] + slot || entity.mobaLane !== mobaVoieCombat(duel.moba, side, lane.id)) return false;
         occupied.add(id);
       }
     }
     if (occupied.size !== entities.length) return false;
   }
   return true;
+}
+
+/** Attach only the conqueror's surviving central creature to an active side lane.
+ * Its physical central slot and permanent original assignment remain intact. */
+export function rpgMobaChoisirVoieCentrale(duel, side, laneId) {
+  if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
+  const result = mobaRattacherCentre(duel.moba, side, laneId);
+  if (!result.ok) return result;
+  for (const id of mobaVoie(duel.moba, 'center').slots[side]) {
+    const entity = duel[side].creatures.find((item) => item.id === id);
+    if (entity) entity.mobaLane = laneId;
+  }
+  return result;
 }
 
 /** Place a creature from the active player's hand using the engine's payment,
@@ -635,7 +648,7 @@ function infligerDansVoie(duel, side, laneId, amount, damageEvents, details = {}
     duel.fin = { gagnant: damage.winner, raison: 'conquete-moba' };
     return { recus: damage.damage, terminerCombat: true };
   }
-  return { recus: damage.damage, sourceExileeParConquete: damage.conquered };
+  return { recus: damage.damage, sourceExileeParConquete: damage.conquered && !(laneId === 'center' && duel.moba.centerChoice === side) };
 }
 
 /** La créature centrale peut cibler toutes les voies actives ; les autres
@@ -721,7 +734,7 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
 
   const lanesByAttacker = new Map();
   for (const lane of duel.moba.lanes) {
-    for (const id of lane.slots[side]) if (id !== null) lanesByAttacker.set(id, lane.id);
+    for (const id of lane.slots[side]) if (id !== null) lanesByAttacker.set(id, mobaVoieCombat(duel.moba, side, lane.id));
   }
   const damageEvents = [];
   const healingEvents = [];

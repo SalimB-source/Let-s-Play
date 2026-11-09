@@ -10,9 +10,9 @@ test('les voies latérales et la main MOBA disposent de plus d’espace', () => 
   try {
     const style = (selector) => dom.window.getComputedStyle(dom.window.document.querySelector(selector));
     assert.equal(style('.moba__slots').gap, 'clamp(8px, 1.2vw, 18px)');
-    assert.equal(style('.moba__lane:first-child .moba__slots').transform, 'translateX(calc(-1 * clamp(2px, 1vw, 14px)))');
+    assert.equal(style('.moba__lane:first-child .moba__slots').transform, 'translateX(calc(-1 * clamp(4px, 1.6vw, 22px)))');
     assert.equal(style('.moba__lane:nth-child(2) .moba__slots').transform, 'none');
-    assert.equal(style('.moba__lane:last-child .moba__slots').transform, 'translateX(clamp(2px, 1vw, 14px))');
+    assert.equal(style('.moba__lane:last-child .moba__slots').transform, 'translateX(clamp(4px, 1.6vw, 22px))');
     assert.equal(style('.moba__hand-cards').gap, 'clamp(12px, 1.5vw, 22px)');
     assert.equal(style('.moba__hand-item').flex, '0 1 min(7.65vw, 12.75vh, 105px)');
     assert.match(style('.moba__hand-item').maxWidth, /^calc\(14\.333% - /);

@@ -340,8 +340,8 @@
 .moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 8px; }
 /* Écarter les deux groupes latéraux de la rivière sans déplacer la voie centrale. */
 .moba__slots { flex-wrap: nowrap; align-items: center; min-height: 0; gap: clamp(8px, 1.2vw, 18px); }
-.moba__lane:first-child .moba__slots { transform: translateX(calc(-1 * clamp(2px, 1vw, 14px))); }
-.moba__lane:last-child .moba__slots { transform: translateX(clamp(2px, 1vw, 14px)); }
+.moba__lane:first-child .moba__slots { transform: translateX(calc(-1 * clamp(4px, 1.6vw, 22px))); }
+.moba__lane:last-child .moba__slots { transform: translateX(clamp(4px, 1.6vw, 22px)); }
 .moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); min-width: 0; padding-bottom: 18px; }
 .moba .moba__real-slot > .moba__inspect { bottom: 0; min-width: 20px; min-height: 20px; font-size: 13px; }
 .moba .moba__ghost-zone, .moba .moba__ghost-zone--empty { inset: 0 0 18px; }
@@ -806,3 +806,6 @@
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__buttons button { min-height: 34px; padding: 5px 7px; }
 }
+
+.moba__center-choice { position: fixed; z-index: 300; top: 50%; left: 50%; width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); transform: translate(-50%, -50%); overflow-y: auto; display: grid; align-content: center; gap: 12px; padding: 22px; border: 2px solid #e4b968; border-radius: 12px; background: #1b1712f5; color: #fff0cd; text-align: center; box-shadow: 0 12px 32px #000b; }
+.moba__center-choice button { padding: 10px; border: 1px solid #e4b968; border-radius: 6px; background: #64401e; color: white; cursor: pointer; }

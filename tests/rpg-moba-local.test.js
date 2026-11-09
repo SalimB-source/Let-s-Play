@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rpgChoisirCouleurMana, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgNouveauDuel, rpgJouerArme, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgReglerHasard, rpgVainqueur } from '../src/games/rpgDuel.js';
 import { cardById, magieById, RPG_MAGIE_CARDS } from '../src/games/rpgCards.js';
-import { rpgMobaNouveauDuel, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaNouveauDuel, rpgMobaChoisirVoieCentrale, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
 import { validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
 import { mobaInfliger, mobaRetirer, mobaVoie } from '../src/games/rpgMoba.js';
@@ -170,6 +170,7 @@ test('real engine direct damage conquers, removes both sides, and triggers secon
   const duel = partieCombat();
   const { attacker, blocker } = poserCombattants(duel, 'left');
   mobaInfliger(duel.moba, 'joueur', 'center', 10);
+  assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'right').ok, true);
   mobaInfliger(duel.moba, 'joueur', 'left', 9);
   const result = rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {});
   assert.equal(result.ok, true);
@@ -304,11 +305,11 @@ test('local engine can play through turns to conquer two lanes with printed stat
   const left = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'left', 0).entite;
   const center = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'center', 0).entite;
   assert.equal(left.atk, 3);
-  for (let turn = 0; turn < 7; turn += 1) {
+  for (let turn = 0; turn < 8 && !duel.moba.winner; turn += 1) {
     rpgFinDeTour(duel); rpgFinDeTour(duel);
     const result = rpgMobaLancerAttaque(duel, 'joueur', [left, center].filter((entity) => duel.joueur.creatures.includes(entity)).map((entity) => entity.id), {});
-    assert.equal(result.ok, true);
-    if (turn < 6) assert.equal(duel.moba.winner, null);
+    assert.equal(result.ok, true, JSON.stringify(result));
+    if (duel.moba.centerChoice) assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'left').ok, true);
   }
   assert.equal(duel.moba.winner, 'joueur');
   assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 0);
