@@ -64,8 +64,16 @@ export function mobaRattacherCentre(state, side, laneId) {
 
 export function mobaEmplacementsLibres(state, side, laneId) {
   const lane = mobaVoie(state, laneId);
-  if (!validSide(side) || !lane?.active || state.winner) return [];
+  if (!mobaVoieJouable(state, side, laneId) || state.winner) return [];
   return lane.slots[side].flatMap((id, index) => id === null ? [index] : []);
+}
+
+/** The joined center remains a playable physical slot for its conqueror only. */
+export function mobaVoieJouable(state, side, laneId) {
+  const lane = mobaVoie(state, laneId);
+  return validSide(side) && Boolean(lane?.active || (laneId === 'center'
+    && state?.centerJoined?.side === side && lane?.conqueredBy === side
+    && mobaVoie(state, state.centerJoined.laneId)?.active));
 }
 
 /** Place an engine entity in an explicit empty slot; never silently relocate it. */
@@ -73,7 +81,7 @@ export function mobaPlacer(state, side, laneId, slot, entityId) {
   if (!state || state.winner) return fail('partie-terminee');
   if (!validSide(side) || !validId(entityId)) return fail('entite');
   const lane = mobaVoie(state, laneId);
-  if (!lane?.active) return fail('voie-inactive');
+  if (!mobaVoieJouable(state, side, laneId)) return fail('voie-inactive');
   if (!Number.isInteger(slot) || slot < 0 || slot >= lane.slots[side].length || lane.slots[side][slot] !== null) return fail('emplacement');
   const prior = state.assignments.find((entry) => entry.entityId === entityId);
   if (prior && (prior.side !== side || prior.laneId !== laneId)) return fail('affectation-permanente');

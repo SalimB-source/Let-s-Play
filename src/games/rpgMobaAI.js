@@ -1,3 +1,4 @@
+import { sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, lienSatisfait } from './rpgCards.js';
@@ -218,7 +219,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
 
 export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
   const enemy = autre(side);
-  const lanes = duel.moba.lanes.filter((l) => l.active).sort((a, b) => {
+  const lanes = duel.moba.lanes.filter((l) => l.active || (l.id === 'center' && duel.moba.centerJoined?.side === side)).sort((a, b) => {
     const score = (l) => (mobaVieMaxPourCamp(duel.moba, enemy, l.id) - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
     return score(b) - score(a);
   });
@@ -232,18 +233,23 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
   if (cards.some((card) => card.id === 'braisier-du-souk')
     && duel.moba.lanes.some((lane) => lane.conqueredBy === side)) {
     for (const lane of lanes.filter((candidate) => candidate.hp[enemy] === 1)) {
+      const sacrificeIds = victimesInvocation(duel[side]).slice(0, sacrificesInvocation(cardById('braisier-du-souk'), duel)).map(e => e.id);
       const slot = lane.slots[side].indexOf(null);
-      if (slot < 0) continue;
+      if (slot < 0 || sacrificeIds.length !== sacrificesInvocation(cardById('braisier-du-souk'), duel)) continue;
       const simulation = copie(duel);
-      if (rpgMobaJouerCreature(simulation, side, 'braisier-du-souk', lane.id, slot).ok
-        && simulation.moba.winner === side) return { id: 'braisier-du-souk', lane: lane.id, slot };
+      if (rpgMobaJouerCreature(simulation, side, 'braisier-du-souk', lane.id, slot, { sacrificeIds }).ok
+        && simulation.moba.winner === side) return { id: 'braisier-du-souk', lane: lane.id, slot, sacrificeIds };
     }
   }
   for (const card of cards) for (const lane of lanes) {
-    const slot = lane.slots[side].indexOf(null);
+    const nombre = sacrificesInvocation(card, duel);
+    const sacrificeIds = victimesInvocation(duel[side]).sort((a, b) => (a.atk ?? 0) + (a.pv ?? 0) - (b.atk ?? 0) - (b.pv ?? 0)).slice(0, nombre).map(e => e.id);
+    if (sacrificeIds.length !== nombre) continue;
+    const libre = lane.slots[side].indexOf(null);
+    const slot = libre >= 0 ? libre : lane.slots[side].findIndex((id) => sacrificeIds.includes(id));
     if (slot < 0) continue;
     const simulation = copie(duel);
-    const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot);
+    const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot, { sacrificeIds });
     if (!pose.ok) continue;
     resoudreDestructionsSurCopie(simulation);
     // Her arrival hurts both camps. Avoid losing more board value than the
@@ -264,7 +270,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
         if (gain < (perdue ? card.cost : 0)) continue;
       }
     }
-    return { id: card.id, lane: lane.id, slot };
+    return { id: card.id, lane: lane.id, slot, sacrificeIds };
   }
   return null;
 }
