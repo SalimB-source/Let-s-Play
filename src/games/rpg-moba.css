@@ -97,7 +97,9 @@
 .moba .moba__lane { background: linear-gradient(180deg, #171820ae, #151519a3 48%, #211914b5); }
 .moba .moba__lane.is-conquered { background: linear-gradient(145deg, #5b402bda, #171719ef); }
 .moba .moba__real-slot { position: relative; flex: 0 1 132px; min-width: 0; width: 132px; padding-bottom: 24px; }
-.moba .moba__real-slot .rpg-card.moba__slot { display: flex; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; border-radius: var(--rpg-card-radius, 10px); }
+/* Les pierres du duel débordent du cadre ; sur les petites cartes MOBA,
+   plusieurs pierres empilées peuvent aussi dépasser le bas de la face. */
+.moba .moba__real-slot .rpg-card.moba__slot { display: flex; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; border-radius: var(--rpg-card-radius, 10px); overflow: visible; overflow: clip; overflow-clip-margin: 64px; }
 .moba .moba__real-slot .rpg-card.moba__slot:disabled { filter: none; opacity: 1; }
 .moba .moba__real-slot .rpg-card.moba__slot.is-attacking { outline: 2px solid #f39a62; outline-offset: 2px; }
 .moba .moba__real-slot .rpg-card.moba__slot.is-blocking, .moba .moba__real-slot .rpg-card.moba__slot.is-target { outline: 2px solid #9edcf3; outline-offset: 2px; }
@@ -106,7 +108,7 @@
 .moba .moba__real-slot > .moba__inspect { position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%); }
 .moba .moba__hand-cards { align-items: flex-start; padding-top: 14px; }
 .moba .moba__hand-item { flex: 0 0 138px; min-width: 0; }
-.moba .moba__hand-item .moba__real-hand { display: flex; width: 100%; height: auto; aspect-ratio: 4 / 5; min-height: 0; padding: 0; overflow: hidden; transform: none; }
+.moba .moba__hand-item .moba__real-hand { display: flex; width: 100%; height: auto; aspect-ratio: 4 / 5; min-height: 0; padding: 0; overflow: visible; overflow: clip; overflow-clip-margin: 40px; transform: none; }
 .moba .moba__hand-item .moba__real-hand:hover:not(:disabled) { transform: translateY(-7px); }
 .moba .moba__hand-item .moba__real-hand.is-selected { transform: translateY(-7px); outline: 2px solid #f0ca80; }
 .moba .moba__hand-caption { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 36px; color: #efdfc2; font: 600 11px/1.2 system-ui,sans-serif; }
@@ -527,13 +529,11 @@
    de la même valeur depuis chaque face. */
 .rpg-battle--moba .moba .rpg-hand__card--img > * { --rpg-card-marker-size: min(28px, 27cqw); }
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
-/* La pierre de la main MOBA suit la carte comme le reste : 26 % de sa largeur,
-   plafonnée à 24 px (contre 12 px auparavant) — les cinq à six faces de la main
-   restent lisibles d'un coup d'œil. */
+/* La main MOBA reprend la taille et le placement des pierres du duel classique. */
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main {
   width: var(--rpg-plaque-taille, 20px);
 }
-.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-card-icone { min-width: var(--rpg-plaque-taille, 20px); min-height: var(--rpg-plaque-taille, 20px); padding: 1cqw; }
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-card-icone { min-width: var(--rpg-plaque-taille, 20px); min-height: var(--rpg-plaque-taille, 20px); padding: 0; }
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-effet-icone { width: var(--rpg-plaque-taille, 20px); height: var(--rpg-plaque-taille, 20px); }
 /* La fiche complète peut défiler, mais son titre et ses mots-clés ne doivent
    pas être rognés lorsque la colonne est étroite en portrait. */

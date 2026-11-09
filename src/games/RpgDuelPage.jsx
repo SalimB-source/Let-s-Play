@@ -5188,7 +5188,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     }
                   }}
                 >
-                  <img className="rpg-mode-carte__art" src={isOnlineModeEnabled() ? cardArt('bouchra-guerriere-des-cretes') : `${import.meta.env.BASE_URL}sablier-moba/champ-des-trois-voies-aligne.webp`} alt="" aria-hidden="true" />
+                  <img className="rpg-mode-carte__art" src={isOnlineModeEnabled() ? cardArt('bouchra-guerriere-des-cretes') : `${import.meta.env.BASE_URL}sablier-moba/champ-des-trois-voies-berges.webp`} alt="" aria-hidden="true" />
                   {!isOnlineModeEnabled() && <span className="rpg-mode-carte__beta" aria-hidden="true">BETA</span>}
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
                     <span className="rpg-mode-carte__infos">
