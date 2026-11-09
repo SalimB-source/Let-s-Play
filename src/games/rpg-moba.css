@@ -842,6 +842,16 @@
 .moba .moba__mulligan-item:focus-visible,
 .moba .moba__search-item:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
 
+/* The victim remains visible for the first beat of the ritual, even when
+   the engine has already placed the new creature in its vacated slot. The
+   shared duel seal is anchored to the slot rather than to screen coordinates. */
+.moba .moba__slot.is-invoking { visibility: hidden; }
+.moba .moba__sacrifice-zone { position: absolute; inset: 0 0 24px; z-index: 60; pointer-events: none; overflow: visible; }
+.moba .moba__plain-slot .moba__sacrifice-zone,
+.moba .moba__ghost-slot .moba__sacrifice-zone { inset: 0; }
+.moba .moba__sacrifice-victim { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+  animation: moba-sacrifice-victim calc(1s * var(--rpg-anim-scale, 1)) ease-in forwards; }
+@keyframes moba-sacrifice-victim { 0%, 25% { opacity: 1; } 100% { opacity: 0; } }
 /* Conquered-center reuse and invocation sacrifices. */
 .moba__sacrifice-hint { position: absolute; z-index: 9; top: 10%; left: 22%; right: 22%; padding: 7px 12px; color: #fff0ce; background: #48301de8; font-size: 13px; text-align: center; }
 .moba__sacrifice-hint button { margin-left: 12px; padding: 4px 8px; color: #fff0ce; background: #292019; border: 1px solid #e7c88e; border-radius: 4px; cursor: pointer; }
