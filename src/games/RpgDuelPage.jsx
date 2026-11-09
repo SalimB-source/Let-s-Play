@@ -2108,10 +2108,10 @@ export function CercleMagique({ effet, onTermine = null }) {
       data-rpg-sacrifice-id={effet.entityId}
       aria-hidden="true"
       style={{
-        left: `${effet.left}px`,
-        top: `${effet.top}px`,
-        width: `${effet.width}px`,
-        height: `${effet.height}px`,
+        left: effet.relativementAuSlot ? 0 : `${effet.left}px`,
+        top: effet.relativementAuSlot ? 0 : `${effet.top}px`,
+        width: effet.relativementAuSlot ? '100%' : `${effet.width}px`,
+        height: effet.relativementAuSlot ? '100%' : `${effet.height}px`,
         '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
         '--rpg-sacrifice-duree': `${SACRIFICE_ANIMATION.cercle}ms`,
       }}
@@ -6608,7 +6608,7 @@ function libellePacteEtage(atouts) {
 }
 
 // The MOBA reuses the same card and detail rendering as the classic table.
-export const RPG_RENDU_MOBA = Object.freeze({ TableCard, ManaCost, CardElementBadge, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite, FaceDownHand, CardPile, CimetiereCarousel, FluxManaTrack, FullscreenIcon, BlockerArrows, ChoixManaEssai, VolumesDuel, PhaseTrack, CombatFeedEvent });
+export const RPG_RENDU_MOBA = Object.freeze({ TableCard, ManaCost, CardElementBadge, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite, CercleMagique, FaceDownHand, CardPile, CimetiereCarousel, FluxManaTrack, FullscreenIcon, BlockerArrows, ChoixManaEssai, VolumesDuel, PhaseTrack, CombatFeedEvent });
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false, pvp = null } = {}) {
   const modePvp = Boolean(pvp);
