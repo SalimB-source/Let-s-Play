@@ -75,6 +75,7 @@ const conditions = [
   ['porte-etendard-de-leclipse', 'vampire-attaque'],
   ['veilleuse-de-la-lune-givree', 'attaquant-force-3'],
   ['tojiro-le-pourfendeur', 'djinn-adverse'],
+  ['sorcier-du-ressac-noir', 'creature-jouee-main'],
 ];
 
 function remplirCondition(d, condition) {
@@ -127,6 +128,10 @@ function remplirCondition(d, condition) {
     }
     case 'adversaire-force-4': { const ennemi = ajouter('sorcier', 'dune-marchante'); ennemi.atk = 4; break; }
     case 'djinn-adverse': ajouter('sorcier', 'djinn-de-foudre'); break;
+    case 'creature-jouee-main':
+      d.sorcier.main.push('chien-du-guet');
+      d.annonce = { cote: 'sorcier', carteId: 'chien-du-guet' };
+      break;
     default: assert.fail(condition);
   }
 }

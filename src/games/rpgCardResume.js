@@ -166,7 +166,7 @@ export function regleCarteLongue(carte, seuil = SEUIL_REGLE_LONGUE) {
 export function conditionEmbuscadePourApercu(carte) {
   if (!carte?.reactionTourAdverse || !carte?.conditionEmbuscade) return null;
   const phrase = carte.text?.match(
-    /^Embuscade\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement si ([^.]+)\./u,
+    /^Embuscade\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement (?:si |en réponse à )([^.]+)\./u,
   );
   return phrase?.[1]?.trim() ?? null;
 }
@@ -175,6 +175,7 @@ export function conditionEmbuscadePourApercu(carte) {
  * les mots clés mis en gras ; les clés suivent celles du moteur, pas le nom
  * des cartes. La règle imprimée et le fonctionnement restent inchangés. */
 const CONDITIONS_EMBUSCADE_COURTES = {
+  'creature-jouee-main': ['une ', 'créature adverse', ' est jouée depuis la main'],
   'adversaire-blesse': ['une ', 'créature adverse blessée'],
   attaquant: ['l’adversaire ', 'attaque'],
   'djinn-adverse': ['il y a un ', 'Djinn', ' en face'],
