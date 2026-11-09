@@ -15,6 +15,8 @@ function terminerEtPasser(duel, side) {
 function partie() {
   const deck = Array(12).fill('gardienne-des-portes-de-sable');
   const duel = rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => 0.5 });
+  // Les scénarios historiques commencent avec les voies latérales déjà blessées.
+  for (const lane of duel.moba.lanes) if (lane.id !== 'center') lane.hp = { joueur: 10, sorcier: 10 };
   assert.equal(rpgMulligan(duel, 'joueur', []).ok, true);
   assert.equal(rpgMulligan(duel, 'sorcier', []).ok, true);
   assert.equal(rpgDemarrerManaEssai(duel).ok, true);
@@ -110,6 +112,8 @@ test('a draw-on-arrival creature uses the real effect and stays in its chosen la
 function partieCombat() {
   const deck = Array(12).fill('ashigaru-des-braises');
   const duel = rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => 0.5 });
+  // Scénarios historiques : les voies latérales sont déjà à mi-vie.
+  for (const lane of duel.moba.lanes) if (lane.id !== 'center') lane.hp = { joueur: 10, sorcier: 10 };
   rpgMulligan(duel, 'joueur', []);
   rpgMulligan(duel, 'sorcier', []);
   rpgDemarrerManaEssai(duel);
@@ -300,16 +304,16 @@ test('local engine can play through turns to conquer two lanes with printed stat
   const left = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'left', 0).entite;
   const center = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'center', 0).entite;
   assert.equal(left.atk, 3);
-  for (let turn = 0; turn < 4; turn += 1) {
+  for (let turn = 0; turn < 7; turn += 1) {
     rpgFinDeTour(duel); rpgFinDeTour(duel);
-    const result = rpgMobaLancerAttaque(duel, 'joueur', [left.id, center.id], {});
+    const result = rpgMobaLancerAttaque(duel, 'joueur', [left, center].filter((entity) => duel.joueur.creatures.includes(entity)).map((entity) => entity.id), {});
     assert.equal(result.ok, true);
-    if (turn < 3) assert.equal(duel.moba.winner, null);
+    if (turn < 6) assert.equal(duel.moba.winner, null);
   }
   assert.equal(duel.moba.winner, 'joueur');
   assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 0);
   assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 0);
-  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 10);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 20);
 });
 
 test('each seat can choose a mulligan before the first turn, in order', () => {
@@ -459,7 +463,7 @@ test('face-targeting spells hit a chosen lane, conquer it and end the game on th
   assert.equal(JSON.stringify(duel), before);
 });
 
-test('a healing spell restores creatures globally and one chosen friendly lane, capped at ten', () => {
+test('a healing spell restores creatures globally and one chosen friendly lane with its lane cap', () => {
   const duel = partieCombat();
   duel.joueur.main.push('loup-des-neiges', 'gardien-viking-du-fjord', 'festin-des-vaillants', 'festin-des-vaillants');
   duel.joueur.mana.neige = 15;
@@ -484,8 +488,8 @@ test('a healing spell restores creatures globally and one chosen friendly lane, 
   assert.equal(duel.joueur.pv, 25);
   const second = rpgMobaLancerMagie(duel, 'joueur', 'festin-des-vaillants', null, 'left');
   assert.equal(second.ok, true);
-  assert.equal(second.healingEvents[0].healing, 1);
-  assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 10);
+  assert.equal(second.healingEvents[0].healing, 2);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 11);
   assert.equal(mobaVoie(duel.moba, 'right').active, false);
 });
 
@@ -671,7 +675,7 @@ test('a returning healing creature routes its arrival to its original lane', () 
   assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver').ok, true);
   assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
   assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
-  assert.equal(mobaVoie(duel.moba, 'right').hp.joueur, 8);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.joueur, 11);
   assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 10);
   assert.equal(duel.joueur.pv, 25);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
@@ -1918,7 +1922,7 @@ test('Yamina heals all allies and only her own lane, and Dame heals her lane bef
   const dame = rpgMobaJouerCreature(duel, 'joueur', 'dame-des-neuf-mondes', 'right', 0);
   assert.equal(dame.ok, true, JSON.stringify(dame));
   assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 9);
-  assert.equal(mobaVoie(duel.moba, 'right').hp.joueur, 10);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.joueur, 11);
   assert.equal(dame.entite.coupRapide, true);
   assert.equal(duel.joueur.pv, legacyHp); assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
@@ -1994,11 +1998,11 @@ test('Appât requires a marked blocker only when a legal attacker is in its lane
   const right = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'right', 0).entite;
   rpgFinDeTour(duel); duel.joueur.mana.braise = 10; duel.joueur.mana.neige = 10;
   duel.joueur.main.push('feriel', 'appat-de-la-meute');
-  const attacker = rpgMobaJouerCreature(duel, 'joueur', 'feriel', 'center', 0).entite;
+  const attacker = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0).entite; attacker.ready = true;
   assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'appat-de-la-meute', right.id).ok, true);
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attacker.id]).ok, true);
   assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {}, { declaree: true }).ok, true);
-  assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 7);
+  assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 9);
   assert.equal(right.blocageForce, null); assert.ok(duel.sorcier.creatures.includes(left));
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
@@ -2502,9 +2506,9 @@ test('all enabled Tribut creatures transfer after a real hit, including the heal
     const result = rpgMobaLancerAttaque(duel, 'joueur', [entity.id], {}, { declaree: true });
     assert.equal(result.ok, true, id);
     assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 10 - oldAtk - tribute, id);
-    assert.equal(mobaVoie(duel.moba, 'right').hp.joueur, Math.min(10, 8 + tribute), id);
+    assert.equal(mobaVoie(duel.moba, 'right').hp.joueur, Math.min(20, 8 + tribute), id);
     assert.ok(result.damageEvents.some((event) => event.tribut && event.damage === tribute), id);
-    assert.ok(result.healingEvents.some((event) => event.healing === Math.min(2, tribute)), id);
+    assert.ok(result.healingEvents.some((event) => event.healing === tribute), id);
     assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], legacy);
     assert.equal(rpgMobaPlacementCoherent(duel), true, id);
   }
@@ -4015,7 +4019,7 @@ test('Festin with an invalid or inactive lane spends nothing; without opt-in it 
   mobaInfliger(duel.moba, 'sorcier', 'left', 1);
   const immediate = rpgMobaLancerMagie(duel, 'joueur', 'festin-des-vaillants', null, 'left');
   assert.equal(immediate.ok, true); assert.equal(immediate.sortEnAttente, undefined);
-  assert.equal(immediate.healingEvents[0].healing, 1); assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 10);
+  assert.equal(immediate.healingEvents[0].healing, 2); assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 11);
 });
 
 test('Festin heals surviving allies even if the selected lane is conquered, without redirecting its lane heal', () => {
@@ -7341,7 +7345,7 @@ test('Dame MOBA : une vague alliée ne brise pas la lumière, une vague ennemie 
 
 test('Dame MOBA : la lumière ne prévient pas une destruction, le soin est plafonné', () => {
   const {duel,side,enemy,dame}=fixtureDame();mobaInfliger(duel.moba,enemy,'right',2);rpgFinDeTour(duel);duel[enemy].main=['le-jugement-des-colosses'];duel[enemy].mana.tenebres=30;
-  const result=rpgMobaLancerMagie(duel,enemy,'le-jugement-des-colosses',dame.id);assert.equal(result.ok,true,JSON.stringify(result));assert.ok(!duel[side].creatures.includes(dame));assert.equal(mobaVoie(duel.moba,'right').hp[side],10);assert.equal(result.healingEvents[0].healing,2);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  const result=rpgMobaLancerMagie(duel,enemy,'le-jugement-des-colosses',dame.id);assert.equal(result.ok,true,JSON.stringify(result));assert.ok(!duel[side].creatures.includes(dame));assert.equal(mobaVoie(duel.moba,'right').hp[side],13);assert.equal(result.healingEvents[0].healing,5);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 for(const side of ['joueur','sorcier'])for(const perdu of [false,true])test(`Rempart MOBA : Lien de la Dame ${side}, ancre renvoyée ${perdu}`, () => {

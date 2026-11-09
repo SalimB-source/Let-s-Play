@@ -1,3 +1,5 @@
+import { rpgMobaCiblesAttaque } from './rpgMobaLocal.js';
+
 /**
  * Combat indications are presentation only: they never assign targets or
  * decide the outcome. Each direct attack points to the defender's HP in the
@@ -28,15 +30,15 @@ export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, b
       continue;
     }
     if (targetId) {
-      const target = defenders.find((entity) => entity.id === targetId && lane.slots[defense].includes(entity.id));
+      const target = defenders.find((entity) => entity.id === targetId && duel.moba.lanes.some((targetLane) => targetLane.active && (lane.id === 'center' || targetLane.id === lane.id) && targetLane.slots[defense].includes(entity.id)));
       // A lost target never becomes a direct attack.
       if (!target) continue;
       (attackArrows[target.id] ??= []).push(id);
       descriptions.push(`${attacker.name} vise ${target.name}, ${laneNames[lane.id]}`);
       continue;
     }
-    // Until a same-lane targeted attack is chosen, it has no destination.
-    if (attacker.coupRapide && lane.slots[defense].some(Boolean)) continue;
+    // Until an obligatory targeted attack is chosen, it has no destination.
+    if (rpgMobaCiblesAttaque(duel, side, id).obligatoires) continue;
     const target = `@moba:${lane.id}:${defense}`;
     (attackArrows[target] ??= []).push(id);
     descriptions.push(`${attacker.name} attaque les PV de ${laneNames[lane.id]} de ${defense === 'joueur' ? 'votre camp' : 'l’IA'}`);

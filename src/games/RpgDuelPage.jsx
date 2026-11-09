@@ -9686,7 +9686,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran === 'moba') {
     return <div ref={shellRef} className={`rpg-battle rpg-battle--moba${pleinEcran ? ' is-immersive' : ''}${rpgAnimationsReduites(animReduite) ? ' is-reduced' : ''}`} style={{ '--rpg-anim-scale': String(vitesseAnim) }} data-scene="moba">
-      <RpgMobaBoard onQuitter={() => setEcran('jouer')} rendu={RPG_RENDU_MOBA} onPlaySfx={jouerSfx} onArriveesAudio={jouerArriveesMoba} onPreloadVoice={prechargerVoixCarte}
+      <RpgMobaBoard onQuitter={() => setEcran('jouer')} decksMaison={decksMaison} rendu={RPG_RENDU_MOBA} onPlaySfx={jouerSfx} onArriveesAudio={jouerArriveesMoba} onPreloadVoice={prechargerVoixCarte}
         sonActif={sonActif} onToggleSound={basculerSon} volumeSfx={volumeSfx} volumeVoix={volumeVoix} volumeMusique={volumeMusique}
         onChangeVolumeSfx={changerVolumeSfx} onChangeVolumeVoix={changerVolumeVoix} onChangeVolumeMusique={changerVolumeMusique}
         pleinEcran={pleinEcran} onToggleFullscreen={pleinEcranVerrouille ? null : basculerPleinEcran} />

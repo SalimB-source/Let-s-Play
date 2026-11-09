@@ -5,6 +5,8 @@
  * See docs/sablier-moba.md for the integration work still required.
  */
 export const MOBA_LANE_HP = 10;
+export const MOBA_SIDE_LANE_HP = 20;
+export const mobaVieMax = (laneId) => laneId === 'center' ? MOBA_LANE_HP : MOBA_SIDE_LANE_HP;
 export const MOBA_LANES = Object.freeze(['left', 'center', 'right']);
 export const MOBA_SIDES = Object.freeze(['joueur', 'sorcier']);
 const CAPACITY = Object.freeze({ left: 2, center: 1, right: 2 });
@@ -19,7 +21,7 @@ export function mobaNouveau() {
   return {
     lanes: MOBA_LANES.map((id) => ({
       id,
-      hp: { joueur: MOBA_LANE_HP, sorcier: MOBA_LANE_HP },
+      hp: { joueur: mobaVieMax(id), sorcier: mobaVieMax(id) },
       slots: {
         joueur: Array(CAPACITY[id]).fill(null),
         sorcier: Array(CAPACITY[id]).fill(null),
@@ -143,6 +145,6 @@ export function mobaSoigner(state, side, laneId, amount) {
   const lane = mobaVoie(state, laneId);
   if (!lane?.active) return fail('voie-inactive');
   const before = lane.hp[side];
-  lane.hp[side] = Math.min(MOBA_LANE_HP, before + amount);
+  lane.hp[side] = Math.min(mobaVieMax(laneId), before + amount);
   return { ok: true, healing: lane.hp[side] - before };
 }

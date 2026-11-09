@@ -7671,7 +7671,7 @@ export function rpgLancerAttaque(
     if (!cibleId) {
       // La cible est choisie à la déclaration, pas à la résolution d'un
       // combat déjà annoncé (une créature peut arriver entre les deux).
-      if (!attaqueDeclaree && attaquant.coupRapide && duel[adv].creatures.some((entite) => !estSite(entite) && (!duel.moba || entite.mobaLane === attaquant.mobaLane))) {
+      if (!attaqueDeclaree && attaquant.coupRapide && duel[adv].creatures.some((entite) => !estSite(entite) && (!duel.moba || attaquant.mobaLane === 'center' || entite.mobaLane === attaquant.mobaLane))) {
         return { ok: false, raison: 'cible-obligatoire' };
       }
       continue;
@@ -7687,7 +7687,7 @@ export function rpgLancerAttaque(
     }
     if (cible && !attaqueDeclaree) {
       const ciblesLegales = duel[adv].creatures.filter((entite) =>
-        (!duel.moba || entite.mobaLane === attaquant.mobaLane)
+        (!duel.moba || attaquant.mobaLane === 'center' || entite.mobaLane === attaquant.mobaLane)
         && !rpgEstProtegee(entite, cardColors(duelCardById(attaquant.carteId))));
       if (!ciblesDefenseur(ciblesLegales).some((entite) => entite.id === cible.id)) {
         return { ok: false, raison: 'defenseur' };
