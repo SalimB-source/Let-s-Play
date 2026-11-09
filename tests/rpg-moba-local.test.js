@@ -282,17 +282,19 @@ test('the experimental fixed deck respects the existing 30-card and copy rules',
   assert.equal(validerDeckManaEssai({ cardIds: MOBA_DECK_ESSAI, elements: ['braise', 'sable', 'neige'] }).ok, true);
 });
 
-test('a real global spell affects creatures in multiple active lanes and reconciles deaths', () => {
+test('a real zone spell affects only the chosen active lane and reconciles deaths', () => {
   const duel = partieCombat();
   const left = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
   const right = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
   duel.joueur.main.push('grand-hiver');
   duel.joueur.mana.neige = 10;
-  const result = rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver');
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver').raison, 'cible');
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver', null, 'left');
   assert.equal(result.ok, true);
-  assert.equal(duel.joueur.creatures.some((e) => e.id === left.id || e.id === right.id), false);
+  assert.equal(duel.joueur.creatures.some((e) => e.id === left.id), false);
+  assert.equal(duel.joueur.creatures.some((e) => e.id === right.id), true);
   assert.equal(mobaVoie(duel.moba, 'left').slots.joueur[0], null);
-  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[0], null);
+  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[0], right.id);
   assert.equal(mobaVoie(duel.moba, 'center').hp.joueur, 10);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
