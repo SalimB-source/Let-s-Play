@@ -1,7 +1,7 @@
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, lienSatisfait } from './rpgCards.js';
-import { mobaVieMax } from './rpgMoba.js';
+import { mobaVieMaxPourCamp } from './rpgMoba.js';
 import { choisirBloqueursIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgReglerHasard } from './rpgDuel.js';
 import {
@@ -219,7 +219,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
 export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
   const enemy = autre(side);
   const lanes = duel.moba.lanes.filter((l) => l.active).sort((a, b) => {
-    const score = (l) => (mobaVieMax(l.id) - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
+    const score = (l) => (mobaVieMaxPourCamp(duel.moba, enemy, l.id) - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
     return score(b) - score(a);
   });
   const cards = [...new Set(duel[side].main)].map(cardById)

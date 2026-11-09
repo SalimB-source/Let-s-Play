@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan } from '../src/games/rpgDuel.js';
-import { mobaInfliger, mobaNouveau, mobaPlacer, mobaRattacherCentre, mobaValiderBlocages, mobaVoie } from '../src/games/rpgMoba.js';
+import { mobaInfliger, mobaSoigner, mobaVieMaxPourCamp, mobaNouveau, mobaPlacer, mobaRattacherCentre, mobaValiderBlocages, mobaVoie } from '../src/games/rpgMoba.js';
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerAttaque, rpgMobaChoisirVoieCentrale, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 
 for (const side of ['joueur', 'sorcier']) for (const flank of ['left', 'right']) {
@@ -72,7 +72,7 @@ test('si la voie rattachée tombe, la créature centrale rattachée quitte égal
   mobaPlacer(state, 'joueur', 'left', 0, 'left-ally');
   mobaInfliger(state, 'joueur', 'center', 10);
   mobaRattacherCentre(state, 'joueur', 'left');
-  const result = mobaInfliger(state, 'sorcier', 'left', 20);
+  const result = mobaInfliger(state, 'sorcier', 'left', 30);
   assert.deepEqual(result.removed.joueur, ['left-ally', 'center-ally']);
   assert.equal(mobaVoie(state, 'center').slots.joueur[0], null);
   assert.equal(state.centerJoined, null);
@@ -110,6 +110,26 @@ test('la créature centrale rattachée bloque une attaque latérale adverse', ()
   attacker.ready = true;
   const result = rpgMobaLancerAttaque(duel, 'sorcier', [attacker.id], { [attacker.id]: [blocker.id] });
   assert.equal(result.ok, true, JSON.stringify(result));
-  assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 20);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 30);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
+
+for (const side of ['joueur', 'sorcier']) for (const flank of ['left', 'right']) {
+  test(`PV réunis au centre et à ${flank} pour ${side}, sans profiter à l'adversaire`, () => {
+    const state = mobaNouveau();
+    const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+    mobaInfliger(state, enemy, 'center', 3); // le vainqueur a déjà perdu 3 PV centraux
+    mobaInfliger(state, enemy, flank, 4); // et 4 PV latéraux
+    mobaInfliger(state, side, 'center', 10);
+    assert.equal(mobaRattacherCentre(state, side, flank).ok, true);
+    assert.equal(mobaVieMaxPourCamp(state, side, flank), 30);
+    assert.equal(mobaVieMaxPourCamp(state, enemy, flank), 20);
+    assert.equal(mobaVoie(state, flank).hp[side], 23, '16 PV latéraux + 7 PV centraux');
+    assert.equal(mobaVoie(state, flank).hp[enemy], 20);
+    assert.equal(mobaSoigner(state, side, flank, 100).healing, 7);
+    assert.equal(mobaVoie(state, flank).hp[side], 30);
+    assert.equal(mobaSoigner(state, enemy, flank, 100).healing, 0);
+    assert.equal(mobaInfliger(state, enemy, flank, 29).conquered, false);
+    assert.equal(mobaInfliger(state, enemy, flank, 1).conquered, true);
+  });
+}

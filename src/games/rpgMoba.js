@@ -7,6 +7,9 @@
 export const MOBA_LANE_HP = 10;
 export const MOBA_SIDE_LANE_HP = 20;
 export const mobaVieMax = (laneId) => laneId === 'center' ? MOBA_LANE_HP : MOBA_SIDE_LANE_HP;
+/** Only the conqueror's chosen flank gains the central lane's HP reserve. */
+export const mobaVieMaxPourCamp = (state, side, laneId) => mobaVieMax(laneId)
+  + (state?.centerJoined?.side === side && state.centerJoined.laneId === laneId ? MOBA_LANE_HP : 0);
 export const MOBA_LANES = Object.freeze(['left', 'center', 'right']);
 export const MOBA_SIDES = Object.freeze(['joueur', 'sorcier']);
 const CAPACITY = Object.freeze({ left: 2, center: 1, right: 2 });
@@ -51,6 +54,10 @@ export function mobaRattacherCentre(state, side, laneId) {
   if (!state || state.winner || state.centerChoice !== side || !validSide(side)
     || !['left', 'right'].includes(laneId) || !mobaVoie(state, laneId)?.active) return fail('choix-voie');
   state.centerJoined = { side, laneId };
+  // Merge the existing reserves rather than conjuring a fresh 30 HP: damage
+  // previously dealt to either friendly lane remains meaningful.
+  const flank = mobaVoie(state, laneId);
+  flank.hp[side] = Math.min(mobaVieMaxPourCamp(state, side, laneId), flank.hp[side] + mobaVoie(state, 'center').hp[side]);
   state.centerChoice = null;
   return { ok: true };
 }
@@ -174,6 +181,6 @@ export function mobaSoigner(state, side, laneId, amount) {
   const lane = mobaVoie(state, laneId);
   if (!lane?.active) return fail('voie-inactive');
   const before = lane.hp[side];
-  lane.hp[side] = Math.min(mobaVieMax(laneId), before + amount);
+  lane.hp[side] = Math.min(mobaVieMaxPourCamp(state, side, laneId), before + amount);
   return { ok: true, healing: lane.hp[side] - before };
 }
