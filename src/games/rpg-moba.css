@@ -1212,3 +1212,8 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__announcement-fallback .rpg-annonce-sort__pass { min-width: 0; min-height: 42px; padding: 6px; border: 1px solid #bda276; border-radius: 8px; background: #1c2828; color: #f2e8d5; }
 .moba__announcement-fallback .rpg-annonce-sort__respond { grid-area: respond; }
 .moba__announcement-fallback .rpg-annonce-sort__pass { grid-area: pass; }
+
+/* La main reste opaque : seule sa saturation signale une carte injouable. */
+.moba .moba__hand-cards .moba__card:disabled { opacity: 1; filter: saturate(.58) brightness(.82); }
+/* Éloigner légèrement les jauges adverses des cartes, sans changer leurs PV. */
+.moba .moba__side--sorcier > .moba__health { transform: translateY(-6px); }

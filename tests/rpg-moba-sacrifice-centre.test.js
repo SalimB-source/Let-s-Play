@@ -60,6 +60,8 @@ test('le sacrifice MOBA exige des victimes distinctes, retire les cases et conse
   assert.equal(mobaVoie(duel.moba, 'left').slots.joueur[0], resolved.entite.id);
   assert.ok(duel.joueur.cimetiere.includes('ashigaru-des-braises'));
   assert.equal(rpgMobaPlacementCoherent(duel), true);
+  // La limite est remise à zéro au changement de tour.
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   // A seven-plus-cost card requires two different creatures, not a free summon.
   donner(duel, 'joueur', 'jormungandr');
   before = JSON.stringify(duel);

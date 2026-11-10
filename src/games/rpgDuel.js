@@ -621,6 +621,7 @@ export function rpgDemarrerManaEssai(duel) {
   if (duel?.modeMana !== RPG_MODE_MANA_ESSAI || duel.manaEssaiDemarre) return { ok: false, raison: 'mode' };
   if (!duel.mulliganFait?.joueur || !duel.mulliganFait?.sorcier) return { ok: false, raison: 'mulligan' };
   duel.manaEssaiDemarre = true;
+  if (duel.moba) { duel.joueur.manaChoixEnAttente = false; return { ok: true }; }
   if (duel.joueur.couleurs.length === 1) return rpgChoisirCouleurMana(duel, 'joueur', duel.joueur.couleurs[0]);
   return { ok: true, choixEnAttente: true };
 }
@@ -984,6 +985,7 @@ export function rpgPeutPayer(camp, carte, { ignorerPrixPv = false } = {}) {
   // Le Prix classique ne peut pas faire descendre le sorcier sous 1 PV.
   // Un adaptateur peut vérifier séparément un prix payé par une voie MOBA.
   if (!ignorerPrixPv && (carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return false;
+  if (camp.mobaSansMana) return true;
   const sources = sourcesManaDisponibles(camp);
   const cout = Math.max(0, carte.cost ?? 0);
   return sources.length >= cout && sourcesCouvrentPips(sources, cardColorCost(carte));
@@ -1000,6 +1002,7 @@ function payer(duel, cote, carte, options = null) {
     else camp.pv = Math.max(1, camp.pv - carte.prixPv);
     duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} ${carte.prixPv} PV${duel.moba && options?.payerPrixPv ? ' de voie' : ''} pour ${carte.name ?? 'la carte'}.`);
   }
+  if (duel.moba) return;
   let reste = Math.max(0, carte.cost ?? 0);
   const depenserSource = (couleur) => {
     if (camp.mana[couleur] > 0) {
@@ -6183,6 +6186,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   const nombreSacrifices = sacrificesInvocation(carte, duel);
+  if (duel.moba && nombreSacrifices && !dejaPayee && duel.moba.sacrificesJoues?.[cote]) return { ok: false, raison: 'sacrifice-limite' };
   const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
   let sacrifices = [];
   if (idsDemandes !== null) {
@@ -6334,6 +6338,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!dejaPayee && !rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (!dejaPayee && duel.moba && annoncerCreatureMoba) {
     payer(duel, cote, carte);
+    if (nombreSacrifices) duel.moba.sacrificesJoues[cote] = true;
     camp.main.splice(camp.main.indexOf(carteId), 1);
     duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
@@ -6393,6 +6398,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
+    if (duel.moba && nombreSacrifices) duel.moba.sacrificesJoues[cote] = true;
     camp.main.splice(camp.main.indexOf(carteId), 1);
   }
   // Un effet de mort payé comme sacrifice peut fermer la case ou terminer
@@ -9238,6 +9244,7 @@ export function rpgFinDeTour(duel) {
   resoudreExilsFinTour(duel);
   if (duel.moba?.winner) return duel;
   duel.tour = autre(duel.tour);
+  if (duel.moba) duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
   for (const entite of duel[duel.tour].creatures) {
     const croissance = duelCardById(entite.carteId)?.croissanceTour;
     if (!croissance) continue;
@@ -9299,7 +9306,7 @@ function terminerDebutTour(duel) {
   const camp = duel[duel.tour];
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
   if (duel.moba?.winner) return duel;
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
+  if (!duel.moba && duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
     && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
     camp.manaChoixEnAttente = true;
     const autoIA = duel.tour === 'sorcier' && !duel.pvp;

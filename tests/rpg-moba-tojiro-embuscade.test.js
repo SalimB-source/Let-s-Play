@@ -161,3 +161,13 @@ test('Tojiro en réponse : ne sacrifie pas une créature bien supérieure sans a
  assert.equal(rpgMobaChoisirEmbuscadeIA(d,defenseur),null);
  assert.equal(JSON.stringify(d),before);
 });
+
+test('une Embuscade à sacrifice consomme la limite du défenseur pendant le tour adverse seulement', () => {
+ const {d, defenseur, victime} = partie('sorcier');
+ d.sorcier.main=[]; assert.ok(rpgMobaTerminerTour(d,'sorcier').ok);
+ assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',0,{ouvrirReponse:true,sacrificeIds:[victime.id]}).ok);
+ assert.ok(rpgMobaPasserCreature(d,'sorcier').entite);
+ assert.equal(d.moba.sacrificesJoues[defenseur],true);
+ assert.ok(rpgMobaPasserFinDeTour(d,defenseur).ok);
+ assert.equal(d.tour,defenseur); assert.equal(d.moba.sacrificesJoues[defenseur],false);
+});

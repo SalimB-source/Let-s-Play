@@ -15,7 +15,8 @@ export function invocationPossible(duel, cote, carte) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;
   const nombre = sacrificesInvocation(carte, duel);
   const camp = duel[cote];
-  return victimesInvocation(camp).length >= nombre
+  return !(duel.moba && nombre && duel.moba.sacrificesJoues?.[cote])
+    && victimesInvocation(camp).length >= nombre
     && (duel.modeMana !== RPG_MODE_MANA_ESSAI
       || camp.creatures.length - nombre < RPG_MANA_ESSAI_CHAMP_MAX);
 }
