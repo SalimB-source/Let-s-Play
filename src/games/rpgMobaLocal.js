@@ -8,12 +8,12 @@ import { ciblesDefenseur } from './rpgDefenseur.js';
 import { MOBA_ABORDAGE_IMPRIME, MOBA_TOURS_AUDITEES, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import {
   rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme,
-  rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
+  rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgLancerAttaque, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
-import { invocationPossible } from './rpgInvocation.js';
+import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRattacherCentre, mobaRetirer, mobaVoieCombat, mobaVoieJouable, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
 
 const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
@@ -41,13 +41,13 @@ const caleAuditee = (duel, cote, entite) => {
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
-export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
-export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
+export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['gardienne-du-croissant', 'guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
+export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
 // Chercheuse keeps the classic random search for kind === 'arme'.
 // Sabre maudit is a magic, not a candidate; only audited printed weapons are.
 // Re-audit the search and its UX before enabling further printed weapons.
-const MOBA_ARRIVEES_GLOBALES = Object.freeze(['passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres']);
+const MOBA_ARRIVEES_GLOBALES = Object.freeze(['passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres', 'porte-etendard-de-leclipse', 'sanguinaire-des-dunes']);
 // Keep the original starter list independent of additions to the editor pool.
 export const MOBA_CARTES_ESSAI = Object.freeze([
   'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges',
@@ -346,6 +346,37 @@ export function rpgMobaChoisirVoieCentrale(duel, side, laneId) {
   return result;
 }
 
+// These audited Embuscades can use the bounded combat response path.
+// Offered boarding still needs its own off-turn arrival adaptation.
+export const MOBA_EMBUSCADES_COMBAT = Object.freeze(['tojiro-le-pourfendeur', 'sanguinaire-des-dunes', 'gardienne-du-croissant', 'porte-etendard-de-leclipse', 'garde-du-trone-givre', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune']);
+export function rpgMobaPeutEmbuscade(duel, side, cardId) {
+  const carte = duelCardById(cardId);
+  const annonce = duel?.mobaCreatureEnAttente;
+  const sorcier = cardId === 'sorcier-du-ressac-noir' && annonce && !annonce.embuscadeCombat && !annonce.embuscadeSuspendue && !annonce.origineCreature
+    && annonce.cote === duel.tour && annonce.cote !== side && ['creature', 'hero'].includes((duelCardById(annonce.carteId)?.kind ?? 'creature'));
+  const generale = ['sanguinaire-des-dunes', 'tojiro-le-pourfendeur'].includes(cardId);
+  const menace = !duel?.mobaReponseSuspendue && ((cardId === 'gardienne-du-croissant' && !annonce
+    && ((duel?.mobaSortEnAttente?.cote === duel.tour && !duel.mobaSortEnAttente.armeMoba)
+      || duel?.effetCreatureEnAttente?.cote === duel.tour))
+    || (generale && ((annonce?.cote === duel.tour && !annonce.embuscadeCombat && !annonce.embuscadeSuspendue && !annonce.origineCreature)
+      || duel?.mobaSortEnAttente?.cote === duel.tour || duel?.effetCreatureEnAttente?.cote === duel.tour
+      || (duel?.finDeTour?.cote === duel.tour && duel.phase === 'fin'))));
+  const combat = MOBA_EMBUSCADES_COMBAT.includes(cardId) && duel?.phase === 'blocage'
+    && duel.combatDeclare?.cote === duel.tour && !annonce && !duel.mobaReponseSuspendue
+    && (!duel.combatDeclare.blocages || ['porte-etendard-de-leclipse', 'gardienne-du-croissant', 'sanguinaire-des-dunes', 'tojiro-le-pourfendeur'].includes(cardId));
+  return Boolean(duel?.moba && MOBA_SIDES.includes(side) && (combat || sorcier || menace)
+    && !duel.moba.winner && !duel.fin?.gagnant && !duel.fin?.nul && !duel.moba.centerChoice
+    && duel.manaEssaiDemarre && side !== duel.tour && duel.fenetreReponse
+    && (!duel.mobaSortEnAttente || menace)
+    && !duel.arriveeEnAttente && (!duel.effetCreatureEnAttente || menace) && !duel.destructionsEnAttente?.length
+    && !duel.defausseEnAttente && !duel.siteEnAttente && !duel.mobaRechercheEnAttente
+    && !duel[side].manaChoixEnAttente && !duel[side].prochaineArriveeAbordage && !duel[side].abordageDesArrivees
+    && duel[side].main.includes(cardId) && (sorcier || rpgConditionEmbuscadeRemplie(duel, side, carte))
+    && rpgMobaPeutPayer(duel, side, carte) && rpgMobaPlacementCoherent(duel)
+    && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, side, lane.id)
+      && lane.slots[side].some((id) => id === null || (sacrificesInvocation(carte, duel) > 0 && victimesInvocation(duel[side]).some((entity) => entity.id === id)))));
+}
+
 /** Place a creature from the active player's hand using the engine's payment,
  * restrictions, entity creation and aura recalculation. Effects requiring lane
  * semantics are temporarily rejected rather than executed incorrectly. */
@@ -353,13 +384,17 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
-  if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
+  if (!MOBA_SIDES.includes(side)) return fail('pas-votre-tour');
   const attente = resoudreEnAttente && duel.mobaCreatureEnAttente;
+  const reaction = side !== duel.tour && (attente?.embuscadeCombat === true || Boolean(attente?.embuscadeSuspendue) || Boolean(attente?.origineCreature) || rpgMobaPeutEmbuscade(duel, side, cardId));
+  if (duel.tour !== side && !reaction) return fail('pas-votre-tour');
+  // Always offer a response to an off-turn summon; no silent direct placement.
+  if (reaction && !resoudreEnAttente && !ouvrirReponse) return fail('timing');
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
   if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
-    || !['principale', 'principale2'].includes(duel.phase)
-    || (duel.fenetreReponse && !attente) || duel.finDeTour || duel.combatDeclare
-    || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || (!reaction && !['principale', 'principale2'].includes(duel.phase))
+    || (duel.fenetreReponse && !attente && !reaction) || (duel.finDeTour && !(reaction && ['sanguinaire-des-dunes', 'tojiro-le-pourfendeur'].includes(cardId) && !resoudreEnAttente)) || (duel.combatDeclare && !reaction)
+    || duel.arriveeEnAttente || (duel.effetCreatureEnAttente && !(reaction && ['gardienne-du-croissant', 'sanguinaire-des-dunes', 'tojiro-le-pourfendeur'].includes(cardId) && !resoudreEnAttente))
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente) return fail('timing');
   const lane = mobaVoie(duel.moba, laneId);
   if (!mobaVoieJouable(duel.moba, side, laneId)) return fail('voie-inactive');
@@ -370,10 +405,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   if (!carte) return fail('carte');
   // A card with unaudited combat or leave-play abilities must never enter the
   // local game: accepting it could later deadlock the only combat phase.
-  if (!CARTES_COMBAT_AUDITEES.has(cardId) || carte.reactionTourAdverse) return fail('effet-non-pris-en-charge');
-  // Une créature Embuscade ne doit pas être admise uniquement parce que son
-  // combat est audité : sa pose hors tour et toutes ses fenêtres restent à
-  // adapter, même si l'on essaie de la poser pendant son propre tour.
+  if (!CARTES_COMBAT_AUDITEES.has(cardId) || (carte.reactionTourAdverse && !MOBA_EMBUSCADES_COMBAT.includes(cardId) && cardId !== 'sorcier-du-ressac-noir')) return fail('effet-non-pris-en-charge');
   // Porteuse heals her own lane; audited shields and damage use the engine's
   // deferred arrival choices. Other arrivals remain gated until audited.
   const soinArrivee = ['porteuse-de-cruches', 'yamina', 'dame-des-neuf-mondes', 'tour-des-flots'].includes(cardId);
@@ -392,11 +424,18 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     const healingEvents = [];
     rpgConsommerSoinsCreatureMoba(duel);
     rpgConsommerDegatsCapaciteMoba(duel);
+    const reponseSuspendue = reaction && !resoudreEnAttente && ['gardienne-du-croissant', 'sanguinaire-des-dunes', 'tojiro-le-pourfendeur'].includes(cardId)
+      ? (duel.mobaSortEnAttente ? { type: 'sort', attente: duel.mobaSortEnAttente }
+        : duel.effetCreatureEnAttente ? { type: 'effet', attente: duel.effetCreatureEnAttente }
+        : duel.mobaCreatureEnAttente ? { type: 'creature', attente: duel.mobaCreatureEnAttente }
+        : duel.finDeTour ? { type: 'fin', attente: duel.finDeTour } : null) : null;
+    const origineCreature = reaction && cardId === 'sorcier-du-ressac-noir' ? (attente?.origineCreature ?? duel.mobaCreatureEnAttente) : null;
     const result = rpgJouerCreature(duel, side, cardId, null, {
       emplacement: OFFSETS[laneId] + slot,
       ...(sacrificesDemandes !== null ? { sacrificeIds: sacrificesDemandes } : {}),
-      ...(ouvrirReponse && !resoudreEnAttente ? { annoncerCreatureMoba: { laneId, slot, nomVoie: NOMS_VOIES[laneId] } } : {}),
+      ...(ouvrirReponse && !resoudreEnAttente ? { annoncerCreatureMoba: { laneId, slot, nomVoie: NOMS_VOIES[laneId], ...(reaction ? (origineCreature ? { origineCreature } : reponseSuspendue ? { embuscadeSuspendue: true } : { embuscadeCombat: true }) : {}) } } : {}),
       ...(resoudreEnAttente ? { resoudreCreatureMoba: true } : {}),
+      ...(origineCreature ? { annonceCreatureMobaOrigine: origineCreature } : {}),
       peutPlacerApresSacrifices: () => !duel.moba.winner && mobaVoieJouable(duel.moba, side, laneId),
       onEntitePlacee: (entite) => {
         entite.mobaLane = mobaVoieCombat(duel.moba, side, laneId);
@@ -419,9 +458,26 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     healingEvents.push(...rpgConsommerSoinsCreatureMoba(duel));
     damageEvents.push(...rpgConsommerDegatsCapaciteMoba(duel));
     if (!result.ok) return result;
-    if (result.creatureEnAttente) return result;
-    if (attente) { duel.mobaCreatureEnAttente = null; duel.fenetreReponse = false; }
+    if (result.creatureEnAttente) {
+      if (reponseSuspendue) {
+        duel.mobaReponseSuspendue = reponseSuspendue;
+        if (reponseSuspendue.type === 'sort') duel.mobaSortEnAttente = null;
+        else if (reponseSuspendue.type === 'effet') duel.effetCreatureEnAttente = null;
+        else if (reponseSuspendue.type === 'fin') duel.finDeTour = null;
+        // Une annonce de créature est remplacée par l'annonce imbriquée.
+
+      }
+      return result;
+    }
+    if (attente) {
+      duel.mobaCreatureEnAttente = null; duel.fenetreReponse = Boolean(attente.embuscadeCombat && duel.combatDeclare);
+      if (attente.origineCreature) {
+        duel[attente.origineCreature.cote].cimetiere.push(attente.origineCreature.carteId);
+        duel.log.push(`${carte.name} contre ${duelCardById(attente.origineCreature.carteId)?.name ?? 'la créature'} avant son arrivée.`);
+      }
+    }
     if (result.dissipe) {
+      if (attente?.embuscadeSuspendue) reprendreReponseSuspendue(duel);
       synchroniserSorties(duel);
       return { ...result, damageEvents, healingEvents };
     }
@@ -429,6 +485,9 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     // state actions removed another entity or added an unexpected one.
     synchroniserSorties(duel);
     normaliserArriveeMoba(duel);
+    if (attente?.embuscadeCombat || attente?.embuscadeSuspendue) reconcilerCombatDeclare(duel);
+    if ((attente?.embuscadeCombat || attente?.embuscadeSuspendue) && duel.arriveeEnAttente) duel.mobaEmbuscadeArrivee = true;
+    if (attente?.embuscadeSuspendue && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente) reprendreReponseSuspendue(duel);
     if (result.arriveeEnAttente && !duel.arriveeEnAttente) result.arriveeEnAttente = false;
     // An immediate death caused by the arrival is a valid resolved play, not
     // a failed placement. Unexpected extra entities still fail closed.
@@ -443,26 +502,45 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   }
 }
 
+// Réactive uniquement l'annonce mise de côté par l'Embuscade, sans la payer
+// une seconde fois. La priorité revient au défenseur de cette annonce.
+function reprendreReponseSuspendue(duel) {
+  const suspendue = duel.mobaReponseSuspendue;
+  if (!suspendue) return;
+  duel.mobaReponseSuspendue = null;
+  if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) {
+    if (['sort', 'creature'].includes(suspendue.type)) duel[suspendue.attente.cote].cimetiere.push(suspendue.attente.carteId);
+    return;
+  }
+  if (suspendue.type === 'sort') duel.mobaSortEnAttente = suspendue.attente;
+  else if (suspendue.type === 'creature') duel.mobaCreatureEnAttente = suspendue.attente;
+  else if (suspendue.type === 'fin') duel.finDeTour = suspendue.attente;
+  else duel.effetCreatureEnAttente = suspendue.attente;
+  duel.fenetreReponse = true;
+}
+
 /** Resolve a paid creature announcement without reopening a response to the
  * card itself. Targeted arrival choices happen afterward as a separate step. */
 export function rpgMobaPasserCreature(duel, side) {
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   const attente = duel.mobaCreatureEnAttente;
-  if (!attente || side !== (attente.cote === 'joueur' ? 'sorcier' : 'joueur') || attente.cote !== duel.tour
+  if (!attente || side !== (attente.cote === 'joueur' ? 'sorcier' : 'joueur') || (attente.cote !== duel.tour && !attente.embuscadeCombat && !attente.embuscadeSuspendue && !attente.origineCreature)
     || !duel.fenetreReponse || duel.defausseEnAttente || duel.mobaRechercheEnAttente || duel.destructionsEnAttente?.length || duel.moba.winner) return fail('aucune-creature');
   const lane = mobaVoie(duel.moba, attente.laneId);
   if (!mobaVoieJouable(duel.moba, attente.cote, attente.laneId)
     || (lane.slots[attente.cote][attente.slot] !== null && !attente.sacrificeIds?.includes(lane.slots[attente.cote][attente.slot]))) {
     duel[attente.cote].cimetiere.push(attente.carteId);
     duel.log.push(`La case de ${duelCardById(attente.carteId)?.name ?? 'la créature'} n'est plus disponible : elle ne peut pas entrer.`);
-    duel.mobaCreatureEnAttente = null; duel.fenetreReponse = false;
+    duel.mobaCreatureEnAttente = attente.origineCreature ?? null; duel.fenetreReponse = Boolean(attente.origineCreature || (attente.embuscadeCombat && duel.combatDeclare));
+    if (attente.embuscadeSuspendue) reprendreReponseSuspendue(duel);
     return { ok: true, dissipe: true };
   }
   const result = rpgMobaJouerCreature(duel, attente.cote, attente.carteId, attente.laneId, attente.slot, { resoudreEnAttente: true });
   if (!result.ok && duel.mobaCreatureEnAttente === attente) {
     duel[attente.cote].cimetiere.push(attente.carteId);
     duel.log.push(`${duelCardById(attente.carteId)?.name ?? 'La créature'} ne peut plus entrer : elle est mise au cimetière.`);
-    duel.mobaCreatureEnAttente = null; duel.fenetreReponse = false;
+    duel.mobaCreatureEnAttente = attente.origineCreature ?? null; duel.fenetreReponse = Boolean(attente.origineCreature || (attente.embuscadeCombat && duel.combatDeclare));
+    if (attente.embuscadeSuspendue) reprendreReponseSuspendue(duel);
     return { ok: true, dissipe: true };
   }
   return result;
@@ -519,7 +597,7 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
-  if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
+  if (!MOBA_SIDES.includes(side) || (duel.tour !== side && !duel.mobaEmbuscadeArrivee)) return fail('pas-votre-tour');
   const attente = duel.arriveeEnAttente;
   if (attente?.cote !== side || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || (!Number.isFinite(attente.abordage) && ![...MOBA_ARRIVEES_ALLIEES, ...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(attente.carteId))) return fail('aucune-attente');
   if (Number.isFinite(attente.abordage) && !rpgMobaCiblesPrise(duel, side).includes(cibleId)) return fail('cible');
@@ -559,7 +637,15 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
   const result = rpgResoudreArriveeCiblee(duel, side, cibleId, options);
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   damageEvents.push(...rpgConsommerDegatsCapaciteMoba(duel));
-  if (result.ok) { synchroniserSorties(duel); normaliserArriveeMoba(duel); }
+  if (result.ok) {
+    synchroniserSorties(duel); normaliserArriveeMoba(duel);
+    if (duel.mobaEmbuscadeArrivee && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente) {
+      duel.mobaEmbuscadeArrivee = null;
+      reconcilerCombatDeclare(duel);
+      duel.fenetreReponse = Boolean(duel.combatDeclare);
+      reprendreReponseSuspendue(duel);
+    }
+  }
   return { ...result, damageEvents, healingEvents, ...(duel.arriveeEnAttente ? { arriveeEnAttente: true } : {}) };
 }
 
@@ -569,14 +655,21 @@ export function rpgMobaPasserEffetCreature(duel, side) {
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   const attente = duel.effetCreatureEnAttente;
-  if (!MOBA_SIDES.includes(side) || !attente || side === attente.cote || attente.cote !== duel.tour
+  if (!MOBA_SIDES.includes(side) || !attente || side === attente.cote || (attente.cote !== duel.tour && !duel.mobaEmbuscadeArrivee)
     || ![...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(attente.carteId) || !duel.fenetreReponse || duel.destructionsEnAttente?.length) return fail('aucun-effet');
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
   const result = rpgResoudreEffetCreatureEnAttente(duel, side);
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
-  if (result.ok) synchroniserSorties(duel);
+  if (result.ok) {
+    synchroniserSorties(duel);
+    if (duel.mobaEmbuscadeArrivee) {
+      duel.mobaEmbuscadeArrivee = null;
+      reconcilerCombatDeclare(duel);
+      duel.fenetreReponse = Boolean(duel.combatDeclare);
+    }
+  }
   return { ...result, healingEvents, ...(damageEvents.length ? { damageEvents } : {}) };
 }
 
@@ -710,6 +803,28 @@ export function rpgMobaDeclarerAttaque(duel, side, attackerIds, ciblesAttaque = 
   return { ok: true };
 }
 
+/** Verrouille des blocages pleinement validés sans résoudre le combat. */
+export function rpgMobaDeclarerBlocages(duel, side, blocks = {}) {
+  if (!duel?.moba || !MOBA_SIDES.includes(side) || !rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
+  const combat = duel.combatDeclare;
+  if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul || !combat || side === combat.cote
+    || combat.cote !== duel.tour || duel.phase !== 'blocage' || !duel.fenetreReponse || combat.blocages
+    || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente || duel.arriveeEnAttente
+    || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.defausseEnAttente
+    || duel.siteEnAttente || duel.mobaRechercheEnAttente || duel.moba.centerChoice) return fail('timing');
+  const isolation = mobaValiderBlocages(duel.moba, combat.cote, combat.attaquants, blocks);
+  if (!isolation.ok) return isolation;
+  const result = rpgLancerAttaque(duel, combat.cote, combat.attaquants, blocks, null, null, combat.ciblesAttaque, {
+    attaqueDeclaree: true, bannieresAppliquees: Boolean(combat.bannieresAppliquees), validerBlocagesSeulement: true,
+  });
+  if (!result.ok) return result;
+  const verifie = mobaValiderBlocages(duel.moba, combat.cote, combat.attaquants, result.blocages);
+  if (!verifie.ok) return verifie;
+  combat.blocages = result.blocages;
+  combat.attaquantsBloques = Object.entries(result.blocages).filter(([, ids]) => ids.length).map(([id]) => id);
+  return { ok: true, blocages: structuredClone(result.blocages) };
+}
+
 /** Combat damage, readiness, blocking and the one-attack-per-turn rule are
  * resolved by the duel engine. Other card abilities require an audit first. */
 export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { declaree = false, ciblesAttaque = {} } = {}) {
@@ -721,10 +836,11 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
   const combatValide = declaree && duel.phase === 'blocage' && combat?.cote === side
     && Array.isArray(attackerIds) && attackerIds.length === combat.attaquants.length
     && attackerIds.every((id) => combat.attaquants.includes(id));
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
+  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente || duel.mobaCreatureEnAttente
     || (declaree ? !combatValide : (!['principale', 'attaque'].includes(duel.phase) || duel.fenetreReponse || duel.combatDeclare))
     || duel.finDeTour || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente) return fail('timing');
+  if (combat?.blocages && (!blocks || typeof blocks !== 'object' || Array.isArray(blocks) || JSON.stringify(Object.entries(blocks).sort()) !== JSON.stringify(Object.entries(combat.blocages).sort()))) return fail('blocage-verrouille');
   const isolation = mobaValiderBlocages(duel.moba, side, attackerIds, blocks);
   if (!isolation.ok) return isolation;
   if (!declaree) {
@@ -747,8 +863,8 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
   const healingEvents = [];
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
-  const result = rpgLancerAttaque(duel, side, attackerIds, blocks, null, null, declaree ? combat.ciblesAttaque : ciblesAttaque, {
-    attaqueDeclaree: declaree,
+  const result = rpgLancerAttaque(duel, side, attackerIds, blocks, null, combat?.attaquantsBloques ?? null, declaree ? combat.ciblesAttaque : ciblesAttaque, {
+    attaqueDeclaree: declaree, blocagesDejaDeclares: Boolean(combat?.blocages),
     bannieresAppliquees: declaree && Boolean(combat.bannieresAppliquees),
     surTransfertMoba: (transfer, source) => {
       damageEvents.push({ ...transfer, laneId: transfer.laneId, targetSide: side === 'joueur' ? 'sorcier' : 'joueur', attackerId: source.id, tribut: true });
@@ -837,13 +953,19 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side)) return fail('pas-votre-tour');
-  const reaction = duel.tour !== side && (
+  const embuscadeEnAttente = Boolean(duel.mobaCreatureEnAttente?.embuscadeCombat || duel.mobaCreatureEnAttente?.embuscadeSuspendue || duel.mobaCreatureEnAttente?.origineCreature);
+  const embuscadeSuspendue = duel.mobaCreatureEnAttente?.embuscadeSuspendue;
+  const origineCreature = duel.mobaCreatureEnAttente?.origineCreature;
+  const effetEmbuscade = Boolean(duel.mobaEmbuscadeArrivee && duel.effetCreatureEnAttente);
+  const auteurImbrique = embuscadeEnAttente ? duel.mobaCreatureEnAttente.cote : effetEmbuscade ? duel.effetCreatureEnAttente.cote : null;
+  if (auteurImbrique && (side === auteurImbrique || !duel.fenetreReponse)) return fail('timing');
+  const reaction = (auteurImbrique && side !== auteurImbrique) || (duel.tour !== side && (
     (duel.phase === 'blocage' && duel.combatDeclare?.cote === duel.tour)
     || (duel.phase === 'fin' && duel.finDeTour?.cote === duel.tour && duel.fenetreReponse)
     || (duel.effetCreatureEnAttente?.cote === duel.tour && [...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(duel.effetCreatureEnAttente?.carteId) && duel.fenetreReponse)
     || (duel.mobaSortEnAttente?.cote === duel.tour && duel.fenetreReponse)
     || (duel.mobaCreatureEnAttente?.cote === duel.tour && duel.fenetreReponse)
-  );
+  ));
   if (duel.tour !== side && !reaction) return fail('pas-votre-tour');
   if (reaction && !magieById(cardId)?.instant) return fail('timing');
   if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
@@ -955,17 +1077,22 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
   const result = rpgLancerMagie(duel, side, cardId, cibleId, cibleSecondaireId, options);
+  if (result.ok && result.contre && embuscadeSuspendue) reprendreReponseSuspendue(duel);
+  else if (result.ok && result.contre && origineCreature) { duel.mobaCreatureEnAttente = origineCreature; duel.fenetreReponse = true; }
+  else if (result.ok && result.contre && embuscadeEnAttente && duel.combatDeclare) duel.fenetreReponse = true;
   healingEvents.push(...rpgConsommerSoinsCreatureMoba(duel));
   damageEvents.push(...rpgConsommerDegatsCapaciteMoba(duel));
   if (!result.ok) return result;
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) {
     for (const key of ['mobaSortEnAttente', 'mobaCreatureEnAttente']) {
       const pending = duel[key];
-      if (pending) { duel[pending.cote].cimetiere.push(pending.carteId); duel[key] = null; duel.fenetreReponse = false; }
+      if (pending) { duel[pending.cote].cimetiere.push(pending.carteId); if (pending.origineCreature) duel[pending.origineCreature.cote].cimetiere.push(pending.origineCreature.carteId); duel[key] = null; duel.fenetreReponse = false; }
     }
+    reprendreReponseSuspendue(duel);
   }
   synchroniserSorties(duel);
   const combatTermine = reaction ? reconcilerCombatDeclare(duel) : false;
+  if ((duel.mobaCreatureEnAttente?.embuscadeCombat || duel.mobaCreatureEnAttente?.embuscadeSuspendue || duel.mobaCreatureEnAttente?.origineCreature || (duel.mobaEmbuscadeArrivee && duel.effetCreatureEnAttente)) && !duel.moba.winner) duel.fenetreReponse = true;
   return { ...result, damageEvents, healingEvents, combatTermine };
 }
 
@@ -990,8 +1117,11 @@ function reconcilerCombatDeclare(duel) {
     duel.phase = 'principale2';
     return true;
   }
+  const defenseur = combat.cote === 'joueur' ? 'sorcier' : 'joueur';
   duel.combatDeclare = { ...combat, attaquants: survivants,
-    ciblesAttaque: Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {}).filter(([id]) => survivants.includes(id))) };
+    ciblesAttaque: Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {}).filter(([id]) => survivants.includes(id))),
+    ...(combat.blocages ? { blocages: Object.fromEntries(Object.entries(combat.blocages)
+      .filter(([id]) => survivants.includes(id)).map(([id, ids]) => [id, ids.filter((bloqueur) => duel[defenseur].creatures.some((e) => e.id === bloqueur))])) } : {}) };
   return false;
 }
 
@@ -1007,8 +1137,9 @@ export function rpgMobaResoudreDestruction(duel, side, cibleId) {
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) {
     for (const key of ['mobaSortEnAttente', 'mobaCreatureEnAttente']) {
       const pending = duel[key];
-      if (pending) { duel[pending.cote].cimetiere.push(pending.carteId); duel[key] = null; duel.fenetreReponse = false; }
+      if (pending) { duel[pending.cote].cimetiere.push(pending.carteId); if (pending.origineCreature) duel[pending.origineCreature.cote].cimetiere.push(pending.origineCreature.carteId); duel[key] = null; duel.fenetreReponse = false; }
     }
+    reprendreReponseSuspendue(duel);
   }
   synchroniserSorties(duel);
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);

@@ -1255,7 +1255,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 1, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'allie-cible',
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, bonusDef: 2 },
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true, bonusDef: 2 },
     text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une de vos créatures est ciblée par un sort, un effet annoncé ou une Attaque ciblée adverse. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
     flavor: 'Son croissant veille sur ceux qui n’ont plus de soleil.',
   },

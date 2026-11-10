@@ -119,8 +119,8 @@ for (const dansLaVoie of [false, true]) {
 }
 
 for (const side of ['joueur', 'sorcier']) {
-  test(`Sorcier du ressac noir : Embuscade reste hors du MOBA (${side})`, () => {
-    assert.ok(!MOBA_CARTES_AUTORISEES.includes('sorcier-du-ressac-noir'));
+  test(`Sorcier du ressac noir : annonce depuis la main en MOBA (${side})`, () => {
+    assert.ok(MOBA_CARTES_AUTORISEES.includes('sorcier-du-ressac-noir'));
     const duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), rng: () => .5 });
     rpgMulligan(duel, 'joueur', []); rpgMulligan(duel, 'sorcier', []); rpgDemarrerManaEssai(duel);
     if (side === 'sorcier') rpgFinDeTour(duel);
@@ -131,11 +131,8 @@ for (const side of ['joueur', 'sorcier']) {
     const annonce = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'left', 0, { ouvrirReponse: true });
     assert.equal(annonce.creatureEnAttente, true);
     assert.equal(rpgPeutRepondre(duel, defenseur), false);
-    assert.equal(rpgMobaPasserCreature(duel, defenseur).ok, true);
-    rpgFinDeTour(duel);
-    const avant = JSON.stringify(duel);
-    const rejet = rpgMobaJouerCreature(duel, defenseur, 'sorcier-du-ressac-noir', 'right', 0);
-    assert.equal(rejet.raison, 'effet-non-pris-en-charge');
-    assert.equal(JSON.stringify(duel), avant);
+    assert.equal(rpgMobaJouerCreature(duel, defenseur, 'sorcier-du-ressac-noir', 'right', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+    assert.equal(rpgMobaPasserCreature(duel, side).entite?.carteId, 'sorcier-du-ressac-noir');
+    assert.ok(duel[side].cimetiere.includes('chien-du-guet'));
   });
 }

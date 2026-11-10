@@ -366,3 +366,64 @@ Comparaison effectuée avec `main` à `a7ce2b0` : la même sélection historique
 La tentative locale a été reprise sur `main` à `a7ce2b0` : le catalogue comporte désormais 231 cartes, dont 220 autorisées en MOBA. Le Sorcier du ressac noir est, comme les dix autres Embuscades, exclu du pool et de la réponse MOBA tant que l’invocation hors tour n’est pas adaptée ; son duel classique est conservé. Les deux camps sont couverts par des tests ciblés. La suite historique et les autres nouvelles cartes restent à réconcilier avant fusion.
 
 Les scénarios d’Embuscade de la branche utilisent désormais des cibles sur une même voie et fournissent les sacrifices d’invocation exigés. Deux scénarios de la Guetteuse placent aussi la source dans la voie de sa cible. Le build, 45 tests MOBA ciblés, 16 scénarios Embuscade/Guetteuse et 32 tests classiques ciblés réussissent après le rapprochement sur `a7ce2b0`. La suite historique complète reste à mettre à jour et à revoir.
+
+### Proposition d'implémentation des créatures Embuscade en MOBA
+
+Les dix créatures avec `reactionTourAdverse` restent exclues du pool : il ne suffit pas de satisfaire `rpgConditionEmbuscadeRemplie` pour les jouer. Pour une première tranche, le Garde du trône givré est le candidat le plus simple : son déclencheur est la déclaration d'attaque et il n'a pas d'effet d'arrivée imprimé. Même lui peut recevoir un Abordage de la prochaine arrivée, qui demanderait une cible ; cet état doit être pris en charge ou explicitement refusé avant toute dépense.
+
+La solution proposée est de suspendre la fenêtre courante pendant l'annonce de l'Embuscade, puis de la reprendre après sa résolution ou son contre. Le contexte suspendu doit conserver le combat, les choix éventuels et le camp ayant la priorité ; le propriétaire d'une annonce n'est plus nécessairement `duel.tour`. Il faut :
+
+1. Valider le déclencheur, la main, le mana, les sacrifices et une case légale avant paiement ; permettre aussi l'invocation ordinaire pendant le tour du propriétaire.
+2. Annoncer la créature et donner à son adversaire une vraie réponse avant son arrivée, y compris Écueil et Contresort des abîmes. Ne jamais passer par le contre automatique propre au duel classique. Sur contre, payer chaque carte une seule fois, placer les cartes au cimetière et reprendre la fenêtre initiale. Sur passage, placer la créature puis traiter ses effets et choix d'arrivée avant la reprise. Si une voie ou une case a changé, appliquer une résolution explicite et cohérente sans duplications ni remboursement implicite.
+3. Adapter ensemble l'admission au catalogue, `rpgMobaJouerCreature`, `rpgMobaPasserCreature`, `rpgMobaLancerMagie`, les conditions de réponse et la résolution des effets. La réponse à une annonce hors tour ne peut pas dépendre uniquement de `side !== duel.tour` ; les annonces et leurs contre-effets ne doivent pas effacer le combat ou sa fenêtre suspendue.
+4. Dans le plateau, calculer le camp qui agit d'après la fenêtre effective plutôt que toujours d'après le défenseur du tour ; offrir la sélection de main, la voie, la case et les sacrifices à ce camp, puis les réponses et la reprise du blocage. Adapter également l'IA pour jouer, contrer ou passer, en simulant sur copie sans consommer le hasard réel.
+5. Tester les deux camps : conditions vraies et fausses, mana et places insuffisants, changements de voie, absence de mutation sur refus, paiement unique, contre et passage, conservation des attaquants, blocage dans la même voie, changements pendant la réponse, IA, interface et absence de régression du duel classique.
+
+Après le Garde, chaque carte demande un audit distinct : Sentinelle (dégâts à un attaquant), Éclipse (affaiblissement), Gardienne (cible alliée et bouclier), Traqueur (deux attaquants et renvoi/destruction), Veilleuse (gel), Sanguinaire (dégâts de zone), Porte-étendard (Vampire ciblé ou bloqueur), Tojiro (Djinn adverse, sacrifice et effets de combat/mort) et Sorcier du ressac noir (contre d'une créature jouée depuis la main). En particulier, la condition de blocage du Porte-étendard nécessite une fenêtre après la désignation des bloqueurs, et le Sorcier doit contrer une annonce MOBA déjà payée plutôt qu'une carte encore en main. Ne pas étendre le pool tant que chaque chemin n'est pas couvert ; Boualem, également exclu, n'est pas une créature Embuscade et doit être audité séparément.
+
+La voie de contre automatique du duel classique refuse désormais explicitement les duels MOBA, même si leur drapeau `pvp` était absent. Les nouveaux tests vérifient ce garde-fou, les contres explicites MOBA des deux camps, le maintien du contre classique et le refus sans mutation du Garde malgré une attaque déclarée. **Cela ne rend pas encore les Embuscades jouables en MOBA.**
+
+### Première Embuscade jouable : Garde du trône givré
+
+Le Garde est maintenant admis dans le pool MOBA et jouable normalement pendant son tour, ou pendant la fenêtre de blocage après une attaque adverse. Pour l'Embuscade, une case libre est choisie et le mana est payé à l'annonce ; l'attaquant reçoit la priorité, peut jouer une magie rapide ou contrer la créature, puis passe. Si elle arrive, la fenêtre de combat reprend et le Garde peut bloquer dans sa propre voie. Une voie devenue indisponible dissipe la créature annoncée ; si tous les attaquants disparaissent, une annonce dans une autre voie peut néanmoins se résoudre. Aucun placement immédiat hors tour ne contourne la réponse.
+
+Le plateau identifie désormais le camp qui répond à l'annonce plutôt que de supposer qu'il est toujours le défenseur du tour. L'IA peut annoncer le Garde dans une voie où il peut bloquer, et évalue ses réponses sur copie. Les tests couvrent les deux camps, les contres, une autre magie rapide, les refus sans dépense, la reprise du combat, la conquête pendant la réponse et les deux parcours d'interface. Les neuf autres créatures Embuscade restent exclues : leurs déclencheurs et effets nécessitent encore leur propre adaptation. Le Garde est aussi refusé hors tour lorsqu'un Abordage lui est offert, tant que cette arrivée avec choix n'est pas adaptée à la fenêtre imbriquée.
+
+### Autres Embuscades liées aux attaques
+
+Éclipse silencieuse, Veilleuse de la lune givrée, Sentinelle des sables et Traqueur des nuits sans lune rejoignent le Garde dans le pool MOBA. Leurs conditions de déclaration sont validées avant l'annonce ; le contrôleur choisit une cible dans la même voie après l'arrivée, puis l'adversaire peut répondre à l'effet ciblé. Le combat reprend avec les seuls attaquants encore présents. La Sentinelle ne peut viser qu'un attaquant ; le Traqueur peut viser toute créature adverse de sa voie, même si elle n'attaque pas, conformément au texte de sa carte. L'interface et l'IA gèrent le camp de l'arrivée et le camp de réponse, y compris lorsque la créature est jouée hors tour. Les retours automatiques de ces cartes respectent aussi la voie et les restrictions de cible.
+
+Les cinq autres créatures Embuscade restent exclues : Gardienne du croissant, Sanguinaire des dunes, Porte-étendard de l'éclipse, Tojiro et Sorcier du ressac noir. Elles demandent des fenêtres ou effets supplémentaires (sort/capacité ciblant un allié, créature blessée, blocage d'un Vampire, sacrifice/effets de Tojiro, ou contre d'une créature annoncée). L'Abordage offert reste refusé sur les Embuscades jouées hors tour. Boualem reste exclu séparément et n'est pas une carte Embuscade.
+
+
+### Sorcier du ressac noir en MOBA
+
+Le Sorcier du ressac noir rejoint le pool. Il peut répondre à une créature adverse annoncée depuis la main (pas à un Site) : son annonce suspend la première carte, déjà payée, et donne à son adversaire une fenêtre de réponse. Si le Sorcier entre, la première carte est contrecarrée sans nouveau paiement ni sacrifice ; si le Sorcier est lui-même contrecarré ou ne peut plus entrer, la première annonce reprend sa fenêtre. L'interface et l'IA gèrent les deux priorités, et l'IA évalue ses choix sur copie. Les tests ciblés couvrent les deux camps, les refus, le mana, les sacrifices et deux parcours d'interface.
+
+Quatre Embuscades restent exclues : Gardienne du croissant, Sanguinaire des dunes, Porte-étendard de l'éclipse et Tojiro. Leurs fenêtres et effets respectifs ne sont pas encore suffisamment adaptés et validés ; cette section ne prétend pas terminer l'audit de ces quatre cartes. L'Abordage offert reste refusé hors tour et Boualem reste exclu séparément.
+
+### Porte-étendard de l’éclipse en MOBA
+
+Le Porte-étendard rejoint le pool. Sa condition est vérifiée pour un Vampire allié visé par une Attaque ciblée ou pour un Vampire dont le blocage a effectivement été déclaré. Pour ce second cas, le plateau valide et verrouille les blocages avant d'offrir l'Embuscade, sans lancer les blessures : l'adversaire peut répondre à la créature, et un bloqueur retiré après déclaration ne rend pas son attaquant non bloqué. Le renfort temporaire s'applique aux Vampires de la voie d'arrivée, Porte-étendard compris ; les autres voies restent intactes, y compris lors d'une Réanimation. Les deux camps, l'IA et l'interface sont couverts par les tests ciblés.
+
+Les trois autres Embuscades restent exclues : Gardienne du croissant, Sanguinaire des dunes et Tojiro. Leurs autres fenêtres de réponse et effets ne sont pas encore entièrement adaptés. Boualem reste exclu séparément.
+
+### Gardienne du croissant en MOBA
+
+La Gardienne du croissant (« Gardien au croissant » sur la carte) rejoint le pool. Elle répond à un sort ou effet adverse ciblant une créature alliée, ou à une Attaque ciblée. Un sort ou une capacité déjà annoncé est suspendu pendant l'annonce de la Gardienne et sa propre arrivée, puis reprend sa fenêtre : aucun coût n'est payé deux fois. Si la Gardienne est contrée, l'annonce initiale reprend également. Son +0/+2 et son bouclier peuvent viser une créature alliée de sa voie, elle-même comprise ; ils ne visent pas un Site. Les retours automatiques respectent aussi les voies. L'interface, l'IA et les deux camps sont couverts par les tests ciblés.
+
+Deux Embuscades restent exclues : Sanguinaire des dunes et Tojiro. Elles nécessitent encore un audit de leurs autres fenêtres de réponse et de leurs effets propres. Boualem reste exclu séparément.
+
+### Sanguinaire des dunes
+
+Sanguinaire est autorisé dans le pool MOBA. Sa condition exige une créature adverse blessée (pas un Site) ; son arrivée photographie les blessures puis inflige 1 ou 2 dégâts aux créatures adverses de sa voie, en respectant les protections. Il peut être annoncé pendant la réponse au combat, à une créature, à un sort ou une capacité, ainsi qu'en fin de tour. L'annonce initiale est suspendue, puis reprise sans nouveau paiement, même si Sanguinaire est contré. Les attaquants disparus sont retirés du combat. L'interface et l'IA gèrent ces fenêtres ; les arrivées normales et par Réanimation utilisent aussi la voie.
+
+Tojiro reste exclu : son sacrifice hors tour et ses capacités de combat et de mort demandent encore une adaptation et une validation. Boualem reste exclu séparément.
+
+### Tojiro, le pourfendeur
+
+Tojiro rejoint le pool MOBA. Pendant le tour adverse, son Embuscade exige un Djinn adverse en jeu et une créature alliée à sacrifier ; le joueur peut sélectionner la victime et poser Tojiro sur sa case, même si son champ est plein. Le sacrifice ne se produit qu'à la résolution de l'annonce : un contre le laisse intact, et une victime disparue fait dissiper Tojiro sans rembourser son mana. Combat, annonces de créature, sorts, capacités et fin de tour disposent des fenêtres adaptées. L'IA choisit et simule son sacrifice sur une copie de la partie.
+
+Esquive et Contre-attaque restent celles de la carte : la riposte à un sort frappe la voie adverse correspondant à Tojiro, et celle à une créature frappe sa source. Comme les autres Harakiri déjà documentés en MOBA, le sien choisit une créature adverse à travers les voies ; à défaut, il frappe la voie adverse de Tojiro. Les Sites ne sont pas des créatures éligibles. Une Réanimation n'est pas une invocation depuis la main et ne demande ni condition d'Embuscade ni sacrifice.
+
+Les dix créatures portant Embuscade sont désormais dans le pool audité. Boualem reste exclu séparément et n'est pas une carte Embuscade.
