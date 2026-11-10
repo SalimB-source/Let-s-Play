@@ -1,4 +1,4 @@
-import { invocationPossible } from './rpgInvocation.js';
+import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
@@ -2143,6 +2143,97 @@ function ciblesCondamneesAuCombat(duel, cote, combat) {
   return exclues;
 }
 
+/** Tactical value of a living body, including current buffs, equipment and
+ * keywords; a temporary body is much less valuable after its expiry. */
+export function rpgValeurSacrificeIA(entite) {
+  const carte = duelCardById(entite?.carteId) ?? {};
+  const valeur = Math.max(0, valeurEntite(entite));
+  return valeur * (carte.ephemere || carte.furtif ? 0.35 : 1);
+}
+
+export function rpgValeurInvocationIA(carte) {
+  const entite = { ...carte, carteId: carte.id, pv: carte.def ?? 0,
+    bouclier: carte.bouclierInitial ? 1 : 0, tenaciteDisponible: Boolean(carte.tenacite) };
+  return rpgValeurSacrificeIA(entite);
+}
+
+/** Compare both tactical value and total current combat stats; one strong
+ * creature is not thrown away simply because a weaker card costs more. */
+export function rpgSacrificeEstDeclasseIA(carte, victimes) {
+  const perte = victimes.reduce((s, e) => s + rpgValeurSacrificeIA(e), 0);
+  const statsPerdues = victimes.reduce((s, e) => s + Math.max(0, Number(e.atk) || 0) + Math.max(0, Number(e.pv ?? e.def) || 0), 0);
+  const statsNouvelles = Math.max(0, Number(carte.atk) || 0) + Math.max(0, Number(carte.def) || 0);
+  return rpgValeurInvocationIA(carte) < perte || statsNouvelles < statsPerdues;
+}
+
+/** All legal one- or two-body combinations, cheapest first. The field is
+ * bounded in MOBA; sorting also ensures deterministic choices on ties. */
+export function rpgCombinaisonsSacrificesIA(duel, cote, carte) {
+  const n = sacrificesInvocation(carte, duel);
+  if (!n) return [[]];
+  const victimes = victimesInvocation(duel[cote]);
+  const groupes = [];
+  if (n === 1) for (const a of victimes) groupes.push([a]);
+  else if (n === 2) for (let i = 0; i < victimes.length; i++) for (let j = i + 1; j < victimes.length; j++) groupes.push([victimes[i], victimes[j]]);
+  return groupes.sort((a, b) => a.reduce((s, e) => s + rpgValeurSacrificeIA(e), 0) - b.reduce((s, e) => s + rpgValeurSacrificeIA(e), 0)).slice(0, 40);
+}
+
+// Conservative one-combat lookahead: only a fully resolved next turn and
+// legal combat can establish that a move prevents an otherwise lethal attack.
+function adversaireGagneProchainCombat(duel, cote) {
+  try {
+    const probe = copierDuelPourRecherche(duel);
+    moteur.rpgReglerHasard(probe, () => 0.5);
+    const ennemi = autre(cote);
+    if (probe.tour !== cote || probe.arriveeEnAttente || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length) return null;
+    moteur.rpgFinDeTour(probe);
+    if (moteur.rpgVainqueur(probe)) return moteur.rpgVainqueur(probe) === ennemi;
+    if (probe.tour !== ennemi) return null;
+    if (probe[ennemi].manaChoixEnAttente) moteur.rpgChoisirCouleurMana(probe, ennemi, choisirCouleurManaIA(probe, ennemi));
+    const ids = choisirAttaquantsIA(probe, ennemi, { rng: () => 0.5 });
+    if (!ids.length) return false;
+    const cibles = choisirCiblesRapidesIA(probe, ennemi, ids);
+    const blocs = choisirBloqueursIA(probe, ennemi, ids, cibles);
+    if (!moteur.rpgLancerAttaque(probe, ennemi, ids, blocs, null, null, cibles).ok) return null;
+    return moteur.rpgVainqueur(probe) === ennemi;
+  } catch { return null; }
+}
+
+/** Before committing to a downgrade, require a concrete tactical payoff on
+ * an isolated engine simulation, not just the card's mana cost or printed
+ * arrival text. A winning attack is an explicit exception. */
+export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null) {
+  const n = sacrificesInvocation(carte, duel);
+  if (!n) return [];
+  let menaceInitiale;
+  for (const victimes of rpgCombinaisonsSacrificesIA(duel, cote, carte)) {
+    const ids = victimes.map((e) => e.id);
+    if (!rpgSacrificeEstDeclasseIA(carte, victimes)) return ids;
+    try {
+      const probe = copierDuelPourRecherche(duel);
+      moteur.rpgReglerHasard(probe, () => 0.5);
+      const pose = moteur.rpgJouerCreature(probe, cote, carte.id, cibleId, { sacrificeIds: ids });
+      if (!pose.ok) continue;
+      if (moteur.rpgVainqueur(probe) === cote) return ids;
+      if (probe.arriveeEnAttente || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length || probe.siteEnAttente || probe.defausseEnAttente) continue;
+      if (evaluerPositionIA(probe, cote) > evaluerPositionIA(duel, cote) + 1.5) return ids;
+      if (menaceInitiale === undefined) menaceInitiale = adversaireGagneProchainCombat(duel, cote);
+      if (menaceInitiale === true && adversaireGagneProchainCombat(probe, cote) === false) return ids;
+      // A haste creature can close the game now. Resolve a legal attack and
+      // the defending AI's blocks rather than assuming it goes unblocked.
+      if (pose.entite && moteur.rpgPeutAttaquer(pose.entite) && probe.attaqueJouee !== cote) {
+        const attackers = choisirAttaquantsIA(probe, cote);
+        if (attackers.includes(pose.entite.id)) {
+          const cibles = choisirCiblesRapidesIA(probe, cote, attackers);
+          const blocks = choisirBloqueursIA(probe, cote, attackers, cibles);
+          if (moteur.rpgLancerAttaque(probe, cote, attackers, blocks, null, null, cibles).ok && moteur.rpgVainqueur(probe) === cote) return ids;
+        }
+      }
+    } catch { /* Unknown or incomplete effects do not justify a downgrade. */ }
+  }
+  return null;
+}
+
 /** Coups actuellement jouables, ordonnés par l'heuristique historique. */
 function candidatsCartesIA(duel, cote, options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
@@ -2175,8 +2266,11 @@ function candidatsCartesIA(duel, cote, options = {}) {
         .find((entite) => entite.id === evaluation.cibleId);
       if (visee && (estProtegee(visee, cardColors(carte)) || horsDAtteinteDuSort(visee, carte))) continue;
     }
+    const sacrificeIds = choisirSacrificesInvocationIA(duel, cote, carte, evaluation.cibleId ?? null);
+    if (sacrificeIds === null) continue;
     candidats.push({
       carteId,
+      ...(sacrificeIds.length ? { sacrificeIds } : {}),
       cibleId: evaluation.cibleId ?? null,
       cibleAllieeId: evaluation.cibleAllieeId ?? null,
       score: evaluation.score + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
@@ -2204,7 +2298,7 @@ function simulerCoupCarte(duel, cote, coup) {
     if (armeById(coup.carteId)) {
       resultat = moteur.rpgJouerArme(simulation, cote, coup.carteId, coup.cibleId);
     } else if (duelCardById(coup.carteId)) {
-      resultat = moteur.rpgJouerCreature(simulation, cote, coup.carteId, coup.cibleId);
+      resultat = moteur.rpgJouerCreature(simulation, cote, coup.carteId, coup.cibleId, { sacrificeIds: coup.sacrificeIds ?? null });
     } else if (magieById(coup.carteId)) {
       resultat = moteur.rpgLancerMagie(
         simulation, cote, coup.carteId, coup.cibleId, coup.cibleAllieeId,
