@@ -195,8 +195,8 @@ test('RpgPvpBoard monte la vraie table visuelle RpgDuelPage et pilote un duel co
       assert.equal(hoteDom.querySelector('.rpg-pvp--duel'), null, 'aucun plateau textuel côté hôte');
       assert.equal(inviteDom.querySelector('.rpg-pvp--duel'), null, 'aucun plateau textuel côté invité');
       assert.ok(hoteDom.querySelector('.rpg-duel-nav__pvp')?.textContent.includes(ouverture.code), 'badge EN LIGNE + code affiché');
-      assert.equal(hoteDom.querySelectorAll('.rpg-hand > *').length, 3, 'les 3 vraies cartes de départ de l’hôte sont rendues en éventail');
-      assert.equal(inviteDom.querySelectorAll('.rpg-hand > *').length, 3, 'les 3 vraies cartes de départ de l’invité sont rendues en éventail');
+      assert.equal(hoteDom.querySelectorAll('.rpg-hand > *').length, 5, 'les 5 vraies cartes de départ de l’hôte sont rendues en éventail');
+      assert.equal(inviteDom.querySelectorAll('.rpg-hand > *').length, 5, 'les 5 vraies cartes de départ de l’invité sont rendues en éventail');
       assert.equal(hoteDom.querySelectorAll('.rpg-hidden-hand > *').length > 0, true, 'main adverse dos-de-carte affichée');
       assert.ok(hoteDom.textContent.includes('Yasmine'), 'le nom de l’adversaire apparaît sur sa plaque');
       assert.ok(inviteDom.textContent.includes('Salim'), 'le nom de l’hôte apparaît sur la plaque adverse côté invité');

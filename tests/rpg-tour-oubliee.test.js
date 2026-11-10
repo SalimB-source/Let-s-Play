@@ -346,7 +346,7 @@ test('le pacte du sommet se lit dans l’état du duel : PV, mana, main et boucl
   assert.equal(duel.sorcier.pv, rpgSorcierPv(16) + atouts.pv);
   assert.equal(duel.sorcier.pvMax, duel.sorcier.pv);
   assert.equal(duel.sorcier.bouclier, atouts.bouclier);
-  assert.equal(duel.sorcier.main.length, 3 + atouts.main, 'une carte de départ de plus');
+  assert.equal(duel.sorcier.main.length, 5 + atouts.main, 'une carte de départ de plus');
   assert.deepEqual(duel.sorcier.atouts, { pv: 12, mana: 1, main: 1, bouclier: 6 });
   assert.ok(duel.sorcier.manaSources.length >= atouts.mana, 'le mana du pacte est déjà une source');
   assert.ok(duel.log.some((ligne) => /pacte/i.test(ligne)), 'le pacte est annoncé dans le journal');

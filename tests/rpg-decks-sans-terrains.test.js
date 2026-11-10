@@ -41,8 +41,8 @@ for (const deck of RPG_DECKS_ARCHETYPES) {
     assert.deepEqual(validerDeckManaEssai({ ...deck, elements }), { ok: true });
     const duel = rpgNouveauDuel({ joueurDeck: deck.cardIds, sorcierDeck: RPG_DECK_SORCIER_BASE,
       modeMana: RPG_MODE_MANA_ESSAI, rng: () => 0.5 });
-    assert.equal(duel.joueur.main.length, 3);
-    assert.equal(duel.joueur.deck.length, 27);
+    assert.equal(duel.joueur.main.length, 5);
+    assert.equal(duel.joueur.deck.length, 25);
     assert.deepEqual(duel.joueur.terrains, []);
     assert.equal(rpgMulligan(duel, 'joueur', [], () => 0.5).ok, true);
     assert.equal(rpgMulliganSorcier(duel, () => 0.5).ok, true);
