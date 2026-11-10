@@ -32,7 +32,7 @@ et sa progression locale.
 
 ## Comportement de l'app
 
-- Tirer-rafraîchir rechargement la page ; bouton retour = navigation arrière.
+- Tirer-rafraîchir recharge la page hors du Sablier. Dans le Sablier, l'APK masque les barres système sans demander le plein écran de la WebView : le bouton Retour remonte les écrans internes du jeu et s'arrête au menu « Jouer » (il ne ferme pas l'application). Une vidéo plein écran se ferme d'abord. Hors du Sablier, Retour conserve la navigation arrière habituelle. Ce comportement natif exige une **nouvelle APK** ; une mise à jour du site seule ne change pas le bouton Android.
 - **Mise en page mobile** : `setUseWideViewPort(true)` +
   `setLoadWithOverviewMode(true)` sont indispensables. Sans eux, la WebView
   ignore `<meta name="viewport">` et met la page en page à ~980 px (comme un
