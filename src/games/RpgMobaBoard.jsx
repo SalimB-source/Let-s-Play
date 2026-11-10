@@ -38,6 +38,8 @@ const TAILLE_PAGE_MAIN = 6;
 const noms = { joueur: 'Vous', sorcier: 'IA', tous: 'Vous + IA' };
 const voies = { left: 'Voie gauche', center: 'Voie centrale', right: 'Voie droite' };
 const glyphes = { left: 'I', center: 'II', right: 'III' };
+// Maillons répartis sur les deux diagonales du sceau d'une voie fermée.
+const MAILLONS_VOIE_FERMEE = Array.from({ length: 21 }, (_, index) => 5 + index * 4.5);
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const message = {
   mana: 'Mana insuffisant pour cette carte.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
@@ -1090,7 +1092,20 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     <div className="moba__lanes" data-moba-joined-lane={rattachement?.laneId || undefined} data-moba-joined-side={rattachement?.side || undefined}>
       {duel.moba.lanes.map((lane) => <section key={lane.id} className={`moba__lane${lane.active ? '' : ` is-conquered is-conquered--${lane.conqueredBy}${lane.id !== 'center' ? ' is-sealed' : ''}`}`} aria-label={voies[lane.id]}>
         <div className="moba__lanehead"><span className="moba__lane-number">{glyphes[lane.id]}</span><strong>{voies[lane.id]}</strong><span className="moba__lane-state">{lane.active ? 'EN JEU' : `CONQUISE · ${noms[lane.conqueredBy]}${lane.id === 'center' && duel.moba.centerJoined ? ` → ${voies[duel.moba.centerJoined.laneId]}` : ''}`}</span></div>
-        {!lane.active && lane.id !== 'center' && <div className="moba__conquest" aria-hidden="true"><div className="moba__conquest-seal"><img src={`${import.meta.env.BASE_URL}icons/sablier/conquete.svg`} alt="" /></div><span className="moba__conquest-kicker">Voie conquise</span><strong className="moba__conquest-owner">{lane.conqueredBy === 'joueur' ? 'VOUS' : 'L’IA'}</strong><span className="moba__conquest-closed">Voie fermée</span></div>}
+        {!lane.active && lane.id !== 'center' && <div className="moba__conquest" aria-hidden="true">
+          <svg className="moba__conquest-chains" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path className="moba__conquest-chain-shadow" d="M5 5 95 95 M95 5 5 95" />
+            <path className="moba__conquest-chain-core" d="M5 5 95 95 M95 5 5 95" />
+            {MAILLONS_VOIE_FERMEE.map((point, index) => <g key={index} className="moba__conquest-links">
+              <ellipse cx={point} cy={point} rx="3" ry="1.8" transform={`rotate(${index % 2 ? 135 : 45} ${point} ${point})`} />
+              <ellipse cx={100 - point} cy={point} rx="3" ry="1.8" transform={`rotate(${index % 2 ? 45 : -45} ${100 - point} ${point})`} />
+            </g>)}
+          </svg>
+          <span className="moba__conquest-kicker">Voie conquise</span>
+          <span className="moba__conquest-lock"><img src={`${import.meta.env.BASE_URL}icons/sablier/verrou-voie.svg`} alt="" /></span>
+          <strong className="moba__conquest-owner">{lane.conqueredBy === 'joueur' ? 'VOUS' : 'L’IA'}</strong>
+          <span className="moba__conquest-closed">Voie fermée</span>
+        </div>}
         {['sorcier', 'joueur'].map((side) => <div className={`moba__side moba__side--${side}${rattachement?.side === side && lane.id === 'center' ? ' is-joined-center' : ''}${rattachement?.side === side && lane.id === rattachement.laneId ? ' is-joined-flank' : ''}`} key={side} inert={!mobaVoieJouable(duel.moba, side, lane.id)} aria-hidden={!mobaVoieJouable(duel.moba, side, lane.id)}>
           {side === 'joueur' && <div className="moba__frontline" aria-hidden="true"><span>✦</span></div>}
           {/* Le centre conquis n’a plus de PV autonomes pour son vainqueur :
@@ -1166,7 +1181,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
             if (entity && rendu?.TableCard) {
               const TableCard = rendu.TableCard;
               return <div className={`moba__real-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps} {...interactionsApercu(entity.carteId, entity)}>
-                <TableCard entite={entity} cote={side === 'joueur' ? 'joueur' : 'ennemi'} playerTurn={side === actif && etape === 'tour'} actionFx={sortFx[entity.id]?.action ?? combatFx[entity.id] ?? null} miss={combatFeedback?.miss[entity.id]} critiqueFx={combatFeedback?.critiques[entity.id]} soin={sortFx[entity.id]?.soin ?? null} bouclierFx={sortFx[entity.id]?.bouclier ?? null} selected={Boolean(isAttacker)} blocking={Boolean(isBlocked)} declaredAttacker={etape === 'blocage' && Boolean(isAttacker)} canTarget={Boolean(destruction ? mayDeathTarget : site ? maySiteTarget : (maySacrifice || mayPlace || maySpellTarget || mayArrivalTarget || mayBlock || mayTarget || mayTargetRapide))} onClick={action} moba={{ className: `moba__slot has-creature${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id) ? ' is-target' : ''}${sacrificeCible ? ' is-sacrifice' : ''}${combatFeedback?.critiques[id] ? ' is-moba-critique' : ''}`, disabled: destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur), ariaLabel: label, draggable: Boolean(!destruction && peutGlisserBloqueur), onPointerDown: !destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined, onDragStart: !destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined, onDragEnd: finGlissement }} />
+                <TableCard key={`${entity.id}-${invocationEnCours ? 'rituel' : 'pose'}`} entite={entity} cote={side === 'joueur' ? 'joueur' : 'ennemi'} playerTurn={side === actif && etape === 'tour'} actionFx={sortFx[entity.id]?.action ?? combatFx[entity.id] ?? null} miss={combatFeedback?.miss[entity.id]} critiqueFx={combatFeedback?.critiques[entity.id]} soin={sortFx[entity.id]?.soin ?? null} bouclierFx={sortFx[entity.id]?.bouclier ?? null} selected={Boolean(isAttacker)} blocking={Boolean(isBlocked)} declaredAttacker={etape === 'blocage' && Boolean(isAttacker)} canTarget={Boolean(destruction ? mayDeathTarget : site ? maySiteTarget : (maySacrifice || mayPlace || maySpellTarget || mayArrivalTarget || mayBlock || mayTarget || mayTargetRapide))} onClick={action} moba={{ className: `moba__slot has-creature${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id) ? ' is-target' : ''}${sacrificeCible ? ' is-sacrifice' : ''}${combatFeedback?.critiques[id] ? ' is-moba-critique' : ''}`, disabled: destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur), ariaLabel: label, draggable: Boolean(!destruction && peutGlisserBloqueur), onPointerDown: !destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined, onDragStart: !destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined, onDragEnd: finGlissement }} />
                 {adieux.length > 0 && <div className="moba__ghost-zone" aria-hidden="true">{adieux}</div>}
                 {sacrifice}
               </div>;
@@ -1264,7 +1279,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
       </div>
     </div>}
     {etape === 'choix' && edition && <RpgMobaDeckEditor key={edition} deck={deckPour(edition)} joueur={noms[edition]} onCancel={() => setEdition(null)} onSave={(deck) => { setDecksPersonnalises((decks) => ({ ...decks, [edition]: deck })); setEdition(null); }} />}
-    {etape === 'mulligan' && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Votre main de départ"><div className="moba__modal moba__mulligan"><span>PRÉPARATION · {noms[mulliganSide].toUpperCase()}</span><h2>Votre main de départ</h2><p>Sélectionnez les cartes à échanger, ou gardez votre main. Vous pouvez faire un échange ; l’IA choisit sa main automatiquement.</p><div className="moba__mulligan-cards">{duel[mulliganSide].main.map((id, index) => {
+    {etape === 'mulligan' && <div className="moba__overlay moba__mulligan-overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Votre main de départ"><div className="moba__modal moba__mulligan"><div className="moba__mulligan-intro"><span>PRÉPARATION · {noms[mulliganSide].toUpperCase()}</span><h2>Votre main de départ</h2><p>Touchez les cartes à échanger, ou gardez votre main.</p></div><div className="moba__mulligan-cards">{duel[mulliganSide].main.map((id, index) => {
       const card = cardById(id), choisi = mulliganIndices.includes(index);
       const toggle = () => setMulliganIndices((ids) => ids.includes(index) ? ids.filter((n) => n !== index) : [...ids, index]);
       if (rendu?.CarteMulligan) {

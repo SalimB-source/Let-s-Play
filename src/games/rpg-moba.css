@@ -793,8 +793,9 @@
   .moba__buttons button { min-height: 34px; padding: 5px 7px; }
 }
 
-/* A conquered lane becomes a quiet heraldic seal on the same Sablier table.
-   The terrain stays visible; the tint and banner identify who owns the lane. */
+/* Une voie latérale conquise se ferme sur la carte : deux chaînes croisées
+   rejoignent un verrou central. Le terrain reste visible, le camp vainqueur
+   conserve sa couleur et le centre rattachable reste jouable. */
 .moba .moba__lane.is-sealed {
   --conquest-accent: #c39c6b;
   --conquest-glow: #a7804652;
@@ -807,34 +808,47 @@
 .moba__lane.is-sealed .moba__health,
 .moba__lane.is-sealed .moba__slot { visibility: hidden; }
 .moba__conquest {
-  position: absolute; z-index: 2; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: clamp(4px, .7vh, 8px);
-  padding: 4px; overflow: hidden; pointer-events: none; text-align: center;
-  color: #f5e7cb; text-shadow: 0 2px 5px #000;
-  background: linear-gradient(180deg, transparent 4%, var(--conquest-glow) 50%, transparent 96%);
+  position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none;
+  color: #f5e7cb; text-align: center; text-shadow: 0 2px 5px #000;
+  background: linear-gradient(90deg, #0a0908a6, var(--conquest-glow) 50%, #0a0908a6);
   box-shadow: inset 1px 0 #e6c89455, inset -1px 0 #e6c89455;
   animation: moba-conquest-reveal calc(.7s * var(--rpg-anim-scale, 1)) ease-out both;
 }
-.moba__conquest::before, .moba__conquest::after {
-  content: ''; width: 42%; max-width: 80px; height: 1px; flex: none;
-  background: linear-gradient(90deg, transparent, var(--conquest-accent), transparent);
+.moba__conquest-chains { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 3px 4px #000c); }
+.moba__conquest-chain-shadow, .moba__conquest-chain-core, .moba__conquest-links ellipse {
+  fill: none; vector-effect: non-scaling-stroke;
 }
-.moba__conquest-seal {
-  display: grid; place-items: center; width: clamp(30px, 4vw, 58px); aspect-ratio: 1;
-  border: 1px solid var(--conquest-accent); border-radius: 50%;
-  background: radial-gradient(circle at 50% 35%, #51432e, #171310 70%);
-  box-shadow: 0 0 0 3px #17120dc9, 0 0 20px var(--conquest-glow), inset 0 0 8px #000a;
+.moba__conquest-chain-shadow { stroke: #130e0a; stroke-width: 11px; }
+.moba__conquest-chain-core { stroke: #977652; stroke-width: 6px; }
+.moba__conquest-links ellipse { stroke: #ead2a1; stroke-width: 2px; }
+.moba__conquest-lock {
+  position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; width: clamp(46px, 5vw, 76px); aspect-ratio: 1;
+  border: 2px solid var(--conquest-accent); border-radius: 18px;
+  background: radial-gradient(circle, #4c3621 10%, #19120d 76%);
+  box-shadow: 0 0 0 4px #14100be8, 0 0 22px var(--conquest-glow), inset 0 0 12px #000a;
 }
-.moba__conquest-seal img { width: 70%; height: 70%; object-fit: contain; }
-.moba__conquest-kicker { color: #e8d3ad; font: 600 clamp(8px, .7vw, 11px)/1.2 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
-.moba__conquest-owner { max-width: 100%; color: var(--conquest-accent); font: 800 clamp(9px, .9vw, 13px)/1.2 system-ui, sans-serif; letter-spacing: .06em; overflow-wrap: normal; }
-.moba__conquest-closed { color: #ddccb1; font: 500 clamp(8px, .7vw, 10px)/1.2 system-ui, sans-serif; }
+.moba__conquest-lock img { display: block; width: 88%; height: 92%; object-fit: contain; }
+.moba__conquest-kicker, .moba__conquest-owner, .moba__conquest-closed {
+  position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
+  max-width: calc(100% - 8px); padding: 3px 7px; white-space: nowrap;
+  border: 1px solid #e5c68170; border-radius: 4px; background: #17120ee8;
+}
+.moba__conquest-kicker { top: 11%; color: #e8d3ad; font: 600 clamp(8px, .7vw, 11px)/1.2 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.moba__conquest-owner { bottom: 13%; color: var(--conquest-accent); font: 800 clamp(9px, .9vw, 13px)/1.2 system-ui, sans-serif; letter-spacing: .06em; }
+.moba__conquest-closed { bottom: 5%; color: #ddccb1; font: 500 clamp(8px, .7vw, 10px)/1.2 system-ui, sans-serif; }
 @keyframes moba-conquest-reveal { from { opacity: 0; filter: brightness(1.7); } to { opacity: 1; filter: brightness(1); } }
 @media (max-width: 700px) {
-  .moba__conquest { gap: 3px; padding: 2px; }
-  .moba__conquest-seal { width: clamp(24px, 5vw, 36px); }
+  .moba__conquest-lock { width: clamp(36px, 7vw, 50px); border-radius: 12px; }
+  .moba__conquest-kicker, .moba__conquest-owner, .moba__conquest-closed { padding: 2px 3px; }
   .moba__conquest-kicker, .moba__conquest-owner { font-size: 8px; letter-spacing: 0; }
   .moba__conquest-closed { font-size: 8px; }
+}
+@media (max-height: 500px) {
+  .moba__conquest-lock { width: clamp(32px, 5vw, 48px); }
+  .moba__conquest-kicker { top: 4%; }
+  .moba__conquest-owner { bottom: 17%; }
+  .moba__conquest-closed { bottom: 2%; }
 }
 
 /* La fiche classique anime le lancement au centre. Ce rappel compact reste
@@ -911,6 +925,11 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba .moba__side--joueur.is-joined-flank { padding-bottom: 28px; }
 .moba .moba__side--joueur.is-joined-flank .moba__health { top: auto; bottom: 0; }
 
+/* La barre de PV doit rester lisible quand une créature adverse vole près
+   d'elle. Les jauges rattachées conservent leur position absolue (règle plus
+   spécifique ci-dessus), et les autres passent devant les cartes. */
+.moba .moba__side > .moba__health { position: relative; z-index: 3; }
+
 /* Le conteneur remplace le bouton « i » pour l'accès clavier à la fiche. */
 .moba .moba__real-slot:focus-visible,
 .moba .moba__hand-item:focus-visible,
@@ -931,19 +950,51 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__sacrifice-hint { position: absolute; z-index: 9; top: 10%; left: 22%; right: 22%; padding: 7px 12px; color: #fff0ce; background: #48301de8; font-size: 13px; text-align: center; }
 .moba__sacrifice-hint button { margin-left: 12px; padding: 4px 8px; color: #fff0ce; background: #292019; border: 1px solid #e7c88e; border-radius: 4px; cursor: pointer; }
 .moba__slot.is-sacrifice, .moba__real-slot .moba__slot.is-sacrifice { outline: 3px solid #e5aa5a; outline-offset: -3px; }
+/* Les groupes latéraux restent décalés vers l'extérieur (voir les règles des
+   voies ci-dessus) : les ramener vers la rivière les détachait des deux chemins
+   de sable peints sur la carte. La colonne centrale ne bouge pas. */
 .moba__lanes { grid-template-columns: 2fr 1fr 2fr; }
-.moba__lane:first-child .moba__slots { transform: translateX(clamp(4px, 1.2vw, 18px)); }
-.moba__lane:last-child .moba__slots { transform: translateX(calc(-1 * clamp(4px, 1.2vw, 18px))); }
 
 @media (max-width: 700px) and (orientation: portrait) { .moba__sacrifice-hint { top: 16%; left: 2%; right: 2%; padding: 3px 5px; font-size: 10px; } }
 @media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) { .moba__sacrifice-hint { top: 23%; } }
 
-/* Les emblèmes d'effets des créatures posées en MOBA sont plus discrets que
-   ceux de la main et de l'aperçu. Ne pas redimensionner la plaque de couleur,
-   le coût ou les autres marqueurs : seule la colonne d'effets hérite ici de
-   cette taille locale. */
+/* La pose est visible sur les trois voies : la carte descend de la main de
+   l'IA, ou monte depuis celle du joueur, puis se cale sans dépasser les PV.
+   TableCard porte fx-enter pendant 620ms ; sa clé suit l'entité pour que le
+   remplacement d'une créature (ou la fin d'un rituel) rejoue bien la pose. */
+.rpg-battle--moba .moba .moba__side--sorcier { --moba-pose-depart: -64px; }
+.rpg-battle--moba .moba .moba__side--joueur { --moba-pose-depart: 64px; }
+.rpg-battle--moba .moba .moba__real-slot .rpg-card.fx-enter {
+  animation: moba-creature-pose .6s cubic-bezier(.2, .72, .26, 1) both;
+}
+@keyframes moba-creature-pose {
+  0% { opacity: 0; translate: 0 var(--moba-pose-depart); scale: .78; filter: brightness(1.35); }
+  65% { opacity: 1; translate: 0 0; scale: 1.035; }
+  85% { translate: 0 -2px; scale: .99; }
+  100% { opacity: 1; translate: 0 var(--rpg-envol-repos, 0px); scale: 1; filter: none; }
+}
+
+/* La lévitation des cartes de table reste visible sans remonter jusqu'aux PV
+   de la voie adverse (4px au sommet, contre 23px dans le duel classique).
+   Le repos s'applique aussi aux cartes gelées et au mouvement réduit. */
+.rpg-battle--moba .moba .moba__slots .rpg-card.is-envol {
+  --rpg-envol-repos: -2px;
+  --rpg-envol-montee: -3px;
+  --rpg-envol-sommet: -4px;
+  --rpg-envol-descente: -3px;
+}
+
+/* Sur les créatures posées en MOBA, coût et couleur étaient trop grands tandis
+   que les effets étaient minuscules. Les mesures vivent sur les enfants de la
+   carte (le cqw se rapporte à la face) ; la colonne d'effets les agrandit seule.
+   Main, aperçu, cartes des autres modes et cases vides restent inchangés. */
+.rpg-battle--moba .moba .moba__slots .rpg-card--img > * {
+  --rpg-card-marker-size: clamp(16px, 18cqw, 26px);
+  --rpg-plaque-taille: clamp(16px, 18cqw, 26px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
+}
 .rpg-battle--moba .moba .moba__slots .rpg-card--img .rpg-card-icones.rpg-card-icones--colonne {
-  --rpg-plaque-taille: clamp(11px, 12cqw, 19px);
+  --rpg-plaque-taille: clamp(18px, 22cqw, 30px);
   gap: clamp(2px, 1cqw, 3px);
 }
 
@@ -1002,3 +1053,108 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba__setup-actions { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .moba__booster-body { transition: none; } }
+/* MOBA opening hand: the five faces and confirmation share the viewport.
+   Keep this scoped to the mulligan: deck searches use the same card strip and
+   may still need their own scrolling. The stage's container height is the
+   space left AFTER the heading and confirmation have been laid out. */
+.moba__mulligan-overlay {
+  overflow: hidden;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+           max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+}
+.moba__mulligan-overlay .moba__mulligan {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: clamp(3px, 1vh, 8px);
+  width: min(100%, 680px);
+  height: min(100%, 540px);
+  min-height: 0;
+  padding: clamp(6px, 1.4vh, 16px);
+  --moba-mulligan-gap: clamp(8px, 1vw, 12px);
+}
+.moba__mulligan-intro h2 { margin: 2px 0; font-size: clamp(17px, 3vh, 30px); }
+.moba__mulligan-intro p { margin: 0; font-size: clamp(10px, 1.6vh, 13px); line-height: 1.25; }
+.moba__mulligan-overlay .moba__mulligan-cards {
+  box-sizing: border-box;
+  container-type: size;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  gap: var(--moba-mulligan-gap);
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  /* Leave room for the shared cost/colour stones that overlap the left edge. */
+  padding: 0 10px;
+  overflow: visible;
+}
+.moba .moba__mulligan-overlay .moba__mulligan-item,
+.moba__mulligan-overlay .moba__mulligan-card {
+  box-sizing: border-box;
+  flex: 0 0 min(calc((100% - 48px) / 5), calc(80cqh - 22px), 100px);
+  min-width: 0;
+}
+.moba__mulligan-overlay .moba__mulligan-card {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.moba__mulligan-overlay .moba__mulligan-card img { width: 100%; height: 100%; object-fit: cover; }
+.moba__mulligan-overlay .moba__mulligan-card b,
+.moba__mulligan-overlay .moba__mulligan-card small {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px;
+  background: #151416dd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.moba__mulligan-overlay .moba__mulligan-card small { top: 0; bottom: auto; }
+.moba__mulligan-overlay .moba__mulligan > button {
+  justify-self: center;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 12px;
+}
+.moba__mulligan-overlay .moba__mulligan .moba__error { margin: 0; }
+@media (max-width: 650px) and (orientation: portrait) {
+  /* Two rows (3 + 2) make the artwork legible on narrow portrait screens. */
+  .moba .moba__mulligan-overlay .moba__mulligan-item,
+  .moba__mulligan-overlay .moba__mulligan-card {
+    flex-basis: min(calc((100% - 24px) / 3), calc(40cqh - 16px), 100px);
+  }
+}
+
+/* Keep the same cost-at-the-corner / colour-below-cost placement as the
+   shared card face. Only scale the stones and stat pills to the smaller cards;
+   the strip reserves space around their overlapping left/top edges. */
+.moba .moba__mulligan-overlay .moba__mulligan-item .rpg-mulligan__card {
+  --rpg-card-marker-size: clamp(9px, 20cqw, 28px);
+  border-width: 3px;
+}
+.moba .moba__mulligan-overlay .rpg-mulligan__card > * {
+  --rpg-plaque-taille: clamp(9px, 20cqw, 28px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
+}
+.moba__mulligan-overlay .rpg-mulligan__card .rpg-mulligan__stats {
+  gap: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+}
+.moba__mulligan-overlay .rpg-mulligan__card .rpg-card__stat--atk,
+.moba__mulligan-overlay .rpg-mulligan__card .rpg-card__pt {
+  gap: 1px;
+  padding: 1px;
+  border-radius: 3px;
+  font-size: clamp(6px, 12cqw, 15px);
+}

@@ -1117,7 +1117,7 @@
 .rpg-card.is-envol {
   z-index: 2;
   /* Le repos est le premier arrêt du cycle : la carte est levée d'emblée. */
-  translate: 0 -14px;
+  translate: 0 var(--rpg-envol-repos, -14px);
   rotate: -0.7deg;
   scale: 1;
   filter:
@@ -1130,10 +1130,10 @@
    est franche — neuf pixels de montée et un degré et demi de roulis : le vol
    se lit d'un coup d'œil, même du coin de la table. */
 @keyframes rpg-envol-levite {
-  0%, 100% { translate: 0 -14px; rotate: -0.7deg; scale: 1; }
-  25% { translate: 2.4px -19px; rotate: 0.25deg; scale: 1.008; }
-  50% { translate: 0.6px -23px; rotate: 0.7deg; scale: 1.015; }
-  75% { translate: -2.2px -17.5px; rotate: -0.25deg; scale: 1.006; }
+  0%, 100% { translate: 0 var(--rpg-envol-repos, -14px); rotate: -0.7deg; scale: 1; }
+  25% { translate: 2.4px var(--rpg-envol-montee, -19px); rotate: 0.25deg; scale: 1.008; }
+  50% { translate: 0.6px var(--rpg-envol-sommet, -23px); rotate: 0.7deg; scale: 1.015; }
+  75% { translate: -2.2px var(--rpg-envol-descente, -17.5px); rotate: -0.25deg; scale: 1.006; }
 }
 
 /* Le calque du souffle : posé sur la face, il ne couvre que l'illustration et

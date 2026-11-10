@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 92" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="verrou-anse" x1="11" y1="12" x2="60" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff1c8"/><stop offset=".3" stop-color="#cda879"/><stop offset=".65" stop-color="#6e5034"/><stop offset="1" stop-color="#e5c89a"/>
+    </linearGradient>
+    <linearGradient id="verrou-corps" x1="12" y1="37" x2="61" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#efd8a0"/><stop offset=".2" stop-color="#ad8351"/><stop offset=".6" stop-color="#533920"/><stop offset="1" stop-color="#bb945b"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="36" cy="86" rx="26" ry="5" fill="#070604" opacity=".55"/>
+  <path d="M18 40V26a18 18 0 0 1 36 0v14h-9V26a9 9 0 0 0-18 0v14Z" fill="#34291d" stroke="#100e0a" stroke-width="3"/>
+  <path d="M18 40V26a18 18 0 0 1 36 0v14h-9V26a9 9 0 0 0-18 0v14Z" stroke="url(#verrou-anse)" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M9 36h54l4 8v32l-7 8H12l-7-8V44Z" fill="url(#verrou-corps)" stroke="#1c150d" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M14 43h44l3 5v25l-4 5H15l-4-5V48Z" stroke="#f7dc9d" stroke-opacity=".65" stroke-width="1.5"/>
+  <path d="M14 51h44M14 72h44" stroke="#3a2918" stroke-opacity=".6"/>
+  <circle cx="17" cy="45" r="2" fill="#f5d59b"/><circle cx="55" cy="45" r="2" fill="#f5d59b"/>
+  <circle cx="17" cy="76" r="2" fill="#987149"/><circle cx="55" cy="76" r="2" fill="#987149"/>
+  <path d="M36 49a7 7 0 0 0-3.5 13l-2 10h11l-2-10A7 7 0 0 0 36 49Z" fill="#17120e" stroke="#f4d89e" stroke-width="1.5"/>
+  <circle cx="36" cy="55" r="2.5" fill="#e8c584" opacity=".8"/>
+</svg>

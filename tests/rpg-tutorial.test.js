@@ -90,9 +90,16 @@ test('chaque carte manipulée existe et chaque annonce scénarisée est en main 
 test('la préparation installe la main, le mana et la scène de chaque leçon', () => {
   for (const tutoriel of RPG_TUTORIELS) {
     const duel = duelDeLecon(tutoriel);
-    assert.deepEqual(duel.joueur.main, tutoriel.openingHand, `${tutoriel.id} : main exacte`);
+    assert.equal(duel.joueur.main.length, 5, `${tutoriel.id} : cinq cartes en main`);
+    assert.deepEqual(duel.joueur.main.slice(0, tutoriel.openingHand.length), tutoriel.openingHand, `${tutoriel.id} : cartes guidées conservées`);
+    assert.ok(tutoriel.playerDraws?.every((id) => duel.joueur.deck.includes(id)) ?? true, `${tutoriel.id} : pioches scénarisées réservées`);
     assert.equal(rpgPeutMulligan(duel, 'joueur'), false, `${tutoriel.id} : pas de mulligan`);
-    assert.equal(duel.sorcier.main.length, tutoriel.opponentHand.length, `${tutoriel.id} : main adverse`);
+    assert.equal(duel.sorcier.main.length, 5, `${tutoriel.id} : main adverse de cinq cartes`);
+    assert.deepEqual(duel.sorcier.main.slice(0, tutoriel.opponentHand.length), tutoriel.opponentHand);
+    const autreTirage = rpgNouveauDuel({ joueurDeck: paquetDeLaLecon(tutoriel),
+      sorcierDeck: deckDe(tutoriel.opponentDeckId), modeMana: RPG_MODE_MANA_ESSAI, rng: () => .91 });
+    preparerDuelTutoriel(autreTirage, tutoriel);
+    assert.deepEqual(autreTirage.joueur.main, duel.joueur.main, `${tutoriel.id} : compléments déterministes`);
     const manaAttendu = tutoriel.playerMana ?? { [RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutoriel.deckId).element]: 1 };
     for (const [couleur, montant] of Object.entries(manaAttendu)) {
       assert.equal(duel.joueur.mana[couleur], montant, `${tutoriel.id} : mana ${couleur}`);

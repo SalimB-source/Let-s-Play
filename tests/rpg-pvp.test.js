@@ -292,8 +292,8 @@ test('les deux sièges remplacent réellement leurs cartes au mulligan avant le 
   const m2 = rpgPvpAppliquer(duel, 'sorcier', { type: 'mulligan', index: [1] });
   assert.equal(m2.ok, true);
   assert.equal(duel.manaEssaiDemarre, true, 'le mana démarre dès que les deux joueurs sont prêts');
-  assert.equal(duel.joueur.main.length, 3);
-  assert.equal(duel.sorcier.main.length, 3);
+  assert.equal(duel.joueur.main.length, 5);
+  assert.equal(duel.sorcier.main.length, 5);
   assert.ok(duel.hasard.compteur > 0, 'le mélange semé a bien été consommé par les deux mulligans');
 });
 

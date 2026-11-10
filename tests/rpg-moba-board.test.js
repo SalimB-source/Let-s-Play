@@ -80,7 +80,16 @@ test('the player can edit an audited deck, with live size, colour and copy valid
     assert.match(document.querySelector('.moba__deck-choice').textContent, /Deck personnalisé/);
     assert.match(document.querySelectorAll('.moba__deck-choice')[1].textContent, /deck de tour.*aléatoire/i);
     await click(byText('[role=dialog] button', 'Commencer'));
-    assert.match(document.querySelector('[role=dialog]').getAttribute('aria-label'), /Votre main de départ/);
+    const mulligan = document.querySelector('.moba__mulligan-overlay');
+    assert.match(mulligan.getAttribute('aria-label'), /Votre main de départ/);
+    assert.equal(mulligan.querySelectorAll('.moba__mulligan-cards > button').length, 5);
+    const card = mulligan.querySelector('.moba__mulligan-card');
+    await click(card);
+    assert.equal(card.getAttribute('aria-pressed'), 'true');
+    assert.match(mulligan.querySelector('.moba__primary').textContent, /Échanger 1 carte/);
+    await click(card);
+    assert.equal(card.getAttribute('aria-pressed'), 'false');
+    assert.match(mulligan.querySelector('.moba__primary').textContent, /Garder ma main/);
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();
@@ -172,6 +181,10 @@ test('solo game keeps the AI hand private and allows human responses', async () 
     // Give the human a real instant to exercise the response interface.
     duel.joueur.main.push('poigne-de-givre'); duel.joueur.mana.neige = 10;
     await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser })));
+    // Avec cinq cartes au départ, la Poigne ajoutée peut être sur la page 2.
+    if (!byText('.moba__card', 'Poigne de givre')) {
+      await click(document.querySelector('.moba__hand-pages button[aria-label="Page suivante de la main"]'));
+    }
     await click(byText('.moba__card', 'Poigne de givre'));
     await click([...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').includes('cible de magie')));
     assert.equal(duel.combatDeclare, null, 'the instant removes the attacker and ends the combat');

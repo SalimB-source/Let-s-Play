@@ -15,8 +15,8 @@ import {
 export const RPG_MODE_MANA_ESSAI = 'essai';
 export const RPG_MANA_ESSAI_TAILLE = 30;
 export const RPG_MANA_ESSAI_MAX = 10;
-/** Main de départ réduite du mode sans terrains (le mode classique garde 5). */
-export const RPG_MANA_ESSAI_MAIN_DEPART = 3;
+/** Cinq cartes au départ, comme en duel classique et dans tous les autres modes. */
+export const RPG_MANA_ESSAI_MAIN_DEPART = 5;
 /** Taille de main maximale à la fin d'un tour : l'excédent est défaussé. */
 export const RPG_MANA_ESSAI_MAIN_MAX = 6;
 export const RPG_MANA_ESSAI_CARTES_EXCLUES = Object.freeze([]);
