@@ -41,7 +41,20 @@ test('le terrain MOBA continu garde ses trois voies et ses commandes', async () 
   }
 });
 
-test('une voie conquise affiche le sceau du bon camp sans désactiver les autres voies', async () => {
+test('les chaînes remplissent la voie conquise et le verrou reste au centre à toute taille', async () => {
+  const css = await readFile(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
+  assert.match(css, /\.moba__conquest-chains \{[^}]*inset: 0; width: 100%; height: 100%/);
+  assert.match(css, /\.moba__conquest-lock \{[^}]*top: 50%; left: 50%; transform: translate\(-50%, -50%\)/);
+  assert.match(css, /\.moba__conquest-links ellipse \{[^}]*stroke: #ead2a1/);
+  const icon = await readFile(new URL('../public/icons/sablier/verrou-voie.svg', import.meta.url), 'utf8');
+  const dom = new JSDOM(icon, { contentType: 'image/svg+xml' });
+  try {
+    assert.ok(dom.window.document.querySelector('svg[viewBox="0 0 72 92"]'));
+    assert.ok(dom.window.document.querySelector('path[fill="#17120e"]'), 'trou de serrure visible');
+  } finally { dom.window.close(); }
+});
+
+test('une voie conquise affiche les chaînes et le verrou du bon camp sans désactiver les autres voies', async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -64,7 +77,13 @@ test('une voie conquise affiche le sceau du bon camp sans désactiver les autres
     const [left, center, right] = document.querySelectorAll('.moba__lane');
     assert.ok(left.classList.contains('is-conquered--joueur'));
     assert.match(left.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Voie fermée/);
-    assert.match(left.querySelector('.moba__conquest img').getAttribute('src'), /icons\/sablier\/conquete\.svg$/);
+    const barrage = left.querySelector('.moba__conquest');
+    const chaines = barrage.querySelector('.moba__conquest-chains');
+    assert.equal(chaines.querySelectorAll('.moba__conquest-chain-core').length, 1);
+    assert.equal(chaines.querySelectorAll('.moba__conquest-links ellipse').length, 42, 'deux chaînes de maillons en diagonales');
+    assert.match(chaines.querySelector('.moba__conquest-chain-core').getAttribute('d'), /M5 5 95 95 M95 5 5 95/);
+    assert.match(barrage.querySelector('.moba__conquest-lock img').getAttribute('src'), /icons\/sablier\/verrou-voie\.svg$/);
+    assert.equal(barrage.getAttribute('aria-hidden'), 'true', 'le décor ne double pas l’annonce accessible');
     assert.ok([...left.querySelectorAll('.moba__side')].every((side) => side.hasAttribute('inert') && side.getAttribute('aria-hidden') === 'true'));
     assert.ok([...left.querySelectorAll('button')].every((button) => button.disabled));
     assert.ok(!center.querySelector('.moba__conquest'));
@@ -83,6 +102,12 @@ test('une voie conquise affiche le sceau du bon camp sans désactiver les autres
     assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie centrale conquise par IA ; centre rattaché à Voie droite/);
     assert.ok(!right.querySelector('.moba__conquest'));
     assert.equal(duel.moba.winner, null, 'une voie par camp ne termine pas la partie');
+    mobaInfliger(duel.moba, 'sorcier', 'right', 30);
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.ok(right.classList.contains('is-conquered--sorcier'));
+    assert.equal(right.querySelectorAll('.moba__conquest-links ellipse').length, 42);
+    assert.ok(right.querySelector('.moba__conquest-lock img'));
+    assert.match(right.querySelector('.moba__conquest-owner').textContent, /L’IA/);
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
