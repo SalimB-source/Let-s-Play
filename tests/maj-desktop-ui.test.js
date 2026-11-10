@@ -207,3 +207,106 @@ test('le menu Aide de la coque ouvre le panneau dans le jeu', async () => {
     dom.window.close();
   }
 });
+
+test('la mise à jour reste dans la table native plein écran, puis revient hors plein écran', async () => {
+  const dom = installerDom();
+  const pont = poserPontFactice(dom);
+  const conteneur = document.createElement('div');
+  const table = document.createElement('div');
+  table.className = 'rpg-battle';
+  document.body.append(conteneur, table);
+  let pleinEcran = null;
+  Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => pleinEcran });
+  const racine = createRoot(conteneur);
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { default: RpgMiseAJour } = await vite.ssrLoadModule('/src/games/RpgMiseAJour.jsx');
+    const { reinitialiserStoreMajDesktop } = await vite.ssrLoadModule('/src/updates/maj-desktop.js');
+    reinitialiserStoreMajDesktop();
+    await act(async () => { racine.render(React.createElement(RpgMiseAJour)); });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    await act(async () => { pont.diffuser({ phase: 'disponible', version: '1.0.9' }); });
+    assert.ok(conteneur.querySelector('.rpg-maj'), 'panneau dans la page avant le plein écran');
+    await act(async () => { pleinEcran = table; document.dispatchEvent(new window.Event('fullscreenchange')); });
+    assert.ok(table.querySelector('.rpg-maj'), 'panneau déplacé dans la top layer du jeu');
+    assert.equal(conteneur.querySelector('.rpg-maj'), null);
+    await act(async () => { [...table.querySelectorAll('button')].find(b => b.textContent.trim() === 'Plus tard').click(); });
+    assert.ok(table.querySelector('.rpg-maj__pastille'), 'pastille également visible en plein écran');
+    await act(async () => { table.querySelector('.rpg-maj__pastille').click(); });
+    assert.ok(table.querySelector('.rpg-maj'));
+    await act(async () => { [...table.querySelectorAll('button')].find(b => b.textContent.includes('Télécharger la mise à jour')).click(); });
+    assert.equal(pont.journal.filter(x => x === 'telecharger').length, 1, 'le bouton déclenche un seul téléchargement');
+    assert.ok(table.querySelector('[role="progressbar"]'));
+    await act(async () => { pleinEcran = null; document.dispatchEvent(new window.Event('fullscreenchange')); });
+    assert.ok(conteneur.querySelector('[role="progressbar"]'), 'état conservé en sortie de plein écran');
+    await act(async () => { pont.diffuser({ phase: 'prete', version: '1.0.9' }); });
+    await act(async () => { pleinEcran = table; document.dispatchEvent(new window.Event('fullscreenchange')); });
+    await act(async () => { [...table.querySelectorAll('button')].find(b => b.textContent.includes('Redémarrer et installer')).click(); });
+    assert.equal(pont.journal.filter(x => x === 'installer').length, 1, 'installation accessible en plein écran');
+    await act(async () => { pleinEcran = document.createElement('video'); document.dispatchEvent(new window.Event('fullscreenchange')); });
+    assert.ok(conteneur.querySelector('.rpg-maj'), 'ne pas déplacer le panneau dans une vidéo plein écran');
+  } finally {
+    await act(async () => { racine.unmount(); }); await vite.close(); dom.window.close();
+  }
+});
+
+test('le plein écran WebKit déjà actif accueille la mise à jour dès son ouverture', async () => {
+  const dom = installerDom(); const pont = poserPontFactice(dom);
+  const conteneur = document.createElement('div'); const table = document.createElement('div');
+  table.className = 'rpg-battle'; document.body.append(conteneur, table);
+  Object.defineProperty(document, 'webkitFullscreenElement', { configurable: true, value: table });
+  const racine = createRoot(conteneur);
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { default: RpgMiseAJour } = await vite.ssrLoadModule('/src/games/RpgMiseAJour.jsx');
+    const { reinitialiserStoreMajDesktop } = await vite.ssrLoadModule('/src/updates/maj-desktop.js');
+    reinitialiserStoreMajDesktop();
+    await act(async () => racine.render(React.createElement(RpgMiseAJour)));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    await act(async () => pont.diffuser({ phase: 'disponible', version: '2.0' }));
+    assert.ok(table.querySelector('.rpg-maj__bouton--ok'));
+  } finally { await act(async () => racine.unmount()); await vite.close(); dom.window.close(); }
+});
+
+test('premier clic de téléchargement : le vrai jeu ne déclenche pas le plein écran et transmet l’ordre', async () => {
+  const dom = installerDom(); const pont = poserPontFactice(dom);
+  window.HTMLMediaElement.prototype.play = () => Promise.resolve();
+  window.HTMLMediaElement.prototype.pause = () => {};
+  window.HTMLMediaElement.prototype.load = () => {};
+  window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+  const conteneur = document.createElement('div'); document.body.appendChild(conteneur);
+  let pleinEcran = null; let demandes = 0;
+  Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => pleinEcran });
+  window.HTMLElement.prototype.requestFullscreen = async function () { demandes += 1; pleinEcran = this; document.dispatchEvent(new window.Event('fullscreenchange')); };
+  document.exitFullscreen = async () => { pleinEcran = null; document.dispatchEvent(new window.Event('fullscreenchange')); };
+  const racine = createRoot(conteneur);
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { default: RpgMiseAJour } = await vite.ssrLoadModule('/src/games/RpgMiseAJour.jsx');
+    const { default: RpgDuelPage } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const { reinitialiserStoreMajDesktop } = await vite.ssrLoadModule('/src/updates/maj-desktop.js');
+    reinitialiserStoreMajDesktop();
+    await act(async () => racine.render(React.createElement(React.Fragment, null, React.createElement(RpgDuelPage), React.createElement(RpgMiseAJour))));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    assert.ok(conteneur.querySelector('.rpg-battle'));
+    await act(async () => pont.diffuser({ phase: 'disponible', version: '1.0.9' }));
+    const telecharger = [...conteneur.querySelectorAll('button')].find(b => b.textContent.includes('Télécharger la mise à jour'));
+    assert.ok(telecharger);
+    await act(async () => {
+      telecharger.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true }));
+      telecharger.dispatchEvent(new window.MouseEvent('pointerup', { bubbles: true }));
+      telecharger.click();
+    });
+    assert.equal(demandes, 0, 'le pointerdown de la mise à jour ne demande pas le plein écran');
+    assert.equal(pont.journal.filter(x => x === 'telecharger').length, 1);
+    const table = conteneur.querySelector('.rpg-battle');
+    await act(async () => { table.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true })); });
+    assert.equal(demandes, 0, 'une modale ouverte bloque aussi les gestes derrière elle');
+    await act(async () => { [...conteneur.querySelectorAll('button')].find(b => b.textContent.trim() === 'Réduire').click(); });
+    await act(async () => { table.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true })); });
+    assert.equal(demandes, 1, 'un geste normal sur le jeu demande toujours le plein écran');
+    assert.ok(table.querySelector('.rpg-maj__pastille'), 'la pastille reste visible après la bascule');
+    await act(async () => table.querySelector('.rpg-maj__pastille').click());
+    assert.ok(table.querySelector('.rpg-maj [role="progressbar"]'), 'le téléchargement peut être rouvert en plein écran');
+  } finally { await act(async () => racine.unmount()); await vite.close(); dom.window.close(); }
+});

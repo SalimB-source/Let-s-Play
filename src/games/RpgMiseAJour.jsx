@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { nativeFullscreenElement } from './gameFullscreen.js';
 import {
   storeMajDesktop,
   libelleDebit,
@@ -83,6 +85,26 @@ export default function RpgMiseAJour() {
   const [ouvert, setOuvert] = useState(false);
   const [reportee, setReportee] = useState(false);
   const derniereAnnoncee = useRef('');
+  // La Fullscreen API place la table dans la « top layer » du navigateur :
+  // un z-index, même énorme, ne peut pas faire apparaître son frère au-dessus.
+  // Seul le plein écran de la table est concerné ; un autre élément plein écran
+  // (vidéo, document…) ne doit pas recevoir le panneau du Sablier.
+  const lireTablePleinEcran = () => {
+    const element = nativeFullscreenElement();
+    return element?.classList?.contains('rpg-battle') ? element : null;
+  };
+  const [tablePleinEcran, setTablePleinEcran] = useState(lireTablePleinEcran);
+  useEffect(() => {
+    if (!disponible || typeof document === 'undefined') return undefined;
+    const synchroniser = () => setTablePleinEcran(lireTablePleinEcran());
+    document.addEventListener('fullscreenchange', synchroniser);
+    document.addEventListener('webkitfullscreenchange', synchroniser);
+    synchroniser();
+    return () => {
+      document.removeEventListener('fullscreenchange', synchroniser);
+      document.removeEventListener('webkitfullscreenchange', synchroniser);
+    };
+  }, [disponible]);
 
   // Le menu « Aide → Rechercher une mise à jour » de la coque ouvre le panneau.
   useEffect(() => abonnerOuverture(() => { setOuvert(true); setReportee(false); }), [abonnerOuverture]);
@@ -121,7 +143,7 @@ export default function RpgMiseAJour() {
   const publiee = formatDate(etat.datePublication);
   const enCours = etat.phase === 'telechargement' || etat.phase === 'verification';
 
-  return (
+  const interfaceMaj = (
     <>
       {phaseVisible(etat.phase) && !ouvert && (
         <button
@@ -271,6 +293,7 @@ export default function RpgMiseAJour() {
       )}
     </>
   );
+  return tablePleinEcran ? createPortal(interfaceMaj, tablePleinEcran) : interfaceMaj;
 }
 
 /**

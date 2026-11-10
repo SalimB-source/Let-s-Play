@@ -32,6 +32,7 @@ import RpgMessagerieBouton from './RpgMessagerieBouton.jsx';
 import RpgMessageriePanel from './RpgMessageriePanel.jsx';
 import { avancerEcranJeu, reculerEcranJeu } from './rpgNavigationBack.js';
 import useGameFullscreen from './useGameFullscreen.js';
+import { gesteSurMiseAJourDesktop } from './gameFullscreen.js';
 import { AuthContext } from '../auth/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useFriends } from '../friends/FriendsContext.jsx';
@@ -6720,7 +6721,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     rentrerPleinEcranRef.current = () => entrerPleinEcran({ pinned: true, native: false });
     rentrerPleinEcranRef.current();
     if (window.LetsPlayAndroid) return undefined;
-    const demanderNatif = () => entrerPleinEcran({ pinned: true });
+    const demanderNatif = (event) => {
+      if (gesteSurMiseAJourDesktop(event)) return;
+      entrerPleinEcran({ pinned: true });
+    };
     window.addEventListener('pointerdown', demanderNatif, true);
     window.addEventListener('keydown', demanderNatif, true);
     return () => {
@@ -9367,7 +9371,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (ecran !== 'partie' || viewport.portrait) return undefined;
     const surRaccourciDuel = (event) => {
       if (event.defaultPrevented || event.repeat || event.altKey) return;
-      if (vientDunChampDeSaisie(event.target)) return;
+      if (vientDunChampDeSaisie(event.target) || gesteSurMiseAJourDesktop(event)) return;
       const coque = shellRef.current;
       if (!coque || coque.getAttribute('data-scene') !== 'duel') return;
       if (apercuAppui || apercuCatalogue || navMenuOuvert || navParametresOuvert || messagerieVoletOuvert || monteeNiveau) return;
