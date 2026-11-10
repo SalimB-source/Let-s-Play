@@ -44,6 +44,7 @@ test('le sacrifice MOBA exige des victimes distinctes, retire les cases et conse
   assert.equal(sacrificesInvocation(cardById('jormungandr'), { moba: {} }), 2);
   const duel = partie();
   const first = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   const second = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
   donner(duel, 'joueur', 'anqa-des-braises');
   let before = JSON.stringify(duel);

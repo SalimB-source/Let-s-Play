@@ -135,6 +135,8 @@ test('nouvelle annonce de la même carte : la fenêtre se rouvre après la réso
     await t.click(t.text('.moba__card-announcement button', 'Répondre'));
     await t.click(t.text('.moba__controls button', 'Passer et laisser entrer'));
     assert.equal(document.querySelector('.moba__card-announcement'), null);
+    // La deuxième petite créature ne peut être annoncée qu'à un autre tour.
+    t.classic.rpgFinDeTour(t.duel); t.classic.rpgFinDeTour(t.duel);
     await t.tick();
     assert.equal(t.duel.mobaCreatureEnAttente?.carteId, 'gardienne-des-portes-de-sable');
     assert.ok(document.querySelector('.moba__card-announcement'), 'chaque nouvelle carte possède son annonce');

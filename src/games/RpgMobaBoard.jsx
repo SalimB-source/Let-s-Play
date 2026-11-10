@@ -42,7 +42,7 @@ const glyphes = { left: 'I', center: 'II', right: 'III' };
 const MAILLONS_VOIE_FERMEE = Array.from({ length: 21 }, (_, index) => 5 + index * 4.5);
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const message = {
-  mana: 'Carte impossible à jouer.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
+  mana: 'Carte impossible à jouer.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
   provocation: 'Une créature avec Provocation doit être bloquée si possible.',
   'blocage-force': 'Les créatures marquées doivent bloquer si elles le peuvent dans leur voie.',
   'attaque-jouee': 'La phase d’attaque est déjà terminée.', 'cible-obligatoire': 'Choisissez une cible légale pour chaque attaquant ciblé.', emplacement: 'Cet emplacement n’est pas libre.',
@@ -1104,7 +1104,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       <details className="moba__rules"><summary>Règles du plateau</summary><div>
         <p>Trois voies indépendantes : 20 / 10 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Une créature attaque sa voie et ne peut être bloquée que dans celle-ci. Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et bloquent ; le vainqueur peut continuer à jouer sur sa case centrale. Une seule barre réunit leurs PV (30 maximum). Une Attaque ciblée au centre peut viser les côtés avant la conquête.</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Chaque camp peut annoncer une seule créature nécessitant un sacrifice par tour, même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Les créatures de coût 1 à 4 ne demandent aucun sacrifice : chaque camp peut en annoncer une seule par tour. Celles de coût 5 ou 6 demandent un sacrifice, et celles de coût 7 ou plus en demandent deux ; chaque camp peut annoncer une seule créature à sacrifice par tour, en plus de sa petite créature. Une annonce pendant son propre tour compte même si elle est contrée. Les Embuscades jouées pendant le tour adverse ne consomment pas ces limites. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>

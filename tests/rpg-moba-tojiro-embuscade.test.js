@@ -10,10 +10,11 @@ function partie(actif, plein=false){
  const defenseur=actif==='joueur'?'sorcier':'joueur';if(d.tour!==defenseur)rpgFinDeTour(d);
  d[defenseur].main=['gardienne-des-portes-de-sable'];d[defenseur].mana.sable=20;
  const victime=rpgMobaJouerCreature(d,defenseur,'gardienne-des-portes-de-sable','left',0).entite;assert.ok(victime);
- if(plein) for(const [lane,slot] of [['left',1],['center',0],['right',0],['right',1]]) {d[defenseur].main.push('gardienne-des-portes-de-sable');assert.ok(rpgMobaJouerCreature(d,defenseur,'gardienne-des-portes-de-sable',lane,slot).entite);}
+ if(plein) for(const [lane,slot] of [['left',1],['center',0],['right',0],['right',1]]) {rpgFinDeTour(d);rpgFinDeTour(d);d[defenseur].main.push('gardienne-des-portes-de-sable');assert.ok(rpgMobaJouerCreature(d,defenseur,'gardienne-des-portes-de-sable',lane,slot).entite);}
  rpgFinDeTour(d);assert.equal(d.tour,actif);
  d[actif].main=['djinn-du-dernier-brasier'];d[actif].mana.braise=20;
- const djinn=rpgMobaJouerCreature(d,actif,'djinn-du-dernier-brasier','left',0).entite;assert.ok(djinn);djinn.ready=true;
+ // Le Djinn éphémère est conservé pour préparer une menace à un tour ultérieur.
+ const djinn=rpgMobaJouerCreature(d,actif,'djinn-du-dernier-brasier','left',0).entite;assert.ok(djinn);djinn.detruireFinDuTour=false;rpgFinDeTour(d);rpgFinDeTour(d);djinn.ready=true;
  d[defenseur].main=[id];d[defenseur].mana.braise=20;d[actif].mana.braise=20;
  return {d,defenseur,victime,djinn};
 }
@@ -77,7 +78,7 @@ function tojiroEnJeu(side){
  const victime=rpgMobaJouerCreature(d,side,'gardienne-des-portes-de-sable','left',0).entite;
  const tojiro=rpgMobaJouerCreature(d,side,id,'left',0,{sacrificeIds:[victime.id]}).entite;assert.ok(tojiro);
  rpgFinDeTour(d);const actif=d.tour;d[actif].main=['gardienne-des-portes-de-sable'];d[actif].mana.sable=20;
- const autre=rpgMobaJouerCreature(d,actif,'gardienne-des-portes-de-sable','right',0).entite;assert.ok(autre);
+ const autre=rpgMobaJouerCreature(d,actif,'gardienne-des-portes-de-sable','right',0).entite;assert.ok(autre);rpgFinDeTour(d);rpgFinDeTour(d);
  d[actif].main=['trait-de-braise'];d[actif].mana.braise=20;return {d,actif,tojiro,autre};
 }
 for(const side of ['joueur','sorcier']){
@@ -120,8 +121,9 @@ test('une victoire déclenchée par le sacrifice ne ressuscite pas l’annonce s
  const d=rpgMobaNouveauDuel({joueurDeck:deck,sorcierDeck:deck,rng:()=>.5});assert.ok(rpgMulligan(d,'joueur',[]).ok&&rpgMulligan(d,'sorcier',[]).ok&&rpgDemarrerManaEssai(d).ok);
  d.joueur.main=['gardienne-des-portes-de-sable','djinn-des-cendres-vengeresses'];Object.assign(d.joueur.mana,{sable:20,braise:20});
  const victime=rpgMobaJouerCreature(d,'joueur','gardienne-des-portes-de-sable','left',0).entite;
+ rpgFinDeTour(d);rpgFinDeTour(d);
  assert.ok(rpgMobaJouerCreature(d,'joueur','djinn-des-cendres-vengeresses','left',1).entite);rpgFinDeTour(d);
- d.sorcier.main=['djinn-du-dernier-brasier'];d.sorcier.mana.braise=20;assert.ok(rpgMobaJouerCreature(d,'sorcier','djinn-du-dernier-brasier','center',0).entite);
+ d.sorcier.main=['djinn-du-dernier-brasier'];d.sorcier.mana.braise=20;const djinn=rpgMobaJouerCreature(d,'sorcier','djinn-du-dernier-brasier','center',0).entite;assert.ok(djinn);djinn.detruireFinDuTour=false;rpgFinDeTour(d);rpgFinDeTour(d);
  d.joueur.main=[id];d.joueur.mana.braise=20;mobaInfliger(d.moba,'joueur','right',20);mobaInfliger(d.moba,'joueur','left',19);
  d.sorcier.main=['ashigaru-des-braises'];assert.ok(rpgMobaJouerCreature(d,'sorcier','ashigaru-des-braises','left',0,{ouvrirReponse:true}).ok);
  const choix=rpgMobaChoisirEmbuscadeIA(d,'joueur');assert.equal(choix?.id,id,JSON.stringify(choix));
@@ -162,12 +164,16 @@ test('Tojiro en réponse : ne sacrifie pas une créature bien supérieure sans a
  assert.equal(JSON.stringify(d),before);
 });
 
-test('une Embuscade à sacrifice consomme la limite du défenseur pendant le tour adverse seulement', () => {
+test('une Embuscade à sacrifice ne consomme pas la limite du défenseur pendant le tour adverse', () => {
  const {d, defenseur, victime} = partie('sorcier');
  d.sorcier.main=[]; assert.ok(rpgMobaTerminerTour(d,'sorcier').ok);
  assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',0,{ouvrirReponse:true,sacrificeIds:[victime.id]}).ok);
  assert.ok(rpgMobaPasserCreature(d,'sorcier').entite);
- assert.equal(d.moba.sacrificesJoues[defenseur],true);
+ assert.equal(d.moba.sacrificesJoues[defenseur],false);
  assert.ok(rpgMobaPasserFinDeTour(d,defenseur).ok);
  assert.equal(d.tour,defenseur); assert.equal(d.moba.sacrificesJoues[defenseur],false);
+ const tojiro=d[defenseur].creatures.find(e=>e.carteId===id);
+ d[defenseur].main=['anqa-des-braises'];
+ assert.ok(rpgMobaJouerCreature(d,defenseur,'anqa-des-braises','left',0,{sacrificeIds:[tojiro.id]}).ok);
+ assert.equal(d.moba.sacrificesJoues[defenseur],true);
 });
