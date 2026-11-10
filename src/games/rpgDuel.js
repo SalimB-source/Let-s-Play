@@ -581,8 +581,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     combatFeed: [],
   };
   hasardParDuel.set(duel, rng);
-  // Mode sans terrains : main de départ réduite à trois cartes. Le mode
-  // classique conserve sa main historique de cinq cartes.
+  // Même pioche de départ dans tous les modes (classique, sans terrains,
+  // MOBA et PvP). Les éventuels atouts du sorcier s'ajoutent ensuite.
   const mainDepart = essaiMana ? RPG_MANA_ESSAI_MAIN_DEPART : RPG_MAIN_DEPART;
   for (let i = 0; i < mainDepart; i += 1) {
     rpgPiocher(duel, 'joueur');

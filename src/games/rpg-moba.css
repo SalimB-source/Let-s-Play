@@ -997,3 +997,122 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   --rpg-plaque-taille: clamp(18px, 22cqw, 30px);
   gap: clamp(2px, 1cqw, 3px);
 }
+
+/* MOBA opening hand: the five faces and confirmation share the viewport.
+   Keep this scoped to the mulligan: deck searches use the same card strip and
+   may still need their own scrolling. The stage's container height is the
+   space left AFTER the heading and confirmation have been laid out. */
+.moba__mulligan-overlay {
+  overflow: hidden;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+           max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+}
+.moba__mulligan-overlay .moba__mulligan {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: clamp(3px, 1vh, 8px);
+  width: min(100%, 800px);
+  height: min(100%, 680px);
+  min-height: 0;
+  padding: clamp(6px, 1.4vh, 16px);
+  --moba-mulligan-gap: clamp(4px, 1vw, 8px);
+}
+.moba__mulligan-intro h2 { margin: 2px 0; font-size: clamp(17px, 3vh, 30px); }
+.moba__mulligan-intro p { margin: 0; font-size: clamp(10px, 1.6vh, 13px); line-height: 1.25; }
+.moba__mulligan-overlay .moba__mulligan-cards {
+  box-sizing: border-box;
+  container-type: size;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  gap: var(--moba-mulligan-gap);
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+}
+.moba .moba__mulligan-overlay .moba__mulligan-item,
+.moba__mulligan-overlay .moba__mulligan-card {
+  box-sizing: border-box;
+  flex: 0 0 min(calc((100% - 32px) / 5), calc(80cqh - 8px), 140px);
+  min-width: 0;
+}
+.moba__mulligan-overlay .moba__mulligan-card {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.moba__mulligan-overlay .moba__mulligan-card img { width: 100%; height: 100%; object-fit: cover; }
+.moba__mulligan-overlay .moba__mulligan-card b,
+.moba__mulligan-overlay .moba__mulligan-card small {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px;
+  background: #151416dd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.moba__mulligan-overlay .moba__mulligan-card small { top: 0; bottom: auto; }
+.moba__mulligan-overlay .moba__mulligan > button {
+  justify-self: center;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 12px;
+}
+.moba__mulligan-overlay .moba__mulligan .moba__error { margin: 0; }
+@media (max-width: 650px) and (orientation: portrait) {
+  /* Two rows (3 + 2) make the artwork legible on narrow portrait screens. */
+  .moba .moba__mulligan-overlay .moba__mulligan-item,
+  .moba__mulligan-overlay .moba__mulligan-card {
+    flex-basis: min(calc((100% - 16px) / 3), calc(40cqh - 8px), 140px);
+  }
+}
+
+/* The shared card face normally lets its mana stones overlap the top/left
+   border. On the small MOBA mulligan faces that overlap cuts the glyphs off.
+   Bring them inside the frame and scale the stones AND the stat pills together;
+   the large card preview keeps the normal artwork and full-size markers. */
+.moba .moba__mulligan-overlay .moba__mulligan-item .rpg-mulligan__card {
+  --rpg-card-marker-size: clamp(9px, 20cqw, 28px);
+  border-width: 3px;
+}
+.moba .moba__mulligan-overlay .rpg-mulligan__card > * {
+  --rpg-plaque-taille: clamp(9px, 20cqw, 28px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
+}
+.rpg-battle .moba__mulligan-overlay .rpg-mulligan__card .rpg-mana-cost.is-plaque {
+  top: 3px !important;
+  left: 3px !important;
+  transform: none !important;
+}
+.rpg-battle .moba__mulligan-overlay .rpg-mulligan__card > .rpg-card-element-badge.is-plaque {
+  top: calc(5px + var(--rpg-cout-taille, 14px)) !important;
+  left: 3px !important;
+  transform: none !important;
+}
+.rpg-battle .moba__mulligan-overlay .rpg-mulligan__card:not(:has(.rpg-mana-cost.is-plaque)) > .rpg-card-element-badge.is-plaque {
+  top: 3px !important;
+}
+.moba__mulligan-overlay .rpg-mulligan__card .rpg-mulligan__stats {
+  gap: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+}
+.moba__mulligan-overlay .rpg-mulligan__card .rpg-card__stat--atk,
+.moba__mulligan-overlay .rpg-mulligan__card .rpg-card__pt {
+  gap: 1px;
+  padding: 1px;
+  border-radius: 3px;
+  font-size: clamp(6px, 12cqw, 15px);
+}

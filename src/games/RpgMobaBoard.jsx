@@ -1196,7 +1196,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
       </div>
     </div>}
     {etape === 'choix' && edition && <RpgMobaDeckEditor key={edition} deck={deckPour(edition)} joueur={noms[edition]} onCancel={() => setEdition(null)} onSave={(deck) => { setDecksPersonnalises((decks) => ({ ...decks, [edition]: deck })); setEdition(null); }} />}
-    {etape === 'mulligan' && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Votre main de départ"><div className="moba__modal moba__mulligan"><span>PRÉPARATION · {noms[mulliganSide].toUpperCase()}</span><h2>Votre main de départ</h2><p>Sélectionnez les cartes à échanger, ou gardez votre main. Vous pouvez faire un échange ; l’IA choisit sa main automatiquement.</p><div className="moba__mulligan-cards">{duel[mulliganSide].main.map((id, index) => {
+    {etape === 'mulligan' && <div className="moba__overlay moba__mulligan-overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Votre main de départ"><div className="moba__modal moba__mulligan"><div className="moba__mulligan-intro"><span>PRÉPARATION · {noms[mulliganSide].toUpperCase()}</span><h2>Votre main de départ</h2><p>Touchez les cartes à échanger, ou gardez votre main.</p></div><div className="moba__mulligan-cards">{duel[mulliganSide].main.map((id, index) => {
       const card = cardById(id), choisi = mulliganIndices.includes(index);
       const toggle = () => setMulliganIndices((ids) => ids.includes(index) ? ids.filter((n) => n !== index) : [...ids, index]);
       if (rendu?.CarteMulligan) {

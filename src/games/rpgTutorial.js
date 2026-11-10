@@ -29,6 +29,7 @@
 import { CATALOGUE_DU_COMPOSEUR, RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
+import { RPG_MANA_ESSAI_MAIN_DEPART } from './rpgManaEssai.js';
 
 // Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
 // l'étagère du joueur (vide depuis les coffrets de bienvenue).
@@ -65,8 +66,9 @@ const PAQUET_EMBUSCADE = Object.freeze(composerDeck({
 /** La première leçon garde les alias historiques du tutoriel débutant. */
 const FONDATIONS = 'fondations-du-sablier';
 
-/** Place une main exacte, sans dupliquer les cartes déjà en main ou au paquet. */
-function preparerMain(camp, ids) {
+/** Conserve les cartes scénarisées et complète la main avec le paquet réel,
+ * sans prendre les pioches réservées aux étapes de la leçon. */
+function preparerMain(camp, ids, { taille = RPG_MANA_ESSAI_MAIN_DEPART, reserve = [], complement = [] } = {}) {
   if (!camp) return;
   const disponible = [...camp.deck, ...camp.main];
   const main = [];
@@ -75,6 +77,19 @@ function preparerMain(camp, ids) {
     // Une main de leçon est une convention : si la carte n'existe plus dans
     // cette version du deck, on ne fait pas échouer tout le tutoriel.
     if (index < 0) continue;
+    main.push(disponible.splice(index, 1)[0]);
+  }
+  const aGarder = new Set(reserve);
+  // L'ordre du paquet de la leçon, et non celui du mélange, choisit les deux
+  // compléments : la main guidée reste identique d'une partie à l'autre.
+  for (const id of complement) {
+    if (main.length >= taille) break;
+    const index = aGarder.has(id) ? -1 : disponible.indexOf(id);
+    if (index >= 0) main.push(disponible.splice(index, 1)[0]);
+  }
+  while (main.length < taille) {
+    const index = disponible.findIndex((id) => !aGarder.has(id));
+    if (index < 0) break;
     main.push(disponible.splice(index, 1)[0]);
   }
   camp.main = main;
@@ -187,7 +202,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · VOTRE MAIN',
         title: 'Vos cartes, vos options',
-        text: 'Votre main de départ contient trois cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables s’allument d’un halo. La main est triée par coût croissant de gauche à droite et ne peut pas dépasser six cartes à la fin de votre tour.',
+        text: 'Votre main de départ contient cinq cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables s’allument d’un halo. La main est triée par coût croissant de gauche à droite et ne peut pas dépasser six cartes à la fin de votre tour.',
         nextLabel: 'Comprendre le mana',
         side: 'top',
       },
@@ -1406,14 +1421,19 @@ export function preparerDuelTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
   if (!duel?.joueur || !duel?.sorcier) throw new TypeError('Un duel complet est nécessaire pour préparer le tutoriel.');
   const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
 
-  preparerMain(duel.joueur, tutoriel.openingHand ?? []);
+  preparerMain(duel.joueur, tutoriel.openingHand ?? [], {
+    reserve: tutoriel.playerDraws ?? [], complement: paquetDeLaLecon(tutoriel),
+  });
   if (tutoriel.playerDraws?.length) preparerPioches(duel.joueur, tutoriel.playerDraws);
 
-  preparerMain(duel.sorcier, tutoriel.opponentHand ?? []);
-  // Le reste du paquet adverse n'a pas à raconter d'histoire : on le remplit
-  // de cartes trop chères pour son mana, afin qu'il ne perturbe pas la leçon.
+  preparerMain(duel.sorcier, tutoriel.opponentHand ?? [], { taille: 0 });
+  // Compléter la main adverse à cinq avec des cartes inoffensives : les
+  // annonces scénarisées restent en place, sans surprise pendant la leçon.
   if (tutoriel.opponentDeckFill) {
     duel.sorcier.deck = Array(30).fill(tutoriel.opponentDeckFill);
+    while (duel.sorcier.main.length < RPG_MANA_ESSAI_MAIN_DEPART) {
+      duel.sorcier.main.push(duel.sorcier.deck.pop());
+    }
   }
   if (tutoriel.opponentDraws?.length) preparerPioches(duel.sorcier, tutoriel.opponentDraws);
   if (tutoriel.opponentMana) installerMana(duel.sorcier, tutoriel.opponentMana);
