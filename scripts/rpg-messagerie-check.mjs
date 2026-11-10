@@ -89,7 +89,7 @@ for (const chemin of ['/jeu', '/jeu/mirage-rush', '/jeu/sablier-de-bab-el2', '/m
 }
 assert.match(socialDock, /onSablierRoute \? ' social-dock--sablier' : ''/,
   'la classe qui monte la fenêtre sociale n’est posée que sur les routes du Sablier');
-assert.match(socialDock, /const dockVisible = !onSocialRoute && !\(onSablierRoute && isMobile\);/,
+assert.match(socialDock, /const dockVisible = !connexionEnAttente && !onSocialRoute && !\(onSablierRoute && isMobile\) && open;/,
   'sur téléphone, dans le jeu, le lanceur flottant s’efface : la messagerie y a son onglet et son voile');
 
 /* ── 3. La messagerie a son onglet dans le menu du jeu ─────────────────────── */

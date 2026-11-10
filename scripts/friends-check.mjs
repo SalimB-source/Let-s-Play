@@ -141,13 +141,13 @@ for (const lang of ['en', 'fr', 'ar']) {
   const st = socialCopy[lang];
   try {
     const guest = renderApp('/auth', { lang });
-    check(`[${lang}] visiteur : raccourci messagerie visible`, guest.includes('social-launcher') && strip(guest).includes(st.launcher));
+    check(`[${lang}] visiteur : aucun lanceur flottant`, guest.includes('social-launcher'), false);
     check(`[${lang}] visiteur : pas de panneau de conversations`, guest.includes('social-panel'), false);
   } catch (e) { check(`[${lang}] /auth visiteur se rend`, e.message, ''); }
   try {
     const html = renderApp('/auth', { lang, demoKey: 'vortex' });
     const text = strip(html);
-    check(`[${lang}] persona : lanceur « ${st.launcher} » présent`, html.includes('social-launcher') && text.includes(st.launcher));
+    check(`[${lang}] persona : aucun lanceur flottant`, html.includes('social-launcher'), false);
     check(`[${lang}] persona : section « ${t.hubTitle} » du hub`, text.includes(t.hubTitle));
   } catch (e) { check(`[${lang}] /auth persona se rend`, e.message, ''); }
   try {

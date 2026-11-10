@@ -48,7 +48,6 @@
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
   body:has(.rpg-mode-menu) .social-dock--sablier:not(.is-open) { display: none; }
 }
-.social-dock--home-hero:not(.is-open) { bottom: calc(88px + env(safe-area-inset-bottom)); }
 .social-dock > * { pointer-events: auto; }
 
 /* Conteneur du lanceur. Les pastilles de notification dépassent légèrement
@@ -290,7 +289,7 @@
 
 /* --------------------- Cohabitation avec les toasts --------------------- */
 
-/* Le lanceur occupe le coin : les notifications montent d'un cran. */
+/* Le panneau ouvert occupe le coin : les notifications montent d’un cran. */
 body.has-friends-dock .achievement-toasts,
 body.has-messages-dock .achievement-toasts { bottom: 76px; }
 /* Fenêtre ouverte : les notifications glissent à côté de la fenêtre. */
