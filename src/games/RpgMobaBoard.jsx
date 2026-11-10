@@ -21,7 +21,7 @@ import RpgMobaDeckEditor from './RpgMobaDeckEditor.jsx';
 import { sacrificesInvocation } from './rpgInvocation.js';
 import { SACRIFICE_ANIMATION, victimesSacrificeSurVoies } from './rpgSacrificeAnimation.js';
 import { mobaVieMaxPourCamp, mobaVoieCombat, mobaVoieJouable } from './rpgMoba.js';
-import { MOBA_DECKS_TOURS, MOBA_DECKS_TOURS_TOTAL, rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from './rpgMobaDecks.js';
+import { rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from './rpgMobaDecks.js';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from './rpgAI.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA, rpgMobaChoisirEmbuscadeIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA } from './rpgMobaAI.js';
 import './rpg-moba.css';
@@ -57,15 +57,10 @@ function nouveau(joueur = MOBA_DECKS[0], sorcier = MOBA_DECKS[0]) {
 
 // The wrapper is a visual selector for an existing deck, not a purchasable
 // booster. Its face uses a real card from that deck; rules never depend on art.
-const MOBA_BOOSTER_ILLUSTRATIONS = {
-  sable: 'gardienne-des-portes-de-sable', sources: 'porteuse-de-cruches',
-  sahir: 'sahir-des-braises', lionne: 'lionne-du-midi-ardent', papyrus: 'papyrus',
-};
 function BoosterDeck({ deck, selected, onSelect, autoFocus = false }) {
   const validation = rpgMobaValiderDeck(deck);
-  const illustration = MOBA_BOOSTER_ILLUSTRATIONS[deck.id]
-    ?? deck.cardIds?.find((id) => ['creature', 'hero'].includes(cardById(id)?.kind))
-    ?? 'ashigaru-des-braises';
+  const illustration = (Array.isArray(deck.cardIds) ? deck.cardIds : [])
+    .find((id) => ['creature', 'hero'].includes(cardById(id)?.kind)) ?? 'ashigaru-des-braises';
   return <div className={`moba__booster-item${!validation.ok ? ' is-unavailable' : ''}`}>
     <button type="button" className={`moba__booster${selected ? ' is-selected' : ''}`}
       aria-pressed={selected} disabled={!validation.ok} autoFocus={autoFocus}
@@ -159,7 +154,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
   const [blocages, setBlocages] = useState({});
   const [cible, setCible] = useState(null);
   const [etape, setEtape] = useState(initialiser === nouveau ? 'choix' : 'mulligan');
-  const [deckJoueur, setDeckJoueur] = useState(MOBA_DECKS[0].id);
+  const [deckJoueur, setDeckJoueur] = useState(null);
   const [deckSorcier, setDeckSorcier] = useState(null);
   const [decksPersonnalises, setDecksPersonnalises] = useState({ joueur: null, sorcier: null });
   const [edition, setEdition] = useState(null);
@@ -366,10 +361,14 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
   const getEntity = (side, id) => duel[side].creatures.find((e) => e.id === id);
   const rattachement = duel.moba.centerJoined;
   const scores = Object.fromEntries(['joueur', 'sorcier'].map((side) => [side, duel.moba.lanes.filter((lane) => lane.conqueredBy === side).length]));
-  const decksDuJoueur = [...MOBA_DECKS, ...decksMaison.map(rpgMobaDeckMaison)];
+  const decksDuJoueur = decksMaison.map(rpgMobaDeckMaison);
+  // No hidden fallback to a predefined MOBA deck: pick a compatible personal
+  // deck initially, or require the player to create one.
   const deckPour = (side) => side === 'sorcier' ? (deckSorcier ?? MOBA_DECKS[0])
-    : decksPersonnalises.joueur ?? decksDuJoueur.find((deck) => deck.id === deckJoueur) ?? MOBA_DECKS[0];
-  const validationDeckJoueur = rpgMobaValiderDeck(deckPour('joueur'));
+    : decksPersonnalises.joueur ?? (deckJoueur === null
+      ? decksDuJoueur.find((deck) => rpgMobaValiderDeck(deck).ok)
+      : decksDuJoueur.find((deck) => deck.id === deckJoueur)) ?? null;
+  const validationDeckJoueur = deckPour('joueur') ? rpgMobaValiderDeck(deckPour('joueur')) : { ok: false, raison: 'Choisissez ou créez un deck compatible.' };
   const choisirDeck = (id) => {
     setDeckJoueur(id);
     setDecksPersonnalises((decks) => ({ ...decks, joueur: null }));
@@ -1254,31 +1253,23 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
         <h2>Préparez votre duel</h2>
         <p>Deux decks. Trois voies. Une seule victoire.</p>
         <div className="moba__setup-rules"><span><b>03</b> voies</span><span><b>20 / 10 / 20</b> PV par voie</span><span><b>02</b> conquêtes pour gagner</span></div>
-        <div className="moba__deck-picker-heading"><div><span>VOTRE CAMP</span><h3>Choisissez votre deck</h3></div><p>Chaque paquet représente un deck, sans achat.</p></div>
-        {decksPersonnalises.joueur && <section className="moba__booster-group" aria-label="Deck personnalisé">
-          <h4>Votre composition</h4><div className="moba__booster-list"><BoosterDeck deck={decksPersonnalises.joueur} selected onSelect={() => {}} /></div>
-        </section>}
-        <section className="moba__booster-group" aria-label="Decks MOBA">
-          <h4>Decks MOBA <span>· {MOBA_DECKS.length} prêts à jouer</span></h4>
-          <div className="moba__booster-list">{MOBA_DECKS.map((option, index) => <BoosterDeck key={option.id} deck={option} selected={!decksPersonnalises.joueur && deckPour('joueur').id === option.id} autoFocus={index === 0} onSelect={() => choisirDeck(option.id)} />)}</div>
-        </section>
-        {decksMaison.length > 0 && <section className="moba__booster-group" aria-label="Vos decks créés">
-          <h4>Vos decks créés <span>· compatibilité vérifiée</span></h4>
-          <div className="moba__booster-list">{decksMaison.map(rpgMobaDeckMaison).map((option) => <BoosterDeck key={option.id} deck={option} selected={!decksPersonnalises.joueur && deckPour('joueur').id === option.id} onSelect={() => choisirDeck(option.id)} />)}</div>
-        </section>}
-        <div className="moba__setup-details">
-          <div className="moba__selected-deck" aria-live="polite"><span>DECK SÉLECTIONNÉ</span><strong>{deckPour('joueur').name}</strong>
-            <small>{decksPersonnalises.joueur ? 'Votre composition personnalisée.' : (deckPour('joueur').description ?? 'Votre deck créé.')}</small>
-            <div className="moba__deck-elements" aria-label={`Éléments : ${(deckPour('joueur').elements ?? []).join(', ')}`}>{(deckPour('joueur').elements ?? []).map((element) => <span key={element} className={`is-${element}`}>{element}</span>)}</div>
-            {!validationDeckJoueur.ok && <small role="alert">Deck non compatible : {validationDeckJoueur.raison}</small>}
-            <button type="button" onClick={() => setEdition('joueur')}>Personnaliser le deck du joueur</button>
+        <div className="moba__deck-picker-heading"><div><span>VOTRE CAMP</span><h3>Choisissez votre deck</h3></div><p>Vos decks sont représentés par des paquets, sans achat.</p></div>
+        <section className="moba__booster-group" aria-label="Vos decks">
+          <div className="moba__booster-list">
+            {decksPersonnalises.joueur && <BoosterDeck deck={decksPersonnalises.joueur} selected onSelect={() => {}} />}
+            {decksDuJoueur.map((option) => <BoosterDeck key={option.id} deck={option} selected={!decksPersonnalises.joueur && deckPour('joueur')?.id === option.id} onSelect={() => choisirDeck(option.id)} />)}
+            {!decksPersonnalises.joueur && !decksDuJoueur.length && <p className="moba__setup-empty">Vous n’avez pas encore de deck. Créez-en un pour commencer.</p>}
           </div>
-          <div className="moba__opponent-deck"><div className="moba__opponent-pack" aria-hidden="true"><span>LE SABLIER</span><b>?</b><small>TOUR</small></div><div><span>CAMP ADVERSE</span><strong>Deck de tour aléatoire</strong><small>{MOBA_DECKS_TOURS.length} / {MOBA_DECKS_TOURS_TOTAL} decks de tour sont compatibles avec le MOBA. L’IA en reçoit un au hasard à chaque duel.</small></div></div>
+        </section>
+        {!validationDeckJoueur.ok && <p className="moba__setup-warning" role="status">{deckPour('joueur') ? `Deck non compatible : ${validationDeckJoueur.raison}` : validationDeckJoueur.raison}</p>}
+        <div className="moba__setup-actions">
+          <button type="button" onClick={onQuitter}>← Retour au menu</button>
+          <button type="button" onClick={() => setEdition('joueur')}>{deckPour('joueur') ? 'Personnaliser le deck' : 'Créer un deck'}</button>
+          <button type="button" className="moba__primary" disabled={!validationDeckJoueur.ok} onClick={() => { if (!validationDeckJoueur.ok) return; const adversaire = rpgMobaDeckTourAleatoire() ?? MOBA_DECKS[0]; setDeckSorcier(adversaire); setDuel(nouveau(deckPour('joueur'), adversaire)); setEtape('mulligan'); }}>Commencer le duel <span aria-hidden="true">→</span></button>
         </div>
-        <div className="moba__setup-actions"><button type="button" onClick={onQuitter}>← Retour au menu</button><button type="button" className="moba__primary" disabled={!validationDeckJoueur.ok} onClick={() => { if (!validationDeckJoueur.ok) return; const adversaire = rpgMobaDeckTourAleatoire() ?? MOBA_DECKS[0]; setDeckSorcier(adversaire); setDuel(nouveau(deckPour('joueur'), adversaire)); setEtape('mulligan'); }}>Commencer le duel <span aria-hidden="true">→</span></button></div>
       </div>
     </div>}
-    {etape === 'choix' && edition && <RpgMobaDeckEditor key={edition} deck={deckPour(edition)} joueur={noms[edition]} onCancel={() => setEdition(null)} onSave={(deck) => { setDecksPersonnalises((decks) => ({ ...decks, [edition]: deck })); setEdition(null); }} />}
+    {etape === 'choix' && edition && <RpgMobaDeckEditor key={edition} deck={deckPour(edition) ?? { cardIds: [], elements: [] }} joueur={noms[edition]} onCancel={() => setEdition(null)} onSave={(deck) => { setDecksPersonnalises((decks) => ({ ...decks, [edition]: deck })); setEdition(null); }} />}
     {etape === 'mulligan' && <div className="moba__overlay moba__mulligan-overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Votre main de départ"><div className="moba__modal moba__mulligan"><div className="moba__mulligan-intro"><span>PRÉPARATION · {noms[mulliganSide].toUpperCase()}</span><h2>Votre main de départ</h2><p>Touchez les cartes à échanger, ou gardez votre main.</p></div><div className="moba__mulligan-cards">{duel[mulliganSide].main.map((id, index) => {
       const card = cardById(id), choisi = mulliganIndices.includes(index);
       const toggle = () => setMulliganIndices((ids) => ids.includes(index) ? ids.filter((n) => n !== index) : [...ids, index]);
