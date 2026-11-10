@@ -50,6 +50,16 @@ export function nativeFullscreenElement(root = currentDocument()) {
   return root?.fullscreenElement || root?.webkitFullscreenElement || null;
 }
 
+/** Un geste sur la mise à jour PC doit atteindre son bouton avant toute
+ * demande de plein écran, qui déplacerait le panneau pendant le clic. */
+export function gesteSurMiseAJourDesktop(event) {
+  const cible = event?.target;
+  const doc = cible?.ownerDocument ?? cible?.document;
+  // Même si le focus est resté sur la table, une modale ouverte doit empêcher
+  // les raccourcis du duel et la demande automatique de plein écran.
+  return Boolean(cible?.closest?.('.rpg-maj, .rpg-maj__pastille') || doc?.querySelector?.('.rpg-maj[role="dialog"]'));
+}
+
 /**
  * Demande le plein écran natif pour `element`. À appeler **de façon synchrone**
  * dans le geste de l'utilisateur (clic, touche) : le navigateur refuse sinon.

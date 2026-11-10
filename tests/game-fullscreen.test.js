@@ -170,3 +170,19 @@ test('valeurs absurdes : repli sur le plafond de densité, jamais 0 ni NaN', () 
   assert.equal(renderPixelRatio(978, 700, -2), 1);
   assert.equal(renderPixelRatio(978, 700), 1, 'densité omise : 1');
 });
+
+test('les gestes sur la mise à jour PC ne demandent pas le plein écran au milieu du clic', async () => {
+  const { JSDOM } = await import('jsdom');
+  const { gesteSurMiseAJourDesktop } = await import('../src/games/gameFullscreen.js');
+  const dom = new JSDOM('<div class="rpg-maj" role="dialog"><button><span>Télécharger</span></button></div><button class="rpg-maj__pastille"><span>MAJ</span></button><button class="jeu">Jouer</button>');
+  try {
+    for (const target of dom.window.document.querySelectorAll('.rpg-maj span, .rpg-maj__pastille span')) {
+      assert.equal(gesteSurMiseAJourDesktop({ target }), true);
+    }
+    assert.equal(gesteSurMiseAJourDesktop({ target: dom.window.document.querySelector('.jeu') }), true, 'focus resté sur la table pendant la modale');
+    dom.window.document.querySelector('.rpg-maj').remove();
+    assert.equal(gesteSurMiseAJourDesktop({ target: dom.window.document.querySelector('.jeu') }), false);
+    assert.equal(gesteSurMiseAJourDesktop({ target: dom.window }), false);
+    assert.equal(gesteSurMiseAJourDesktop(null), false);
+  } finally { dom.window.close(); }
+});
