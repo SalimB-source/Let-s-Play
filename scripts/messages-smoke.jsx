@@ -246,6 +246,36 @@ export function renderRequestsTab({ incoming = [], outgoing = [], lang = 'fr' } 
   ));
 }
 
+/** Le bouton flottant reste absent, mais un profil ami ouvre toujours le fil. */
+export async function checkDockSansLanceur(assert) {
+  window.localStorage.clear();
+  window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
+  window.scrollTo = () => {};
+  const node = document.createElement('div');
+  document.body.append(node);
+  const root = createRoot(node);
+  try {
+    await act(async () => root.render(createApp('/profile/demo-player-3105', { lang: 'fr' })));
+    assert.equal(node.querySelector('.social-launcher'), null);
+    assert.equal(document.body.classList.contains('has-messages-dock'), false);
+    const message = node.querySelector('button.message-btn:not(:disabled)');
+    assert.ok(message, 'le profil ami garde son bouton Message');
+    await act(async () => message.click());
+    assert.ok(node.querySelector('.social-panel .messages-thread'), 'le fil reste accessible');
+    assert.equal(node.querySelector('.social-launcher'), null);
+    assert.equal(document.body.classList.contains('social-dock-open'), true);
+    const close = node.querySelector('.social-panel .social-tool[aria-label="Fermer"]');
+    assert.ok(close, 'la fenêtre conserve son bouton de fermeture');
+    await act(async () => close.click());
+    assert.equal(node.querySelector('.social-panel'), null);
+    assert.equal(node.querySelector('.social-launcher'), null);
+    assert.equal(document.body.classList.contains('has-messages-dock'), false);
+  } finally {
+    await act(async () => root.unmount());
+    node.remove();
+  }
+}
+
 /** Clic réel (DOM) : annulation, confirmation, disparition puis rechargement. */
 export async function checkClearInteraction(assert) {
   const user = DEMO_PROFILE_FIXTURES.vortex;

@@ -20,9 +20,8 @@ import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
  * Fenêtre sociale unifiée — amis + messagerie dans la même fenêtre, ancrée
  * en bas à droite.
  * ---------------------------------------------------------------------------
- * Un seul lanceur compact — le logo « Let’s Talk » (voir `LetsTalkLogo`),
- * les pastilles des non-lus et des demandes d'amis reçues, le compteur d'amis
- * en ligne — ouvre un panneau à trois onglets :
+ * Le panneau, ouvert depuis les autres accès à la messagerie, possède trois
+ * onglets (il n’y a pas de bouton flottant permanent) :
  *
  *   - **Messages** : la liste unique amis + discussions (`InboxView`) —
  *     chaque ligne est un ami, discussion ouverte au clic, présence et accès
@@ -43,14 +42,14 @@ import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
  * Sur la page de messagerie (`/messages`), la fenêtre s'efface entièrement :
  * c'est la page qui porte la messagerie, rien ne flotte par-dessus.
  *
- * Dans le Sablier (`/jeu/sablier-de-bab-el*`), elle reste au contraire
- * présente et **visible au-dessus du jeu** sur ordinateur
+ * Dans le Sablier (`/jeu/sablier-de-bab-el*`), lorsqu’elle est ouverte,
+ * elle reste **visible au-dessus du jeu** sur ordinateur
  * (`social-dock--sablier`) : la messagerie est le canal des défis du duel en
  * ligne, et le jeu — une couche plein écran — la couvrait entièrement. Sur
- * téléphone, au contraire, le lanceur s’efface sur ces routes : la
+ * téléphone, au contraire, la fenêtre du site s’efface sur ces routes : la
  * messagerie du jeu vit dans le jeu lui-même — son onglet au menu, son voile
  * au-dessus de la table et du salon (`src/games/RpgMessageriePanel.jsx`) — et
- * le lanceur n’aurait fait que mener hors de la partie.
+ * la fenêtre du site n’aurait fait que mener hors de la partie.
  */
 
 /**
@@ -107,22 +106,6 @@ export default function SocialDock() {
   // Sur la page sociale, le lanceur flottant disparaît : la page se suffit
   // à elle-même.
   const onSocialRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
-  const onHomeRoute = location.pathname === '/';
-  const [homeHeroDock, setHomeHeroDock] = useState(false);
-  useEffect(() => {
-    if (!onHomeRoute) {
-      setHomeHeroDock(false);
-      return undefined;
-    }
-    const updateHomeHeroDock = () => setHomeHeroDock(window.scrollY < window.innerHeight * 0.6);
-    updateHomeHeroDock();
-    window.addEventListener('scroll', updateHomeHeroDock, { passive: true });
-    window.addEventListener('resize', updateHomeHeroDock);
-    return () => {
-      window.removeEventListener('scroll', updateHomeHeroDock);
-      window.removeEventListener('resize', updateHomeHeroDock);
-    };
-  }, [onHomeRoute]);
   // Dans le Sablier, la fenêtre sociale passe au-dessus de la couche plein
   // écran du jeu : voir `estRouteSablier` ci-dessus et `social.css`.
   const onSablierRoute = estRouteSablier(location.pathname);
@@ -160,7 +143,7 @@ export default function SocialDock() {
     closeMessagesDock();
   };
 
-  // Sur mobile, tout clic sur le lanceur ou sur un onglet social ouvre la
+  // Sur mobile, tout clic sur un onglet social ouvre la
   // page dédiée (pas de pop-up) : l'historique de navigation fonctionne,
   // le bouton retour du téléphone ferme la page, et l'utilisateur n'est
   // jamais « piégé » dans un overlay sans retour visible.
@@ -179,18 +162,6 @@ export default function SocialDock() {
     navigate(`${path}${search ? `?${search}` : ''}`);
   };
 
-  const toggle = () => {
-    // Sans compte, le panneau n'a aucune donnée à montrer : la page dédiée
-    // explique la connexion au lieu d'ouvrir une fenêtre sociale vide.
-    if (!enabled) { goSocial('messages'); return; }
-    if (isMobile) {
-      // Sur mobile, le lanceur ouvre toujours la page sociale (inbox).
-      goSocial('messages');
-      return;
-    }
-    if (open) { closeAll(); return; }
-    openDock(tab === 'messages' ? 'messages' : dockTab);
-  };
   const selectTab = (tabId) => {
     if (isMobile) {
       // Mobile : tous les onglets mènent vers la page sociale (paramètre ?tab=).
@@ -232,22 +203,9 @@ export default function SocialDock() {
     navigate(target);
   }, [connexionEnAttente, isMobile, enabled, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
 
-  // Classes sur <body> : social.css y lit la place prise par le lanceur ou la
-  // fenêtre pour décaler les notifications de succès. Sur mobile, rien ne
-  // verrouille le scroll (pas de pop-up plein écran puisque tout se passe
-  // dans une vraie page). Sur la page sociale, le lanceur flottant étant
-  // masqué, aucune classe n'est posée.
-  // La WebView de l'APK possède sa propre session : même si le joueur n'y est
-  // pas encore connecté, garder un accès visible à /messages, qui affiche
-  // alors l'invitation à se connecter (sans exposer les conversations).
-  // Dans le Sablier **sur téléphone**, le lanceur flottant disparaît à son
-  // tour : la messagerie vit désormais dans le jeu — son onglet au menu
-  // (`RpgDuelPage.jsx`), son voile au-dessus de la table et du salon
-  // (`RpgMessageriePanel.jsx`). Le lanceur n’aurait servi qu’à sortir du jeu
-  // (il ouvre la page `/messages`, qui démonte la partie en cours), et en
-  // plein écran natif (APK) il reste de toute façon peint sous la coque du
-  // jeu : invisible. Le jeu est son propre accès à la messagerie.
-  const dockVisible = !connexionEnAttente && !onSocialRoute && !(onSablierRoute && isMobile);
+  // Sans lanceur flottant, le dock n'occupe de place que lorsque le panneau
+  // est ouvert depuis un autre accès. Sur mobile, la page dédiée est utilisée.
+  const dockVisible = !connexionEnAttente && !onSocialRoute && !(onSablierRoute && isMobile) && open;
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;
@@ -413,7 +371,7 @@ export default function SocialDock() {
   ];
 
   return (
-    <div className={`social-dock${open ? ' is-open' : ''}${onSablierRoute ? ' social-dock--sablier' : ''}${homeHeroDock ? ' social-dock--home-hero' : ''}`}>
+    <div className={`social-dock${open ? ' is-open' : ''}${onSablierRoute ? ' social-dock--sablier' : ''}`}>
       {open && (
         <section className="social-panel" role="dialog" aria-label={t.title} aria-modal="false">
           {!inThread && (
@@ -469,41 +427,6 @@ export default function SocialDock() {
           {mode === 'demo' && <footer className="social-panel-foot">{t.demoNote}</footer>}
         </section>
       )}
-      {/* Les pastilles de notification vivent dans un conteneur dédié : elles
-          peuvent dépasser légèrement du bouton arrondi sans être rognées. */}
-      <span className="social-launcher-wrap">
-        <button
-          type="button"
-          className={`social-launcher${unreadTotal > 0 || pendingCount > 0 ? ' has-alert' : ''}`}
-          onClick={toggle}
-          aria-expanded={open}
-          aria-label={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
-          title={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
-        >
-          {/* Le logo porte le nom visible ; le libellé texte reste dans le
-              DOM pour les lecteurs d'écran et les rendus sans SVG. Les trois
-              points de la bulle ondulent tant que des messages attendent. */}
-          <LetsTalkLogo className="social-launcher-logo" typing={unreadTotal > 0} />
-          <span className="sr-only">{t.launcher}</span>
-          {enabled && <span className="social-launcher-meta">
-            <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
-            {onlineCount} {ft.online}
-          </span>}
-          {unreadTotal > 0 && (
-            <span className="social-launcher-meta social-launcher-meta-unread">{unreadTotal} {mt.unread}</span>
-          )}
-        </button>
-        {unreadTotal > 0 && (
-          <span className="social-launcher-badge social-launcher-badge-unread" aria-label={fill(mt.unreadCount, { count: unreadTotal })}>
-            {unreadTotal}
-          </span>
-        )}
-        {pendingCount > 0 && (
-          <span className="social-launcher-badge social-launcher-badge-requests" aria-label={`${pendingCount} ${ft.tabRequests}`}>
-            {pendingCount}
-          </span>
-        )}
-      </span>
     </div>
   );
 }

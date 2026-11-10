@@ -31,8 +31,7 @@
  * typography.css impose 400 en `!important` : le gras ne tient que grâce au
  * bloc dédié de ce même fichier.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
- *    langues ; le lanceur reste visible pour un visiteur et l'envoie vers
- *    la page de connexion, sans ouvrir les conversations ; pour un joueur
+ *    langues ; aucun lanceur flottant n'est affiché ; pour un joueur
  *    connecté, la fenêtre sociale ouverte sur la messagerie montre la
  *    liste des discussions puis la discussion en cours (bulles + champ de
  *    saisie + bulle de suggestions à l'ouverture, fermable) ; le bouton
@@ -83,7 +82,7 @@ const {
   makeStorage, markThreadReadLocal, mergeUnread, messageSuggestions, messagesCopy, normalizeMessage, peersFromKey,
   prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
   sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
-  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp,
+  checkClearInteraction, checkSuggestionInteraction, checkDockSansLanceur, findDemoPlayer, renderApp,
   renderInboxView, renderRequestsTab, renderThreadView, callsText,
 } = smoke;
 
@@ -376,7 +375,7 @@ for (const lang of ['en', 'fr', 'ar']) {
   const st = socialCopy[lang];
   try {
     const guest = renderApp('/auth', { lang });
-    check(`[${lang}] visiteur : lanceur vers la messagerie visible`, guest.includes('social-launcher') && strip(guest).includes(st.launcher));
+    check(`[${lang}] visiteur : aucun lanceur flottant`, guest.includes('social-launcher'), false);
     check(`[${lang}] visiteur : aucun panneau de discussions`, guest.includes('social-panel'), false);
     check(`[${lang}] menu mobile : accès direct à /messages`, guest.includes('class="nav-messages-link') && guest.includes('href="/messages"'));
     const gate = renderApp('/messages', { lang });
@@ -387,8 +386,7 @@ for (const lang of ['en', 'fr', 'ar']) {
   try {
     const html = renderApp('/auth', { lang, demoKey: 'vortex' });
     const text = strip(html);
-    check(`[${lang}] persona : lanceur « ${st.launcher} » présent`, html.includes('social-launcher') && text.includes(st.launcher));
-    check(`[${lang}] persona : badge des non-lus`, html.includes('social-launcher-badge'));
+    check(`[${lang}] persona : aucun lanceur flottant ni badge`, html.includes('social-launcher'), false);
     // Le profil du joueur n'affiche plus les raccourcis de messagerie : la
     // discussion se rejoint par la fenêtre sociale (ou la page /messages).
     check(`[${lang}] hub : aucun raccourci de messagerie`, text.includes(t.hubOpen), false);
@@ -398,6 +396,7 @@ for (const lang of ['en', 'fr', 'ar']) {
     const html = renderApp('/auth', { lang, demoKey: 'vortex', dockOpen: true });
     const text = strip(html);
     check(`[${lang}] fenêtre ouverte : liste des discussions`, html.includes('social-panel') && text.includes(t.sectionConversations));
+    check(`[${lang}] fenêtre ouverte : aucun lanceur flottant`, html.includes('social-launcher'), false);
     check(`[${lang}] fenêtre ouverte : onglet « ${st.tabMessages} » actif`, text.includes(st.tabMessages));
     const seededPeer = Object.keys(DEMO_THREADS.vortex)[0];
     const lastBody = DEMO_THREADS.vortex[seededPeer].at(-1).body;
@@ -439,7 +438,7 @@ for (const lang of ['en', 'fr', 'ar']) {
 // Amis + messagerie partagent maintenant une seule fenêtre sociale.
 try {
   const html = renderApp('/auth', { lang: 'fr', demoKey: 'vortex' });
-  check('une seule fenêtre sociale', (html.match(/class="social-launcher( |")/g) || []).length, 1);
+  check('aucun lanceur flottant', (html.match(/class="social-launcher( |")/g) || []).length, 0);
   const opened = strip(renderApp('/auth', { lang: 'fr', demoKey: 'vortex', friendsOpen: true }));
   check('fenêtre unifiée : trois onglets (Messages, Demandes, Ajouter)', opened.includes(socialCopy.fr.tabMessages) && opened.includes(friendsCopy.fr.tabRequests) && opened.includes(friendsCopy.fr.tabAdd));
   check('fenêtre unifiée : plus d’onglet Amis séparé', !opened.includes('>Amis<'));
@@ -582,6 +581,8 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
+  await checkDockSansLanceur(assert);
+  check('sans lanceur : ouverture depuis un profil et fermeture du panneau', true);
   await checkClearInteraction(assert);
   check('annuler / confirmer : fil effacé et persistant pour la persona seulement', true);
   await checkSuggestionInteraction(assert);
