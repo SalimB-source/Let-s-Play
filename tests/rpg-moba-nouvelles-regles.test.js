@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan } from '../src/games/rpgDuel.js';
 import { mobaInfliger, mobaSoigner, mobaVoie } from '../src/games/rpgMoba.js';
 import { MOBA_DECKS, rpgMobaNouveauDuel, rpgMobaCiblesAttaque, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaValiderDeck } from '../src/games/rpgMobaLocal.js';
-import { MOBA_DECKS_TOURS, rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from '../src/games/rpgMobaDecks.js';
+import { MOBA_DECKS_TOURS, MOBA_DECKS_TOURS_TOTAL, rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from '../src/games/rpgMobaDecks.js';
 import { rpgMobaCombatIndicators } from '../src/games/rpgMobaCombatIndicators.js';
 
 function partie() {
@@ -56,6 +56,8 @@ test('une arrivée ciblée centrale peut choisir une créature latérale', () =>
 
 test('le tirage IA utilise les decks des tours intacts et audités, et les decks maison gardent leur identité', () => {
   assert.ok(MOBA_DECKS_TOURS.length > 1);
+  assert.ok(MOBA_DECKS_TOURS.length <= MOBA_DECKS_TOURS_TOTAL);
+  for (const deck of MOBA_DECKS) assert.equal(rpgMobaValiderDeck(deck).ok, true, deck.name);
   for (const deck of MOBA_DECKS_TOURS) assert.equal(rpgMobaValiderDeck(deck).ok, true, deck.name);
   assert.equal(rpgMobaDeckTourAleatoire(() => 0), MOBA_DECKS_TOURS[0]);
   assert.equal(rpgMobaDeckTourAleatoire(() => .999999), MOBA_DECKS_TOURS.at(-1));

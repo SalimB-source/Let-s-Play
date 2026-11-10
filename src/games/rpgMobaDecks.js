@@ -7,6 +7,9 @@ export function rpgMobaDeckMaison(deck) {
   return { ...deck, name: deck.name ?? deck.nom ?? 'Deck maison', elements: deck.elements ?? (deck.element ? [deck.element] : []) };
 }
 
+// Nombre d'étages disposant d'un deck, avant le filtre de compatibilité MOBA.
+export const MOBA_DECKS_TOURS_TOTAL = RPG_STORY_TOURS.reduce((total, tour) => total + tour.etages.filter((etage) => deckHistoire(etage.deck)).length, 0);
+
 export const MOBA_DECKS_TOURS = Object.freeze(RPG_STORY_TOURS.flatMap((tour) => tour.etages.flatMap((etage) => {
   const cardIds = deckHistoire(etage.deck);
   if (!cardIds) return [];

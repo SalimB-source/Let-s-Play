@@ -72,10 +72,10 @@ test('local turn changes give the second seat control of its own slots', () => {
 
 test('inactive lanes, finished games and unsupported arrival effects are gated', () => {
   const duel = partie();
-  duel.joueur.main.push('tojiro-le-pourfendeur');
+  duel.joueur.main.push('boualem');
   duel.joueur.mana.sable = 8;
   let before = JSON.stringify(duel);
-  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'tojiro-le-pourfendeur', 'left', 0).raison, 'effet-non-pris-en-charge');
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'boualem', 'left', 0).raison, 'effet-non-pris-en-charge');
   assert.equal(JSON.stringify(duel), before);
   mobaInfliger(duel.moba, 'joueur', 'center', 10);
   before = JSON.stringify(duel);
@@ -190,12 +190,12 @@ test('real engine direct damage conquers, removes both sides, and triggers secon
 test('unaudited creatures are rejected before placement and combat fails closed for an out-of-band entity', () => {
   const duel = partie();
   duel.joueur.mana.sable = 3;
-  duel.joueur.main.push('tojiro-le-pourfendeur');
+  duel.joueur.main.push('boualem');
   const before = JSON.stringify(duel);
-  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'tojiro-le-pourfendeur', 'left', 0).raison, 'effet-non-pris-en-charge');
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'boualem', 'left', 0).raison, 'effet-non-pris-en-charge');
   assert.equal(JSON.stringify(duel), before);
   const { entite } = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0);
-  entite.carteId = 'tojiro-le-pourfendeur'; // emulate a mutation outside the adapter
+  entite.carteId = 'boualem'; // emulate a mutation outside the adapter
   entite.ready = true;
   const corrupted = JSON.stringify(duel);
   assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [entite.id], {}).raison, 'effet-non-pris-en-charge');
@@ -1235,10 +1235,10 @@ test('custom deck validation enforces normal deck rules and the MOBA audit gate'
   assert.match(rpgMobaValiderDeck(outsideIdentity).raison, /hors identité/);
   const fourColors = { ...base, elements: ['neige', 'braise', 'sable', 'eau'] };
   assert.match(rpgMobaValiderDeck(fourColors).raison, /1 à 3 couleurs/);
-  const unsupported = { ...base, cardIds: [...base.cardIds] };
-  unsupported.cardIds[unsupported.cardIds.indexOf('viking-des-neiges')] = 'tojiro-le-pourfendeur';
+  const unsupported = { ...base, elements: ['neige', 'braise', 'eau'], cardIds: base.cardIds.map((id) => id === 'mousse-des-galiotes' ? 'viking-des-neiges' : id === 'gardienne-des-portes-de-sable' ? 'ronin-du-soleil-rouge' : id) };
+  unsupported.cardIds[unsupported.cardIds.indexOf('viking-des-neiges')] = 'boualem';
   assert.match(rpgMobaValiderDeck(unsupported).raison, /carte non adaptée/);
-  assert.deepEqual(rpgMobaCreerPartie(base, unsupported), { ok: false, side: 'sorcier', raison: 'carte non adaptée au MOBA : tojiro-le-pourfendeur' });
+  assert.deepEqual(rpgMobaCreerPartie(base, unsupported), { ok: false, side: 'sorcier', raison: 'carte non adaptée au MOBA : boualem' });
 });
 
 test('a validated custom deck starts an independent match with its own colours and cards', () => {
@@ -5567,7 +5567,7 @@ test('Réanimation : arrivée de la Porteuse soigne la voie choisie et conserve 
 
 test('Réanimation : refus sans créature, case libre ou carte auditée, sans aucun paiement', () => {
   const duel = reanimationFixture();
-  for (const [grave, lane, slot] of [[[], 'left',0], [['tojiro-le-pourfendeur'], 'left',0], [['gardienne-des-portes-de-sable'], 'center',1], [['gardienne-des-portes-de-sable'], 'unknown',0]]) {
+  for (const [grave, lane, slot] of [[[], 'left',0], [['boualem'], 'left',0], [['gardienne-des-portes-de-sable'], 'center',1], [['gardienne-des-portes-de-sable'], 'unknown',0]]) {
     duel.joueur.cimetiere = grave; const avant = JSON.stringify(duel);
     assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, lane, null, {emplacementReanimation:slot}).raison, 'cible');
     assert.equal(JSON.stringify(duel), avant);
@@ -8926,7 +8926,7 @@ test('Passeur MOBA : champ plein ou dernière créature non auditée restent au 
     const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30 });
     duel.joueur.main = Array(4).fill('gardienne-des-portes-de-sable').concat('passeur-au-masque-de-chacal');
     if (mode === 'plein') for (const [lane, slot] of [['left',0], ['left',1], ['right',0], ['right',1]]) assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', lane, slot).ok, true);
-    duel.joueur.cimetiere = mode === 'plein' ? ['chien-du-guet'] : ['chien-du-guet', 'tojiro-le-pourfendeur'];
+    duel.joueur.cimetiere = mode === 'plein' ? ['chien-du-guet'] : ['chien-du-guet', 'boualem'];
     const avant = [...duel.joueur.cimetiere];
     assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'center', 0).ok, true);
     assert.deepEqual(duel.joueur.cimetiere, avant); assert.equal(rpgMobaPlacementCoherent(duel), true);
@@ -9385,7 +9385,7 @@ for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: announce
   duel.fenetreReponse = true;
   assert.equal(rpgMobaPasserSort(duel, defender).ok, true);
   assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
-  assert.equal(MOBA_CARTES_AUTORISEES.includes(gardien.id), false);
+  assert.equal(MOBA_CARTES_AUTORISEES.includes(gardien.id), true);
 });
 
 for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${caster}'s untargeted wave is not a targeted spell`, () => {
@@ -9401,10 +9401,8 @@ for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${caster
   assert.equal(rpgMobaPasserSort(duel, defender).ok, true);
 });
 
-test('the eleven unaudited creatures remain gated and cannot be summoned during their own turn', () => {
-  const ids = ['sentinelle-des-sables', 'tojiro-le-pourfendeur', 'garde-du-trone-givre',
-    'eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune',
-    'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree', 'boualem', 'sorcier-du-ressac-noir'];
+test('the unaudited creatures remain gated and cannot be summoned during their own turn', () => {
+  const ids = ['boualem'];
   for (const side of ['joueur', 'sorcier']) {
     const duel = partie();
     if (side === 'sorcier') rpgFinDeTour(duel);
@@ -9463,7 +9461,7 @@ for (const attackerSide of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${
   }
 });
 
-for (const caster of ['joueur', 'sorcier']) for (const instant of [false, true]) test(`Embuscade gate: ${caster}'s targeted arrival ${instant ? 'opens for an audited instant' : 'does not open for a gated creature alone'}`, () => {
+for (const caster of ['joueur', 'sorcier']) for (const instant of [false, true]) test(`Embuscade gate: ${caster}'s targeted arrival ${instant ? 'opens for an audited instant' : 'opens for the Gardienne alone'}`, () => {
   const defender = caster === 'joueur' ? 'sorcier' : 'joueur';
   const duel = partie();
   if (duel.tour !== defender) rpgFinDeTour(duel);
@@ -9488,8 +9486,9 @@ for (const caster of ['joueur', 'sorcier']) for (const instant of [false, true])
     assert.equal(rpgMobaPasserEffetCreature(duel, defender).ok, true);
     assert.equal(target.pv, life);
   } else {
-    assert.equal(duel.effetCreatureEnAttente, null);
-    assert.equal(duel.fenetreReponse, false);
+    assert.ok(duel.effetCreatureEnAttente);
+    assert.equal(target.pv, life);
+    assert.equal(rpgMobaPasserEffetCreature(duel, defender).ok, true);
     assert.ok(!duel[defender].creatures.includes(target) || target.pv < life);
   }
   assert.deepEqual(duel[defender].main, ['gardienne-du-croissant']);
@@ -9497,21 +9496,21 @@ for (const caster of ['joueur', 'sorcier']) for (const instant of [false, true])
 });
 
 
-test('an Embuscade is not admitted on its own turn by the combat audit alone', () => {
-  const id = 'garde-du-trone-givre';
-  assert.equal(CARTES_COMBAT_AUDITEES.has(id), false);
-  CARTES_COMBAT_AUDITEES.add(id);
+test('an Embuscade removed from the combat audit fails closed', () => {
+  const id = 'tojiro-le-pourfendeur';
+  assert.equal(CARTES_COMBAT_AUDITEES.has(id), true);
+  CARTES_COMBAT_AUDITEES.delete(id);
   try {
     for (const side of ['joueur', 'sorcier']) {
       const duel = partie();
       if (side === 'sorcier') rpgFinDeTour(duel);
-      duel[side].main = [id]; duel[side].mana.neige = 20; duel[side].mana.tenebres = 20;
+      duel[side].main = [id]; duel[side].mana.braise = 20;
       const before = JSON.stringify(duel);
       assert.equal(rpgMobaJouerCreature(duel, side, id, 'left', 0).raison, 'effet-non-pris-en-charge');
       assert.equal(JSON.stringify(duel), before);
     }
   } finally {
-    CARTES_COMBAT_AUDITEES.delete(id);
+    CARTES_COMBAT_AUDITEES.add(id);
   }
 });
 
