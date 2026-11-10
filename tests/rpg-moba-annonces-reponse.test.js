@@ -16,7 +16,7 @@ async function setup(partage = true) {
   const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
   let duel;
   const initialiser = () => (duel = local.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'eau', 'neige'], sorcierCouleurs: ['braise', 'sable', 'neige'], rng: () => .5 }));
-  const props = { initialiser, onQuitter: () => {}, rendu: partage ? { HoverCardPreview: RPG_RENDU_MOBA.HoverCardPreview } : null };
+  const props = { initialiser, onQuitter: () => {}, rendu: partage ? { HoverCardPreview: RPG_RENDU_MOBA.HoverCardPreview, TableCard: RPG_RENDU_MOBA.TableCard } : null };
   const root = createRoot(document.getElementById('root'));
   const render = () => act(async () => root.render(React.createElement(Board, props)));
   const text = (selector, value) => [...document.querySelectorAll(selector)].find((node) => node.textContent.includes(value));
@@ -86,6 +86,7 @@ test('sort adverse : sa cible est montrée, le bouclier peut répondre puis le s
     d.joueur.main = ['ashigaru-des-braises']; d.joueur.mana.braise = 10;
     const cible = local.rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
     assert.ok(cible); const pv = cible.pv;
+    cible.attaquee = true;
     classic.rpgFinDeTour(d);
     if (d.sorcier.manaChoixEnAttente) classic.rpgChoisirCouleurMana(d, 'sorcier', 'neige');
     d.sorcier.main = ['poigne-de-givre']; d.sorcier.mana.neige = 20;
@@ -95,10 +96,14 @@ test('sort adverse : sa cible est montrée, le bouclier peut répondre puis le s
     const modal = document.querySelector('.moba__card-announcement');
     assert.match(modal.getAttribute('aria-label'), /Poigne de givre.*Ashigaru.*Voie gauche/i);
     assert.equal(cible.pv, pv);
+    const cibleDOM = () => document.querySelector(`[data-moba-entity="${cible.id}"] .rpg-card`);
+    assert.equal(cibleDOM()?.dataset.combatTilted, 'true', 'reste engagée pendant la réponse');
     await t.click(t.text('.moba__card-announcement button', 'Répondre'));
     await t.click(t.text('.moba__card', 'Parade de verre'));
     await t.click(document.querySelector(`[data-moba-entity="${cible.id}"] button`));
     assert.equal(cible.bouclier, 1); assert.ok(d.mobaSortEnAttente);
+    assert.equal(cible.attaquee, true);
+    assert.equal(cibleDOM()?.dataset.combatTilted, 'true', 'reste engagée après le sort en réponse');
     await t.click(t.text('.moba__controls button', 'Voir l’annonce'));
     await t.click(t.text('.moba__card-announcement button', 'Laisser passer'));
     assert.equal(d.mobaSortEnAttente, null); assert.equal(cible.pv, pv);

@@ -1,0 +1,80 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { cardById } from '../src/games/rpgCards.js';
+import { rpgMulligan, rpgDemarrerManaEssai, rpgFinDeTour, rpgNouveauDuel, rpgPeutPayer } from '../src/games/rpgDuel.js';
+import { sacrificesInvocation } from '../src/games/rpgInvocation.js';
+import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaTerminerTour, rpgMobaPasserFinDeTour } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaChoisirCreatureIA } from '../src/games/rpgMobaAI.js';
+
+function partie() {
+  const d = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['sable', 'braise'], sorcierCouleurs: ['braise', 'eau'], rng: () => .5 });
+  assert.ok(rpgMulligan(d, 'joueur', []).ok); assert.ok(rpgMulligan(d, 'sorcier', []).ok); assert.ok(rpgDemarrerManaEssai(d).ok);
+  return d;
+}
+function donner(d, cote, id) { d[cote].main.push(id); }
+
+test('pas de mana ni de choix de couleur, en début de partie ou aux tours suivants', () => {
+  const d = partie();
+  assert.equal(d.joueur.manaChoixEnAttente, false);
+  for (const side of ['joueur', 'sorcier']) assert.equal(Object.values(d[side].mana).reduce((a,b) => a+b, 0), 0);
+  assert.equal(rpgMobaTerminerTour(d, 'joueur').ok, true);
+  assert.equal(rpgMobaPasserFinDeTour(d, 'sorcier').ok, true);
+  assert.equal(d.sorcier.manaChoixEnAttente, false);
+  assert.equal(Object.values(d.sorcier.manaMax).reduce((a,b) => a+b, 0), 0);
+});
+
+test('coûts imprimés 1 à 4 gratuits, sorts et prix en PV séparés ; classique inchangé', () => {
+  const d = partie();
+  for (const [id, lane, slot] of [['ashigaru-des-braises','left',0], ['gardienne-des-portes-de-sable','left',1], ['ronin-du-soleil-rouge','right',0], ['pourfendeur-des-djinns','right',1]]) {
+    donner(d, 'joueur', id);
+    assert.ok(cardById(id).cost <= 4); assert.equal(sacrificesInvocation(cardById(id), d), 0);
+    assert.ok(rpgMobaJouerCreature(d, 'joueur', id, lane, slot).ok, id);
+  }
+  donner(d, 'joueur', 'trait-de-braise');
+  assert.ok(rpgMobaLancerMagie(d, 'joueur', 'trait-de-braise', 'sorcier', 'center').ok);
+  assert.equal(Object.values(d.joueur.mana).reduce((a,b) => a+b, 0), 0);
+  const classique = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
+  assert.equal(rpgPeutPayer(classique.joueur, cardById('trait-de-braise')), false);
+});
+
+test('une seule invocation à sacrifice par camp et par tour, y compris après une annonce contrée', () => {
+  const d = partie();
+  const a = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  const b = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
+  donner(d, 'joueur', 'anqa-des-braises'); donner(d, 'joueur', 'orochi'); donner(d, 'sorcier', 'ecueil');
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'anqa-des-braises', 'left', 0, { ouvrirReponse: true, sacrificeIds: [a.id] }).ok);
+  assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'ecueil').contre);
+  assert.ok(d.joueur.creatures.some(e => e.id === a.id), 'contre : les victimes restent en jeu');
+  assert.equal(rpgMobaPeutPayer(d, 'joueur', cardById('orochi')), false);
+  const before = JSON.stringify(d);
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'orochi', 'left', 0, { sacrificeIds: [a.id, b.id] }).raison, 'sacrifice-limite');
+  assert.equal(JSON.stringify(d), before);
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  assert.equal(rpgMobaPeutPayer(d, 'joueur', cardById('orochi')), true);
+  const result = rpgMobaJouerCreature(d, 'joueur', 'orochi', 'left', 0, { ouvrirReponse: true, sacrificeIds: [a.id, b.id] });
+  assert.ok(result.ok);
+  assert.ok(rpgMobaPasserCreature(d, 'sorcier').entite, 'résolution autorisée malgré la limite réservée à l’annonce');
+  assert.equal(d.joueur.creatures.length, 1);
+});
+
+test('l’IA applique les mêmes règles sans mana et ne rejoue pas une invocation à sacrifice', () => {
+  const d = partie(); rpgFinDeTour(d);
+  d.sorcier.main = ['ashigaru-des-braises', 'anqa-des-braises'];
+  const small = rpgMobaJouerCreature(d, 'sorcier', 'ashigaru-des-braises', 'left', 0); assert.ok(small.ok);
+  const choice = rpgMobaChoisirCreatureIA(d, 'sorcier'); assert.equal(choice?.id, 'anqa-des-braises');
+  assert.ok(rpgMobaJouerCreature(d, 'sorcier', choice.id, choice.lane, choice.slot, { sacrificeIds: choice.sacrificeIds }).ok);
+  donner(d, 'sorcier', 'anqa-des-braises');
+  assert.notEqual(rpgMobaChoisirCreatureIA(d, 'sorcier')?.id, 'anqa-des-braises');
+});
+
+
+test('le Prix en PV reste obligatoire et indépendant du coût en mana', () => {
+  const d = partie(); donner(d, 'joueur', 'papyrus');
+  const voie = d.moba.lanes.find(l => l.id === 'left');
+  voie.hp.joueur = cardById('papyrus').prixPv;
+  assert.equal(rpgMobaLancerMagie(d, 'joueur', 'papyrus', null, 'left').raison, 'prix');
+  voie.hp.joueur += 5;
+  const avant = voie.hp.joueur;
+  assert.ok(rpgMobaLancerMagie(d, 'joueur', 'papyrus', null, 'left').ok);
+  assert.equal(voie.hp.joueur, avant - cardById('papyrus').prixPv);
+});

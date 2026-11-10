@@ -27,7 +27,7 @@ for (const attackerSide of ['joueur', 'sorcier']) {
     const mana = structuredClone(d[defender].mana);
     assert.equal(rpgMobaJouerCreature(d, defender, garde, 'left', 0).ok, false);
     assert.equal(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
-    assert.equal(d[defender].main.length, 0); assert.notDeepEqual(d[defender].mana, mana);
+    assert.equal(d[defender].main.length, 0); assert.deepEqual(d[defender].mana, mana);
     assert.equal(rpgMobaLancerAttaque(d, attackerSide, [a.id], {}, { declaree: true }).ok, false);
     assert.equal(rpgMobaPasserCreature(d, defender).ok, false);
     const result = rpgMobaPasserCreature(d, attackerSide);
@@ -100,14 +100,11 @@ for (const side of ['joueur', 'sorcier']) test(`${side} répond à l'Embuscade a
   assert.ok(d.combatDeclare); assert.equal(d.fenetreReponse, true);
 });
 
-for (const side of ['joueur', 'sorcier']) test(`${side} : l'Embuscade exige mana et déclencheur, et ne peut pas bloquer une autre voie`, () => {
+for (const side of ['joueur', 'sorcier']) test(`${side} : l'Embuscade ne demande pas de mana, exige son déclencheur et ne bloque pas une autre voie`, () => {
   const { d, a, defender } = combat(side);
   d[defender].mana.neige = 0;
-  const avant = JSON.stringify(d);
-  assert.equal(rpgMobaPeutEmbuscade(d, defender, garde), false);
-  assert.equal(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true }).ok, false);
-  assert.equal(JSON.stringify(d), avant);
-  d[defender].mana.neige = 10;
+  d[defender].mana.tenebres = 0;
+  assert.equal(rpgMobaPeutEmbuscade(d, defender, garde), true);
   assert.ok(rpgMobaJouerCreature(d, defender, garde, 'right', 0, { ouvrirReponse: true }).ok);
   const guard = rpgMobaPasserCreature(d, side).entite; assert.ok(guard);
   const before = JSON.stringify(d);

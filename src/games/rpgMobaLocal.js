@@ -168,11 +168,13 @@ export function rpgMobaPeutPayer(duel, side, carte) {
     && duel.moba.lanes.some((lane) => lane.active && lane.hp[side] > carte.prixPv);
 }
 
-/** Two human-controlled seats use the existing mana-essai turn and mana rules.
+/** Two human-controlled seats reuse the turn engine, without mana costs or growth.
  * `pvp` is the engine's manual-control flag; no network or referee is used. */
 export function rpgMobaNouveauDuel(options = {}) {
   const duel = rpgNouveauDuel({ ...options, modeMana: RPG_MODE_MANA_ESSAI, pvp: true });
   duel.moba = mobaNouveau();
+  duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
+  for (const side of MOBA_SIDES) { duel[side].mobaSansMana = true; duel[side].manaChoixEnAttente = false; }
   return duel;
 }
 

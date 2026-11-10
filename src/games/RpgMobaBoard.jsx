@@ -11,7 +11,7 @@ import { sonSortAuLancement } from './rpgSortAudio.js';
 import { rpgSonsResolutionCombat, rpgVagueAnnonceAcier } from './rpgAttackAudio.js';
 import { rpgMobaCombatFeedback } from './rpgMobaCombatFeedback.js';
 import { rpgMobaArrowTarget, rpgMobaCombatIndicators } from './rpgMobaCombatIndicators.js';
-import { rpgChoisirCouleurMana, rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgRenvoisEnMain, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
+import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgRenvoisEnMain, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
 import {
   MOBA_DECKS, MOBA_EMBUSCADES_COMBAT, rpgMobaValiderDeck, MOBA_ARMES, MOBA_CONTRESORTS, MOBA_ARRIVEES_HOSTILES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_NEUTRES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_VOIES, MOBA_MAGIES_SOINS, MOBA_MAGIES_PRIX, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_ZONE_REPONSE, MOBA_MAGIES_ZONE_TOTALE_REPONSE, MOBA_MAGIES_RENFORT_REPONSE, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCiblesPrise, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaCiblesAttaque, rpgMobaDeclarerAttaque, rpgMobaDeclarerBlocages, rpgMobaDefausser, rpgMobaPeutEmbuscade, rpgMobaJouerCreature, rpgMobaJouerArme,
   rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan,
@@ -22,7 +22,7 @@ import { sacrificesInvocation } from './rpgInvocation.js';
 import { SACRIFICE_ANIMATION, victimesSacrificeSurVoies } from './rpgSacrificeAnimation.js';
 import { mobaVieMaxPourCamp, mobaVoieCombat, mobaVoieJouable } from './rpgMoba.js';
 import { rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from './rpgMobaDecks.js';
-import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from './rpgAI.js';
+import { choisirDefausseIA, choisirMulliganIA } from './rpgAI.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA, rpgMobaChoisirEmbuscadeIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA } from './rpgMobaAI.js';
 import './rpg-moba.css';
 
@@ -42,7 +42,7 @@ const glyphes = { left: 'I', center: 'II', right: 'III' };
 const MAILLONS_VOIE_FERMEE = Array.from({ length: 21 }, (_, index) => 5 + index * 4.5);
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const message = {
-  mana: 'Mana insuffisant pour cette carte.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
+  mana: 'Carte impossible à jouer.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
   provocation: 'Une créature avec Provocation doit être bloquée si possible.',
   'blocage-force': 'Les créatures marquées doivent bloquer si elles le peuvent dans leur voie.',
   'attaque-jouee': 'La phase d’attaque est déjà terminée.', 'cible-obligatoire': 'Choisissez une cible légale pour chaque attaquant ciblé.', emplacement: 'Cet emplacement n’est pas libre.',
@@ -963,24 +963,6 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (event.shiftKey && actif === boutons[0]) { event.preventDefault(); boutons.at(-1).focus(); }
     else if (!event.shiftKey && actif === boutons.at(-1)) { event.preventDefault(); boutons[0].focus(); }
   };
-  const choixManaVisible = actif === 'joueur' && camp.manaChoixEnAttente && !destruction && !site && !defausse && !fini && etape === 'tour';
-  const choisirMana = (couleur) => {
-    if (!choixManaVisible || apercu || confirmerSortie || parametresOuverts || cimetiere || recherche) return;
-    if (afficherResultat(rpgChoisirCouleurMana(duel, 'joueur', couleur))) onPlaySfx?.('select');
-  };
-  useEffect(() => {
-    if (!choixManaVisible || apercu || confirmerSortie || parametresOuverts || cimetiere || recherche) return undefined;
-    const raccourci = (event) => {
-      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName) || event.target?.isContentEditable) return;
-      const index = ['1', '2', '3'].findIndex((key) => event.key === key || event.code === `Digit${key}` || event.code === `Numpad${key}`);
-      if (index < 0 || !camp.couleurs[index]) return;
-      event.preventDefault();
-      choisirMana(camp.couleurs[index]);
-    };
-    window.addEventListener('keydown', raccourci);
-    return () => window.removeEventListener('keydown', raccourci);
-  }, [choixManaVisible, apercu, confirmerSortie, parametresOuverts, cimetiere, recherche, duel, camp]);
   useEffect(() => {
     if (!iaAgit || iaBloquee || duel.moba.centerChoice) return undefined;
     const timer = window.setTimeout(() => {
@@ -997,9 +979,6 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         const result = rpgMobaDefausser(duel, 'sorcier', choisirDefausseIA(duel, 'sorcier'));
         if (afficherResultat(result) && !result.restant && finDeTour) finTour();
       } else if (etape === 'tour') {
-        if (duel.sorcier.manaChoixEnAttente) {
-          afficherResultat(rpgChoisirCouleurMana(duel, 'sorcier', choisirCouleurManaIA(duel, 'sorcier')));
-        } else {
           const creature = rpgMobaChoisirCreatureIA(duel);
           const magie = rpgMobaChoisirMagieIA(duel);
           if (magie && (!creature || magie.score >= 35)) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
@@ -1015,7 +994,6 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
               if (afficherResultat(result)) { setAttaquants(ids); setCiblesRapides(ciblesIA); setCible(ids.find((id) => !ciblesIA[id]) ?? null); setEtape('blocage'); if (rpgVagueAnnonceAcier(ids, ciblesIA)) onPlaySfx?.('attackers_confirm'); }
             } else finTour();
           }
-        }
       } else if (etape === 'arrivee') {
         const cibleIA = rpgMobaChoisirArriveeIA(duel, arriveeSide);
         if (cibleIA) choisirCibleArrivee(cibleIA);
@@ -1046,7 +1024,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const phaseVisuelle = etape === 'blocage' ? 'blocage' : etape === 'fin' ? 'fin' : attaquants.length && etape === 'tour' ? 'attaque' : duel.attaqueJouee === actif ? 'principale2' : 'principale';
   const combatVisuel = etape === 'blocage' ? duel.combatDeclare : null;
   const indications = rpgMobaCombatIndicators(duel, actif, combatVisuel?.attaquants ?? (etape === 'tour' ? attaquants : []), combatVisuel?.ciblesAttaque ?? ciblesRapides, etape === 'blocage' ? blocages : {});
-  const instruction = iaAgit ? 'L’IA réfléchit…' : destruction ? 'Ghul des cendres : choisissez une créature adverse illuminée pour lui infliger 1 dégât.' : site ? 'La Source de Bimini : choisissez une créature alliée à soigner et consacrer.' : choixManaVisible ? 'Choisissez la couleur de votre nouveau mana permanent.' : cibleRapideEnCours ? 'Choisissez une créature adverse illuminée pour l’attaque ciblée.' : etape === 'arrivee' ? (Number.isFinite(duel.arriveeEnAttente?.abordage)
+  const instruction = iaAgit ? 'L’IA réfléchit…' : destruction ? 'Ghul des cendres : choisissez une créature adverse illuminée pour lui infliger 1 dégât.' : site ? 'La Source de Bimini : choisissez une créature alliée à soigner et consacrer.' : cibleRapideEnCours ? 'Choisissez une créature adverse illuminée pour l’attaque ciblée.' : etape === 'arrivee' ? (Number.isFinite(duel.arriveeEnAttente?.abordage)
       ? `Choisissez une créature adverse à prendre en cale (coût maximal ${duel.arriveeEnAttente.abordage}).`
       : duel.arriveeEnAttente?.carteId === 'lionne-du-midi-ardent'
     ? 'Choisissez une créature adverse à frapper avec la Lionne.'
@@ -1126,7 +1104,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       <details className="moba__rules"><summary>Règles du plateau</summary><div>
         <p>Trois voies indépendantes : 20 / 10 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Une créature attaque sa voie et ne peut être bloquée que dans celle-ci. Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et bloquent ; le vainqueur peut continuer à jouer sur sa case centrale. Une seule barre réunit leurs PV (30 maximum). Une Attaque ciblée au centre peut viser les côtés avant la conquête.</p>
-        <p>Invoquer une créature de coût 5 ou 6 demande un sacrifice ; à partir de 7, deux sacrifices. Choisissez les victimes parmi vos créatures (hors Sites) avant de choisir la case de pose.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Chaque camp peut annoncer une seule créature nécessitant un sacrifice par tour, même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -1142,7 +1120,6 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {['sorcier', 'joueur'].map((side) => <div className={`moba__piles moba__piles--${side}`} role="group" aria-label={side === 'joueur' ? 'Vos zones de cartes' : 'Zones de l’IA'} key={side}>
       {rendu?.CardPile ? <><rendu.CardPile count={duel[side].deck.length} label="Paquet" variant="deck" /><rendu.CardPile count={duel[side].cimetiere.length} label="Cimetière" variant="graveyard" topCard={duel[side].cimetiere.at(-1)} onClick={(event) => ouvrirCimetiere(side, event)} /></> : <><span className="moba__pile-fallback">Paquet · {duel[side].deck.length}</span><button type="button" className="moba__pile-fallback" disabled={!duel[side].cimetiere.length} onClick={(event) => ouvrirCimetiere(side, event)}>Cimetière · {duel[side].cimetiere.length}</button></>}
     </div>)}
-    {rendu?.FluxManaTrack && <><div className="moba__flux moba__flux--sorcier"><rendu.FluxManaTrack camp={duel.sorcier} cote="ennemi" /></div><div className="moba__flux moba__flux--joueur"><rendu.FluxManaTrack camp={duel.joueur} cote="joueur" carteApercu={mainSide === 'joueur' ? cardById(carte ?? (apercu?.dansMain ? apercu.carteId : null)) : null} /></div></>}
     <div className="moba__ai-status" role="status">{iaBloquee ? <><span>{erreur} </span><button type="button" onClick={() => { setErreur(''); setIaBloquee(false); }}>Réessayer</button></> : iaAgit ? 'L’IA réfléchit…' : ''}</div>
     <div inert={iaAgit}>
     {duel.mobaSortEnAttente && !fini && (() => {
@@ -1157,8 +1134,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <div className="moba__pending-copy"><small>{attente.armeMoba ? 'ARME' : 'SORT'} {attente.cote === 'sorcier' ? 'ADVERSE' : 'JOUÉ'} · EN ATTENTE</small><strong title={carteAttendue.name}>{carteAttendue.name}</strong><span title={cibleAttendue}>⌖ {cibleAttendue}</span></div>
       </div>;
     })()}
-    <div className="moba__status"><strong>Tour : {noms[actif]} <span>·</span> {etape === 'blocage' ? `${duel.combatDeclare?.blocages ? 'blocages déclarés' : 'défense'} de ${noms[defenseur]}` : ['fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) ? `réponse de ${noms[repondant]}` : 'phase principale'}{duel.brouillardCombat && <> · <abbr className="moba__fog" title="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour." aria-label="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour">☁<span> Voile</span></abbr></>}{camp.prochaineArriveeAbordage && <> · <abbr className="moba__boarding" title="La prochaine créature jouée ce tour a Abordage." aria-label="La prochaine créature jouée ce tour a Abordage">⚓<span> Abordage</span></abbr></>}</strong>{!rendu?.FluxManaTrack && <span className="moba__mana">{campMain.couleurs.map((c) => <span className={`moba__mana-${c}`} key={c}><i aria-hidden="true">◆</i> {c} <b>{campMain.mana[c] ?? 0}</b></span>)}</span>}</div>
-    {choixManaVisible && (rendu?.ChoixManaEssai ? <div className="moba__mana-choice"><rendu.ChoixManaEssai camp={camp} onChoisir={choisirMana} /></div> : <div className="moba__choice"><strong>Choisissez votre nouveau mana</strong>{camp.couleurs.map((color) => <button type="button" key={color} onClick={() => choisirMana(color)}>◆ {color}</button>)}</div>)}
+    <div className="moba__status"><strong>Tour : {noms[actif]} <span>·</span> {etape === 'blocage' ? `${duel.combatDeclare?.blocages ? 'blocages déclarés' : 'défense'} de ${noms[defenseur]}` : ['fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) ? `réponse de ${noms[repondant]}` : 'phase principale'}{duel.brouillardCombat && <> · <abbr className="moba__fog" title="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour." aria-label="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour">☁<span> Voile</span></abbr></>}{camp.prochaineArriveeAbordage && <> · <abbr className="moba__boarding" title="La prochaine créature jouée ce tour a Abordage." aria-label="La prochaine créature jouée ce tour a Abordage">⚓<span> Abordage</span></abbr></>}</strong></div>
     <div className={`moba__directive${['reponse-sort', 'reponse-creature'].includes(etape) ? ' moba__directive--sort' : ''}`} aria-live="polite"><span className="moba__directive-icon" aria-hidden="true">✧</span><div className="moba__directive-copy"><p className="moba__hint">{!destruction && etape === 'reponse-creature' && <><strong>{cardById(duel.mobaCreatureEnAttente?.carteId)?.name} → {voies[duel.mobaCreatureEnAttente?.laneId]} · {noms[duel.mobaCreatureEnAttente?.cote]} · emplacement {(duel.mobaCreatureEnAttente?.slot ?? 0) + 1}.</strong>{' '}</>}{!destruction && etape === 'reponse-sort' && <><strong>{cardById(duel.mobaSortEnAttente?.carteId)?.name} → {duel.mobaSortEnAttente?.laneId ? `${duel.mobaSortEnAttente.carteId === 'festin-des-vaillants' ? 'Alliés + ' : ''}${voies[duel.mobaSortEnAttente.laneId]} · ${noms[duel.mobaSortEnAttente.cibleCote]}${duel.mobaSortEnAttente.carteId === 'le-poids' && duel.mobaSortEnAttente.cibleId ? ` + ${getEntity(autre(duel.mobaSortEnAttente.cote), duel.mobaSortEnAttente.cibleId)?.name ?? 'créature ciblée'}` : ''}` : `${duel.mobaSortEnAttente?.cibleNom} · ${noms[duel.mobaSortEnAttente?.cibleCote]}` }.</strong>{' '} </>}{!destruction && ['reponse-sort', 'reponse-creature'].includes(etape) && !iaAgit && !defausse ? (carte && rpgMobaPeutEmbuscade(duel, mainSide, carte) ? instruction : carte && MOBA_MAGIES_PRIX.includes(carte) && (!MOBA_MAGIES_TRANSFERT.includes(carte) && !MOBA_MAGIES_SPATIALES.includes(carte) || !prixLane) ? 'Choisissez une voie pour payer.' : carte ? 'Cible ?' : 'Répondez ou passez.') : instruction}</p>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div>{!destruction && (carte || cibleRapideEnCours) && !defausse && !fini && <button type="button" className="moba__cancel-choice" onClick={annulerChoix}>Annuler le choix</button>}</div>
     {carte && sacrificesInvocation(cardById(carte), duel) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{sacrificesInvocation(cardById(carte), duel)}. {sacrificesChoisis.length < sacrificesInvocation(cardById(carte), duel) ? "Cliquez sur vos créatures à sacrifier, puis sur une case libre ou la case d’une victime." : "Choisissez une case libre ou la case d’une victime pour invoquer."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></div>}
     <div className="moba__field-scroll" role="region" aria-label="Plateau des trois voies" tabIndex={0}>
@@ -1258,7 +1234,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             if (entity && rendu?.TableCard) {
               const TableCard = rendu.TableCard;
               return <div className={`moba__real-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps} {...interactionsApercu(entity.carteId, entity)}>
-                <TableCard key={`${entity.id}-${invocationEnCours ? 'rituel' : 'pose'}`} entite={entity} cote={side === 'joueur' ? 'joueur' : 'ennemi'} playerTurn={side === actif && etape === 'tour'} actionFx={sortFx[entity.id]?.action ?? combatFx[entity.id] ?? null} miss={combatFeedback?.miss[entity.id]} critiqueFx={combatFeedback?.critiques[entity.id]} soin={sortFx[entity.id]?.soin ?? null} bouclierFx={sortFx[entity.id]?.bouclier ?? null} selected={Boolean(isAttacker)} blocking={Boolean(isBlocked)} declaredAttacker={etape === 'blocage' && Boolean(isAttacker)} canTarget={Boolean(destruction ? mayDeathTarget : site ? maySiteTarget : (maySacrifice || mayPlace || maySpellTarget || mayArrivalTarget || mayBlock || mayTarget || mayTargetRapide))} onClick={action} moba={{ className: `moba__slot has-creature${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id) ? ' is-target' : ''}${sacrificeCible ? ' is-sacrifice' : ''}${combatFeedback?.critiques[id] ? ' is-moba-critique' : ''}`, disabled: destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur), ariaLabel: label, draggable: Boolean(!destruction && peutGlisserBloqueur), onPointerDown: !destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined, onDragStart: !destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined, onDragEnd: finGlissement }} />
+                <TableCard key={`${entity.id}-${invocationEnCours ? 'rituel' : 'pose'}`} entite={entity} cote={side === 'joueur' ? 'joueur' : 'ennemi'} playerTurn={side === actif && etape === 'tour'} actionFx={sortFx[entity.id]?.action ?? combatFx[entity.id] ?? null} miss={combatFeedback?.miss[entity.id]} critiqueFx={combatFeedback?.critiques[entity.id]} soin={sortFx[entity.id]?.soin ?? null} bouclierFx={sortFx[entity.id]?.bouclier ?? null} selected={Boolean(isAttacker)} blocking={Boolean(isBlocked)} declaredAttacker={Boolean(duel.combatDeclare?.attaquants?.includes(id))} canTarget={Boolean(destruction ? mayDeathTarget : site ? maySiteTarget : (maySacrifice || mayPlace || maySpellTarget || mayArrivalTarget || mayBlock || mayTarget || mayTargetRapide))} onClick={action} moba={{ className: `moba__slot has-creature${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id) ? ' is-target' : ''}${sacrificeCible ? ' is-sacrifice' : ''}${combatFeedback?.critiques[id] ? ' is-moba-critique' : ''}`, disabled: destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur), ariaLabel: label, draggable: Boolean(!destruction && peutGlisserBloqueur), onPointerDown: !destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined, onDragStart: !destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined, onDragEnd: finGlissement }} />
                 {adieux.length > 0 && <div className="moba__ghost-zone" aria-hidden="true">{adieux}</div>}
                 {sacrifice}
               </div>;
@@ -1286,7 +1262,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         const { ManaCost, CardElementBadge, CardStatIcon } = rendu;
         const creature = ['creature', 'hero'].includes(card.kind);
         return <div className="moba__hand-item" key={`${id}-${index}`} {...interactionsApercu(id)}>
-          <button type="button" className={`moba__card moba__real-hand rpg-hand__card rpg-hand__card--img rpg-hand__card--elem-${card.element} ${cardFrameClass(card)} ${cardMotifClass(card)}${selected ? ' is-selected is-targeting' : ''}${disabled ? ' is-unplayable' : ' is-playable'}`} style={{ '--rpg-frame-color': cardFrameColor(card) }} data-card-id={id} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} aria-label={`${card.name}, coût ${card.cost} mana, ${card.text || 'aucune capacité'}`} aria-pressed={selected} onClick={() => jouerCarte(id, index)}>
+          <button type="button" className={`moba__card moba__real-hand rpg-hand__card rpg-hand__card--img rpg-hand__card--elem-${card.element} ${cardFrameClass(card)} ${cardMotifClass(card)}${selected ? ' is-selected is-targeting' : ''}${disabled ? ' is-unplayable' : ' is-playable'}`} style={{ '--rpg-frame-color': cardFrameColor(card) }} data-card-id={id} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} aria-label={`${card.name}, coût imprimé ${card.cost}, ${card.text || 'aucune capacité'}`} aria-pressed={selected} onClick={() => jouerCarte(id, index)}>
             <img draggable="false" className="rpg-hand__img" src={cardArt(id)} alt="" aria-hidden="true" />
             <CardElementBadge carte={card} /><span className="rpg-hand__title"><ManaCost carte={card} showElement={false} /></span>
             <IconesCarte carte={card} className="rpg-card-icones--colonne rpg-card-icones--main" /><SortSceau carte={card} className="rpg-hand__sceau rpg-hand__sort" />
@@ -1356,7 +1332,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         const CarteMulligan = rendu.CarteMulligan;
         return <div className="moba__mulligan-item" key={`${id}-${index}`} {...interactionsApercu(id)}><CarteMulligan carte={card} index={index} selectionnee={choisi} onBasculer={toggle} /></div>;
       }
-      return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : `${card.cost} MANA`}</small></button>;
+      return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : `COÛT ${card.cost}`}</small></button>;
     })}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}<button type="button" className="moba__primary" onClick={confirmerMulligan}>{mulliganIndices.length ? `Échanger ${mulliganIndices.length} carte(s)` : 'Garder ma main'} →</button></div></div>}
 
     {apercuAnnonceOuvert && <section className="rpg-annonce-sort moba__card-announcement" role="dialog" aria-modal="true" aria-label={`L’IA annonce ${carteAnnonce.name}. Cible : ${cibleAnnonce}.`} onKeyDown={clavierAnnonce}>
@@ -1385,7 +1361,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       </div>
     </div>}
     {confirmerSortie && !fini && <div className="moba__overlay" role="dialog" aria-modal="true" aria-labelledby="moba-quitter-title" aria-describedby="moba-quitter-description" onKeyDown={clavierConfirmation}><div className="moba__modal moba__quit-modal"><span>FIN DE PARTIE</span><h2 id="moba-quitter-title">Quitter le duel ?</h2><p id="moba-quitter-description">La partie en cours ne sera pas sauvegardée.</p><button type="button" autoFocus className="moba__primary" onClick={fermerConfirmation}>Continuer le duel</button><button type="button" onClick={onQuitter}>Quitter sans sauvegarder</button></div></div>}
-    {recherche?.cote === 'joueur' && !fini && !confirmerSortie && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Recherche dans votre deck"><div className="moba__modal moba__mulligan"><span>CAPACITÉ D’ARRIVÉE</span><h2>Choisissez une carte</h2><p>{cardById(recherche.sourceCarteId)?.name} cherche dans votre deck. Choisissez une carte admissible à ajouter à votre main.</p><div className="moba__mulligan-cards moba__search-cards">{rpgMobaCandidatsRecherche(duel, 'joueur').map((id, index) => <div className="moba__search-item" key={id} {...interactionsApercu(id)}><button type="button" autoFocus={index === 0} className="moba__mulligan-card" onClick={() => afficherResultat(rpgMobaResoudreRecherche(duel, 'joueur', id))}><img src={cardArt(id)} alt="" /><b>{cardById(id)?.name}</b><small>{cardById(id)?.cost} MANA</small><small className="moba__search-text">{cardById(id)?.text}</small></button></div>)}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div></div>}
+    {recherche?.cote === 'joueur' && !fini && !confirmerSortie && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Recherche dans votre deck"><div className="moba__modal moba__mulligan"><span>CAPACITÉ D’ARRIVÉE</span><h2>Choisissez une carte</h2><p>{cardById(recherche.sourceCarteId)?.name} cherche dans votre deck. Choisissez une carte admissible à ajouter à votre main.</p><div className="moba__mulligan-cards moba__search-cards">{rpgMobaCandidatsRecherche(duel, 'joueur').map((id, index) => <div className="moba__search-item" key={id} {...interactionsApercu(id)}><button type="button" autoFocus={index === 0} className="moba__mulligan-card" onClick={() => afficherResultat(rpgMobaResoudreRecherche(duel, 'joueur', id))}><img src={cardArt(id)} alt="" /><b>{cardById(id)?.name}</b><small>COÛT {cardById(id)?.cost}</small><small className="moba__search-text">{cardById(id)?.text}</small></button></div>)}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div></div>}
     {fini && <div className="moba__end-overlay" role="dialog" aria-modal="true" aria-label={vainqueur === 'joueur' ? 'Victoire' : vainqueur === 'sorcier' ? 'Défaite' : vainqueur === 'nul' ? 'Match nul' : 'Partie terminée'} onKeyDown={(event) => {
       if (event.key !== 'Tab') return;
       const elements = [...event.currentTarget.querySelectorAll('button:not(:disabled), summary')];
