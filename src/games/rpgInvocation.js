@@ -8,6 +8,30 @@ export function sacrificesInvocation(carte, duel = null) {
   const cout = Number(carte.cost) || 0;
   return cout >= 7 ? 2 : cout >= 5 ? 1 : 0;
 }
+/** Seules les créatures de coût imprimé 1 à 4 consomment ce quota MOBA.
+ * Les Sites et sorts sont distincts ; les jetons et réanimations ne sont
+ * pas des invocations de créature depuis la main. */
+export function petiteCreatureMoba(carte) {
+  const kind = carte?.kind ?? cardById(carte?.id)?.kind;
+  const cout = Number(carte?.cost);
+  return ['creature', 'hero'].includes(kind) && cout >= 1 && cout <= 4;
+}
+// Une Embuscade jouée pendant le tour adverse n'utilise aucun des quotas de
+// pose du tour actif. Les mêmes cartes jouées à leur propre tour comptent.
+function embuscadeHorsTour(duel, cote, carte) {
+  return Boolean(duel?.moba && duel.tour !== cote && carte?.reactionTourAdverse);
+}
+export function limiteInvocationMoba(duel, cote, carte) {
+  if (!duel?.moba || embuscadeHorsTour(duel, cote, carte)) return null;
+  if (petiteCreatureMoba(carte) && duel.moba.petitesCreaturesJouees?.[cote]) return 'petite-creature-limite';
+  if (sacrificesInvocation(carte, duel) && duel.moba.sacrificesJoues?.[cote]) return 'sacrifice-limite';
+  return null;
+}
+export function marquerInvocationMoba(duel, cote, carte) {
+  if (!duel?.moba || embuscadeHorsTour(duel, cote, carte)) return;
+  if (petiteCreatureMoba(carte)) (duel.moba.petitesCreaturesJouees ??= {})[cote] = true;
+  if (sacrificesInvocation(carte, duel)) (duel.moba.sacrificesJoues ??= {})[cote] = true;
+}
 export function victimesInvocation(camp) {
   return (camp?.creatures ?? []).filter(e => cardById(e.carteId)?.kind !== 'site');
 }
@@ -15,7 +39,7 @@ export function invocationPossible(duel, cote, carte) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;
   const nombre = sacrificesInvocation(carte, duel);
   const camp = duel[cote];
-  return !(duel.moba && nombre && duel.moba.sacrificesJoues?.[cote])
+  return !limiteInvocationMoba(duel, cote, carte)
     && victimesInvocation(camp).length >= nombre
     && (duel.modeMana !== RPG_MODE_MANA_ESSAI
       || camp.creatures.length - nombre < RPG_MANA_ESSAI_CHAMP_MAX);

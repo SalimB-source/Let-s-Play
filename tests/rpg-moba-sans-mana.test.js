@@ -24,12 +24,13 @@ test('pas de mana ni de choix de couleur, en début de partie ou aux tours suiva
 });
 
 test('coûts imprimés 1 à 4 gratuits, sorts et prix en PV séparés ; classique inchangé', () => {
-  const d = partie();
   for (const [id, lane, slot] of [['ashigaru-des-braises','left',0], ['gardienne-des-portes-de-sable','left',1], ['ronin-du-soleil-rouge','right',0], ['pourfendeur-des-djinns','right',1]]) {
+    const d = partie();
     donner(d, 'joueur', id);
     assert.ok(cardById(id).cost <= 4); assert.equal(sacrificesInvocation(cardById(id), d), 0);
     assert.ok(rpgMobaJouerCreature(d, 'joueur', id, lane, slot).ok, id);
   }
+  const d = partie();
   donner(d, 'joueur', 'trait-de-braise');
   assert.ok(rpgMobaLancerMagie(d, 'joueur', 'trait-de-braise', 'sorcier', 'center').ok);
   assert.equal(Object.values(d.joueur.mana).reduce((a,b) => a+b, 0), 0);
@@ -40,6 +41,7 @@ test('coûts imprimés 1 à 4 gratuits, sorts et prix en PV séparés ; classiqu
 test('une seule invocation à sacrifice par camp et par tour, y compris après une annonce contrée', () => {
   const d = partie();
   const a = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(d); rpgFinDeTour(d);
   const b = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
   donner(d, 'joueur', 'anqa-des-braises'); donner(d, 'joueur', 'orochi'); donner(d, 'sorcier', 'ecueil');
   assert.ok(rpgMobaJouerCreature(d, 'joueur', 'anqa-des-braises', 'left', 0, { ouvrirReponse: true, sacrificeIds: [a.id] }).ok);
@@ -77,4 +79,77 @@ test('le Prix en PV reste obligatoire et indépendant du coût en mana', () => {
   const avant = voie.hp.joueur;
   assert.ok(rpgMobaLancerMagie(d, 'joueur', 'papyrus', null, 'left').ok);
   assert.equal(voie.hp.joueur, avant - cardById('papyrus').prixPv);
+});
+
+for (const side of ['joueur', 'sorcier']) {
+  test(`${side} : une seule créature de coût 1 à 4 par tour, mais un sort et une créature à sacrifice restent possibles`, () => {
+    const d = partie(); if (side === 'sorcier') rpgFinDeTour(d);
+    d[side].main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable', 'anqa-des-braises', 'trait-de-braise'];
+    const petite = rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite;
+    assert.ok(petite);
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), false);
+    let avant = JSON.stringify(d);
+    assert.equal(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'right', 0).raison, 'petite-creature-limite');
+    assert.equal(JSON.stringify(d), avant, 'refus sans mutation ni perte de carte');
+    assert.ok(rpgMobaLancerMagie(d, side, 'trait-de-braise', 'sorcier', 'center').ok);
+    assert.ok(rpgMobaJouerCreature(d, side, 'anqa-des-braises', 'left', 0, { sacrificeIds: [petite.id] }).ok);
+    assert.equal(d.moba.petitesCreaturesJouees[side], true);
+    assert.equal(d.moba.sacrificesJoues[side], true);
+    rpgFinDeTour(d); rpgFinDeTour(d);
+    assert.ok(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'right', 0).ok, 'quota réarmé au tour suivant');
+  });
+}
+
+test('une petite créature annoncée réserve le quota même si elle est contrée', () => {
+  const d = partie(); d.joueur.main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable']; d.sorcier.main = ['ecueil'];
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'ecueil').contre);
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).raison, 'petite-creature-limite');
+  assert.deepEqual(d.joueur.main, ['gardienne-des-portes-de-sable']);
+});
+
+test('une annonce illégale ne consomme pas le quota, sa résolution reste possible, et les Sites sont distincts', () => {
+  const d = partie(); d.joueur.main = ['ashigaru-des-braises', 'source-de-bimini'];
+  const avant = JSON.stringify(d);
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 8, { ouvrirReponse: true }).raison, 'emplacement');
+  assert.equal(JSON.stringify(d), avant);
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  assert.ok(rpgMobaPasserCreature(d, 'sorcier').entite);
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'source-de-bimini', 'right', 0).ok, 'Site non soumis au quota de créatures');
+});
+
+test('le choix de l’IA respecte la limite des petites créatures sans modifier le duel', () => {
+  const d = partie(); rpgFinDeTour(d); d.sorcier.main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable'];
+  assert.ok(rpgMobaJouerCreature(d, 'sorcier', 'ashigaru-des-braises', 'left', 0).ok);
+  const avant = JSON.stringify(d);
+  assert.equal(rpgMobaChoisirCreatureIA(d, 'sorcier'), null);
+  assert.equal(JSON.stringify(d), avant);
+});
+
+test('une réanimation ne consomme pas le quota de petite créature et reste légale après une invocation', () => {
+  const d = partie();
+  d.joueur.main = ['ashigaru-des-braises', 'reanimation', 'gardienne-des-portes-de-sable'];
+  d.joueur.cimetiere = ['gardienne-des-portes-de-sable'];
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).ok);
+  assert.ok(rpgMobaLancerMagie(d, 'joueur', 'reanimation', null, 'right', null, { emplacementReanimation: 0 }).ok);
+  assert.equal(d.joueur.creatures.length, 2);
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'left', 1).raison, 'petite-creature-limite');
+});
+
+test('après une créature à sacrifice, une petite créature reste autorisée dans le même tour', () => {
+  const d = partie();
+  d.joueur.main = ['ashigaru-des-braises'];
+  const victime = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  d.joueur.main = ['anqa-des-braises', 'gardienne-des-portes-de-sable'];
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'anqa-des-braises', 'left', 0, { sacrificeIds: [victime.id] }).ok);
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).ok);
+});
+
+test('une carte Embuscade jouée normalement à son propre tour consomme le quota approprié', () => {
+  const d = partie();
+  d.joueur.main = ['garde-du-trone-givre', 'gardienne-des-portes-de-sable'];
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'garde-du-trone-givre', 'left', 0).ok);
+  assert.equal(d.moba.petitesCreaturesJouees.joueur, true);
+  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).raison, 'petite-creature-limite');
 });

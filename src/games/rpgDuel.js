@@ -1,4 +1,4 @@
-import { sacrificesInvocation, victimesInvocation, invocationPossible } from './rpgInvocation.js';
+import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoieJouable } from './rpgMoba.js';
@@ -6186,7 +6186,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   const nombreSacrifices = sacrificesInvocation(carte, duel);
-  if (duel.moba && nombreSacrifices && !dejaPayee && duel.moba.sacrificesJoues?.[cote]) return { ok: false, raison: 'sacrifice-limite' };
+  const limiteInvocation = !dejaPayee && limiteInvocationMoba(duel, cote, carte);
+  if (limiteInvocation) return { ok: false, raison: limiteInvocation };
   const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
   let sacrifices = [];
   if (idsDemandes !== null) {
@@ -6338,7 +6339,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!dejaPayee && !rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (!dejaPayee && duel.moba && annoncerCreatureMoba) {
     payer(duel, cote, carte);
-    if (nombreSacrifices) duel.moba.sacrificesJoues[cote] = true;
+    marquerInvocationMoba(duel, cote, carte);
     camp.main.splice(camp.main.indexOf(carteId), 1);
     duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
@@ -6398,7 +6399,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
-    if (duel.moba && nombreSacrifices) duel.moba.sacrificesJoues[cote] = true;
+    marquerInvocationMoba(duel, cote, carte);
     camp.main.splice(camp.main.indexOf(carteId), 1);
   }
   // Un effet de mort payé comme sacrifice peut fermer la case ou terminer
@@ -9244,7 +9245,10 @@ export function rpgFinDeTour(duel) {
   resoudreExilsFinTour(duel);
   if (duel.moba?.winner) return duel;
   duel.tour = autre(duel.tour);
-  if (duel.moba) duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
+  if (duel.moba) {
+    duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
+    duel.moba.petitesCreaturesJouees = { joueur: false, sorcier: false };
+  }
   for (const entite of duel[duel.tour].creatures) {
     const croissance = duelCardById(entite.carteId)?.croissanceTour;
     if (!croissance) continue;

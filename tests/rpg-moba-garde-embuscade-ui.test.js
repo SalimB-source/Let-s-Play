@@ -83,6 +83,7 @@ test('le joueur invoque le Garde en défense, puis choisit son blocage après la
     await click(text('.moba__card', 'Garde du trône givré'));
     await click(document.querySelector('.moba__lane[aria-label="Voie gauche"] .moba__side--joueur .moba__slot.is-empty'));
     assert.equal(duel.mobaCreatureEnAttente?.cote, 'joueur');
+    assert.equal(duel.moba.petitesCreaturesJouees.joueur, false, 'l’Embuscade ne consomme pas le quota');
     assert.equal(attaquant()?.dataset.combatTilted, 'true', 'attaquant incliné même durant la réponse à l’Embuscade');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.equal(duel.mobaCreatureEnAttente, null);
@@ -109,20 +110,27 @@ test('la main distingue les cartes impossibles sans transparence et ne montre au
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
-    const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 }));
     const props = { initialiser, onQuitter() {}, rendu: RPG_RENDU_MOBA };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
     await act(async () => document.querySelector('.moba__mulligan .moba__primary').click());
-    duel.joueur.main = ['ashigaru-des-braises', 'anqa-des-braises'];
+    duel.joueur.main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable', 'anqa-des-braises'];
     await act(async () => root.render(React.createElement(Board, props)));
     assert.equal(document.querySelector('[data-card-id="ashigaru-des-braises"].moba__card').disabled, false);
     const lourde = document.querySelector('[data-card-id="anqa-des-braises"].moba__card');
     assert.ok(lourde.disabled && lourde.classList.contains('is-unplayable'));
     assert.equal(document.querySelector('.moba__flux, .moba__mana, .moba__choice'), null);
-    assert.match(document.querySelector('.moba__rules').textContent, /une seule créature nécessitant un sacrifice par tour/i);
+    assert.match(document.querySelector('.moba__rules').textContent, /coût 1 à 4.*une seule par tour/i);
+    assert.match(document.querySelector('.moba__rules').textContent, /une seule créature à sacrifice par tour/i);
+    assert.match(document.querySelector('.moba__rules').textContent, /Embuscades jouées pendant le tour adverse ne consomment pas ces limites/i);
+    assert.ok(rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).ok);
+    await act(async () => root.render(React.createElement(Board, props)));
+    const petite = document.querySelector('[data-card-id="gardienne-des-portes-de-sable"].moba__card');
+    assert.ok(petite.disabled && petite.classList.contains('is-unplayable'));
+    assert.equal(document.querySelector('[data-card-id="anqa-des-braises"].moba__card').disabled, false, 'le quota de sacrifice reste disponible');
     const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
     assert.match(css, /\.moba \.moba__hand-cards \.moba__card:disabled\s*\{[^}]*opacity:\s*1;[^}]*filter:\s*saturate/s);
     assert.match(css, /\.moba \.moba__side--sorcier > \.moba__health\s*\{[^}]*translateY\(-6px\)/s);

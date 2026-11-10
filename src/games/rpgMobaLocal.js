@@ -174,6 +174,7 @@ export function rpgMobaNouveauDuel(options = {}) {
   const duel = rpgNouveauDuel({ ...options, modeMana: RPG_MODE_MANA_ESSAI, pvp: true });
   duel.moba = mobaNouveau();
   duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
+  duel.moba.petitesCreaturesJouees = { joueur: false, sorcier: false };
   for (const side of MOBA_SIDES) { duel[side].mobaSansMana = true; duel[side].manaChoixEnAttente = false; }
   return duel;
 }
