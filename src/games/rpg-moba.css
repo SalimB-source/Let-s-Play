@@ -793,8 +793,9 @@
   .moba__buttons button { min-height: 34px; padding: 5px 7px; }
 }
 
-/* A conquered lane becomes a quiet heraldic seal on the same Sablier table.
-   The terrain stays visible; the tint and banner identify who owns the lane. */
+/* Une voie latérale conquise se ferme sur la carte : deux chaînes croisées
+   rejoignent un verrou central. Le terrain reste visible, le camp vainqueur
+   conserve sa couleur et le centre rattachable reste jouable. */
 .moba .moba__lane.is-sealed {
   --conquest-accent: #c39c6b;
   --conquest-glow: #a7804652;
@@ -807,34 +808,47 @@
 .moba__lane.is-sealed .moba__health,
 .moba__lane.is-sealed .moba__slot { visibility: hidden; }
 .moba__conquest {
-  position: absolute; z-index: 2; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: clamp(4px, .7vh, 8px);
-  padding: 4px; overflow: hidden; pointer-events: none; text-align: center;
-  color: #f5e7cb; text-shadow: 0 2px 5px #000;
-  background: linear-gradient(180deg, transparent 4%, var(--conquest-glow) 50%, transparent 96%);
+  position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none;
+  color: #f5e7cb; text-align: center; text-shadow: 0 2px 5px #000;
+  background: linear-gradient(90deg, #0a0908a6, var(--conquest-glow) 50%, #0a0908a6);
   box-shadow: inset 1px 0 #e6c89455, inset -1px 0 #e6c89455;
   animation: moba-conquest-reveal calc(.7s * var(--rpg-anim-scale, 1)) ease-out both;
 }
-.moba__conquest::before, .moba__conquest::after {
-  content: ''; width: 42%; max-width: 80px; height: 1px; flex: none;
-  background: linear-gradient(90deg, transparent, var(--conquest-accent), transparent);
+.moba__conquest-chains { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 3px 4px #000c); }
+.moba__conquest-chain-shadow, .moba__conquest-chain-core, .moba__conquest-links ellipse {
+  fill: none; vector-effect: non-scaling-stroke;
 }
-.moba__conquest-seal {
-  display: grid; place-items: center; width: clamp(30px, 4vw, 58px); aspect-ratio: 1;
-  border: 1px solid var(--conquest-accent); border-radius: 50%;
-  background: radial-gradient(circle at 50% 35%, #51432e, #171310 70%);
-  box-shadow: 0 0 0 3px #17120dc9, 0 0 20px var(--conquest-glow), inset 0 0 8px #000a;
+.moba__conquest-chain-shadow { stroke: #130e0a; stroke-width: 11px; }
+.moba__conquest-chain-core { stroke: #977652; stroke-width: 6px; }
+.moba__conquest-links ellipse { stroke: #ead2a1; stroke-width: 2px; }
+.moba__conquest-lock {
+  position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; width: clamp(46px, 5vw, 76px); aspect-ratio: 1;
+  border: 2px solid var(--conquest-accent); border-radius: 18px;
+  background: radial-gradient(circle, #4c3621 10%, #19120d 76%);
+  box-shadow: 0 0 0 4px #14100be8, 0 0 22px var(--conquest-glow), inset 0 0 12px #000a;
 }
-.moba__conquest-seal img { width: 70%; height: 70%; object-fit: contain; }
-.moba__conquest-kicker { color: #e8d3ad; font: 600 clamp(8px, .7vw, 11px)/1.2 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
-.moba__conquest-owner { max-width: 100%; color: var(--conquest-accent); font: 800 clamp(9px, .9vw, 13px)/1.2 system-ui, sans-serif; letter-spacing: .06em; overflow-wrap: normal; }
-.moba__conquest-closed { color: #ddccb1; font: 500 clamp(8px, .7vw, 10px)/1.2 system-ui, sans-serif; }
+.moba__conquest-lock img { display: block; width: 88%; height: 92%; object-fit: contain; }
+.moba__conquest-kicker, .moba__conquest-owner, .moba__conquest-closed {
+  position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
+  max-width: calc(100% - 8px); padding: 3px 7px; white-space: nowrap;
+  border: 1px solid #e5c68170; border-radius: 4px; background: #17120ee8;
+}
+.moba__conquest-kicker { top: 11%; color: #e8d3ad; font: 600 clamp(8px, .7vw, 11px)/1.2 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.moba__conquest-owner { bottom: 13%; color: var(--conquest-accent); font: 800 clamp(9px, .9vw, 13px)/1.2 system-ui, sans-serif; letter-spacing: .06em; }
+.moba__conquest-closed { bottom: 5%; color: #ddccb1; font: 500 clamp(8px, .7vw, 10px)/1.2 system-ui, sans-serif; }
 @keyframes moba-conquest-reveal { from { opacity: 0; filter: brightness(1.7); } to { opacity: 1; filter: brightness(1); } }
 @media (max-width: 700px) {
-  .moba__conquest { gap: 3px; padding: 2px; }
-  .moba__conquest-seal { width: clamp(24px, 5vw, 36px); }
+  .moba__conquest-lock { width: clamp(36px, 7vw, 50px); border-radius: 12px; }
+  .moba__conquest-kicker, .moba__conquest-owner, .moba__conquest-closed { padding: 2px 3px; }
   .moba__conquest-kicker, .moba__conquest-owner { font-size: 8px; letter-spacing: 0; }
   .moba__conquest-closed { font-size: 8px; }
+}
+@media (max-height: 500px) {
+  .moba__conquest-lock { width: clamp(32px, 5vw, 48px); }
+  .moba__conquest-kicker { top: 4%; }
+  .moba__conquest-owner { bottom: 17%; }
+  .moba__conquest-closed { bottom: 2%; }
 }
 
 /* La fiche classique anime le lancement au centre. Ce rappel compact reste
