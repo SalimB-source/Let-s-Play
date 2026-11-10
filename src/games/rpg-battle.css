@@ -1674,9 +1674,8 @@
 }
 
 /* ── Plein écran : le menu comme le duel ─────────────────────────────────────
-   La page ne force jamais le plein écran : la couche immersive et l'API native
-   ne sont activées que sur demande explicite (boutons ou touche F). Les règles
-   visuelles partagées par le menu et le duel sont définies ici. Les marges
+   Le Sablier couvre toujours le viewport. Dans l'APK, Android masque aussi
+   les barres système sans passer par le plein écran de la WebView ; les marges
    d'encoche (`env(safe-area-inset-*)`, plus bas) restent conservées. */
 body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle.is-immersive { overscroll-behavior: none; }
@@ -8930,18 +8929,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mode-menu { background-position: 58% center; }
   .rpg-mode-menu__content { gap: 18px; padding: 19px 14px 14px; }
-  /* Le plein écran reste à portée du pouce sans voler de la place à la barre
-     des modes : le bouton monte à côté du titre, les quatre modes gardent toute
-     la largeur (leurs libellés tiennent dans un écran de 320 px). */
+  /* La marque et la sortie partagent la première ligne, les modes la seconde. */
   .rpg-mode-menu__header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "brand fullscreen" "modes modes";
+    grid-template-areas: "brand quitter" "modes modes";
     align-items: start;
     gap: 12px;
   }
   .rpg-mode-menu__brand { grid-area: brand; margin-right: 0; }
-  .rpg-mode-menu__fullscreen { grid-area: fullscreen; min-width: 44px; min-height: 44px; padding: 10px; }
+  .rpg-mode-menu__quitter { grid-area: quitter; }
   .rpg-mode-menu__switch { grid-area: modes; }
   /* Quatre boutons à parts égales, icône au-dessus du libellé : « CATALOGUE »
      tient dans un écran de 320 px au lieu de déborder à droite. */
@@ -13418,11 +13415,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: 16px 7px 0;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    "brand fullscreen quitter"
-    "modes modes modes";
+    "brand quitter"
+    "modes modes";
   align-items: center;
   column-gap: 6px;
   row-gap: 14px;
@@ -15012,11 +15009,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     min-height: 0;
     max-height: 100svh;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-      "brand fullscreen quitter"
-      "modes modes modes";
+      "brand quitter"
+      "modes modes";
     align-items: center;
     justify-content: stretch;
     column-gap: 4px;

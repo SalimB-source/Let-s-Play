@@ -1115,10 +1115,10 @@ test('classic zones expose public graveyards and both mana tracks without reveal
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
-    let duel, toggles = 0;
+    let duel;
     const initialiser = () => (duel = voiesLateralesBlessees(rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 })));
     root = createRoot(document.getElementById('root'));
-    await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA, onToggleFullscreen: () => { toggles++; } })));
+    await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA })));
     const click = async (element) => { assert.ok(element); await act(async () => element.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
     await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.cimetiere.push('viking-des-neiges');
@@ -1133,7 +1133,7 @@ test('classic zones expose public graveyards and both mana tracks without reveal
     assert.equal(document.querySelector('.moba__piles--sorcier .rpg-card-pile--deck').getAttribute('aria-label'), `Paquet : ${duel.sorcier.deck.length} cartes`);
     assert.equal(document.querySelector('.moba__piles--sorcier .rpg-card-pile--deck [data-card-id]'), null);
     assert.equal(document.querySelector('.rpg-hidden-hand [data-card-id]'), null);
-    await click(document.querySelector('.moba__fullscreen')); assert.equal(toggles, 1);
+    assert.equal(document.querySelector('.moba__fullscreen'), null, 'aucune sortie vers le mode fenêtré');
     const grave = document.querySelector('.moba__piles--joueur .rpg-card-pile--graveyard');
     grave.focus();
     await click(grave);

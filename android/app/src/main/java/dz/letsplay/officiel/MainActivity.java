@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -45,6 +46,38 @@ import java.util.regex.Pattern;
 public class MainActivity extends Activity {
     private boolean paysageSablierActif = false;
     private int orientationAvantPaysage = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+
+    /** Le jeu occupe l'écran sans passer par la Fullscreen API de la WebView :
+     * celle-ci dévorait le premier Retour Android pour sortir du plein écran. */
+    private void actualiserPleinEcranJeu() {
+        if (videoView != null) return; // Une vidéo conserve sa propre vue plein écran.
+        View decor = getWindow().getDecorView();
+        boolean jeu = estPageSablier();
+        decor.setSystemUiVisibility(jeu
+                ? View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                : View.SYSTEM_UI_FLAG_VISIBLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowInsetsController controller = decor.getWindowInsetsController();
+            if (controller != null) {
+                if (jeu) {
+                    controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    controller.hide(WindowInsets.Type.systemBars());
+                } else {
+                    controller.show(WindowInsets.Type.systemBars());
+                }
+            }
+        }
+        View content = findViewById(android.R.id.content);
+        if (content != null) content.requestApplyInsets();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) actualiserPleinEcranJeu();
+    }
 
     /** Rend l'écran à sa rotation naturelle (portrait compris). */
     private void rendreOrientation() {
@@ -161,7 +194,7 @@ public class MainActivity extends Activity {
         View content = findViewById(android.R.id.content);
         content.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Insets safeInsets = insets.getInsets(WindowInsets.Type.systemBars()
+                Insets safeInsets = insets.getInsets((estPageSablier() ? 0 : WindowInsets.Type.systemBars())
                         | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
                 view.setPadding(safeInsets.left, safeInsets.top,
                         safeInsets.right, safeInsets.bottom);
@@ -169,10 +202,10 @@ public class MainActivity extends Activity {
                 // évite que la WebView les réapplique via env(safe-area-inset-*).
                 return WindowInsets.CONSUMED;
             }
-            view.setPadding(insets.getSystemWindowInsetLeft(),
-                    insets.getSystemWindowInsetTop(),
-                    insets.getSystemWindowInsetRight(),
-                    insets.getSystemWindowInsetBottom());
+            view.setPadding(estPageSablier() ? 0 : insets.getSystemWindowInsetLeft(),
+                    estPageSablier() ? 0 : insets.getSystemWindowInsetTop(),
+                    estPageSablier() ? 0 : insets.getSystemWindowInsetRight(),
+                    estPageSablier() ? 0 : insets.getSystemWindowInsetBottom());
             WindowInsets consumed = insets.consumeSystemWindowInsets();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 consumed = consumed.consumeDisplayCutout();
@@ -239,6 +272,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 refreshLayout.setRefreshing(false);
+                actualiserPleinEcranJeu();
                 if (!estPageSablier()) rendreOrientation();
                 // Le tirage vers le bas recharge la page : sur le duel, ce
                 // geste détruirait la partie en cours — et tant que le doigt
@@ -454,6 +488,7 @@ public class MainActivity extends Activity {
                     // annule les appuis longs des cartes en cours.
                     refreshLayout.setEnabled(false);
                 }
+                actualiserPleinEcranJeu();
             });
         }
 
@@ -535,18 +570,26 @@ public class MainActivity extends Activity {
             videoCallback.onCustomViewHidden();
             videoCallback = null;
         }
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        actualiserPleinEcranJeu();
     }
 
     @Override
     public void onBackPressed() {
         if (videoView != null) {
             exitFullscreen();
+        } else if (estPageSablier()) {
+            // Les écrans du jeu sont des états React, pas des pages WebView.
+            // Même si canGoBack() pointe vers le site ou l'écran de connexion,
+            // ne jamais franchir le menu principal du Sablier.
+            webView.evaluateJavascript(
+                    "if (typeof window.letsPlayGameBack === 'function') window.letsPlayGameBack();"
+                    + " else if (location.pathname.indexOf('/defi') !== -1)"
+                    + " location.assign('/jeu/sablier-de-bab-el');", null);
         } else if (webView.canGoBack()) {
             webView.goBack();
-        } else {
+        } else if (!jeuDedie()) {
             super.onBackPressed();
-        }
+        } // L'APK dédiée reste sur le menu du jeu, jamais sur l'accueil du téléphone.
     }
 
     @Override

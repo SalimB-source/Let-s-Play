@@ -146,9 +146,9 @@ function etatsCreature(entity) {
 }
 
 /** Solo MOBA: the adapter owns the rules, React schedules the AI decisions. */
-export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu = null, onPlaySfx = null, onArriveesAudio = null, onPreloadVoice = null, decksMaison = [],
+export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser = nouveau, rendu = null, onPlaySfx = null, onArriveesAudio = null, onPreloadVoice = null, decksMaison = [],
   sonActif = true, onToggleSound = null, volumeSfx = 1, volumeVoix = 1, volumeMusique = 1,
-  onChangeVolumeSfx = null, onChangeVolumeVoix = null, onChangeVolumeMusique = null, pleinEcran = false, onToggleFullscreen = null }) {
+  onChangeVolumeSfx = null, onChangeVolumeVoix = null, onChangeVolumeMusique = null }) {
   const [duel, setDuel] = useState(initialiser);
   const [version, redraw] = useReducer((n) => n + 1, 0);
   const [carte, setCarte] = useState(null);
@@ -282,6 +282,21 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
       boutonQuitter.current?.focus();
     }
   }, [confirmerSortie]);
+  useEffect(() => {
+    if (!onBackRef) return undefined;
+    const retour = () => {
+      if (apercu) fermerApercu();
+      else if (parametresOuverts) fermerParametres();
+      else if (cimetiere) fermerCimetiere();
+      else if (confirmerSortie) fermerConfirmation();
+      else if (edition) setEdition(null);
+      else if (etape === 'choix') onQuitter();
+      else setConfirmerSortie(true); // Ne pas détruire une partie en cours sans confirmation.
+      return true;
+    };
+    onBackRef.current = retour;
+    return () => { if (onBackRef.current === retour) onBackRef.current = null; };
+  }, [onBackRef, apercu, parametresOuverts, cimetiere, confirmerSortie, edition, etape, onQuitter]);
   const clavierConfirmation = (event) => {
     if (event.key === 'Escape') { event.stopPropagation(); fermerConfirmation(); return; }
     if (event.key !== 'Tab') return;
@@ -1042,7 +1057,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     <div inert={Boolean(etape === 'mulligan' || etape === 'choix' || fini || duel.moba.centerChoice || apercu || confirmerSortie || parametresOuverts || cimetiere || (recherche?.cote === 'joueur'))}>
     <header className="moba__header">
       <div className="moba__brand"><span>LE SABLIER <i>✦</i> DUEL SOLO</span><h1>MOBA <small>Les trois voies</small></h1></div>
-      <div className="moba__header-meta"><span className="moba__trial">ESSAI · DUEL SOLO</span>{onToggleSound && <button type="button" className="moba__back moba__sound" aria-pressed={sonActif} aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'} onClick={onToggleSound}><span aria-hidden="true">{sonActif ? '♫' : '♪'}</span> <span className="moba__sound-label">{sonActif ? 'Son activé' : 'Son coupé'}</span></button>}{rendu?.VolumesDuel && onToggleSound && onChangeVolumeSfx && onChangeVolumeVoix && onChangeVolumeMusique && <button type="button" ref={boutonParametres} className="moba__back moba__settings-button" aria-label="Paramètres audio" aria-haspopup="dialog" aria-expanded={parametresOuverts} onClick={() => setParametresOuverts(true)}><span aria-hidden="true">⚙</span></button>}{onToggleFullscreen && <button type="button" className="moba__back moba__fullscreen" aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'} aria-pressed={pleinEcran} title={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'} onClick={onToggleFullscreen}>{rendu?.FullscreenIcon ? <rendu.FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" /> : <span aria-hidden="true">⛶</span>}</button>}<button type="button" ref={boutonQuitter} className="moba__back moba__quit" aria-label="Quitter la partie" onClick={() => setConfirmerSortie(true)}>← <span>Quitter la partie</span></button></div>
+      <div className="moba__header-meta"><span className="moba__trial">ESSAI · DUEL SOLO</span>{onToggleSound && <button type="button" className="moba__back moba__sound" aria-pressed={sonActif} aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'} onClick={onToggleSound}><span aria-hidden="true">{sonActif ? '♫' : '♪'}</span> <span className="moba__sound-label">{sonActif ? 'Son activé' : 'Son coupé'}</span></button>}{rendu?.VolumesDuel && onToggleSound && onChangeVolumeSfx && onChangeVolumeVoix && onChangeVolumeMusique && <button type="button" ref={boutonParametres} className="moba__back moba__settings-button" aria-label="Paramètres audio" aria-haspopup="dialog" aria-expanded={parametresOuverts} onClick={() => setParametresOuverts(true)}><span aria-hidden="true">⚙</span></button>}<button type="button" ref={boutonQuitter} className="moba__back moba__quit" aria-label="Quitter la partie" onClick={() => setConfirmerSortie(true)}>← <span>Quitter la partie</span></button></div>
     </header>
     <div className="moba__intro">
       <p className="moba__notice">Affrontez l’IA · Conquérez 2 voies pour gagner · Decks de 30 cartes adaptés au MOBA</p>
