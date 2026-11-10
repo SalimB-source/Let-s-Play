@@ -1003,7 +1003,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__setup-overlay { align-items: start; }
 .moba__setup { width: min(100%, 980px); margin: auto; }
 .moba__deck-picker-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin: 24px 0 12px; text-align: left; }
-.moba__deck-picker-heading span, .moba__selected-deck > span, .moba__opponent-deck > div > span { color: #d9b87f; font: 700 10px/1.3 system-ui,sans-serif; letter-spacing: .16em; }
+.moba__deck-picker-heading span { color: #d9b87f; font: 700 10px/1.3 system-ui,sans-serif; letter-spacing: .16em; }
 .moba__deck-picker-heading h3 { margin: 5px 0 0; color: #f8e9cf; font: 500 clamp(20px, 2.3vw, 28px)/1.1 Georgia,serif; }
 .moba__deck-picker-heading p { margin: 0; color: #c5b49c; font: 12px/1.35 system-ui,sans-serif; }
 .moba__booster-group { margin: 0 0 12px; text-align: left; }
@@ -1033,23 +1033,11 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__booster.is-selected .moba__booster-state { color: #ffe2a0; font-weight: 700; }
 .moba__booster-item.is-unavailable .moba__booster-scene { opacity: .55; filter: grayscale(.55); }
 .moba__booster-reason { display: block; padding: 1px 4px; color: #e2b6a3; font: 11px/1.25 system-ui,sans-serif; overflow-wrap: anywhere; }
-.moba__setup-details { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 18px; text-align: left; }
-.moba__selected-deck, .moba__opponent-deck { min-width: 0; padding: 14px; border: 1px solid #7b6444; background: #111216bd; }
-.moba__selected-deck { display: grid; gap: 6px; align-content: start; }
-.moba__selected-deck strong, .moba__opponent-deck strong { color: #f9e8cb; font: 600 16px/1.2 Georgia,serif; }
-.moba__selected-deck small, .moba__opponent-deck small { color: #cfc0ab; font: 12px/1.4 system-ui,sans-serif; }
-.moba__overlay .moba__selected-deck button { justify-self: start; margin-top: 4px; padding: 8px 12px; }
-.moba__opponent-deck { display: flex; align-items: center; gap: 16px; }
-.moba__opponent-deck > div:last-child { display: grid; gap: 7px; }
-.moba__opponent-pack { flex: 0 0 65px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; height: 94px; border: 1px solid #b7975d; background: linear-gradient(120deg, #715231, #211b1b 24%, #101014 72%, #85693e); box-shadow: 5px 4px 0 #34291c, 8px 8px 14px #0008; transform: perspective(400px) rotateY(14deg); }
-.moba__opponent-pack span, .moba__opponent-pack small { color: #e9d2a1; font: 700 6px/1 Georgia,serif; letter-spacing: .08em; }
-.moba__opponent-pack b { color: #e1c18b; font: 38px/1 Georgia,serif; }
 .moba__setup-actions button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 600px) {
   .moba__deck-picker-heading { align-items: start; flex-direction: column; gap: 6px; margin-top: 17px; }
   .moba__booster-item { flex-basis: 125px; }
   .moba__booster-scene { width: 99px; height: 145px; }
-  .moba__setup-details { grid-template-columns: 1fr; }
   .moba__setup-actions { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .moba__booster-body { transition: none; } }
@@ -1157,4 +1145,36 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   padding: 1px;
   border-radius: 3px;
   font-size: clamp(6px, 12cqw, 15px);
+}
+
+/* Choix compact : une seule rangée de paquets et des actions toujours visibles. */
+.moba__setup-overlay { display: flex; align-items: center; justify-content: center; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+.moba__setup { box-sizing: border-box; max-height: calc(100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom))); overflow-y: auto; overscroll-behavior: contain; }
+.moba__setup .moba__deck-picker-heading { margin: clamp(8px, 2vh, 18px) 0 2px; }
+.moba__setup .moba__booster-group { margin: 0 0 8px; }
+.moba__setup .moba__booster-list { padding: 7px 8px; }
+.moba__setup .moba__booster-scene { height: clamp(80px, 24dvh, 162px); width: auto; aspect-ratio: 112 / 162; margin: 4px auto 8px; }
+.moba__setup .moba__setup-empty, .moba__setup .moba__setup-warning { margin: 4px 0 10px; font: 12px/1.35 system-ui,sans-serif; }
+.moba__setup .moba__setup-empty { text-align: left; }
+.moba__setup .moba__setup-warning { color: #efc3af; }
+.moba__setup-actions { align-items: center; flex-wrap: wrap; }
+.moba__setup-actions button { flex: 1 1 auto; }
+@media (max-height: 550px) {
+  .moba__setup { padding: 10px 14px; }
+  .moba__setup h2 { margin: 3px 0; font-size: 23px; }
+  .moba__setup > p { font-size: 12px; }
+  .moba__setup-rules { margin-top: 5px; }
+  .moba__setup .moba__deck-picker-heading { margin-top: 6px; }
+  .moba__deck-picker-heading h3 { font-size: 18px; }
+  .moba__setup .moba__booster-scene { height: clamp(64px, 23dvh, 110px); }
+  .moba__booster-item { flex-basis: 120px; }
+  .moba__booster-name { min-height: 0; }
+  .moba__booster-face-name { min-height: 18px; }
+  .moba__booster-seal, .moba__booster-stamp { padding-block: 2px; }
+}
+@media (max-width: 600px) {
+  .moba__setup .moba__deck-picker-heading { flex-direction: row; align-items: end; }
+  .moba__deck-picker-heading p { max-width: 45%; font-size: 10px; }
+  .moba__setup-actions { gap: 6px; }
+  .moba__setup-actions button { padding: 8px; font-size: 11px; }
 }
