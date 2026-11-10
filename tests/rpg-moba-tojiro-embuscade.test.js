@@ -152,3 +152,12 @@ for(const side of ['joueur','sorcier']) test(`Réanimation de Tojiro sans Djinn 
  const result=rpgMobaLancerMagie(d,side,'reanimation',null,'left',null,{emplacementReanimation:0});assert.ok(result.ok,JSON.stringify(result));
  const tojiro=d[side].creatures.find(e=>e.carteId===id);assert.ok(tojiro);assert.ok(tojiro.esquive&&tojiro.contreAttaque);assert.ok(rpgMobaPlacementCoherent(d));
 });
+
+test('Tojiro en réponse : ne sacrifie pas une créature bien supérieure sans avantage décisif', () => {
+ const {d,defenseur,victime}=partie('joueur');
+ Object.assign(victime, { atk: 18, pv: 18, def: 18, pvMax: 18 });
+ assert.ok(rpgMobaTerminerTour(d,'joueur').ok);
+ const before=JSON.stringify(d);
+ assert.equal(rpgMobaChoisirEmbuscadeIA(d,defenseur),null);
+ assert.equal(JSON.stringify(d),before);
+});

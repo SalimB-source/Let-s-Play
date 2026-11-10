@@ -41,6 +41,7 @@ import {
   choisirAttaquantsIA,
   choisirBloqueursIA,
   choisirCarteIA,
+  choisirSacrificesInvocationIA,
   choisirCibleAutoIA,
   choisirCiblesRapidesIA,
   choisirDefausseIA,
@@ -9359,7 +9360,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
       refuses.add(coup.carteId);
       continue;
     }
-    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null };
+    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null, ...(coup.sacrificeIds ? { sacrificeIds: coup.sacrificeIds } : {}) };
     duel.fenetreReponse = true;
     duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
     return duel.annonce;
@@ -9373,11 +9374,19 @@ export function rpgSorcierResoudreAnnonce(duel) {
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };
   duel.annonce = null;
   duel.fenetreReponse = false;
-  // Le moteur choisit les victimes requises par le coût de la carte IA.
+  // La réponse adverse peut avoir changé le plateau : réévaluer avant de
+  // sacrifier plutôt que payer aveuglément avec une créature devenue précieuse.
+  const creature = duelCardById(annonce.carteId);
+  const sacrifices = creature && sacrificesInvocation(creature, duel)
+    ? choisirSacrificesInvocationIA(duel, 'sorcier', creature, annonce.cibleId) : null;
+  if (creature && sacrificesInvocation(creature, duel) && sacrifices === null) {
+    duel.log.push(`Le sorcier renonce à invoquer ${creature.name} : aucun sacrifice avantageux.`);
+    return { ok: false, raison: 'sacrifice-inutile', carteId: annonce.carteId };
+  }
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
-      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { attendreReponseEffet: true })
+      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { attendreReponseEffet: true, sacrificeIds: sacrifices })
       : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
