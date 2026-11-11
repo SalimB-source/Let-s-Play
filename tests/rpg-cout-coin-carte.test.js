@@ -5,7 +5,7 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 const css = ['rpg-battle.css', 'rpg-mobile.css', 'rpg-mana-essai.css', 'effet-icons.css']
   .map(nom => readFileSync(new URL(`../src/games/${nom}`, import.meta.url), 'utf8')).join('\n');
 
-test('coût agrandi dans le coin, couleurs et compteurs dessous sur chaque surface, PC et tactile', () => {
+test('coût aligné sur les effets, couleurs et compteurs dessous sur chaque surface, PC et tactile', () => {
   const surfaces = ['rpg-card--img', 'rpg-hand__card--img', 'rpg-mulligan__card', 'rpg-hover-card-preview__face', 'rpg-card-catalogue__art', 'rpg-atelier__carte-art'];
   const fixtures = [];
   for (const touch of [false, true]) for (const surface of surfaces) for (const hybride of [false, true]) {
@@ -24,17 +24,17 @@ test('coût agrandi dans le coin, couleurs et compteurs dessous sur chaque surfa
     const cout = style(carte.querySelector('.rpg-mana-cost'));
     const couleur = style(carte.querySelector('.rpg-card-element-badge'));
     const compteur = style(carte.querySelector('.rpg-card__compteurs'));
-    assert.equal(cout.top, '0px', surface);
+    assert.equal(cout.top, 'var(--rpg-card-element-marker-top, 5%)', surface);
     assert.equal(cout.left, '0px', surface);
     assert.equal(cout.position, 'absolute');
-    assert.equal(cout.transform, 'translate(-36%, -36%)');
+    assert.equal(cout.transform, 'translateX(-36%)');
     assert.equal(cout.width, 'var(--rpg-cout-taille, 26.88px)');
     assert.equal(cout.height, cout.width);
-    assert.equal(couleur.top, 'calc(var(--rpg-cout-taille, 26.88px) * .64 + 6px)');
+    assert.equal(couleur.top, 'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 6px)');
     assert.match(couleur.width, /^var\(--rpg-plaque-taille,/);
     assert.equal(compteur.top, hybride
-      ? 'calc(var(--rpg-cout-taille, 26.88px) * .64 + 2 * var(--rpg-plaque-taille, 24px) + 14px + var(--rpg-card-counter-size) * .21)'
-      : 'calc(var(--rpg-cout-taille, 26.88px) * .64 + var(--rpg-plaque-taille, 24px) + 12px + var(--rpg-card-counter-size) * .21)');
+      ? 'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 2 * var(--rpg-plaque-taille, 24px) + 14px + var(--rpg-card-counter-size) * .21)'
+      : 'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + var(--rpg-plaque-taille, 24px) + 12px + var(--rpg-card-counter-size) * .21)');
   }
   assert.equal(style(dom.window.document.querySelector('#terrain .rpg-card-element-badge')).top, 'var(--rpg-card-element-marker-top, 5%)');
   assert.match(css, /--rpg-cout-taille: calc\(var\(--rpg-plaque-taille, 24px\) \* 1.12\)/);

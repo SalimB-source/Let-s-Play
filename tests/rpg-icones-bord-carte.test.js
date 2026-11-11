@@ -208,18 +208,18 @@ test('l’aperçu porte les mêmes pierres, en 40 px, sur le bord de sa face', (
   assert.equal(faceImage['border-radius'], face['border-radius'], 'l’illustration garde les coins du cadre');
 });
 
-test('l’aperçu place le coût agrandi dans le coin, et la couleur en dessous', () => {
+test('l’aperçu aligne le coût avec les effets et range la couleur en dessous', () => {
   const { cout, badge, colonne } = mesurer(false, APERCU);
   assert.equal(cout.right, 'auto', 'le coût quitte le coin haut droit');
   assert.equal(cout.left, '0px', 'il s’aligne sur le bord gauche');
-  assert.equal(cout.transform, 'translate(-36%, -36%)', 'le coût chevauche le bord');
+  assert.equal(cout.transform, 'translateX(-36%)', 'le coût chevauche le bord');
   assert.equal(badge.transform, 'translateX(-36%)', 'la couleur reste sur le bord gauche');
-  assert.equal(badge.top, 'calc(var(--rpg-cout-taille, 26.88px) * .64 + 6px)');
-  // Le coût chevauche maintenant le coin, et la couleur se range en dessous.
+  assert.equal(badge.top, 'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 6px)');
+  // Le coût s’aligne sur les effets, et la couleur se range en dessous.
   assert.equal(
     cout.top,
-    '0px',
-    'il se pose dans le coin haut gauche',
+    'var(--rpg-card-element-marker-top, 5%)',
+    'il commence au niveau des effets',
   );
   // Seul le coût grandit ; couleurs et effets gardent leur mesure commune.
   assert.equal(cout.width, 'var(--rpg-cout-taille, 26.88px)', 'le coût gagne 12 %');
@@ -264,7 +264,7 @@ test('le coût reste affiché sur le plateau, au doigt comme à la souris', () =
     assert.equal(chiffreCout['grid-area'], fondCout['grid-area'], 'le chiffre se superpose au losange');
     assert.equal(cout.position, 'absolute', 'top déplace réellement le coût sous la couleur');
     assert.equal(cout.left, '0px');
-    assert.equal(cout.transform, 'translate(-36%, -36%)');
+    assert.equal(cout.transform, 'translateX(-36%)');
   }
 });
 
@@ -286,11 +286,11 @@ test('l’aperçu réserve le débord à l’intérieur du panneau défilant', (
 });
 
 
-test('le coût en main occupe le coin haut gauche sur PC et mobile', () => {
+test('le coût en main commence au niveau des effets sur PC et mobile', () => {
   for (const touch of [false, true]) {
     const { cout } = mesurer(touch, CARTE_MAIN);
     assert.equal(cout.position, 'absolute');
-    assert.equal(cout.top, '0px');
+    assert.equal(cout.top, 'var(--rpg-card-element-marker-top, 5%)');
     assert.equal(cout.left, '0px');
   }
 });
@@ -303,6 +303,6 @@ test('pendant le vol main-plateau, les pastilles ne sont pas rognées', () => {
     assert.equal(carte.overflow, 'visible', 'aucun rognage pendant le vol');
     assert.equal(illustration['border-radius'], carte['border-radius'], 'les coins de l’image restent arrondis');
     assert.equal(colonne.transform, 'translateX(var(--rpg-plaque-bord))', 'les effets gardent leur chevauchement');
-    assert.equal(cout.transform, 'translate(-36%, -36%)', 'le coût garde son chevauchement');
+    assert.equal(cout.transform, 'translateX(-36%)', 'le coût garde son chevauchement');
   }
 });
