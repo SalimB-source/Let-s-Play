@@ -15879,3 +15879,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card.is-sacrifice-animating { visibility: hidden; pointer-events: none; }
 .rpg-battle.is-reduced .rpg-cercle-magique,
 .rpg-battle.is-reduced .rpg-cercle-magique * { animation: none !important; }
+
+/* Les armes ont leur propre sceau d'acier, distinct des deux familles de sort. */
+.rpg-sort-sceau--arme {
+  --rpg-sort-sceau-clair: #edf3f4;
+  --rpg-sort-sceau-sombre: #8399a4;
+  --rpg-sort-sceau-encre: #17272e;
+  border-color: transparent;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: #d4b57a;
+  filter: drop-shadow(0 0 2px #879da9);
+}
+.rpg-sort-sceau--arme::before {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--rpg-sort-sceau-fond);
+}
+.rpg-sort-sceau--arme .rpg-arme-sigil { position: relative; }
+/* En main, les bonus d'arme occupent déjà le bas de la carte. */
+.rpg-hand__sceau.rpg-sort-sceau--arme { bottom: 24%; }

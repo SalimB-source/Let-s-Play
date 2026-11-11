@@ -19,15 +19,15 @@
  *   pour les vignettes où un bandeau ne tiendrait pas (grille du catalogue,
  *   atelier, mulligan). Sa couleur dit la famille, jamais l'élément de la carte.
  *
- * Les trois ne rendent **rien** pour une créature, un héros, un terrain ou une
- * arme : c'est précisément ce silence qui rend un sort reconnaissable. Les
+ * Le sceau distingue aussi les armes par une épée sur fond d'acier ; les
+ * créatures, héros et terrains n'ont pas de sceau de type. Les
  * mesures et les teintes vivent dans `rpg-battle.css` (bloc « Les familles de
  * sorts : le sceau, le socle, la ligne »). Le tout suit
  * `--rpg-card-marker-size` — le repère de couleur de la face — de la main
  * (22 px au doigt) à la fiche (56 px).
  */
 
-import { magieFamilleInfo } from './rpgCards.js';
+import { carteEstArme, magieFamilleInfo } from './rpgCards.js';
 
 /** Le sigle d'une famille : l'éclair, ou l'étincelle. */
 export function SortSigil({ famille }) {
@@ -55,16 +55,16 @@ export function SortSocle({ carte, variante = '' }) {
   );
 }
 
-/** Le jeton de la famille — losange jaune rapide ou losange violet. */
+/** Le jeton de type — sort ou arme, sans changer la famille de sort. */
 export function SortSceau({ carte, className = '' }) {
-  const famille = magieFamilleInfo(carte);
-  if (!famille) return null;
+  const type = carteEstArme(carte) ? 'arme' : magieFamilleInfo(carte)?.key;
+  if (!type) return null;
   return (
     <span
-      className={`rpg-sort-sceau rpg-sort-sceau--${famille.key}${className ? ` ${className}` : ''}`}
+      className={`rpg-sort-sceau rpg-sort-sceau--${type}${className ? ` ${className}` : ''}`}
       aria-hidden="true"
     >
-      <SortSigil famille={famille.key} />
+      {type === 'arme' ? <svg className="rpg-sort-sigil rpg-arme-sigil" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.8 2.2 21 3.4 19.4 10l-5.5 5.5 1.8 1.8-1.3 1.3-2.1-2.1-3.8 3.8.9.9-1.3 1.3-3.7-3.7 1.3-1.3.9.9 3.8-3.8-2.1-2.1 1.3-1.3 1.8 1.8 5.5-5.5 6.6-1.6Z" /></svg> : <SortSigil famille={type} />}
     </span>
   );
 }
