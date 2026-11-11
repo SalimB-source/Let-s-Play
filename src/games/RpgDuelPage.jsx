@@ -1,3 +1,4 @@
+import { rpgMobaCartePourApercu } from './rpgMobaPresentation.js';
 import { SACRIFICE_ANIMATION, instantaneSansSacrificesAnimes } from './rpgSacrificeAnimation.js';
 import { sacrificesInvocation, invocationPossible } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
@@ -2925,7 +2926,7 @@ export function TableCard({
   // not change the classic table's default markup or interaction.
   moba = null,
 }) {
-  const carte = cardById(entite.carteId);
+  const carte = moba ? rpgMobaCartePourApercu(cardById(entite.carteId)) : cardById(entite.carteId);
   const estSite = carte?.kind === 'site';
   const hybride = cardColors(carte).length > 1;
   const nom = entite.name;
@@ -3745,7 +3746,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
  * face illustrée comprise, comme la fiche — sur un volet sombre qui l'isole du
  * plateau. N'importe quel toucher — le volet ou le bouton — le referme. L'appui
  * long ne joue jamais la carte : c'est une consultation, pas une action. */
-function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], onFermer }) {
+function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], notesMoba = [], onFermer }) {
   const boutonFermerRef = useRef(null);
   const [coteOppose, setCoteOppose] = useState(null);
   // Le focus arrive sur « Fermer l'aperçu » sans faire défiler la page :
@@ -3780,6 +3781,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, stat
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
         <HoverCardPreview carte={carte} armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} variante="appui-long" />
+        {notesMoba.length > 0 && <aside className="moba__rule-note" aria-label="Adaptations MOBA"><strong>Règles MOBA — remplacent le texte imprimé si différent</strong>{notesMoba.map((note) => <p key={note}>{note}</p>)}</aside>}
       </div>
       <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu

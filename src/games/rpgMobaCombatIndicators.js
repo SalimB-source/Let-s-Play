@@ -6,7 +6,7 @@ import { rpgMobaCiblesAttaque } from './rpgMobaLocal.js';
  * decide the outcome. Each direct attack points to the defender's HP in the
  * attacker's own active lane, not to a shared wizard portrait.
  */
-export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, blocks = {}) {
+export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, blocks = {}, { individuel = false } = {}) {
   const attackArrows = {};
   const blockArrows = {};
   const descriptions = [];
@@ -22,6 +22,17 @@ export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, b
     const lane = duel.moba.lanes.find((item) => item.id === mobaVoieCombat(duel.moba, side, origin?.id) && item.active);
     if (!attacker || !lane) continue;
     const targetId = targets[id];
+    if (individuel) {
+      if (targetId) {
+        const target = defenders.find((entity) => entity.id === targetId);
+        if (target) { (attackArrows[target.id] ??= []).push(id); descriptions.push(`${attacker.name} vise ${target.name}`); }
+      } else {
+        const target = `@moba:${lane.id}:${defense}`;
+        (attackArrows[target] ??= []).push(id);
+        descriptions.push(`${attacker.name} attaque les PV de ${laneNames[lane.id]} de ${defense === 'joueur' ? 'votre camp' : 'l’IA'}`);
+      }
+      continue;
+    }
     const blockerIds = (blocks[id] ?? []).filter((blockerId) => duel.moba.lanes.some((originLane) => originLane.slots[defense].includes(blockerId) && mobaVoieCombat(duel.moba, defense, originLane.id) === lane.id) && defenders.some((entity) => entity.id === blockerId));
     if (!targetId && blockerIds.length) {
       blockArrows[id] = blockerIds;

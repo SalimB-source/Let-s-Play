@@ -8752,6 +8752,109 @@ export function rpgLancerAttaque(
   return { ok: true, resume };
 }
 
+/** Résolution d'une attaque individuelle MOBA préalablement
+ * validée par l'adaptateur. N'utilise jamais les chemins de blocage classiques.
+ * Les blessures des deux combattants sont recueillies avant toute destruction. */
+export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleId, ciblee, { resoudreDegatsDirects, surTransfertMoba } = {}) {
+  if (!duel?.moba || !['joueur', 'sorcier'].includes(cote) || typeof resoudreDegatsDirects !== 'function') return { ok: false, raison: 'combat' };
+  const adv = autre(cote);
+  const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
+  let cible = cibleId === null ? null : duel[adv].creatures.find((e) => e.id === cibleId);
+  if (!attaquant || (cibleId !== null && !cible)) return { ok: false, raison: 'cible' };
+  const resume = { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], blocages: {}, repartitions: {}, attaquantsBloques: [], attaquantsLiberes: [], critiques: [] };
+  const rng = hasardParDuel.get(duel) ?? Math.random;
+  const calculForce = (entite, contreCreature, bonus = 0) => {
+    const base = estGelee(entite) ? 0 : Math.max(0, Number(entite.atk) || 0) + bonus;
+    const cfg = !contreCreature && armeCarteDe(entite)?.id === 'lance-de-la-lune-givree'
+      ? calculerCoupCritique(entite, { exclureLanceContreVoie: true }) : entite.coupCritique;
+    if (base && cfg && rng() < (cfg.chance ?? RPG_COUP_CRITIQUE_CHANCE)) {
+      const fois = cfg.fois ?? RPG_COUP_CRITIQUE_FOIS;
+      resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois });
+      return base * fois;
+    }
+    return base;
+  };
+  const armeId = attaquant.arme?.carteId ?? null;
+  const lane = attaquant.mobaLane;
+  const sourceAuContact = { ...attaquant };
+  let degatsCreature = 0;
+  let degatsVoie = 0;
+  let sourceExileeParConquete = null;
+  let annule = false;
+  if (cible) {
+    const cibleAvant = { ...cible };
+    const rate = ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable
+      && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    if (tenterRenvoiSphere(duel, cote, attaquant, adv, cible)
+      || tenterRenvoiSphere(duel, adv, cible, cote, attaquant)) {
+      annule = true;
+    } else {
+      cible = duel[adv].creatures.find((e) => e.id === cibleId);
+      if (!rate) {
+        gelerAdversaireDePorteur(duel, attaquant, cible);
+        if (!ciblee) gelerAdversaireDePorteur(duel, cible, attaquant);
+      }
+      // Le gel se résout avant les blessures des deux côtés, sans favoriser
+      // l'attaquant ; les deux forces sont ensuite déterminées avant l'échange.
+      const traque = estGelee(attaquant) ? 0 : bonusTraquePirates(attaquant, cible);
+      const force = rate ? 0 : calculForce(attaquant, true, traque);
+      if (ciblee) resume.coupsRapides.push({ attaquantId, attaquant: attaquant.name, cibleId, cible: cible.name, degats: force, ...(rate ? { rate: true } : {}) });
+      else resume.paires.push([attaquant.name, cible.name]);
+      if (!rate) {
+        const defense = Math.max(0, Number(cible.def) || 0);
+        const exces = attaquant.overkill ? Math.max(0, force - defense) : 0;
+        const coup = { cote: adv, entiteId: cible.id, amount: force - exces,
+          sourceElement: cardColors(duelCardById(attaquant.carteId)), sourceType: 'attaque', sourceCote: cote, sourceId: attaquant.id, rapide: ciblee };
+        const coups = [coup];
+        if (!ciblee) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, true),
+          sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id });
+        let touche = false;
+        const esquives = appliquerDegatsDeCombatSimultanes(duel, coups, {
+          onBlessure: (hit, amount) => { if (hit === coup) { touche = true; degatsCreature += amount; } },
+          onFurie: (entite, camp) => resume.furies.push({ entiteId: entite.id, carteId: entite.carteId, cote: camp }),
+        });
+        for (const esquive of esquives ?? []) {
+          const defenseur = duel[esquive.cote]?.creatures.find((e) => e.id === esquive.entiteId);
+          if (defenseur) riposteDeContreAttaque(duel, defenseur, esquive.source);
+        }
+        if (ciblee) {
+          const defenseur = duel[adv].creatures.find((e) => e.id === cibleId) ?? cibleAvant;
+          riposteSurAttaqueCiblee(duel, defenseur, cote, attaquantId);
+          if (coup.contreAttaqueAtteinte) riposteDeContreAttaque(duel, defenseur, { type: 'creature', cote, entiteId: attaquantId });
+        }
+        if (exces > 0 && touche && !duel.moba.winner) {
+          const frappe = resoudreDegatsDirects(exces);
+          degatsVoie = frappe?.recus ?? 0;
+          sourceExileeParConquete = frappe?.sourceExileeParConquete ? sourceAuContact : null;
+          resume.frappeSorcier = degatsVoie;
+          if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
+        }
+      } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
+    }
+  } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {
+    const force = calculForce(attaquant, false);
+    const frappe = resoudreDegatsDirects(force);
+    degatsVoie = frappe?.recus ?? 0;
+    sourceExileeParConquete = frappe?.sourceExileeParConquete ? sourceAuContact : null;
+    resume.frappeSorcier = degatsVoie;
+    if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
+  }
+  if (annule) duel.log.push(`${attaquant.name} ne trouve plus sa cible : son attaque est annulée.`);
+  else if (cibleId === null) duel.log.push(`${attaquant.name} frappe sa voie adverse (${degatsVoie} dégâts).`);
+  else if (resume.coupsRapides[0]?.rate) duel.log.push(`${attaquant.name} rate son Attaque ciblée contre ${cible?.name ?? 'sa cible'}.`);
+  else duel.log.push(`${attaquant.name} attaque ${cible?.name ?? 'sa cible'} (${degatsCreature} dégâts).`);
+  if (!duel.moba.winner && !annule) {
+    declencherArmesAttaquants(duel, cote, [{ id: attaquantId, armeId, mobaLane: lane, creature: degatsCreature, sorcier: degatsVoie, cibles: [] }]);
+    const bilans = [{ id: attaquantId, sorcier: degatsVoie, sourceExileeParConquete }];
+    declencherButins(duel, cote, bilans);
+    declencherTributs(duel, cote, bilans, surTransfertMoba);
+  }
+  retirerUnCompteurDurabiliteArme(duel, cote, attaquantId, 'attaque');
+  if (cibleId !== null && !ciblee) retirerUnCompteurDurabiliteArme(duel, adv, cibleId, 'défense');
+  rpgActionsEtat(duel);
+  return { ok: true, annule, resume };
+}
+
 /**
  * Résolution d'une attaque qui n'a pas été bloquée par une créature — le
  * raccourci d'une attaque isolée (les scénarios sans interface s'en servent).
