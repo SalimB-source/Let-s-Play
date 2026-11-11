@@ -174,16 +174,21 @@ test('Overkill est simultané même si la riposte ordinaire tue aussi l’attaqu
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp - (5 - defense));
 });
 
-test('l’attaque directe conquiert le centre et laisse le choix de rattachement', () => {
+test('l’attaque directe conquiert le centre sans choix ni transfert de PV', () => {
   const { d, a } = partie();
   // Utiliser un emplacement central valide pour une seconde créature.
   d.joueur.main = ['ashigaru-des-braises'];
   const centre = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'center', 0).entite;
-  centre.ready = true; centre.atk = 10;
+  centre.ready = true; centre.atk = 15;
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', centre.id, null).ok);
   const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
   assert.ok(result.ok, JSON.stringify(result));
-  assert.equal(d.moba.centerChoice, 'joueur');
+  assert.equal(d.moba.centerChoice, null);
+  assert.deepEqual(d.moba.centerJoined, { side: 'joueur', laneId: null });
+  assert.equal(mobaVoie(d.moba, 'center').hp.joueur, 0);
+  assert.equal(mobaVoie(d.moba, 'left').hp.joueur, 20);
+  assert.equal(mobaVoie(d.moba, 'right').hp.joueur, 20);
+  assert.equal(centre.mobaLane, 'center');
   assert.equal(d.combatDeclare, null); assert.equal(d.phase, 'principale');
   assert.ok(rpgMobaPlacementCoherent(d));
   assert.equal(a.attaquee, false);
@@ -243,18 +248,20 @@ test('le gel avant blessures agit aussi lorsque la cible gèle l’attaquant', (
   assert.ok(a.gelToursRestants > 0); assert.equal(c.pv, pv);
 });
 
-test('Tojiro peut sacrifier la cible pendant la réponse et annule la frappe', async () => {
+test('Tojiro en réponse ne sacrifie pas la cible en présence du Djinn attaquant', async () => {
   const { rpgMobaPasserCreature } = await import('../src/games/rpgMobaLocal.js');
   const { d, a, c } = partie();
   a.carteId = 'djinn-du-dernier-brasier';
+  c.pv = c.pvMax = c.def = 10; c.atk = 0;
   const hp = mobaVoie(d.moba, 'left').hp.sorcier;
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
   d.sorcier.main = ['tojiro-le-pourfendeur']; d.sorcier.mana.braise = 20;
-  const annonce = rpgMobaJouerCreature(d, 'sorcier', 'tojiro-le-pourfendeur', 'left', 0, { ouvrirReponse: true, sacrificeIds: [c.id] });
+  const annonce = rpgMobaJouerCreature(d, 'sorcier', 'tojiro-le-pourfendeur', 'left', 1, { ouvrirReponse: true, sacrificeIds: [] });
   assert.ok(annonce.ok, JSON.stringify(annonce));
   assert.ok(rpgMobaPasserCreature(d, 'joueur').ok);
-  assert.equal(d.sorcier.creatures.some((e) => e.id === c.id), false);
+  assert.ok(d.sorcier.creatures.some((e) => e.id === c.id));
   const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
-  assert.ok(result.ok, JSON.stringify(result)); assert.equal(result.annule, true);
+  assert.ok(result.ok, JSON.stringify(result)); assert.notEqual(result.annule, true);
+  assert.ok(c.pv < 10);
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp); assert.ok(rpgMobaPlacementCoherent(d));
 });

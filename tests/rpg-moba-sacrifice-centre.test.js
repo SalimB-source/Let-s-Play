@@ -4,7 +4,7 @@ import { rpgMulligan, rpgDemarrerManaEssai, rpgFinDeTour } from '../src/games/rp
 import { sacrificesInvocation } from '../src/games/rpgInvocation.js';
 import { cardById } from '../src/games/rpgCards.js';
 import { mobaEmplacementsLibres, mobaInfliger, mobaPlacer, mobaVoie, mobaVoieJouable } from '../src/games/rpgMoba.js';
-import { rpgMobaNouveauDuel, rpgMobaChoisirVoieCentrale, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaPasserCreature, rpgMobaLancerMagie } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaNouveauDuel, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaPasserCreature, rpgMobaLancerMagie } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirCreatureIA } from '../src/games/rpgMobaAI.js';
 
 function partie() {
@@ -20,18 +20,17 @@ function partie() {
 
 function donner(duel, side, id) { duel[side].main.push(id); }
 
-test('le centre conquis reste physiquement disponible pour le vainqueur après rattachement seulement', () => {
+test('le centre conquis reste physiquement disponible pour le vainqueur sans rattachement', () => {
   const duel = partie();
-  mobaInfliger(duel.moba, 'joueur', 'center', 10);
-  assert.equal(mobaVoieJouable(duel.moba, 'joueur', 'center'), false);
-  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0).raison, 'voie-inactive');
-  assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'right').ok, true);
+  mobaInfliger(duel.moba, 'joueur', 'center', 15);
+  assert.equal(mobaVoieJouable(duel.moba, 'joueur', 'center'), true);
+  assert.equal(duel.moba.centerChoice, null);
   assert.deepEqual(mobaEmplacementsLibres(duel.moba, 'joueur', 'center'), [0]);
   assert.deepEqual(mobaEmplacementsLibres(duel.moba, 'sorcier', 'center'), []);
   assert.equal(mobaPlacer(duel.moba, 'sorcier', 'center', 0, 'intrus').raison, 'voie-inactive');
   const result = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0);
   assert.equal(result.ok, true);
-  assert.equal(result.entite.mobaLane, 'right');
+  assert.equal(result.entite.mobaLane, 'center');
   assert.equal(result.entite.emplacement, 2);
   assert.equal(mobaVoie(duel.moba, 'center').slots.joueur[0], result.entite.id);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
@@ -46,6 +45,7 @@ test('le sacrifice MOBA exige des victimes distinctes, retire les cases et conse
   const first = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   const second = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   donner(duel, 'joueur', 'anqa-des-braises');
   let before = JSON.stringify(duel);
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'anqa-des-braises', 'left', 1).raison, 'sacrifice-requis');
@@ -80,6 +80,7 @@ test('le sacrifice MOBA exige des victimes distinctes, retire les cases et conse
 test('un contresort interrompt l’invocation avant de sacrifier la victime', () => {
   const duel = partie();
   const victim = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   donner(duel, 'joueur', 'anqa-des-braises');
   donner(duel, 'sorcier', 'ecueil'); duel.sorcier.mana.eau = 30;
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'anqa-des-braises', 'left', 0, { ouvrirReponse: true, sacrificeIds: [victim.id] }).creatureEnAttente, true);
@@ -94,6 +95,7 @@ test('l’IA sait payer le sacrifice et rejouer dans la case libérée', () => {
   rpgFinDeTour(duel);
   duel.sorcier.mana.braise = 30;
   const victim = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   donner(duel, 'sorcier', 'anqa-des-braises');
   const choice = rpgMobaChoisirCreatureIA(duel, 'sorcier');
   assert.equal(choice.id, 'anqa-des-braises');
@@ -103,18 +105,18 @@ test('l’IA sait payer le sacrifice et rejouer dans la case libérée', () => {
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('une Réanimation peut viser la case centrale du vainqueur et rejoindre son flanc', () => {
+test('une Réanimation peut viser la case centrale du vainqueur sans rattachement', () => {
   const duel = partie();
   const victim = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   donner(duel, 'joueur', 'anqa-des-braises');
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'anqa-des-braises', 'left', 0, { sacrificeIds: [victim.id] }).ok, true);
-  mobaInfliger(duel.moba, 'joueur', 'center', 10);
-  assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'right').ok, true);
+  mobaInfliger(duel.moba, 'joueur', 'center', 15);
   donner(duel, 'joueur', 'reanimation');
   duel.joueur.mana.sable = 30;
   const result = rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'center', null, { emplacementReanimation: 0 });
   assert.equal(result.ok, true, JSON.stringify(result));
   const id = mobaVoie(duel.moba, 'center').slots.joueur[0];
-  assert.equal(duel.joueur.creatures.find((e) => e.id === id).mobaLane, 'right');
+  assert.equal(duel.joueur.creatures.find((e) => e.id === id).mobaLane, 'center');
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });

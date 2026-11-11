@@ -78,3 +78,46 @@ test('une frappe directe depuis le centre permet de choisir le flanc', async () 
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('une attaque ciblée centrale propose les voies légales avant de confirmer', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
+    const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
+    let duel;
+    const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 }));
+    const props = { initialiser, onQuitter: () => {} };
+    root = createRoot(document.getElementById('root'));
+    const render = () => act(async () => root.render(React.createElement(Board, props)));
+    const click = async (el) => { assert.ok(el); assert.equal(el.disabled, false); await act(async () => el.click()); };
+    await render(); await click(document.querySelector('.moba__mulligan .moba__primary'));
+    duel.joueur.main = ['ashigaru-des-braises'];
+    const source = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0).entite;
+    rpgFinDeTour(duel); duel.sorcier.main = ['ashigaru-des-braises'];
+    const cible = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+    rpgFinDeTour(duel); source.ready = true; source.coupRapide = true;
+    assert.ok(mobaInfliger(duel.moba, 'joueur', 'center', 15).conquered);
+    duel.sorcier.main = [];
+    await render(); await click(document.querySelector(`[data-moba-entity="${source.id}"] button`));
+    await click(document.querySelector(`[data-moba-entity="${cible.id}"] button`));
+    const group = document.querySelector('[aria-label="Choisir la voie de l’attaque"]');
+    assert.ok(group);
+    assert.ok(!duel.combatDeclare);
+    const droite = [...group.querySelectorAll('button')].find((b) => /droite/i.test(b.textContent));
+    await click(droite);
+    assert.equal(duel.combatDeclare?.cibleIndividuelle?.voie, 'right');
+    assert.equal(duel.combatDeclare?.cibleIndividuelle?.cibleId, cible.id);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close();
+    globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

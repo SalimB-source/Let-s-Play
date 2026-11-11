@@ -11,7 +11,7 @@ test('three lanes have six health values and five slots per side', () => {
   const state = mobaNouveau();
   assert.deepEqual(state.lanes.map((l) => l.id), ['left', 'center', 'right']);
   for (const lane of state.lanes) {
-    assert.deepEqual(lane.hp, { joueur: lane.id === 'center' ? 10 : 20, sorcier: lane.id === 'center' ? 10 : 20 });
+    assert.deepEqual(lane.hp, { joueur: lane.id === 'center' ? 15 : 20, sorcier: lane.id === 'center' ? 15 : 20 });
     assert.equal(lane.active, true);
     assert.equal(lane.conqueredBy, null);
   }
@@ -75,7 +75,7 @@ test('two conquests win immediately and freeze lane actions', () => {
   const state = mobaNouveau();
   mobaInfliger(state, 'sorcier', 'right', 20);
   assert.equal(state.winner, null);
-  const result = mobaInfliger(state, 'sorcier', 'center', 10);
+  const result = mobaInfliger(state, 'sorcier', 'center', 15);
   assert.equal(result.winner, 'sorcier');
   assert.equal(state.winner, 'sorcier');
   const before = JSON.stringify(state);
@@ -98,9 +98,9 @@ test('healing caps at the lane maximum, invalid amounts and inactive lanes are r
 
 test('a caller iterating active lanes can apply a global event without reopening conquered lanes', () => {
   const state = mobaNouveau();
-  mobaInfliger(state, 'joueur', 'center', 10);
+  mobaInfliger(state, 'joueur', 'center', 15);
   for (const lane of state.lanes.filter((item) => item.active)) mobaInfliger(state, 'sorcier', lane.id, 2);
-  assert.deepEqual(state.lanes.map((l) => l.hp.joueur), [18, 10, 18]);
+  assert.deepEqual(state.lanes.map((l) => l.hp.joueur), [18, 0, 18]);
   assert.deepEqual(state.lanes.map((l) => l.hp.sorcier), [20, 0, 20]);
 });
 
@@ -111,8 +111,8 @@ test('a life cost can only be paid by an active friendly lane above the cost', (
   assert.equal(mobaPayerPrix(state, 'joueur', 'left', 2).raison, 'prix');
   assert.equal(JSON.stringify(state), before);
   assert.deepEqual(mobaPayerPrix(state, 'joueur', 'center', 2), { ok: true, paid: 2 });
-  assert.equal(mobaVoie(state, 'center').hp.joueur, 8);
-  assert.equal(mobaVoie(state, 'center').hp.sorcier, 10);
+  assert.equal(mobaVoie(state, 'center').hp.joueur, 13);
+  assert.equal(mobaVoie(state, 'center').hp.sorcier, 15);
   mobaInfliger(state, 'sorcier', 'right', 20);
   assert.equal(mobaPayerPrix(state, 'joueur', 'right', 2).raison, 'voie-inactive');
 });

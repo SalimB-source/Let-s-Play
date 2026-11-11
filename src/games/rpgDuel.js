@@ -2702,7 +2702,7 @@ function tenterEsquive(duel, entite, sourceType) {
  * @returns {boolean} vrai si une riposte est partie
  */
 function riposteDeContreAttaque(duel, defenseur, source) {
-  if (!defenseur?.contreAttaque || (duel.moba && (duel.moba.winner || !mobaVoie(duel.moba, defenseur.mobaLane)?.active))) return false;
+  if (!defenseur?.contreAttaque || (duel.moba && (duel.moba.winner || !mobaVoiesCombat(duel.moba, defenseur.mobaLane).length))) return false;
   const force = Math.max(0, Number(defenseur.atk) || 0);
   if (!force) return false;
   const carte = duelCardById(defenseur.carteId);
@@ -2855,7 +2855,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
       && paradeZoneBloque(duel, entite, 'capacite', coup.cote, coup.effetSourceCote ?? coup.sourceCote)) continue;
     // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
     // les dégâts de capacité et de magie, eux, traversent le voile.
-    if (coup.sourceType === 'attaque' && (duel.brouillardCombat || (duel.moba && duel.brouillardCombatVoies?.includes(duel[coup.sourceCote]?.creatures.find((e) => e.id === coup.sourceId)?.mobaLane)))) continue;
+    if (coup.sourceType === 'attaque' && (duel.brouillardCombat || (duel.moba && duel.brouillardCombatVoies?.includes(coup.voieCombat ?? duel[coup.sourceCote]?.creatures.find((e) => e.id === coup.sourceId)?.mobaLane)))) continue;
     if (entite.bouclierLumiere) {
       // En MOBA la lumière empêche aussi les dégâts d'une capacité et les
       // dégâts alliés, sans se briser. Seule une attaque ou magie ennemie
@@ -3406,9 +3406,15 @@ function declencherTributs(duel, cote, bilans, surTransfertMoba = null) {
     const montant = entite?.tribut ?? 0;
     if (!(montant > 0)) continue;
     if (duel.moba) {
-      const transfert = transfertVieMoba(duel, cote, entite.mobaLane, montant);
-      if (!transfert.ok) continue;
-      surTransfertMoba?.(transfert, entite);
+      const voies = mobaVoiesCombat(duel.moba, entite.mobaLane);
+      let effectue = false;
+      for (const voie of voies) {
+        const transfert = transfertVieMoba(duel, cote, voie, montant);
+        if (!transfert.ok) continue;
+        effectue = true;
+        surTransfertMoba?.(transfert, entite);
+      }
+      if (!effectue) continue;
     } else transfertVie(duel, cote, montant);
     // Le journal des Tributs retient la créature : le fil de sable de la table
     // part de son emplacement réel, là où le journal des transferts, lui, ne
@@ -4022,10 +4028,22 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!montant) return;
       if (duel.moba) {
         const laneId = options?.mobaLane ?? duel[cote].creatures.find((entite) => entite.id === sauf)?.mobaLane;
-        const transfert = transfertVieMoba(duel, cote, laneId, montant);
-        if (!transfert.ok) return;
-        options?.surTransfertMoba?.(transfert);
-        duel.log.push(`Transfert : la voie adverse perd ${transfert.damage} PV et la voie alliée récupère ${transfert.healing} PV.`);
+        const voies = sourceType === 'capacite' ? mobaVoiesCombat(duel.moba, laneId) : [laneId];
+        let effectue = false;
+        for (const voie of voies) {
+          const transfert = transfertVieMoba(duel, cote, voie, montant);
+          if (!transfert.ok) continue;
+          effectue = true;
+          if (options?.surTransfertMoba) options.surTransfertMoba(transfert);
+          else if (sourceType === 'capacite') {
+            journaliserDegatsCapaciteMoba(duel, { ...transfert, targetSide: adv, cardId: sourceCarteId, entityId: sauf, transfert: true });
+            const events = soinsCreatureMoba.get(duel) ?? [];
+            events.push({ side: cote, laneId: voie, healing: transfert.healing, cardId: sourceCarteId, entityId: sauf, transfert: true });
+            soinsCreatureMoba.set(duel, events);
+          }
+          duel.log.push(`Transfert : la voie adverse perd ${transfert.damage} PV et la voie alliée récupère ${transfert.healing} PV.`);
+        }
+        if (!effectue) return;
       } else {
         transfertVie(duel, cote, montant, sourceCarteId);
         duel.log.push(`Transfert : ${adv === 'joueur' ? 'le joueur' : 'le sorcier'} perd ${montant} PV, ${cote === 'joueur' ? `vous en gagnez ${montant}` : `le sorcier en gagne ${montant}`}.`);
@@ -4341,9 +4359,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         const sourceLane = options?.mobaLane ?? source?.mobaLane;
-        // Tokens never spill into a second lane when their source lane is full.
-        // Closed lanes have no usable slots, even if the classic field has room.
-        const voies = sourceLane ? duel.moba.lanes.filter((v) => mobaVoieJouable(duel.moba, cote, v.id) && mobaVoieCombat(duel.moba, cote, v.id) === sourceLane) : [];
+        // A central source can use either shared flank, but creates only its
+        // printed number of tokens. Prefer the physical origin when available.
+        const voies = sourceLane ? duel.moba.lanes.filter((v) => mobaVoieJouable(duel.moba, cote, v.id)
+          && (v.id === sourceLane || mobaPartageVoie(duel.moba, v.id, sourceLane)))
+          .sort((a, b) => Number(b.id === sourceLane) - Number(a.id === sourceLane)) : [];
         const offsets = { left: 0, center: 2, right: 3 };
         for (let i = 0; i < nombre; i += 1) {
           const placement = i === 0 ? options?.mobaPlacementJeton : null;
@@ -4935,15 +4955,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (duel.moba && typeof options?.placerReanimationMoba !== 'function') {
         const source = sourceCarteId === 'passeur-au-masque-de-chacal'
           ? camp.creatures.find((entite) => entite.id === sauf) : null;
-        if (!source || !mobaVoie(duel.moba, source.mobaLane)?.active) return;
+        if (!source || !mobaVoiesCombat(duel.moba, source.mobaLane).length) return;
         for (const side of ['joueur', 'sorcier']) {
           const vivantes = new Set(duel[side].creatures.map((entite) => entite.id));
           for (const voie of duel.moba.lanes) for (const id of [...voie.slots[side]]) {
             if (id && !vivantes.has(id)) mobaRetirer(duel.moba, side, id);
           }
         }
-        const voies = [...duel.moba.lanes].sort((a, b) => Number(b.id === source.mobaLane) - Number(a.id === source.mobaLane));
-        const voie = voies.find((v) => v.active && v.slots[cote].includes(null));
+        const voies = [...duel.moba.lanes].sort((a, b) => Number(b.id === source.mobaLane || mobaPartageVoie(duel.moba, b.id, source.mobaLane)) - Number(a.id === source.mobaLane || mobaPartageVoie(duel.moba, a.id, source.mobaLane)));
+        const voie = voies.find((v) => mobaVoieJouable(duel.moba, cote, v.id) && v.slots[cote].includes(null));
         if (voie) placementAuto = { voie, slot: voie.slots[cote].indexOf(null) };
       }
       // Pas de place libre : la créature reste au cimetière, la carte n'est
@@ -6049,20 +6069,22 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
     } }
     : duel.moba && entite.mobaLane && carte.id === 'maitre-du-marteau'
       ? { resoudreDegatsSorcier: ({ amount }) => {
-        const damage = mobaInfliger(duel.moba, cote, entite.mobaLane, amount);
-        if (damage.conquered) rpgRetirerEntitesConquete(duel, damage.removed, entite.mobaLane);
-        if (damage.winner) duel.fin = { gagnant: damage.winner, raison: 'conquete-moba' };
-        signalerRetourMoba({ type: 'degats', laneId: entite.mobaLane, cote, carteId: carte.id, ...damage });
+        const damage = mobaPerdreVieAdverse(duel, cote, entite.mobaLane, amount);
+        for (const impact of damage.voies ?? [damage]) {
+          if (impact.ok) signalerRetourMoba({ type: 'degats', laneId: impact.laneId ?? entite.mobaLane, cote, carteId: carte.id, ...impact });
+        }
         return { recus: damage.damage ?? 0 };
       } }
       : duel.moba && entite.mobaLane && carte.id === 'braisier-du-souk'
         ? { resoudreDegatsSorcier: ({ amount }) => {
           const damage = mobaPerdreVieAdverse(duel, cote, entite.mobaLane, amount);
-          signalerRetourMoba({ type: 'degats', laneId: entite.mobaLane, cote, carteId: carte.id, ...damage });
+          for (const impact of damage.voies ?? [damage]) {
+            if (impact.ok) signalerRetourMoba({ type: 'degats', laneId: impact.laneId ?? entite.mobaLane, cote, carteId: carte.id, ...impact });
+          }
           return { recus: damage.damage ?? 0 };
         } }
         : duel.moba && entite.mobaLane && carte.id === 'pretre-de-la-bouche'
-          ? { mobaLane: entite.mobaLane, surTransfertMoba: (event) => signalerRetourMoba({ type: 'transfert', laneId: entite.mobaLane, cote, carteId: carte.id, ...event }) }
+          ? { mobaLane: entite.mobaLane, surTransfertMoba: (event) => signalerRetourMoba({ type: 'transfert', cote, carteId: carte.id, ...event }) }
           : duel.moba && carte.id === 'passeur-au-masque-de-chacal'
             ? { surEvenementRetourMoba: signalerRetourMoba } : {};
   if (duel.moba && carte.id === 'oni-de-la-fournaise') {
@@ -8819,10 +8841,10 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
         const defense = Math.max(0, Number(cible.def) || 0);
         const exces = attaquant.overkill ? Math.max(0, force - defense) : 0;
         const coup = { cote: adv, entiteId: cible.id, amount: force - exces,
-          sourceElement: cardColors(duelCardById(attaquant.carteId)), sourceType: 'attaque', sourceCote: cote, sourceId: attaquant.id, rapide: ciblee };
+          sourceElement: cardColors(duelCardById(attaquant.carteId)), sourceType: 'attaque', sourceCote: cote, sourceId: attaquant.id, voieCombat: lane, rapide: ciblee };
         const coups = [coup];
         if (!ciblee) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, true),
-          sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id });
+          sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id, voieCombat: lane });
         let touche = false;
         const esquives = appliquerDegatsDeCombatSimultanes(duel, coups, {
           onBlessure: (hit, amount) => { if (hit === coup) { touche = true; degatsCreature += amount; } },
@@ -9081,7 +9103,7 @@ function resoudreRetoursProgrammes(duel) {
     for (const retour of retours) {
       // Les retours MOBA restent liés à la voie de leur présence d'origine.
       const voie = duel.moba ? mobaVoie(duel.moba, retour.mobaLane) : null;
-      if (duel.moba && !voie?.active) {
+      if (duel.moba && (!voie || !mobaVoieJouable(duel.moba, cote, voie.id))) {
         duel.log.push(`${duelCardById(retour.carteId)?.name ?? 'La créature'} ne peut pas revenir : sa voie est fermée ou inconnue.`);
         continue;
       }

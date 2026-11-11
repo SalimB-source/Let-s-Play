@@ -20,7 +20,7 @@ function combat(attackerSide) {
   return { d, a, defender };
 }
 for (const attackerSide of ['joueur', 'sorcier']) {
-  test(`${attackerSide} attaque : annonce, passage et blocage du Garde`, () => {
+  test(`${attackerSide} attaque : annonce du Garde sans blocage rétroactif`, () => {
     const {d, a, defender} = combat(attackerSide);
     assert.ok(MOBA_CARTES_AUTORISEES.includes(garde));
     assert.ok(rpgMobaPeutEmbuscade(d, defender, garde));
@@ -34,8 +34,9 @@ for (const attackerSide of ['joueur', 'sorcier']) {
     assert.ok(result.ok, JSON.stringify(result)); assert.ok(result.entite);
     assert.equal(d.fenetreReponse, true); assert.equal(d.combatDeclare.attaquants[0], a.id);
     assert.equal(mobaVoie(d.moba, 'left').slots[defender][0], result.entite.id);
-    assert.ok(rpgMobaLancerAttaque(d, attackerSide, [a.id], { [a.id]: [result.entite.id] }, { declaree: true }).ok);
-    assert.equal(mobaVoie(d.moba, 'left').hp[defender], 20);
+    assert.equal(rpgMobaLancerAttaque(d, attackerSide, [a.id], { [a.id]: [result.entite.id] }, { declaree: true }).ok, false);
+    assert.ok(rpgMobaLancerAttaque(d, attackerSide, [a.id], {}, { declaree: true }).ok);
+    assert.equal(mobaVoie(d.moba, 'left').hp[defender], 20 - a.atk);
     assert.ok(rpgMobaPlacementCoherent(d));
   });
   test(`${attackerSide} contre l'Embuscade avec Écueil puis reprend le combat`, () => {
@@ -70,7 +71,7 @@ test('IA choisit une voie défendable sans mutation puis peut contrer une Embusc
   assert.ok(rpgMobaJouerCreature(d, defender, garde, choix.lane, choix.slot, { ouvrirReponse: true }).ok);
   assert.ok(rpgMobaPasserCreature(d, 'joueur').ok);
   const blocks = rpgMobaChoisirBlocagesIA(d, 'joueur', d.combatDeclare.attaquants);
-  assert.ok(Object.values(blocks).flat().length);
+  assert.deepEqual(blocks, {}, 'le combat individuel ne comporte pas de blocage');
   const other = combat('sorcier'); other.d.sorcier.main = ['ecueil']; other.d.sorcier.mana.eau = 10;
   assert.ok(rpgMobaJouerCreature(other.d, other.defender, garde, 'left', 0, { ouvrirReponse: true }).ok);
   assert.equal(rpgMobaChoisirMagieIA(other.d, 'sorcier', true)?.id, 'ecueil');
@@ -141,7 +142,7 @@ test('la disparition du dernier attaquant ne fait pas perdre une Embuscade déj�
   assert.equal(d.combatDeclare, null); assert.equal(d.fenetreReponse, true);
   const resolved = rpgMobaPasserCreature(d, 'joueur');
   assert.ok(resolved.entite, JSON.stringify(resolved));
-  assert.equal(d.fenetreReponse, false); assert.equal(d.phase, 'principale2');
+  assert.equal(d.fenetreReponse, false); assert.equal(d.phase, 'principale');
   assert.ok(rpgMobaPlacementCoherent(d));
 });
 
@@ -150,7 +151,7 @@ for (const side of ['joueur', 'sorcier']) test(`${side} : une Embuscade contrée
   d[defender].main = [garde, garde]; d[side].main = ['ecueil'];
   assert.ok(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true }).ok);
   assert.ok(rpgMobaLancerMagie(d, side, 'ecueil').contre);
-  assert.equal(d.moba.petitesCreaturesJouees[defender], true);
+  assert.equal(d.moba.embuscadesJouees[defender], true);
   assert.equal(rpgMobaPeutEmbuscade(d, defender, garde), false);
   const avant = JSON.stringify(d);
   assert.equal(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true }).ok, false);
@@ -159,6 +160,6 @@ for (const side of ['joueur', 'sorcier']) test(`${side} : une Embuscade contrée
   d[defender].main = ['gardienne-des-portes-de-sable'];
   rpgFinDeTour(d);
   assert.equal(d.tour, defender);
-  assert.equal(d.moba.petitesCreaturesJouees[defender], false);
+  assert.equal(d.moba.embuscadesJouees[defender], false);
   assert.ok(rpgMobaJouerCreature(d, defender, 'gardienne-des-portes-de-sable', 'right', 0, { ouvrirReponse: true }).ok);
 });

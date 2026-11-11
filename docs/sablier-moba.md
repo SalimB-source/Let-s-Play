@@ -476,3 +476,16 @@ Les effets exigeant un blocage ou plusieurs attaquants ne se déclenchent pas : 
 Chaque camp dispose d'une invocation normale de créature par tour, quel que soit son coût, et d'une Embuscade supplémentaire pendant le tour adverse. Chaque camp peut aussi jouer un sort et une arme par tour (dont le Sabre maudit). Une annonce légale consomme son quota même si elle est contrée ; la résolution ne le consomme pas une seconde fois. Tojiro en Embuscade ne demande pas de sacrifice si un Djinn adverse est présent à l'annonce ; sa pose normale conserve le coût habituel. Les quotas des deux camps sont réinitialisés au changement de tour. Les Sites, jetons et réanimations ne sont pas des invocations depuis la main. Ces quotas ne créent pas de nouvelles fenêtres de réaction ; les règles des autres modes restent inchangées.
 
 Le centre commence avec 15 PV par camp. La refonte après conquête est en cours : suppression du dialogue de rattachement et du reliquat de PV, présence de la créature centrale sur les deux flancs actifs et choix de la voie pour les attaques. Les soins d’arrivée et plusieurs interactions spatiales ont été adaptés. Les autres effets, priorités, cas de victoire et suites historiques restent à auditer et tester : cette version est un travail en cours, non validé pour fusion.
+
+Depuis cette ébauche, les transferts d'arrivée et de mort, la Contre-attaque,
+le retour par Ténacité, la Réanimation, les jetons et les flèches de combat
+ont été adaptés au centre à deux voies. Les essais couvrent notamment les deux
+camps, les deux flancs, une zone sans double impact, un flanc perdu et une
+victoire par capacité centrale. Les anciennes suites Garde/Tojiro et les suites
+ciblées de conquête/sacrifice ont été réconciliées avec les nouvelles règles.
+
+La validation globale reste ouverte : sur une sélection historique de 968 tests
+MOBA (moteur local, IA et effets de voie), 763 échouent encore ; les mêmes noms
+échouaient au précédent point de contrôle de cette PR. Cette comparaison ne
+prouve pas que chaque échec a la même cause et ne remplace pas la révision des
+scénarios historiques ni une comparaison avec `main`. La PR reste en brouillon.
