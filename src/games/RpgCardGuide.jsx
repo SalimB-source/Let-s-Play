@@ -4,9 +4,6 @@ import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
 import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme, libelleModificationStats, modificationStats } from './rpgCards.js';
-// Le jeton des familles de sorts : le guide enseigne la face des cartes, il
-// montre donc le repère tel que le duel le pose (voir `rpgSortSignature.jsx`).
-import { SortSceau } from './rpgSortSignature.jsx';
 import './rpg-card-guide.css';
 
 const ELEMENT_LABELS = {
@@ -16,7 +13,6 @@ const ELEMENT_LABELS = {
   neige: 'Neige',
   tenebres: 'Ténèbres',
 };
-const ELEMENT_MARKS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 
 /** Un bonus signé pour l'affichage : « +2 », ou « -2 » pour le malus du Sabre maudit. */
 const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
@@ -32,7 +28,7 @@ function GuideCard({ carte, cardArt }) {
   const modifStats = estCreature || carteEstArme(carte) ? null : modificationStats(carte);
   const libelleModif = modifStats ? libelleModificationStats(carte) : null;
   const [modifAtk, modifDef] = libelleModif ? libelleModif.split('/') : [];
-  const labelElement = colors.map((color) => `${ELEMENT_MARKS[color] ?? '◇'} ${ELEMENT_LABELS[color] ?? color}`).join(' · ');
+  const labelElement = colors.map((color) => ELEMENT_LABELS[color] ?? color).join(' · ');
 
   return (
     <article
@@ -47,7 +43,6 @@ function GuideCard({ carte, cardArt }) {
           style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}
           aria-label={`Coût : ${carte.cost} mana${exigencesCout ? `, dont ${exigencesCout}` : ''}`}
         >{carte.cost}</span>}
-        <SortSceau carte={carte} className="rpg-card-guide__sort" />
       </div>
       <div className="rpg-card-guide__details">
         <span className="rpg-card-guide__element">{labelElement}</span>

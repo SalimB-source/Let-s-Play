@@ -2,11 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const lire = f => readFileSync(new URL(`../src/games/${f}`, import.meta.url), 'utf8');
-test('couleur simple, hybride et coût sont dessinés dans un losange', () => {
+test('le coût reste dessiné dans un losange sans badge de couleur sur les cartes', () => {
   const page = lire('RpgDuelPage.jsx');
-  const badge = page.slice(page.indexOf('function CardElementBadge'), page.indexOf('function CombatActionIcon'));
-  assert.equal((badge.match(/<PlaqueForme forme="diamant"/g) ?? []).length, 2);
-  assert.doesNotMatch(badge, /forme="hexagone"/);
+  assert.doesNotMatch(page, /CardElementBadge|<SortSceau/);
   const cout = page.slice(page.indexOf('function ManaCost'), page.indexOf('function WizardManaCounters'));
   assert.match(cout, /<PlaqueForme forme="diamant"/);
 });

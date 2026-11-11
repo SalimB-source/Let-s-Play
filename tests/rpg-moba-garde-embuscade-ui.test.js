@@ -14,7 +14,7 @@ test('le plateau rend la priorité à l’attaquant humain quand l’IA annonce 
   let root;
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
-    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaJouerArme } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'eau'], sorcierCouleurs: ['braise', 'neige', 'tenebres'], rng: () => .5 }));
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
@@ -57,7 +57,7 @@ test('le joueur invoque le Garde en défense, puis choisit son blocage après la
   let root;
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
-    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaJouerArme } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour, rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige', 'tenebres'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 }));
@@ -85,7 +85,7 @@ test('le joueur invoque le Garde en défense, puis choisit son blocage après la
     await click(text('.moba__card', 'Garde du trône givré'));
     await click(document.querySelector('.moba__lane[aria-label="Voie gauche"] .moba__side--joueur .moba__slot.is-empty'));
     assert.equal(duel.mobaCreatureEnAttente?.cote, 'joueur');
-    assert.equal(duel.moba.petitesCreaturesJouees.joueur, false, 'l’Embuscade ne consomme pas le quota');
+    assert.equal(duel.moba.petitesCreaturesJouees.joueur, true, 'l’Embuscade consomme le quota');
     assert.equal(attaquant()?.dataset.combatTilted, 'true', 'attaquant incliné même durant la réponse à l’Embuscade');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.equal(duel.mobaCreatureEnAttente, null);
@@ -112,7 +112,7 @@ test('la main distingue les cartes impossibles sans transparence et ne montre au
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
-    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaJouerArme } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     let duel;
     const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 }));
     const props = { initialiser, onQuitter() {}, rendu: RPG_RENDU_MOBA };
@@ -127,12 +127,23 @@ test('la main distingue les cartes impossibles sans transparence et ne montre au
     assert.equal(document.querySelector('.moba__flux, .moba__mana, .moba__choice'), null);
     assert.match(document.querySelector('.moba__rules').textContent, /coût 1 à 4.*une seule par tour/i);
     assert.match(document.querySelector('.moba__rules').textContent, /une seule créature à sacrifice par tour/i);
-    assert.match(document.querySelector('.moba__rules').textContent, /Embuscades jouées pendant le tour adverse ne consomment pas ces limites/i);
+    assert.match(document.querySelector('.moba__rules').textContent, /limites s’appliquent aussi pendant le tour adverse/i);
     assert.ok(rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).ok);
     await act(async () => root.render(React.createElement(Board, props)));
     const petite = document.querySelector('[data-card-id="gardienne-des-portes-de-sable"].moba__card');
     assert.ok(petite.disabled && petite.classList.contains('is-unplayable'));
     assert.equal(document.querySelector('[data-card-id="anqa-des-braises"].moba__card').disabled, false, 'le quota de sacrifice reste disponible');
+    const porteur = duel.joueur.creatures[0];
+    duel.joueur.main = ['trait-de-braise', 'trait-de-braise', 'javelot-du-beffroi', 'cuirasse-de-sel'];
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.equal(document.querySelector('[data-card-id="trait-de-braise"].moba__card').disabled, false);
+    assert.equal(document.querySelector('[data-card-id="javelot-du-beffroi"].moba__card').disabled, false);
+    assert.equal(document.querySelector('.moba__real-hand .rpg-card-element-badge, .moba__real-hand .rpg-sort-sceau'), null);
+    assert.ok(rpgMobaLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier', 'right').ok);
+    assert.ok(rpgMobaJouerArme(duel, 'joueur', 'javelot-du-beffroi', porteur.id).ok);
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.equal(document.querySelector('[data-card-id="trait-de-braise"].moba__card').disabled, true);
+    assert.equal(document.querySelector('[data-card-id="cuirasse-de-sel"].moba__card').disabled, true);
     const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
     assert.match(css, /\.moba \.moba__hand-cards \.moba__card:disabled\s*\{[^}]*opacity:\s*1;[^}]*filter:\s*saturate/s);
     assert.match(css, /\.moba \.moba__side--sorcier > \.moba__health\s*\{[^}]*translateY\(calc\(-1 \* var\(--moba-slot-padding\)\)\)/s);

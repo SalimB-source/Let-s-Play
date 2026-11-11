@@ -9351,6 +9351,8 @@ export function rpgFinDeTour(duel) {
   if (duel.moba) {
     duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
     duel.moba.petitesCreaturesJouees = { joueur: false, sorcier: false };
+    duel.moba.sortsJoues = { joueur: false, sorcier: false };
+    duel.moba.armesJouees = { joueur: false, sorcier: false };
   }
   for (const entite of duel[duel.tour].creatures) {
     const croissance = duelCardById(entite.carteId)?.croissanceTour;

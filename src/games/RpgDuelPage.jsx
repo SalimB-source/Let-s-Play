@@ -327,10 +327,8 @@ import {
   rpgValiderDeck,
   signeStat,
 } from './rpgCards.js';
-// La signature des deux familles de sorts — sceau, socle, ligne teintée — vit
-// dans son propre module : l'atelier de decks la partage (voir
-// `rpgSortSignature.jsx`).
-import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
+// La ligne de type conserve sa teinte et son texte, sans sceau sur la carte.
+import { classeLigneFamille } from './rpgSortSignature.jsx';
 import { cardArt, cardArtEntite, cardArtFurie } from './rpgCardArt.js';
 import {
   ALTERNATIVES_DE_BOUTIQUE,
@@ -959,55 +957,20 @@ function desktopAccountName(user) {
   return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || 'Joueur';
 }
 
-function CardElementBadge({ carte }) {
-  if (!carte?.element || carte.kind === 'terrain') return null;
-  // Comme le disque de coût : les couleurs affichées sont celles du coût de la
-  // carte, dans le même ordre que les bandes de son cadre.
-  const colors = cardCostColors(carte);
-  const hybrid = colors.length > 1 || colors[0] === 'hybride';
-  const teinte = colors[0] ?? carte.element;
-  const teintePlaque = (couleur) => ELEMENT_TEINTES[couleur] ?? ELEMENT_TEINTES.braise;
-  // La couleur s’imprime sur un **losange**, comme le coût — une pierre taillée
-  // que les effets, à la même taille qu'eux (`plaqueNue`).
-  return (
-    <span
-      className={`rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : teinte} is-plaque`}
-      aria-hidden="true"
-    >
-      {hybrid
-        ? colors.map((couleur) => (
-          <i
-            key={couleur}
-            className={`rpg-card-element-badge__pip rpg-card-element-badge__pip--${couleur} is-plaque`}
-          >
-            <PlaqueForme forme="diamant" bases={[teintePlaque(couleur)]} />
-            <span className="rpg-card-element-badge__glyphe"><GlyphePierreElement element={couleur} /></span>
-          </i>
-        ))
-        : (
-          <>
-            <PlaqueForme forme="diamant" bases={[teintePlaque(teinte)]} />
-            <span className="rpg-card-element-badge__glyphe"><GlyphePierreElement element={teinte} /></span>
-          </>
-        )}
-    </span>
-  );
-}
-
 const CAPACITES_CATALOGUE = capacitesDuCatalogue(RPG_DUEL_CARDS);
 
 // Même vignette illustrée dans le catalogue et dans la collection de l'atelier.
 // Les boutons de lecture/ajout restent propres à chaque écran ; les repères de
-// couleur, de coût, de sort et d'effets gardent les mêmes formes, même si le
+// coût et d’effets gardent les mêmes formes, même si le
 // catalogue les réduit pour laisser respirer sa grille.
 function CatalogueCardFace({ carte, exemplaires, verrouillee }) {
   return (
     <>
       <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
-      <CardElementBadge carte={carte} />
+
       <ManaCost carte={carte} showElement={false} />
       <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--catalogue" />
-      <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
+
       <RpgCardCopyBadge nombre={exemplaires} className="rpg-card-catalogue__copies" />
       {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
       <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
@@ -3054,7 +3017,7 @@ export function TableCard({
         actionFx?.type === 'attack' ? 'fx-lunge' : '',
         actionFx?.type === 'hit' ? 'fx-hit' : '',
         actionFx?.type === 'combat-impact' ? 'fx-combat-impact' : '',
-        actionFx?.type === 'foudre' ? 'fx-foudre' : '', 
+        actionFx?.type === 'foudre' ? 'fx-foudre' : '',
         actionFx?.type === 'glow' ? 'fx-glow' : '',
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
@@ -3166,7 +3129,7 @@ export function TableCard({
         <span className="rpg-card__frost-shimmer" />
         <span className="rpg-card__frost-glow" />
       </span>}
-      <CardElementBadge carte={carte} />
+
       {/* Les compteurs de durabilité et de cale se lisent sous les couleurs.
           Les Heures et le sable restent sous le coût pour les hybrides. */}
       {(entite.heures?.restants > 0 || (armeCarte && (entite.arme?.compteurs > 0 || (!hybride && durabiliteArme > 0))) || (entite.enCale && !hybride)) && (
@@ -3690,9 +3653,9 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
       {estEnFurie && <VignetteFurie />}
-      <CardElementBadge carte={carte} />
+
       <ManaCost carte={carte} showElement={false} />
-      <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
+
       {/* Les effets de la carte, en pierres d'emblème sur le bord de la face —
           comme sur la carte qu'on survole, pour que l'aperçu dise d'un coup
           d'œil ce que la carte fait, avant même la liste des mots-clés. */}
@@ -4051,9 +4014,9 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      <CardElementBadge carte={carte} />
+
       <ManaCost carte={carte} showElement={false} />
-      <SortSceau carte={carte} className="rpg-mulligan__sceau rpg-mulligan__sort" />
+
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>
@@ -6610,7 +6573,7 @@ function libellePacteEtage(atouts) {
 }
 
 // The MOBA reuses the same card and detail rendering as the classic table.
-export const RPG_RENDU_MOBA = Object.freeze({ AnnonceTour, HoverCardPreview, dureeAnnonceTour: RPG_ANNONCE_TOUR_DUREE, TableCard, ManaCost, CardElementBadge, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite, CercleMagique, FaceDownHand, CardPile, CimetiereCarousel, FluxManaTrack, FullscreenIcon, BlockerArrows, ChoixManaEssai, VolumesDuel, PhaseTrack, CombatFeedEvent });
+export const RPG_RENDU_MOBA = Object.freeze({ AnnonceTour, HoverCardPreview, dureeAnnonceTour: RPG_ANNONCE_TOUR_DUREE, TableCard, ManaCost, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite, CercleMagique, FaceDownHand, CardPile, CimetiereCarousel, FluxManaTrack, FullscreenIcon, BlockerArrows, ChoixManaEssai, VolumesDuel, PhaseTrack, CombatFeedEvent });
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false, pvp = null } = {}) {
   const modePvp = Boolean(pvp);
@@ -14835,12 +14798,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''}${sacrificesInvocation(carte, duel) ? ` — invocation : ${sacrificesInvocation(carte, duel)} sacrifice(s), en plus du mana` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-                  <CardElementBadge carte={carte} />
+
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
                   </span>
                   <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />
-                  <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />
+
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>

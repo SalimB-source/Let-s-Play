@@ -457,7 +457,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · QUATRE CARTES, TROIS TEMPS',
         title: 'Reconnaître les familles de sorts',
-        text: 'La Porteuse de cruches est une créature. L’Eau de la source est une Sorcellerie : elle se lance pendant votre tour. Ressac et le Contresort des abîmes sont des Magies Rapides : elles peuvent se lancer en réponse, même pendant le tour adverse. Regardez le sceau au bas de chaque carte.',
+        text: 'La Porteuse de cruches est une créature. L’Eau de la source est une Sorcellerie : elle se lance pendant votre tour. Ressac et le Contresort des abîmes sont des Magies Rapides : elles peuvent se lancer en réponse, même pendant le tour adverse. Consultez la ligne de type dans l’aperçu de chaque carte.',
         nextLabel: 'Jouer la créature',
         side: 'top',
       },

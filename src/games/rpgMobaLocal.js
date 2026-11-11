@@ -3,7 +3,7 @@
  * preconstructed or validated custom decks from an audited pool; most card
  * effects and online play are not yet supported. Never bypass the audit gate.
  */
-import { armeById, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
+import { armeById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
 import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation } from './rpgMobaAttaqueIndividuelle.js';
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import {
@@ -13,7 +13,7 @@ import {
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
-import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
+import { invocationPossible, limiteInvocationMoba, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRattacherCentre, mobaRetirer, mobaVoieCombat, mobaVoieJouable, mobaSoigner, mobaVoie } from './rpgMoba.js';
 
 const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
@@ -161,10 +161,17 @@ export function rpgMobaCreerPartie(joueur, sorcier, options = {}) {
   }) };
 }
 
-/** Whether a displayed card can be paid, including the existence of a legal
- * lane for an audited life price. Timing and targets are checked separately. */
+/** Quotas d'annonces par camp et par tour, y compris les réponses. */
+export function rpgMobaLimiteCarte(duel, side, carte) {
+  if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte) return null;
+  if (carteEstArme(carte) && duel.moba.armesJouees?.[side]) return 'arme-limite';
+  if (carte.kind === 'magie' && !carteEstArme(carte) && duel.moba.sortsJoues?.[side]) return 'sort-limite';
+  return limiteInvocationMoba(duel, side, carte);
+}
+
+/** Whether a displayed card can be paid, including a legal lane for life prices. */
 export function rpgMobaPeutPayer(duel, side, carte) {
-  if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte || !invocationPossible(duel, side, carte)) return false;
+  if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte || rpgMobaLimiteCarte(duel, side, carte) || !invocationPossible(duel, side, carte)) return false;
   if (!MOBA_MAGIES_PRIX.includes(carte.id)) return rpgPeutPayer(duel[side], carte);
   return rpgPeutPayer(duel[side], carte, { ignorerPrixPv: true })
     && duel.moba.lanes.some((lane) => lane.active && lane.hp[side] > carte.prixPv);
@@ -177,6 +184,8 @@ export function rpgMobaNouveauDuel(options = {}) {
   duel.moba = mobaNouveau();
   duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
   duel.moba.petitesCreaturesJouees = { joueur: false, sorcier: false };
+  duel.moba.sortsJoues = { joueur: false, sorcier: false };
+  duel.moba.armesJouees = { joueur: false, sorcier: false };
   for (const side of MOBA_SIDES) { duel[side].mobaSansMana = true; duel[side].manaChoixEnAttente = false; }
   return duel;
 }
@@ -887,6 +896,7 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
     || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente || duel.mobaRechercheEnAttente) return fail('timing');
   if (!MOBA_ARMES.includes(cardId)) return fail('effet-non-pris-en-charge');
+  if (rpgMobaLimiteCarte(duel, side, armeById(cardId))) return fail('arme-limite');
   if (MOBA_SIDES.some((cote) => duel[cote].creatures.some((e) => !combatAudite(e) || !equipementAudite(e) || !caleAuditee(duel, cote, e)))) return fail('effet-non-pris-en-charge');
   const cible = duel[side].creatures.find((entity) => entity.id === cibleId);
   const vivante = cardId === 'lame-des-ergs' && cibleId == null;
@@ -898,6 +908,7 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
   }
   const result = rpgJouerArme(duel, side, cardId, cibleId, { annoncerArmeMoba: ouvrirReponse,
     ...(vivante ? { mobaPlacementArme: { laneId, slot } } : {}) });
+  if (result.ok) (duel.moba.armesJouees ??= {})[side] = true;
   if (result.ok && !result.sortEnAttente) {
     synchroniserSorties(duel);
     normaliserArriveeMoba(duel);
@@ -914,6 +925,8 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side)) return fail('pas-votre-tour');
+  const limiteCarte = rpgMobaLimiteCarte(duel, side, magieById(cardId));
+  if (limiteCarte) return fail(limiteCarte);
   const embuscadeEnAttente = Boolean(duel.mobaCreatureEnAttente?.embuscadeCombat || duel.mobaCreatureEnAttente?.embuscadeSuspendue || duel.mobaCreatureEnAttente?.origineCreature);
   const embuscadeSuspendue = duel.mobaCreatureEnAttente?.embuscadeSuspendue;
   const origineCreature = duel.mobaCreatureEnAttente?.origineCreature;
@@ -1038,6 +1051,10 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
   const result = rpgLancerMagie(duel, side, cardId, cibleId, cibleSecondaireId, options);
+  if (result.ok) {
+    const quota = carteEstArme(magieById(cardId)) ? 'armesJouees' : 'sortsJoues';
+    (duel.moba[quota] ??= {})[side] = true;
+  }
   if (result.ok && result.contre && embuscadeSuspendue) reprendreReponseSuspendue(duel);
   else if (result.ok && result.contre && origineCreature) { duel.mobaCreatureEnAttente = origineCreature; duel.fenetreReponse = true; }
   else if (result.ok && result.contre && embuscadeEnAttente && duel.combatDeclare) duel.fenetreReponse = true;

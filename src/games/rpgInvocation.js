@@ -16,19 +16,14 @@ export function petiteCreatureMoba(carte) {
   const cout = Number(carte?.cost);
   return ['creature', 'hero'].includes(kind) && cout >= 1 && cout <= 4;
 }
-// Une Embuscade jouée pendant le tour adverse n'utilise aucun des quotas de
-// pose du tour actif. Les mêmes cartes jouées à leur propre tour comptent.
-function embuscadeHorsTour(duel, cote, carte) {
-  return Boolean(duel?.moba && duel.tour !== cote && carte?.reactionTourAdverse);
-}
 export function limiteInvocationMoba(duel, cote, carte) {
-  if (!duel?.moba || embuscadeHorsTour(duel, cote, carte)) return null;
+  if (!duel?.moba) return null;
   if (petiteCreatureMoba(carte) && duel.moba.petitesCreaturesJouees?.[cote]) return 'petite-creature-limite';
   if (sacrificesInvocation(carte, duel) && duel.moba.sacrificesJoues?.[cote]) return 'sacrifice-limite';
   return null;
 }
 export function marquerInvocationMoba(duel, cote, carte) {
-  if (!duel?.moba || embuscadeHorsTour(duel, cote, carte)) return;
+  if (!duel?.moba) return;
   if (petiteCreatureMoba(carte)) (duel.moba.petitesCreaturesJouees ??= {})[cote] = true;
   if (sacrificesInvocation(carte, duel)) (duel.moba.sacrificesJoues ??= {})[cote] = true;
 }

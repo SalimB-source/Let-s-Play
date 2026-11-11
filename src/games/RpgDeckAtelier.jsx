@@ -79,17 +79,6 @@ const TRIS = [
   { id: 'rarete', label: 'Rareté' },
 ];
 
-function pipsDeCout(carte) {
-  const detail = cardColorCost(carte);
-  if (!detail || typeof detail !== 'object') return [];
-  const liste = [];
-  for (const element of RPG_ELEMENTS) {
-    const n = Number(detail[element]) || 0;
-    for (let i = 0; i < n; i += 1) liste.push(element);
-  }
-  return liste;
-}
-
 /** Pips élémentaires compacts : un symbole teinté par exigence colorée du coût. */
 function Pip({ element }) {
   return (
@@ -104,11 +93,11 @@ function Pip({ element }) {
 }
 
 /**
- * Médaillon de coût (valeur totale + pips élémentaires), posé en haut à droite
+ * Médaillon de coût, posé en haut à droite
  * des cartes de la collection et à l'extrémité droite des barres du deck.
  */
 function Cout({ carte }) {
-  const pips = pipsDeCout(carte);
+  const exigences = Object.entries(cardColorCost(carte)).map(([couleur, n]) => `${n} ${COULEUR_LABELS[couleur] ?? couleur}`).join(' et ');
   const couleurs = cardColors(carte);
   const modificateur = couleurs.length > 1
     ? 'hybride'
@@ -116,10 +105,9 @@ function Cout({ carte }) {
   return (
     <span
       className={`rpg-atelier__cout rpg-atelier__cout--${modificateur}`}
-      aria-label={`Coût ${cardCost(carte)}`}
+      aria-label={`Coût ${cardCost(carte)} mana${exigences ? `, dont ${exigences}` : ''}`}
     >
       <b>{cardCost(carte)}</b>
-      {pips.map((pip, index) => <Pip key={`${carte.id}-pip-${index}`} element={pip} />)}
     </span>
   );
 }
