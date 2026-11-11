@@ -11,6 +11,7 @@ import { dureeAnimation, rpgAnimationsReduites } from './rpgAnimations.js';
 import { sonSortAuLancement } from './rpgSortAudio.js';
 import { rpgSonsResolutionCombat, rpgVagueAnnonceAcier } from './rpgAttackAudio.js';
 import { rpgMobaCombatFeedback } from './rpgMobaCombatFeedback.js';
+import { rpgMobaPositionsImpact, rpgMobaImpactIndividuel } from './rpgMobaImpact.js';
 import { rpgMobaArrowTarget, rpgMobaCombatIndicators } from './rpgMobaCombatIndicators.js';
 import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgRenvoisEnMain, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
 import {
@@ -174,6 +175,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [apercu, setApercu] = useState(null);
   const [combatFx, setCombatFx] = useState({});
   const [combatFeedback, setCombatFeedback] = useState(null);
+  const [impactIndividuel, setImpactIndividuel] = useState(null);
   const [sortFx, setSortFx] = useState({});
   const [annonceSort, setAnnonceSort] = useState(null);
   const [annoncesApercues, setAnnoncesApercues] = useState([]);
@@ -311,6 +313,11 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     const timer = window.setTimeout(() => setCombatFx({}), dureeAnimation(900));
     return () => window.clearTimeout(timer);
   }, [combatFx]);
+  useEffect(() => {
+    if (!impactIndividuel) return undefined;
+    const timer = window.setTimeout(() => setImpactIndividuel(null), dureeAnimation(1200));
+    return () => window.clearTimeout(timer);
+  }, [impactIndividuel]);
   useEffect(() => {
     if (!combatFeedback) return undefined;
     const timer = window.setTimeout(() => setCombatFeedback(null), dureeAnimation(1500));
@@ -883,6 +890,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     }));
   const resoudre = (affectations = blocages) => {
     const combat = duel.combatDeclare;
+    const positionsImpact = combat?.cibleIndividuelle ? rpgMobaPositionsImpact(terrainRef.current) : null;
     // Quand un Vampire est choisi comme bloqueur, verrouiller la déclaration
     // avant d'offrir l'Embuscade du Porte-étendard. Les bloqueurs ne peuvent
     // plus être modifiés après cette fenêtre.
@@ -914,6 +922,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     const lumieresBrisees = lumieresAvant.filter((entity) => !entity.bouclierLumiere);
     setSortFx(Object.fromEntries(lumieresBrisees.map((entity) => [entity.id, { bouclier: { montant: 1, token } }])));
     setCombatFeedback(rpgMobaCombatFeedback(res.resume, combattants, token));
+    const impact = rpgMobaImpactIndividuel(combat, res, positionsImpact, Object.fromEntries(combattants.map((entity) => [entity.id, entity.name])));
+    setImpactIndividuel(impact ? { ...impact, token } : null);
     for (const son of rpgSonsResolutionCombat(res.resume)) onPlaySfx?.(son.nom, son.delai);
     const armeBrisee = armesAvant.some(({ side, entity, armeId }) => duel[side].creatures.includes(entity) && entity.arme?.carteId !== armeId);
     if (lumieresBrisees.length || armeBrisee) onPlaySfx?.('weapon_break');
@@ -931,7 +941,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     setAttaquants(ids); setCiblesRapides(cibles); setCibleRapideEnCours(null); setCibleVoieEnCours(null);
     setCarte(null); setEtape('blocage'); setCible(cibleId ? null : attaquantId);
   };
-  const nouvellePartie = () => { setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(initialiser === nouveau ? 'choix' : 'mulligan'); setMulliganIndices([]); setErreur(''); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); setCombatFeedback(null); setFantomes([]); setCerclesSacrifice([]); };
+  const nouvellePartie = () => { setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(initialiser === nouveau ? 'choix' : 'mulligan'); setMulliganIndices([]); setErreur(''); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); setCombatFeedback(null); setImpactIndividuel(null); setFantomes([]); setCerclesSacrifice([]); };
   // Let the opponent's ritual finish before its next move or arrival choice.
   const iaAgit = !fini && !cerclesSacrifice.length && !confirmerSortie && !parametresOuverts && !cimetiere && !apercu && (destruction ? destruction.cote === 'sorcier' : recherche ? recherche.cote === 'sorcier' : defausse ? mainSide === 'sorcier' : site ? site.cote === 'sorcier' : ((etape === 'tour' && actif === 'sorcier') || (etape === 'arrivee' && arriveeSide === 'sorcier')
     || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && repondant === 'sorcier')));
@@ -1091,7 +1101,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
   return <main className="moba" aria-label="MOBA, partie contre l’IA" style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-map': `url("${import.meta.env.BASE_URL}sablier-moba/champ-trois-voies-rapprochees.webp")`, '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`, '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
     {rendu && <EffetsSprite />}
-    <p className="moba__sr-only moba__combat-result" role="status" aria-atomic="true">{combatFeedback?.annonce ?? ''}</p>
+    <p className="moba__sr-only moba__combat-result" role="status" aria-atomic="true">{[combatFeedback?.annonce, impactIndividuel?.annonce].filter(Boolean).join(' ; ')}</p>
     <p className="moba__sr-only" role="status" aria-atomic="true">{duel.moba.lanes.filter((lane) => !lane.active && lane.conqueredBy).map((lane) => `${voies[lane.id]} conquise par ${noms[lane.conqueredBy]} ; ${lane.id === 'center' && duel.moba.centerJoined ? 'présence sur les deux voies latérales actives' : 'voie fermée'}.`).join(' ')}</p>
     {rendu?.AnnonceTour ? <rendu.AnnonceTour annonce={annonceTourVisible} /> : <div className="rpg-annonce-tour" style={{ '--rpg-annonce-tour-duree': `${dureeAnnonceTour}ms` }} role="status" aria-live="polite" aria-atomic="true">
       {annonceTourVisible && <p key={annonceTourVisible.token} className={`rpg-annonce-tour__bandeau is-${annonceTourVisible.camp}`}><span className="rpg-annonce-tour__lamp" aria-hidden="true" /><strong>{annonceTourVisible.camp === 'joueur' ? 'Votre tour' : 'Tour de l’adversaire'}</strong><span className="rpg-annonce-tour__lamp" aria-hidden="true" /></p>}
@@ -1140,6 +1150,16 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {carte && sacrificesInvocation(cardById(carte), duel, mainSide) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{sacrificesInvocation(cardById(carte), duel, mainSide)}. {sacrificesChoisis.length < sacrificesInvocation(cardById(carte), duel, mainSide) ? "Cliquez sur vos créatures à sacrifier, puis sur une case libre ou la case d’une victime." : "Choisissez une case libre ou la case d’une victime pour invoquer."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></div>}
     <div className="moba__field-scroll" role="region" aria-label="Plateau des trois voies" tabIndex={0}>
     <div className="moba__battlefield" ref={terrainRef}>
+    {impactIndividuel?.positions && <svg key={impactIndividuel.token} className="moba__impact-cinema" viewBox={`0 0 ${impactIndividuel.positions.width} ${impactIndividuel.positions.height}`} preserveAspectRatio="none" aria-hidden="true">
+      {impactIndividuel.source && impactIndividuel.destination && <>
+        <circle className="moba__impact-source" cx={impactIndividuel.source.x} cy={impactIndividuel.source.y} r="17" />
+        <line className="moba__impact-trail" x1={impactIndividuel.source.x} y1={impactIndividuel.source.y} x2={impactIndividuel.destination.x} y2={impactIndividuel.destination.y} pathLength="1" />
+      </>}
+      {impactIndividuel.impacts.map((impact, index) => impact.point && <g key={`${impact.id}-${index}`} className={`moba__impact-mark${impact.critique ? ' is-critical' : ''}`} transform={`translate(${impact.point.x} ${impact.point.y})`}>
+        <circle className="moba__impact-burst" r="22" />
+        <text className="moba__impact-number" y="-18" textAnchor="middle">−{impact.montant}</text>
+      </g>)}
+    </svg>}
     {rendu?.BlockerArrows && <><rendu.BlockerArrows tableRef={terrainRef} assignments={indications.attackArrows} attaque resolveTarget={rpgMobaArrowTarget} /><rendu.BlockerArrows tableRef={terrainRef} assignments={indications.blockArrows} resolveTarget={rpgMobaArrowTarget} /></>}
     <p className="moba__sr-only" aria-live="polite">{indications.descriptions.join(' ; ')}</p>
 

@@ -24,6 +24,10 @@ test('échange simultané sans blocage et reprise de la phase principale', () =>
   assert.equal(a.attaquee, true); assert.equal(d.fenetreReponse, true);
   const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
   assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.resume.blessures, [
+    { entiteId: c.id, sourceId: a.id, montant: 5 },
+    { entiteId: a.id, sourceId: c.id, montant: 5 },
+  ]);
   assert.equal(d.joueur.creatures.length, 0); assert.equal(d.sorcier.creatures.length, 0);
   assert.equal(d.phase, 'principale'); assert.equal(d.attaqueJouee, null); assert.equal(d.combatDeclare, null);
   assert.ok(rpgMobaPlacementCoherent(d));
@@ -118,7 +122,9 @@ test('un Bouclier de lumière empêche aussi le passage Overkill', () => {
   a.atk = 5; a.overkill = true; c.atk = 0; c.bouclierLumiere = true;
   const hp = mobaVoie(d.moba, 'left').hp.sorcier;
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
-  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok);
+  assert.deepEqual(result.resume.blessures, []);
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp);
   assert.equal(c.bouclierLumiere, false);
 });
@@ -211,6 +217,7 @@ test('une Attaque ciblée peut rater et ne provoque aucun Overkill', () => {
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
   const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
   assert.equal(result.resume.coupsRapides[0].rate, true);
+  assert.deepEqual(result.resume.blessures, []);
   assert.equal(c.pv, c.pvMax); assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp);
 });
 
