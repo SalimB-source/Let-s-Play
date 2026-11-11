@@ -14838,7 +14838,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <ManaCost carte={carte} showElement={false} />
                   </span>
                   <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />
-                  {familleSort && <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />}
+                  <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
                       <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>
