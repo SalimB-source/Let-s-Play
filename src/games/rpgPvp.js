@@ -276,6 +276,14 @@ function retournerPartie(vue) {
       sorcier: vue.mainDepart.joueur ?? 0,
     };
   }
+  if (vue.transitionRetours) {
+    const transition = vue.transitionRetours;
+    vue.transitionRetours = { ...transition,
+      file: (transition.file ?? []).map((item) => item.cote ? { ...item, cote: remplace(item.cote) } : item),
+      ...(transition.declenche?.cote ? { declenche: { ...transition.declenche, cote: remplace(transition.declenche.cote) } } : {}),
+    };
+  }
+  if (Array.isArray(vue.retoursExilFinTour)) vue.retoursExilFinTour = vue.retoursExilFinTour.map((item) => ({ ...item, cote: remplace(item.cote) }));
   if (vue.finDeTour?.cote) vue.finDeTour = { ...vue.finDeTour, cote: remplace(vue.finDeTour.cote) };
   if (vue.defausseEnAttente?.cote) {
     vue.defausseEnAttente = { ...vue.defausseEnAttente, cote: remplace(vue.defausseEnAttente.cote) };
@@ -576,6 +584,7 @@ function executerIntention(duel, cote, intention) {
       if (!duel.arriveeEnAttente || duel.arriveeEnAttente.cote !== cote) {
         return { ok: false, raison: 'aucune-arrivee' };
       }
+      if (duel.arriveeEnAttente.retour) return { ok: false, raison: 'cible-obligatoire' };
       duel.arriveeEnAttente = null;
       return { ok: true };
     case 'resoudre-destruction':
@@ -637,14 +646,14 @@ function executerIntention(duel, cote, intention) {
       }
       const avant = duel.tour;
       rpgFinDeTour(duel);
-      if (duel.tour === avant) return { ok: false, raison: 'tour-non-close' };
+      if (duel.tour === avant && !duel.transitionRetours) return { ok: false, raison: 'tour-non-close' };
       return { ok: true };
     }
     case 'passer-fin-de-tour': {
       if (duel.finDeTour?.cote !== rpgPvpAutreCote(cote)) return { ok: false, raison: 'aucune-fin-de-tour' };
       const avant = duel.tour;
       rpgFinDeTour(duel);
-      if (duel.tour === avant) return { ok: false, raison: 'tour-non-close' };
+      if (duel.tour === avant && !duel.transitionRetours) return { ok: false, raison: 'tour-non-close' };
       return { ok: true };
     }
     case 'conceder':

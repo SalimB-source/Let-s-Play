@@ -584,3 +584,28 @@ test('expiration PvP : le défenseur passe l’effet ciblé, puis la fenêtre de
   assert.equal(apresFin.etat.finDeTour, null);
   assert.equal(apresFin.etat.tour, 'sorcier');
 });
+
+test('expiration PvP : une cible de retour obligatoire est choisie puis le tour reprend', async () => {
+  const { rpgFinDeTour } = await import('../src/games/rpgDuel.js');
+  const monde = creerMonde();
+  const { code } = await duelEnCours(monde);
+  await jouerTour(monde, HOTE, code);
+  await jouerTour(monde, INVITE, code);
+  const ligne = monde.magasin.duels.get(code);
+  const d = ligne.etat;
+  d.joueur.manaChoixEnAttente = false; d.sorcier.manaChoixEnAttente = false;
+  d.joueur.creatures = []; d.sorcier.creatures = [];
+  d.joueur.exil = ['maitre-du-marteau'];
+  d.retoursExilFinTour = [{ cote: 'joueur', carteId: 'maitre-du-marteau' }];
+  const pv = d.sorcier.pv;
+  rpgFinDeTour(d);
+  assert.equal(d.arriveeEnAttente?.retour, true);
+  const seq = ligne.seq;
+  monde.horloge.t += RPG_PVP_HORLOGES.live + 1000;
+  const resultat = await api(monde, HOTE, { action: 'etat', code });
+  assert.equal(resultat.seq, seq + 1);
+  assert.equal(resultat.etat.arriveeEnAttente, null);
+  assert.equal(resultat.etat.transitionRetours, null);
+  assert.equal(resultat.etat.tour, 'sorcier');
+  assert.equal(monde.magasin.duels.get(code).etat.sorcier.pv, pv - 3);
+});

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgJouerArme,
-  rpgReglerHasard, rpgBlesserCreature,
+  rpgReglerHasard, rpgBlesserCreature, rpgFinDeTour,
 } from '../src/games/rpgDuel.js';
 import { degatsApresEsquive } from '../src/games/rpgAI.js';
 
@@ -97,4 +97,19 @@ test('l’IA estime aussi les capacités et la chance cumulée d’Esquive', () 
   assert.equal(degatsApresEsquive({ esquive: true, esquiveChance: 0.3 }, 10, 'capacite'), 7);
   assert.equal(degatsApresEsquive({ esquive: true, esquiveChance: 0.3 }, 10, 'magie'), 7);
   assert.equal(degatsApresEsquive({ esquive: true, esquiveChance: 0.3 }, 10, 'poison'), 10);
+});
+
+
+test('le retour d’Anqa permet d’esquiver sa capacité hostile', () => {
+  for (const [jet, esquive] of [[0.14, true], [0.15, false]]) {
+    const duel = duelVide();
+    const cible = poser(duel, 'sorcier', 'onna-musha-des-cendres');
+    duel.joueur.cimetiere.push('anqa-des-braises');
+    duel.joueur.retoursProgrammes.push({ carteId: 'anqa-des-braises', toursRestants: 1 });
+    rpgReglerHasard(duel, () => jet);
+    rpgFinDeTour(duel);
+    assert.ok(duel.joueur.creatures.some((entite) => entite.carteId === 'anqa-des-braises'));
+    assert.equal(cible.pv, esquive ? 3 : 2);
+    assert.equal(duel.log.some((ligne) => ligne.includes('esquive la capacité')), esquive);
+  }
 });
