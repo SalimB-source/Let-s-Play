@@ -2004,6 +2004,29 @@
   .rpg-atelier__nommage-actions .rpg-menu-button { min-height: 44px; }
 }
 
+/* Le jeu mobile se joue en paysage : cinq cartes par rangée dans la vue
+   « Cartes ». Les commandes restent à 44 px, empilées dans le coin droit
+   pour ne pas se chevaucher sur les écrans à navigation latérale. */
+@media (max-width: 960px) and (orientation: landscape) {
+  .rpg-atelier__cartes {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px 6px;
+    padding: 10px 8px 18px;
+  }
+  .rpg-battle .rpg-atelier__cartes .rpg-atelier__carte {
+    width: 100%;
+    padding-bottom: 54px;
+    border-radius: 8px;
+    background: #17151e;
+    overflow: hidden;
+  }
+  .rpg-atelier__carte-ajout,
+  .rpg-atelier__carte-retrait { right: 5px; }
+  .rpg-atelier__carte-ajout { bottom: 5px; }
+  .rpg-atelier__carte-retrait { bottom: 54px; }
+  .rpg-atelier__carte .rpg-card-catalogue__zoom { display: none; }
+}
+
 /* Le téléphone portrait place les modes au-dessus de l'atelier ; les trois
    rangées sont donc en-tête, atelier défilant, pied du jeu. */
 @media (max-width: 700px),
