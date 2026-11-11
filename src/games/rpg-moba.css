@@ -1248,3 +1248,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba__conquest-photo-chain--down { transform: translate(-50%, -50%) rotate(atan2(100cqh, 100cqw)); }
   .moba__conquest-photo-chain--up { transform: translate(-50%, -50%) rotate(calc(-1 * atan2(100cqh, 100cqw))); }
 }
+
+/* Le texte imprimé reste consultable ; les adaptations propres au mode le priment. */
+.moba__rule-note { width: min(100%, 34rem); padding: .75rem; border: 1px solid #aa854d; border-radius: .5rem; color: #fff1cf; background: #1a1410; font-size: .82rem; }
+.moba__rule-note p { margin: .35rem 0 0; }

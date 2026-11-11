@@ -4,17 +4,17 @@
  * effects and online play are not yet supported. Never bypass the audit gate.
  */
 import { armeById, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
-import { ciblesDefenseur } from './rpgDefenseur.js';
-import { MOBA_ABORDAGE_IMPRIME, MOBA_TOURS_AUDITEES, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
+import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation } from './rpgMobaAttaqueIndividuelle.js';
+import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import {
   rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
-  rpgLancerAttaque, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher,
+  rpgResoudreEchangeIndividuelMoba, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
 import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
-import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRattacherCentre, mobaRetirer, mobaVoieCombat, mobaVoieJouable, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
+import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRattacherCentre, mobaRetirer, mobaVoieCombat, mobaVoieJouable, mobaSoigner, mobaVoie } from './rpgMoba.js';
 
 const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
 const NOMS_VOIES = Object.freeze({ left: 'la voie gauche', center: 'la voie centrale', right: 'la voie droite' });
@@ -41,6 +41,8 @@ const caleAuditee = (duel, cote, entite) => {
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
+// Ces sorts exigent une déclaration de blocage, absente des nouvelles règles MOBA.
+export const rpgMobaSortBlocageInterdit = (id) => ['appat-de-la-meute', 'embuscade'].includes(id);
 export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['gardienne-du-croissant', 'guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
 export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
@@ -354,6 +356,7 @@ export function rpgMobaChoisirVoieCentrale(duel, side, laneId) {
 export const MOBA_EMBUSCADES_COMBAT = Object.freeze(['tojiro-le-pourfendeur', 'sanguinaire-des-dunes', 'gardienne-du-croissant', 'porte-etendard-de-leclipse', 'garde-du-trone-givre', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune']);
 export function rpgMobaPeutEmbuscade(duel, side, cardId) {
   const carte = duelCardById(cardId);
+  if (carte?.conditionEmbuscade === 'deux-attaquants') return false;
   const annonce = duel?.mobaCreatureEnAttente;
   const sorcier = cardId === 'sorcier-du-ressac-noir' && annonce && !annonce.embuscadeCombat && !annonce.embuscadeSuspendue && !annonce.origineCreature
     && annonce.cote === duel.tour && annonce.cote !== side && ['creature', 'hero'].includes((duelCardById(annonce.carteId)?.kind ?? 'creature'));
@@ -754,142 +757,96 @@ function infligerDansVoie(duel, side, laneId, amount, damageEvents, details = {}
   return { recus: damage.damage, sourceExileeParConquete: damage.conquered && !(laneId === 'center' && duel.moba.centerChoice === side) };
 }
 
-/** La créature centrale peut cibler toutes les voies actives ; les autres
- * restent dans leur voie. Les créatures protégées empêchent encore la frappe
- * directe, même lorsqu’aucune cible légale n’est disponible. */
+/** Interface de compatibilité : les cibles sont celles du combat individuel. */
 export function rpgMobaCiblesAttaque(duel, side, attackerId) {
-  const attaquant = duel?.[side]?.creatures.find((e) => e.id === attackerId);
-  if (!attaquant?.coupRapide) return { obligatoires: false, cibles: [] };
-  const ennemi = side === 'joueur' ? 'sorcier' : 'joueur';
-  const adversaires = duel[ennemi].creatures.filter((e) => (attaquant.mobaLane === 'center' || e.mobaLane === attaquant.mobaLane) && mobaVoie(duel.moba, e.mobaLane)?.active && duelCardById(e.carteId)?.kind !== 'site');
-  const couleurs = cardColors(duelCardById(attaquant.carteId));
-  const cibles = ciblesDefenseur(adversaires.filter((e) => !rpgEstProtegee(e, couleurs)));
-  return { obligatoires: adversaires.length > 0, cibles: cibles.map((e) => e.id) };
+  const choix = rpgMobaCiblesIndividuelles(duel, side, attackerId);
+  return { obligatoires: !choix.directe, cibles: choix.cibles };
 }
 
-function validerCiblesAttaque(duel, side, ids, cibles) {
-  if (!cibles || typeof cibles !== 'object' || Array.isArray(cibles)
-    || Object.keys(cibles).some((id) => !ids.includes(id))) return fail('cible');
-  for (const id of ids) {
-    const attacker = duel[side].creatures.find((e) => e.id === id);
-    const target = cibles[id];
-    if (!attacker) return fail('attaquant');
-    if (!attacker.coupRapide && target) return fail('cible');
-    const choix = rpgMobaCiblesAttaque(duel, side, id);
-    if (choix.obligatoires && !target) return fail('cible-obligatoire');
-    if (target && !choix.cibles.includes(target)) return fail('cible');
-  }
-  return { ok: true };
-}
-
-/** Declare an attack before giving the other seat a real response window. */
+/** L'ancienne signature n'accepte désormais qu'un attaquant et une cible. */
 export function rpgMobaDeclarerAttaque(duel, side, attackerIds, ciblesAttaque = {}) {
-  if (duel?.mobaRechercheEnAttente) return fail('timing');
-  if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
-  if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
+  if (!Array.isArray(attackerIds) || attackerIds.length !== 1 || !ciblesAttaque || typeof ciblesAttaque !== 'object'
+    || Array.isArray(ciblesAttaque) || Object.keys(ciblesAttaque).some((id) => id !== attackerIds[0])) return fail('combat-individuel');
+  return rpgMobaDeclarerAttaqueIndividuelle(duel, side, attackerIds[0], ciblesAttaque[attackerIds[0]] ?? null);
+}
+
+/** Annonce expérimentale d'une seule créature. Le champ individuel conserve
+ * la cible d'origine même si une réponse modifie les priorités du plateau. */
+export function rpgMobaDeclarerAttaqueIndividuelle(duel, side, attackerId, cibleId = null) {
+  if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
+  if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente || duel.phase !== 'principale'
-    || duel.attaqueJouee === side || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare
+    || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.moba.centerChoice
+    || duel.mobaRechercheEnAttente || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente
     || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length
     || duel.defausseEnAttente || duel.siteEnAttente) return fail('timing');
-  const valid = mobaValiderBlocages(duel.moba, side, attackerIds, {});
-  if (!valid.ok) return valid;
-  const ciblesValides = validerCiblesAttaque(duel, side, attackerIds, ciblesAttaque);
-  if (!ciblesValides.ok) return ciblesValides;
   if (MOBA_SIDES.some((camp) => duel[camp].creatures.some((e) =>
-    !combatAudite(e) || !equipementAudite(e) || !caleAuditee(duel, camp, e) || (e.doitBloquer && !MOBA_TOURS_AUDITEES.includes(e.carteId))))) return fail('effet-non-pris-en-charge');
-  if (attackerIds.some((id) => !rpgPeutAttaquer(duel[side].creatures.find((e) => e.id === id)))) return fail('pas-pret');
-  const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, side, attackerIds);
-  duel.phase = 'blocage';
+    !combatAudite(e) || !equipementAudite(e) || !caleAuditee(duel, camp, e)))) return fail('effet-non-pris-en-charge');
+  const attaquant = duel[side].creatures.find((e) => e.id === attackerId);
+  if (!rpgPeutAttaquer(attaquant)) return fail('pas-pret');
+  const choix = rpgMobaCiblesIndividuelles(duel, side, attackerId);
+  if (cibleId === null ? !choix.directe : !choix.cibles.includes(cibleId)) return fail('cible');
+  const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, side, [attackerId]);
+  const ciblee = Boolean(attaquant.coupRapide);
+  const voie = attaquant.mobaLane;
+  if (cibleId !== null) rpgMobaBonusProvocation(duel, side === 'joueur' ? 'sorcier' : 'joueur', cibleId);
+  attaquant.attaquee = true;
+  duel.log.push(`${attaquant.name} annonce une attaque${cibleId ? ` contre ${duel[side === 'joueur' ? 'sorcier' : 'joueur'].creatures.find((e) => e.id === cibleId)?.name ?? 'une créature'}` : ' directe sur sa voie'}.`);
+  duel.phase = 'blocage'; // Réutilisation des fenêtres de réponse, pas de blocage.
   duel.fenetreReponse = true;
-  duel.combatDeclare = { cote: side, attaquants: [...attackerIds], ciblesAttaque: { ...ciblesAttaque }, bannieresAppliquees };
+  duel.combatDeclare = { cote: side, attaquants: [attackerId], ciblesAttaque: ciblee && cibleId ? { [attackerId]: cibleId } : {},
+    bannieresAppliquees, cibleIndividuelle: { cibleId, ciblee, voie } };
   return { ok: true };
 }
 
-/** Verrouille des blocages pleinement validés sans résoudre le combat. */
-export function rpgMobaDeclarerBlocages(duel, side, blocks = {}) {
-  if (!duel?.moba || !MOBA_SIDES.includes(side) || !rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
-  const combat = duel.combatDeclare;
-  if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul || !combat || side === combat.cote
-    || combat.cote !== duel.tour || duel.phase !== 'blocage' || !duel.fenetreReponse || combat.blocages
-    || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente || duel.arriveeEnAttente
-    || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.defausseEnAttente
-    || duel.siteEnAttente || duel.mobaRechercheEnAttente || duel.moba.centerChoice) return fail('timing');
-  const isolation = mobaValiderBlocages(duel.moba, combat.cote, combat.attaquants, blocks);
-  if (!isolation.ok) return isolation;
-  const result = rpgLancerAttaque(duel, combat.cote, combat.attaquants, blocks, null, null, combat.ciblesAttaque, {
-    attaqueDeclaree: true, bannieresAppliquees: Boolean(combat.bannieresAppliquees), validerBlocagesSeulement: true,
-  });
-  if (!result.ok) return result;
-  const verifie = mobaValiderBlocages(duel.moba, combat.cote, combat.attaquants, result.blocages);
-  if (!verifie.ok) return verifie;
-  combat.blocages = result.blocages;
-  combat.attaquantsBloques = Object.entries(result.blocages).filter(([, ids]) => ids.length).map(([id]) => id);
-  return { ok: true, blocages: structuredClone(result.blocages) };
-}
-
-/** Combat damage, readiness, blocking and the one-attack-per-turn rule are
- * resolved by the duel engine. Other card abilities require an audit first. */
-export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { declaree = false, ciblesAttaque = {} } = {}) {
-  if (duel?.mobaRechercheEnAttente) return fail('timing');
+/** Passe la réponse et résout la frappe sans ouvrir de phase de blocage. */
+export function rpgMobaResoudreAttaqueIndividuelle(duel, side) {
+  const combat = duel?.combatDeclare;
+  if (!duel?.moba || !combat?.cibleIndividuelle || side !== combat.cote || duel.tour !== side
+    || duel.phase !== 'blocage' || !duel.fenetreReponse || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente
+    || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length
+    || duel.siteEnAttente || duel.defausseEnAttente || duel.mobaRechercheEnAttente || duel.moba.centerChoice) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
-  if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
-  if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
-  const combat = duel.combatDeclare;
-  const combatValide = declaree && duel.phase === 'blocage' && combat?.cote === side
-    && Array.isArray(attackerIds) && attackerIds.length === combat.attaquants.length
-    && attackerIds.every((id) => combat.attaquants.includes(id));
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente || duel.mobaCreatureEnAttente
-    || (declaree ? !combatValide : (!['principale', 'attaque'].includes(duel.phase) || duel.fenetreReponse || duel.combatDeclare))
-    || duel.finDeTour || duel.arriveeEnAttente || duel.effetCreatureEnAttente
-    || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente) return fail('timing');
-  if (combat?.blocages && (!blocks || typeof blocks !== 'object' || Array.isArray(blocks) || JSON.stringify(Object.entries(blocks).sort()) !== JSON.stringify(Object.entries(combat.blocages).sort()))) return fail('blocage-verrouille');
-  const isolation = mobaValiderBlocages(duel.moba, side, attackerIds, blocks);
-  if (!isolation.ok) return isolation;
-  if (!declaree) {
-    const ciblesValides = validerCiblesAttaque(duel, side, attackerIds, ciblesAttaque);
-    if (!ciblesValides.ok) return ciblesValides;
-  }
-
-  // Other keywords, death triggers and player-targeting effects must be audited
-  // before enabling them. This is not a permanent card restriction.
-  if (MOBA_SIDES.some((cote) => duel[cote].creatures.some((entity) =>
-    !combatAudite(entity) || !equipementAudite(entity) || !caleAuditee(duel, cote, entity)
-      || (entity.doitBloquer && !MOBA_TOURS_AUDITEES.includes(entity.carteId))
-  ))) return fail('effet-non-pris-en-charge');
-
-  const lanesByAttacker = new Map();
-  for (const lane of duel.moba.lanes) {
-    for (const id of lane.slots[side]) if (id !== null) lanesByAttacker.set(id, mobaVoieCombat(duel.moba, side, lane.id));
-  }
+  const attackerId = combat.attaquants[0];
+  const { cibleId, ciblee, voie } = combat.cibleIndividuelle;
+  const valide = rpgMobaCibleIndividuelleEncoreLegale(duel, side, attackerId, cibleId, ciblee, voie);
   const damageEvents = [];
   const healingEvents = [];
-  rpgConsommerSoinsCreatureMoba(duel);
-  rpgConsommerDegatsCapaciteMoba(duel);
-  const result = rpgLancerAttaque(duel, side, attackerIds, blocks, null, combat?.attaquantsBloques ?? null, declaree ? combat.ciblesAttaque : ciblesAttaque, {
-    attaqueDeclaree: declaree, blocagesDejaDeclares: Boolean(combat?.blocages),
-    bannieresAppliquees: declaree && Boolean(combat.bannieresAppliquees),
+  rpgConsommerSoinsCreatureMoba(duel); rpgConsommerDegatsCapaciteMoba(duel);
+  let result = { ok: true, annule: true, resume: { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], critiques: [] } };
+  if (valide) result = rpgResoudreEchangeIndividuelMoba(duel, side, attackerId, cibleId, ciblee, {
+    resoudreDegatsDirects: (amount) => infligerDansVoie(duel, side, voie, amount, damageEvents, { attackerId }),
     surTransfertMoba: (transfer, source) => {
       damageEvents.push({ ...transfer, laneId: transfer.laneId, targetSide: side === 'joueur' ? 'sorcier' : 'joueur', attackerId: source.id, tribut: true });
       healingEvents.push({ laneId: transfer.laneId, side, healing: transfer.healing, attackerId: source.id });
     },
-    resoudreDegatsDirects: (hit) => {
-      const laneId = lanesByAttacker.get(hit.attaquantId);
-      return infligerDansVoie(duel, side, laneId, hit.amount, damageEvents, { attackerId: hit.attaquantId });
-    },
   });
+  if (!result.ok) return result;
+  if (!valide) duel.log.push('La cible de l’attaque n’est plus légale : l’attaque est annulée.');
+  duel.combatDeclare = null;
+  duel.fenetreReponse = false;
+  duel.phase = 'principale';
+  synchroniserSorties(duel);
+  normaliserArriveeMoba(duel);
   healingEvents.push(...rpgConsommerSoinsCreatureMoba(duel));
   damageEvents.push(...rpgConsommerDegatsCapaciteMoba(duel));
-  if (!result.ok) return result;
-  if (declaree) {
-    duel.combatDeclare = null;
-    duel.fenetreReponse = false;
-    if (duel.phase === 'blocage') duel.phase = 'principale2';
-  }
-  // Creatures killed in ordinary combat leave the engine field. Clear the
-  // corresponding lane slots without changing their original assignment.
-  synchroniserSorties(duel);
   return { ...result, damageEvents, healingEvents };
+}
+
+/** Les blocages n'existent plus en MOBA. */
+export function rpgMobaDeclarerBlocages() {
+  return fail('blocage-indisponible-moba');
+}
+
+/** Compatibilité avec l'ancienne signature : seule une attaque individuelle
+ * déjà annoncée peut être résolue, sans affectation de bloqueur. */
+export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { declaree = false } = {}) {
+  if (!declaree || !Array.isArray(attackerIds) || attackerIds.length !== 1
+    || attackerIds[0] !== duel?.combatDeclare?.attaquants?.[0] || !duel.combatDeclare.cibleIndividuelle
+    || !blocks || typeof blocks !== 'object' || Array.isArray(blocks)
+    || Object.values(blocks).some((ids) => !Array.isArray(ids) || ids.length > 0)) return fail('combat-individuel');
+  return rpgMobaResoudreAttaqueIndividuelle(duel, side);
 }
 
 // Match the classic engine's latest eligible creature, without skipping an
@@ -952,6 +909,7 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
  * validates protection, payment and resolves the printed text. The local UI
  * opts in to the limited main-phase spell window; probes resolve immediately. */
 export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = null, prixLaneId = null, { ouvrirReponse = false, cibleSecondaireId = null, emplacementReanimation = null } = {}) {
+  if (rpgMobaSortBlocageInterdit(cardId)) return fail('blocage-indisponible-moba');
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
@@ -1114,10 +1072,10 @@ function reconcilerCombatDeclare(duel) {
   if (!combat) return false;
   const survivants = combat.attaquants.filter((id) => duel[combat.cote].creatures.some((entity) => entity.id === id));
   if (!survivants.length || duel.moba.winner) {
-    duel.attaqueJouee = combat.cote;
+    if (!combat.cibleIndividuelle) duel.attaqueJouee = combat.cote;
     duel.combatDeclare = null;
     duel.fenetreReponse = false;
-    duel.phase = 'principale2';
+    duel.phase = combat.cibleIndividuelle ? 'principale' : 'principale2';
     return true;
   }
   const defenseur = combat.cote === 'joueur' ? 'sorcier' : 'joueur';

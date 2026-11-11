@@ -435,3 +435,35 @@ Les dix créatures portant Embuscade sont désormais dans le pool audité. Boual
 ### Choix des sacrifices par l’IA
 
 En duel classique comme en MOBA, l’IA examine les combinaisons légales de victimes (une ou deux), en privilégiant les moins précieuses. Elle compare leur force et leur défense actuelles ainsi que leur valeur tactique — notamment capacités, protections, équipement et caractère éphémère — à celles de la nouvelle créature. Un remplacement défavorable n’est envisagé que si une simulation isolée révèle un avantage concret : arrivée profitable, victoire au combat ou prévention d’une défaite au prochain combat. En MOBA les placements et blocages sont évalués par voie ; Tojiro applique aussi cette prudence en Embuscade. Les simulations sont bornées et utilisent leur propre hasard : elles restent des estimations, sans connaissance des futures actions adverses. En classique, le choix est réévalué après la fenêtre de réponse si le plateau a changé.
+
+## Refonte : attaques individuelles
+
+Le plateau local, l'IA et l'adaptateur utilisent les attaques individuelles. Les anciennes signatures MOBA refusent les groupes et les blocages. Le moteur réutilise en interne `phase = blocage` pour la fenêtre de réponse, sans permettre de blocage. Les sections historiques ci-dessus décrivent l'ancien fonctionnement lorsqu'elles mentionnent des blocages : les présentes règles prévalent.
+
+Règles décidées pour l'intégration : chaque créature peut attaquer une fois par
+tour ; après l'annonce, une fenêtre Magie Rapide/Embuscade précède les dégâts.
+L'attaque normale vise une créature accessible de la même voie avec échange
+simultané, ou directement la voie si aucune n'est accessible. Sans Envol on ne
+vise pas une créature volante ; avec Envol, si aucun ennemi volant accessible
+n'existe, on peut choisir une créature au sol ou la voie. Infiltration protège
+contre les attaques normales. L'Attaque ciblée peut viser une créature sur tout
+le plateau, y compris Envol et Infiltration, ou directement la voie ; elle ne
+reçoit pas de riposte sauf Contre-attaque. Les protections et échecs existants
+restent applicables.
+
+Parmi les cibles accessibles, Provocation prime sur Défenseur et interdit la
+frappe directe ; la créature visée gagne +0/+1 par attaque qui la cible,
+cumulable jusqu'à la fin du tour. Une cible est fixée à l'annonce : si elle
+disparaît ou devient illégale, la frappe est annulée sans redirection ; un
+nouveau Défenseur n'est pas rétroactif. Overkill inflige à la voie les dégâts
+dépassant la défense de la créature attaquée, uniquement si le coup porte.
+
+Déjà appliqué dans l'adaptateur MOBA : Appât de la meute et le sort Embuscade,
+qui imposent des blocages, sont injouables (et exclus des choix de l'IA). Le
+Traqueur des nuits sans lune ne peut plus utiliser son Embuscade à deux
+attaquants, mais conserve son effet normal d'arrivée. Le duel classique n'est
+pas modifié. Certains anciens tests MOBA décrivant ces cartes comme jouables
+par blocage devront être remplacés lors de la refonte, pas pris pour des tests
+du nouveau parcours.
+
+Les effets exigeant un blocage ou plusieurs attaquants ne se déclenchent pas : notamment Vampire des braises, Sahir, Cavalier de vapeur et les Tours. Le Porte-étendard ne réagit plus à un blocage mais conserve sa réaction à une Attaque ciblée de Vampire. Le gel de combat conserve sa règle existante de déclenchement avant les blessures. Les aperçus signalent les adaptations MOBA sans altérer le catalogue classique. Les anciens tests qui exigent un blocage restent à réécrire ; les scénarios de réponses imbriquées, les effets de toutes les cartes et le PvP en ligne ne sont pas exhaustivement validés.
