@@ -469,3 +469,7 @@ par blocage devront être remplacés lors de la refonte, pas pris pour des tests
 du nouveau parcours.
 
 Les effets exigeant un blocage ou plusieurs attaquants ne se déclenchent pas : notamment Vampire des braises, Sahir, Cavalier de vapeur et les Tours. Le Porte-étendard ne réagit plus à un blocage mais conserve sa réaction à une Attaque ciblée de Vampire. Le gel de combat conserve sa règle existante de déclenchement avant les blessures. Les aperçus signalent les adaptations MOBA sans altérer le catalogue classique. Les anciens tests qui exigent un blocage restent à réécrire ; les scénarios de réponses imbriquées, les effets de toutes les cartes et le PvP en ligne ne sont pas exhaustivement validés.
+
+### Quotas de cartes par tour
+
+Chaque camp dispose, à chaque tour (y compris celui de l'adversaire), de quatre quotas indépendants : une créature de coût 1 à 4, une créature nécessitant un sacrifice, un sort et une arme (dont le Sabre maudit). Une annonce légale consomme le quota même si elle est contrée ; la résolution ne le consomme pas une seconde fois. Les quotas des deux camps sont réinitialisés au changement de tour. Les Sites, jetons et réanimations ne sont pas des invocations depuis la main. Ces quotas ne créent pas de nouvelles fenêtres de réaction ; les règles des autres modes restent inchangées.

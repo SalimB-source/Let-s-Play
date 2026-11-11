@@ -5,7 +5,6 @@ import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import { cardById, cardColors, cardHasPrintedType, lienSatisfait, cardFrameClass, cardFrameColor, cardMotifClass } from './rpgCards.js';
 import { EffetsSprite, IconesCarte } from './effetIcons.jsx';
-import { SortSceau } from './rpgSortSignature.jsx';
 import { cardArt, cardArtEntite } from './rpgCardArt.js';
 import { armesPortees } from './rpgCardStacks.js';
 import { dureeAnimation, rpgAnimationsReduites } from './rpgAnimations.js';
@@ -41,7 +40,7 @@ const voies = { left: 'Voie gauche', center: 'Voie centrale', right: 'Voie droit
 const MAILLONS_VOIE_FERMEE = Array.from({ length: 21 }, (_, index) => 5 + index * 4.5);
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const message = {
-  mana: 'Carte impossible à jouer.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
+  mana: 'Carte impossible à jouer.', 'sort-limite': 'Un seul sort peut être joué par camp et par tour.', 'arme-limite': 'Une seule arme peut être jouée par camp et par tour.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
   provocation: 'Une Provocation accessible doit être attaquée en priorité.',
   'blocage-force': 'Les créatures marquées doivent bloquer si elles le peuvent dans leur voie.',
   'attaque-jouee': 'La phase d’attaque est déjà terminée.', 'cible-obligatoire': 'Choisissez une cible légale pour chaque attaquant ciblé.', emplacement: 'Cet emplacement n’est pas libre.',
@@ -1109,7 +1108,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <p>Trois voies indépendantes : 20 / 10 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide ou une Embuscade avant les dégâts. Il n’y a pas de blocage. Une attaque normale vise une créature accessible dans la même voie et les dégâts sont simultanés ; à défaut elle frappe directement la voie. Envol permet aussi la frappe directe s’il n’y a pas d’ennemi volant accessible. Infiltration protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation, puis Défenseur, imposent les cibles accessibles prioritaires.</p>
         <p>Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et le vainqueur peut continuer à jouer sur sa case centrale. Une seule barre réunit leurs PV (30 maximum).</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Les créatures de coût 1 à 4 ne demandent aucun sacrifice : chaque camp peut en annoncer une seule par tour. Celles de coût 5 ou 6 demandent un sacrifice, et celles de coût 7 ou plus en demandent deux ; chaque camp peut annoncer une seule créature à sacrifice par tour, en plus de sa petite créature. Une annonce pendant son propre tour compte même si elle est contrée. Les Embuscades jouées pendant le tour adverse ne consomment pas ces limites. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Les créatures de coût 1 à 4 ne demandent aucun sacrifice : chaque camp peut en annoncer une seule par tour. Celles de coût 5 ou 6 demandent un sacrifice, et celles de coût 7 ou plus en demandent deux ; chaque camp peut annoncer une seule créature à sacrifice par tour, en plus de sa petite créature. Chaque camp peut aussi jouer un sort et une arme par tour. Ces limites s’appliquent aussi pendant le tour adverse ; toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -1271,14 +1270,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const disabled = fini || Boolean(destruction || (site && !defausse)) || (!defausse && (rpgMobaSortBlocageInterdit(id) || (id === 'memoire-de-l-armurerie' && !campMain.cimetiere.includes('sabre-maudit')) || !!cibleRapideEnCours || etape === 'arrivee' || campMain.manaChoixEnAttente || (MOBA_CONTRESORTS.includes(id) && !(etape === 'reponse-sort' && (duel.mobaSortEnAttente?.armeMoba ? id === 'contresort-des-abimes' : id !== 'ecueil') && duel.mobaSortEnAttente?.cote !== mainSide || etape === 'reponse-creature' && (id === 'contresort-des-abimes' || (id === 'ecueil' && cardById(duel.mobaCreatureEnAttente?.carteId)?.kind !== 'site')) && duel.mobaCreatureEnAttente?.cote !== mainSide)) || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !card.instant && !(['blocage', 'fin', 'reponse-creature', 'reponse-sort', 'reponse-arrivee'].includes(etape) && rpgMobaPeutEmbuscade(duel, mainSide, id))) || !rpgMobaPeutPayer(duel, mainSide, card)));
       const selected = carte === id && !defausse;
       const peutGlisserCarte = !disabled && !iaAgit && etape === 'tour' && actif === 'joueur' && ['creature', 'site'].includes(card.kind) && !defausse;
-      if (rendu?.ManaCost && rendu?.CardElementBadge && rendu?.CardStatIcon) {
-        const { ManaCost, CardElementBadge, CardStatIcon } = rendu;
+      if (rendu?.ManaCost && rendu?.CardStatIcon) {
+        const { ManaCost, CardStatIcon } = rendu;
         const creature = ['creature', 'hero'].includes(card.kind);
         return <div className="moba__hand-item" key={`${id}-${index}`} {...interactionsApercu(id)}>
           <button type="button" className={`moba__card moba__real-hand rpg-hand__card rpg-hand__card--img rpg-hand__card--elem-${card.element} ${cardFrameClass(card)} ${cardMotifClass(card)}${selected ? ' is-selected is-targeting' : ''}${disabled ? ' is-unplayable' : ' is-playable'}`} style={{ '--rpg-frame-color': cardFrameColor(card) }} data-card-id={id} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} aria-label={`${card.name}, coût imprimé ${card.cost}, ${card.text || 'aucune capacité'}${rpgMobaSortBlocageInterdit(id) ? '. Injouable en MOBA : impose un blocage.' : ''}`} title={rpgMobaSortBlocageInterdit(id) ? 'Injouable en MOBA : impose un blocage.' : undefined} aria-pressed={selected} onClick={() => jouerCarte(id, index)}>
             <img draggable="false" className="rpg-hand__img" src={cardArt(id)} alt="" aria-hidden="true" />
-            <CardElementBadge carte={card} /><span className="rpg-hand__title"><ManaCost carte={card} showElement={false} /></span>
-            <IconesCarte carte={rpgMobaCartePourApercu(card)} className="rpg-card-icones--colonne rpg-card-icones--main" /><SortSceau carte={card} className="rpg-hand__sceau rpg-hand__sort" />
+            <span className="rpg-hand__title"><ManaCost carte={card} showElement={false} /></span>
+            <IconesCarte carte={rpgMobaCartePourApercu(card)} className="rpg-card-icones--colonne rpg-card-icones--main" />
             {creature && <span className="rpg-hand__stats" aria-hidden="true"><span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={card.coupRapide} /><span className="rpg-stat-value">{card.atk}</span></span><span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{card.def}</span></span></span>}
             <span className="moba__sr-only">{card.name}</span>
           </button>
