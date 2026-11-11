@@ -21,6 +21,17 @@ test('le mobile affiche une seule liste, avec onglets et actions hors des deux l
   assert.match(source, /onOpenCardPreview\?\.\(carte\)/, 'toucher une carte ouvre toujours son aperçu');
 });
 
+test('la grille mobile utilise cinq colonnes seulement en paysage', () => {
+  const reglePaysage = css.match(/@media \(max-width: 960px\) and \(orientation: landscape\) \{([\s\S]*?)\n\}/)?.[1];
+  assert.ok(reglePaysage, 'un palier dédié au paysage existe');
+  assert.match(reglePaysage, /\.rpg-atelier__cartes\s*\{[^}]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
+  assert.match(reglePaysage, /\.rpg-atelier__carte-retrait \{ bottom: 54px; \}/, 'les boutons ne se chevauchent pas');
+  assert.ok(css.indexOf('@media (max-width: 960px) and (orientation: landscape)')
+    > css.indexOf('@media (max-width: 540px)'), 'la règle paysage l’emporte sur la règle tactile à deux colonnes');
+  assert.match(css, /@media \(max-width: 540px\)[\s\S]*?\.rpg-atelier__cartes\s*\{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(css, /\.rpg-atelier__cartes\s*\{[^}]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/, 'le bureau reste à quatre colonnes');
+});
+
 test('sur mobile : possédées par défaut, onglets persistants, sauvegarde depuis Cartes', async () => {
   const previousEnv = process.env.NODE_ENV;
   await build({ logLevel: 'error', build: {
