@@ -1217,3 +1217,16 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba .moba__hand-cards .moba__card:disabled { opacity: 1; filter: saturate(.58) brightness(.82); }
 /* Éloigner légèrement les jauges adverses des cartes, sans changer leurs PV. */
 .moba .moba__side--sorcier > .moba__health { transform: translateY(-6px); }
+
+/* Commandes centrées sur le côté ; seules les consignes utiles à une action
+   en cours apparaissent sous les boutons, sans panneau permanent au-dessus. */
+.moba .moba__controls { top: 43%; transform: translateY(-50%); }
+.moba .moba__controls .moba__directive {
+  position: static; width: auto; max-width: none; min-height: 0;
+  margin: 0; padding: 0; border: 0; background: none; box-shadow: none;
+}
+.moba .moba__controls .moba__cancel-choice { position: static; }
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba .moba__controls { top: 75%; transform: none; flex-wrap: wrap; }
+  .moba .moba__controls .moba__directive { flex: 1 1 100%; }
+}
