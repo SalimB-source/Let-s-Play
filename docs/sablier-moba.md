@@ -440,6 +440,8 @@ En duel classique comme en MOBA, l’IA examine les combinaisons légales de vic
 
 Le plateau local, l'IA et l'adaptateur utilisent les attaques individuelles. Les anciennes signatures MOBA refusent les groupes et les blocages. Le moteur réutilise en interne `phase = blocage` pour la fenêtre de réponse, sans permettre de blocage. Les sections historiques ci-dessus décrivent l'ancien fonctionnement lorsqu'elles mentionnent des blocages : les présentes règles prévalent.
 
+Sur le plateau, sélectionner une cible ou choisir la frappe directe annonce aussitôt l'attaque ; si la frappe directe est la seule possibilité, sélectionner l'attaquant suffit. Un choix de cible peut être annulé avant l'annonce. Seul le défenseur peut répondre ou passer : lorsque l'IA défend, le joueur attaquant ne peut pas passer à sa place.
+
 Règles décidées pour l'intégration : chaque créature peut attaquer une fois par
 tour ; après l'annonce, une fenêtre Magie Rapide/Embuscade précède les dégâts.
 L'attaque normale vise une créature accessible de la même voie avec échange
