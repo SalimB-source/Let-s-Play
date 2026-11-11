@@ -2010,20 +2010,39 @@
 @media (max-width: 960px) and (orientation: landscape) {
   .rpg-atelier__cartes {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-rows: max-content;
+    align-items: start;
     gap: 10px 6px;
     padding: 10px 8px 18px;
   }
+  /* La face est un conteneur CSS (inline-size) : dans un parent flex, sa
+     hauteur intrinsèque peut tomber à zéro et chaque rangée devient une
+     bande. Un parent bloc + une face non rétrécissable gardent le 4/5 entier. */
   .rpg-battle .rpg-atelier__cartes .rpg-atelier__carte {
+    display: block;
     width: 100%;
+    height: auto;
     padding-bottom: 54px;
     border-radius: 8px;
     background: #17151e;
     overflow: hidden;
   }
+  .rpg-battle .rpg-atelier__cartes .rpg-atelier__carte-art {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    flex: none;
+  }
+  /* Les deux commandes restent SOUS la face, jamais sur l'illustration. */
   .rpg-atelier__carte-ajout,
-  .rpg-atelier__carte-retrait { right: 5px; }
-  .rpg-atelier__carte-ajout { bottom: 5px; }
-  .rpg-atelier__carte-retrait { bottom: 54px; }
+  .rpg-atelier__carte-retrait {
+    bottom: 5px;
+    width: min(44px, calc((100% - 15px) / 2));
+    height: 44px;
+  }
+  .rpg-atelier__carte-ajout { right: 5px; }
+  .rpg-atelier__carte-retrait { left: 5px; right: auto; }
   .rpg-atelier__carte .rpg-card-catalogue__zoom { display: none; }
 }
 

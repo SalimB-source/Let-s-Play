@@ -25,7 +25,13 @@ test('la grille mobile utilise cinq colonnes seulement en paysage', () => {
   const reglePaysage = css.match(/@media \(max-width: 960px\) and \(orientation: landscape\) \{([\s\S]*?)\n\}/)?.[1];
   assert.ok(reglePaysage, 'un palier dédié au paysage existe');
   assert.match(reglePaysage, /\.rpg-atelier__cartes\s*\{[^}]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
-  assert.match(reglePaysage, /\.rpg-atelier__carte-retrait \{ bottom: 54px; \}/, 'les boutons ne se chevauchent pas');
+  assert.match(reglePaysage, /grid-auto-rows: max-content;/, 'la hauteur des rangées suit toute la carte');
+  assert.match(reglePaysage, /\.rpg-battle \.rpg-atelier__cartes \.rpg-atelier__carte\s*\{[^}]*display: block;/,
+    'le conteneur de la carte ne rétrécit pas sa face en flex');
+  assert.match(reglePaysage, /\.rpg-battle \.rpg-atelier__cartes \.rpg-atelier__carte-art\s*\{[^}]*aspect-ratio: 4 \/ 5;/,
+    'la face conserve son format portrait complet');
+  assert.match(reglePaysage, /\.rpg-atelier__carte-retrait \{ left: 5px; right: auto; \}/,
+    'les commandes occupent le pied sans masquer l’illustration');
   assert.ok(css.indexOf('@media (max-width: 960px) and (orientation: landscape)')
     > css.indexOf('@media (max-width: 540px)'), 'la règle paysage l’emporte sur la règle tactile à deux colonnes');
   assert.match(css, /@media \(max-width: 540px\)[\s\S]*?\.rpg-atelier__cartes\s*\{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
