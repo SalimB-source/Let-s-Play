@@ -25,7 +25,9 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId) {
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = duel[autre(side)].creatures.filter((e) => cibleAccessible(duel, attaquant, e, ciblee));
   const provocations = possibles.filter((e) => e.provocation);
-  const defenseurs = possibles.filter((e) => e.defenseur || e.prioriteAttaqueRapide);
+  // Défenseur ne protège que sa voie de combat, même contre une attaque
+  // ciblée qui peut autrement viser une créature sur une autre voie.
+  const defenseurs = possibles.filter((e) => e.mobaLane === attaquant.mobaLane && (e.defenseur || e.prioriteAttaqueRapide));
   const prioritaires = provocations.length ? provocations : defenseurs;
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {

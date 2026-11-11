@@ -453,9 +453,10 @@ le plateau, y compris Envol et Infiltration, ou directement la voie ; elle ne
 reçoit pas de riposte sauf Contre-attaque. Les protections et échecs existants
 restent applicables.
 
-Parmi les cibles accessibles, Provocation prime sur Défenseur et interdit la
-frappe directe ; la créature visée gagne +0/+1 par attaque qui la cible,
-cumulable jusqu'à la fin du tour. Une cible est fixée à l'annonce : si elle
+Parmi les cibles accessibles, Provocation prime sur Défenseur ; à défaut,
+Défenseur ne s’impose qu’aux attaques venant de sa propre voie de combat. Une
+priorité applicable interdit la frappe directe ; une créature avec Provocation
+gagne +0/+1 par attaque qui la cible, cumulable jusqu'à la fin du tour. Une cible est fixée à l'annonce : si elle
 disparaît ou devient illégale, la frappe est annulée sans redirection ; un
 nouveau Défenseur n'est pas rétroactif. Overkill inflige à la voie les dégâts
 dépassant la défense de la créature attaquée, uniquement si le coup porte.
@@ -472,4 +473,6 @@ Les effets exigeant un blocage ou plusieurs attaquants ne se déclenchent pas : 
 
 ### Quotas de cartes par tour
 
-Chaque camp dispose, à chaque tour (y compris celui de l'adversaire), de quatre quotas indépendants : une créature de coût 1 à 4, une créature nécessitant un sacrifice, un sort et une arme (dont le Sabre maudit). Une annonce légale consomme le quota même si elle est contrée ; la résolution ne le consomme pas une seconde fois. Les quotas des deux camps sont réinitialisés au changement de tour. Les Sites, jetons et réanimations ne sont pas des invocations depuis la main. Ces quotas ne créent pas de nouvelles fenêtres de réaction ; les règles des autres modes restent inchangées.
+Chaque camp dispose d'une invocation normale de créature par tour, quel que soit son coût, et d'une Embuscade supplémentaire pendant le tour adverse. Chaque camp peut aussi jouer un sort et une arme par tour (dont le Sabre maudit). Une annonce légale consomme son quota même si elle est contrée ; la résolution ne le consomme pas une seconde fois. Tojiro en Embuscade ne demande pas de sacrifice si un Djinn adverse est présent à l'annonce ; sa pose normale conserve le coût habituel. Les quotas des deux camps sont réinitialisés au changement de tour. Les Sites, jetons et réanimations ne sont pas des invocations depuis la main. Ces quotas ne créent pas de nouvelles fenêtres de réaction ; les règles des autres modes restent inchangées.
+
+Le centre commence avec 15 PV par camp. La refonte de son fonctionnement après conquête (présence sur les deux voies et suppression du rattachement) reste à réaliser ; le rattachement actuel reste en vigueur en attendant.

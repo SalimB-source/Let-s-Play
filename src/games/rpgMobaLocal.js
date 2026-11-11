@@ -182,8 +182,8 @@ export function rpgMobaPeutPayer(duel, side, carte) {
 export function rpgMobaNouveauDuel(options = {}) {
   const duel = rpgNouveauDuel({ ...options, modeMana: RPG_MODE_MANA_ESSAI, pvp: true });
   duel.moba = mobaNouveau();
-  duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
-  duel.moba.petitesCreaturesJouees = { joueur: false, sorcier: false };
+  duel.moba.creaturesJouees = { joueur: false, sorcier: false };
+  duel.moba.embuscadesJouees = { joueur: false, sorcier: false };
   duel.moba.sortsJoues = { joueur: false, sorcier: false };
   duel.moba.armesJouees = { joueur: false, sorcier: false };
   for (const side of MOBA_SIDES) { duel[side].mobaSansMana = true; duel[side].manaChoixEnAttente = false; }
@@ -389,7 +389,7 @@ export function rpgMobaPeutEmbuscade(duel, side, cardId) {
     && duel[side].main.includes(cardId) && (sorcier || rpgConditionEmbuscadeRemplie(duel, side, carte))
     && rpgMobaPeutPayer(duel, side, carte) && rpgMobaPlacementCoherent(duel)
     && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, side, lane.id)
-      && lane.slots[side].some((id) => id === null || (sacrificesInvocation(carte, duel) > 0 && victimesInvocation(duel[side]).some((entity) => entity.id === id)))));
+      && lane.slots[side].some((id) => id === null || (sacrificesInvocation(carte, duel, side) > 0 && victimesInvocation(duel[side]).some((entity) => entity.id === id)))));
 }
 
 /** Place a creature from the active player's hand using the engine's payment,

@@ -53,12 +53,13 @@ export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
       else if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
       else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
       resoudreDestructionsSurCopie(baseline);
-      for (const victime of victimesInvocation(duel[side])) for (const lane of duel.moba.lanes) for (let slot = 0; slot < lane.slots[side].length; slot++) {
-        if (lane.slots[side][slot] !== null && lane.slots[side][slot] !== victime.id) continue;
+      const sacrifices = sacrificesInvocation(cardById(id), duel, side) ? victimesInvocation(duel[side]) : [null];
+      for (const victime of sacrifices) for (const lane of duel.moba.lanes) for (let slot = 0; slot < lane.slots[side].length; slot++) {
+        if (lane.slots[side][slot] !== null && lane.slots[side][slot] !== victime?.id) continue;
         const probe = copie(duel);
-        if (!rpgMobaJouerCreature(probe, side, id, lane.id, slot, { ouvrirReponse: true, sacrificeIds: [victime.id] }).ok) continue;
+        if (!rpgMobaJouerCreature(probe, side, id, lane.id, slot, { ouvrirReponse: true, sacrificeIds: victime ? [victime.id] : [] }).ok) continue;
         const arrivee = rpgMobaPasserCreature(probe, autre(side));
-        if (arrivee.ok && probe.moba.winner === side) return { id, lane: lane.id, slot, sacrificeIds: [victime.id], score: 10000 };
+        if (arrivee.ok && probe.moba.winner === side) return { id, lane: lane.id, slot, sacrificeIds: victime ? [victime.id] : [], score: 10000 };
         if (!arrivee.entite) continue;
         resoudreDestructionsSurCopie(probe);
         if (probe.mobaCreatureEnAttente) resoudreMenaceCreature(probe, autre(probe.mobaCreatureEnAttente.cote));
@@ -74,8 +75,8 @@ export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
             && baseline[side].creatures.some((e) => e.mobaLane === attacker.mobaLane && rpgPeutBloquerAttaquant(e, attacker) && !rpgEstProtegee(attacker, cardColors(cardById(e.carteId)))))
           .reduce((best, attacker) => Math.max(best, attacker.atk ?? 0), 0);
         const score = valeurPosition(probe, side) - valeurPosition(baseline, side) + Math.max(0, blocage - blocageAvant) * 2;
-        if (rpgSacrificeEstDeclasseIA(cardById(id), [victime]) && score <= 1.5 && probe.moba.winner !== side) continue;
-        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, sacrificeIds: [victime.id], score };
+        if (victime && rpgSacrificeEstDeclasseIA(cardById(id), [victime]) && score <= 1.5 && probe.moba.winner !== side) continue;
+        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, sacrificeIds: victime ? [victime.id] : [], score };
       }
       continue;
     }

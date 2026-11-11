@@ -4,7 +4,7 @@
  * Callers must validate those rules in the engine before applying lane events.
  * See docs/sablier-moba.md for the integration work still required.
  */
-export const MOBA_LANE_HP = 10;
+export const MOBA_LANE_HP = 15;
 export const MOBA_SIDE_LANE_HP = 20;
 export const mobaVieMax = (laneId) => laneId === 'center' ? MOBA_LANE_HP : MOBA_SIDE_LANE_HP;
 /** Only the conqueror's chosen flank gains the central lane's HP reserve. */

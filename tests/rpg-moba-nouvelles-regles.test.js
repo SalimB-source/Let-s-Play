@@ -66,15 +66,20 @@ test('le tirage IA utilise les decks des tours intacts et audités, et les decks
   assert.equal(rpgMobaValiderDeck(maison).ok, false);
 });
 
-test('un Défenseur latéral attire l’attaque ciblée du centre et l’IA le choisit', async () => {
-  const { rpgMobaChoisirCiblesAttaqueIA } = await import('../src/games/rpgMobaAI.js');
-  const duel = partie(); duel.joueur.mana.braise = 20;
+test('un Défenseur latéral ne force pas l’attaque ciblée du centre, y compris pour l’IA', async () => {
+  const { rpgMobaChoisirAttaqueIndividuelleIA } = await import('../src/games/rpgMobaAI.js');
+  const duel = partie();
+  duel.joueur.main = ['gardienne-des-portes-de-sable'];
+  const droite = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).entite;
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
+  duel.joueur.main = ['ashigaru-des-braises'];
   const gauche = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
-  const droite = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
-  droite.defenseur = true;
-  rpgFinDeTour(duel); duel.sorcier.mana.braise = 20; duel.sorcier.main.push('feriel');
-  const attaquant = rpgMobaJouerCreature(duel, 'sorcier', 'feriel', 'center', 0).entite;
-  assert.deepEqual(rpgMobaCiblesAttaque(duel, 'sorcier', attaquant.id).cibles, [droite.id]);
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: gauche.id }).raison, 'cible');
-  assert.equal(rpgMobaChoisirCiblesAttaqueIA(duel, 'sorcier', [attaquant.id])[attaquant.id], droite.id);
+  rpgFinDeTour(duel);
+  duel.sorcier.main = ['ashigaru-des-braises'];
+  const attaquant = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'center', 0).entite;
+  attaquant.coupRapide = true; attaquant.ready = true;
+  assert.deepEqual(rpgMobaCiblesAttaque(duel, 'sorcier', attaquant.id), { obligatoires: false, cibles: [droite.id, gauche.id] });
+  const choix = rpgMobaChoisirAttaqueIndividuelleIA(duel, 'sorcier');
+  assert.ok(choix && [null, gauche.id, droite.id].includes(choix.cibleId));
+  assert.equal(rpgMobaDeclarerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: gauche.id }).ok, true);
 });

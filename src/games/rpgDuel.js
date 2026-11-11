@@ -6185,7 +6185,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!contreCreatureMoba && !(dejaPayee && (attenteMoba.embuscadeCombat || attenteMoba.embuscadeSuspendue)) && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
-  const nombreSacrifices = sacrificesInvocation(carte, duel);
+  const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length : sacrificesInvocation(carte, duel, cote);
   const limiteInvocation = !dejaPayee && limiteInvocationMoba(duel, cote, carte);
   if (limiteInvocation) return { ok: false, raison: limiteInvocation };
   const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
@@ -9349,8 +9349,8 @@ export function rpgFinDeTour(duel) {
   if (duel.moba?.winner) return duel;
   duel.tour = autre(duel.tour);
   if (duel.moba) {
-    duel.moba.sacrificesJoues = { joueur: false, sorcier: false };
-    duel.moba.petitesCreaturesJouees = { joueur: false, sorcier: false };
+    duel.moba.creaturesJouees = { joueur: false, sorcier: false };
+    duel.moba.embuscadesJouees = { joueur: false, sorcier: false };
     duel.moba.sortsJoues = { joueur: false, sorcier: false };
     duel.moba.armesJouees = { joueur: false, sorcier: false };
   }

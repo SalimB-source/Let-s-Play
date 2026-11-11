@@ -40,7 +40,7 @@ const voies = { left: 'Voie gauche', center: 'Voie centrale', right: 'Voie droit
 const MAILLONS_VOIE_FERMEE = Array.from({ length: 21 }, (_, index) => 5 + index * 4.5);
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const message = {
-  mana: 'Carte impossible à jouer.', 'sort-limite': 'Un seul sort peut être joué par camp et par tour.', 'arme-limite': 'Une seule arme peut être jouée par camp et par tour.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
+  mana: 'Carte impossible à jouer.', 'creature-limite': 'Une seule créature normale peut être jouée par camp et par tour.', 'embuscade-limite': 'Une seule Embuscade supplémentaire peut être jouée par camp et par tour.', 'sort-limite': 'Un seul sort peut être joué par camp et par tour.', 'arme-limite': 'Une seule arme peut être jouée par camp et par tour.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
   provocation: 'Une Provocation accessible doit être attaquée en priorité.',
   'blocage-force': 'Les créatures marquées doivent bloquer si elles le peuvent dans leur voie.',
   'attaque-jouee': 'La phase d’attaque est déjà terminée.', 'cible-obligatoire': 'Choisissez une cible légale pour chaque attaquant ciblé.', emplacement: 'Cet emplacement n’est pas libre.',
@@ -634,7 +634,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const poser = (lane, slot, carteId = carte) => {
     if (!carteId) return;
     const avantDestructions = instantaneDestructions();
-    const nombre = sacrificesInvocation(cardById(carteId), duel);
+    const nombre = sacrificesInvocation(cardById(carteId), duel, mainSide);
     if (sacrificesChoisis.length !== nombre) { setErreur(`Choisissez ${nombre} créature${nombre > 1 ? 's' : ''} à sacrifier.`); return; }
     const result = rpgMobaJouerCreature(duel, mainSide, carteId, lane, slot, { ouvrirReponse: true, sacrificeIds: sacrificesChoisis });
     if (!afficherResultat(result)) return;
@@ -821,7 +821,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const card = cardById(drag.id);
       return etape === 'tour' && actif === 'joueur' && !cibleRapideEnCours && !camp.manaChoixEnAttente
         && position.side === 'joueur' && Number.isInteger(position.slot) && lane.slots.joueur[position.slot] === null
-        && sacrificesChoisis.length === sacrificesInvocation(card, duel) && duel.joueur.main.includes(drag.id) && ['creature', 'site'].includes(card?.kind) && rpgMobaPeutPayer(duel, 'joueur', card);
+        && sacrificesChoisis.length === sacrificesInvocation(card, duel, mainSide) && duel.joueur.main.includes(drag.id) && ['creature', 'site'].includes(card?.kind) && rpgMobaPeutPayer(duel, 'joueur', card);
     }
     if (drag.type !== 'bloqueur' || duel.combatDeclare?.cibleIndividuelle || etape !== 'blocage' || defenseur !== 'joueur' || carte || position.side !== actif) return false;
     const attacker = getEntity(actif, position.id);
@@ -1079,7 +1079,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         : carte && MOBA_MAGIES_ALLIEES.includes(carte) ? 'Choisissez une créature alliée illuminée pour lancer votre magie.'
         : carte && MOBA_MAGIES_NEUTRES.includes(carte) ? 'Choisissez une créature illuminée respectant le coût indiqué.'
         : carte && MOBA_MAGIES_CIBLEES.includes(carte) ? 'Choisissez une créature adverse illuminée pour lancer votre magie.'
-          : carte && rpgMobaPeutEmbuscade(duel, mainSide, carte) ? (sacrificesInvocation(cardById(carte), duel) > sacrificesChoisis.length ? 'Choisissez la créature à sacrifier pour votre Embuscade.' : 'Choisissez une case libre ou celle de la créature sacrifiée pour votre Embuscade.')
+          : carte && rpgMobaPeutEmbuscade(duel, mainSide, carte) ? (sacrificesInvocation(cardById(carte), duel, mainSide) > sacrificesChoisis.length ? 'Choisissez la créature à sacrifier pour votre Embuscade.' : 'Choisissez une case libre ou celle de la créature sacrifiée pour votre Embuscade.')
           : etape === 'reponse-creature' ? 'Jouez une magie rapide ou une Embuscade éligible, ou passez pour laisser entrer la créature.'
           : etape === 'reponse-sort' ? `Jouez une magie rapide ou une Embuscade éligible, ou passez pour résoudre ${duel.mobaSortEnAttente?.armeMoba ? 'l’arme' : 'le sort'}.`
           : etape === 'reponse-arrivee' ? 'Jouez une magie rapide ou une Embuscade éligible, puis passez pour résoudre la capacité.'
@@ -1087,7 +1087,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             : etape === 'blocage' && MOBA_EMBUSCADES_COMBAT.includes(carte) ? 'Choisissez une case libre pour votre Embuscade.'
             : etape === 'blocage' && duel.combatDeclare?.cibleIndividuelle ? 'Répondez avec une Magie Rapide ou une Embuscade, ou passez pour résoudre l’attaque.'
             : etape === 'blocage' ? 'Répondez avec une Magie Rapide ou une Embuscade, ou passez pour résoudre l’attaque.'
-            : carte && sacrificesInvocation(cardById(carte), duel) > sacrificesChoisis.length ? 'Choisissez vos créatures à sacrifier pour invoquer.'
+            : carte && sacrificesInvocation(cardById(carte), duel, mainSide) > sacrificesChoisis.length ? 'Choisissez vos créatures à sacrifier pour invoquer.'
             : carte ? 'Choisissez une case illuminée pour invoquer votre créature.'
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
   return <main className="moba" aria-label="MOBA, partie contre l’IA" style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-map': `url("${import.meta.env.BASE_URL}sablier-moba/champ-trois-voies-rapprochees.webp")`, '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`, '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
@@ -1105,10 +1105,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     <div className="moba__intro">
       <p className="moba__notice">Affrontez l’IA · Conquérez 2 voies pour gagner · Decks de 30 cartes adaptés au MOBA</p>
       <details className="moba__rules"><summary>Règles du plateau</summary><div>
-        <p>Trois voies indépendantes : 20 / 10 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
-        <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide ou une Embuscade avant les dégâts. Il n’y a pas de blocage. Une attaque normale vise une créature accessible dans la même voie et les dégâts sont simultanés ; à défaut elle frappe directement la voie. Envol permet aussi la frappe directe s’il n’y a pas d’ennemi volant accessible. Infiltration protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation, puis Défenseur, imposent les cibles accessibles prioritaires.</p>
-        <p>Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et le vainqueur peut continuer à jouer sur sa case centrale. Une seule barre réunit leurs PV (30 maximum).</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Les créatures de coût 1 à 4 ne demandent aucun sacrifice : chaque camp peut en annoncer une seule par tour. Celles de coût 5 ou 6 demandent un sacrifice, et celles de coût 7 ou plus en demandent deux ; chaque camp peut annoncer une seule créature à sacrifice par tour, en plus de sa petite créature. Chaque camp peut aussi jouer un sort et une arme par tour. Ces limites s’appliquent aussi pendant le tour adverse ; toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
+        <p>Trois voies indépendantes : 20 / 15 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
+        <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide ou une Embuscade avant les dégâts. Il n’y a pas de blocage. Une attaque normale vise une créature accessible dans la même voie et les dégâts sont simultanés ; à défaut elle frappe directement la voie. Envol permet aussi la frappe directe s’il n’y a pas d’ennemi volant accessible. Infiltration protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation impose une cible accessible prioritaire ; à défaut, Défenseur impose une cible accessible dans la voie de l’attaquant.</p>
+        <p>Après la conquête du centre, le vainqueur choisit une voie latérale pour ses créatures centrales ; elles y attaquent et le vainqueur peut continuer à jouer sur sa case centrale. Une seule barre réunit leurs PV (35 maximum).</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade hors tour est une invocation spéciale supplémentaire, limitée à une par camp et par tour ; Tojiro ne demande pas de sacrifice en Embuscade si un Djinn adverse est présent. Chaque camp peut aussi jouer un sort et une arme par tour. Toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) avant la case de pose.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -1138,7 +1138,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <div className="moba__pending-copy"><small>{attente.armeMoba ? 'ARME' : 'SORT'} {attente.cote === 'sorcier' ? 'ADVERSE' : 'JOUÉ'} · EN ATTENTE</small><strong title={carteAttendue.name}>{carteAttendue.name}</strong><span title={cibleAttendue}>⌖ {cibleAttendue}</span></div>
       </div>;
     })()}
-    {carte && sacrificesInvocation(cardById(carte), duel) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{sacrificesInvocation(cardById(carte), duel)}. {sacrificesChoisis.length < sacrificesInvocation(cardById(carte), duel) ? "Cliquez sur vos créatures à sacrifier, puis sur une case libre ou la case d’une victime." : "Choisissez une case libre ou la case d’une victime pour invoquer."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></div>}
+    {carte && sacrificesInvocation(cardById(carte), duel, mainSide) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{sacrificesInvocation(cardById(carte), duel, mainSide)}. {sacrificesChoisis.length < sacrificesInvocation(cardById(carte), duel, mainSide) ? "Cliquez sur vos créatures à sacrifier, puis sur une case libre ou la case d’une victime." : "Choisissez une case libre ou la case d’une victime pour invoquer."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></div>}
     <div className="moba__field-scroll" role="region" aria-label="Plateau des trois voies" tabIndex={0}>
     <div className="moba__battlefield" ref={terrainRef}>
     {rendu?.BlockerArrows && <><rendu.BlockerArrows tableRef={terrainRef} assignments={indications.attackArrows} attaque resolveTarget={rpgMobaArrowTarget} /><rendu.BlockerArrows tableRef={terrainRef} assignments={indications.blockArrows} resolveTarget={rpgMobaArrowTarget} /></>}
@@ -1194,7 +1194,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             const carteSoin = carte && MOBA_MAGIES_SOINS.includes(carte);
             const cartePrix = carte && MOBA_MAGIES_PRIX.includes(carte);
             const carteTransfert = carte && MOBA_MAGIES_TRANSFERT.includes(carte);
-            const nombreSacrifices = sacrificesInvocation(cardById(carte), duel);
+            const nombreSacrifices = sacrificesInvocation(cardById(carte), duel, mainSide);
             const maySacrifice = (etape === 'tour' && side === actif || side === mainSide && rpgMobaPeutEmbuscade(duel, side, carte)) && entity && carte && nombreSacrifices > 0
               && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && cardById(entity.carteId)?.kind !== 'site' && !fini;
             const sacrificeCible = Boolean(entity && sacrificesChoisis.includes(id));
@@ -1293,7 +1293,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       {!contenuJournal.length && <p>{vueJournal === 'combat' ? 'Aucun échange enregistré.' : 'Aucun événement enregistré.'}</p>}
       {pagesJournal > 1 && <div className="moba__journal-pages" aria-label="Pages du journal"><button type="button" aria-label="Page précédente du journal" disabled={pageJournalVisible === 0} onClick={() => setPageJournal(pageJournalVisible - 1)}>‹</button><span>{pageJournalVisible + 1} / {pagesJournal}</span><button type="button" aria-label="Page suivante du journal" disabled={pageJournalVisible >= pagesJournal - 1} onClick={() => setPageJournal(pageJournalVisible + 1)}>›</button></div>}</details>
     </div>
-    {duel.moba.centerChoice === 'joueur' && !fini && <div className="moba__center-choice" role="dialog" aria-modal="true" aria-label="Choisir une voie latérale"><strong>Centre conquis !</strong><p>Choisissez la voie que rejoignent vos créatures centrales. Elles y attaqueront ; leurs PV seront réunis sur une seule barre de vie (30 maximum).</p>{duel.moba.lanes.filter((lane) => lane.active && lane.id !== 'center').map((lane) => <button type="button" key={lane.id} autoFocus={lane.id === 'left'} onClick={() => { if (afficherResultat(rpgMobaChoisirVoieCentrale(duel, 'joueur', lane.id))) { setAttaquants([]); setBlocages({}); setCible(null); } }}>Rejoindre la {voies[lane.id]}</button>)}</div>}
+    {duel.moba.centerChoice === 'joueur' && !fini && <div className="moba__center-choice" role="dialog" aria-modal="true" aria-label="Choisir une voie latérale"><strong>Centre conquis !</strong><p>Choisissez la voie que rejoignent vos créatures centrales. Elles y attaqueront ; leurs PV seront réunis sur une seule barre de vie (35 maximum).</p>{duel.moba.lanes.filter((lane) => lane.active && lane.id !== 'center').map((lane) => <button type="button" key={lane.id} autoFocus={lane.id === 'left'} onClick={() => { if (afficherResultat(rpgMobaChoisirVoieCentrale(duel, 'joueur', lane.id))) { setAttaquants([]); setBlocages({}); setCible(null); } }}>Rejoindre la {voies[lane.id]}</button>)}</div>}
     {cimetiere && <div className="moba__graveyard-layer" onKeyDown={(event) => {
       if (event.key === 'Escape') { event.stopPropagation(); fermerCimetiere(); }
       if (event.key === 'Tab') {
