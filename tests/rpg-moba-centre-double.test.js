@@ -123,7 +123,9 @@ test('le brouillard de la voie choisie arrête les deux blessures de l’échang
   const avant = [source.pv, defenseur.pv];
   d.brouillardCombatVoies = ['left'];
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', source.id, defenseur.id, 'left').ok);
-  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
+  const resultat = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(resultat.ok);
+  assert.deepEqual(resultat.resume.blessures, []);
   assert.deepEqual([source.pv, defenseur.pv], avant);
 });
 

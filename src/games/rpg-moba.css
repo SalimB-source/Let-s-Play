@@ -1252,3 +1252,23 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 /* Le texte imprimé reste consultable ; les adaptations propres au mode le priment. */
 .moba__rule-note { width: min(100%, 34rem); padding: .75rem; border: 1px solid #aa854d; border-radius: .5rem; color: #fff1cf; background: #1a1410; font-size: .82rem; }
 .moba__rule-note p { margin: .35rem 0 0; }
+
+/* Prototype d'impact individuel : calque décoratif, jamais une cible de clic. */
+.moba .moba__impact-cinema { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; overflow: visible; pointer-events: none; }
+.moba__impact-source { fill: #f9d18d33; stroke: #f7d392; stroke-width: 2; opacity: 0; animation: moba-impact-source calc(.55s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__impact-trail { stroke: #ffd994; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 5px #d47535); opacity: 0; animation: moba-impact-trail calc(.65s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__impact-burst { fill: #f8bd6d33; stroke: #ffe6b6; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: moba-impact-burst calc(.72s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__impact-number { fill: #fff1d9; stroke: #30100b; stroke-width: 3px; paint-order: stroke; font: 900 23px system-ui, sans-serif; opacity: 0; animation: moba-impact-number calc(1.2s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__impact-mark.is-critical .moba__impact-number { fill: #ffd26e; font-size: 27px; }
+.moba__impact-mark.is-critical .moba__impact-burst { stroke: #ffbd52; stroke-width: 3; }
+@keyframes moba-impact-source { 0% { opacity: 0; transform: scale(.8); transform-box: fill-box; transform-origin: center; } 20% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); transform-box: fill-box; transform-origin: center; } }
+@keyframes moba-impact-trail { 0%, 12% { opacity: 0; stroke-dashoffset: 1; } 25% { opacity: .95; } 65% { opacity: .8; stroke-dashoffset: 0; } 100% { opacity: 0; stroke-dashoffset: 0; } }
+@keyframes moba-impact-burst { 0%, 32% { opacity: 0; transform: scale(.3); } 45% { opacity: 1; } 100% { opacity: 0; transform: scale(1.65); } }
+@keyframes moba-impact-number { 0%, 24% { opacity: 0; } 37%, 72% { opacity: 1; } 100% { opacity: 0; translate: 0 -24px; } }
+/* En mouvement réduit, conserver l'information, sans trajectoire ni flash. */
+.rpg-battle--moba.is-reduced .moba__impact-source, .rpg-battle--moba.is-reduced .moba__impact-trail, .rpg-battle--moba.is-reduced .moba__impact-burst { display: none; }
+.rpg-battle--moba.is-reduced .moba__impact-number { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .moba .moba__impact-source, .moba .moba__impact-trail, .moba .moba__impact-burst { display: none; }
+  .moba .moba__impact-number { animation: none; opacity: 1; }
+}

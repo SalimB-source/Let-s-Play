@@ -8798,7 +8798,7 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
   const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
   let cible = cibleId === null ? null : duel[adv].creatures.find((e) => e.id === cibleId);
   if (!attaquant || (cibleId !== null && !cible)) return { ok: false, raison: 'cible' };
-  const resume = { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], blocages: {}, repartitions: {}, attaquantsBloques: [], attaquantsLiberes: [], critiques: [] };
+  const resume = { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], blocages: {}, repartitions: {}, attaquantsBloques: [], attaquantsLiberes: [], critiques: [], blessures: [] };
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const calculForce = (entite, contreCreature, bonus = 0) => {
     const base = estGelee(entite) ? 0 : Math.max(0, Number(entite.atk) || 0) + bonus;
@@ -8847,7 +8847,10 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
           sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id, voieCombat: lane });
         let touche = false;
         const esquives = appliquerDegatsDeCombatSimultanes(duel, coups, {
-          onBlessure: (hit, amount) => { if (hit === coup) { touche = true; degatsCreature += amount; } },
+          onBlessure: (hit, amount) => {
+            resume.blessures.push({ entiteId: hit.entiteId, sourceId: hit.sourceId, montant: amount });
+            if (hit === coup) { touche = true; degatsCreature += amount; }
+          },
           onFurie: (entite, camp) => resume.furies.push({ entiteId: entite.id, carteId: entite.carteId, cote: camp }),
         });
         for (const esquive of esquives ?? []) {
