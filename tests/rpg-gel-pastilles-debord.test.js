@@ -28,8 +28,8 @@ test('le gel ne rogne ni le coût dans le coin ni les couleurs et effets sur les
     assert.equal(style(carte.querySelector('.rpg-card__frost-cracks')).overflow, 'hidden');
     assert.equal(style(carte.querySelector('.rpg-card__img')).borderRadius, style(carte).borderRadius);
     const cout = style(carte.querySelector('.rpg-mana-cost'));
-    assert.equal(cout.top, '0px');
-    assert.equal(cout.transform, 'translate(-36%, -36%)');
+    assert.equal(cout.top, 'var(--rpg-card-element-marker-top, 5%)');
+    assert.equal(cout.transform, 'translateX(-36%)');
     const effets = style(carte.querySelector('.rpg-card-icones'));
     assert.equal(effets.right, '0px');
     assert.equal(style(carte.querySelector('.rpg-card__img')).animation, 'none');

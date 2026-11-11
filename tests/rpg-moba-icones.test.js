@@ -14,6 +14,13 @@ test('les repères des cartes posées en MOBA sont équilibrés sans changer la 
     for (const [moba, classique] of [['.moba__real-slot', '.card-row'], ['.moba__hand-item', '.rpg-hand']]) {
       const colonne = style(`${moba} .rpg-card-icones`);
       const originale = style(`${classique} .rpg-card-icones`);
+      const cout = style(`${moba} .rpg-mana-cost`);
+      assert.equal(cout.top, colonne.top, `coût et premier effet alignés sur ${moba}`);
+      assert.equal(cout.top, 'var(--rpg-card-element-marker-top, 5%)');
+      assert.equal(cout.transform, 'translateX(-36%)', 'le coût reste sur le bord, sans remonter au-dessus de la carte');
+      assert.equal(style(`${moba} .rpg-card-element-badge`).top,
+        'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 6px)',
+        'la couleur suit le coût sans le chevaucher');
       assert.equal(colonne.getPropertyValue('--rpg-plaque-taille'),
         moba === '.moba__hand-item' ? '26cqw' : 'clamp(18px,22cqw,30px)');
       if (moba === '.moba__real-slot') {

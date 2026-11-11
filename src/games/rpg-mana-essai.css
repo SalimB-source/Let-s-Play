@@ -601,7 +601,7 @@
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
   /* La pierre, l'hexagone de couleur et le losange de coût partagent la taille
      posée par la carte (`.rpg-card--img`, dans `rpg-battle.css`). */
-  top: 4%;
+  top: var(--rpg-card-element-marker-top, 5%);
   right: 0;
   bottom: auto;
   left: auto;
