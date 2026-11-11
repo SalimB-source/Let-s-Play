@@ -46,6 +46,12 @@ test('les chaînes remplissent la voie conquise et le verrou reste au centre à 
   assert.match(css, /\.moba__conquest-chains \{[^}]*inset: 0; width: 100%; height: 100%/);
   assert.match(css, /\.moba__conquest-lock \{[^}]*top: 50%; left: 50%; transform: translate\(-50%, -50%\)/);
   assert.match(css, /\.moba__conquest-links ellipse \{[^}]*stroke: #ead2a1/);
+  assert.match(css, /container-type:\s*size/);
+  assert.match(css, /hypot\(100cqw, 100cqh\)/);
+  assert.match(css, /atan2\(100cqh, 100cqw\)/);
+  const chain = await readFile(new URL('../public/sablier-moba/chaine-fer.png', import.meta.url));
+  assert.equal(chain.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(chain[25], 6, 'PNG RGBA à fond transparent');
   const icon = await readFile(new URL('../public/icons/sablier/verrou-voie.svg', import.meta.url), 'utf8');
   const dom = new JSDOM(icon, { contentType: 'image/svg+xml' });
   try {
@@ -79,6 +85,9 @@ test('une voie conquise affiche les chaînes et le verrou du bon camp sans désa
     assert.match(left.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Voie fermée/);
     const barrage = left.querySelector('.moba__conquest');
     const chaines = barrage.querySelector('.moba__conquest-chains');
+    const photos = barrage.querySelectorAll('.moba__conquest-photo-chain');
+    assert.equal(photos.length, 2);
+    for (const photo of photos) assert.match(photo.getAttribute('src'), /sablier-moba\/chaine-fer\.png$/);
     assert.equal(chaines.querySelectorAll('.moba__conquest-chain-core').length, 1);
     assert.equal(chaines.querySelectorAll('.moba__conquest-links ellipse').length, 42, 'deux chaînes de maillons en diagonales');
     assert.match(chaines.querySelector('.moba__conquest-chain-core').getAttribute('d'), /M5 5 95 95 M95 5 5 95/);

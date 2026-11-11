@@ -328,7 +328,7 @@
 .moba__lanehead { position: absolute; top: -16px; left: 0; right: 0; display: flex; justify-content: center; min-height: 0; padding: 0; border: 0; text-shadow: 0 1px 4px #000; }
 .moba__lane-number { display: none; }.moba__lanehead strong { padding: 0; color: #fff1d5; font-size: 10px; }.moba__lane-state { display: none; }
 .moba__lane.is-conquered .moba__lane-state { display: block; flex: initial; margin: 0; color: #ffe0a5; }
-.moba__side, .moba__side--joueur { position: relative; flex: 1 1 50%; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 3px 0; border: 0 !important; }
+.moba__side, .moba__side--joueur { --moba-slot-padding: 18px; position: relative; flex: 1 1 50%; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 3px 0; border: 0 !important; }
 .moba__frontline { display: none; }
 .moba__health { flex: none; gap: 4px; min-height: 0; margin: 0 0 4px; padding: 3px 5px; border-radius: 4px; background: #15120dc9; font-size: 10px; }
 .moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 8px; }
@@ -336,7 +336,7 @@
 .moba__slots { flex-wrap: nowrap; align-items: center; min-height: 0; gap: clamp(8px, 1.2vw, 18px); }
 .moba__lane:first-child .moba__slots { transform: translateX(calc(-1 * clamp(4px, 1.6vw, 22px))); }
 .moba__lane:last-child .moba__slots { transform: translateX(clamp(4px, 1.6vw, 22px)); }
-.moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); min-width: 0; padding-bottom: 18px; }
+.moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); min-width: 0; padding-bottom: var(--moba-slot-padding); }
 .moba .moba__ghost-zone, .moba .moba__ghost-zone--empty { inset: 0 0 18px; }
 .moba__slot.is-empty { border: 1px dashed #e9ddc062; border-radius: 8px; background: #17191c35; box-shadow: none; }
 .moba__slot.is-empty:not(:disabled) { background: #bb9b5544; }
@@ -372,7 +372,7 @@
   .moba__field-scroll { inset: 17% 19% 24%; }
   .moba .moba__lane, .moba .moba__lane.is-conquered { padding: 0 2px; }
   .moba__lanehead strong { font-size: 8px; }.moba__health { gap: 2px; padding: 2px; font-size: 8px; }.moba__health strong { font-size: 10px; }.moba__health strong small { display: none; }
-  .moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); padding-bottom: 16px; }
+  .moba .moba__side { --moba-slot-padding: 16px; }
   .moba__empty-label { font-size: 7px; }.moba__empty-label i { font-size: 14px; }
   .moba__controls { top: 61%; }.moba__phase strong { font-size: 9px; }.moba__buttons button { min-height: 25px; padding: 3px; font-size: 9px; }
   .moba__hand { left: 18%; right: 18%; height: 19%; }.moba .moba__hand-item { flex-basis: min(8.5vw, 11.05vh, 75px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(10vw, 13vh, 88px); height: 16vh; }
@@ -1215,11 +1215,12 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 
 /* La main reste opaque : seule sa saturation signale une carte injouable. */
 .moba .moba__hand-cards .moba__card:disabled { opacity: 1; filter: saturate(.58) brightness(.82); }
-/* Éloigner légèrement les jauges adverses des cartes, sans changer leurs PV. */
-.moba .moba__side--sorcier > .moba__health { transform: translateY(-6px); }
+/* Compenser l'espace réservé sous les cases (18 px, ou 16 px sur mobile),
+   pour que les deux camps aient le même écart entre leurs cartes et leurs PV. */
+.moba .moba__side--sorcier > .moba__health { transform: translateY(calc(-1 * var(--moba-slot-padding))); }
 
-/* Commandes centrées sur le côté ; seules les consignes utiles à une action
-   en cours apparaissent sous les boutons, sans panneau permanent au-dessus. */
+/* Commandes centrées : seules les erreurs et l'annulation d'un choix restent
+   visibles dans ce panneau ; les consignes sont réservées aux lecteurs d'écran. */
 .moba .moba__controls { top: 43%; transform: translateY(-50%); }
 .moba .moba__controls .moba__directive {
   position: static; width: auto; max-width: none; min-height: 0;
@@ -1229,4 +1230,21 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 @media (max-width: 700px) and (orientation: portrait) {
   .moba .moba__controls { top: 75%; transform: none; flex-wrap: wrap; }
   .moba .moba__controls .moba__directive { flex: 1 1 100%; }
+}
+
+/* Chaînes en fer forgé : les dimensions et l'angle suivent les proportions
+   réelles de chaque voie, sans étirer les maillons. L'ancien SVG reste une
+   solution de repli sur les navigateurs sans unités de conteneur/trigonométrie. */
+.moba__conquest { container-type: size; }
+.moba__conquest-photo-chains { display: none; }
+@supports (width: hypot(100cqw, 100cqh)) and (transform: rotate(atan2(100cqh, 100cqw))) {
+  .moba__conquest-chains { display: none; }
+  .moba__conquest-photo-chains { display: block; position: absolute; inset: 0; }
+  .moba__conquest-photo-chain {
+    position: absolute; top: 50%; left: 50%;
+    width: calc(hypot(100cqw, 100cqh) * 1.03); max-width: none; height: auto;
+    filter: drop-shadow(0 3px 3px #000d);
+  }
+  .moba__conquest-photo-chain--down { transform: translate(-50%, -50%) rotate(atan2(100cqh, 100cqw)); }
+  .moba__conquest-photo-chain--up { transform: translate(-50%, -50%) rotate(calc(-1 * atan2(100cqh, 100cqw))); }
 }

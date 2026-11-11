@@ -5,7 +5,7 @@ import { createServer } from 'vite';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
-test('plateau épuré : voies accessibles et consignes disponibles seulement pendant une action', async () => {
+test('plateau épuré : aucune indication visible sous les commandes et annulation possible', async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -32,6 +32,8 @@ test('plateau épuré : voies accessibles et consignes disponibles seulement pen
     await act(async () => root.render(React.createElement(Board, props)));
     await click(document.querySelector('.moba__card'));
     assert.match(document.querySelector('.moba__controls .moba__hint').textContent, /Choisissez une case/);
+    assert.ok(document.querySelector('.moba__controls .moba__hint').classList.contains('moba__sr-only'));
+    assert.equal(document.querySelector('.moba__directive .moba__hint'), null);
     await click(document.querySelector('.moba__controls .moba__cancel-choice'));
     assert.equal(document.querySelector('.moba__directive'), null);
   } finally {
