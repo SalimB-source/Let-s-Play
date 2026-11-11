@@ -30,17 +30,25 @@ test('plateau : sélection d’une cible, réponse, échange, puis seconde attaq
     rpgFinDeTour(duel); a.ready = true;
     duel.joueur.main = ['ashigaru-des-braises'];
     const b = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite; b.ready = true;
-    duel.sorcier.main = []; duel.joueur.main = [];
+    duel.sorcier.main = ['trait-de-braise']; duel.joueur.main = [];
     await render();
     await click(document.querySelector(`[data-moba-entity="${a.id}"] button`));
+    assert.ok(!duel.combatDeclare, 'le choix de cible reste annulable');
+    assert.equal(cmd('Déclarer l’attaque'), undefined);
+    await click(document.querySelector('.moba__cancel-choice'));
+    assert.equal(a.attaquee, false);
+    await click(document.querySelector(`[data-moba-entity="${a.id}"] button`));
     await click(document.querySelector(`[data-moba-entity="${c.id}"] button`));
-    await click(cmd('Déclarer l’attaque'));
-    assert.equal(duel.combatDeclare?.cibleIndividuelle.cibleId, c.id);
+    assert.equal(duel.combatDeclare?.cibleIndividuelle.cibleId, c.id, 'la cible choisie annonce immédiatement l’attaque');
+    assert.equal(cmd('Passer et résoudre'), undefined, 'seul le défenseur peut passer la fenêtre de réponse');
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
+    assert.equal(duel.sorcier.main.length, 0, 'l’IA a eu l’occasion de jouer une Magie Rapide');
+    assert.ok(duel.combatDeclare, 'la réponse précède la résolution');
+    assert.equal(cmd('Passer et résoudre'), undefined, 'l’attaquant ne peut pas passer à la place de l’IA');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.equal(duel.combatDeclare, null); assert.equal(duel.phase, 'principale');
     await click(document.querySelector(`[data-moba-entity="${b.id}"] button`));
-    await click(cmd('Déclarer l’attaque'));
-    assert.equal(duel.combatDeclare?.cibleIndividuelle.cibleId, null);
+    assert.equal(duel.combatDeclare?.cibleIndividuelle.cibleId, null, 'une attaque forcément directe est annoncée immédiatement');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.equal(duel.combatDeclare, null); assert.equal(b.attaquee, true);
   } finally {
@@ -58,12 +66,13 @@ test('plateau : Attaque ciblée peut choisir la voie même avec une créature ad
   let root;
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 }));
     root = createRoot(document.getElementById('root'));
-    const props = { initialiser, onQuitter: () => {} };
+    const props = { initialiser, rendu: RPG_RENDU_MOBA, onQuitter: () => {} };
     const render = () => act(async () => root.render(React.createElement(Board, props)));
     const click = async (el) => { assert.ok(el); assert.equal(el.disabled, false); await act(async () => el.click()); };
     const cmd = (texte) => [...document.querySelectorAll('.moba__controls button')].find((b) => b.textContent.includes(texte));
@@ -75,8 +84,7 @@ test('plateau : Attaque ciblée peut choisir la voie même avec une créature ad
     rpgFinDeTour(duel); a.ready = true; a.coupRapide = true; duel.sorcier.main = [];
     await render(); await click(document.querySelector(`[data-moba-entity="${a.id}"] button`));
     await click(cmd('Attaquer directement la voie'));
-    await click(cmd('Déclarer l’attaque'));
-    assert.equal(duel.combatDeclare.cibleIndividuelle.cibleId, null);
+    assert.equal(duel.combatDeclare.cibleIndividuelle.cibleId, null, 'le choix de la voie annonce immédiatement l’attaque');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.equal(duel.combatDeclare, null);
     assert.equal(duel.sorcier.creatures.some((e) => e.id === cible.id), true);
