@@ -3620,7 +3620,7 @@ test('Esquive : 15 % des attaques, Magies et Sorcelleries sont annulées entièr
   assert.equal(esquiveuse.pv, 0, 'au seuil de 15 %, l’Esquive échoue et la Magie Rapide frappe');
 });
 
-test('Esquive annule l’effet d’un sort sur sa cible, mais jamais une capacité', () => {
+test('Esquive annule les sorts et les blessures de capacité sur leur cible', () => {
   const duel = duelDeBase({ rng: () => 0.14 });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -3650,8 +3650,13 @@ test('Esquive annule l’effet d’un sort sur sa cible, mais jamais une capacit
   assert.equal(esquiveuse.gelToursRestants ?? 0, 0, 'le gel associé est annulé avec le sort');
 
   const degatsCapacite = rpgBlesserCreature(duel, 'joueur', esquiveuse.id, 1, 'braise', null, 'capacite');
-  assert.equal(degatsCapacite.esquive, false, 'une capacité ne tente pas d’Esquive');
-  assert.equal(esquiveuse.pv, 2, 'la capacité blesse normalement, même à 14 %');
+  assert.equal(degatsCapacite.esquive, true, 'la capacité hostile tente aussi l’Esquive');
+  assert.equal(esquiveuse.pv, 3, 'la blessure de capacité est évitée à 14 %');
+  rpgReglerHasard(duel, () => 0.15);
+  const capaciteReussie = rpgBlesserCreature(duel, 'joueur', esquiveuse.id, 1, 'braise', null, 'capacite');
+  assert.equal(capaciteReussie.esquive, false, 'le jet échoue au seuil exact de 15 %');
+  assert.equal(esquiveuse.pv, 2, 'la capacité inflige alors ses dégâts');
+  rpgReglerHasard(duel, () => 0.14);
 
   donner(duel, 'sorcier', 'haut-fond');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'haut-fond', esquiveuse.id).ok, true);

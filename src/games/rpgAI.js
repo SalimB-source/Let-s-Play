@@ -183,14 +183,13 @@ function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
 }
 
 /**
- * Dégâts effectifs après Esquive : une attaque, une Magie ou une Sorcellerie
- * a 30 % de chance d'être entièrement esquivée, soit 70 % de ses dégâts en
- * espérance. Les capacités ne s'esquivent pas.
+ * Dégâts effectifs après Esquive : attaque, sort ou capacité hostile de
+ * créature sont entièrement évités avec la chance cumulée de la cible.
  */
 export function degatsApresEsquive(entite, montant, sourceType = 'attaque') {
   const degats = Math.max(0, Number(montant) || 0);
-  return entite?.esquive && ['attaque', 'magie'].includes(sourceType)
-    ? degats * (1 - moteur.RPG_ESQUIVE_CHANCE)
+  return entite?.esquive && ['attaque', 'magie', 'capacite'].includes(sourceType)
+    ? degats * (1 - (entite.esquiveChance ?? moteur.RPG_ESQUIVE_CHANCE))
     : degats;
 }
 
@@ -745,7 +744,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     const arme = armeById(attaquant.arme?.carteId);
     const immanquable = Boolean(arme?.coupRapideImmanquable);
     const touche = immanquable ? 1 : 1 - moteur.RPG_COUP_RAPIDE_ECHEC_CHANCE;
-    return touche * (cible.esquive ? 1 - moteur.RPG_ESQUIVE_CHANCE : 1);
+    return touche * (cible.esquive ? 1 - (cible.esquiveChance ?? moteur.RPG_ESQUIVE_CHANCE) : 1);
   };
 
   const evaluerAttribution = () => {
@@ -1438,7 +1437,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       const ripostes = degatsRipostesZone(duel, cote, carte, duel[adv].creatures);
       const gain = brisees.reduce((somme, entite) => somme
         + valeurEntite(entite)
-          * (entite.esquive ? 1 - moteur.RPG_ESQUIVE_CHANCE : 1)
+          * (entite.esquive ? 1 - (entite.esquiveChance ?? moteur.RPG_ESQUIVE_CHANCE) : 1)
           * (entite.tenaciteDisponible ? 0.7 : 1), 0)
         + (effet.gel ? (couvertes.length - brisees.length) * 1.2 : 0)
         - ripostes;

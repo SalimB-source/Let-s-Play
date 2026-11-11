@@ -83,8 +83,8 @@ export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
 /**
  * Esquive : une créature qui l'imprime (ou dont l'arme la donne) échappe à
- * **15 % des attaques, Magies et Sorcelleries par source** — leur effet sur elle est
- * annulé, pas diminué. Les capacités ne sont jamais esquivées. Le tirage vient
+ * **15 % des attaques, sorts et capacités hostiles de créatures par source** :
+ * leur effet sur elle est annulé, pas diminué. Le tirage vient
  * du hasard du duel (`hasardParDuel`), donc une même partie reste reproductible.
  */
 // L'Esquive a 15 % de réussite par source ; les sources s'additionnent
@@ -1257,7 +1257,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
   }
   if ((activation.effet?.type ?? 'degats') === 'degats') {
     if (!paradeZoneBloque(duel, cibleFinale, 'capacite', campFinal, cote))
-      rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'capacite');
+      rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'capacite', carte.id, null, cote);
   }
   duel.log.push(`${(entite?.name ?? carte.name)} inflige ${montant} blessures à ${cibleFinale.name}.`);
   rpgActionsEtat(duel);
@@ -2622,7 +2622,7 @@ function declencherHarakiri(duel, cote, entite) {
   flammecheCreature(duel, cote, entite.id, { type: 'creature', cote: adversaire, entiteId: cible.id });
   duel.log.push(`Harakiri${honneur > 1 ? ` ${honneur}` : ''} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
   if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
-    rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
+    rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite', carte.id, null, cote);
 }
 
 /** Projectile décoratif commun aux capacités de créature, sans règle ajoutée. */
@@ -2663,18 +2663,19 @@ function journaliserAnimationCombat(duel, animation) {
 }
 
 /**
- * L'Esquive se tente **une fois par attaque ou par sort** : 30 % de chance que
- * son effet sur la créature ne porte pas du tout. Les Magies rapides et les
- * Sorcelleries partagent le `sourceType` « magie » ; les capacités de
- * créatures conservent leur propre type et ne sont jamais esquivées.
+ * L'Esquive se tente une fois par attaque, sort ou effet hostile de créature :
+ * l'effet sur cette créature est annulé en entier. Les Magies rapides et les
+ * Sorcelleries partagent le `sourceType` « magie » ; les effets de créature
+ * portent « capacite ». Une capacité alliée ne déclenche aucun jet.
  */
-function tenterEsquive(duel, entite, sourceType) {
-  if (!['attaque', 'magie'].includes(sourceType) || !entite?.esquive) return false;
+function tenterEsquive(duel, entite, sourceType, hostile = true) {
+  if (!['attaque', 'magie', 'capacite'].includes(sourceType) || !entite?.esquive
+    || (sourceType === 'capacite' && !hostile)) return false;
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const chance = Number.isFinite(entite.esquiveChance) ? entite.esquiveChance : RPG_ESQUIVE_CHANCE;
   const reussie = rng() < chance;
   if (reussie) {
-    duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : 'l’attaque'}.`);
+    duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : sourceType === 'capacite' ? 'la capacité' : 'l’attaque'}.`);
     const cote = duel.joueur.creatures.some((candidate) => candidate.id === entite.id) ? 'joueur' : 'sorcier';
     journaliserAnimationCombat(duel, {
       type: 'esquive',
@@ -2691,10 +2692,10 @@ function tenterEsquive(duel, entite, sourceType) {
  * magie se paie sur le visage du lanceur. Une vague de zone qui atteint la
  * créature produit la même riposte, voir `ripostesDeZone`.
  *
- * Elle passe par `rpgBlesserCreature` avec le type « capacite » : les
- * capacités ne s'esquivent pas, une riposte ne peut donc jamais être renvoyée
- * en boucle par une Esquive adverse. Même un coup fatal déclenche la riposte ;
- * une Esquive réussie ne l'empêche pas non plus.
+ * Elle passe par `rpgBlesserCreature` avec le type « capacite » : la cible
+ * peut esquiver cette riposte, sans riposter en boucle (la riposte ne passe pas
+ * par `appliquer`). Même un coup fatal déclenche la première riposte ; une
+ * Esquive réussie ne l'empêche pas non plus.
  *
  * @param {object} duel partie en cours
  * @param {object} defenseur entité qui porte Contre-attaque
@@ -3067,7 +3068,7 @@ function embraserTueur(duel, cote, carte, source) {
   if (!cible || !amount || rpgEstProtegee(cible, cardColors(carte))
     || paradeZoneBloque(duel, cible, 'capacite', source.cote, cote)) return;
   duel.log.push(`${carte.name} embrase ${cible.name} : ${amount} dégâts.`);
-  rpgBlesserCreature(duel, source.cote, cible.id, amount, cardColors(carte), null, 'capacite', carte.id);
+  rpgBlesserCreature(duel, source.cote, cible.id, amount, cardColors(carte), null, 'capacite', carte.id, null, cote);
 }
 
 /** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
@@ -3819,18 +3820,19 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       campCible = choisie.camp;
     }
   }
-  // Une Magie ou une Sorcellerie hostile qui désigne une créature peut voir
-  // son effet sur cette cible esquivé. Les dégâts passent, eux, par les deux
-  // fonctions de blessure ci-dessous afin de couvrir aussi les sorts de zone
-  // sans effectuer un second jet sur une cible directe.
+  // Un sort ou une capacité hostile qui désigne une créature peut être esquivé.
+  // Les dégâts passent, eux, par les fonctions de blessure ci-dessous afin de
+  // couvrir aussi les effets de zone sans second jet sur une cible directe.
   const viseUneCreatureAdverse = cibleId && (effet.cible === 'creature'
     // Certaines fiches de malus portent leur cible dans `cibles`, sans la
     // répéter dans l'effet ; leur cible reste toujours une créature adverse.
     || ['debuff', 'empeche-blocage'].includes(effet.type));
-  if (sourceType === 'magie' && effet.type !== 'degats' && viseUneCreatureAdverse
+  if (['magie', 'capacite'].includes(sourceType) && effet.type !== 'degats'
+    && !(effet.type === 'gel' && effet.degats > 0) && viseUneCreatureAdverse
+    && (sourceType !== 'capacite' || campCible !== cote)
     && (effet.type !== 'destruction-cible' || campCible !== cote)) {
-    const cibleSort = duel[campCible].creatures.find((entite) => entite.id === cibleId);
-    if (cibleSort && tenterEsquive(duel, cibleSort, sourceType)) {
+    const cibleEffet = duel[campCible].creatures.find((entite) => entite.id === cibleId);
+    if (cibleEffet && tenterEsquive(duel, cibleEffet, sourceType)) {
       // La pioche éventuelle (Courant de retour) appartient au lanceur : elle
       // ne dépend pas de l'effet esquivé par la cible et se résout normalement.
       for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
@@ -3931,7 +3933,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           // La parade anti-sort épargne sa porteuse et tombe : elle n'entre
           // ni dans les victimes, ni dans les survivantes gelées ensuite.
           if (paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement)) continue;
-          // Un sort esquivé est annulé EN ENTIER sur cette créature : ni
+          // Un effet esquivé est annulé EN ENTIER sur cette créature : ni
           // destruction, ni gel — un seul jet, comme pour les dégâts de zone.
           // L'Esquive n'éteint pas sa Contre-attaque pour autant.
           if (tenterEsquive(duel, entite, sourceType)) {
@@ -4134,7 +4136,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (effet.cible === 'toutes-autres') {
         // Vague du Léviathan : les renvoyées quittent la table et ne ripostent pas (elles ne sont plus dans le camp). Seule
         // une créature qui reste en jeu tout en ayant été atteinte — une Esquive
-        // réussie, donc uniquement face à une source de magie — peut réveiller
+        // réussie face à un sort ou une capacité — peut réveiller
         // sa Contre-attaque. Les protégées (`renvoyerEnMain` refuse) et les
         // parades ne sont pas atteintes et ne ripostent pas.
         const touchees = [];
@@ -4444,7 +4446,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           // créature sans prise à bord ne débarque personne.
           if (effet.caleOccupeeSeulement && !entite.enCale) return false;
           if (horsSort(entite)) return false;
-          if (contreAdversaire && sourceType === 'magie'
+          if (contreAdversaire && ['magie', 'capacite'].includes(sourceType)
             && tenterEsquive(duel, entite, sourceType)) {
             esquivees.add(entite.id);
             return false;
@@ -4516,7 +4518,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       }
       // Le malus de zone adverse (l'Embuscade) réveille les Contre-attaques
       // des créatures atteintes, celles qui ont esquivé comprises.
-      if (contreAdversaire && sourceType === 'magie') {
+      if (contreAdversaire && ['magie', 'capacite'].includes(sourceType)) {
         const touchees = [
           ...ciblesBuff.map((entite) => ({ camp: adv, entiteId: entite.id })),
           ...[...esquivees].map((entiteId) => ({ camp: adv, entiteId })),
@@ -4752,7 +4754,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (rpgEstProtegee(cible, sourceElement) || rpgEstProtegeeDesSorts(cible, sourceElement, sourceType)
           || paradeZoneBloque(duel, cible, sourceType, campCible, cote, sourceElement)) continue;
         const dernierEtat = { ...cible };
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null, cote, options?.projectileSource ?? null);
+        // Une vague qui blesse aussi les alliés est hostile à ses victimes ;
+        // seul le prix d'un équipement allié échappe volontairement au jet.
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null,
+          sourceType === 'capacite' && campCible === cote ? null : cote, options?.projectileSource ?? null);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
@@ -4765,7 +4770,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             ? { type: 'sorcier', cote }
             : { type: 'creature', cote, entiteId: sauf });
         }
-        // Un sort esquivé est annulé en entier sur cette créature : ni dégât,
+        // Un effet esquivé est annulé en entier sur cette créature : ni dégât,
         // ni gel associé. Les autres cibles font leur propre jet — mais
         // l'Esquive n'éteint pas la Contre-attaque, déjà enregistrée.
         if (blessure.esquive) continue;
@@ -4853,13 +4858,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       for (const cible of cibles) {
         if (duel.moba?.winner) break;
         const dernierEtat = { ...cible };
-        if (zoneGel && tenterEsquive(duel, cible, sourceType)) {
+        if (zoneGel && !(effet.degats > 0) && tenterEsquive(duel, cible, sourceType)) {
           touchees.push(cible);
           continue;
         }
         if (Number.isFinite(effet.degats) && effet.degats > 0) {
           const blessure = rpgBlesserCreature(duel, adv, cible.id, effet.degats,
-            sourceElement, null, sourceType, sourceCarteId);
+            sourceElement, null, sourceType, sourceCarteId, null, cote);
           if (blessure.protegee || blessure.bouclierLumiere) continue;
           if (blessure.esquive || !duel[adv].creatures.some((entite) => entite.id === cible.id)) {
             touchees.push(dernierEtat);
@@ -5800,7 +5805,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     }
     if (duel.moba) return { ok: true, recus: 0, absorbes: 0, degatsPrevenus: true };
   }
-  if (tenterEsquive(duel, entite, sourceType)) {
+  if (tenterEsquive(duel, entite, sourceType, sourceCote == null || sourceCote !== cote)) {
     return { ok: true, recus: 0, absorbes: 0, esquive: true };
   }
   // Les points de parade sont dépensés par les résolutions qui connaissent
@@ -6812,7 +6817,7 @@ export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
       cible.camp);
   } else if (attente.montant !== null && attente.montant !== undefined) {
     if (!paradeZoneBloque(duel, cible.entite, 'capacite', cible.camp, attente.sourceCote))
-      rpgBlesserCreature(duel, cible.camp, cible.entite.id, attente.montant, attente.couleur, null, 'capacite', attente.sourceCarteId);
+      rpgBlesserCreature(duel, cible.camp, cible.entite.id, attente.montant, attente.couleur, null, 'capacite', attente.sourceCarteId, null, attente.sourceCote);
     duel.log.push(`${attente.sourceNom ?? 'La capacité'} inflige ${attente.montant} blessures à ${cible.entite.name}.`);
   }
   rpgActionsEtat(duel);
@@ -6900,14 +6905,13 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null, options = {}) 
 function resoudreAttachementArme(duel, cote, carte, cible, porteurCree = false) {
   const camp = duel[cote];
   // Le prix de l'attachement (la Hache de la banquise) : l'arme mord son
-  // porteur AVANT de lui donner quoi que ce soit. La parade qu'elle accorde
-  // ensuite ne bloque que les sorts : cette morsure — une capacité — passe
-  // de toute façon. Un porteur qui succombe ne porte rien : l'arme tombe au
-  // cimetière avec lui, comme si son porteur était mort en la prenant.
+  // porteur AVANT de lui donner quoi que ce soit. Une morsure alliée ne
+  // déclenche pas l'Esquive ; la parade accordée ensuite ne bloque que les
+  // sorts. Un porteur qui succombe emporte l'arme au cimetière avec lui.
   if (Math.max(0, Number(carte.blessurePorteur) || 0) > 0) {
     const morsure = Math.max(0, Number(carte.blessurePorteur) || 0);
     duel.log.push(`${carte.name} mord ${cible.name} en s’attachant (${morsure} dégât${morsure > 1 ? 's' : ''}).`);
-    rpgBlesserCreature(duel, cote, cible.id, morsure, carte.element, null, 'capacite', carte.id);
+    rpgBlesserCreature(duel, cote, cible.id, morsure, carte.element, null, 'capacite', carte.id, null, cote);
     if (!camp.creatures.some((entite) => entite.id === cible.id)) {
       camp.cimetiere.push(carte.id);
       duel.log.push(`${carte.name} emporte son porteur : l’arme tombe au cimetière.`);
@@ -9169,7 +9173,7 @@ function resoudreRetoursProgrammes(duel) {
         const adversaire = autre(cote);
         for (const cible of [...duel[adversaire].creatures]) {
           if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
-            rpgBlesserCreature(duel, adversaire, cible.id, carte.retourDeclenche.degats ?? 1, cardColors(carte), null, 'capacite', carte.id);
+            rpgBlesserCreature(duel, adversaire, cible.id, carte.retourDeclenche.degats ?? 1, cardColors(carte), null, 'capacite', carte.id, null, cote);
         }
         for (const allie of duel[cote].creatures) {
           if (allie.pv <= 0) continue;
