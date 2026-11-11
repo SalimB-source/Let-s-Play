@@ -78,6 +78,8 @@ test('le joueur invoque le Garde en défense, puis choisit son blocage après la
     await act(async () => root.render(React.createElement(Board, props)));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.ok(duel.combatDeclare);
+    assert.ok(document.querySelector('.moba__controls .moba__hint.moba__sr-only'));
+    assert.equal(document.querySelector('.moba__controls .moba__directive'), null, 'aucune indication visible sous le bouton de défense');
     const attaquant = () => document.querySelector(`[data-moba-entity="${a.id}"] .rpg-card`);
     assert.equal(attaquant()?.dataset.combatTilted, 'true');
     await click(text('.moba__card', 'Garde du trône givré'));
@@ -133,7 +135,11 @@ test('la main distingue les cartes impossibles sans transparence et ne montre au
     assert.equal(document.querySelector('[data-card-id="anqa-des-braises"].moba__card').disabled, false, 'le quota de sacrifice reste disponible');
     const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
     assert.match(css, /\.moba \.moba__hand-cards \.moba__card:disabled\s*\{[^}]*opacity:\s*1;[^}]*filter:\s*saturate/s);
-    assert.match(css, /\.moba \.moba__side--sorcier > \.moba__health\s*\{[^}]*translateY\(-6px\)/s);
+    assert.match(css, /\.moba \.moba__side--sorcier > \.moba__health\s*\{[^}]*translateY\(calc\(-1 \* var\(--moba-slot-padding\)\)\)/s);
+    assert.match(css, /\.moba__side, \.moba__side--joueur\s*\{[^}]*--moba-slot-padding:\s*18px/s);
+    assert.match(css, /\.moba \.moba__side\s*\{[^}]*--moba-slot-padding:\s*16px/s);
+    assert.match(css, /\.moba \.moba__plain-slot\s*\{[^}]*padding-bottom:\s*var\(--moba-slot-padding\)/s);
+    assert.match(css, /\.moba \.moba__side--joueur \.moba__health\s*\{[^}]*margin:\s*4px 0 0/s);
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
