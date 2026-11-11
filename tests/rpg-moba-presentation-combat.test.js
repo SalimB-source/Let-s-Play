@@ -18,6 +18,7 @@ test('le Traqueur perd visuellement l’Embuscade en MOBA sans modifier la carte
 test('les notes de combat expliquent les priorités et restrictions MOBA', () => {
   assert.match(rpgMobaNotesCarte(cardById('appat-de-la-meute')).join(' '), /Injouable/);
   assert.match(rpgMobaNotesCarte(cardById('gardien-de-la-porte-ardente')).join(' '), /priorité/);
+  assert.match(rpgMobaNotesCarte(cardById('gardienne-des-portes-de-sable')).join(' '), /attaques venant de sa voie/);
   assert.match(rpgMobaNotesCarte(cardById('feriel')).join(' '), /tout le plateau/);
 });
 

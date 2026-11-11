@@ -19,7 +19,9 @@ export function rpgMobaCombatIndicators(duel, side, attackerIds, targets = {}, b
   for (const id of attackerIds ?? []) {
     const attacker = duel[side]?.creatures.find((entity) => entity.id === id);
     const origin = duel.moba.lanes.find((item) => item.slots[side].includes(id));
-    const lane = duel.moba.lanes.find((item) => item.id === mobaVoieCombat(duel.moba, side, origin?.id) && item.active);
+    const voieAnnoncee = individuel && duel.combatDeclare?.cote === side
+      && duel.combatDeclare.attaquants?.includes(id) ? duel.combatDeclare.cibleIndividuelle?.voie : null;
+    const lane = duel.moba.lanes.find((item) => item.id === (voieAnnoncee ?? mobaVoieCombat(duel.moba, side, origin?.id)) && item.active);
     if (!attacker || !lane) continue;
     const targetId = targets[id];
     if (individuel) {

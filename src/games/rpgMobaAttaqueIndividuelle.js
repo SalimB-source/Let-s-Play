@@ -1,31 +1,37 @@
 /** Règles de ciblage et bonus propres au combat individuel MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { rpgEstProtegee } from './rpgDuel.js';
-import { mobaVoie, MOBA_SIDES } from './rpgMoba.js';
+import { mobaVoie, mobaVoiesCombat, mobaPartageVoie, MOBA_SIDES } from './rpgMoba.js';
 
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const creature = (e) => e && duelCardById(e.carteId)?.kind !== 'site';
 
-function cibleAccessible(duel, attaquant, cible, ciblee) {
-  if (!creature(cible) || !mobaVoie(duel.moba, cible.mobaLane)?.active) return false;
+function cibleAccessible(duel, attaquant, cible, ciblee, voieAttaque) {
+  if (!creature(cible) || !mobaVoiesCombat(duel.moba, cible.mobaLane).length) return false;
   if (rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) return false;
   if (ciblee) return true;
-  return cible.mobaLane === attaquant.mobaLane && !cible.infiltration
+  return mobaPartageVoie(duel.moba, cible.mobaLane, voieAttaque) && !cible.infiltration
     && (attaquant.envol || !cible.envol);
 }
 
-/** Cibles autorisées à l'annonce. null représente la frappe directe sur la
- * voie de l'attaquant ; une priorité accessible interdit la frappe directe.
- * L'Attaque ciblée utilise l'état effectif (y compris les capacités prêtées).
- */
-export function rpgMobaCiblesIndividuelles(duel, side, attackerId) {
+/** Cibles légales depuis une voie donnée. Pour le centre conquis, sans voie
+ * explicite, réunit les choix des deux voies sans les doubler. */
+export function rpgMobaCiblesIndividuelles(duel, side, attackerId, voieAttaque = null) {
   if (!MOBA_SIDES.includes(side) || !duel?.moba) return { cibles: [], directe: false };
   const attaquant = duel[side]?.creatures.find((e) => e.id === attackerId);
-  if (!creature(attaquant) || !mobaVoie(duel.moba, attaquant.mobaLane)?.active) return { cibles: [], directe: false };
+  if (!creature(attaquant)) return { cibles: [], directe: false };
+  const voies = mobaVoiesCombat(duel.moba, attaquant.mobaLane);
+  if (voieAttaque && !voies.includes(voieAttaque)) return { cibles: [], directe: false };
+  if (!voieAttaque && voies.length > 1) {
+    const choix = voies.map((voie) => rpgMobaCiblesIndividuelles(duel, side, attackerId, voie));
+    return { cibles: [...new Set(choix.flatMap((v) => v.cibles))], directe: choix.some((v) => v.directe) };
+  }
+  const voie = voieAttaque ?? voies[0];
+  if (!voie) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
-  const possibles = duel[autre(side)].creatures.filter((e) => cibleAccessible(duel, attaquant, e, ciblee));
+  const possibles = duel[autre(side)].creatures.filter((e) => cibleAccessible(duel, attaquant, e, ciblee, voie));
   const provocations = possibles.filter((e) => e.provocation);
-  const defenseurs = possibles.filter((e) => e.defenseur || e.prioriteAttaqueRapide);
+  const defenseurs = possibles.filter((e) => mobaPartageVoie(duel.moba, e.mobaLane, voie) && (e.defenseur || e.prioriteAttaqueRapide));
   const prioritaires = provocations.length ? provocations : defenseurs;
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
@@ -34,17 +40,15 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId) {
   };
 }
 
-/** Revalidation après réponse : la cible annoncée ne change jamais, et une
- * priorité apparue après l'annonce ne redirige pas l'attaque. */
+/** La voie choisie à l'annonce reste fixe pendant la fenêtre de réponse. */
 export function rpgMobaCibleIndividuelleEncoreLegale(duel, side, attackerId, cibleId, cibleeAnnoncee, voieAnnoncee) {
   if (!MOBA_SIDES.includes(side) || !duel?.moba || duel.moba.winner || duel.moba.centerChoice) return false;
   const attaquant = duel[side]?.creatures.find((e) => e.id === attackerId);
-  if (!creature(attaquant) || attaquant.mobaLane !== voieAnnoncee || !mobaVoie(duel.moba, voieAnnoncee)?.active) return false;
-  // Perdre Attaque ciblée ou Envol pendant une réponse peut rendre la cible illégale.
+  if (!creature(attaquant) || !mobaVoiesCombat(duel.moba, attaquant.mobaLane).includes(voieAnnoncee) || !mobaVoie(duel.moba, voieAnnoncee)?.active) return false;
   if (cibleeAnnoncee && !attaquant.coupRapide) return false;
   if (cibleId === null) return true;
   const cible = duel[autre(side)]?.creatures.find((e) => e.id === cibleId);
-  return cibleAccessible(duel, attaquant, cible, Boolean(cibleeAnnoncee));
+  return cibleAccessible(duel, attaquant, cible, Boolean(cibleeAnnoncee), voieAnnoncee);
 }
 
 /** Le bonus est enregistré dans le carnet existant, expirant à la fin de ce tour. */

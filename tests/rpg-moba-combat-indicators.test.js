@@ -20,26 +20,26 @@ test('direct attack arrows go to the defending HP of each individual lane, in bo
   put('joueur', 'left', 0, 'gauche'); put('joueur', 'center', 0, 'centre'); put('joueur', 'right', 0, 'droite');
   put('sorcier', 'right', 0, 'ia');
   const before = JSON.stringify(duel);
-  const human = rpgMobaCombatIndicators(duel, 'joueur', ['gauche', 'centre', 'droite']);
+  const human = rpgMobaCombatIndicators(duel, 'joueur', ['gauche', 'centre', 'droite'], {}, {}, { individuel: true });
   assert.deepEqual(human.attackArrows, { '@moba:left:sorcier': ['gauche'], '@moba:center:sorcier': ['centre'], '@moba:right:sorcier': ['droite'] });
   assert.match(human.descriptions[0], /gauche attaque les PV de voie gauche de l’IA/);
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'sorcier', ['ia']).attackArrows, { '@moba:right:joueur': ['ia'] });
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'sorcier', ['ia'], {}, {}, { individuel: true }).attackArrows, { '@moba:right:joueur': ['ia'] });
   assert.equal(JSON.stringify(duel), before, 'presentation never mutates the duel');
 });
 
-test('targeted attacks wait for a valid target in their own lane and never redirect a lost target', () => {
+test('les flèches individuelles montrent la cible choisie sans rediriger une cible perdue', () => {
   const { duel, put } = fixture();
   put('joueur', 'left', 0, 'rapide', { coupRapide: true });
   put('sorcier', 'left', 0, 'cible'); put('sorcier', 'right', 0, 'ailleurs');
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide']).attackArrows, {});
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], { rapide: 'ailleurs' }).attackArrows, {});
-  const selected = rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], { rapide: 'cible' });
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], {}, {}, { individuel: true }).attackArrows, { '@moba:left:sorcier': ['rapide'] });
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], { rapide: 'ailleurs' }, {}, { individuel: true }).attackArrows, { ailleurs: ['rapide'] });
+  const selected = rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], { rapide: 'cible' }, {}, { individuel: true });
   assert.deepEqual(selected.attackArrows, { cible: ['rapide'] });
-  assert.match(selected.descriptions[0], /rapide vise cible, voie gauche/);
+  assert.match(selected.descriptions[0], /rapide vise cible/);
   duel.moba.lanes[0].slots.sorcier[0] = null;
   duel.sorcier.creatures = duel.sorcier.creatures.filter((e) => e.id !== 'cible');
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], { rapide: 'cible' }).attackArrows, {});
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide']).attackArrows, { '@moba:left:sorcier': ['rapide'] }, 'enemy in another lane does not prevent a direct attack');
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], { rapide: 'cible' }, {}, { individuel: true }).attackArrows, {});
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['rapide'], {}, {}, { individuel: true }).attackArrows, { '@moba:left:sorcier': ['rapide'] }, 'enemy in another lane does not prevent a direct attack');
 });
 
 test('block arrows replace direct arrows, include several blockers and ignore stale or wrong-lane entities', () => {
@@ -64,15 +64,17 @@ test('lane resolver finds the correct HP element without interpreting IDs as CSS
   dom.window.close();
 });
 
-test('les flèches des créatures centrales rattachées visent la voie latérale et ses combats', async () => {
-  const { mobaInfliger, mobaRattacherCentre } = await import('../src/games/rpgMoba.js');
+test('les flèches de la créature centrale utilisent la voie annoncée', async () => {
+  const { mobaInfliger } = await import('../src/games/rpgMoba.js');
   const { duel, put } = fixture();
-  const ally = put('joueur', 'center', 0, 'allie');
-  put('sorcier', 'right', 0, 'ennemi', { coupRapide: true });
-  mobaInfliger(duel.moba, 'joueur', 'center', 10);
-  mobaRattacherCentre(duel.moba, 'joueur', 'right');
-  ally.mobaLane = 'right';
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['allie']).attackArrows, { '@moba:right:sorcier': ['allie'] });
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'sorcier', ['ennemi'], { ennemi: 'allie' }).attackArrows, { allie: ['ennemi'] });
-  assert.deepEqual(rpgMobaCombatIndicators(duel, 'sorcier', ['ennemi'], {}, { ennemi: ['allie'] }).blockArrows, { ennemi: ['allie'] });
+  put('joueur', 'center', 0, 'allie');
+  put('sorcier', 'right', 0, 'ennemi');
+  mobaInfliger(duel.moba, 'joueur', 'center', 15);
+  for (const voie of ['left', 'right']) {
+    duel.combatDeclare = { cote: 'joueur', attaquants: ['allie'], cibleIndividuelle: { cibleId: null, voie } };
+    const result = rpgMobaCombatIndicators(duel, 'joueur', ['allie'], {}, {}, { individuel: true });
+    assert.deepEqual(result.attackArrows, { [`@moba:${voie}:sorcier`]: ['allie'] });
+  }
+  duel.combatDeclare.cibleIndividuelle.cibleId = 'ennemi';
+  assert.deepEqual(rpgMobaCombatIndicators(duel, 'joueur', ['allie'], { allie: 'ennemi' }, {}, { individuel: true }).attackArrows, { ennemi: ['allie'] });
 });

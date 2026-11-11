@@ -4,12 +4,10 @@
  * Callers must validate those rules in the engine before applying lane events.
  * See docs/sablier-moba.md for the integration work still required.
  */
-export const MOBA_LANE_HP = 10;
+export const MOBA_LANE_HP = 15;
 export const MOBA_SIDE_LANE_HP = 20;
 export const mobaVieMax = (laneId) => laneId === 'center' ? MOBA_LANE_HP : MOBA_SIDE_LANE_HP;
-/** Only the conqueror's chosen flank gains the central lane's HP reserve. */
-export const mobaVieMaxPourCamp = (state, side, laneId) => mobaVieMax(laneId)
-  + (state?.centerJoined?.side === side && state.centerJoined.laneId === laneId ? MOBA_LANE_HP : 0);
+export const mobaVieMaxPourCamp = (state, side, laneId) => mobaVieMax(laneId);
 export const MOBA_LANES = Object.freeze(['left', 'center', 'right']);
 export const MOBA_SIDES = Object.freeze(['joueur', 'sorcier']);
 const CAPACITY = Object.freeze({ left: 2, center: 1, right: 2 });
@@ -35,8 +33,8 @@ export function mobaNouveau() {
     // A creature's identity remains bound to its first lane, even off-board.
     assignments: [],
     winner: null,
-    centerChoice: null, // vainqueur du centre en attente de son choix latéral
-    centerJoined: null, // { side, laneId } ; les cartes gardent leur case centrale
+    centerChoice: null, // conservé pour les anciens états
+    centerJoined: null, // { side, laneId: null } : présence dans les deux voies
   };
 }
 
@@ -44,23 +42,25 @@ export function mobaVoie(state, laneId) {
   return state?.lanes?.find((lane) => lane.id === laneId) ?? null;
 }
 
-/** Combat lane of a card occupying a physical slot (the opponent never inherits the center). */
+/** La case centrale conquise compte pour chaque voie latérale encore active. */
+export function mobaVoiesCombat(state, laneId) {
+  if (laneId === 'center' && state?.centerJoined && state.centerJoined.laneId === null) {
+    return ['left', 'right'].filter((id) => mobaVoie(state, id)?.active);
+  }
+  return mobaVoie(state, laneId)?.active ? [laneId] : [];
+}
+export function mobaPartageVoie(state, laneA, laneB) {
+  if (!laneA || !laneB) return false;
+  const voies = mobaVoiesCombat(state, laneA);
+  return mobaVoiesCombat(state, laneB).some((voie) => voies.includes(voie));
+}
 export function mobaVoieCombat(state, side, laneId) {
-  return laneId === 'center' && state?.centerJoined?.side === side
+  return laneId === 'center' && state?.centerJoined?.side === side && state.centerJoined.laneId
     ? state.centerJoined.laneId : laneId;
 }
 
-export function mobaRattacherCentre(state, side, laneId) {
-  if (!state || state.winner || state.centerChoice !== side || !validSide(side)
-    || !['left', 'right'].includes(laneId) || !mobaVoie(state, laneId)?.active) return fail('choix-voie');
-  state.centerJoined = { side, laneId };
-  // Merge the existing reserves rather than conjuring a fresh 30 HP: damage
-  // previously dealt to either friendly lane remains meaningful.
-  const flank = mobaVoie(state, laneId);
-  flank.hp[side] = Math.min(mobaVieMaxPourCamp(state, side, laneId), flank.hp[side] + mobaVoie(state, 'center').hp[side]);
-  state.centerChoice = null;
-  return { ok: true };
-}
+/** Le rattachement à une voie n'existe plus. */
+export function mobaRattacherCentre() { return fail('choix-voie'); }
 
 export function mobaEmplacementsLibres(state, side, laneId) {
   const lane = mobaVoie(state, laneId);
@@ -73,7 +73,7 @@ export function mobaVoieJouable(state, side, laneId) {
   const lane = mobaVoie(state, laneId);
   return validSide(side) && Boolean(lane?.active || (laneId === 'center'
     && state?.centerJoined?.side === side && lane?.conqueredBy === side
-    && mobaVoie(state, state.centerJoined.laneId)?.active));
+    && mobaVoiesCombat(state, 'center').length > 0));
 }
 
 /** Place an engine entity in an explicit empty slot; never silently relocate it. */
@@ -151,15 +151,9 @@ export function mobaInfliger(state, attackingSide, laneId, amount) {
     result.removed = Object.fromEntries(MOBA_SIDES.map((side) =>
       [side, retainCenter && side === attackingSide ? [] : lane.slots[side].filter((id) => id !== null)]));
     for (const side of MOBA_SIDES) if (!retainCenter || side !== attackingSide) lane.slots[side].fill(null);
-    if (retainCenter) state.centerChoice = attackingSide;
-    // The joined central slot is an extra slot of its chosen flank: it falls
-    // with that flank, never survives on a closed battlefield.
-    if (state.centerJoined?.laneId === laneId) {
-      const center = mobaVoie(state, 'center');
-      const joinedSide = state.centerJoined.side;
-      result.removed[joinedSide].push(...center.slots[joinedSide].filter(Boolean));
-      center.slots[joinedSide].fill(null);
-      state.centerJoined = null;
+    if (retainCenter) {
+      state.centerJoined = { side: attackingSide, laneId: null };
+      lane.hp[attackingSide] = 0; // le reliquat central ne rejoint aucune voie
     }
     lane.active = false;
     lane.conqueredBy = attackingSide;

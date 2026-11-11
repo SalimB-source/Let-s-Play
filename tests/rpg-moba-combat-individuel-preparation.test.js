@@ -26,11 +26,13 @@ test('Envol : choix de la frappe directe si aucun ennemi volant accessible', () 
   assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: false });
 });
 
-test('Attaque ciblée : tout le plateau et frappe directe, mais priorité accessible', () => {
+test('Attaque ciblée : Défenseur ne force que les attaques de sa propre voie', () => {
   const d = position({ coupRapide: true }, [entite('cible', 'right', { envol: true, infiltration: true })]);
   assert.deepEqual(choix(d), { cibles: ['cible'], directe: true });
   d.sorcier.creatures.push(entite('garde', 'center', { defenseur: true }));
-  assert.deepEqual(choix(d), { cibles: ['garde'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['cible', 'garde'], directe: true });
+  d.sorcier.creatures.push(entite('garde-local', 'left', { defenseur: true }));
+  assert.deepEqual(choix(d), { cibles: ['garde-local'], directe: false });
 });
 
 test('Provocation prime sur Défenseur uniquement si accessible', () => {
@@ -118,7 +120,7 @@ test('Traqueur garde son arrivée normale mais pas son Embuscade à deux attaqua
   const a = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite; a.ready = true;
   d.joueur.main = ['ashigaru-des-braises'];
   // Un second attaquant est placé sur un tour séparé des quotas de pose.
-  d.moba.petitesCreaturesJouees.joueur = false;
+  d.moba.creaturesJouees.joueur = false;
   const b = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 1).entite; b.ready = true;
   d.sorcier.main = ['traqueur-des-nuits-sans-lune'];
   assert.equal(rpgMobaDeclarerAttaque(d, 'joueur', [a.id, b.id]).ok, false);
@@ -144,3 +146,27 @@ test('le sort Embuscade reste utilisable en classique', () => {
   d.joueur.main = ['embuscade']; d.joueur.mana.neige = 20;
   assert.ok(rpgLancerMagie(d, 'joueur', 'embuscade').ok);
 });
+
+for (const side of ['joueur', 'sorcier']) {
+  for (const voie of ['left', 'center', 'right']) {
+    test(`${side} : Défenseur sur une autre voie ne contraint pas l’attaque ciblée depuis ${voie}`, () => {
+      const adversaire = side === 'joueur' ? 'sorcier' : 'joueur';
+      const autreVoie = voie === 'right' ? 'left' : 'right';
+      const attaquant = entite('attaquant', voie, { coupRapide: true });
+      const cible = entite('cible', voie);
+      const lointain = entite('lointain', autreVoie, { defenseur: true, prioriteAttaqueRapide: true });
+      const d = { tour: side, moba: mobaNouveau(), [side]: { creatures: [attaquant] }, [adversaire]: { creatures: [cible, lointain] } };
+      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['cible', 'lointain'], directe: true });
+      const local = entite('local', voie, { defenseur: true });
+      d[adversaire].creatures.push(local);
+      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['local'], directe: false });
+      local.defenseur = false; local.prioriteAttaqueRapide = true;
+      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['local'], directe: false });
+      lointain.provocation = true;
+      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['lointain'], directe: false }, 'Provocation reste prioritaire');
+      lointain.provocation = false;
+      attaquant.coupRapide = false;
+      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['local'], directe: false }, 'attaque normale inchangée');
+    });
+  }
+}
