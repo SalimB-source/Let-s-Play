@@ -2,7 +2,7 @@ import { sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
-import { mobaVieMaxPourCamp } from './rpgMoba.js';
+import { mobaVieMaxPourCamp, mobaVoiesCombat } from './rpgMoba.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
 import { rpgCombinaisonsSacrificesIA, rpgSacrificeEstDeclasseIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana } from './rpgDuel.js';
@@ -483,15 +483,17 @@ export function rpgMobaChoisirAttaqueIndividuelleIA(duel, side = 'sorcier') {
   const initial = valeurPosition(duel, side);
   let meilleur = null;
   for (const attacker of duel[side].creatures.filter(rpgPeutAttaquer)) {
-    const choix = rpgMobaCiblesIndividuelles(duel, side, attacker.id);
-    const cibles = [...choix.cibles, ...(choix.directe ? [null] : [])];
-    for (const cibleId of cibles) {
-      const probe = copie(duel);
-      if (!rpgMobaDeclarerAttaqueIndividuelle(probe, side, attacker.id, cibleId).ok) continue;
-      if (!rpgMobaResoudreAttaqueIndividuelle(probe, side).ok) continue;
-      resoudreDestructionsSurCopie(probe);
-      const score = valeurPosition(probe, side) - initial;
-      if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { attaquantId: attacker.id, cibleId, score };
+    for (const voie of mobaVoiesCombat(duel.moba, attacker.mobaLane)) {
+      const choix = rpgMobaCiblesIndividuelles(duel, side, attacker.id, voie);
+      const cibles = [...choix.cibles, ...(choix.directe ? [null] : [])];
+      for (const cibleId of cibles) {
+        const probe = copie(duel);
+        if (!rpgMobaDeclarerAttaqueIndividuelle(probe, side, attacker.id, cibleId, voie).ok) continue;
+        if (!rpgMobaResoudreAttaqueIndividuelle(probe, side).ok) continue;
+        resoudreDestructionsSurCopie(probe);
+        const score = valeurPosition(probe, side) - initial;
+        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { attaquantId: attacker.id, cibleId, voie, score };
+      }
     }
   }
   return meilleur;
