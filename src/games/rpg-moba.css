@@ -1272,3 +1272,84 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba .moba__impact-source, .moba .moba__impact-trail, .moba .moba__impact-burst { display: none; }
   .moba .moba__impact-number { animation: none; opacity: 1; }
 }
+
+/* Soutien MOBA : les montants proviennent des soins réellement appliqués. */
+.moba__lane-heal, .moba__creature-heal {
+  position: absolute; z-index: 12; pointer-events: none; color: #eaffd5;
+  font: 900 clamp(16px, 2.3vw, 23px) system-ui, sans-serif;
+  text-shadow: 0 1px 3px #092b18, 0 0 9px #85d77c, 0 0 15px #416d3c;
+  animation: moba-soutien-soin calc(1.3s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.moba__lane-heal { right: 4px; top: -12px; }
+.moba__creature-heal { left: 50%; top: 34%; translate: -50% 0; }
+@keyframes moba-soutien-soin {
+  0% { opacity: 0; transform: translateY(4px) scale(.8); }
+  18%, 70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-16px) scale(1.04); }
+}
+/* Un cercle apparaît au moment où la créature devient visible, sans gêner le
+   rituel déjà présent ni intercepter les clics. */
+.moba__summon-fx, .moba__shield-fx { position: absolute; inset: 0 0 var(--moba-slot-padding, 18px); z-index: 10; pointer-events: none; }
+.moba__summon-fx::before, .moba__summon-fx::after, .moba__summon-fx i {
+  content: ''; position: absolute; left: 50%; top: 55%; width: 70%; aspect-ratio: 1;
+  border: 1px solid #f1c77b; border-radius: 50%; box-shadow: 0 0 12px #cf914c, inset 0 0 12px #d8ad66;
+  opacity: 0; translate: -50% -50%; animation: moba-summon-ring calc(.95s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.moba__summon-fx::after { width: 50%; border-style: dashed; animation-delay: calc(.09s * var(--rpg-anim-scale, 1)); }
+.moba__summon-fx i { width: 6px; background: #ffe8b5; border: 0; top: 70%; left: 34%; animation: moba-summon-spark calc(.85s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__summon-fx i:nth-child(2) { left: 65%; animation-delay: calc(.1s * var(--rpg-anim-scale, 1)); }
+.moba__summon-fx i:nth-child(3) { left: 50%; animation-delay: calc(.18s * var(--rpg-anim-scale, 1)); }
+@keyframes moba-summon-ring { 0% { opacity: 0; transform: scale(.4) rotate(0); } 20% { opacity: .85; } 100% { opacity: 0; transform: scale(1.25) rotate(45deg); } }
+@keyframes moba-summon-spark { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-55px); } }
+/* L'égide signale l'acquisition ; l'effet de bouclier brisé existant reste distinct. */
+.moba__shield-fx i { position: absolute; inset: 5%; border: 2px solid #f3d99f; border-radius: 45% 45% 50% 50%; box-shadow: inset 0 0 18px #ffdc8977, 0 0 12px #d6a85b; opacity: 0; animation: moba-shield-gain calc(1s * var(--rpg-anim-scale, 1)) ease-out both; }
+@keyframes moba-shield-gain { 0% { opacity: 0; transform: scale(.8); } 22%, 48% { opacity: .95; transform: scale(1); } 100% { opacity: 0; transform: scale(1.06); } }
+.rpg-battle--moba.is-reduced .moba__summon-fx, .rpg-battle--moba.is-reduced .moba__shield-fx { display: none; }
+.rpg-battle--moba.is-reduced .moba__lane-heal, .rpg-battle--moba.is-reduced .moba__creature-heal { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .moba__summon-fx, .moba__shield-fx { display: none; }
+  .moba__lane-heal, .moba__creature-heal { animation: none; opacity: 1; }
+}
+/* Le rendu illustré réutilise EclatSoin ; le chiffre reste visible quand le
+   réglage du jeu supprime toutes les animations de ses enfants. */
+.rpg-battle--moba.is-reduced .moba .rpg-soin__montant { opacity: 1; transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: reduce) {
+  .moba .rpg-soin__montant { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Conquête effective : une brève onde dorée, au-dessus de la voie mais sans
+   masquer durablement la case centrale ni intercepter les interactions. */
+.moba__conquest-fx { position: absolute; inset: 0; z-index: 8; overflow: hidden; pointer-events: none; }
+.moba__conquest-fx::before, .moba__conquest-fx::after, .moba__conquest-fx i { content: ''; position: absolute; pointer-events: none; }
+.moba__conquest-fx::before { inset: 0; opacity: 0; background: radial-gradient(ellipse at center, #f2ca7766, transparent 72%); box-shadow: inset 0 0 20px #edc67a88; animation: moba-conquest-wave calc(1.4s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__conquest-fx::after { left: 50%; top: 50%; width: min(65%, 110px); aspect-ratio: 1; border: 2px solid #f2d6a1; border-radius: 50%; box-shadow: 0 0 12px #d2a75a, inset 0 0 12px #d2a75a; opacity: 0; translate: -50% -50%; animation: moba-conquest-ring calc(1.2s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__conquest-fx i { left: 25%; bottom: 18%; width: 5px; height: 5px; border-radius: 50%; background: #ffe6aa; box-shadow: 0 0 9px #eec06c; opacity: 0; animation: moba-conquest-ember calc(1.2s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__conquest-fx i:nth-child(2) { left: 72%; bottom: 23%; animation-delay: calc(.12s * var(--rpg-anim-scale, 1)); }
+.moba__conquest-fx i:nth-child(3) { left: 48%; bottom: 10%; animation-delay: calc(.2s * var(--rpg-anim-scale, 1)); }
+@keyframes moba-conquest-wave { 0%, 100% { opacity: 0; } 25% { opacity: .9; } 60% { opacity: .45; } }
+@keyframes moba-conquest-ring { 0% { opacity: 0; transform: scale(.45); } 22% { opacity: .9; } 100% { opacity: 0; transform: scale(1.5); } }
+@keyframes moba-conquest-ember { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: .9; } 100% { opacity: 0; transform: translateY(-48px); } }
+.rpg-battle--moba.is-reduced .moba__conquest-fx { display: none; }
+@media (prefers-reduced-motion: reduce) { .moba__conquest-fx { display: none; } }
+/* La fenêtre de victoire reste immédiate et utilisable ; un liseré discret
+   rappelle simplement la conquête qui vient de terminer la partie. */
+.moba__end-conquest-fx { position: absolute; inset: 2px; pointer-events: none; opacity: 0; box-shadow: inset 0 0 28px #f0ce7c88; animation: moba-conquest-wave calc(1.4s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-battle--moba.is-reduced .moba__end-conquest-fx { display: none; }
+@media (prefers-reduced-motion: reduce) { .moba__end-conquest-fx { display: none; } }
+
+/* Le même tourbillon que le duel, posé dans la case d'origine : il ne couvre
+   aucune interaction et reste indépendant du déplacement des cartes. */
+.moba .moba__departure-zone { position: absolute; inset: 0 0 var(--moba-slot-padding, 18px); z-index: 11; pointer-events: none; }
+.moba .rpg-tourbillon-eau, .moba .rpg-tourbillon-eau * { animation-duration: calc(.95s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-tourbillon-eau__anneau--deux { animation-delay: calc(.16s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-tourbillon-eau__goutte { animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1)); }
+
+/* Retour d'exil temporaire : le souffle blanc se referme vers la carte qui
+   revient, distinct du cercle doré d'une invocation depuis la main. */
+.moba__summon-fx--retour-exil::before, .moba__summon-fx--retour-exil::after {
+  border-color: #f4fbff; box-shadow: 0 0 12px #d9f2ff, inset 0 0 12px #a7d6e6;
+  animation-name: moba-exil-return-ring;
+}
+.moba__summon-fx--retour-exil i { background: #f3fbff; box-shadow: 0 0 8px #cceefa; animation-name: moba-exil-return-spark; }
+@keyframes moba-exil-return-ring { 0% { opacity: 0; transform: scale(1.35) rotate(-45deg); } 30% { opacity: .9; } 100% { opacity: 0; transform: scale(.65) rotate(0deg); } }
+@keyframes moba-exil-return-spark { 0% { opacity: 0; transform: translateY(-45px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(0); } }

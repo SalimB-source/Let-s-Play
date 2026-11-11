@@ -271,7 +271,7 @@ export function rpgMobaPasserFinDeTour(duel, side) {
   const drawEvents = rpgConsommerPiochesRetourExilMoba(duel);
   // Une capacité de retour peut détruire des créatures d'autres voies.
   synchroniserSorties(duel);
-  return duel.tour !== avant || duel.moba.winner ? { ok: true, tour: duel.tour, ...(healingEvents.length ? { healingEvents } : {}), ...(damageEvents.length ? { damageEvents } : {}), ...(drawEvents.length ? { drawEvents } : {}) } : fail('timing');
+  return duel.tour !== avant || duel.moba.winner || duel.transitionRetours ? { ok: true, tour: duel.tour, ...(duel.arriveeEnAttente ? { arriveeEnAttente: true } : {}), ...(healingEvents.length ? { healingEvents } : {}), ...(damageEvents.length ? { damageEvents } : {}), ...(drawEvents.length ? { drawEvents } : {}) } : fail('timing');
 }
 
 export function rpgMobaDefausser(duel, side, index) {
@@ -616,7 +616,7 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
-  if (!MOBA_SIDES.includes(side) || (duel.tour !== side && !duel.mobaEmbuscadeArrivee)) return fail('pas-votre-tour');
+  if (!MOBA_SIDES.includes(side) || (duel.tour !== side && !duel.mobaEmbuscadeArrivee && !duel.arriveeEnAttente?.retour)) return fail('pas-votre-tour');
   const attente = duel.arriveeEnAttente;
   if (attente?.cote !== side || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || (!Number.isFinite(attente.abordage) && ![...MOBA_ARRIVEES_ALLIEES, ...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(attente.carteId))) return fail('aucune-attente');
   if (Number.isFinite(attente.abordage) && !rpgMobaCiblesPrise(duel, side).includes(cibleId)) return fail('cible');
@@ -659,6 +659,7 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
   const result = rpgResoudreArriveeCiblee(duel, side, cibleId, options);
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   damageEvents.push(...rpgConsommerDegatsCapaciteMoba(duel));
+  const drawEvents = rpgConsommerPiochesRetourExilMoba(duel);
   if (result.ok) {
     synchroniserSorties(duel); normaliserArriveeMoba(duel);
     if (duel.mobaEmbuscadeArrivee && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente) {
@@ -668,7 +669,7 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
       reprendreReponseSuspendue(duel);
     }
   }
-  return { ...result, damageEvents, healingEvents, ...(duel.arriveeEnAttente ? { arriveeEnAttente: true } : {}) };
+  return { ...result, damageEvents, healingEvents, ...(drawEvents.length ? { drawEvents } : {}), ...(duel.arriveeEnAttente ? { arriveeEnAttente: true } : {}) };
 }
 
 /** The defender passes on a paid creature effect; it resolves using the engine. */
@@ -1140,7 +1141,8 @@ export function rpgMobaResoudreDestruction(duel, side, cibleId) {
   synchroniserSorties(duel);
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
+  const drawEvents = rpgConsommerPiochesRetourExilMoba(duel);
   if (!duel.moba.winner) normaliserArriveeMoba(duel);
   const combatTermine = reconcilerCombatDeclare(duel);
-  return { ...result, healingEvents, damageEvents, combatTermine };
+  return { ...result, healingEvents, damageEvents, combatTermine, ...(drawEvents.length ? { drawEvents } : {}) };
 }

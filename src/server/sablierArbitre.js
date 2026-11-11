@@ -359,6 +359,21 @@ export function creerArbitre({
         gagnant_id: actif === 'joueur' ? duel.invite_id : duel.hote_id,
         fin_raison: 'temps',
       };
+    } else if (etat.arriveeEnAttente?.retour) {
+      // Le contrôleur absent avait un choix obligatoire. À l'expiration, on
+      // essaie les cibles publiques dans l'ordre, puis la cible sorcier. Chaque
+      // essai est revalidé atomiquement par l'arbitre, sans bloquer le tour.
+      const debut = etat.log.length;
+      const adversaire = rpgPvpAutreCote(actif);
+      const cibles = [...etat[adversaire].creatures, ...etat[actif].creatures].map((entite) => entite.id).concat('sorcier');
+      const resolu = cibles.some((cibleId) => rpgPvpAppliquer(etat, actif, { type: 'resoudre-arrivee', cibleId }).ok);
+      if (resolu) nommerNouvellesEntrees(etat, debut, actif, noms);
+      patch = {
+        etat,
+        seq: duel.seq + (resolu ? 1 : 0),
+        tour: etat.tour,
+        ...(await issue(duel, etat)),
+      };
     } else if (etat.effetCreatureEnAttente || etat.finDeTour) {
       // En réponse à un effet ciblé ou à une Embuscade de fin de tour, le
       // délai vaut « passer », jamais une seconde fermeture du tour actif.

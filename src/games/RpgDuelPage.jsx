@@ -1,3 +1,5 @@
+import { TourbillonEau } from './TourbillonEau.jsx';
+export { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaCartePourApercu } from './rpgMobaPresentation.js';
 import { SACRIFICE_ANIMATION, instantaneSansSacrificesAnimes } from './rpgSacrificeAnimation.js';
 import { sacrificesInvocation, invocationPossible } from './rpgInvocation.js';
@@ -1770,60 +1772,6 @@ const GRAINS_BALANCE = Object.freeze([
   { dx: 72, dy: -14, d: 610 },
 ]);
 
-const GOUTTES_TOURBILLON = Object.freeze([
-  { dx: -46, dy: -34, d: 0 },
-  { dx: 42, dy: -52, d: 90 },
-  { dx: -24, dy: -74, d: 170 },
-  { dx: 30, dy: -96, d: 250 },
-  { dx: 6, dy: -120, d: 330 },
-]);
-
-export function TourbillonEau({ effet, onTermine = null }) {
-  const estExil = effet.variante === 'exil';
-  return (
-    <div
-      className={`rpg-tourbillon-eau${estExil ? ' rpg-tourbillon-eau--exil' : ''}`}
-      data-rpg-bounce-id={effet.entityId}
-      data-rpg-bounce-fx={estExil ? 'exil' : 'eau'}
-      aria-hidden="true"
-      style={{
-        left: `${effet.left}px`,
-        top: `${effet.top}px`,
-        width: `${effet.width}px`,
-        height: `${effet.height}px`,
-        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
-      }}
-      // Comme l'adieu d'une carte détruite : on ignore les animations des
-      // enfants, qui se terminent avant le calque.
-      onAnimationEnd={(event) => {
-        if (event.target !== event.currentTarget || event.pseudoElement) return;
-        onTermine?.(effet.effectId);
-      }}
-    >
-      {/* La carte elle-même, encore à sa place : le tourbillon l'enveloppe,
-          la soulève et la dissout — vers la main ou hors de la partie. */}
-      {effet.cardId && (
-        <span
-          className={`rpg-tourbillon-eau__carte ${cardFrameClass(cardById(effet.cardId))} ${cardMotifClass(cardById(effet.cardId))}`}
-          style={cardFrameStyle(cardById(effet.cardId))}
-        >
-          <img src={cardArt(effet.cardId)} alt="" />
-        </span>
-      )}
-      <i className="rpg-tourbillon-eau__nappe" />
-      <i className="rpg-tourbillon-eau__spirale" />
-      <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--un" />
-      <i className="rpg-tourbillon-eau__anneau rpg-tourbillon-eau__anneau--deux" />
-      {GOUTTES_TOURBILLON.map((goutte) => (
-        <i
-          key={goutte.d}
-          className="rpg-tourbillon-eau__goutte"
-          style={{ '--dx': `${goutte.dx}px`, '--dy': `${goutte.dy}px`, '--d': `${goutte.d}ms` }}
-        />
-      ))}
-    </div>
-  );
-}
 
 /**
  * La tempête de sable d'un sort Sable (Tempête de sable, etc.).
@@ -10082,6 +10030,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     + (cardResonanceGroup(cardById(e.carteId)) === 'samourai' ? bonusBanniereAssaut : 0)), 0);
   const vieTotaleSorcier = Math.max(0, (duel.sorcier.pv ?? 0) + (duel.sorcier.bouclier ?? 0));
   const menaceLetaleActive = Boolean(monTour && phase && !combatEntrant && !duel.brouillardCombat && puissanceDirecte > 0 && puissanceDirecte >= vieTotaleSorcier);
+  // Un retour peut interrompre la transition de tour, y compris hors de notre
+  // tour : sa créature est déjà sur le plateau et attend une désignation.
+  useEffect(() => {
+    const attente = duel.arriveeEnAttente;
+    if (attente?.retour && attente.cote === 'joueur') setCibleEnCours(attente.carteId);
+  }, [duel, duel.arriveeEnAttente?.entiteId, duel.arriveeEnAttente?.cote]);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   // L'Abordage (set Lettres de Marque) : la créature (ou le porteur du
   // Grappin) vient d'accoster et attend sa prize — la table ne doit allumer
@@ -10408,7 +10362,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Boualem : l'effet contré attend la victime désignée par son contrôleur.
     const boualem = duel.boualemEnAttente?.cote === 'joueur';
     const effet = duel.effetCreatureEnAttente?.cote === 'sorcier';
-    if (!destruction && !site && !boualem && !effet) return false;
+    const arrivee = duel.arriveeEnAttente?.cote === 'joueur' && duel.arriveeEnAttente?.retour;
+    if (!destruction && !site && !boualem && !effet && !arrivee) return false;
     repriseSorcierRef.current = reprendre;
     force();
     return true;
@@ -12032,6 +11987,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const champAvantAction = prendreInstantaneChamp();
       const debutJournalDestructions = rpgNombreDestructions(duel);
       if (modePvp) rpgSyncCompteurEntites(duel);
+      const estRetour = Boolean(duel.arriveeEnAttente?.retour);
       const res = rpgResoudreArriveeCiblee(duel, 'joueur', entite.id);
       if (!res.ok) {
         jouerSfx('erreur');
@@ -12048,7 +12004,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // L'attente peut subsister pour l'autre effet (ex. Abordage après une
       // cible d'arrivée, ou l'inverse) : on garde la cible en cours pour le
       // prochain clic, sinon on la lève.
-      if (!duel.arriveeEnAttente) setCibleEnCours(null);
+      if (!duel.arriveeEnAttente) { setCibleEnCours(null); if (estRetour && !modePvp && !duel.transitionRetours && !duel.effetCreatureEnAttente) reprendreSorcier(); }
+      else if (duel.arriveeEnAttente.retour && duel.arriveeEnAttente.cote === 'joueur') setCibleEnCours(duel.arriveeEnAttente.carteId);
       if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
       // Le souffle appartient à l'effet qui vient de frapper : il part
       // maintenant, sur la cible désignée — jamais à la pose de la carte.
@@ -12505,6 +12462,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const champAvantAction = prendreInstantaneChamp();
       const debutJournalDestructions = rpgNombreDestructions(duel);
       if (modePvp) rpgSyncCompteurEntites(duel);
+      const estRetour = Boolean(duel.arriveeEnAttente?.retour);
       const res = rpgResoudreArriveeCiblee(duel, 'joueur', 'sorcier');
       if (!res.ok) {
         jouerSfx('erreur');
@@ -12512,7 +12470,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
       if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: 'sorcier' });
-      if (!duel.arriveeEnAttente) setCibleEnCours(null);
+      if (!duel.arriveeEnAttente) { setCibleEnCours(null); if (estRetour && !modePvp && !duel.transitionRetours && !duel.effetCreatureEnAttente) reprendreSorcier(); }
+      else if (duel.arriveeEnAttente.retour && duel.arriveeEnAttente.cote === 'joueur') setCibleEnCours(duel.arriveeEnAttente.carteId);
       // Le souffle de l'arrivée part sur le visage frappé, pas à la pose.
       jouerSfx(sonArriveeALaDesignation(carteCiblee));
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
@@ -12850,13 +12809,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         setApercuSurvol(null);
       }
       force();
-      later(() => {
+      const commencerSorcier = () => {
+        if (pauseSiAttenteJoueur(commencerSorcier)) return;
+        if (duel.tour !== 'sorcier' || rpgVainqueur(duel)) return;
         const champAvantIA = prendreInstantaneChamp();
         const debutJournalDestructions = rpgNombreDestructions(duel);
         rpgSorcierPrepareTerrain(duel);
         animerModificationsChamp(champAvantIA, [], debutJournalDestructions);
         annoncerSuivantSorcier();
-      }, Math.max(700, delaiReflexionSorcier()));
+      };
+      later(commencerSorcier, Math.max(700, delaiReflexionSorcier()));
     };
 
     if (!rpgPeutRepondre(duel, 'sorcier')) {
@@ -14423,7 +14385,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : combatEntrant.blocagesDeclares ? '⚔ Résoudre le combat' : '✓ Déclarer les bloqueurs'}
                   </button>
                 )}
-                {cibleEnCours && !attenteSiteBimini && (
+                {cibleEnCours && !attenteSiteBimini && !duel.arriveeEnAttente?.retour && (
                   <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => {
                     // « Annuler la cible » n'annule que la **désignation** : une
                     // créature déjà posée reste en jeu, son arrivée ciblée

@@ -411,13 +411,14 @@ function journaliserTribut(duel, cote, entiteId, montant) {
   tributsParDuel.set(duel, journal);
 }
 
-function journaliserExil(duel, cote, entite, sourceCarteId = null) {
+function journaliserExil(duel, cote, entite, sourceCarteId = null, conqueteMoba = false) {
   const journal = exilsParDuel.get(duel) ?? [];
   journal.push({
     entityId: entite.id,
     carteId: entite.carteId,
     cote,
     sourceCarteId: sourceCarteId ?? null,
+    ...(conqueteMoba ? { conqueteMoba: true } : {}),
   });
   exilsParDuel.set(duel, journal);
 }
@@ -1278,6 +1279,7 @@ export function rpgResoudreEffetCreatureEnAttente(duel, cote) {
   const cible = duel[autre(attente.cote)].creatures.find((entite) => entite.id === attente.cibleId);
   if (!carte || !cible) {
     duel.log.push(`La cible de ${carte?.name ?? 'la créature'} a disparu : l'effet se dissipe.`);
+    reprendreTransitionRetours(duel);
     return { ok: true, dissipe: true };
   }
   appliquer(duel, attente.cote, carte.arrivee.attaquanteSeulement
@@ -1286,6 +1288,7 @@ export function rpgResoudreEffetCreatureEnAttente(duel, cote) {
   journaliserArriveeAuSorcier(duel, carte, cible.id);
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
+  reprendreTransitionRetours(duel);
   return { ok: true, cible };
 }
 
@@ -5424,7 +5427,7 @@ function exilerEntite(duel, cote, entite, sourceCarteId = null, conqueteMoba = f
   detacherArmes(duel, cote, entite);
   armeAuCimetiere(duel, cote, entite);
   duel[cote].creatures = duel[cote].creatures.filter((candidate) => candidate.id !== entite.id);
-  journaliserExil(duel, cote, entite, sourceCarteId);
+  journaliserExil(duel, cote, entite, sourceCarteId, conqueteMoba);
   if (!entite.jeton) {
     duel[cote].exil ??= [];
     duel[cote].exil.push(entite.carteId);
@@ -5469,11 +5472,10 @@ function exilerPourFinDeTour(duel, cote, entite, sourceCarteId) {
     ...(voie ? { mobaLane: voie.id, mobaSlot: slot } : {}) });
 }
 
-function resoudreExilsFinTour(duel) {
-  const retours = duel.retoursExilFinTour ?? [];
-  duel.retoursExilFinTour = [];
-  for (const retour of retours) {
-    if (duel.moba?.winner) break;
+function resoudreExilsFinTour(duel, retours) {
+  while (retours.length) {
+    if (rpgVainqueur(duel)) break;
+    const retour = retours.shift();
     const camp = duel[retour.cote];
     const carte = duelCardById(retour.carteId);
     const index = (camp.exil ?? []).lastIndexOf(retour.carteId);
@@ -5504,7 +5506,7 @@ function resoudreExilsFinTour(duel) {
     journaliserArriveeCreature(duel, retour.cote, entite, 'retour-exil');
     duel.log.push(`${carte.name} revient en jeu à la fin du tour.`);
     const decksAvant = duel.moba ? ['joueur', 'sorcier'].map((side) => duel[side].deck.length) : null;
-    appliquerArriveeDeRetour(duel, retour.cote, carte, entite);
+    if (!preparerArriveeDeRetour(duel, retour.cote, carte, entite)) appliquerArriveeDeRetour(duel, retour.cote, carte, entite);
     if (decksAvant) for (const [i, side] of ['joueur', 'sorcier'].entries()) {
       const count = Math.max(0, decksAvant[i] - duel[side].deck.length);
       if (count) {
@@ -5513,6 +5515,8 @@ function resoudreExilsFinTour(duel) {
         piochesRetourExilMoba.set(duel, events);
       }
     }
+    rpgDissiperDestructionsSansCible(duel);
+    if (duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -6013,18 +6017,29 @@ export function effetArriveePourCible(carte, cibleId) {
   return arrivee;
 }
 
+// Pendant une transition, la créature est déjà placée : on réutilise la
+// désignation de pose et on conserve la suite de la transition séparément.
+function preparerArriveeDeRetour(duel, cote, carte, entite) {
+  if (!carte?.arrivee || (!duel.moba && !duel.pvp && cote !== 'joueur')) return false;
+  if (!arriveeCiblePortee(carte) || !arriveeACibleLegale(duel, cote, carte, entite.id)) return false;
+  duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId: carte.id, retour: true,
+    ...(carte.arrivee.attaquanteSeulement ? { attaquants: duel.combatDeclare?.attaquants ?? [] } : {}) };
+  duel.log.push(`${carte.name} revient : choisissez la cible de son effet d’arrivée.`);
+  return true;
+}
+
 /**
  * L'effet d'arrivée d'une créature qui **revient en jeu** sans être posée
  * depuis la main — renaissance de Tenacité, réanimation du Khopesh, retour
  * programmé de l'Anqa. C'est le même déclenchement que la pose : la cible est
- * désignée automatiquement (le joueur ne reprend pas la main au milieu d'un
- * changement de tour), et le Maître du marteau revenu de Tenacité frappe donc
- * de nouveau ses 3 dégâts — sur une créature, ou sur le sorcier adverse quand
- * il n'y a rien de mieux à toucher.
+ * désignée par le contrôleur lorsque la transition l'attend ; les retours
+ * immédiats et l'IA classique utilisent ici une cible automatique.
  */
 function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
   if (!carte?.arrivee) return false;
   let cible = rpgCibleAuto(duel, cote, carte, entite.id);
+  // Un retour sans cible légale ne doit pas viser une autre voie par défaut.
+  if (duel.moba && arriveeCiblePortee(carte) && !arriveeACibleLegale(duel, cote, carte, entite.id)) cible = null;
   // Les retours automatiques de ces Embuscades ne doivent jamais choisir une
   // cible hors voie, ni contourner la restriction aux attaquants.
   if (duel.moba && ['eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune'].includes(carte.id)) {
@@ -6127,11 +6142,15 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
   // Hors de là (validation d'une pose directe, choix de l'IA), elle reste
   // « reste-t-il une AUTRE cible ? », sans quoi le sorcier écarterait son
   // Guerrier dès qu'il est seul.
-  if (entiteId && carte?.arrivee?.cibleSoi) return true;
+  if (entiteId && carte?.arrivee?.cibleSoi) {
+    const source = duel[cote].creatures.find((entite) => entite.id === entiteId);
+    if (source && (carte.arrivee.type === 'exil-temporaire' || !rpgEstProtegee(source, cardColors(carte)))) return true;
+  }
   const sourceLane = duel.moba && duel[cote].creatures.find((e) => e.id === entiteId)?.mobaLane;
   return campsDePortee(cote, portee)
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
       && (!sourceLane || mobaPartageVoie(duel.moba, entite.mobaLane, sourceLane))
+      && (carte?.id !== 'gardienne-du-croissant' || !estSite(entite))
       && (!['renvoi-ou-destruction', 'exil-temporaire'].includes(carte.arrivee?.type) || !estSite(entite))
       && (carte.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carte)))
       && cibleRespecteCoutMax(carte, entite)
@@ -6677,6 +6696,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
     journaliserArriveeAuSorcier(duel, carte, 'sorcier');
     rafraichirAuras(duel);
     rpgActionsEtat(duel);
+    reprendreTransitionRetours(duel);
     return { ok: true, cible: null, sorcier: true };
   }
   const cible = campsDePortee(cote, portee)
@@ -6724,6 +6744,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
+  reprendreTransitionRetours(duel);
   return { ok: true, cible, effetEnAttente };
 }
 
@@ -6783,6 +6804,7 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId, null,
     { mobaLane: attente.mobaLane, projectileSource: { cote, id: attente.sourceEntiteId } });
   rpgActionsEtat(duel);
+  reprendreTransitionRetours(duel);
   return { ok: true, cible };
 }
 
@@ -6816,6 +6838,7 @@ export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
     duel.log.push(`${attente.sourceNom ?? 'La capacité'} inflige ${attente.montant} blessures à ${cible.entite.name}.`);
   }
   rpgActionsEtat(duel);
+  reprendreTransitionRetours(duel);
   return { ok: true, cible };
 }
 
@@ -6832,6 +6855,7 @@ export function rpgDissiperContresortBoualem(duel) {
   if (legales.length) return false;
   duel.boualemEnAttente = null;
   duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
+  reprendreTransitionRetours(duel);
   return true;
 }
 
@@ -9094,98 +9118,107 @@ function resoudreHeures(duel, ids = [...duel[duel.tour].creatures]) {
  * pas : le retour se dissipe sans doublon.
  *
  * Ce retour est une **arrivée en jeu** : `appliquerArriveeDeRetour` rejoue
- * l'effet d'arrivée de la carte, cible désignée par l'IA. C'est la règle de
+ * l'effet d'arrivée de la carte, avec choix si nécessaire. C'est la règle de
  * Tenacité voulue pour le Maître du marteau (ses 3 dégâts retentissent) comme
  * pour toutes les créatures tenaces.
  */
-function resoudreRetoursProgrammes(duel) {
-  for (const cote of ['joueur', 'sorcier']) {
+function resoudreRetoursProgrammes(duel, retours) {
+  while (retours.length) {
+    if (rpgVainqueur(duel)) return;
+    const { cote, retour } = retours.shift();
     const camp = duel[cote];
-    const retours = camp.retoursProgrammes ?? [];
-    camp.retoursProgrammes = [];
-    for (const retour of retours) {
-      // Les retours MOBA restent liés à la voie de leur présence d'origine.
-      const voie = duel.moba ? mobaVoie(duel.moba, retour.mobaLane) : null;
-      if (duel.moba && (!voie || !mobaVoieJouable(duel.moba, cote, voie.id))) {
-        duel.log.push(`${duelCardById(retour.carteId)?.name ?? 'La créature'} ne peut pas revenir : sa voie est fermée ou inconnue.`);
-        continue;
-      }
-      const toursRestants = Math.max(0, Math.floor(Number(retour.toursRestants) || 0) - 1);
-      if (toursRestants > 0) {
-        camp.retoursProgrammes.push({ ...retour, toursRestants });
-        continue;
-      }
+    // Les retours MOBA restent liés à la voie de leur présence d'origine.
+    const voie = duel.moba ? mobaVoie(duel.moba, retour.mobaLane) : null;
+    if (duel.moba && (!voie || !mobaVoieJouable(duel.moba, cote, voie.id))) {
+      duel.log.push(`${duelCardById(retour.carteId)?.name ?? 'La créature'} ne peut pas revenir : sa voie est fermée ou inconnue.`);
+      continue;
+    }
+    const toursRestants = Math.max(0, Math.floor(Number(retour.toursRestants) || 0) - 1);
+    if (toursRestants > 0) {
+      camp.retoursProgrammes.push({ ...retour, toursRestants });
+      continue;
+    }
 
-      const carte = duelCardById(retour.carteId);
-      const indexCimetiere = camp.cimetiere.lastIndexOf(retour.carteId);
-      if (!carte || indexCimetiere < 0) continue;
-      // Réconcilier les morts survenues pendant la transition avant de
-      // chercher une place dans la voie d'origine, jamais dans une autre.
-      if (voie) {
-        const vivantes = new Set(camp.creatures.map((entite) => entite.id));
-        for (const id of [...voie.slots[cote]]) {
-          if (id !== null && !vivantes.has(id)) mobaRetirer(duel.moba, cote, id);
-        }
-      }
-      const slotVoie = voie ? voie.slots[cote].indexOf(null) : null;
-      // Sans place dans cette voie, le retour attend ; le mode classique garde
-      // sa règle habituelle de champ plein.
-      if (!placesLibresChamp(duel, cote) || (voie && slotVoie < 0)) {
-        camp.retoursProgrammes.push({ ...retour, toursRestants: 1 });
-        duel.log.push(`Le champ est plein : ${carte.name} attend une place libre pour revenir.`);
-        continue;
-      }
-      camp.cimetiere.splice(indexCimetiere, 1);
-      const entite = creerEntiteCreature(carte);
-      if (retour.tenacite) {
-        // Renaissance de Tenacité : un point de défense, et plus aucune
-        // Tenacité — la carte a dépensé sa seule renaissance de la partie.
-        // Le plafond de vie reste la défense imprimée : un soin peut rendre à
-        // la créature sa vie (et donc sa défense), sans lui rendre Tenacité.
-        entite.tenaciteDisponible = false;
-        entite.pv = 1;
-        entite.def = 1;
-        // La renaissance est une **vraie arrivée en jeu** : l'effet d'arrivée
-        // de la carte se déclenche de nouveau (voir `appliquerArriveeDeRetour`
-        // juste après). Le Maître du marteau revenu de Tenacité refrappe donc.
-        duel.log.push(carte.arrivee
-          ? `Tenacité : ${carte.name} revient en jeu avec 1 point de défense, et son effet d’arrivée retentit.`
-          : `Tenacité : ${carte.name} revient en jeu avec 1 point de défense.`);
-      } else {
-        duel.log.push(`${carte.name} renaît et revient en jeu.`);
-      }
-      if (voie) entite.mobaLane = voie.id;
-      camp.creatures.push(entite);
-      const offsetVoie = voie ? { left: 0, center: 2, right: 3 }[voie.id] : null;
-      placerDansEmplacement(duel, cote, entite, voie ? offsetVoie + slotVoie : null);
-      if (voie) mobaPlacer(duel.moba, cote, voie.id, slotVoie, entite.id);
-      if (retour.tenacite) journaliserArriveeCreature(duel, cote, entite, 'tenacite');
-      // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
-      appliquerArriveeDeRetour(duel, cote, carte, entite);
-      // Une seconde conquête termine la partie immédiatement, avant les
-      // autres retours ou effets de début de tour.
-      if (duel.moba?.winner) return;
-      if (carte.retourDeclenche) {
-        const adversaire = autre(cote);
-        for (const cible of [...duel[adversaire].creatures]) {
-          if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
-            rpgBlesserCreature(duel, adversaire, cible.id, carte.retourDeclenche.degats ?? 1, cardColors(carte), null, 'capacite', carte.id);
-        }
-        for (const allie of duel[cote].creatures) {
-          if (allie.pv <= 0) continue;
-          const soin = Math.max(0, Number(carte.retourDeclenche.soin) || 0);
-          const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
-          const pvAvant = allie.pv;
-          allie.pv = Math.min(plafondSoinCreature(allie, plafond), allie.pv + soin);
-          allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
-          if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
-          synchroniserFurieEntite(duel, allie);
-        }
-        duel.log.push(`${carte.name} renaît : 1 dégât à chaque créature adverse et 1 soin à chaque créature alliée.`);
+    const carte = duelCardById(retour.carteId);
+    const indexCimetiere = camp.cimetiere.lastIndexOf(retour.carteId);
+    if (!carte || indexCimetiere < 0) continue;
+    // Réconcilier les morts survenues pendant la transition avant de
+    // chercher une place dans la voie d'origine, jamais dans une autre.
+    if (voie) {
+      const vivantes = new Set(camp.creatures.map((entite) => entite.id));
+      for (const id of [...voie.slots[cote]]) {
+        if (id !== null && !vivantes.has(id)) mobaRetirer(duel.moba, cote, id);
       }
     }
+    const slotVoie = voie ? voie.slots[cote].indexOf(null) : null;
+    // Sans place dans cette voie, le retour attend ; le mode classique garde
+    // sa règle habituelle de champ plein.
+    if (!placesLibresChamp(duel, cote) || (voie && slotVoie < 0)) {
+      camp.retoursProgrammes.push({ ...retour, toursRestants: 1 });
+      duel.log.push(`Le champ est plein : ${carte.name} attend une place libre pour revenir.`);
+      continue;
+    }
+    camp.cimetiere.splice(indexCimetiere, 1);
+    const entite = creerEntiteCreature(carte);
+    if (retour.tenacite) {
+      // Renaissance de Tenacité : un point de défense, et plus aucune
+      // Tenacité — la carte a dépensé sa seule renaissance de la partie.
+      // Le plafond de vie reste la défense imprimée : un soin peut rendre à
+      // la créature sa vie (et donc sa défense), sans lui rendre Tenacité.
+      entite.tenaciteDisponible = false;
+      entite.pv = 1;
+      entite.def = 1;
+      // La renaissance est une **vraie arrivée en jeu** : l'effet d'arrivée
+      // de la carte se déclenche de nouveau (voir `appliquerArriveeDeRetour`
+      // juste après). Le Maître du marteau revenu de Tenacité refrappe donc.
+      duel.log.push(carte.arrivee
+        ? `Tenacité : ${carte.name} revient en jeu avec 1 point de défense, et son effet d’arrivée retentit.`
+        : `Tenacité : ${carte.name} revient en jeu avec 1 point de défense.`);
+    } else {
+      duel.log.push(`${carte.name} renaît et revient en jeu.`);
+    }
+    if (voie) entite.mobaLane = voie.id;
+    camp.creatures.push(entite);
+    const offsetVoie = voie ? { left: 0, center: 2, right: 3 }[voie.id] : null;
+    placerDansEmplacement(duel, cote, entite, voie ? offsetVoie + slotVoie : null);
+    if (voie) mobaPlacer(duel.moba, cote, voie.id, slotVoie, entite.id);
+    if (retour.tenacite) journaliserArriveeCreature(duel, cote, entite, 'tenacite');
+    // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
+    const attente = preparerArriveeDeRetour(duel, cote, carte, entite);
+    if (!attente) appliquerArriveeDeRetour(duel, cote, carte, entite);
+    if (attente) {
+      duel.transitionRetours.declenche = carte.retourDeclenche ? { cote, carteId: carte.id } : null;
+      return;
+    }
+    // Une seconde conquête termine la partie immédiatement, avant les
+    // autres retours ou effets de début de tour.
+    if (rpgVainqueur(duel)) return;
+    appliquerDeclencheRetour(duel, cote, carte);
+    rpgDissiperDestructionsSansCible(duel);
+    if (duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
   }
   rafraichirAuras(duel);
+}
+
+function appliquerDeclencheRetour(duel, cote, carte) {
+  if (carte.retourDeclenche) {
+    const adversaire = autre(cote);
+    for (const cible of [...duel[adversaire].creatures]) {
+      if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
+        rpgBlesserCreature(duel, adversaire, cible.id, carte.retourDeclenche.degats ?? 1, cardColors(carte), null, 'capacite', carte.id);
+    }
+    for (const allie of duel[cote].creatures) {
+      if (allie.pv <= 0) continue;
+      const soin = Math.max(0, Number(carte.retourDeclenche.soin) || 0);
+      const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
+      const pvAvant = allie.pv;
+      allie.pv = Math.min(plafondSoinCreature(allie, plafond), allie.pv + soin);
+      allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
+      if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
+      synchroniserFurieEntite(duel, allie);
+    }
+    duel.log.push(`${carte.name} renaît : 1 dégât à chaque créature adverse et 1 soin à chaque créature alliée.`);
+  }
 }
 
 /** Note la phase en cours (l'interface la lit pour son rail de phases). */
@@ -9297,6 +9330,7 @@ function resoudrePoisons(duel, cote) {
  *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
  *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
 export function rpgFinDeTour(duel) {
+  if (duel.transitionRetours) return duel;
   // Une cible annoncée doit pouvoir recevoir sa réponse avant de changer de tour.
   if (duel.effetCreatureEnAttente) return duel;
   // Bimini attend que son contrôleur désigne la créature consacrée.
@@ -9385,8 +9419,43 @@ export function rpgFinDeTour(duel) {
     }
     if (duel.defausseEnAttente?.cote === duel.tour) duel.defausseEnAttente = null;
   }
-  resoudreExilsFinTour(duel);
-  if (duel.moba?.winner) return duel;
+  const file = duel.retoursExilFinTour ?? [];
+  duel.retoursExilFinTour = [];
+  duel.transitionRetours = { etape: 'exil', file };
+  reprendreTransitionRetours(duel);
+  return duel;
+}
+
+// L'état est sérialisable : sauvegardes et arbitre PvP reprennent la même
+// file sans redécompter les tours ni rejouer les étapes déjà exécutées.
+function reprendreTransitionRetours(duel) {
+  const transition = duel.transitionRetours;
+  if (!transition || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || duel.boualemEnAttente || duel.siteEnAttente) return;
+  rpgDissiperDestructionsSansCible(duel);
+  if (duel.destructionsEnAttente?.length) return;
+  if (rpgVainqueur(duel)) { duel.transitionRetours = null; return; }
+  if (transition.etape === 'exil') {
+    resoudreExilsFinTour(duel, transition.file);
+    if (duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (rpgVainqueur(duel)) { duel.transitionRetours = null; return; }
+    commencerNouveauTour(duel);
+  } else if (transition.etape === 'programmes') {
+    if (transition.declenche) {
+      const { cote, carteId } = transition.declenche;
+      transition.declenche = null;
+      appliquerDeclencheRetour(duel, cote, duelCardById(carteId));
+      rpgDissiperDestructionsSansCible(duel);
+      if (duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    }
+    resoudreRetoursProgrammes(duel, transition.file);
+    if (duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    duel.transitionRetours = null;
+    if (!rpgVainqueur(duel)) terminerTransitionRetours(duel);
+  }
+}
+
+function commencerNouveauTour(duel) {
   duel.tour = autre(duel.tour);
   if (duel.moba) {
     duel.moba.creaturesJouees = { joueur: false, sorcier: false };
@@ -9433,8 +9502,17 @@ export function rpgFinDeTour(duel) {
     entite.ready = true;
     entite.attaquee = false;
   }
-  resoudreRetoursProgrammes(duel);
-  if (duel.moba?.winner) return duel;
+  const file = [];
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const retour of duel[cote].retoursProgrammes ?? []) file.push({ cote, retour });
+    duel[cote].retoursProgrammes = [];
+  }
+  duel.transitionRetours = { etape: 'programmes', file, declenche: null };
+  reprendreTransitionRetours(duel);
+  return duel;
+}
+
+function terminerTransitionRetours(duel) {
   resoudrePoisons(duel, duel.tour); // deux débuts de tour de la victime
   if (duel.moba?.winner) return duel;
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
