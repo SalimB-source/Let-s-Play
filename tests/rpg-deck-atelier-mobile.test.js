@@ -30,6 +30,11 @@ test('la grille mobile utilise cinq colonnes seulement en paysage', () => {
     'le conteneur de la carte ne rétrécit pas sa face en flex');
   assert.match(reglePaysage, /\.rpg-battle \.rpg-atelier__cartes \.rpg-atelier__carte-art\s*\{[^}]*aspect-ratio: 4 \/ 5;/,
     'la face conserve son format portrait complet');
+  const cartePaysage = reglePaysage.match(/\.rpg-battle \.rpg-atelier__cartes \.rpg-atelier__carte\s*\{([^}]*)\}/)?.[1];
+  assert.match(cartePaysage, /padding: 0 12px 54px;/,
+    'les repères qui chevauchent les bords ont un espace dans chaque case');
+  assert.match(cartePaysage, /overflow: visible;/,
+    'le parent ne rogne pas les repères de coût, de couleur et d’effet');
   assert.match(reglePaysage, /\.rpg-atelier__carte-retrait \{ left: 5px; right: auto; \}/,
     'les commandes occupent le pied sans masquer l’illustration');
   assert.ok(css.indexOf('@media (max-width: 960px) and (orientation: landscape)')
