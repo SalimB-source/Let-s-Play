@@ -13,6 +13,8 @@
  *    + compteur `N / 30 cartes` + mini-courbe de mana intégrée en tête, pile
  *    verticale de barres horizontales triées par coût (`1x` · Nom · Coût) au
  *    centre, et bouton principal doré/orangé « Enregistrer » ancré en bas.
+ *  - Sur mobile, ces panneaux deviennent deux vues exclusives « Cartes » et
+ *    « Mon deck » avec leurs défilements préservés et une barre d'action fixe.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -194,12 +196,42 @@ export function RpgDeckAtelier({
   const [coutsActifs, setCoutsActifs] = useState(() => new Set());
   const [rareteFiltre, setRareteFiltre] = useState('toutes');
   const [seulementPossedees, setSeulementPossedees] = useState(false);
+  const [estMobile, setEstMobile] = useState(false);
+  const filtrePossedeesChoisi = useRef(false);
+  // L'atelier sur téléphone démarre dans les cartes réellement utilisables.
+  // Une préférence changée à la main (ou « Tout effacer ») reste prioritaire.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mobile = window.matchMedia('(max-width: 960px)');
+    const actualiser = () => {
+      setEstMobile(mobile.matches);
+      if (mobile.matches && !filtrePossedeesChoisi.current) setSeulementPossedees(true);
+    };
+    actualiser();
+    mobile.addEventListener?.('change', actualiser);
+    return () => mobile.removeEventListener?.('change', actualiser);
+  }, []);
+  const [vueMobile, setVueMobile] = useState('cartes');
+  const cartesRef = useRef(null);
+  const listeDeckRef = useRef(null);
+  const defilements = useRef({ cartes: 0, deck: 0 });
+  const changerVueMobile = (vue) => {
+    if (vue === vueMobile) return;
+    defilements.current[vueMobile] = (vueMobile === 'cartes' ? cartesRef : listeDeckRef).current?.scrollTop ?? 0;
+    surSfx('menu');
+    setVueMobile(vue);
+  };
+  useEffect(() => {
+    const ref = vueMobile === 'cartes' ? cartesRef : listeDeckRef;
+    if (ref.current) ref.current.scrollTop = defilements.current[vueMobile];
+  }, [vueMobile]);
   const [recherche, setRecherche] = useState('');
   const [tri, setTri] = useState('cout');
   const [filtresAvances, setFiltresAvances] = useState(false);
 
   // Mode d'affichage de la colonne du deck : pile MTGA par coût (défaut) ou par famille.
   const [modeListeDeck, setModeListeDeck] = useState('cout');
+  const [courbeMobileOuverte, setCourbeMobileOuverte] = useState(false);
 
   // Retours visuels & confirmations en deux temps.
   const [statut, setStatut] = useState('');
@@ -211,10 +243,32 @@ export function RpgDeckAtelier({
   const [nommageOuvert, setNommageOuvert] = useState(false);
   const [nomPropose, setNomPropose] = useState('');
   const champNommageRef = useRef(null);
+  const sauvegardeMobileRef = useRef(null);
+  const nommagePrecedent = useRef(false);
 
   useEffect(() => {
     if (nommageOuvert) champNommageRef.current?.focus();
-  }, [nommageOuvert]);
+    else if (nommagePrecedent.current && estMobile) sauvegardeMobileRef.current?.focus();
+    nommagePrecedent.current = nommageOuvert;
+  }, [nommageOuvert, estMobile]);
+
+  const clavierNommage = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setNommageOuvert(false);
+    }
+    if (event.key !== 'Tab' || !estMobile) return;
+    const boutons = [...event.currentTarget.querySelectorAll('input:not(:disabled), button:not(:disabled)')];
+    const premier = boutons[0];
+    const dernier = boutons.at(-1);
+    if (event.shiftKey && document.activeElement === premier) {
+      event.preventDefault();
+      dernier?.focus();
+    } else if (!event.shiftKey && document.activeElement === dernier) {
+      event.preventDefault();
+      premier?.focus();
+    }
+  };
 
   const collectionSet = useMemo(() => new Set(collection), [collection]);
   const compte = useMemo(() => compteExemplaires(cardIds), [cardIds]);
@@ -244,6 +298,7 @@ export function RpgDeckAtelier({
     setTypeFiltre('tous');
     setCoutsActifs(new Set());
     setRareteFiltre('toutes');
+    filtrePossedeesChoisi.current = true;
     setSeulementPossedees(false);
     setRecherche('');
     setTri('cout');
@@ -384,10 +439,17 @@ export function RpgDeckAtelier({
   );
 
   const demanderEnregistrement = () => {
+    // Sur mobile, le formulaire vit dans le panneau deck : le rendre visible
+    // même si l'enregistrement a été demandé depuis la collection.
+    if (estMobile) {
+      if (vueMobile === 'cartes') defilements.current.cartes = cartesRef.current?.scrollTop ?? 0;
+      setVueMobile('deck');
+    }
     surSfx('menu');
     const prerempli = nomTouche && nom.trim()
       ? nom.trim()
       : (deckInitial?.nom?.trim() || suggestions[0] || libelleDefaut);
+    setStatut('');
     setNomPropose(prerempli);
     setNommageOuvert(true);
   };
@@ -489,10 +551,18 @@ export function RpgDeckAtelier({
   };
 
   return (
-    <section className="rpg-atelier" aria-label="Atelier de création de deck">
+    <section className="rpg-atelier" aria-label="Atelier de création de deck" data-mobile-view={vueMobile}>
+      <nav className="rpg-atelier__mobile-tabs" aria-label="Vues de l’atelier">
+        <button type="button" className={vueMobile === 'cartes' ? 'is-active' : ''}
+          aria-pressed={vueMobile === 'cartes'} aria-controls="rpg-atelier-biblio"
+          onClick={() => changerVueMobile('cartes')}>Cartes</button>
+        <button type="button" className={vueMobile === 'deck' ? 'is-active' : ''}
+          aria-pressed={vueMobile === 'deck'} aria-controls="rpg-atelier-deck"
+          onClick={() => changerVueMobile('deck')}>Mon deck <b>{cardIds.length}/{RPG_DECK_TAILLE}</b></button>
+      </nav>
       <div className="rpg-atelier__panneaux">
         {/* ═══ COLONNE GAUCHE : BARRE DE FILTRES MTGA + COLLECTION LISIBLE ═══ */}
-        <div className="rpg-atelier__biblio" aria-label="Bibliothèque des cartes">
+        <div id="rpg-atelier-biblio" className="rpg-atelier__biblio" aria-label="Bibliothèque des cartes">
           <div className="rpg-atelier__toolbar rpg-atelier__toolbar--simple" role="region" aria-label="Filtres de la collection">
             <button
               type="button"
@@ -548,7 +618,7 @@ export function RpgDeckAtelier({
                 type="button"
                 className={`rpg-atelier__toggle${seulementPossedees ? ' is-on' : ''}`}
                 aria-pressed={seulementPossedees}
-                onClick={() => { surSfx('menu'); setSeulementPossedees((v) => !v); }}
+                onClick={() => { surSfx('menu'); filtrePossedeesChoisi.current = true; setSeulementPossedees((v) => !v); }}
               >
                 Possédées
               </button>
@@ -647,7 +717,8 @@ export function RpgDeckAtelier({
             Touchez une carte pour la lire · utilisez « + » pour l’ajouter et « − » pour la retirer.
           </p>
 
-          <ul className="rpg-atelier__cartes" aria-label="Cartes du catalogue">
+          <ul className="rpg-atelier__cartes" aria-label="Cartes du catalogue" ref={cartesRef}
+            onScroll={(event) => { defilements.current.cartes = event.currentTarget.scrollTop; }}>
             {cartesFiltrees.map((carte) => {
               const possedee = collectionSet.has(carte.id);
               const dansLeDeck = compte.get(carte.id) ?? 0;
@@ -731,7 +802,7 @@ export function RpgDeckAtelier({
         </div>
 
         {/* ═══ COLONNE DROITE : BOÎTIER + PILE DE CARTES MTGA + CTA BAS ═══ */}
-        <aside className="rpg-atelier__deck" aria-label="Composition du deck">
+        <aside id="rpg-atelier-deck" className="rpg-atelier__deck" aria-label="Composition du deck">
           <div className="rpg-atelier__state">
             <div className="rpg-atelier__boite-entete">
               <div
@@ -777,7 +848,13 @@ export function RpgDeckAtelier({
                 </div>
               </div>
 
-              <figure className="rpg-atelier__courbe" aria-label={`Courbe de mana — ${resumeCourbe}`} title={`Courbe de mana : ${resumeCourbe}`}>
+              <button type="button" className="rpg-atelier__mobile-courbe"
+                aria-expanded={courbeMobileOuverte} aria-controls="rpg-atelier-courbe"
+                onClick={() => setCourbeMobileOuverte((ouverte) => !ouverte)}>
+                Courbe de mana {courbeMobileOuverte ? '−' : '+'}
+              </button>
+              <figure id="rpg-atelier-courbe" className={`rpg-atelier__courbe${courbeMobileOuverte ? ' is-mobile-open' : ''}`}
+                aria-label={`Courbe de mana — ${resumeCourbe}`} title={`Courbe de mana : ${resumeCourbe}`}>
                 <figcaption className="sr-only">Courbe de mana</figcaption>
                 <div className="rpg-atelier__barres" aria-hidden="true">
                   {courbe.paliers.map(({ cout, label, nombre }) => {
@@ -863,11 +940,12 @@ export function RpgDeckAtelier({
             </div>
           </div>
 
-          {statut && (
+          {statut && !nommageOuvert && (
             <p className="rpg-atelier__statut" role="status" aria-live="polite">{statut}</p>
           )}
 
-          <div className="rpg-atelier__liste">
+          <div className="rpg-atelier__liste" ref={listeDeckRef}
+            onScroll={(event) => { defilements.current.deck = event.currentTarget.scrollTop; }}>
             {cardIds.length === 0 ? (
               <div className="rpg-atelier__vide rpg-atelier__vide--deck">
                 <strong>Votre deck est vide</strong>
@@ -894,60 +972,66 @@ export function RpgDeckAtelier({
 
           <footer className="rpg-atelier__actions">
             {nommageOuvert ? (
-              <div className="rpg-atelier__nommage" role="region" aria-label="Nommer le deck">
-                <h3>Comment s’appelle ce deck ?</h3>
-                <p className="rpg-atelier__nommage-aide">
-                  Choisissez une proposition inspirée de vos cartes, ou écrivez votre propre titre.
-                </p>
-                <label className="rpg-atelier__champ rpg-atelier__champ--nom">
-                  <span className="sr-only">Nom du deck</span>
-                  <input
-                    ref={champNommageRef}
-                    type="text"
-                    value={nomPropose}
-                    maxLength={RPG_DECK_NOM_MAX}
-                    placeholder={suggestions[0] ?? libelleDefaut}
-                    onChange={(event) => setNomPropose(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        confirmerEnregistrement();
-                      }
-                    }}
-                  />
-                </label>
-                {suggestions.length > 0 && (
-                  <ul className="rpg-atelier__nommage-suggestions" aria-label="Suggestions de noms">
-                    {suggestions.map((idee) => (
-                      <li key={idee}>
-                        <button
-                          type="button"
-                          className={nomPropose === idee ? 'is-on' : ''}
-                          onClick={() => { surSfx('menu'); setNomPropose(idee); }}
-                        >
-                          {idee}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="rpg-atelier__nommage-actions">
-                  <button
-                    type="button"
-                    className="rpg-menu-button rpg-menu-button--primary rpg-atelier__btn-done"
-                    onClick={confirmerEnregistrement}
-                  >
-                    Enregistrer
-                  </button>
-                  <button
-                    type="button"
-                    className="rpg-menu-button"
-                    onClick={() => { surSfx('annuler'); setNommageOuvert(false); }}
-                  >
-                    Retour
-                  </button>
+              <>
+                <div className="rpg-atelier__nommage-backdrop" aria-hidden="true" />
+                <div className="rpg-atelier__nommage" role={estMobile ? 'dialog' : 'region'}
+                  aria-modal={estMobile || undefined} aria-label="Nommer le deck"
+                  onKeyDown={clavierNommage}>
+                  <h3>Comment s’appelle ce deck ?</h3>
+                  <p className="rpg-atelier__nommage-aide">
+                    Choisissez une proposition inspirée de vos cartes, ou écrivez votre propre titre.
+                  </p>
+                  {statut && <p className="rpg-atelier__statut" role="alert">{statut}</p>}
+                  <label className="rpg-atelier__champ rpg-atelier__champ--nom">
+                    <span className="sr-only">Nom du deck</span>
+                    <input
+                      ref={champNommageRef}
+                      type="text"
+                      value={nomPropose}
+                      maxLength={RPG_DECK_NOM_MAX}
+                      placeholder={suggestions[0] ?? libelleDefaut}
+                      onChange={(event) => setNomPropose(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          confirmerEnregistrement();
+                        }
+                      }}
+                    />
+                  </label>
+                  {suggestions.length > 0 && (
+                    <ul className="rpg-atelier__nommage-suggestions" aria-label="Suggestions de noms">
+                      {suggestions.map((idee) => (
+                        <li key={idee}>
+                          <button
+                            type="button"
+                            className={nomPropose === idee ? 'is-on' : ''}
+                            onClick={() => { surSfx('menu'); setNomPropose(idee); }}
+                          >
+                            {idee}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="rpg-atelier__nommage-actions">
+                    <button
+                      type="button"
+                      className="rpg-menu-button rpg-menu-button--primary rpg-atelier__btn-done"
+                      onClick={confirmerEnregistrement}
+                    >
+                      Enregistrer
+                    </button>
+                    <button
+                      type="button"
+                      className="rpg-menu-button"
+                      onClick={() => { surSfx('annuler'); setNommageOuvert(false); }}
+                    >
+                      Retour
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
               <>
                 <button
@@ -978,6 +1062,18 @@ export function RpgDeckAtelier({
           </footer>
         </aside>
       </div>
+      {!nommageOuvert && (
+        <div className="rpg-atelier__mobile-barre" aria-label="Actions du deck">
+          <button type="button" className="rpg-atelier__mobile-compteur"
+            onClick={() => changerVueMobile('deck')} aria-label={`Voir mon deck : ${cardIds.length} sur ${RPG_DECK_TAILLE} cartes`}>
+            <span>Mon deck</span><b>{cardIds.length}/{RPG_DECK_TAILLE}</b>
+          </button>
+          <button type="button" className="rpg-atelier__mobile-sauver" ref={sauvegardeMobileRef}
+            onClick={demanderEnregistrement}>
+            Enregistrer
+          </button>
+        </div>
+      )}
     </section>
   );
 }

@@ -132,11 +132,27 @@ test('Tojiro exempté n’active pas les effets de mort et reprend l’annonce s
  const result=rpgMobaPasserCreature(d,'sorcier');assert.ok(result.entite,JSON.stringify(result));assert.equal(d.moba.winner,null);assert.ok(d.mobaCreatureEnAttente);assert.ok(d.joueur.creatures.includes(victime));
  assert.ok(rpgMobaPasserCreature(d,'joueur').entite);
 });
-for(const side of ['joueur','sorcier']) test(`une capacité ciblée ne s’esquive pas et Tojiro riposte à sa source (${side})`,()=>{
+for(const side of ['joueur','sorcier']) for(const [jet, esquive] of [[0, true], [0.9, false]]) test(`un souffle de créature ${esquive ? 'esquivé' : 'encaissé'} réveille la riposte sur la même voie MOBA (${side})`,()=>{
+ const {d,actif,tojiro}=tojiroEnJeu(side);
+ d[actif].main=['ashigaru-des-braises'];d[actif].mana.braise=20;
+ const sacrifice=rpgMobaJouerCreature(d,actif,'ashigaru-des-braises','left',0).entite;assert.ok(sacrifice);
+ d[actif].main=['geant-des-banquises'];d[actif].mana.neige=20;
+ rpgReglerHasard(d,()=>jet);
+ const resultat=rpgMobaJouerCreature(d,actif,'geant-des-banquises','left',0,{sacrificeIds:[sacrifice.id]});
+ assert.ok(resultat.ok,JSON.stringify(resultat));
+ assert.equal(tojiro.pv,esquive ? 5 : 4);
+ if(esquive) assert.equal(tojiro.gelToursRestants ?? 0,0);
+ else assert.ok(tojiro.gelToursRestants > 0);
+ assert.equal(d.log.some(ligne=>ligne.includes('esquive la capacité')),esquive);
+ assert.ok(d.log.some(ligne=>ligne.includes('Contre-attaque')));
+ assert.ok(!d[actif].creatures.some(e=>e.carteId==='geant-des-banquises'), 'la source encaisse la riposte, même après Esquive');
+});
+for(const side of ['joueur','sorcier']) for (const [jet, esquive] of [[0, true], [0.9, false]]) test(`une capacité ciblée ${esquive ? 'esquivée' : 'encaissée'} réveille la riposte de Tojiro (${side})`,()=>{
  const {d,actif,tojiro,autre}=tojiroEnJeu(side);d[actif].main=['eclipse-silencieuse'];Object.assign(d[actif].mana,{sable:20,tenebres:20});
- const source=rpgMobaJouerCreature(d,actif,'eclipse-silencieuse','left',0).entite;assert.ok(source);rpgReglerHasard(d,()=>0);
+ const source=rpgMobaJouerCreature(d,actif,'eclipse-silencieuse','left',0).entite;assert.ok(source);rpgReglerHasard(d,()=>jet);
  const result=rpgMobaResoudreArrivee(d,actif,tojiro.id);assert.ok(result.ok,JSON.stringify(result));
- assert.equal(tojiro.atk,3);assert.ok(!d[actif].creatures.includes(source));assert.equal(autre.pv,4);
+ assert.equal(tojiro.atk,esquive ? 5 : 3);assert.ok(!d[actif].creatures.includes(source));assert.equal(autre.pv,4);
+ assert.equal(d.log.some(ligne=>ligne.includes('esquive la capacité')),esquive);
 });
 for(const actif of ['joueur','sorcier']) test(`champ plein : la capacité ciblée se résout sans réponse Tojiro impossible (${actif})`,()=>{
  const {d,defenseur,victime}=partie(actif,true);d[actif].main=['eclipse-silencieuse'];Object.assign(d[actif].mana,{sable:20,tenebres:20});
