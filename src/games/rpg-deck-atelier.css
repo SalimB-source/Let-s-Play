@@ -2005,8 +2005,7 @@
 }
 
 /* Le jeu mobile se joue en paysage : cinq cartes par rangée dans la vue
-   « Cartes ». Les commandes restent à 44 px, empilées dans le coin droit
-   pour ne pas se chevaucher sur les écrans à navigation latérale. */
+   « Cartes ». Les commandes restent sous les illustrations, côte à côte. */
 @media (max-width: 960px) and (orientation: landscape) {
   .rpg-atelier__cartes {
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2022,10 +2021,12 @@
     display: block;
     width: 100%;
     height: auto;
-    padding-bottom: 54px;
+    /* Le coût et les pierres d'effet débordent d'environ 36 % de leur taille.
+       Une marge intérieure les garde dans chaque case, sans perdre de colonne. */
+    padding: 0 12px 54px;
     border-radius: 8px;
     background: #17151e;
-    overflow: hidden;
+    overflow: visible;
   }
   .rpg-battle .rpg-atelier__cartes .rpg-atelier__carte-art {
     display: block;
