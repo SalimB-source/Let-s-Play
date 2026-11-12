@@ -47,6 +47,7 @@ test('les repères des cartes posées en MOBA sont équilibrés sans changer la 
         'calc(var(--rpg-plaque-taille)*1.12)');
     }
     assert.equal(effets.getPropertyValue('--rpg-plaque-taille'), 'clamp(21px,26cqw,36px)');
+    assert.equal(effets.gap, 'clamp(3px, 1.5cqw, 5px)', 'les icônes d’une même créature restent distinctes');
     for (const largeur of [48, 95, 132]) {
       const clamp = (min, ratio, max) => Math.min(max, Math.max(min, largeur * ratio));
       assert.ok(clamp(21, .26, 36) >= clamp(18, .22, 30) * 1.12,
