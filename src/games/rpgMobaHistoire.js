@@ -1,0 +1,23 @@
+import { MOBA_PLATEAUX } from './rpgMobaPlateaux.js';
+import { MOBA_DECKS_TOURS } from './rpgMobaDecks.js';
+
+// Three independent MOBA duels: a fresh deck, hand, lanes and life each time.
+// The opponent's portrait is always a real card illustration, never an AI
+// rendering of a character. Interlude backgrounds are only scenery.
+const etapes = [
+  { plateau: 'trois-voies', deckId: 'tour-listes-1', titre: 'Le seuil des trois voies' },
+  { plateau: 'lac-gele-viking', deckId: 'tour-fjord-3', titre: 'Le serment du lac gelé', portrait: 'valkyrie-des-glaces',
+    decor: 'sablier-moba/interlude-lac-gele.webp', texte: 'Sur le lac figé, la Valkyrie des glaces garde le passage. Ses ailes se dessinent dans la brume : le prochain duel sera le sien.' },
+  { plateau: 'temple-du-nil-egyptien', deckId: 'tour-sablier-5', titre: 'Le passage du Styx', portrait: 'passeur-au-masque-de-chacal',
+    decor: 'sablier-moba/interlude-styx.webp', texte: 'Devant la rivière du Styx, le Passeur au masque de chacal vous attend. Au-delà des eaux noires s’élève le Temple du Nil.' },
+];
+
+export const MOBA_HISTOIRE = Object.freeze(etapes.map((etape) => Object.freeze({
+  ...etape,
+  plateau: MOBA_PLATEAUX.find(({ id }) => id === etape.plateau),
+  deck: MOBA_DECKS_TOURS.find(({ id }) => id === etape.deckId),
+})));
+
+export function prochainChapitreMoba(index, vainqueur) {
+  return vainqueur === 'joueur' ? MOBA_HISTOIRE[index + 1] ?? null : null;
+}

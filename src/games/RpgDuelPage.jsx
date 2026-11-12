@@ -7187,7 +7187,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     const musiqueTheme = musiqueThemeRef.current;
     if (!musiqueTheme) return;
-    if (ecran !== 'partie' && sonActif) void musiqueTheme.start();
+    if (ecran !== 'partie' && ecran !== 'moba' && sonActif) void musiqueTheme.start();
     else musiqueTheme.stop();
   }, [ecran, sonActif]);
   // Un seul bruit de feu par geste : un sort ou un effet de Braise qui blesse
@@ -8687,7 +8687,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const musiqueTheme = musiqueThemeRef.current;
       if (musiqueTheme) {
         if (document.hidden) musiqueTheme.pause();
-        else if (ecran !== 'partie' && sonActif) musiqueTheme.resume();
+        else if (ecran !== 'partie' && ecran !== 'moba' && sonActif) musiqueTheme.resume();
       }
       const musiquePlateau = musiquePlateauRef.current;
       if (musiquePlateau) {
@@ -8703,7 +8703,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (prochain) {
       if (ecran === 'partie') {
         void musiquePlateauRef.current?.start();
-      } else {
+      } else if (ecran !== 'moba') {
         void musiqueThemeRef.current?.start();
       }
     }
