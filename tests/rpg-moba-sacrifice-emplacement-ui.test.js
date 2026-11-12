@@ -5,7 +5,7 @@ import { createServer } from 'vite';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
-for (const mode of ['clic', 'glisser']) test(`deux victimes : seule une case sacrifiée accepte l'invocation par ${mode}`, async () => {
+for (const mode of ['clic', 'glisser']) test(`deux victimes : la dernière choisie devient la case d'arrivée par ${mode}`, async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -33,12 +33,9 @@ for (const mode of ['clic', 'glisser']) test(`deux victimes : seule une case sac
     await act(async () => root.render(React.createElement(Board, props)));
     const carte = () => [...document.querySelectorAll('.moba__card')].find((node) => node.textContent.includes('Orochi'));
     const slot = (lane, position) => document.querySelector(`[data-moba-lane="${lane}"][data-moba-side="joueur"][data-moba-slot="${position}"]`);
-    await click(carte()); await click(slot('left', 0).querySelector('button')); await click(slot('right', 1).querySelector('button'));
-    assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /2\/2/);
-    assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /case d’une victime/);
+    await click(carte()); await click(slot('left', 0).querySelector('button'));
+    assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /1\/2/);
     assert.equal(slot('center', 0).querySelector('button').disabled, true, 'une case libre ne peut être choisie');
-    assert.equal(slot('left', 0).querySelector('button').disabled, false);
-    assert.equal(slot('right', 1).querySelector('button').disabled, false);
     if (mode === 'clic') await click(slot('right', 1).querySelector('button'));
     else {
       const drag = (element, type) => { const event = new dom.window.Event(type, { bubbles: true, cancelable: true }); Object.defineProperty(event, 'dataTransfer', { value: { setData() {}, effectAllowed: '', dropEffect: '' } }); return act(async () => element.dispatchEvent(event)); };
@@ -46,6 +43,7 @@ for (const mode of ['clic', 'glisser']) test(`deux victimes : seule une case sac
       await drag(slot('center', 0), 'drop'); assert.ok(!duel.mobaCreatureEnAttente, 'pas de dépôt sur une case vide');
       await drag(carte(), 'dragstart'); await drag(slot('right', 1), 'drop');
     }
+    assert.equal(document.querySelector('.moba__sacrifice-hint'), null, 'aucun troisième geste nécessaire');
     assert.deepEqual(duel.mobaCreatureEnAttente?.sacrificeIds, [a.id, b.id]);
     assert.equal(duel.mobaCreatureEnAttente?.laneId, 'right'); assert.equal(duel.mobaCreatureEnAttente?.slot, 1);
   } finally {
