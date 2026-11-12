@@ -1534,3 +1534,32 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba__card-flight-face { display: none; }
   .moba__card-flight-label { top: 0; }
 }
+
+/* La carte reçue reste repérable dans la main, sans voler le focus ni empêcher
+   le clic. La page courante ne change pas pendant un choix de cible. */
+.moba .moba__hand-cards .is-new-card { position: relative; z-index: 2; }
+.moba .moba__hand-cards .is-new-card::after {
+  content: ''; position: absolute; inset: -2px; z-index: 8;
+  border: 2px solid #f7d89b; border-radius: 6px;
+  box-shadow: 0 0 18px #eeca78bb, inset 0 0 12px #eeca7866;
+  pointer-events: none;
+  animation: moba-card-received calc(1.3s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.moba .moba__hand-cards [data-moba-received="recherche"]::after { border-color: #b6eced; box-shadow: 0 0 18px #93dce4bb; }
+.moba__hand-receipt {
+  position: absolute; top: 0; left: 50%; z-index: 9;
+  transform: translate(-50%, -85%); padding: 2px 5px;
+  border: 1px solid #e8c58a; border-radius: 4px;
+  background: #24180df2; color: #fff4dc; white-space: nowrap;
+  font: 700 9px/1.2 system-ui, sans-serif; letter-spacing: .06em;
+  pointer-events: none;
+}
+.moba__card.is-new-card .moba__hand-receipt { top: 3px; transform: translateX(-50%); }
+.moba__hand-new-page { color: #ffdc9e; white-space: nowrap; font: 700 9px system-ui, sans-serif; }
+@keyframes moba-card-received { 0% { opacity: 0; scale: .93; } 25%, 55% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.04; } }
+/* Un repère immobile et contrasté demeure accessible avec le mouvement réduit. */
+.rpg-battle--moba.is-reduced .moba .moba__hand-cards .is-new-card::after { opacity: 1; scale: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .moba .moba__hand-cards .is-new-card::after { opacity: 1; scale: 1; }
+}
+.moba__card-flight--recherche .moba__card-flight-face { border-color: #b6eced; box-shadow: 0 3px 15px #000d, 0 0 16px #93dce4bb; }

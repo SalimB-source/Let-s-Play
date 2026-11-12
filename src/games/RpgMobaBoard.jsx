@@ -312,11 +312,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const paquet = piles?.querySelector('.rpg-card-pile--deck .rpg-card-pile__stack, .rpg-card-pile--deck, .moba__pile-fallback:first-child');
       const cimetiere = piles?.querySelector('.rpg-card-pile--graveyard .rpg-card-pile__stack, .rpg-card-pile--graveyard, .moba__pile-fallback:last-child');
       const main = plateau.querySelector(event.cote === 'joueur' ? '.moba__hand-cards' : '.rpg-hidden-hand__cards, .moba__hidden-hand > div');
-      const source = event.type === 'pioche' ? paquet : main;
-      const cible = event.type === 'pioche' ? main : cimetiere;
+      const source = event.type === 'defausse' ? main : paquet;
+      const cible = event.type === 'defausse' ? cimetiere : main;
       const trajet = rpgMobaTrajetCarte(source?.getBoundingClientRect(), cible?.getBoundingClientRect());
       if (!trajet) return;
-      nouveaux[++sequenceCartes.current] = { ...event, ...trajet, delai: Math.min(index, 5) * 110 };
+      nouveaux[++sequenceCartes.current] = {
+        ...event, ...trajet, delai: Math.min(index, 5) * 110,
+        indexMain: event.cote === 'joueur' && event.type !== 'defausse' ? duel.joueur.main.lastIndexOf(event.carteId) : -1,
+      };
     });
     ajouterMouvementsCartes(nouveaux);
   });
@@ -560,6 +563,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const nombrePagesMain = Math.max(1, Math.ceil(campMainVisible.main.length / TAILLE_PAGE_MAIN));
   const pageMainVisible = Math.min(pageMain, nombrePagesMain - 1);
   const debutPageMain = pageMainVisible * TAILLE_PAGE_MAIN;
+  const receptionsMain = Object.values(mouvementsCartes).filter((mouvement) => mouvement.indexMain >= 0
+    && campMainVisible.main[mouvement.indexMain] === mouvement.carteId);
+  const receptionHorsPage = receptionsMain.find((mouvement) => Math.floor(mouvement.indexMain / TAILLE_PAGE_MAIN) !== pageMainVisible);
   const lignesJournal = duel.log.slice(-12).reverse();
   const echangesJournal = (duel.combatFeed ?? []).slice(-12).reverse();
   const contenuJournal = vueJournal === 'combat' && rendu?.CombatFeedEvent ? echangesJournal : lignesJournal;
@@ -1401,10 +1407,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {['sorcier', 'joueur'].map((side) => <div className={`moba__piles moba__piles--${side}`} role="group" aria-label={side === 'joueur' ? 'Vos zones de cartes' : 'Zones de l’IA'} key={side}>
       {rendu?.CardPile ? <><rendu.CardPile count={duel[side].deck.length} label="Paquet" variant="deck" /><rendu.CardPile count={duel[side].cimetiere.length} label="Cimetière" variant="graveyard" topCard={duel[side].cimetiere.at(-1)} onClick={(event) => ouvrirCimetiere(side, event)} /></> : <><span className="moba__pile-fallback">Paquet · {duel[side].deck.length}</span><button type="button" className="moba__pile-fallback" disabled={!duel[side].cimetiere.length} onClick={(event) => ouvrirCimetiere(side, event)}>Cimetière · {duel[side].cimetiere.length}</button></>}
     </div>)}
-    <p className="moba__sr-only" role="status" aria-live="polite">{Object.values(mouvementsCartes).map((mouvement) => `${mouvement.cote === 'joueur' ? 'Vous' : 'Le sorcier'} ${mouvement.type === 'pioche' ? (mouvement.cote === 'joueur' ? 'piochez' : 'pioche') : (mouvement.cote === 'joueur' ? 'défaussez' : 'défausse')} ${mouvement.nombre} carte${mouvement.nombre > 1 ? 's' : ''}.`).join(' ')}</p>
+    <p className="moba__sr-only" role="status" aria-live="polite">{Object.values(mouvementsCartes).map((mouvement) => `${mouvement.cote === 'joueur' ? 'Vous' : 'Le sorcier'} ${mouvement.type === 'recherche' ? (mouvement.cote === 'joueur' ? 'ajoutez' : 'ajoute') : mouvement.type === 'pioche' ? (mouvement.cote === 'joueur' ? 'piochez' : 'pioche') : (mouvement.cote === 'joueur' ? 'défaussez' : 'défausse')} ${mouvement.nombre} carte${mouvement.nombre > 1 ? 's' : ''}${mouvement.type === 'recherche' ? ' du paquet à la main' : ''}.`).join(' ')}</p>
     {Object.entries(mouvementsCartes).map(([id, mouvement]) => <span key={id} className={`moba__card-flight moba__card-flight--${mouvement.type}`} data-moba-card-move={`${mouvement.cote}-${mouvement.type}`} aria-hidden="true" style={{ left: mouvement.x, top: mouvement.y, '--flight-dx': `${mouvement.dx}px`, '--flight-dy': `${mouvement.dy}px`, '--flight-delay': `${mouvement.delai}ms` }}>
-      <span className="moba__card-flight-face" style={mouvement.cote === 'joueur' && mouvement.type === 'defausse' ? { backgroundImage: `url("${cardArt(mouvement.carteId)}")` } : undefined} />
-      <span className="moba__card-flight-label">{mouvement.type === 'pioche' ? 'PIOCHE' : 'DÉFAUSSE'}{mouvement.nombre > 1 ? ` ×${mouvement.nombre}` : ''}</span>
+      <span className="moba__card-flight-face" style={mouvement.cote === 'joueur' && mouvement.type !== 'pioche' ? { backgroundImage: `url("${cardArt(mouvement.carteId)}")` } : undefined} />
+      <span className="moba__card-flight-label">{mouvement.type === 'recherche' ? 'TROUVÉE' : mouvement.type === 'pioche' ? 'PIOCHE' : 'DÉFAUSSE'}{mouvement.nombre > 1 ? ` ×${mouvement.nombre}` : ''}</span>
     </span>)}
     <div className="moba__ai-status" role="status">{iaBloquee ? <><span>{erreur} </span><button type="button" onClick={() => { setErreur(''); setIaBloquee(false); }}>Réessayer</button></> : iaAgit ? 'L’IA réfléchit…' : ''}</div>
     <div inert={iaAgit}>
@@ -1566,8 +1572,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       {!destruction && (carte || cibleRapideEnCours) && !defausse && !fini && <button type="button" className="moba__cancel-choice" onClick={annulerChoix}>Annuler le choix</button>}
     </div>}
     </div>
-    {['tour', 'arrivee', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && <section className="moba__hand" aria-label="Votre main"><div className="moba__handhead"><div><span>VOTRE RÉSERVE</span><h2>Votre main</h2></div><span className="moba__deck-count">PIOCHE <b>{campMainVisible.deck.length}</b></span>{nombrePagesMain > 1 && <div className="moba__hand-pages" aria-label="Pages de la main"><button type="button" aria-label="Page précédente de la main" disabled={pageMainVisible === 0} onClick={() => setPageMain(pageMainVisible - 1)}>‹</button><span>{pageMainVisible + 1} / {nombrePagesMain}</span><button type="button" aria-label="Page suivante de la main" disabled={pageMainVisible >= nombrePagesMain - 1} onClick={() => setPageMain(pageMainVisible + 1)}>›</button></div>}</div><div className="moba__hand-cards">{campMainVisible.main.slice(debutPageMain, debutPageMain + TAILLE_PAGE_MAIN).map((id, pageIndex) => {
+    {['tour', 'arrivee', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && <section className="moba__hand" aria-label="Votre main"><div className="moba__handhead"><div><span>VOTRE RÉSERVE</span><h2>Votre main</h2></div><span className="moba__deck-count">PIOCHE <b>{campMainVisible.deck.length}</b></span>{nombrePagesMain > 1 && <div className="moba__hand-pages" aria-label="Pages de la main"><button type="button" aria-label="Page précédente de la main" disabled={pageMainVisible === 0} onClick={() => setPageMain(pageMainVisible - 1)}>‹</button><span>{pageMainVisible + 1} / {nombrePagesMain}</span>{receptionHorsPage && <span className="moba__hand-new-page" aria-hidden="true">Nouvelle carte p. {Math.floor(receptionHorsPage.indexMain / TAILLE_PAGE_MAIN) + 1}</span>}<button type="button" aria-label="Page suivante de la main" disabled={pageMainVisible >= nombrePagesMain - 1} onClick={() => setPageMain(pageMainVisible + 1)}>›</button></div>}</div><div className="moba__hand-cards">{campMainVisible.main.slice(debutPageMain, debutPageMain + TAILLE_PAGE_MAIN).map((id, pageIndex) => {
       const index = debutPageMain + pageIndex;
+      const reception = receptionsMain.find((mouvement) => mouvement.indexMain === index);
       const card = cardById(id);
       const disabled = mainSide !== 'joueur' || fini || Boolean(destruction || (site && !defausse)) || (!defausse && (rpgMobaSortBlocageInterdit(id) || (id === 'memoire-de-l-armurerie' && !campMainVisible.cimetiere.includes('sabre-maudit')) || !!cibleRapideEnCours || etape === 'arrivee' || campMainVisible.manaChoixEnAttente || (MOBA_CONTRESORTS.includes(id) && !(etape === 'reponse-sort' && (duel.mobaSortEnAttente?.armeMoba ? id === 'contresort-des-abimes' : id !== 'ecueil') && duel.mobaSortEnAttente?.cote !== mainSide || etape === 'reponse-creature' && (id === 'contresort-des-abimes' || (id === 'ecueil' && cardById(duel.mobaCreatureEnAttente?.carteId)?.kind !== 'site')) && duel.mobaCreatureEnAttente?.cote !== mainSide)) || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !card.instant && !(['blocage', 'fin', 'reponse-creature', 'reponse-sort', 'reponse-arrivee'].includes(etape) && rpgMobaPeutEmbuscade(duel, mainSide, id))) || !rpgMobaPeutPayer(duel, mainSide, card)));
       const specialementJouable = !disabled && ['creature', 'hero'].includes(card.kind) && rpgMobaPeutEmbuscade(duel, mainSide, id);
@@ -1576,7 +1583,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       if (rendu?.ManaCost && rendu?.CardStatIcon) {
         const { ManaCost, CardStatIcon } = rendu;
         const creature = ['creature', 'hero'].includes(card.kind);
-        return <div className="moba__hand-item" key={`${id}-${index}`} {...interactionsApercu(id)}>
+        return <div className={`moba__hand-item${reception ? ' is-new-card' : ''}`} key={`${id}-${index}`} data-moba-received={reception?.type} {...interactionsApercu(id)}>
           <button type="button" className={`moba__card moba__real-hand rpg-hand__card rpg-hand__card--img rpg-hand__card--elem-${card.element} ${cardFrameClass(card)} ${cardMotifClass(card)}${selected ? ' is-selected is-targeting' : ''}${disabled ? ' is-unplayable' : ' is-playable'}${specialementJouable ? ' is-special-ambush' : ''}`} style={{ '--rpg-frame-color': cardFrameColor(card) }} data-card-id={id} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} aria-label={`${card.name}, coût imprimé ${card.cost}, ${card.text || 'aucune capacité'}${rpgMobaSortBlocageInterdit(id) ? '. Injouable en MOBA : impose un blocage.' : ''}`} title={rpgMobaSortBlocageInterdit(id) ? 'Injouable en MOBA : impose un blocage.' : undefined} aria-pressed={selected} onClick={() => jouerCarte(id, index)}>
             <img draggable="false" className="rpg-hand__img" src={cardArt(id)} alt="" aria-hidden="true" />
             <span className="rpg-hand__title"><ManaCost carte={card} showElement={false} /></span>
@@ -1584,9 +1591,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             {creature && <span className="rpg-hand__stats" aria-hidden="true"><span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={card.coupRapide} /><span className="rpg-stat-value">{card.atk}</span></span><span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{card.def}</span></span></span>}
             <span className="moba__sr-only">{card.name}</span>
           </button>
+          {reception && <span className="moba__hand-receipt" aria-hidden="true">{reception.type === 'recherche' ? 'TROUVÉE' : 'PIOCHÉE'}</span>}
         </div>;
       }
-      return <button type="button" key={`${id}-${index}`} className={`moba__card${selected ? ' is-selected' : ''}${specialementJouable ? ' is-special-ambush' : ''}`} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} onClick={() => jouerCarte(id, index)} title={rpgMobaSortBlocageInterdit(id) ? 'Injouable en MOBA : impose un blocage.' : card.text} aria-label={rpgMobaSortBlocageInterdit(id) ? `${card.name}. Injouable en MOBA : impose un blocage.` : undefined}><span className="moba__card-art"><img src={cardArt(id)} alt="" /><i>{card.cost}</i></span><span className="moba__card-info"><b>{card.name}</b><small>{card.kind === 'magie' ? 'MAGIE' : card.kind === 'arme' ? 'ARME' : card.kind === 'site' ? 'SITE' : `⚔ ${card.atk}  ◆ ${card.def}`}</small><small className="moba__cardtext">{card.text || 'Aucune capacité.'}</small></span></button>;
+      return <button type="button" key={`${id}-${index}`} className={`moba__card${selected ? ' is-selected' : ''}${specialementJouable ? ' is-special-ambush' : ''}${reception ? ' is-new-card' : ''}`} data-moba-received={reception?.type} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} onClick={() => jouerCarte(id, index)} title={rpgMobaSortBlocageInterdit(id) ? 'Injouable en MOBA : impose un blocage.' : card.text} aria-label={rpgMobaSortBlocageInterdit(id) ? `${card.name}. Injouable en MOBA : impose un blocage.` : undefined}><span className="moba__card-art"><img src={cardArt(id)} alt="" /><i>{card.cost}</i></span><span className="moba__card-info"><b>{card.name}</b><small>{card.kind === 'magie' ? 'MAGIE' : card.kind === 'arme' ? 'ARME' : card.kind === 'site' ? 'SITE' : `⚔ ${card.atk}  ◆ ${card.def}`}</small><small className="moba__cardtext">{card.text || 'Aucune capacité.'}</small></span>{reception && <span className="moba__hand-receipt" aria-hidden="true">{reception.type === 'recherche' ? 'TROUVÉE' : 'PIOCHÉE'}</span>}</button>;
     })}</div></section>}
     </div>
     <details className="moba__journal"><summary>Journal du duel</summary>

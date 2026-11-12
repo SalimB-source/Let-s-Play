@@ -3,7 +3,7 @@
 export function rpgMobaMouvementsCartes(evenements) {
   const groupes = [];
   for (const event of evenements) {
-    if (!['pioche', 'defausse'].includes(event.type) || !['joueur', 'sorcier'].includes(event.cote)) continue;
+    if (!['pioche', 'defausse', 'recherche'].includes(event.type) || !['joueur', 'sorcier'].includes(event.cote)) continue;
     const dernier = groupes.at(-1);
     if (dernier?.type === event.type && dernier.cote === event.cote) {
       dernier.nombre += 1;
