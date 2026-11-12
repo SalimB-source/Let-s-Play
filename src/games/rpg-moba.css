@@ -876,9 +876,16 @@
   box-shadow: inset 1px 0 #e6c89455, inset -1px 0 #e6c89455;
   animation: moba-conquest-reveal calc(.7s * var(--rpg-anim-scale, 1)) ease-out both;
 }
-/* Le centre conquis conserve une case jouable : sa carte passe devant le
-   décor, sans masquer le verrou au milieu ni intercepter ses interactions. */
+/* Au centre, seul le camp qui a perdu est scellé : le décor est contenu
+   dans sa moitié, jamais sur la case conservée par le vainqueur. */
+.moba .moba__lane.is-center-conquered { background: none; }
 .moba .moba__lane.is-conquered .moba__side.is-joined-center { z-index: 3; }
+.moba__side.is-lost-center .moba__health,
+.moba__side.is-lost-center .moba__slot { visibility: hidden; }
+.moba__conquest--center .moba__conquest-lock { width: clamp(30px, 3vw, 48px); border-radius: 10px; }
+.moba__conquest--center .moba__conquest-kicker { top: 4%; }
+.moba__conquest--center .moba__conquest-owner { bottom: 15%; }
+.moba__conquest--center .moba__conquest-closed { bottom: 3%; }
 .moba__conquest-chains { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 3px 4px #000c); }
 .moba__conquest-chain-shadow, .moba__conquest-chain-core, .moba__conquest-links ellipse {
   fill: none; vector-effect: non-scaling-stroke;
@@ -974,6 +981,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba .moba__lanes[data-moba-joined-lane="right"] .moba__lane:nth-child(3) .moba__side.is-joined-flank::before { display: none; }
 .moba .moba__lanes[data-moba-joined-lane] .moba__lane:nth-child(2).is-conquered { background: none; }
 .moba .moba__lane.is-conquered .moba__side:not(.is-joined-center) { background: #16100c66; }
+.moba .moba__lane.is-center-conquered .moba__side:not(.is-lost-center) { background: none; }
 .moba .moba__side.is-joined-flank .moba__health {
   position: absolute; z-index: 12; top: 0; left: 0; width: 150%; min-height: 24px;
   padding: 4px 8px; border: 1px solid #e5c681; border-radius: 6px;
