@@ -1318,9 +1318,10 @@
 [data-theme='light'] .nav-search-result.is-finished{filter:grayscale(.75) brightness(.97)}
 
 /* Le sélecteur généré (`[data-theme='light'] .nav-links a`) l'emporte sur la
-   couleur propre des boutons de compte — d'autant qu'aucune requête média ne
-   s'applique sur téléphone, où le tiroir est VIOLET lui aussi. Encres claires,
-   donc, et le bouton « S'inscrire » garde son aplat jaune (encre sombre). */
+   couleur propre des boutons de compte — encres claires pour l'île violette de
+   la barre. Sur téléphone, le tiroir plein écran est une surface CLAIRE : ses
+   encres sont rétablies en fin de fichier (§15). Le bouton « S'inscrire » garde
+   son aplat jaune (encre sombre) dans les deux formats. */
 [data-theme='light'] .nav-links a.nav-account.nav-login,
 [data-theme='light'] .nav-links a.nav-account.nav-login:hover{color:#fff}
 [data-theme='light'] .nav-links a.nav-account.nav-register,
@@ -1375,9 +1376,11 @@
    quasi invisibles. On garde le même dessin qu’en thème sombre. */
 /* Les commandes de l'île claire (langue, thème, menu, liens, recherche,
    compte) sont regroupées dans la section « 6bis » plus bas. */
-/* Même règle pour le reste du chrome posé sur l'île : bouton du menu, entrées
-   de navigation et pied de page du tiroir mobile. Les encres « clair »
-   (var(--ink), var(--cyan)… assombris pour la page) y étaient illisibles. */
+/* Même règle pour le reste du chrome posé sur l'île : bouton du menu et
+   entrées de navigation. Les encres « clair » (var(--ink), var(--cyan)…
+   assombris pour la page) y étaient illisibles.
+   NB : le tiroir plein écran du format téléphone n'est PAS sur l'île (il est
+   clair en thème clair) — ses encres sont rétablies en §15, fin de fichier. */
 [data-theme='light'] .menu-button{
   background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.92);
 }
@@ -1483,11 +1486,13 @@
 }
 [data-theme='light'] .menu-button .dash{color:#a5f3fc}
 [data-theme='light'] .menu-button .dash.open{color:var(--yellow)}
-/* Liens de la BARRE uniquement. Le sélecteur `[data-theme='light'] .nav-links a`
+/* Liens de la BARRE (île violette). Le sélecteur `[data-theme='light'] .nav-links a`
    (généré par le balayage d'encre) impose le gris de la page ; on le neutralise
    au même niveau de spécificité — mais sans toucher aux panneaux déroulants
    posés dessus (menu du compte, menu « Actus »), qui sont des surfaces CLAIRES
-   en thème clair : y blanchir les liens donnait du blanc sur blanc. */
+   en thème clair : y blanchir les liens donnait du blanc sur blanc.
+   NB : `.nav-links` contient aussi le tiroir plein écran du format téléphone —
+   ses encres propres sont rétablies en §15 (fin de fichier). */
 [data-theme='light'] .nav-links .nav-primary > .nav-item > a,
 [data-theme='light'] .nav-links .nav-primary > .nav-item > a:hover,
 [data-theme='light'] .nav-links .nav-primary a.nav-messages-link,
@@ -1770,3 +1775,88 @@
 [data-theme='light'] .actus-card-copy p{color:rgba(255,255,255,.9)}
 [data-theme='light'] .actus-card-action span{border-color:rgba(255,255,255,.42)}
 [data-theme='light'] .actus-card:hover .actus-card-action span{color:#4f3494;background:#ffd619;border-color:#ffd619}
+
+/* ============ 15. TIROIR MOBILE CLAIR — ENCRES DU MENU ============ */
+/* Le tiroir plein écran ouvert par le burger (≤800px) est une surface CLAIRE
+   en thème clair (`#f7f8fc`, voir la requête « petit écran » du §6), alors que
+   la barre qu'il ouvre reste violette. Les règles de la « 6bis » — écrites
+   pour l'île violette de la barre de bureau — emploient des sélecteurs
+   descendants (`.nav-links .nav-primary …`, `.nav .nav-search …`) qui
+   repassent aussi sur le tiroir : elles y laissaient une encre BLANCHE posée
+   sur le panneau clair (libellés, numéros, recherche, boutons ≈ 1,1:1), donc
+   un menu illisible. Ce bloc, déclaré APRÈS la 6bis et limité au format
+   téléphone, rend au tiroir ses encres de page. Vérifié par
+   `npm run check:light-mobile-menu`. */
+@media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  /* Entrées de section (libellés 01…07) : encre sombre, à l'exception de
+     l'onglet courant qui garde l'encre sombre du §6 (avec son `!important`). */
+  [data-theme='light'] .nav-links .nav-links-inner .nav-primary > a,
+  [data-theme='light'] .nav-links .nav-links-inner .nav-primary > .nav-item > a{
+    color:rgba(35,32,70,.9);
+  }
+  [data-theme='light'] .nav-links .nav-links-inner .nav-primary > a:hover,
+  [data-theme='light'] .nav-links .nav-links-inner .nav-primary > .nav-item > a:hover{
+    color:var(--ink);
+  }
+  /* Numéro, libellé secondaire et flèche : jetons d'encre du thème clair. */
+  [data-theme='light'] .nav-links .nav-link-num{color:var(--cyan)}
+  [data-theme='light'] .nav-links .nav-primary a:hover .nav-link-num,
+  [data-theme='light'] .nav-links .nav-primary a.active .nav-link-num{color:var(--yellow-ink)}
+  [data-theme='light'] .nav-links .nav-link-desc{color:var(--dim)}
+  /* Le libellé « Messagerie » a sa propre encre (§14) : on la conserve. */
+  [data-theme='light'] .nav-links .nav-messages-link .lets-talk-label,
+  [data-theme='light'] .nav-links .nav-link-desc.lets-talk-label{color:#0a0b1a}
+  [data-theme='light'] .nav-links .nav-link-arrow{color:rgba(35,32,70,.7);border-color:var(--line)}
+  /* Pastille de niveau du profil : bordure et libellés en encre d'or. */
+  [data-theme='light'] .nav-links .nav-profile-level{color:var(--ink);border-color:var(--yellow-ink)}
+  [data-theme='light'] .nav-links .nav-profile-level strong{color:var(--ink)}
+
+  /* Recherche, thème, langue, comptes : ils vivent DANS le tiroir clair —
+     même encre que sur la page (règles « île claire » neutralisées). */
+  [data-theme='light'] .nav-links .nav-actions .nav-search{
+    background:rgba(86,70,190,.06);border-color:rgba(86,70,190,.10);
+  }
+  [data-theme='light'] .nav-links .nav-actions .nav-search:focus-within{
+    background:#fff;border-color:rgba(14,116,144,.28);
+  }
+  [data-theme='light'] .nav-links .nav-search input{color:var(--ink)}
+  [data-theme='light'] .nav-links .nav-search input::placeholder{color:rgba(35,32,70,.45)}
+  /* Alpha relevé : `rgba(35,32,70,.42)` composité sur le panneau clair
+     tombe à 2,4:1 — sous le seuil des 3:1 d'un pictogramme. */
+  [data-theme='light'] .nav-links .nav-search-icon{color:var(--dim)}
+  [data-theme='light'] .nav-links .nav-actions-grid .theme-toggle{
+    background-color:rgba(86,70,190,.06);border-color:rgba(86,70,190,.16);color:var(--muted);
+  }
+  [data-theme='light'] .nav-links .nav-actions-grid .theme-toggle:hover{
+    background-color:rgba(86,70,190,.10);border-color:rgba(86,70,190,.3);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links .nav-actions-grid .lang-switch-button{
+    background-color:rgba(86,70,190,.06);border-color:rgba(86,70,190,.16);color:var(--muted);
+  }
+  [data-theme='light'] .nav-links .nav-actions-grid .lang-switch-button:hover,
+  [data-theme='light'] .nav-links .lang-switch.is-open .lang-switch-button{
+    background-color:rgba(86,70,190,.10);border-color:rgba(86,70,190,.3);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links .lang-switch-globe{color:var(--cyan)}
+  [data-theme='light'] .nav-links a.nav-account.nav-login,
+  [data-theme='light'] .nav-links a.nav-account.nav-login:hover{
+    background-color:rgba(86,70,190,.06);border-color:rgba(86,70,190,.14);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links a.nav-account.connected{
+    background-color:rgba(86,70,190,.06);border-color:rgba(86,70,190,.14);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links .nav-logout{
+    background-color:rgba(86,70,190,.06);border-color:rgba(86,70,190,.10);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links .nav-logout:hover{
+    background-color:rgba(190,18,60,.08);border-color:rgba(190,18,60,.22);color:var(--danger);
+  }
+  /* Le bouton « S'inscrire » garde son aplat jaune + encre sombre (6bis). */
+
+  /* Pied du tiroir : libellé et liens en encre de page. Le « • » de marque
+     passe en or d'encre — le jaune plein (§6) se fond dans le panneau clair. */
+  [data-theme='light'] .nav-links .mobile-menu-footer,
+  [data-theme='light'] .nav-links .mobile-menu-footer a,
+  [data-theme='light'] .nav-links .mobile-menu-footer-label{color:var(--dim)}
+  [data-theme='light'] .nav-links .mobile-menu-footer-dot{color:var(--yellow-ink)}
+}
