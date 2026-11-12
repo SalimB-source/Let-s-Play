@@ -13,6 +13,8 @@ import { cardById } from '../src/games/rpgCards.js';
 test('trois chapitres distincts, decks compatibles, musiques classiques et portraits des vraies cartes', async () => {
   assert.deepEqual(MOBA_HISTOIRE.map((c) => c.plateau?.id), ['trois-voies', 'lac-gele-viking', 'temple-du-nil-egyptien']);
   assert.deepEqual(MOBA_HISTOIRE.map((c) => c.deck?.id), ['tour-listes-1', 'tour-fjord-3', 'tour-sablier-5']);
+  assert.equal(MOBA_HISTOIRE[0].portrait, 'guetteur-du-beffroi');
+  assert.ok(MOBA_HISTOIRE[0].deck.cardIds.includes(MOBA_HISTOIRE[0].portrait));
   for (const chapitre of MOBA_HISTOIRE) {
     assert.equal(rpgMobaValiderDeck(chapitre.deck).ok, true, chapitre.titre);
     assert.ok(RPG_PLATEAU_MUSIC_FILES[chapitre.plateau.musique], chapitre.plateau.nom);
@@ -30,6 +32,11 @@ test('trois chapitres distincts, decks compatibles, musiques classiques et portr
   assert.equal(prochainChapitreMoba(0, 'joueur'), MOBA_HISTOIRE[1]);
   assert.equal(prochainChapitreMoba(1, 'joueur'), MOBA_HISTOIRE[2]);
   assert.equal(prochainChapitreMoba(2, 'joueur'), null);
+  assert.equal(MOBA_HISTOIRE[1].ambiance, 'neige');
+  assert.equal(MOBA_HISTOIRE[2].ambiance, undefined);
+  const css = await readFile(new URL('../src/games/rpgMobaHistoire.css', import.meta.url), 'utf8');
+  assert.match(css, /moba-interlude-approche[^]*?scale\(1\.075\)/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
 });
 
 test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel adversaire et bilan final', async () => {
@@ -62,11 +69,27 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
       partie.duel.moba.winner = adverse.id === 'tour-fjord-3' && parties.length === 2 ? 'sorcier' : 'joueur';
       return partie.duel;
     };
+    const retourMobaRef = { current: null };
     root = createRoot(document.getElementById('root'));
-    await act(async () => root.render(React.createElement(Board, { decksMaison: [deck], creerPartie, onQuitter: () => {} })));
+    await act(async () => root.render(React.createElement(Board, { decksMaison: [deck], creerPartie, onQuitter: () => {}, onBackRef: retourMobaRef })));
     assert.ok(document.querySelector('.moba__story-start button'));
     assert.equal(document.querySelector('.moba').dataset.mobaPlateau, 'trois-voies');
     await act(async () => document.querySelector('.moba__story-start button').click());
+    assert.equal(parties.length, 0, 'Le duel ne commence pas avant le premier master');
+    let premierMaster = document.querySelector('.moba__interlude');
+    assert.ok(premierMaster);
+    assert.match(premierMaster.textContent, /LE PREMIER AFFRONTEMENT/);
+    assert.match(premierMaster.querySelector('.moba__interlude-hero img').src, /guetteur-du-beffroi\.jpg/);
+    assert.equal(premierMaster.querySelectorAll('.moba__interlude-snow i').length, 0);
+    assert.equal(document.querySelector('.moba__setup-overlay'), null);
+    assert.ok(lectures.some((audio) => audio.src.endsWith(RPG_PLATEAU_MUSIC_FILES['table-des-heures'])));
+    await act(async () => retourMobaRef.current());
+    assert.ok(document.querySelector('.moba__setup-overlay'), 'Retour à la préparation depuis le master');
+    assert.equal(parties.length, 0);
+    await act(async () => document.querySelector('.moba__story-start button').click());
+    premierMaster = document.querySelector('.moba__interlude');
+    await act(async () => premierMaster.querySelector('.moba__primary').click());
+    assert.equal(document.querySelector('.moba__interlude'), null);
     assert.equal(parties[0][0].id, deck.id);
     assert.equal(parties[0][1].id, MOBA_HISTOIRE[0].deck.id);
     assert.match(document.querySelector('.moba__end-chapter').textContent, /Chapitre 1 \/ 3/);
@@ -81,6 +104,9 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
       await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
       const interlude = document.querySelector('.moba__interlude');
       assert.ok(interlude);
+      assert.ok(interlude.querySelector('.moba__interlude-hero img'), 'Le personnage occupe le master, sans cadre de carte');
+      assert.equal(interlude.querySelector('.moba__interlude-portrait'), null);
+      assert.equal(interlude.querySelectorAll('.moba__interlude-snow i').length, index === 1 ? 36 : 0);
       assert.match(interlude.querySelector('img').src, new RegExp(`${MOBA_HISTOIRE[index].portrait}\\.jpg`));
       assert.match(interlude.style.getPropertyValue('--moba-interlude-decor'), new RegExp(MOBA_HISTOIRE[index].decor));
       assert.match(interlude.textContent, new RegExp(MOBA_HISTOIRE[index].deck.name));
@@ -96,6 +122,19 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
     assert.match(document.querySelector('.moba__end-panel h2').textContent, /Histoire accomplie/);
     assert.equal(document.querySelector('.moba__interlude'), null);
     assert.ok(lectures.some((audio) => audio.src.includes('Egypt.mp3')));
+    const partiesTerminees = parties.length;
+    await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
+    assert.equal(parties.length, partiesTerminees, 'Recommencer réaffiche le premier master avant de recréer un duel');
+    assert.match(document.querySelector('.moba__interlude').textContent, /CHAPITRE 1 \/ 3/);
+    await act(async () => document.querySelector('.moba__interlude-actions button:last-child').click());
+    assert.match(document.querySelector('.moba__end-panel h2').textContent, /Histoire accomplie/);
+    assert.match(document.querySelector('.moba__end-chapter').textContent, /Chapitre 3 \/ 3/);
+    assert.equal(document.querySelector('.moba').dataset.mobaPlateau, MOBA_HISTOIRE[2].plateau.id);
+    assert.equal(parties.length, partiesTerminees);
+    await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
+    await act(async () => document.querySelector('.moba__interlude .moba__primary').click());
+    assert.equal(parties.length, partiesTerminees + 1);
+    assert.equal(parties.at(-1)[1].id, MOBA_HISTOIRE[0].deck.id);
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();
