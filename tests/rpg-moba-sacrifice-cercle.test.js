@@ -50,6 +50,10 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
     duel.sorcier.main = ['ashigaru-des-braises'];
     const victim = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
     assert.ok(victim);
+    // Une créature immobile déjà présente au début du tour justifie le
+    // sacrifice et ne consomme pas l'invocation normale de ce tour.
+    victim.atk = 0; victim.nePeutPasAttaquer = true;
+    duel.moba.creaturesJouees.sorcier = false;
     duel.sorcier.main = ['anqa-des-braises'];
     await act(async () => root.render(React.createElement(Board, props)));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
@@ -59,6 +63,7 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
     await click([...document.querySelectorAll('.moba__primary')].find((button) => button.textContent.includes('laisser entrer')));
     const circle = document.querySelector(`.moba__side--sorcier [data-rpg-sacrifice-id="${victim.id}"]`);
     assert.ok(circle, 'le cercle est visible sur le camp adverse');
+    assert.ok(circle.closest('.moba__sacrifice-zone'), 'le style violet cible bien le cercle du plateau');
     assert.match(circle.getAttribute('style'), /width: 100%; height: 100%/);
     assert.ok(circle.querySelector('.rpg-invocation-sceau__orbite'), 'les runes du véritable cercle sont rendues');
     assert.equal(circle.closest('[data-moba-lane]').dataset.mobaLane, 'left');

@@ -144,6 +144,30 @@
   .rpg-battle--moba .moba *::after { animation: none !important; transition: none !important; }
 }
 
+/* Le rituel MOBA garde le même cercle et la même durée que le duel, mais
+   ses runes et son halo prennent une teinte violette. Le sélecteur reste
+   limité à la zone du sacrifice pour ne pas recolorer les autres sceaux. */
+.moba .moba__sacrifice-zone .rpg-cercle-magique__soleil {
+  background: radial-gradient(circle,
+    rgba(239, 219, 255, .9),
+    rgba(171, 92, 232, .55) 42%,
+    rgba(97, 34, 168, 0) 78%);
+  box-shadow: 0 0 26px rgba(171, 92, 232, .75), 0 0 52px rgba(97, 34, 168, .5);
+}
+.moba .moba__sacrifice-zone .rpg-invocation-sceau {
+  stroke: #c88bf5;
+  filter: drop-shadow(0 0 4px rgba(171, 92, 232, .65));
+}
+.moba .moba__sacrifice-zone .rpg-invocation-sceau__orbite--interne { stroke: #e6c3ff; }
+.moba .moba__sacrifice-zone .rpg-invocation-sceau__coeur { stroke: #f4e5ff; }
+
+/* Réduire le dessin, pas le calque positionné sur la case : le cercle reste
+   centré et ne modifie ni la carte, ni la durée de l'animation. */
+@media (max-width: 700px), (hover: none) and (pointer: coarse) and (max-device-width: 700px) {
+  .moba .moba__sacrifice-zone .rpg-invocation-sceau { width: 130%; }
+  .moba .moba__sacrifice-zone .rpg-cercle-magique__soleil { width: 46%; height: 46%; }
+}
+
 /* Le fantôme original se pose dans la case, sans bloquer sa prochaine action. */
 .moba .moba__ghost-zone { position: absolute; inset: 0 0 24px; pointer-events: none; }
 .moba .rpg-card-destruction-fx { animation-duration: calc(.72s * var(--rpg-anim-scale, 1)); }
