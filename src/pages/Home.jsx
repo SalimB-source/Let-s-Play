@@ -11,7 +11,7 @@ import '../home-live.css';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-08';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-11';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -60,7 +60,7 @@ const djezzyEpisode = {
 
 const newsImageUrl = (image) => /^https?:\/\//i.test(image) ? image : `${base}${image}`;
 
-// GTA VI ouvre l’édition du jour et devient la une de l’accueil.
+// La une suit l’actualité gaming de l’édition la plus récente.
 const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/'));
 
 export default function Home() {

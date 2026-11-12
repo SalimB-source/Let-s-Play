@@ -431,5 +431,77 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-08",
     "section": "Actualités tech"
+  },
+  "/news/xbox-sorties-semaine-9-13-novembre-2026": {
+    "title": "CETTE SEMAINE SUR XBOX DES MANAGERS AUX HORDES. — Let’s Play",
+    "description": "Football Manager 27, TANUKI: Pon’s Summer et Warhammer Survivors ouvrent une semaine chargée sur Xbox. Le calendrier officiel distingue les jeux et les plateformes, sans tout promettre à chaque abonnement.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/nwox-hero-8709553b06cbe4c063ea-1600x900.jpg",
+    "type": "article",
+    "published": "2026-11-09",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/nobody-wants-this-saison-4-renouvellement": {
+    "title": "NOBODY WANTS THIS UNE SAISON 4 CONFIRMÉE. — Let’s Play",
+    "description": "Netflix renouvelle Nobody Wants This pour une quatrième saison. Kristen Bell et Adam Brody poursuivront cette comédie romantique, mais aucune date de diffusion n’est encore annoncée.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQd2KoGre8n2SgXw0mgVOZVtKdLhFTqaCGVadbsDUBjeBe1xm7Wy1g62TrREdbMGilkWIoli2Kb-RlT5g8ok_9MPZIxvEdNSL0Ix8uDg0qoJ-vfh4AYxraJpa8-DDBe5IHopavsRIUHhjynpDEn3midhbm68.jpg?r=c2f",
+    "type": "article",
+    "published": "2026-11-09",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/google-language-explorer-diversite-linguistique": {
+    "title": "LANGUAGE EXPLORER LES LANGUES À LA CARTE. — Let’s Play",
+    "description": "Google présente Language Explorer, une plateforme interactive pour explorer la diversité linguistique mondiale. L’outil s’appuie sur des données ouvertes et accompagne une exposition à Berlin.",
+    "image": "https://storage.googleapis.com/gweb-research2023-media/original_images/LanguageExplorer-hero.png",
+    "type": "article",
+    "published": "2026-11-09",
+    "section": "Actualités tech"
+  },
+  "/news/gta-6-xbox-one-cloud-gaming-19-novembre": {
+    "title": "GTA VI SUR XBOX ONE, VIA LE CLOUD. — Let’s Play",
+    "description": "Xbox annonce GTA VI en cloud sur Xbox One et Xbox Series X|S dès le 19 novembre. Il ne s’agit pas d’un portage natif sur Xbox One : le jeu doit être acheté séparément.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/06/GTA-6-Official_Cover_Art_landscape-c3e36df9ed6c80b13d50.jpg",
+    "type": "article",
+    "published": "2026-11-10",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/the-debut-a24-deuxieme-bande-annonce": {
+    "title": "THE DEBUT LA SCÈNE TOURNE À LA GUERRE. — Let’s Play",
+    "description": "A24 publie une deuxième bande-annonce de The Debut, écrit et réalisé par Jesse Eisenberg. Julianne Moore et Paul Giamatti plongent dans une comédie où un petit rôle devient une grande obsession.",
+    "image": "https://i.ytimg.com/vi/lF9n06SMDPU/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-10",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/windows-11-kb5132061-securite-audio-usb": {
+    "title": "WINDOWS 11 SÉCURITÉ ET AUDIO CORRIGÉS. — Let’s Play",
+    "description": "La mise à jour KB5132061 de Windows 11 apporte des correctifs de sécurité et résout notamment un problème de démarrage de certains appareils USB Audio 1.0. La version de Windows reste à vérifier avant installation.",
+    "image": "https://uhf.microsoft.com/images/microsoft/RE1Mu3b.png",
+    "type": "article",
+    "published": "2026-11-10",
+    "section": "Actualités tech"
+  },
+  "/news/playstation-plus-novembre-2026-catalogue-extra-premium": {
+    "title": "PLAYSTATION PLUS LE CATALOGUE SE RENFORCE. — Let’s Play",
+    "description": "Death Stranding 2, Atomfall et Dragon Quest III HD-2D Remake figurent dans la sélection PS Plus de novembre. Le 17 novembre est la date principale, mais des exceptions et variations régionales existent.",
+    "image": "https://blog.playstation.com/tachyon/2026/11/6ae8af767f59801bb5a0ceabf7fe915f00eed004.jpg?resize=1088%2C612&crop_strategy=smart",
+    "type": "article",
+    "published": "2026-11-11",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/the-body-netflix-sortie-11-novembre": {
+    "title": "THE BODY L’INITIATION DÉRAPE. — Let’s Play",
+    "description": "The Body arrive le 11 novembre sur Netflix. Quinn Shephard mêle psychodrame adolescent et horreur autour d’une troupe de danse dont le rituel d’intégration tourne mal.",
+    "image": "https://i.ytimg.com/vi/wl7uj7n7DoY/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-11",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/google-sensorwm-sante-montres-recherche": {
+    "title": "SENSORWM LA SANTÉ EN SIMULATION. — Let’s Play",
+    "description": "Google Research présente un cadre expérimental qui utilise les données de montres connectées pour simuler des changements d’habitudes. Il s’agit de recherche, pas d’un diagnostic ou d’une nouvelle fonction médicale grand public.",
+    "image": "https://storage.googleapis.com/gweb-research2023-media/original_images/CKMHealthHero.png",
+    "type": "article",
+    "published": "2026-11-11",
+    "section": "Actualités tech"
   }
 };

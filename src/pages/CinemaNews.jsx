@@ -1,4 +1,7 @@
-import { dailyNewsListing as news20261108, editionDate } from '../news/daily/2026-11-08';
+import { dailyNewsListing as news20261111, editionDate } from '../news/daily/2026-11-11';
+import { dailyNewsListing as news20261110 } from '../news/daily/2026-11-10';
+import { dailyNewsListing as news20261109 } from '../news/daily/2026-11-09';
+import { dailyNewsListing as news20261108 } from '../news/daily/2026-11-08';
 import { dailyNewsListing as news20261105 } from '../news/daily/2026-11-05';
 import { dailyNewsListing as news20261104 } from '../news/daily/2026-11-04';
 import { dailyNewsListing as news20261103 } from '../news/daily/2026-11-03';
@@ -108,6 +111,9 @@ export default function CinemaNews() {
   // Source brute, en français : `rawArticles` reçoit les cartes de toutes les
   // éditions, puis `useLocalizedListings` les traduit pour la langue de lecture.
   const rawArticles = useMemo(() => [
+    ...news20261111.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
+    ...news20261110.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
+    ...news20261109.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261108.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261105.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261104.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
