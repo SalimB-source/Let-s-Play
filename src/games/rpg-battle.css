@@ -1022,15 +1022,6 @@
   object-fit: cover;
 }
 
-/* Le heaume du Jarl garde de l'air au-dessus, sans fond flouté rapporté. */
-.rpg-card--img[data-card-id="jarl-au-marteau-de-guerre"] {
-  background-color: #424c50;
-}
-.rpg-card--img[data-card-id="jarl-au-marteau-de-guerre"] > .rpg-card__img {
-  transform: translateY(1.2%) scale(.96);
-  transform-origin: center;
-}
-
 /* Sites persistants : chaque compteur retiré remonte une nouvelle peinture.
    La clé React de l'image change avec l'étape, donc cette révélation se rejoue
    exactement une fois à chaque avancée de Bimini ou de la fouille du trésor. */

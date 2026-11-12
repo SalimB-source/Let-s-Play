@@ -21,6 +21,12 @@ function imageJpeg(id) {
   assert.fail(`${id} n’a pas de dimensions JPEG lisibles`);
 }
 
+test('la peinture du Jarl remplit la carte sans réduction qui révèle des bordures', () => {
+  const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-card__img\s*\{[^}]*inset:\s*0;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*cover;/s);
+  assert.doesNotMatch(css, /\[data-card-id=["']jarl-au-marteau-de-guerre["']\][^{]*>\s*\.rpg-card__img\s*\{/);
+});
+
 test('le Jarl et le Gardien ont leurs faces de Furie dédiées et datées', () => {
   for (const id of ['jarl-au-marteau-de-guerre', 'gardien-viking-du-fjord']) {
     const carte = cardById(id);
