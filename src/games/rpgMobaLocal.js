@@ -3,13 +3,13 @@
  * preconstructed or validated custom decks from an audited pool; most card
  * effects and online play are not yet supported. Never bypass the audit gate.
  */
-import { armeById, carteEstArme, cardById, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
+import { armeById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
 import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation } from './rpgMobaAttaqueIndividuelle.js';
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import {
   rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
-  rpgResoudreEchangeIndividuelMoba, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgDeployerCreaturesMobaDepart,
+  rpgResoudreEchangeIndividuelMoba, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
@@ -211,10 +211,6 @@ export function rpgMobaSacrificesInvocation(duel, side, carte) {
 export function rpgMobaNouveauDuel(options = {}) {
   const duel = rpgNouveauDuel({ ...options, modeMana: RPG_MODE_MANA_ESSAI, pvp: true });
   duel.moba = mobaNouveau();
-  // Les duels créés pour l'interface passent par le déploiement initial ; les
-  // états de test/prévisualisation préconstruits conservent l'ancien démarrage.
-  duel.moba.deploiementInitialRequis = options.deploiementInitial === true;
-  duel.moba.deploiementInitialFait = false;
   duel.moba.creaturesJouees = { joueur: false, sorcier: false };
   duel.moba.embuscadesJouees = { joueur: false, sorcier: false };
   duel.moba.sortsJoues = { joueur: false, sorcier: false };
@@ -260,74 +256,11 @@ export function rpgMobaMulligan(duel, side, indices = [], rng = Math.random) {
   if (side !== expected) return fail('pas-votre-tour');
   const result = rpgMulligan(duel, side, indices, rng);
   if (!result.ok) return fail('mulligan');
-  if (side === 'sorcier' && !duel.moba.deploiementInitialRequis) {
+  if (side === 'sorcier') {
     const start = rpgDemarrerManaEssai(duel);
     if (!start.ok) return start;
   }
   return { ok: true, demarre: duel.manaEssaiDemarre };
-}
-
-/** Indices de la main, pas IDs : deux exemplaires identiques se déploient
- * séparément. Les Sites et les autres coûts restent dans la main. */
-export function rpgMobaCartesDeDepart(duel, cote) {
-  if (!MOBA_SIDES.includes(cote) || !Array.isArray(duel?.[cote]?.main)) return [];
-  return duel[cote].main.flatMap((id, index) => {
-    const carte = cardById(id);
-    return carte && ['creature', 'hero'].includes(carte.kind) && Number.isInteger(carte.cost)
-      && carte.cost >= 1 && carte.cost <= 4 ? [index] : [];
-  });
-}
-
-const CASES_DEPART_IA = Object.freeze([
-  { laneId: 'left', slot: 0 }, { laneId: 'right', slot: 0 },
-  { laneId: 'center', slot: 0 }, { laneId: 'left', slot: 1 }, { laneId: 'right', slot: 1 },
-]);
-export function rpgMobaChoisirDeploiementIA(duel) {
-  return rpgMobaCartesDeDepart(duel, 'sorcier').map((index, position) => ({ index, ...CASES_DEPART_IA[position] }));
-}
-
-/** Après les deux mulligans, valider les cinq cases de chaque camp avant toute
- * mutation. L'IA choisit ses propres emplacements, le joueur choisit les siens. */
-export function rpgMobaDeployerDepart(duel, choixJoueur) {
-  if (!duel?.moba?.deploiementInitialRequis || duel.moba.deploiementInitialFait || duel.manaEssaiDemarre
-    || !duel.mulliganFait?.joueur || !duel.mulliganFait?.sorcier || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul
-    || !rpgMobaPlacementCoherent(duel) || duel.joueur.creatures.length || duel.sorcier.creatures.length) return fail('timing');
-  const attendus = rpgMobaCartesDeDepart(duel, 'joueur');
-  const attendusIA = rpgMobaCartesDeDepart(duel, 'sorcier');
-  if ([['joueur', attendus], ['sorcier', attendusIA]].some(([cote, indices]) =>
-    indices.some((index) => !CARTES_COMBAT_AUDITEES.has(duel[cote].main[index])))) return fail('effet-non-pris-en-charge');
-  if (attendusIA.length > CASES_DEPART_IA.length) return fail('champ-plein');
-  if (!Array.isArray(choixJoueur) || choixJoueur.length !== attendus.length) return fail('choix');
-  const indices = new Set();
-  const cases = new Set();
-  for (const placement of choixJoueur) {
-    if (!placement || !Number.isInteger(placement.index) || !attendus.includes(placement.index)
-      || indices.has(placement.index) || !['left', 'center', 'right'].includes(placement.laneId)
-      || !Number.isInteger(placement.slot) || placement.slot < 0
-      || placement.slot >= mobaVoie(duel.moba, placement.laneId).slots.joueur.length
-      || cases.has(`${placement.laneId}:${placement.slot}`)) return fail('choix');
-    indices.add(placement.index);
-    cases.add(`${placement.laneId}:${placement.slot}`);
-  }
-  const choixIA = rpgMobaChoisirDeploiementIA(duel);
-  const offsets = { left: 0, center: 2, right: 3 };
-  const placements = [...choixJoueur.map((choix) => ({ ...choix, cote: 'joueur' })), ...choixIA.map((choix) => ({ ...choix, cote: 'sorcier' }))]
-    .map((choix) => ({ ...choix, emplacement: offsets[choix.laneId] + choix.slot }));
-  const snapshot = JSON.stringify(duel);
-  try {
-    const entites = rpgDeployerCreaturesMobaDepart(duel, placements);
-    synchroniserSorties(duel);
-    if (!rpgMobaPlacementCoherent(duel)) throw new Error('Placement incohérent');
-    const start = rpgDemarrerManaEssai(duel);
-    if (!start.ok) throw new Error('Premier tour indisponible');
-    duel.moba.deploiementInitialFait = true;
-    return { ok: true, entites };
-  } catch {
-    const ancien = JSON.parse(snapshot);
-    for (const key of Object.keys(duel)) delete duel[key];
-    Object.assign(duel, ancien);
-    return fail('etat-incoherent');
-  }
 }
 
 /** The current player chooses their own excess cards rather than having the
