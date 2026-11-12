@@ -81,7 +81,7 @@ test('les étages ont identifiants uniques, profils IA et puissances lisibles', 
   assert.ok(vus.size >= 9, 'la campagne compte au moins neuf étages');
 });
 
-test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss compris', () => {
+test('la Tour du Fjord affronte les Vikings neige/eau à chaque étage', () => {
   const tour = tourHistoireParId('tour-du-fjord');
   assert.ok(tour, 'la Tour du Fjord fait partie de la campagne');
   assert.match(tour.resume, /glace|hiver|fjord/i, 'son résumé annonce le froid');
@@ -94,8 +94,8 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
     assert.equal(validation.terrains, deck.filter((id) => cardById(id)?.kind === 'terrain').length,
       `${etage.id} pose ses terrains Neige, variantes comprises`);
     for (const id of new Set(deck)) {
-      assert.deepEqual(cardColors(cardById(id)), ['neige'],
-        `${etage.id} reste mono-Neige (${id} fait exception)`);
+      assert.ok(cardColors(cardById(id)).every((couleur) => ['neige', 'eau'].includes(couleur)),
+        `${etage.id} reste neige/eau (${id} fait exception)`);
     }
   }
 
@@ -106,8 +106,8 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
 
   // Le boss réunit les figures du Nord — sans jamais les appeler dieux.
   const boss = deckHistoire(tour.etages.at(-1).deck);
-  assert.ok(boss.includes('pere-des-corbeaux') && boss.includes('maitre-du-marteau'),
-    'le Maître des Neuf Hivers a ses deux figures');
+  assert.ok(boss.includes('eirik-du-premier-serment') && boss.includes('valkyrie-au-corbeau'),
+    'le deck Viking relie Eirik à la Valkyrie');
   for (const id of new Set(boss)) {
     const carte = cardById(id);
     assert.doesNotMatch(`${carte.name} ${carte.text ?? ''} ${carte.flavor ?? ''}`, /\bdieu(x)?\b/i,
@@ -126,7 +126,7 @@ test('la Tour du Fjord fait monter la Neige : quatre étages mono-Neige, boss co
   }
 });
 
-test('la Tour du Soleil rouge fait monter les Samouraïs : quatre étages mono-Braise, boss compris', () => {
+test('la Tour du Soleil rouge joue les Samouraïs neige/braise', () => {
   const tour = tourHistoireParId('tour-du-soleil-rouge');
   assert.ok(tour, 'la Tour du Soleil rouge fait partie de la campagne');
   assert.match(tour.resume, /soleil|samouraï|ardent|écarlate/i);
@@ -137,8 +137,8 @@ test('la Tour du Soleil rouge fait monter les Samouraïs : quatre étages mono-B
     const validation = rpgValiderDeck(deck);
     assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
     for (const id of new Set(deck)) {
-      assert.deepEqual(cardColors(cardById(id)), ['braise'],
-        `${etage.id} reste mono-Braise (${id} fait exception)`);
+      assert.ok(cardColors(cardById(id)).every((couleur) => ['neige', 'braise'].includes(couleur)),
+        `${etage.id} reste neige/braise (${id} fait exception)`);
     }
   }
 
@@ -147,10 +147,10 @@ test('la Tour du Soleil rouge fait monter les Samouraïs : quatre étages mono-B
   assert.equal(tour.etages.at(-1).ia.niveau, 'veilleur');
 
   const boss = deckHistoire(tour.etages.at(-1).deck);
-  assert.ok(boss.includes('daimyo-du-soleil-rouge') && boss.includes('kagutsuchi-flamme-originelle'));
+  assert.ok(boss.includes('daimyo-du-soleil-rouge') && boss.includes('samourai-du-torii'));
 });
 
-test('la Tour de la Nécropole fait peser les Ténèbres : quatre étages mono-Ténèbres, boss compris', () => {
+test('la Tour de la Nécropole joue les Tombes neige/ténèbres', () => {
   const tour = tourHistoireParId('tour-de-la-necropole');
   assert.ok(tour, 'la Tour de la Nécropole fait partie de la campagne');
   assert.match(tour.resume, /nécropole|ténèbres|prix|tribut|lin/i);
@@ -161,8 +161,8 @@ test('la Tour de la Nécropole fait peser les Ténèbres : quatre étages mono-T
     const validation = rpgValiderDeck(deck);
     assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
     for (const id of new Set(deck)) {
-      assert.deepEqual(cardColors(cardById(id)), ['tenebres'],
-        `${etage.id} reste mono-Ténèbres (${id} fait exception)`);
+      assert.ok(cardColors(cardById(id)).every((couleur) => ['neige', 'tenebres'].includes(couleur)),
+        `${etage.id} reste neige/ténèbres (${id} fait exception)`);
     }
   }
 
@@ -171,7 +171,7 @@ test('la Tour de la Nécropole fait peser les Ténèbres : quatre étages mono-T
   assert.equal(tour.etages.at(-1).ia.niveau, 'veilleur');
 
   const boss = deckHistoire(tour.etages.at(-1).deck);
-  assert.ok(boss.includes('la-devoreuse') && boss.includes('celui-qui-juge'));
+  assert.ok(boss.includes('momie-de-lin') && boss.includes('celui-qui-juge'));
 });
 
 test('la Tour du Sablier renversé aligne sept étages de types différents, au-dessus de toutes les tours', () => {
@@ -202,56 +202,25 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
   assert.deepEqual(new Set(tour.etages.map((etage) => etage.ia.style)), new Set(RPG_STYLES_IA),
     'les quatre manières de jouer sont représentées');
 
-  // Chaque étage a son paquet et son identité : les cinq couleurs pures,
-  // la Course Sable + Eau, puis le bicolore du sommet.
-  const identites = tour.etages.map((etage) => {
+  // Les noms et niveaux d'étage restent stables, mais les adversaires sont
+  // désormais sept archétypes bicolores distincts du catalogue partagé.
+  const signatures = tour.etages.map((etage) => {
     const deck = deckHistoire(etage.deck);
-    const validation = rpgValiderDeck(deck);
-    assert.equal(validation.ok, true, `${etage.id} : ${validation.raison}`);
-    return [...new Set(deck.flatMap((id) => cardColors(cardById(id))))].sort().join('+');
+    assert.equal(rpgValiderDeck(deck).ok, true, etage.deck);
+    assert.equal(new Set(deck.flatMap((id) => cardColors(cardById(id)))).size, 2, etage.deck);
+    return deck.join('|');
   });
-  assert.equal(new Set(tour.etages.map((etage) => etage.deck)).size, 7, 'aucun paquet ne se répète');
-  assert.equal(new Set(identites).size, 7, 'aucune identité chromatique ne se répète');
-  assert.deepEqual(new Set(identites.slice(0, 5)), new Set(['sable', 'braise', 'eau', 'neige', 'tenebres']),
-    'les cinq couleurs pures ouvrent la tour');
-  assert.equal(identites[5], 'eau+sable', 'le sixième étage est la Course');
-  assert.equal(identites[6], 'braise+sable', 'le sommet joue Sable et Braise');
-  const manieres = tour.etages.map((etage, i) => `${identites[i]}/${etage.ia.style}`);
-  assert.equal(new Set(manieres).size, 7, 'chaque étage est un type de duel différent');
+  assert.equal(new Set(tour.etages.map((etage) => etage.deck)).size, 7);
+  assert.equal(new Set(signatures).size, 7, 'les sept combats jouent sept listes différentes');
+  assert.ok(deckHistoire('veilleurs-absolus').includes('bouchra-guerriere-des-cretes'));
+  assert.ok(deckHistoire('course-absolue').includes('la-barbe-rousse'));
+  assert.ok(deckHistoire('le-sablier').includes('archonte-du-sablier-noir'));
 
-  // « L'IA a les meilleures cartes » : les recettes absolues n'ont aucun
-  // plafond de rareté, et le résultat se lit dans les listes — chaque
-  // paquet absolu aligne au moins autant de mythiques que le paquet de
-  // campagne le plus fourni d'avant, et le Sablier les écrase tous.
-  const mythiques = (deckId) => deckHistoire(deckId)
-    .filter((id) => cardById(id).rarity === 'mythique').length;
-  // Depuis les coffrets et la rampe des Tours, les sommets de **chaque** Tour
-  // n'ont plus de plafond non plus : le Sablier ne se distingue donc plus par
-  // un nombre de mythiques supérieur à tout le reste, mais par ses sept
-  // identités, sa puissance d'étage et son bicolore. Ce qui reste vrai et
-  // vérifiable : aucun paquet absolu n'est plafonné, et chacun aligne les
-  // figures de son identité.
-  for (const etage of tour.etages) {
-    const recette = RPG_RECETTES_HISTOIRE[etage.deck];
-    assert.ok(recette, `${etage.deck} a sa recette`);
-    assert.equal(recette.mythiquesMax, undefined, `${etage.deck} : aucun plafond de mythiques`);
-    assert.equal(recette.raresMax, undefined, `${etage.deck} : aucun plafond de rares`);
-    assert.equal(recette.mythiquesTotalMax, undefined, `${etage.deck} : aucun plafond global de mythiques`);
-    assert.ok(mythiques(etage.deck) >= 5,
-      `${etage.deck} aligne au moins cinq figures (${mythiques(etage.deck)})`);
-  }
-  assert.ok(mythiques('le-sablier') >= 15, 'le Sablier aligne de nombreuses mythiques dans deux couleurs');
-  assert.ok(deckHistoire('flamme-absolue').includes('kagutsuchi-flamme-originelle')
-    && deckHistoire('flamme-absolue').includes('orochi'), 'la Braise absolue a ses deux plus grandes figures');
-  assert.ok(deckHistoire('hiver-absolu').includes('pere-des-corbeaux')
-    && deckHistoire('hiver-absolu').includes('serpent-du-monde'), 'la Neige absolue réunit les figures du Nord');
-
-  // Les six premiers gardiens portent le portrait de leur figure, qui
-  // joue dans leur paquet ; le Sablier, lui, n'a pas de visage.
+  // Les portraits de campagne restent des peintures, même si le catalogue
+  // commun ne contient plus chaque ancienne figure dans son paquet.
   for (const etage of tour.etages.slice(0, 6)) {
     assert.ok(etage.avatar, `${etage.id} a son portrait`);
-    assert.equal(cardById(etage.avatar).rarity, 'mythique', `${etage.id} : un maître, une figure mythique`);
-    assert.ok(deckHistoire(etage.deck).includes(etage.avatar), `${etage.id} : sa figure joue dans son paquet`);
+    assert.equal(cardById(etage.avatar).rarity, 'mythique');
   }
   assert.equal(tour.etages.at(-1).avatar, null, 'le Sablier n’a pas de visage');
 });

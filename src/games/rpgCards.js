@@ -6,10 +6,9 @@
  * résolvent leurs effets avant de rejoindre le cimetière. Les fiches portent coût,
  * élément, rareté, ligne de type, texte de règle et illustration locale.
  *
- * Les sept decks du jeu sont **composés** en fin de fichier : les recettes
- * (`rpgDeckRecipes.js`) disent l’identité, les quotas et la signature, et
- * `composerDeck` (`rpgDeckComposer.js`) y met les meilleures cartes du
- * catalogue, palier de rareté puis puissance (`rpgCardPower.js`).
+ * Les huit decks préconstruits sont partagés avec le MOBA et l’essai mana :
+ * mêmes listes bicolores, mêmes synergies. Les decks personnels du joueur
+ * et ses cartes de collection sont indépendants de ces préconstruits.
  */
 
 import { RPG_CORBEAU_CREATURES, RPG_CORBEAU_FIGURES, RPG_CORBEAU_MAGIES } from './rpgCorbeau.js';
@@ -29,6 +28,7 @@ import {
   RPG_TOUR_OUBLIEE_MAGIES,
   estCarteOubliee,
 } from './rpgTourOubliee.js';
+import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
 
@@ -2998,28 +2998,17 @@ export function rpgDraftOffer(rng, collection = []) {
   return offer;
 }
 
-/**
- * Les decks du jeu — composés, pas écrits.
- *
- * Chaque liste est le produit d'une **recette** (`rpgDeckRecipes.js`) passée au
- * **composeur** (`rpgDeckComposer.js`) avec le catalogue complet : identité
- * chromatique, quotas de créatures, de sorts et d'armes, signature
- * mécanique, puis les meilleures cartes restantes. Les sept decks de départ
- * contiennent chacun trente cartes sans terrain, une seule mythique et un
- * nombre de rares borné par leur recette ; les autres mythiques et rares
- * se découvrent dans les boosters.
- *
- * Les recettes vivent à part parce qu'elles sont lisibles : elles fixent les
- * synergies qui définissent chaque archétype et le composeur complète les places
- * restantes sans jamais dépasser les plafonds globaux. Les contrôles de
- * `tests/rpg-decks-puissance.test.js` suivent le contrat.
- */
+/** Les listes construites du catalogue commun. Le composeur et les anciennes
+ * recettes restent disponibles pour les decks maison et les archives de
+ * campagne ; elles ne déterminent plus les huit préconstruits joués. */
 export const CATALOGUE_DU_COMPOSEUR = {
   cartes: RPG_DUEL_CARDS.filter(carteJouableSansTerrain),
   couleursDe: cardColors,
   limiteDe: cardCopyLimit,
 };
 
+/** Archives de règles conservées pour les duels de test et les scripts historiques.
+ * Les vrais préconstruits (catalogue, essais, campagne) utilisent RPG_DECKS_THEMATIQUES. */
 /** Veilleurs du Désert — Butin et équipements, avec la Takouba de Tin Hinan comme seule mythique. */
 export const RPG_DECK_JOUEUR_BASE = composerDeck(RPG_RECETTES_DECKS['veilleurs-du-desert'], CATALOGUE_DU_COMPOSEUR);
 
@@ -3044,126 +3033,28 @@ export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-d
 /** Les Lettres de Marque — Abordage, Cale et Cargaison, avec La Barbe-Rousse comme seule mythique. */
 export const RPG_DECK_LETTRES_DE_MARQUE_BASE = composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR);
 
-/**
- * Les **archétypes** du jeu — les paquets qui ne sont plus sur l'étagère du
- * joueur, mais que le sorcier, les leçons du tutoriel, le mode Histoire et les
- * duels en ligne continuent d'aligner.
- *
- * Depuis les **coffrets de bienvenue** (`rpgCoffretBienvenue.js`), le joueur ne
- * commence plus avec un deck préconstruit : il ouvre un coffret de trente
- * cartes, joue avec, puis **compose ses propres decks** dans l'atelier au fur et
- * à mesure que le Souk lui donne des cartes. L'étagère n'a donc plus aucun deck
- * de base (`RPG_DECKS` est vide), mais ces huit paquets restent écrits ici :
- * c'est le répertoire de l'IA et des leçons, pas celui du joueur.
- *
- * `boxArt` : l'illustration plein art du boîtier 3D — un identifiant de
- * `public/cards/`. `role` : le camp que le paquet tient par défaut dans
- * l'ancien catalogue — `joueur` (ex-deck de départ) ou `adversaire` (deck du
- * sorcier en duel libre). `affrontement` : la phrase de la carte
- * « ADVERSAIRE » quand le sorcier joue ce paquet. `description` : ce qu'il
- * joue vraiment — elle suit la recette, jamais l'inverse.
- */
-export const RPG_DECKS_ARCHETYPES = [
-  {
-    id: 'veilleurs-du-desert',
-    name: 'Veilleurs du Désert',
-    role: 'joueur',
-    element: 'sable',
-    terrain: 'desert',
-    boxArt: 'cavalier-amazigh-du-desert',
-    archetype: 'Assaut des dunes',
-    affrontement: 'Affrontez les veilleurs du Désert.',
-    description: 'Deck mono-Sable inspiré des peuples amazighs d’Algérie : Butin, protection, la pioche de Tislit et l’égide d’Amani soutiennent les équipements du Désert. La Takouba de Tin Hinan est son unique mythique ; Salem, Tarek, la figure de Tin Hinan et les autres équipements d’exception restent à découvrir dans les boosters.',
-    cardIds: RPG_DECK_JOUEUR_BASE,
-  },
-  {
-    id: 'cour-des-djinns',
-    name: 'Cour des Djinns',
-    role: 'adversaire',
-    element: 'braise',
-    terrain: 'montagne',
-    boxArt: 'anqa-des-braises',
-    archetype: 'Djinns et sorcellerie',
-    affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Djinn des cendres vengeresses riposte à chaque mort alliée et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Shogun promu ajoutent Harakiri et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
-    cardIds: RPG_DECK_SORCIER_BASE,
-  },
-  {
-    id: 'sentiers-de-cendre',
-    name: 'Sentiers de cendre',
-    role: 'joueur',
-    element: 'hybride',
-    elements: ['sable', 'braise'],
-    terrain: 'petra',
-    boxArt: 'feriel',
-    archetype: 'Sable + Braise · deux couleurs, une même piste',
-    description: 'Deck hybride Sable + Braise : le mana automatique permet de choisir entre les deux couleurs, tandis que le Djinn de foudre et le Vent rouge ouvrent la voie à Fériel, son unique mythique et spécialiste de l’Attaque ciblée. Butin et équipements du Désert complètent l’assaut ; les autres mythiques attendent dans les boosters.',
-    cardIds: RPG_DECK_HYBRIDE_BASE,
-  },
-  {
-    id: 'maree-des-abysses',
-    name: 'Marée des abysses',
-    role: 'joueur',
-    element: 'eau',
-    terrain: 'mer',
-    boxArt: 'leviathan',
-    archetype: 'Contresorts · bêtes marines mythiques',
-    affrontement: 'Affrontez la marée des abysses.',
-    description: 'Deck mono-Eau de contrôle : contresorts, Ressac et rebonds ralentissent le sorcier, tandis que le Bâton appelle ses serpents des citernes. Le Léviathan est l’unique mythique du deck ; Kraken, Bakunawa, Jörmungandr, Yamina et Boualem restent à ouvrir dans les boosters.',
-    cardIds: RPG_DECK_MAREE_BASE,
-  },
-  {
-    id: 'serment-des-neuf-hivers',
-    name: 'Serment des Neuf Hivers',
-    role: 'joueur',
-    element: 'neige',
-    terrain: 'glacier',
-    boxArt: 'valkyrie-des-glaces',
-    archetype: 'Neige · valkyries, guerriers et drakkars',
-    affrontement: 'Affrontez les serments du Nord.',
-    description: 'Deck mono-Neige : la Furie aiguise les guerriers blessés, la Valkyrie au corbeau appelle un Viking du deck, la Poigne de givre et l’Appât de la meute contrôlent le combat, et ses deux mythiques — le Maître du marteau et la Valkyrie des glaces — apportent Furie, Ténacité et soin d’arrivée. Les autres figures du Nord se découvrent dans les boosters ; elles ne sont jamais nommées « dieux ».',
-    cardIds: RPG_DECK_NEIGE_BASE,
-  },
-  {
-    id: 'serment-du-soleil-rouge',
-    name: 'Le Serment du Soleil rouge',
-    role: 'joueur',
-    element: 'braise',
-    terrain: 'montagne-du-soleil-rouge',
-    boxArt: 'kagutsuchi-flamme-originelle',
-    archetype: 'Braise · samouraïs et yōkai',
-    affrontement: 'Affrontez le Serment du Soleil rouge.',
-    description: 'Deck mono-Braise du Japon fantastique : Harakiri frappe à la mort, le Shogun promu, le Tengu et le Kenshi font résonner les Samouraïs, et le Daimyō mythique lève des jetons qui grandissent en attaquant. Kagutsuchi et le Daimyō sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures s’ouvrent dans les boosters.',
-    cardIds: RPG_DECK_SOLEIL_ROUGE_BASE,
-  },
-  {
-    id: 'balance-des-heures',
-    name: 'La Balance des Heures',
-    role: 'joueur',
-    element: 'tenebres',
-    terrain: null,
-    boxArt: 'la-devoreuse',
-    archetype: 'Ténèbres · le Prix, le Tribut, la mort qui déclenche',
-    affrontement: 'Affrontez la Balance des Heures.',
-    description: 'Deck mono-Ténèbres de l’Égypte pharaonique : le Prix se paie en PV (Papyrus, La Grande Pesée), le Tribut transfère la vie au contact du sorcier (Chacal du seuil, Celui qui juge, le Khopesh d’or), et la mort déclenche — l’Ouvrier du natron, la Momie de lin et leurs serviteurs de lin. Nom effacé et Celle qui pèse vident la main adverse, Les feuillets raccourcissent son paquet, et La Dévoreuse — unique mythique du boîtier — exile la créature que la balance a condamnée. Le Passeur au masque de chacal, Le Maître des hiéroglyphes et La Dernière Pesée s’ouvrent dans les boosters.',
-    cardIds: RPG_DECK_TENEBRES_BASE,
-  },
-  {
-    id: 'lettres-de-marque',
-    name: 'Les Lettres de Marque',
-    role: 'joueur',
-    element: 'hybride',
-    // La flotte est Sable + Eau. Le Brûlot, devenu Braise, a quitté le
-    // boîtier : il s'ouvre dans les boosters.
-    elements: ['sable', 'eau'],
-    terrain: null,
-    boxArt: 'la-barbe-rousse',
-    archetype: 'Sable + Eau · l’Abordage, la Cale, la Cargaison',
-    affrontement: 'Affrontez les lettres de marque de la Régence.',
-    description: 'Deck hybride Sable + Eau de l’âge de la course : à l’arrivée en jeu, l’Abordage prend la créature adverse ciblée de coût inférieur au sien en cale (Raïs de la galiote, Cotre de course, La Barbe-Rousse — et la Lettre de marque arme toutes les arrivées du tour) ; la cale ne se rachète pas, il faut détruire ou faire quitter la table au capteur pour récupérer sa créature, et la Cargaison du Galion paie l’assurance du convoi. La Mousse des galiotes hisse la voile dès le premier mana ; le Routier lit les routes, et La Barbe-Rousse — unique mythique du boîtier — débarque un Corsaire. Les Quais de Cuivre attendent leur plateau ; les trois figures du manifeste et le Brûlot — la seule flamme du set, devenu Braise — s’ouvrent dans les boosters.',
-    cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
-  },
+/** Les anciens IDs restent les clés de sauvegarde des duels, tutoriels et
+ * campagnes. Chaque boîtier d'IA joue désormais exactement l'un des huit
+ * paquets thématiques bicolores, sans jamais remplacer un deck maison. */
+const ARCHETYPES_HISTORIQUES = [
+  { id: 'veilleurs-du-desert', role: 'joueur', terrain: 'desert', theme: 'sable' },
+  { id: 'cour-des-djinns', role: 'adversaire', terrain: 'montagne', theme: 'sahir' },
+  { id: 'sentiers-de-cendre', role: 'joueur', terrain: 'petra', theme: 'vampires' },
+  { id: 'maree-des-abysses', role: 'joueur', terrain: 'mer', theme: 'sources' },
+  { id: 'serment-des-neuf-hivers', role: 'joueur', terrain: 'glacier', theme: 'vikings' },
+  { id: 'serment-du-soleil-rouge', role: 'joueur', terrain: 'montagne-du-soleil-rouge', theme: 'lionne' },
+  { id: 'balance-des-heures', role: 'joueur', terrain: null, theme: 'papyrus' },
+  { id: 'lettres-de-marque', role: 'joueur', terrain: null, theme: 'corsaires' },
 ];
+export const RPG_DECKS_ARCHETYPES = ARCHETYPES_HISTORIQUES.map((ancien) => {
+  const theme = RPG_DECKS_THEMATIQUES.find((deck) => deck.id === ancien.theme);
+  const art = theme.cardIds.find((id) => cardById(id)?.rarity === 'mythique') ?? theme.cardIds[0];
+  return { id: ancien.id, name: theme.name, role: ancien.role,
+    element: 'hybride', elements: theme.elements, terrain: ancien.terrain,
+    boxArt: art, archetype: theme.elements.join(' + '),
+    affrontement: `Affrontez ${theme.name}.`,
+    description: theme.description, cardIds: theme.cardIds };
+});
 
 /**
  * L'**étagère du joueur** : vide, et c'est voulu.

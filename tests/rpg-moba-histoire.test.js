@@ -15,17 +15,15 @@ test('cinq chapitres distincts, decks compatibles, musiques classiques et portra
   assert.deepEqual(MOBA_HISTOIRE.map((c) => c.deck?.id), ['tour-listes-1', 'tour-corsaires-1', 'tour-souk-2', 'tour-fjord-3', 'tour-sablier-5']);
   assert.equal(MOBA_HISTOIRE[0].portrait, 'guetteur-du-beffroi');
   assert.ok(MOBA_HISTOIRE[0].deck.cardIds.includes(MOBA_HISTOIRE[0].portrait));
-  assert.equal(MOBA_HISTOIRE[1].portrait, 'la-barbe-noire');
-  assert.match(MOBA_HISTOIRE[1].texte, /Barbe Noire/);
-  assert.equal(MOBA_HISTOIRE[1].deck.name, 'La Mousse des galiotes');
+  assert.equal(MOBA_HISTOIRE[1].portrait, 'la-barbe-rousse');
+  assert.match(MOBA_HISTOIRE[1].texte, /Barbe-Rousse/);
+  assert.equal(MOBA_HISTOIRE[1].deck.name, 'Flotte de l’abordage');
   for (const chapitre of MOBA_HISTOIRE) {
     assert.equal(rpgMobaValiderDeck(chapitre.deck).ok, true, chapitre.titre);
     assert.ok(RPG_PLATEAU_MUSIC_FILES[chapitre.plateau.musique], chapitre.plateau.nom);
     if (chapitre.portrait) {
       assert.ok(cardById(chapitre.portrait), chapitre.portrait);
-      // Barbe Noire illustre l'ambiance du port sans modifier le deck de la Mousse ;
-      // la Valkyrie du fjord est également un portrait de chapitre distinct.
-      if (!['port-des-corsaires', 'lac-gele-viking'].includes(chapitre.plateau.id)) assert.ok(chapitre.deck.cardIds.includes(chapitre.portrait), chapitre.deck.name);
+      assert.ok(chapitre.deck.cardIds.includes(chapitre.portrait), chapitre.deck.name);
       const art = await readFile(new URL(`../public/cards/${chapitre.portrait}.jpg`, import.meta.url));
       assert.equal(art[0], 0xff);
       assert.equal(art[1], 0xd8);
@@ -118,9 +116,9 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
       assert.ok(interlude);
       assert.ok(interlude.querySelector('.moba__interlude-hero img'), 'Le personnage occupe le master, sans cadre de carte');
       if (index === 1) {
-        assert.match(interlude.querySelector('.moba__interlude-hero img').alt, /Barbe Noire/i);
-        assert.match(interlude.textContent, /Barbe Noire/);
-        assert.match(interlude.textContent, /La Mousse des galiotes/);
+        assert.match(interlude.querySelector('.moba__interlude-hero img').alt, /Barbe-Rousse/i);
+        assert.match(interlude.textContent, /Barbe-Rousse/);
+        assert.match(interlude.textContent, /Flotte de l’abordage/);
       }
       assert.equal(interlude.querySelector('.moba__interlude-portrait'), null);
       assert.equal(interlude.querySelectorAll(`.moba__interlude-particles--${MOBA_HISTOIRE[index].ambiance} i`).length, 36);

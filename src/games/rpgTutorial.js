@@ -1,13 +1,10 @@
 /**
  * Les tutoriels du Sablier.
  *
- * Cinq leçons, une par archétype : les fondations du duel, la Marée des
- * abysses (Eau, magies et contres), la Balance des Heures (Ténèbres, effets de
- * créature), le Serment du Soleil rouge (Samouraïs, Résonance et Bannière) et
- * le Serment des Neuf Hivers (Neige, gel et Furie). Une sixième leçon traverse
- * les couleurs : **l'Embuscade**, le mot-clé qui joue une créature pendant le
- * tour adverse. Aucun boîtier de l'étagère n'aligne ses soldats — ils s'ouvrent
- * dans les boosters —, alors cette leçon prête son propre paquet (`deckCards`).
+ * Cinq leçons scénarisées enseignent les fondations, l'Eau, les Ténèbres,
+ * les Samouraïs et les Vikings. Une sixième enseigne l'Embuscade avec le deck
+ * bicolore des Vampires. Les mains et les scènes pédagogiques peuvent prêter
+ * ponctuellement une carte hors du paquet sans modifier le préconstruit.
  *
  * Une leçon est une **partie d'entraînement scriptée** : une main connue, une
  * réserve de mana préparée, un adversaire passif et une suite d'étapes qui
@@ -26,42 +23,18 @@
  * 3. **Une récompense par leçon** : `reward` est versé par la bourse
  *    (`reclamerRecompenseTutoriel`) et retenu dans le portefeuille.
  */
-import { CATALOGUE_DU_COMPOSEUR, RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
-import { composerDeck } from './rpgDeckComposer.js';
-import { rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
+import { RPG_DECKS_ARCHETYPES, cardById } from './rpgCards.js';
+import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
+import { rpgChoisirCouleurMana, rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
 import { RPG_MANA_ESSAI_MAIN_DEPART } from './rpgManaEssai.js';
 
 // Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
 // l'étagère du joueur (vide depuis les coffrets de bienvenue).
 const deckParId = (id) => RPG_DECKS_ARCHETYPES.find((deck) => deck.id === id) ?? null;
-const cartesDuDeck = (id) => [...(deckParId(id)?.cardIds ?? RPG_DECK_JOUEUR_BASE)];
+const cartesDuDeck = (id) => [...(deckParId(id)?.cardIds ?? RPG_DECKS_THEMATIQUES[0].cardIds)];
 
-/**
- * Le paquet de la leçon **Embuscade** : les soldats de la lune noire.
- *
- * Le mot-clé traverse les sets (Sable, Braise, Neige, Eau — toujours mêlés de
- * Ténèbres) et aucun boîtier de l'étagère ne les réunit : la leçon compose donc
- * le sien, comme un deck d'atelier, avec les Embuscades en signature et le
- * reste pris au meilleur du vivier Sable + Ténèbres. Les plafonds gardent un
- * paquet lisible — peu de finisseurs, une seule mythique — parce qu'une leçon
- * se joue avec des cartes à trois manas, pas avec des figures à six.
- */
-const PAQUET_EMBUSCADE = Object.freeze(composerDeck({
-  identite: ['sable', 'tenebres'],
-  terrains: [],
-  creatures: 20,
-  magies: 8,
-  armes: 2,
-  mythiquesTotalMax: 1,
-  raresTotalMax: 4,
-  finisseursMax: 2,
-  signature: [
-    ['sentinelle-des-sables', 2],
-    ['danseuse-des-ombres-de-dune', 2],
-    ['eclipse-silencieuse', 2],
-    ['archonte-du-sablier-noir', 1],
-  ],
-}, CATALOGUE_DU_COMPOSEUR));
+/** La leçon Embuscade emprunte le deck bicolore Vampire commun aux modes. */
+const PAQUET_EMBUSCADE = RPG_DECKS_THEMATIQUES.find((deck) => deck.id === 'vampires').cardIds;
 
 /** La première leçon garde les alias historiques du tutoriel débutant. */
 const FONDATIONS = 'fondations-du-sablier';
@@ -74,10 +47,9 @@ function preparerMain(camp, ids, { taille = RPG_MANA_ESSAI_MAIN_DEPART, reserve 
   const main = [];
   for (const id of ids ?? []) {
     const index = disponible.indexOf(id);
-    // Une main de leçon est une convention : si la carte n'existe plus dans
-    // cette version du deck, on ne fait pas échouer tout le tutoriel.
-    if (index < 0) continue;
-    main.push(disponible.splice(index, 1)[0]);
+    // Une scène de tutoriel peut prêter une carte précise absente du nouveau
+    // deck thématique. Elle ne modifie pas le paquet préconstruit joué ailleurs.
+    main.push(index < 0 ? id : disponible.splice(index, 1)[0]);
   }
   const aGarder = new Set(reserve);
   // L'ordre du paquet de la leçon, et non celui du mélange, choisit les deux
@@ -157,9 +129,10 @@ function installerMana(camp, mana, plafond = 10) {
     if (!n) continue;
     camp.manaMax = { ...(camp.manaMax ?? {}), [couleur]: n };
     camp.mana = { ...(camp.mana ?? {}), [couleur]: n };
-    camp.manaSources = Array.from({ length: n }, () => couleur);
     camp.manaChoixEnAttente = false;
   }
+  camp.manaSources = Object.entries(mana).flatMap(([couleur, montant]) =>
+    Array(Math.max(0, Math.min(plafond, Math.floor(Number(montant) || 0)))).fill(couleur));
 }
 
 /** Une leçon par archétype : le choix du menu « Apprendre à jouer ». */
@@ -791,7 +764,8 @@ export const RPG_TUTORIELS = Object.freeze([
     element: 'braise',
     reward: 150,
     tagline: 'Résonance samouraï, jetons du Daimyō et Bannière qui grandit à chaque attaque.',
-    description: 'Le deck samouraï récompense les tables homogènes : le Shogun promu renforce tous les Samouraïs, lui compris, le Daimyō lève deux jetons et sa Bannière fait grandir chaque attaquant. Une leçon sur les auras et les attaques qui s’additionnent.',
+    description: 'Le deck samouraï récompense les tables homogènes : le Shogun promu renforce tous les Samouraïs, lui compris, le Daimyō lève deux jetons et sa Bannière fait grandir chaque attaquant. Une leçon sur les auras, les sacrifices et les attaques qui s’additionnent.',
+    stagedPlayer: [{ cardId: 'viking-des-neiges' }], // victime guidée du coût d’invocation du Daimyō
     opponentDeckId: 'cour-des-djinns',
     opponentName: 'Sorcier des djinns',
     openingHand: ['ashigaru-des-braises', 'samourai-du-torii', 'daimyo-du-soleil-rouge'],
@@ -808,7 +782,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'SERMENT DU SOLEIL ROUGE · OBJECTIF',
         title: 'Une table, un camp',
-        text: 'Les Samouraïs ne brillent pas seuls : leurs auras se lisent sur le type « Samouraï » et traversent les deux camps. Cette leçon installe trois créatures, puis fait attaquer tout le camp pour montrer la Résonance et la Bannière. Votre réserve est préparée à dix manas.',
+        text: 'Les Samouraïs ne brillent pas seuls : leurs auras se lisent sur le type « Samouraï » et traversent les deux camps. Un Viking attend déjà sur votre table : vous le sacrifierez pour invoquer le Daimyō. Ensuite, attaquez avec tous vos Samouraïs pour voir la Résonance et la Bannière. Votre réserve est préparée à dix manas.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -860,7 +834,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="daimyo-du-soleil-rouge"]',
         eyebrow: 'ÉTAPE 4 · LA BANNIÈRE',
         title: 'Le Daimyō et ses deux lames',
-        text: 'Touchez le Daimyō du Soleil rouge, cinq manas. En arrivant, il crée deux jetons Samouraï 1/1. Tant qu’il est en jeu, chaque Samouraï de votre camp qui attaque gagne +1/+1 avant les blessures. La table est maintenant à cinq créatures : trois créatures et deux jetons, la limite est atteinte.',
+        text: 'Touchez le Daimyō du Soleil rouge : il coûte cinq manas et demande de sacrifier une créature. Confirmez le sacrifice puis désignez le Viking sur votre table, pas un Samouraï. Le Daimyō le remplace et crée deux jetons Samouraï 1/1 : vous atteignez cinq créatures. Sa Bannière renforce les Samouraïs qui attaquent.',
         on: 'creature-jouee',
         cardId: 'daimyo-du-soleil-rouge',
         side: 'top',
@@ -1152,10 +1126,10 @@ export const RPG_TUTORIELS = Object.freeze([
     level: 'Avancé',
     duration: '≈ 8 min',
     icon: '☾',
-    // Le plateau et les couleurs viennent d’un boîtier réel ; les cartes, elles,
-    // viennent du paquet composé par la leçon (`deckCards`).
-    deckId: 'balance-des-heures',
-    deckName: 'Les Soldats de la lune noire',
+    // Le plateau et les couleurs viennent de l’archétype Vampire ; `deckCards`
+    // désigne explicitement la même liste pour les scènes guidées.
+    deckId: 'sentiers-de-cendre',
+    deckName: 'Cour du croissant noir',
     deckCards: PAQUET_EMBUSCADE,
     element: 'tenebres',
     reward: 150,
@@ -1370,11 +1344,9 @@ export function tutorielParId(id) {
   return RPG_TUTORIELS.find((tutoriel) => tutoriel.id === id) ?? RPG_TUTORIELS[0];
 }
 
-/**
- * Le paquet que la leçon prête au joueur : le sien quand elle en compose un —
- * la leçon **Embuscade** aligne des cartes qu'aucun boîtier ne réunit — sinon
- * celui de l'archétype emprunté. La table ne lit que cette liste : le plateau
- * et les couleurs continuent de venir de `deckId`.
+/** Le paquet prêté par la leçon. Embuscade choisit explicitement la liste
+ * Vampire du catalogue commun ; les autres empruntent leur archétype. La
+ * table ne lit que cette liste : le plateau et les couleurs viennent de `deckId`.
  */
 export function paquetDeLaLecon(tutorielOuId = RPG_TUTORIELS[0]) {
   const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
@@ -1457,9 +1429,18 @@ export function preparerDuelTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
  * automatique a déjà été choisi, la leçon remplace la réserve par celle qu'elle
  * annonce. Sans réserve préparée, le duel suit la règle normale (un mana).
  */
+export function choisirManaTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
+  const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
+  if (!duel?.joueur?.manaChoixEnAttente || !duel.joueur.couleurs.includes(tutoriel.element)) return false;
+  // Les gestes guidés ne comprennent pas de choix de couleur : chaque tour
+  // prend la couleur annoncée par la leçon, sans toucher aux duels libres.
+  return rpgChoisirCouleurMana(duel, 'joueur', tutoriel.element).ok;
+}
+
 export function appliquerManaInitialTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
   const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
   if (duel?.joueur && tutoriel.playerMana) installerMana(duel.joueur, tutoriel.playerMana);
+  else choisirManaTutoriel(duel, tutoriel);
   return duel;
 }
 

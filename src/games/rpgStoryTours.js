@@ -17,114 +17,74 @@
  * ne se dévoilent qu'à l'ouverture d'une tour.
  */
 
-import { composerDeck } from './rpgDeckComposer.js';
-import { RPG_RECETTES_HISTOIRE } from './rpgDeckRecipes.js';
-import { RPG_TOUR_OUBLIEE, RPG_TOUR_OUBLIEE_DECKS } from './rpgTourOubliee.js';
-import {
-  CATALOGUE_DU_COMPOSEUR,
-  RPG_DECK_HYBRIDE_BASE,
-  RPG_DECK_LETTRES_DE_MARQUE_BASE,
-  RPG_DECK_JOUEUR_BASE,
-  RPG_DECK_MAREE_BASE,
-  RPG_DECK_NEIGE_BASE,
-  RPG_DECK_SOLEIL_ROUGE_BASE,
-  RPG_DECK_SORCIER_BASE,
-  RPG_DECK_TENEBRES_BASE,
-} from './rpgCards.js';
+import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
+import { RPG_TOUR_OUBLIEE } from './rpgTourOubliee.js';
 
-/**
- * Les paquets de la campagne — les cinq decks du catalogue utilisés dans
- * l'Histoire, joués tels quels par leurs sorciers, et les cinq **variantes** que seuls les
- * étages alignent.
- *
- * Les variantes ne sont pas écrites carte par carte : elles passent par les
- * mêmes recettes que le catalogue (`RPG_RECETTES_HISTOIRE`, `rpgDeckRecipes.js`)
- * et le même composeur (`rpgDeckComposer.js`) — « les meilleures cartes
- * d’abord ». Ce qui les distingue, c’est leur signature (la manière du sorcier)
- * et leurs plafonds (`mythiquesMax`, `raresMax`) : la rampe des Tours, où la
- * Garde du fjord n’ouvre pas avec les figures du Nord et où le Maître des Neuf
- * Hivers les aligne. Les listes restent valides comme celles du catalogue :
- * 30 cartes sans terrain, mythiques à un exemplaire.
- */
-export const RPG_STORY_DECKS = {
-  'cour-des-djinns': RPG_DECK_SORCIER_BASE,
-  // Les Corsaires de la Régence relient les citernes des Abysses aux pistes du désert.
-  'lettres-de-marque': RPG_DECK_LETTRES_DE_MARQUE_BASE,
-  'veilleurs-du-desert': RPG_DECK_JOUEUR_BASE,
-  // Deck bleu (Eau) : contres et bêtes marines. Seule la Tour des Abysses le joue.
-  'maree-des-abysses': RPG_DECK_MAREE_BASE,
-  'sentiers-de-cendre': RPG_DECK_HYBRIDE_BASE,
-  // La Souffleuse de verre : l’Hybride agressive — Fériel frappe avec le verre,
-  // le Trait de braise est son retrait instantané, le Fennec ouvre la piste.
-  'souffleuse-de-verre': composerDeck(RPG_RECETTES_HISTOIRE['souffleuse-de-verre'], CATALOGUE_DU_COMPOSEUR),
-  // La Neige du Serment, telle qu’elle se joue en duel libre.
-  'serment-des-neuf-hivers': RPG_DECK_NEIGE_BASE,
-  // Garde du fjord : la muraille d’abord — boucliers, brumes et soins.
-  'gardes-du-fjord': composerDeck(RPG_RECETTES_HISTOIRE['gardes-du-fjord'], CATALOGUE_DU_COMPOSEUR),
-  // Meute des neiges : la course — loups, berserks et valkyries, sans réserve.
-  'meute-des-neiges': composerDeck(RPG_RECETTES_HISTOIRE['meute-des-neiges'], CATALOGUE_DU_COMPOSEUR),
-  // Le boss du fjord : le Serment essuyé, les figures du Nord à leur maximum.
-  'maitre-des-neuf-hivers': composerDeck(RPG_RECETTES_HISTOIRE['maitre-des-neuf-hivers'], CATALOGUE_DU_COMPOSEUR),
-  // Le boss de la Chambre des Heures : un vrai hybride Sable + Braise, Pétra
-  // comprise — ses mythiques de Braise sont enfin payables.
-  'grand-horloger': composerDeck(RPG_RECETTES_HISTOIRE['grand-horloger'], CATALOGUE_DU_COMPOSEUR),
-  // Tour du Soleil rouge (Braise / Samouraïs)
-  'gardes-du-soleil': composerDeck(RPG_RECETTES_HISTOIRE['gardes-du-soleil'], CATALOGUE_DU_COMPOSEUR),
-  'lames-du-soleil': composerDeck(RPG_RECETTES_HISTOIRE['lames-du-soleil'], CATALOGUE_DU_COMPOSEUR),
-  'serment-du-soleil-rouge': RPG_DECK_SOLEIL_ROUGE_BASE,
-  'maitre-du-soleil-rouge': composerDeck(RPG_RECETTES_HISTOIRE['maitre-du-soleil-rouge'], CATALOGUE_DU_COMPOSEUR),
-  // Tour de la Nécropole (Ténèbres / Égypte)
-  'momies-de-la-necropole': composerDeck(RPG_RECETTES_HISTOIRE['momies-de-la-necropole'], CATALOGUE_DU_COMPOSEUR),
-  'chacals-du-seuil': composerDeck(RPG_RECETTES_HISTOIRE['chacals-du-seuil'], CATALOGUE_DU_COMPOSEUR),
-  'balance-des-heures': RPG_DECK_TENEBRES_BASE,
-  'juges-de-la-necropole': composerDeck(RPG_RECETTES_HISTOIRE['juges-de-la-necropole'], CATALOGUE_DU_COMPOSEUR),
-  // ── Les Tours, étage par étage (rpgDeckRecipes.js, rampeEtage) ──────────
-  // Chaque étage a **son** paquet : la Tour des Listes, le Souk et les Sables
-  // n'empruntent plus ceux du catalogue, les Abysses et les Corsaires ne
-  // rejouent plus quatre fois le même. La rampe monte jusqu'aux figures.
-  'guetteur-de-palier': composerDeck(RPG_RECETTES_HISTOIRE['guetteur-de-palier'], CATALOGUE_DU_COMPOSEUR),
-  'scribe-de-la-liste': composerDeck(RPG_RECETTES_HISTOIRE['scribe-de-la-liste'], CATALOGUE_DU_COMPOSEUR),
-  'puisatier-des-cendres': composerDeck(RPG_RECETTES_HISTOIRE['puisatier-des-cendres'], CATALOGUE_DU_COMPOSEUR),
-  'marchand-de-sable': composerDeck(RPG_RECETTES_HISTOIRE['marchand-de-sable'], CATALOGUE_DU_COMPOSEUR),
-  'gardienne-des-ksour': composerDeck(RPG_RECETTES_HISTOIRE['gardienne-des-ksour'], CATALOGUE_DU_COMPOSEUR),
-  'djinn-du-tournant': composerDeck(RPG_RECETTES_HISTOIRE['djinn-du-tournant'], CATALOGUE_DU_COMPOSEUR),
-  'reine-des-etals': composerDeck(RPG_RECETTES_HISTOIRE['reine-des-etals'], CATALOGUE_DU_COMPOSEUR),
-  'veille-des-ergs': composerDeck(RPG_RECETTES_HISTOIRE['veille-des-ergs'], CATALOGUE_DU_COMPOSEUR),
-  'ifrit-des-sables': composerDeck(RPG_RECETTES_HISTOIRE['ifrit-des-sables'], CATALOGUE_DU_COMPOSEUR),
-  'horloger-du-zenith': composerDeck(RPG_RECETTES_HISTOIRE['horloger-du-zenith'], CATALOGUE_DU_COMPOSEUR),
-  'pecheur-de-perles': composerDeck(RPG_RECETTES_HISTOIRE['pecheur-de-perles'], CATALOGUE_DU_COMPOSEUR),
-  'nageuse-des-puits': composerDeck(RPG_RECETTES_HISTOIRE['nageuse-des-puits'], CATALOGUE_DU_COMPOSEUR),
-  'sonneur-d-ecume': composerDeck(RPG_RECETTES_HISTOIRE['sonneur-d-ecume'], CATALOGUE_DU_COMPOSEUR),
-  'devoreur-de-l-abime': composerDeck(RPG_RECETTES_HISTOIRE['devoreur-de-l-abime'], CATALOGUE_DU_COMPOSEUR),
-  'equipage-des-galiotes': composerDeck(RPG_RECETTES_HISTOIRE['equipage-des-galiotes'], CATALOGUE_DU_COMPOSEUR),
-  'marche-des-ranscons': composerDeck(RPG_RECETTES_HISTOIRE['marche-des-ranscons'], CATALOGUE_DU_COMPOSEUR),
-  'flotte-du-rais': composerDeck(RPG_RECETTES_HISTOIRE['flotte-du-rais'], CATALOGUE_DU_COMPOSEUR),
-  'amiral-des-deux-mers': composerDeck(RPG_RECETTES_HISTOIRE['amiral-des-deux-mers'], CATALOGUE_DU_COMPOSEUR),
-  'valkyrie-du-fjord': composerDeck(RPG_RECETTES_HISTOIRE['valkyrie-du-fjord'], CATALOGUE_DU_COMPOSEUR),
-  'kenshi-du-torii': composerDeck(RPG_RECETTES_HISTOIRE['kenshi-du-torii'], CATALOGUE_DU_COMPOSEUR),
-  'peseuse-des-ames': composerDeck(RPG_RECETTES_HISTOIRE['peseuse-des-ames'], CATALOGUE_DU_COMPOSEUR),
-  // Tour du Corbeau — le set hybride Neige + Ténèbres : la neige qui pèse
-  // les âmes (doc 22). Quatre étages, quatre paquets, une seule identité.
-  'corbeaux-du-givre': composerDeck(RPG_RECETTES_HISTOIRE['corbeaux-du-givre'], CATALOGUE_DU_COMPOSEUR),
-  'serment-des-neuf-nuits': composerDeck(RPG_RECETTES_HISTOIRE['serment-des-neuf-nuits'], CATALOGUE_DU_COMPOSEUR),
-  'veille-du-corbeau': composerDeck(RPG_RECETTES_HISTOIRE['veille-du-corbeau'], CATALOGUE_DU_COMPOSEUR),
-  'maitre-des-corbeaux': composerDeck(RPG_RECETTES_HISTOIRE['maitre-des-corbeaux'], CATALOGUE_DU_COMPOSEUR),
-  // Tour du Sablier renversé — les paquets « absolus » : les meilleures
-  // cartes de chaque identité, sans plafond de rareté (voir les recettes).
-  // Un paquet par étage, une identité différente à chaque marche.
-  'veilleurs-absolus': composerDeck(RPG_RECETTES_HISTOIRE['veilleurs-absolus'], CATALOGUE_DU_COMPOSEUR),
-  'flamme-absolue': composerDeck(RPG_RECETTES_HISTOIRE['flamme-absolue'], CATALOGUE_DU_COMPOSEUR),
-  'maree-absolue': composerDeck(RPG_RECETTES_HISTOIRE['maree-absolue'], CATALOGUE_DU_COMPOSEUR),
-  'hiver-absolu': composerDeck(RPG_RECETTES_HISTOIRE['hiver-absolu'], CATALOGUE_DU_COMPOSEUR),
-  'jugement-absolu': composerDeck(RPG_RECETTES_HISTOIRE['jugement-absolu'], CATALOGUE_DU_COMPOSEUR),
-  'course-absolue': composerDeck(RPG_RECETTES_HISTOIRE['course-absolue'], CATALOGUE_DU_COMPOSEUR),
-  'le-sablier': composerDeck(RPG_RECETTES_HISTOIRE['le-sablier'], CATALOGUE_DU_COMPOSEUR),
-  // La Tour Oubliée — le set secret de l'IA. Ces paquets ne sont pas composés :
-  // ils sont écrits à la main dans `rpgTourOubliee.js`, avec les seules cartes
-  // du set, hors catalogue. La rampe se lit dans la composition (aucune
-  // mythique à l'étage 1, les quatre au sommet).
-  ...RPG_TOUR_OUBLIEE_DECKS,
-};
+/** Identifiants historiques de progression conservés dans les sauvegardes.
+ * Les cartes jouées proviennent uniquement du catalogue thématique commun :
+ * aucune ancienne recette d'étage n'est recomposée au lancement. */
+const THEME_PAR_DECK = Object.freeze({
+  'cour-des-djinns': 'sahir',
+  'lettres-de-marque': 'corsaires',
+  'veilleurs-du-desert': 'sable',
+  'maree-des-abysses': 'sources',
+  'sentiers-de-cendre': 'vampires',
+  'souffleuse-de-verre': 'sahir',
+  'serment-des-neuf-hivers': 'vikings',
+  'gardes-du-fjord': 'vikings',
+  'meute-des-neiges': 'vikings',
+  'maitre-des-neuf-hivers': 'vikings',
+  'grand-horloger': 'sahir',
+  'gardes-du-soleil': 'lionne',
+  'lames-du-soleil': 'lionne',
+  'serment-du-soleil-rouge': 'lionne',
+  'maitre-du-soleil-rouge': 'lionne',
+  'momies-de-la-necropole': 'papyrus',
+  'chacals-du-seuil': 'papyrus',
+  'balance-des-heures': 'papyrus',
+  'juges-de-la-necropole': 'papyrus',
+  'guetteur-de-palier': 'sable',
+  'scribe-de-la-liste': 'sahir',
+  'puisatier-des-cendres': 'sahir',
+  'marchand-de-sable': 'sahir',
+  'gardienne-des-ksour': 'sable',
+  'djinn-du-tournant': 'sahir',
+  'reine-des-etals': 'sahir',
+  'veille-des-ergs': 'sahir',
+  'ifrit-des-sables': 'sahir',
+  'horloger-du-zenith': 'sahir',
+  'pecheur-de-perles': 'sources',
+  'nageuse-des-puits': 'sources',
+  'sonneur-d-ecume': 'sources',
+  'devoreur-de-l-abime': 'sources',
+  'equipage-des-galiotes': 'corsaires',
+  'marche-des-ranscons': 'corsaires',
+  'flotte-du-rais': 'corsaires',
+  'amiral-des-deux-mers': 'corsaires',
+  'valkyrie-du-fjord': 'vikings',
+  'kenshi-du-torii': 'lionne',
+  'peseuse-des-ames': 'papyrus',
+  'corbeaux-du-givre': 'papyrus',
+  'serment-des-neuf-nuits': 'papyrus',
+  'veille-du-corbeau': 'papyrus',
+  'maitre-des-corbeaux': 'papyrus',
+  'veilleurs-absolus': 'sable',
+  'flamme-absolue': 'lionne',
+  'maree-absolue': 'sources',
+  'hiver-absolu': 'vikings',
+  'jugement-absolu': 'papyrus',
+  'course-absolue': 'corsaires',
+  'le-sablier': 'vampires',
+  'horde-des-fosses': 'vampires',
+  'cour-de-sang': 'vampires',
+  'cauchemars-du-gourara': 'vampires',
+  'cauchemars-du-registre': 'vampires',
+  'bestiaire-oublie': 'vampires',
+  'le-roi-sans-nom': 'vampires',
+});
+const themes = new Map(RPG_DECKS_THEMATIQUES.map((theme) => [theme.id, theme.cardIds]));
+export const RPG_STORY_DECKS = Object.fromEntries(Object.entries(THEME_PAR_DECK)
+  .map(([id, themeId]) => [id, themes.get(themeId)]));
 
 /** Les tours, de la plus basse à la plus haute. */
 export const RPG_STORY_TOURS = [

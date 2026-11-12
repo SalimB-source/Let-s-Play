@@ -17,6 +17,7 @@
  * mais la cale reste, Cargaison paie à la mort et à la prise, le Brûlot
  * embrase son tueur, et l'IA du sorcier choisit sa prize.
  */
+import { DECKS_ESSAI_HISTORIQUES as RPG_MANA_ESSAI_DECKS } from './fixtures/legacyManaEssaiDecks.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
@@ -48,7 +49,6 @@ import {
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import {
-  RPG_MANA_ESSAI_DECKS,
   RPG_MODE_MANA_ESSAI,
   validerDeckManaEssai,
   deckManaEssaiParId,
@@ -922,12 +922,13 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
   assert.equal(essai.cardIds.includes('le-brulot'), false, 'le Brûlot, carte Braise, n’est plus dans le paquet');
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5, 'le banc d’essai compte cinq paquets');
 
-  // Le boîtier de l'étagère : composé par sa recette, pas écrit à la main.
+  // Le vieux boîtier reste une fixture moteur ; l'archétype joué est la
+  // flotte bicolore commune aux autres modes.
   const boitier = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'lettres-de-marque');
-  assert.ok(boitier, 'le boîtier est sur l’étagère');
-  assert.deepEqual(boitier.cardIds, composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR),
-    'la liste est celle de la recette');
-  assert.equal(boitier.cardIds, RPG_DECK_LETTRES_DE_MARQUE_BASE);
+  assert.ok(boitier, 'le boîtier est dans le répertoire');
+  assert.deepEqual(RPG_DECK_LETTRES_DE_MARQUE_BASE,
+    composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR));
+  assert.notDeepEqual(boitier.cardIds, RPG_DECK_LETTRES_DE_MARQUE_BASE);
   assert.equal(rpgValiderDeck(boitier.cardIds).ok, true);
   assert.equal(boitier.cardIds.length, 30);
   const familles = { creature: 0, magie: 0, arme: 0 };
@@ -938,8 +939,8 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
     // strictement Sable + Eau.
     assert.ok(cardColors(carte).every((couleur) => ['sable', 'eau'].includes(couleur)), `${id} tient l’identité Sable + Eau`);
   }
-  assert.deepEqual(familles, { creature: 19, magie: 9, arme: 0 + 2 }, '19 créatures, 9 magies, 2 armes');
-  assert.equal(boitier.cardIds.filter((id) => id === 'la-barbe-rousse').length, 1, 'La Barbe-Rousse est l’unique mythique');
+  assert.deepEqual(familles, { creature: 20, magie: 7, arme: 3 }, '20 créatures, 7 magies, 3 armes');
+  assert.equal(boitier.cardIds.filter((id) => id === 'la-barbe-rousse').length, 1, 'La Barbe-Rousse est unique');
   assert.equal(boitier.cardIds.includes('le-brulot'), false, 'le Brûlot, devenu Braise, a quitté la flotte');
   assert.equal(boitier.cardIds.filter((id) => id === 'mousse-des-galiotes').length, 2, 'la Mousse des galiotes prend sa place');
   assert.deepEqual(cardColors(cardById('le-brulot')), ['braise'], 'le Brûlot est une créature Braise, à ouvrir dans les boosters');

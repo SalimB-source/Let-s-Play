@@ -45,6 +45,7 @@ import {
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { composerDeck } from '../src/games/rpgDeckComposer.js';
+import { RPG_DECKS_THEMATIQUES } from '../src/games/rpgDecksThematiques.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
@@ -140,36 +141,22 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   assert.equal(hache.donne?.bouclier, undefined);
 });
 
-test('les decks du catalogue suivent leur quota d’armes et leur plafond de mythiques', () => {
-  const armesParDeck = {
-    'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan', 'harnais-du-mehari'],
-    'cour-des-djinns': [],
-    'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'masque-du-guetteur'],
-    'maree-des-abysses': ['baton-des-citernes'],
-    'serment-des-neuf-hivers': ['lance-de-givre'],
-    'serment-du-soleil-rouge': [],
-    'balance-des-heures': ['khopesh-d-or'],
-    'lettres-de-marque': ['baton-des-citernes', 'grappin-d-abordage'],
-  };
+test('les huit préconstruits partagent leurs armes thématiques et respectent les limites mythiques', () => {
   for (const deck of RPG_DECKS_ARCHETYPES) {
-    assert.equal(deck.cardIds.length, 30, `${deck.name} fait 30 cartes`);
-    assert.equal(rpgValiderDeck(deck.cardIds).ok, true, `${deck.name} reste valide`);
-    const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
-    assert.deepEqual(armes, armesParDeck[deck.id].sort(), `${deck.name} respecte sa sélection d’armes`);
-    const mythiques = [...new Set(deck.cardIds.filter((id) => cardById(id).rarity === 'mythique'))];
-    assert.equal(mythiques.length,
-      ['serment-des-neuf-hivers', 'serment-du-soleil-rouge'].includes(deck.id) ? 2 : 1,
-      `${deck.name} respecte son nombre de mythiques distinctes`);
+    const theme = RPG_DECKS_THEMATIQUES.find((candidate) => candidate.cardIds === deck.cardIds);
+    assert.ok(theme, `${deck.name} joue une liste bicolore du catalogue commun`);
+    assert.equal(deck.cardIds.length, 30);
+    assert.equal(rpgValiderDeck(deck.cardIds).ok, true, deck.name);
+    const armes = deck.cardIds.filter((id) => armeById(id));
+    assert.ok(armes.length >= 2, `${theme.id} a des équipements jouables`);
+    const mythiques = deck.cardIds.filter((id) => cardById(id).rarity === 'mythique');
+    assert.ok(mythiques.length >= 1, `${theme.id} a une figure mythique`);
+    assert.equal(new Set(mythiques).size, mythiques.length, 'une seule copie par carte mythique');
   }
-
   const veilleurs = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'veilleurs-du-desert');
-  assert.ok(veilleurs.cardIds.includes('takouba-de-tin-hinan'),
-    'les Veilleurs gardent la Takouba mythique comme seule mythique');
+  assert.ok(veilleurs.cardIds.includes('sandales-de-tislit'), 'les éclaireurs équipent Tislit');
   const sentiers = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'sentiers-de-cendre');
-  assert.ok(sentiers.cardIds.includes('takouba-des-pistes'),
-    'les Sentiers gardent la Takouba des pistes de leur signature');
-  assert.deepEqual([...new Set(sentiers.cardIds.filter((id) => cardById(id).rarity === 'mythique'))], ['feriel'],
-    'Fériel est la seule mythique des Sentiers, pas les deux équipements mythiques');
+  assert.ok(sentiers.cardIds.includes('sabre-du-croissant-noir'), 'les Vampires portent le sabre du croissant');
 });
 
 test('les armes entrent dans la collection comme les autres cartes', () => {

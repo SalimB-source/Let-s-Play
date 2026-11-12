@@ -66,7 +66,8 @@ test('la Marée des abysses garde une mythique et ouvre les autres bêtes dans l
   assert.deepEqual(RPG_DECKS, [], 'l’étagère n’a plus de deck de base');
   const entree = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'maree-des-abysses');
   assert.ok(entree, 'le deck est dans le répertoire des archétypes');
-  assert.equal(entree.cardIds, RPG_DECK_MAREE_BASE);
+  assert.notDeepEqual(entree.cardIds, RPG_DECK_MAREE_BASE, 'la recette historique ne remplace pas le deck bicolore');
+  assert.deepEqual(entree.elements, ['neige', 'eau']);
   assert.ok(entree.cardIds.includes(entree.boxArt), 'le boîtier reprend une carte du deck');
 });
 
@@ -330,25 +331,19 @@ test('sans mana, l’IA ne contre pas : la carte du joueur se résout', () => {
   assert.equal(duel.joueur.creatures.length, 1, 'la créature est posée');
 });
 
-test('la Tour des Abysses joue un paquet bleu par étage, de plus en plus fourni', () => {
+test('la Tour des Abysses garde ses quatre étapes mais utilise les Gardiennes neige/eau', () => {
   const tour = RPG_STORY_TOURS.find((t) => t.id === 'tour-des-abysses');
-  assert.ok(tour, 'la tour existe');
+  assert.ok(tour);
   assert.equal(tour.etages.length, 4);
-  // Depuis la rampe des Tours, chaque étage a **son** paquet d'Eau — fini le
-  // même deck rejoué quatre fois. La Marée reste le boîtier de l'étagère.
   const paquets = tour.etages.map((etage) => etage.deck);
-  assert.equal(new Set(paquets).size, 4, 'quatre paquets différents');
-  const mythiques = paquets.map((deckId) => deckHistoire(deckId)
-    .filter((id) => cardById(id).rarity === 'mythique').length);
-  assert.deepEqual(mythiques, [...mythiques].sort((a, b) => a - b),
-    'la rampe monte : jamais moins de figures à l’étage suivant');
+  assert.equal(new Set(paquets).size, 4, 'les identifiants de progression sont stables');
+  const modele = deckHistoire('maree-des-abysses');
   for (const deckId of paquets) {
-    const deck = deckHistoire(deckId);
-    assert.equal(rpgValiderDeck(deck).ok, true, `${deckId} est un deck valide`);
-    assert.deepEqual([...new Set(deck.flatMap((id) => cardColors(cardById(id))))], ['eau'],
-      `${deckId} reste cent pour cent Eau`);
+    const cartes = deckHistoire(deckId);
+    assert.equal(rpgValiderDeck(cartes).ok, true, deckId);
+    assert.equal(cartes, modele, `${deckId} joue la même liste thématique`);
+    assert.deepEqual(new Set(cartes.flatMap((id) => cardColors(cardById(id)))), new Set(['neige', 'eau']));
   }
-  assert.equal(deckHistoire('maree-des-abysses'), RPG_DECK_MAREE_BASE);
 });
 
 // ── Renvoi en main : Ressac et Courant de retour ───────────────────────────────

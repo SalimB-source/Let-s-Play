@@ -1,5 +1,7 @@
 /**
- * Les recettes des decks du Sablier.
+ * Recettes historiques du composeur. Les préconstruits joués proviennent
+ * désormais de rpgDecksThematiques.js ; ces recettes restent disponibles
+ * pour vérifier le composeur et rapprocher les anciens étages de leurs thèmes.
  *
  * Une recette n'est pas une liste de cartes : c'est **ce qui ne se négocie
  * pas** dans un deck, le reste étant composé par `rpgDeckComposer.js` avec
@@ -61,9 +63,9 @@ export function rampeEtage(etage, etages) {
 }
 
 /**
- * Les sept boîtiers de l'étagère (onglet Deck). Chaque recette fixe les cartes
- * signature, une seule mythique et un nombre de rares adapté aux trente cartes jouables ; les autres cartes
- * de ces paliers restent à obtenir dans des boosters.
+ * Les anciennes recettes du catalogue. Chaque recette fixe les cartes
+ * signature et les limites de rareté pour vérifier le composeur ; elles ne
+ * remplacent ni les huit listes thématiques ni les decks personnels.
  */
 export const RPG_RECETTES_DECKS = {
   /**

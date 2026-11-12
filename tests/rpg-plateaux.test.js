@@ -299,7 +299,7 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   // sur la table d’origine, l’Eau au bord de la mer, l’hybride sur la piste.
   assert.equal(plateauDeDeck('veilleurs-du-desert').plateau.id, 'erg-du-sahara');
   assert.equal(plateauDeDeck('cour-des-djinns').plateau.id, 'table-des-heures');
-  assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'caravane-de-gourara');
+  assert.equal(plateauDeDeck('sentiers-de-cendre').plateau.id, 'necropole-des-dalles');
   assert.equal(plateauDeDeck('maree-des-abysses').plateau.id, 'ruines-de-tipaza');
   assert.equal(plateauDeDeck('serment-des-neuf-hivers').plateau.id, 'village-viking');
   // Les Ténèbres ont leur terrain : la Balance des Heures, le set égyptien,
@@ -512,7 +512,7 @@ test('la page découpe la table : chaque camp reçoit le plateau de son deck', (
 test('le tirage reste déterministe avec le rng du duel', () => {
   const duel = { deckJoueur: 'maree-des-abysses', deckAdverse: 'sentiers-de-cendre' };
   assert.equal(tirerPlateauDuDuel({ ...duel, rng: () => 0.2 }).plateau.id, 'ruines-de-tipaza');
-  assert.equal(tirerPlateauDuDuel({ ...duel, rng: () => 0.9 }).plateau.id, 'caravane-de-gourara');
+  assert.equal(tirerPlateauDuDuel({ ...duel, rng: () => 0.9 }).plateau.id, 'necropole-des-dalles');
   assert.deepEqual(tirerPlateauDuDuel({ ...duel, rng: () => 0.9 }), tirerPlateauDuDuel({ ...duel, rng: () => 0.9 }));
   // Un seul appel au rng par partie : le reste du moteur garde sa suite.
   let appels = 0;
@@ -631,16 +631,15 @@ test('le second tirage n’est consommé que si le terrain a un double', () => {
     rng: () => { appels += 1; return 0.1; },
   });
   assert.equal(appels, 2, 'terrain à double : le camp puis la variante');
-  // Deux terrains restent uniques : la piste caravanière et la Table des
-  // Heures, la table d'origine depuis le retrait des Cavernes de Cristal. Le
-  // second tirage n'est alors pas consommé.
+  // La Nécropole des Vampires et la Table des Heures restent uniques :
+  // le second tirage n'est alors pas consommé.
   appels = 0;
-  const caravane = tirerPlateauDuDuel({
+  const necropole = tirerPlateauDuDuel({
     ...avecOption, deckJoueur: 'sentiers-de-cendre', deckAdverse: 'sentiers-de-cendre',
     rng: () => { appels += 1; return 0.9; },
   });
-  assert.equal(caravane.plateau.id, 'caravane-de-gourara');
-  assert.equal(caravane.variante, false, 'la piste caravanière garde son terrain unique');
+  assert.equal(necropole.plateau.id, 'necropole-des-dalles');
+  assert.equal(necropole.variante, false, 'la nécropole garde son terrain unique');
   assert.equal(appels, 1, 'terrain unique : le second tirage n’est pas consommé');
   // Le Grand Horloger reçoit sur la table d'origine : elle non plus n'a pas de
   // double merveilleux.
