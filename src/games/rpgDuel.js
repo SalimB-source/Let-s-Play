@@ -6218,7 +6218,7 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
   const sourceLane = duel.moba && duel[cote].creatures.find((e) => e.id === entiteId)?.mobaLane;
   return campsDePortee(cote, portee)
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
-      && (!sourceLane || mobaPartageVoie(duel.moba, entite.mobaLane, sourceLane))
+      && (!sourceLane || portee === 'allie' || mobaPartageVoie(duel.moba, entite.mobaLane, sourceLane))
       && (carte?.id !== 'gardienne-du-croissant' || !estSite(entite))
       && (!['renvoi-ou-destruction', 'exil-temporaire'].includes(carte.arrivee?.type) || !estSite(entite))
       && (carte.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carte)))
@@ -9136,7 +9136,7 @@ export function rpgDissiperSiteSansCibleMoba(duel) {
     || duel.mobaRechercheEnAttente || duel.defausseEnAttente) return false;
   const camp = duel[attente.cote];
   const source = camp.creatures.find((entite) => entite.id === attente.entiteId);
-  if (source && camp.creatures.some((entite) => !estSite(entite) && mobaPartageVoie(duel.moba, entite.mobaLane, source.mobaLane))) return false;
+  if (source && camp.creatures.some((entite) => !estSite(entite) && mobaVoiesCombat(duel.moba, entite.mobaLane).length > 0)) return false;
   duel.siteEnAttente = null;
   if (source) {
     duel.log.push('La Source de Bimini est atteinte, mais aucune créature ne peut boire son eau.');
@@ -9160,7 +9160,7 @@ function resoudreSite(duel, cote, entite, carte) {
     return;
   }
   if (recompense !== 'bimini') return;
-  const cibles = duel[cote].creatures.filter((candidate) => !estSite(candidate) && (!duel.moba || mobaPartageVoie(duel.moba, candidate.mobaLane, entite.mobaLane)));
+  const cibles = duel[cote].creatures.filter((candidate) => !estSite(candidate) && (!duel.moba || mobaVoiesCombat(duel.moba, candidate.mobaLane).length > 0));
   if (!cibles.length) {
     duel.log.push('La Source de Bimini est atteinte, mais aucune créature ne peut boire son eau.');
     terminerSite(duel, cote, entite.id);
