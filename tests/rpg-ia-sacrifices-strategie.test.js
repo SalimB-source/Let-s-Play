@@ -31,7 +31,9 @@ for (const mode of ['classique', 'moba']) {
     assert.equal(choix(d), null); assert.equal(JSON.stringify(d), before);
   });
   test(`${mode} : sacrifie une créature moins précieuse plutôt que la plus puissante`, () => {
-    const d = partie(mode === 'moba'); rpgFinDeTour(d);
+    const d = partie(mode === 'moba');
+    if (!d.moba) { const ennemi = poser(d, 'joueur', 'ashigaru-des-braises'); Object.assign(ennemi, { atk: 5, pv: 5, def: 5, pvMax: 5 }); }
+    rpgFinDeTour(d);
     const forte = poser(d, 'sorcier', 'ashigaru-des-braises', 'left', 0); Object.assign(forte, { atk: 15, pv: 15, def: 15, pvMax: 15 });
     const faible = poser(d, 'sorcier', 'ashigaru-des-braises', 'right', 0);
     d.sorcier.mana = { ...mana }; d.sorcier.main = ['anqa-des-braises']; const before = JSON.stringify(d);
@@ -93,7 +95,9 @@ for (const mode of ['classique', 'moba']) {
 }
 
 test('classique : une réponse changeant la valeur de la victime fait renoncer sans sacrifier', () => {
-  const d = partie(); rpgFinDeTour(d);
+  const d = partie();
+  const ennemi = poser(d, 'joueur', 'ashigaru-des-braises'); Object.assign(ennemi, { atk: 5, pv: 5, def: 5, pvMax: 5 });
+  rpgFinDeTour(d);
   const victime = poser(d, 'sorcier', 'ashigaru-des-braises');
   d.sorcier.mana = { ...mana }; d.sorcier.main = ['anqa-des-braises'];
   assert.equal(rpgSorcierAnnonceSuivante(d)?.carteId, 'anqa-des-braises');
@@ -116,3 +120,43 @@ for (const mode of ['classique', 'moba']) {
     assert.equal(appels, 0); assert.equal(JSON.stringify(d), avant);
   });
 }
+
+test('classique : garde un attaquant quand la seule invocation exigerait son sacrifice', () => {
+  const d = partie(); rpgFinDeTour(d);
+  const victime = poser(d, 'sorcier', 'ashigaru-des-braises');
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  d.sorcier.main = ['anqa-des-braises']; d.sorcier.mana = { ...mana };
+  const avant = JSON.stringify(d); let appels = 0;
+  rpgReglerHasard(d, () => { appels++; return .5; });
+  assert.equal(choix(d), null); assert.equal(JSON.stringify(d), avant); assert.equal(appels, 0);
+  assert.ok(d.sorcier.creatures.includes(victime));
+});
+
+test('classique : joue une créature sans sacrifice plutôt que remplacer un allié', () => {
+  const d = partie(); rpgFinDeTour(d);
+  const victime = poser(d, 'sorcier', 'ashigaru-des-braises');
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  d.sorcier.main = ['anqa-des-braises', 'chien-du-guet']; d.sorcier.mana = { ...mana };
+  const avant = JSON.stringify(d); const c = choix(d);
+  assert.equal(id(c), 'chien-du-guet'); assert.ok(!c.sacrificeIds?.length); assert.equal(JSON.stringify(d), avant);
+  assert.equal(rpgSorcierAnnonceSuivante(d)?.carteId, 'chien-du-guet');
+  assert.equal(rpgSorcierResoudreAnnonce(d).ok, true); assert.ok(d.sorcier.creatures.includes(victime));
+});
+
+test('classique : débloque la progression en remplaçant un allié incapable d’attaquer', () => {
+  const d = partie(); rpgFinDeTour(d);
+  const victime = poser(d, 'sorcier', 'ashigaru-des-braises');
+  Object.assign(victime, { atk: 0, nePeutPasAttaquer: true });
+  d.sorcier.main = ['anqa-des-braises']; d.sorcier.mana = { ...mana };
+  const avant = JSON.stringify(d); const c = choix(d);
+  assert.equal(id(c), 'anqa-des-braises'); assert.deepEqual(c.sacrificeIds, [victime.id]);
+  assert.equal(JSON.stringify(d), avant);
+});
+
+test('classique : ne sacrifie pas un attaquant qui peut déjà gagner', () => {
+  const d = partie(); d.joueur.pv = 5; rpgFinDeTour(d);
+  const victime = poser(d, 'sorcier', 'ashigaru-des-braises'); victime.atk = 5;
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  d.sorcier.main = ['ifrit-des-ergs']; d.sorcier.mana = { ...mana };
+  assert.equal(choix(d), null); assert.ok(d.sorcier.creatures.includes(victime));
+});

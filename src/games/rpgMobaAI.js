@@ -1,11 +1,11 @@
-import { sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
+import { victimesInvocation } from './rpgInvocation.js';
 import { MOBA_EMBUSCADES_CONDITIONS } from './rpgMobaEmbuscades.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
 import { mobaVieMaxPourCamp, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
-import { rpgCombinaisonsSacrificesIA, rpgSacrificeEstDeclasseIA } from './rpgAI.js';
+import { rpgCombinaisonsSacrificesIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana } from './rpgDuel.js';
 import {
   MOBA_EMBUSCADES_COMBAT, MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
@@ -75,8 +75,11 @@ export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
           .filter((attacker) => attacker && !baseline.combatDeclare.ciblesAttaque?.[attacker.id]
             && baseline[side].creatures.some((e) => e.mobaLane === attacker.mobaLane && rpgPeutBloquerAttaquant(e, attacker) && !rpgEstProtegee(attacker, cardColors(cardById(e.carteId)))))
           .reduce((best, attacker) => Math.max(best, attacker.atk ?? 0), 0);
-        const score = valeurPosition(probe, side) - valeurPosition(baseline, side) + Math.max(0, blocage - blocageAvant) * 2;
-        if (victime && rpgSacrificeEstDeclasseIA(cardById(id), [victime]) && score <= 1.5 && probe.moba.winner !== side) continue;
+        const cout = victime ? 4 + (rpgPeutAttaquer(victime) ? 4 : 0) : 0;
+        const score = valeurPosition(probe, side) - valeurPosition(baseline, side) + Math.max(0, blocage - blocageAvant) * 2 - cout;
+        // Une embuscade payante doit changer le cours de la menace, pas
+        // simplement remplacer une créature par une carte plus chère.
+        if (victime && score < 4 && probe.moba.winner !== side) continue;
         if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, sacrificeIds: victime ? [victime.id] : [], score };
       }
       continue;
@@ -375,21 +378,24 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     .filter((c) => c && ['creature', 'hero', 'site'].includes(c.kind)
       && !(duel.attaqueJouee === side && (c.ephemere || c.furtif)))
     .sort((a, b) => b.cost - a.cost);
-  // The Braisier can win immediately on arrival, even when a more expensive
-  // summon or a crowded lane would otherwise rank first. Probe only legal
-  // lethal lanes on a clone; the real duel and its RNG remain untouched.
-  if (cards.some((card) => card.id === 'braisier-du-souk')
-    && duel.moba.lanes.some((lane) => lane.conqueredBy === side)) {
-    for (const lane of lanes.filter((candidate) => candidate.hp[enemy] === 1)) {
-      const sacrificeIds = victimesInvocation(duel[side]).slice(0, sacrificesInvocation(cardById('braisier-du-souk'), duel)).map(e => e.id);
-      const slot = lane.slots[side].indexOf(null);
-      if (slot < 0 || sacrificeIds.length !== sacrificesInvocation(cardById('braisier-du-souk'), duel)) continue;
-      const simulation = copie(duel);
-      if (rpgMobaJouerCreature(simulation, side, 'braisier-du-souk', lane.id, slot, { sacrificeIds }).ok
-        && simulation.moba.winner === side) return { id: 'braisier-du-souk', lane: lane.id, slot, sacrificeIds };
-    }
-  }
+  // Un coût imprimé élevé ne suffit pas à justifier la perte d'une créature.
+  // Comparer toutes les invocations légales sur des copies, y compris celles
+  // sans sacrifice, au lieu de retourner la première carte chère de la main.
+  const valeurInitiale = valeurPosition(duel, side);
   let menaceInitiale;
+  let victoireInitiale;
+  let meilleur = null;
+  const victoireCombat = (position) => {
+    const essai = copie(position);
+    for (let i = 0; i < 5 && !essai.moba.winner; i++) {
+      const attaque = rpgMobaChoisirAttaqueIndividuelleIA(essai, side);
+      if (!attaque || !rpgMobaDeclarerAttaqueIndividuelle(essai, side, attaque.attaquantId, attaque.cibleId, attaque.voie).ok
+        || !rpgMobaResoudreAttaqueIndividuelle(essai, side).ok) break;
+      resoudreDestructionsSurCopie(essai);
+      if (essai.moba.centerChoice || essai.defausseEnAttente || essai.destructionsEnAttente?.length) break;
+    }
+    return essai.moba.winner === side;
+  };
   for (const card of cards) for (const lane of lanes) for (const victimes of (rpgMobaPeutEmbuscade(duel, side, card.id) ? [[]] : rpgCombinaisonsSacrificesIA(duel, side, card))) {
     const sacrificeIds = victimes.map((e) => e.id);
     const libre = lane.slots[side].indexOf(null);
@@ -399,46 +405,75 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot, { sacrificeIds });
     if (!pose.ok) continue;
     resoudreDestructionsSurCopie(simulation);
-    // Resolve actual targeted arrivals on the probe before judging the payoff.
+    // Évaluer les arrivées réelles, pas seulement le texte imprimé : la cible,
+    // ses protections et les effets de mort peuvent changer le bilan.
     for (let i = 0; i < 3 && simulation.arriveeEnAttente && !simulation.moba.winner; i++) {
       const cible = rpgMobaChoisirArriveeIA(simulation, side);
       if (!cible || !rpgMobaResoudreArrivee(simulation, side, cible).ok) break;
       resoudreDestructionsSurCopie(simulation);
       if (simulation.effetCreatureEnAttente) rpgMobaPasserEffetCreature(simulation, enemy);
     }
-    if (card.id === 'valkyrie-des-glaces' && valeurPosition(simulation, side) < valeurPosition(duel, side)) continue;
-    if (['bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire'].includes(card.id) && !simulation.arriveeEnAttente) {
-      const gain = valeurPosition(simulation, side) - valeurPosition(duel, side);
+    if (simulation.moba.winner === enemy) continue;
+    const sansAttente = !simulation.arriveeEnAttente && !simulation.effetCreatureEnAttente
+      && !simulation.destructionsEnAttente?.length && !simulation.siteEnAttente
+      && !simulation.defausseEnAttente && !simulation.mobaRechercheEnAttente;
+    const gain = valeurPosition(simulation, side) - valeurInitiale
+      + Math.max(0, simulation[side].main.length - duel[side].main.length + 1) * 3;
+    if (card.id === 'valkyrie-des-glaces' && gain < 0) continue;
+    if (['bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire'].includes(card.id) && sansAttente) {
       const perdue = !simulation[side].creatures.some((entity) => entity.id === pose.entite?.id);
       if (gain < (perdue ? card.cost : 0)) continue;
     }
-    if (victimes.length && rpgSacrificeEstDeclasseIA(card, victimes)) {
-      const gain = valeurPosition(simulation, side) - valeurPosition(duel, side)
-        + Math.max(0, simulation[side].main.length - duel[side].main.length + 1) * 3;
-      const sansAttente = !simulation.arriveeEnAttente && !simulation.effetCreatureEnAttente
-        && !simulation.destructionsEnAttente?.length && !simulation.siteEnAttente && !simulation.defausseEnAttente && !simulation.mobaRechercheEnAttente;
-      let decisif = simulation.moba.winner === side || (sansAttente && gain > 1.5);
-      if (!decisif && sansAttente) {
-        if (menaceInitiale === undefined) menaceInitiale = adversaireGagneProchainCombatMoba(duel, side);
-        if (menaceInitiale === true && adversaireGagneProchainCombatMoba(simulation, side) === false) decisif = true;
-      }
-      // A real, legally defended combat can justify a weaker hasty summon
-      // when it immediately wins the match, not merely when it can attack.
-      if (!decisif && sansAttente && pose.entite && rpgPeutAttaquer(pose.entite) && simulation.attaqueJouee !== side) {
-        const essai = copie(simulation);
-        for (let i = 0; i < 5 && !essai.moba.winner; i++) {
-          const attaque = rpgMobaChoisirAttaqueIndividuelleIA(essai, side);
-          if (!attaque || !rpgMobaDeclarerAttaqueIndividuelle(essai, side, attaque.attaquantId, attaque.cibleId, attaque.voie).ok
-            || !rpgMobaResoudreAttaqueIndividuelle(essai, side).ok) break;
-          if (essai.moba.centerChoice || essai.defausseEnAttente || essai.destructionsEnAttente?.length) break;
-        }
-        decisif = essai.moba.winner === side;
-      }
-      if (!decisif) continue;
+    // Perdre un corps, son équipement ou une attaque disponible est un coût
+    // en plus de ses statistiques. Ne pas abandonner sans raison une voie
+    // défendue par cette seule créature face à une menace.
+    const cout = victimes.reduce((total, victime) => {
+      const seule = mobaVoiesCombat(duel.moba, victime.mobaLane).some((voie) =>
+        duel[enemy].creatures.some((e) => mobaVoiesCombat(duel.moba, e.mobaLane).includes(voie))
+        && !duel[side].creatures.some((e) => !sacrificeIds.includes(e.id) && mobaVoiesCombat(duel.moba, e.mobaLane).includes(voie)));
+      return total + 4 + (rpgPeutAttaquer(victime) ? 4 : 0) + (seule ? 4 : 0)
+        + (victime.arme ? 3 : 0) + (victime.armes?.length ?? 0) * 2;
+    }, 0);
+    let priorite = simulation.moba.winner === side ? 3 : 0;
+    if (victimes.length && duel.attaqueJouee !== side && duel[side].creatures.some(rpgPeutAttaquer)) {
+      if (victoireInitiale === undefined) victoireInitiale = victoireCombat(duel);
+      if (victoireInitiale) continue;
     }
-    return { id: card.id, lane: lane.id, slot, sacrificeIds };
+    if (sansAttente && priorite < 3) {
+      if (menaceInitiale === undefined) menaceInitiale = adversaireGagneProchainCombatMoba(duel, side);
+      if (menaceInitiale === true && adversaireGagneProchainCombatMoba(simulation, side) === false) priorite = 2;
+      // Un gain immédiat en combat compte seulement si la position initiale
+      // ne pouvait pas déjà gagner sans perdre les créatures.
+      if (pose.entite && rpgPeutAttaquer(pose.entite) && simulation.attaqueJouee !== side) {
+        if (victoireInitiale === undefined) victoireInitiale = victoireCombat(duel);
+        if (!victoireInitiale && victoireCombat(simulation)) priorite = 3;
+      }
+    }
+    if (victimes.length && priorite === 0) {
+      if (!sansAttente) continue;
+      const menacePresente = duel[enemy].creatures.length > 0;
+      const attaqueEnnemie = duel[enemy].creatures.some((e) =>
+        !simulation[enemy].creatures.some((survivante) => survivante.id === e.id));
+      const pvGagnes = duel.moba.lanes.reduce((sum, voie) => {
+        const apres = simulation.moba.lanes.find((item) => item.id === voie.id);
+        return sum + Math.max(0, voie.hp[enemy] - (apres?.hp[enemy] ?? voie.hp[enemy]));
+      }, 0);
+      const conquete = simulation.moba.lanes.some((voie) => voie.conqueredBy === side
+        && !duel.moba.lanes.find((ancienne) => ancienne.id === voie.id)?.conqueredBy);
+      const peutProgresser = (etat) => etat[side].creatures.some((e) =>
+        cardById(e.carteId)?.kind !== 'site' && !e.nePeutPasAttaquer && (Number(e.atk) || 0) > 0
+        && mobaVoiesCombat(etat.moba, e.mobaLane).length > 0);
+      const debloqueProgression = !peutProgresser(duel) && peutProgresser(simulation);
+      // Un sacrifice demande une amélioration nette importante ET un besoin
+      // concret : menace, dégâts, conquête ou plateau incapable d'avancer.
+      if (!(menacePresente || attaqueEnnemie || pvGagnes > 0 || conquete || debloqueProgression) || gain - cout < 4) continue;
+    }
+    const score = gain - cout;
+    const choix = { id: card.id, lane: lane.id, slot, sacrificeIds };
+    if (!meilleur || priorite > meilleur.priorite
+      || (priorite === meilleur.priorite && score > meilleur.score)) meilleur = { choix, priorite, score };
   }
-  return null;
+  return meilleur?.choix ?? null;
 }
 
 export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
