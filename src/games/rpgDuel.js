@@ -2591,7 +2591,9 @@ function transfertVieMoba(duel, cote, laneId, montant) {
 }
 
 /** Harakiri : une seule créature adverse vivante, choisie uniformément au
- * hasard — ou le sorcier adverse s'il n'y a aucune créature adverse.
+ * hasard — ou le sorcier adverse s'il n'y a aucune créature adverse. En MOBA,
+ * seules les créatures partageant une voie avec la source sont éligibles ;
+ * à défaut, la frappe touche la voie adverse.
  * Protection et bouclier restent applicables ; ce sont des dégâts de capacité,
  * pas une attaque ni une magie.
  * La donnée de la carte garde le nom `honneur` : seul le nom affiché a changé. */
@@ -2603,10 +2605,10 @@ function declencherHarakiri(duel, cote, entite) {
   // La source morte ne maintient plus sa Résonance pendant sa dernière frappe.
   rafraichirAuras(duel);
   const adversaire = autre(cote);
-  // Les Sites ne sont pas des créatures : Tojiro ne peut pas les choisir.
-  // Le ciblage intervoies MOBA reste identique aux autres Harakiri.
+  // Le centre conquis partage les deux flancs encore actifs ; les autres
+  // voies sont indépendantes. Les sites ne sont pas des créatures en MOBA.
   const cibles = duel[adversaire].creatures.filter((cible) => cible.pv > 0
-    && (!duel.moba || carte?.id !== 'tojiro-le-pourfendeur' || !estSite(cible)));
+    && (!duel.moba || (!estSite(cible) && mobaPartageVoie(duel.moba, entite.mobaLane, cible.mobaLane))));
   if (!cibles.length) {
     if (!duel.moba) flammecheCreature(duel, cote, entite.id, { type: 'sorcier', cote: adversaire });
     if (duel.moba) {
