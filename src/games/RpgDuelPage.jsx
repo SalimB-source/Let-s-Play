@@ -3037,8 +3037,14 @@ export function TableCard({
         aria-hidden="true"
       />
       {cartesArmes.length > 0 && (
-        <span className="rpg-card__arme-vignette" data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
+        <span className={`rpg-card__arme-vignette${durabiliteArme > 0 || entite.arme?.compteurs > 0 ? ' has-compteurs' : ''}`} data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
           <img src={cardArt(cartesArmes[0])} alt="" />
+          {(durabiliteArme > 0 || entite.arme?.compteurs > 0) && (
+            <span className="rpg-card__arme-compteurs">
+              {durabiliteArme > 0 && <CompteurCarte type="durabilite" valeur={durabiliteArme} titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`} />}
+              {entite.arme?.compteurs > 0 && <CompteurCarte type="sable" valeur={entite.arme.compteurs} titre="Compteurs de sable de l’arme" />}
+            </span>
+          )}
           {cartesArmes.length > 1 && <span className="rpg-card__arme-nombre">+{cartesArmes.length - 1}</span>}
         </span>
       )}
@@ -3086,31 +3092,6 @@ export function TableCard({
         <span className="rpg-card__frost-glow" />
       </span>}
 
-      {/* Les compteurs d'arme gardent leur emplacement propre. */}
-      {(armeCarte && (entite.arme?.compteurs > 0 || (!hybride && durabiliteArme > 0))) && (
-        <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
-          {!hybride && armeCarte && durabiliteArme > 0 && (
-            <CompteurCarte
-              type="durabilite"
-              valeur={durabiliteArme}
-              titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`}
-            />
-          )}
-          {armeCarte && entite.arme?.compteurs > 0 && (
-            <CompteurCarte type="sable" valeur={entite.arme.compteurs} titre="Compteurs de sable de l’arme" />
-          )}
-        </span>
-      )}
-      {/* Sur une hybride, la durabilité reste sous les deux couleurs. */}
-      {hybride && armeCarte && durabiliteArme > 0 && (
-        <span className="rpg-card__compteurs rpg-card__compteurs--cale" aria-hidden="true">
-          <CompteurCarte
-            type="durabilite"
-            valeur={durabiliteArme}
-            titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`}
-          />
-        </span>
-      )}
       {/* Les marqueurs de créature se partagent le centre, entre coût et effets.
           Empilés s'ils coexistent, ils ne prennent pas la place des armes. */}
       {(entite.heures?.restants > 0 || entite.enCale) && (
@@ -3130,16 +3111,13 @@ export function TableCard({
       </header>
       {/* Sur la table, les icônes d'effets de la créature se rangent en colonne
           à la place du coût (qui ne s'imprime plus sur une carte posée), sur le
-          même axe. Si le coin est pris — losanges de compteurs d'une hybride,
-          bouton de capacité activée —, la colonne descend pour les laisser
-          lisibles. */}
+          même axe. Si le bouton de capacité activée occupe le coin, la colonne
+          descend pour le laisser lisible. */}
       {iconesEffets && (
         <IconesCarte
           carte={carte}
           entite={entite}
-          className={`rpg-card-icones--colonne${hybride && armeCarte && entite.arme?.compteurs > 0
-            ? ' rpg-card-icones--sous-compteurs'
-            : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
+          className={`rpg-card-icones--colonne${activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />
       )}
       {activation && cote === 'joueur' && onActiver && (

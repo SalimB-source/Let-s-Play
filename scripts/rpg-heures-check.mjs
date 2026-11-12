@@ -31,6 +31,8 @@ const fixtures = ['card-row', 'moba__slots'].flatMap(zone => [false, true].flatM
     <header class="rpg-card__title"><span class="rpg-mana-cost is-plaque"></span></header>
     <span class="rpg-card-icones rpg-card-icones--colonne"></span>
   </div></div></div>`))).join('');
+assert.match(css, /\.rpg-card\.has-arme > \.rpg-card__compteurs-creature\s*\{[\s\S]*?calc\(max\(34cqw, 26px\) \/ 2 \+ var\(--rpg-card-counter-size\) \* \.21 \+ 2px\)/,
+  'la pointe de la vignette et le losange central ne se chevauchent pas');
 const styleDom = new JSDOM(`<style>${css}</style>${fixtures}`, { virtualConsole: new VirtualConsole() });
 for (const heures of styleDom.window.document.querySelectorAll('.rpg-card__compteurs-creature')) {
   const style = styleDom.window.getComputedStyle(heures);

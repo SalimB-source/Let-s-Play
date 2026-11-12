@@ -293,8 +293,8 @@
   box-shadow: 0 0 0 2px rgba(255, 214, 25, .35);
 }
 
-/* Les compteurs d'arme se rangent sous la couleur, ou à droite
-   pour le sable d'une hybride. L'échelle suit celle du repère. */
+/* Positions historiques des groupes de compteurs de carte. Les marqueurs
+   de créature et les compteurs d'armes ont désormais leurs propres groupes. */
 .rpg-card__compteurs {
   --rpg-card-counter-size: clamp(10px, calc(var(--rpg-card-marker-size, 26px) * .58), 18px);
   position: absolute;
@@ -331,6 +331,14 @@
   transform: translateX(-50%);
   pointer-events: none;
 }
+/* La vignette d'arme chevauche le haut au centre : réserver sa pointe et un
+   interstice avant le premier losange, sans déplacer les compteurs de l'arme. */
+.rpg-card.has-arme > .rpg-card__compteurs-creature {
+  top: max(
+    calc(var(--rpg-card-element-marker-top, 5%) + (var(--rpg-cout-taille, 26.88px) - var(--rpg-card-counter-size)) / 2),
+    calc(max(34cqw, 26px) / 2 + var(--rpg-card-counter-size) * .21 + 2px)
+  );
+}
 .rpg-card__compteur {
   display: grid;
   place-items: center;
@@ -355,8 +363,7 @@
   background: linear-gradient(145deg, #426888, #1c344e);
 }
 .rpg-card__compteur--heures > span { color: #e8f6ff; }
-/* Durabilité d'une arme sur une créature hybride : elle reste sous les deux
-   couleurs. Le nom historique de cette classe conserve les styles existants. */
+/* Placement historique du groupe sous les deux couleurs d'une hybride. */
 .rpg-card__compteurs--cale {
   top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 26px) * 2 + 2px + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(var(--rpg-card-element-marker-left, 6%) + (var(--rpg-card-marker-size, 26px) - var(--rpg-card-counter-size)) / 2);
@@ -12072,6 +12079,41 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   object-fit: cover;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
+/* Durabilité et sable sont dans le losange de l'arme, jamais sur le corps de
+   la créature. La vignette s'élargit juste assez sur les plus petites cartes
+   pour conserver deux chiffres lisibles sans sortir de son cadre. */
+.rpg-card__arme-vignette.has-compteurs { width: max(34%, 26px); }
+.rpg-card__arme-compteurs {
+  --rpg-card-counter-size: clamp(10px, 8cqw, 12px);
+  position: absolute;
+  z-index: 1;
+  top: 54%;
+  left: 50%;
+  display: flex;
+  gap: 1px;
+  width: max-content;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.rpg-card__arme-compteurs .rpg-card__compteur {
+  flex: 0 0 var(--rpg-card-counter-size);
+  border-radius: 3px;
+  background: rgba(20, 15, 28, .92);
+  box-shadow: 0 1px 3px #000d;
+  transform: none;
+}
+.rpg-card__arme-compteurs .rpg-card__compteur--durabilite { border-color: #d5b3ff; }
+.rpg-card__arme-compteurs .rpg-card__compteur--sable { border-color: #f0d497; background: rgba(68, 41, 14, .94); }
+.rpg-card__arme-compteurs .rpg-card__compteur > span {
+  font: 900 clamp(7px, 6cqw, 9px)/1 system-ui, sans-serif;
+  transform: none;
+}
+.rpg-card__arme-compteurs .rpg-card__compteur--durabilite > span { color: #ead9ff; }
+.rpg-card__arme-compteurs .rpg-card__compteur--sable > span { color: #ffdf9b; }
+/* Les anciennes animations tournent les chiffres des losanges de 45° : ici
+   seule la pastille clignote lors d'un changement, le chiffre reste droit. */
+.rpg-card__arme-compteurs .rpg-card__compteur:is(.is-perte--a, .is-perte--b) > span { animation: none; }
+.rpg-card__arme-compteurs .rpg-card__compteur.is-derniere::after { inset: 0; border-radius: inherit; }
 .rpg-card__arme-nombre {
   position: absolute;
   right: -3px;

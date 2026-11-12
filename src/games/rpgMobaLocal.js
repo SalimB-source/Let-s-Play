@@ -112,24 +112,8 @@ const ancienDeckEssai = Object.freeze([
     ['mur-de-boucliers', 'grand-voile-blanc', 'grand-hiver', 'verglas', 'brume-du-fjord'].includes(id) ? [id] : [id, id]),
   'poigne-de-givre', 'poigne-de-givre', ...MOBA_MAGIES_VOIES, 'festin-des-vaillants',
 ]);
-let nombreGardiennes = 0;
-let nombrePoignes = 0;
-const deckSources = ancienDeckEssai.map((id) => {
-  if (id === 'mousse-des-galiotes') return 'porteuse-de-cruches';
-  if (id === 'gardienne-des-portes-de-sable') return nombreGardiennes++ === 0 ? 'eau-de-la-source' : 'festin-des-vaillants';
-  if (id === 'poigne-de-givre') return nombrePoignes++ === 0 ? 'ressac' : 'parade-du-verre';
-  return id;
-});
-const deckSahir = [...ancienDeckEssai];
-deckSahir[deckSahir.indexOf('ashigaru-des-braises')] = 'sahir-des-braises';
-deckSahir[deckSahir.indexOf('brume-du-fjord')] = 'rempart-de-dunes';
-deckSahir[deckSahir.indexOf('viking-des-neiges')] = 'guerrier-au-bouclier-rond';
-const deckLionne = [...deckSources];
-deckLionne[deckLionne.indexOf('jarl-au-marteau-de-guerre')] = 'lionne-du-midi-ardent';
-deckLionne[deckLionne.indexOf('anqa-des-braises')] = 'maitre-du-marteau';
-const deckPapyrus = ancienDeckEssai.map((id) => id === 'mousse-des-galiotes' ? 'guerrier-au-bouclier-rond'
-  : id === 'gardienne-des-portes-de-sable' ? 'papyrus' : id);
-// Keep each preconstructed deck's theme while replacing its third colour.
+// Le paquet historique reste une fixture de compatibilité pour les tests du moteur ;
+// les decks réellement proposés sont désormais construits indépendamment.
 const sansBraise = (id) => ({
   'ashigaru-des-braises': 'scalde-des-runes',
   'anqa-des-braises': 'geant-des-banquises',
@@ -137,25 +121,111 @@ const sansBraise = (id) => ({
   'trait-de-braise': 'hache-de-la-banquise',
 }[id] ?? id);
 export const MOBA_DECK_ESSAI = Object.freeze(ancienDeckEssai.map(sansBraise));
-const sourcesBicolore = deckSources.map(sansBraise);
-const papyrusBicolore = deckPapyrus.map(sansBraise);
-const sahirBicolore = deckSahir.map((id) => ({
-  'mousse-des-galiotes': 'scalde-des-runes',
-  'gardienne-des-portes-de-sable': 'volva-soigneuse',
-  'rempart-de-dunes': 'mur-de-boucliers',
-}[id] ?? id));
-const lionneBicolore = deckLionne.map((id) => ({
-  'porteuse-de-cruches': 'guerrier-au-bouclier-rond',
-  'eau-de-la-source': 'hache-de-la-banquise',
-  'ressac': 'defi-du-jarl',
-  'parade-du-verre': 'lance-de-givre',
-}[id] ?? id));
+const deux = (id) => [id, id];
+
+/** 30 cartes, deux couleurs au plus, deux exemplaires des cartes ordinaires
+ * et un seul des cartes d'exception. Le MOBA est sans mana : la courbe est
+ * celle des poses (0/1/2 sacrifices), avec un début de partie fourni, des
+ * soutiens et quelques finisseurs, pas une courbe de paiement de mana. */
 export const MOBA_DECKS = Object.freeze([
-  Object.freeze({ id: 'sable', name: 'Sable et givre', description: 'Gardiennes et assauts des neiges.', elements: Object.freeze(['neige', 'sable']), cardIds: MOBA_DECK_ESSAI }),
-  Object.freeze({ id: 'sources', name: 'Sources et givre', description: 'Soins de voie, Ressac et Parade de verre.', elements: Object.freeze(['neige', 'eau']), cardIds: Object.freeze(sourcesBicolore) }),
-  Object.freeze({ id: 'sahir', name: 'Le cercle des braises', description: 'Sahir pioche et frappe ; les guerriers et les boucliers protègent vos créatures.', elements: Object.freeze(['neige', 'braise']), cardIds: Object.freeze(sahirBicolore) }),
-  Object.freeze({ id: 'lionne', name: 'Le givre ardent', description: 'La Lionne et le Maître frappent à leur arrivée ; les guerriers protègent vos voies.', elements: Object.freeze(['neige', 'braise']), cardIds: Object.freeze(lionneBicolore) }),
-  Object.freeze({ id: 'papyrus', name: 'Les serments du papyrus', description: 'Payez des PV de voie pour piocher et protégez vos guerriers.', elements: Object.freeze(['neige', 'tenebres']), cardIds: Object.freeze(papyrusBicolore) }),
+  Object.freeze({
+    id: 'sable', name: 'Éclaireurs des pistes', elements: Object.freeze(['sable', 'neige']),
+    description: 'Attaque ciblée et armes légères : protéger les éclaireurs, équiper les meilleurs tireurs et ouvrir la voie.',
+    cardIds: Object.freeze([
+      ...deux('tislit-des-aures'), ...deux('viking-des-neiges'),
+      ...deux('gardienne-des-portes-de-sable'), 'bouchra-guerriere-des-cretes', 'gerboise-des-ruines', ...deux('guerrier-au-bouclier-rond'),
+      ...deux('guetteur-du-beffroi'), ...deux('scalde-des-runes'),
+      'salem', 'faucon-du-zenith', 'jarl-au-marteau-de-guerre',
+      ...deux('javelot-du-beffroi'), ...deux('cuirasse-de-sel'), ...deux('sandales-de-tislit'), 'hache-de-la-banquise',
+      ...deux('poigne-de-givre'), ...deux('brume-du-fjord'), 'defi-du-jarl', 'festin-des-vaillants',
+    ]),
+  }),
+  Object.freeze({
+    id: 'sources', name: 'Gardiennes des citernes', elements: Object.freeze(['neige', 'eau']),
+    description: 'Blessures soignées, boucliers et marées : tenir les trois voies, puis épuiser la réponse adverse.',
+    cardIds: Object.freeze([
+      ...deux('viking-des-neiges'), ...deux('guerrier-au-bouclier-rond'), ...deux('porteuse-de-cruches'),
+      ...deux('guetteuse-des-marees'), ...deux('loup-des-neiges'), ...deux('volva-soigneuse'),
+      ...deux('veilleuse-des-citernes'), ...deux('sonneur-fele'),
+      'jarl-au-marteau-de-guerre', 'tour-des-flots', 'geant-des-banquises',
+      'lance-de-givre', 'baton-des-citernes',
+      ...deux('eau-de-la-source'), ...deux('ressac'), ...deux('parade-du-verre'),
+      ...deux('festin-des-vaillants'), 'poigne-de-givre',
+    ]),
+  }),
+  Object.freeze({
+    id: 'sahir', name: 'Meute des braises', elements: Object.freeze(['sable', 'braise']),
+    description: 'Djinns rapides et chiens de Tarek : attaquer tôt, piocher avec Sahir et finir avec des armes ou le feu.',
+    cardIds: Object.freeze([
+      ...deux('ashigaru-des-braises'), ...deux('ghul-des-cendres'), ...deux('djinn-de-la-premiere-etincelle'),
+      ...deux('djinn-de-foudre'), ...deux('djinn-des-braises-voilees'), ...deux('fennec-des-decombres'),
+      'sahir-des-braises', 'djinn-du-dernier-brasier', ...deux('djinn-de-la-flamme-mourante'), 'tarek', 'ifrit-des-ergs',
+      ...deux('javelot-du-beffroi'), ...deux('braise-et-sable'), 'lame-des-ergs',
+      ...deux('frappe-iaijutsu'), ...deux('vent-rouge'), ...deux('trait-de-braise'), 'rempart-de-dunes',
+    ]),
+  }),
+  Object.freeze({
+    id: 'lionne', name: 'Forge des samouraïs', elements: Object.freeze(['neige', 'braise']),
+    description: 'Samouraïs, Harakiri et équipement : tenir avec les boucliers, déclencher le Serment et le Cavalier armé.',
+    cardIds: Object.freeze([
+      ...deux('ashigaru-des-braises'), ...deux('viking-des-neiges'), ...deux('hatamoto-des-cendres'),
+      ...deux('guerrier-au-bouclier-rond'), ...deux('ronin-du-soleil-rouge'), ...deux('kenshi-de-la-forge'),
+      ...deux('samourai-du-torii'), 'tengu-du-mont-ardent', 'daimyo-du-soleil-rouge',
+      'lionne-du-midi-ardent', 'cavalier-des-deux-sabres', 'tojiro-le-pourfendeur',
+      ...deux('hache-de-la-banquise'), 'armure-de-cendres', 'lance-de-givre',
+      'serment-de-la-forge', 'mur-de-boucliers', ...deux('frappe-iaijutsu'), 'defi-du-jarl', ...deux('trait-de-braise'),
+    ]),
+  }),
+  Object.freeze({
+    id: 'papyrus', name: 'Pesée des tombes', elements: Object.freeze(['neige', 'tenebres']),
+    description: 'Morts utiles, Tribut et pioche : convertir les petites pertes en Shabtis, protéger les survivants et peser les voies.',
+    cardIds: Object.freeze([
+      ...deux('garde-du-voile'), ...deux('ouvrier-du-natron'), ...deux('viking-des-neiges'),
+      ...deux('scarabee-du-natron'), ...deux('pretre-de-la-bouche'), ...deux('momie-de-lin'),
+      ...deux('veuve-des-urnes'), ...deux('corbeau-de-givre'), ...deux('garde-du-trone-givre'),
+      'celle-qui-pese', 'maitre-des-hieroglyphes', 'celui-qui-juge',
+      ...deux('khopesh-d-or'), 'lance-de-la-lune-givree',
+      ...deux('offrande-de-lin'), ...deux('papyrus'), 'effacement-des-faibles', 'poigne-de-givre',
+    ]),
+  }),
+  Object.freeze({
+    id: 'vikings', name: 'Drakkars des fjords', elements: Object.freeze(['neige', 'eau']),
+    description: 'Compagnie viking et Furie : Eirik rassemble les guerriers, la Valkyrie cherche les renforts et les marées dégagent leurs voies.',
+    cardIds: Object.freeze([
+      ...deux('viking-des-neiges'), 'eirik-du-premier-serment', ...deux('gardien-viking-du-fjord'),
+      ...deux('berserk-des-trois-hivers'), ...deux('scalde-des-runes'), ...deux('guetteuse-des-marees'),
+      ...deux('valkyrie-au-corbeau'), ...deux('archere-viking-du-givre'),
+      ...deux('pilote-de-la-carreira'), 'jarl-au-marteau-de-guerre', 'drakkar-a-tete-de-dragon',
+      'le-cavalier-du-ressac-gele',
+      ...deux('hache-de-la-banquise'), 'lance-de-givre',
+      ...deux('brume-du-fjord'), ...deux('hurlement-du-blizzard'), ...deux('ressac'), 'courant-de-retour',
+    ]),
+  }),
+  Object.freeze({
+    id: 'vampires', name: 'Cour du croissant noir', elements: Object.freeze(['sable', 'tenebres']),
+    description: 'Résonance vampire et Vol de vie : protéger le Général, infiltrer les voies et renforcer les Vampires avec l’Archonte.',
+    cardIds: Object.freeze([
+      ...deux('garde-du-voile'), ...deux('porteur-de-la-plume'), ...deux('rodeuse-des-tombes'),
+      ...deux('danseuse-des-ombres-de-dune'), ...deux('eclipse-silencieuse'),
+      ...deux('sentinelle-des-sables'), ...deux('general-du-croissant-noir'),
+      'veilleur-du-dernier-crepuscule', 'porte-etendard-de-leclipse',
+      ...deux('gardienne-du-croissant'), 'archonte-du-sablier-noir', 'souverain-de-la-lune-noire',
+      ...deux('sabre-du-croissant-noir'), 'khopesh-d-or',
+      ...deux('voile-de-la-lune-noire'), ...deux('nom-efface'), ...deux('le-poids'), 'reanimation',
+    ]),
+  }),
+  Object.freeze({
+    id: 'corsaires', name: 'Flotte de l’abordage', elements: Object.freeze(['sable', 'eau']),
+    description: 'Abordage et Butin : remplir les cales, piocher avec la Lettre de marque et lancer le Grand Débarquement.',
+    cardIds: Object.freeze([
+      ...deux('mousse-des-galiotes'), ...deux('pilote-de-la-carreira'), ...deux('negociant-des-ranscons'),
+      ...deux('rais-de-la-galiote'), ...deux('cotre-de-course'), ...deux('le-renegat'),
+      ...deux('guetteuse-des-marees'), ...deux('galion-de-la-flotte'),
+      ...deux('la-vengeance-de-la-reine-anne'), 'la-barbe-rousse', 'le-chasseur-d-ocracoke',
+      ...deux('grappin-d-abordage'), 'sphere-de-rotation',
+      ...deux('lettre-de-marque'), ...deux('le-grand-debarquement'), ...deux('le-routier'), 'ressac',
+    ]),
+  }),
 ]);
 
 /** Only this audited pool may be used by a player-built MOBA deck. */

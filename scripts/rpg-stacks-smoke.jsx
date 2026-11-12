@@ -441,22 +441,16 @@ export async function scenarioCompteursSurCarte(assert) {
   };
   try {
     const carte = await rendre({});
-    const pastilles = carte.querySelector('.rpg-card__compteurs');
-    assert.ok(pastilles, 'la carte équipée porte les losanges chiffrés');
-    assert.equal(pastilles.classList.contains('rpg-card__compteurs--hybride'), false,
-      'sur une carte mono, les compteurs restent sous la couleur');
-    assert.equal(pastilles.getAttribute('aria-hidden'), 'true',
-      'les chiffres décoratifs ne doublonnent pas avec le libellé du bouton');
+    const pastilles = carte.querySelector('.rpg-card__arme-compteurs');
+    assert.ok(pastilles, 'la vignette porte les compteurs de l’arme');
+    assert.equal(carte.querySelector('.rpg-card__arme-vignette').getAttribute('aria-hidden'), 'true');
     assert.equal(carte.querySelector('.rpg-card__compteurs-creature [data-compteur="heures"]')?.textContent, '2',
       'les Heures ont leur propre losange en haut au centre');
     assert.equal(pastilles.querySelector('[data-compteur="heures"]'), null);
     assert.equal(carte.querySelector('.rpg-card__compteurs-creature').getAttribute('aria-hidden'), 'true');
-    assert.equal(pastilles.querySelector('[data-compteur="sable"]')?.textContent, '3',
-      'les compteurs de sable de l’arme ont leur propre losange');
-    assert.match(carte.getAttribute('aria-label'), /2 compteurs d’Heures.*3 compteurs de sable/u,
-      'le nombre et la provenance de chaque compteur restent accessibles');
-    assert.doesNotMatch(carte.textContent, /●|\+2\/\+0/u,
-      'les losanges ne contiennent ni pastille ronde ni rappel du bonus d’arme');
+    assert.equal(pastilles.querySelector('[data-compteur="sable"]')?.textContent, '3');
+    assert.match(carte.getAttribute('aria-label'), /2 compteurs d’Heures.*3 compteurs de sable/u);
+    assert.doesNotMatch(carte.textContent, /●|\+2\/\+0/u);
 
     const apresHeure = await rendre({ heures: { restants: 1 }, arme: { ...entite.arme, compteurs: 0 } });
     assert.equal(apresHeure.querySelector('[data-compteur="heures"]')?.textContent, '1',
@@ -470,8 +464,8 @@ export async function scenarioCompteursSurCarte(assert) {
     const marqueursCreature = avecCale.querySelector('.rpg-card__compteurs-creature');
     assert.deepEqual([...marqueursCreature.children].map(element => element.dataset.compteur), ['heures', 'cale'],
       'Heures et cale sont empilées au centre');
-    assert.equal(avecCale.querySelector('.rpg-card__compteurs [data-compteur="cale"]'), null);
-    assert.equal(avecCale.querySelector('.rpg-card__compteurs [data-compteur="sable"]')?.textContent, '3');
+    assert.equal(avecCale.querySelector('.rpg-card__arme-compteurs [data-compteur="cale"]'), null);
+    assert.equal(avecCale.querySelector('.rpg-card__arme-compteurs [data-compteur="sable"]')?.textContent, '3');
     assert.match(avecCale.getAttribute('aria-label'), /cale : détient Captif/);
     const compteurAvant = marqueursCreature.querySelector('[data-compteur="heures"]');
     const caleEtPerte = await rendre({ heures: { restants: 1 }, enCale: { name: 'Captif', carteId: 'chien-du-guet' } });
@@ -486,17 +480,16 @@ export async function scenarioCompteursSurCarte(assert) {
     assert.equal(apresSable.querySelector('[data-compteur="heures"]'), null,
       'la sonnerie fait disparaître le losange d’Heures');
     const vide = await rendre({ heures: null, arme: { ...entite.arme, compteurs: 0 } });
-    assert.equal(vide.querySelector('.rpg-card__compteurs'), null,
+    assert.equal(vide.querySelector('.rpg-card__compteurs-creature'), null,
       'aucun losange n’est montré quand tous les compteurs sont à zéro');
 
     const hybride = await rendre({
       carteId: 'djinn-de-foudre', name: 'Djinn de foudre', atk: 2, pv: 1, pvMax: 1,
     });
-    const compteursHybrides = hybride.querySelector('.rpg-card__compteurs');
-    assert.equal(compteursHybrides?.classList.contains('rpg-card__compteurs--hybride'), true,
-      'sur la créature hybride, les compteurs passent sous le coût plutôt que sous les deux pastilles de couleur');
-    assert.equal(compteursHybrides.querySelectorAll('.rpg-card__compteur').length, 1,
-      'le sable reste séparé des Heures sur une hybride');
+    const compteursHybrides = hybride.querySelector('.rpg-card__arme-compteurs');
+    assert.ok(compteursHybrides?.querySelector('[data-compteur="sable"]'),
+      'le sable de l’hybride reste dans la vignette de son arme');
+    assert.equal(compteursHybrides.querySelector('[data-compteur="heures"]'), null);
     assert.equal(hybride.querySelector('.rpg-card__compteurs-creature [data-compteur="heures"]')?.textContent, '2');
     assert.equal(hybride.querySelector('.rpg-mana-cost--hybride')?.style.getPropertyValue('--rpg-hybrid-cost-bg'),
       cardHybridGradient('djinn-de-foudre'), 'le Djinn porte aussi son coût bicolore sur la table');
@@ -510,14 +503,14 @@ export async function scenarioCompteursSurCarte(assert) {
       enCale: { name: 'Captif', carteId: 'chien-du-guet' } });
     assert.deepEqual([...hybrideCale.querySelector('.rpg-card__compteurs-creature').children]
       .map(element => element.dataset.compteur), ['heures', 'cale'], 'la cale hybride rejoint aussi les Heures');
-    assert.ok(hybrideCale.querySelector('.rpg-card__compteurs--hybride [data-compteur="sable"]'));
+    assert.ok(hybrideCale.querySelector('.rpg-card__arme-compteurs [data-compteur="sable"]'));
     const caleSeule = await rendre({ heures: null, arme: null, enCale: { name: 'Captif', carteId: 'chien-du-guet' } });
     assert.ok(caleSeule.querySelector('.rpg-card__compteurs-creature [data-compteur="cale"]'));
-    assert.equal(caleSeule.querySelector('.rpg-card__compteurs'), null,
+    assert.equal(caleSeule.querySelector('.rpg-card__arme-compteurs'), null,
       'sans arme, la cale ne crée pas de groupe de compteurs d’arme');
     const retourMono = await rendre({});
-    assert.equal(retourMono.querySelector('.rpg-card__compteurs--hybride'), null,
-      'revenir à une créature mono replace les losanges sous sa couleur');
+    assert.ok(retourMono.querySelector('.rpg-card__arme-compteurs [data-compteur="sable"]'),
+      'revenir à une créature mono conserve le compteur dans la vignette');
   } finally {
     await act(async () => root.unmount());
     container.remove();

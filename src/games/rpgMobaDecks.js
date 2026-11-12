@@ -1,6 +1,6 @@
 import { cardById, cardColors } from './rpgCards.js';
 import { RPG_STORY_TOURS, deckHistoire } from './rpgStoryTours.js';
-import { rpgMobaValiderDeck } from './rpgMobaLocal.js';
+import { MOBA_DECKS, rpgMobaValiderDeck } from './rpgMobaLocal.js';
 
 /** Adapt deck metadata only; never replace cards or bypass the MOBA audit. */
 export function rpgMobaDeckMaison(deck) {
@@ -22,4 +22,10 @@ export const MOBA_DECKS_TOURS = Object.freeze(RPG_STORY_TOURS.flatMap((tour) => 
 
 export function rpgMobaDeckTourAleatoire(rng = Math.random) {
   return MOBA_DECKS_TOURS[Math.min(MOBA_DECKS_TOURS.length - 1, Math.max(0, Math.floor(rng() * MOBA_DECKS_TOURS.length)))] ?? null;
+}
+
+/** Le duel libre affronte l'un des archétypes construits, sans modifier
+ * les adversaires scénarisés de la campagne ni les decks personnels. */
+export function rpgMobaDeckLibreAleatoire(rng = Math.random) {
+  return MOBA_DECKS[Math.min(MOBA_DECKS.length - 1, Math.max(0, Math.floor(rng() * MOBA_DECKS.length)))] ?? null;
 }

@@ -1530,9 +1530,8 @@
   top: calc(5% + var(--rpg-plaque-taille, 19cqw) + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(6% + (var(--rpg-plaque-taille, 19cqw) - var(--rpg-card-counter-size)) / 2);
 }
-/* La durabilité d'une arme sur une hybride reste sous les DEUX pastilles
-   empilées. Cette classe historique conserve son placement d'origine et sa
-   spécificité face à la règle des compteurs mono ci-dessus. */
+/* Placement historique des groupes de compteurs sous les deux pastilles
+   d'une hybride, avec priorité sur la règle des groupes mono ci-dessus. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__compteurs.rpg-card__compteurs--cale {
   top: calc(5% + var(--rpg-plaque-taille, 19cqw) * 2 + 1.5cqw + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);

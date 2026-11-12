@@ -10,7 +10,7 @@ for (const id of ['chien-du-guet', 'danseuse-des-ombres-de-dune']) {
   const doc = documentDe(rendre(id));
   const compteur = doc.querySelector('[data-compteur="durabilite"]');
   assert.ok(compteur, `${id} porte un compteur de durabilité`);
-  assert.ok(compteur.closest('.rpg-card__compteurs:not(.rpg-card__compteurs--hybride)'), 'le compteur se trouve sous la couleur');
+  assert.ok(compteur.closest('.rpg-card__arme-compteurs'), 'le compteur se trouve sur la vignette de l’arme');
   assert.equal(doc.querySelectorAll('[data-compteur="durabilite"]').length, 1);
   assert.match(doc.querySelector('.rpg-card').getAttribute('aria-label'), /1 compteur de durabilité/);
 }
@@ -19,13 +19,13 @@ assert.equal(seulementDuree.querySelector('.rpg-card-icones--sous-compteurs'), n
 const sansDuree = documentDe(rendre('danseuse-des-ombres-de-dune', { arme: { durabilite: 0 } }));
 assert.equal(sansDuree.querySelector('[data-compteur="durabilite"]'), null);
 const doc = documentDe(rendre('danseuse-des-ombres-de-dune', { enCale: true, heures: true, arme: { compteurs: 2 } }));
-const sousCouleurs = doc.querySelector('.rpg-card__compteurs--cale');
-assert.ok(sousCouleurs.querySelector('[data-compteur="durabilite"]'));
-assert.equal(sousCouleurs.querySelector('[data-compteur="cale"]'), null);
+const compteursArme = doc.querySelector('.rpg-card__arme-compteurs');
+assert.ok(compteursArme.querySelector('[data-compteur="durabilite"]'));
+assert.equal(compteursArme.querySelector('[data-compteur="cale"]'), null);
 assert.ok(doc.querySelector('.rpg-card__compteurs-creature [data-compteur="cale"]'));
 assert.ok(doc.querySelector('.rpg-card__compteurs-creature [data-compteur="heures"]'));
-assert.ok(doc.querySelector('.rpg-card__compteurs--hybride [data-compteur="sable"]'));
-assert.equal(doc.querySelector('.rpg-card__compteurs--hybride [data-compteur="durabilite"]'), null);
+assert.ok(doc.querySelector('.rpg-card__arme-compteurs [data-compteur="sable"]'));
+assert.equal(doc.querySelector('.rpg-card__compteurs-creature [data-compteur="durabilite"]'), null);
 const css = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
 assert.match(css, /\.rpg-card__compteurs\.rpg-card__compteurs--cale\s*\{\s*top:\s*calc\(5% \+ var\(--rpg-plaque-taille, 19cqw\) \* 2 \+ 1\.5cqw/);
-console.log('Durabilité sous les couleurs : mono, hybride et compteurs combinés OK');
+console.log('Durabilité dans la vignette : mono, hybride et compteurs combinés OK');
