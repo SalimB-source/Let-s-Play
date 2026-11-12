@@ -182,14 +182,14 @@ test('Tojiro en réponse : l’IA ne sacrifie pas une créature même supérieur
  assert.equal(JSON.stringify(d),before);
 });
 
-test('une Embuscade consomme son quota spécial mais laisse une invocation normale au tour suivant', () => {
+test('une Embuscade laisse une invocation normale au tour suivant, sans quota spécial', () => {
  const {d, defenseur, victime} = partie('sorcier');
  d.sorcier.main=[]; assert.ok(rpgMobaTerminerTour(d,'sorcier').ok);
  assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok);
  assert.ok(rpgMobaPasserCreature(d,'sorcier').entite);
  assert.equal(d.moba.embuscadesJouees[defenseur],true);
  d[defenseur].main=[id];
- assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id),false);
+ assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id),true);
  assert.ok(rpgMobaPasserFinDeTour(d,defenseur).ok);
  assert.equal(d.tour,defenseur); assert.equal(d.moba.embuscadesJouees[defenseur],false);
  const tojiro=d[defenseur].creatures.find(e=>e.carteId===id);

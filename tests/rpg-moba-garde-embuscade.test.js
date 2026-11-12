@@ -146,16 +146,15 @@ test('la disparition du dernier attaquant ne fait pas perdre une Embuscade déj�
   assert.ok(rpgMobaPlacementCoherent(d));
 });
 
-for (const side of ['joueur', 'sorcier']) test(`${side} : une Embuscade contrée consomme le quota du défenseur pour ce tour`, () => {
+for (const side of ['joueur', 'sorcier']) test(`${side} : une Embuscade contrée laisse la condition rejouable`, () => {
   const { d, a, defender } = combat(side);
   d[defender].main = [garde, garde]; d[side].main = ['ecueil'];
   assert.ok(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true }).ok);
   assert.ok(rpgMobaLancerMagie(d, side, 'ecueil').contre);
   assert.equal(d.moba.embuscadesJouees[defender], true);
-  assert.equal(rpgMobaPeutEmbuscade(d, defender, garde), false);
-  const avant = JSON.stringify(d);
-  assert.equal(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true }).ok, false);
-  assert.equal(JSON.stringify(d), avant);
+  assert.equal(rpgMobaPeutEmbuscade(d, defender, garde), true);
+  assert.ok(rpgMobaJouerCreature(d, defender, garde, 'left', 0, { ouvrirReponse: true, sacrificeIds: [] }).creatureEnAttente);
+  assert.ok(rpgMobaPasserCreature(d, side).entite);
   assert.ok(rpgMobaLancerAttaque(d, side, [a.id], {}, { declaree: true }).ok);
   d[defender].main = ['gardienne-des-portes-de-sable'];
   rpgFinDeTour(d);

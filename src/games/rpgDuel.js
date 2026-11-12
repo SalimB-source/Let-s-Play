@@ -6216,7 +6216,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -6246,8 +6246,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!contreCreatureMoba && !(dejaPayee && (attenteMoba.embuscadeCombat || attenteMoba.embuscadeSuspendue)) && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
-  const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length : sacrificesInvocation(carte, duel, cote);
-  const limiteInvocation = !dejaPayee && limiteInvocationMoba(duel, cote, carte);
+  const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba);
+  const limiteInvocation = !dejaPayee && limiteInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
   if (limiteInvocation) return { ok: false, raison: limiteInvocation };
   const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
   let sacrifices = [];
@@ -6400,9 +6400,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!dejaPayee && !rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (!dejaPayee && duel.moba && annoncerCreatureMoba) {
     payer(duel, cote, carte);
-    marquerInvocationMoba(duel, cote, carte);
+    marquerInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
     camp.main.splice(camp.main.indexOf(carteId), 1);
-    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), ...annoncerCreatureMoba };
+    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), invocationSpecialeMoba, ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
     duel.log.push(`${carte.name} est annoncée en ${annoncerCreatureMoba.nomVoie}, emplacement ${annoncerCreatureMoba.slot + 1} : réponse ou passage avant son arrivée.`);
     return { ok: true, creatureEnAttente: true };
@@ -6460,7 +6460,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
-    marquerInvocationMoba(duel, cote, carte);
+    marquerInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
     camp.main.splice(camp.main.indexOf(carteId), 1);
   }
   // Un effet de mort payé comme sacrifice peut fermer la case ou terminer
