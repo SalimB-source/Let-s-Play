@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cardById, cardColors, cardCopyLimit } from '../src/games/rpgCards.js';
+import { cardById, cardColors, cardCopyLimit, cardHasPrintedType } from '../src/games/rpgCards.js';
 import { MOBA_DECKS, MOBA_CARTES_AUTORISEES, rpgMobaCreerPartie, rpgMobaValiderDeck } from '../src/games/rpgMobaLocal.js';
 import { MOBA_DECKS_TOURS, rpgMobaDeckLibreAleatoire, rpgMobaDeckTourAleatoire } from '../src/games/rpgMobaDecks.js';
 
@@ -10,15 +10,22 @@ const signatures = {
   sahir: ['djinn-de-foudre', 'ghul-des-cendres', 'sahir-des-braises', 'tarek', 'lame-des-ergs'],
   lionne: ['samourai-du-torii', 'kenshi-de-la-forge', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'hache-de-la-banquise'],
   papyrus: ['scarabee-du-natron', 'momie-de-lin', 'offrande-de-lin', 'khopesh-d-or', 'papyrus'],
+  vikings: ['eirik-du-premier-serment', 'valkyrie-au-corbeau', 'gardien-viking-du-fjord', 'le-cavalier-du-ressac-gele', 'ressac'],
+  vampires: ['general-du-croissant-noir', 'danseuse-des-ombres-de-dune', 'archonte-du-sablier-noir', 'sabre-du-croissant-noir', 'souverain-de-la-lune-noire'],
+  corsaires: ['rais-de-la-galiote', 'cotre-de-course', 'galion-de-la-flotte', 'lettre-de-marque', 'le-grand-debarquement', 'la-barbe-rousse'],
 };
 
-test('cinq decks MOBA distincts, légaux, audités et réellement jouables', () => {
+test('huit decks MOBA distincts, légaux, audités et réellement jouables', () => {
   assert.deepEqual(MOBA_DECKS.map((deck) => deck.id), Object.keys(signatures));
   const auditees = new Set(MOBA_CARTES_AUTORISEES);
   for (const deck of MOBA_DECKS) {
     assert.equal(deck.cardIds.length, 30, deck.id);
     assert.deepEqual(rpgMobaValiderDeck(deck), { ok: true }, deck.id);
     assert.ok(deck.name && deck.description && deck.elements.length === 2);
+    for (const couleur of deck.elements) {
+      assert.ok(deck.cardIds.filter((id) => cardColors(cardById(id)).includes(couleur)).length >= 6,
+        `${deck.id} : la couleur ${couleur} doit contribuer au plan de jeu`);
+    }
     assert.ok(Object.isFrozen(deck) && Object.isFrozen(deck.cardIds) && Object.isFrozen(deck.elements));
     const compte = new Map();
     for (const id of deck.cardIds) {
@@ -42,7 +49,18 @@ test('cinq decks MOBA distincts, légaux, audités et réellement jouables', () 
   }
 });
 
-test('duel libre : cinq adversaires thématiques ; campagne et decks personnels inchangés', () => {
+test('les nouvelles synergies reposent sur leurs tribus et leurs cartes de soutien', () => {
+  const deck = (id) => MOBA_DECKS.find((candidate) => candidate.id === id).cardIds;
+  assert.ok(deck('vikings').filter((id) => cardHasPrintedType(id, 'Viking')).length >= 12,
+    'la Valkyrie et Eirik ont une vraie compagnie viking à soutenir');
+  assert.ok(deck('vampires').filter((id) => cardHasPrintedType(id, 'Vampire')).length >= 16,
+    'le Général et l’Archonte ont des Vampires à renforcer');
+  for (const id of ['rais-de-la-galiote', 'cotre-de-course', 'galion-de-la-flotte', 'la-vengeance-de-la-reine-anne', 'la-barbe-rousse']) {
+    assert.ok(deck('corsaires').includes(id), `${id} peut porter l’Abordage et le Débarquement`);
+  }
+});
+
+test('duel libre : huit adversaires thématiques ; campagne et decks personnels inchangés', () => {
   for (let i = 0; i < MOBA_DECKS.length; i++) {
     assert.equal(rpgMobaDeckLibreAleatoire(() => i / MOBA_DECKS.length), MOBA_DECKS[i]);
   }

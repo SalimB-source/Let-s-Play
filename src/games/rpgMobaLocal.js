@@ -113,7 +113,7 @@ const ancienDeckEssai = Object.freeze([
   'poigne-de-givre', 'poigne-de-givre', ...MOBA_MAGIES_VOIES, 'festin-des-vaillants',
 ]);
 // Le paquet historique reste une fixture de compatibilité pour les tests du moteur ;
-// les cinq decks réellement proposés sont désormais construits indépendamment.
+// les decks réellement proposés sont désormais construits indépendamment.
 const sansBraise = (id) => ({
   'ashigaru-des-braises': 'scalde-des-runes',
   'anqa-des-braises': 'geant-des-banquises',
@@ -186,6 +186,44 @@ export const MOBA_DECKS = Object.freeze([
       'celle-qui-pese', 'maitre-des-hieroglyphes', 'celui-qui-juge',
       ...deux('khopesh-d-or'), 'lance-de-la-lune-givree',
       ...deux('offrande-de-lin'), ...deux('papyrus'), 'effacement-des-faibles', 'poigne-de-givre',
+    ]),
+  }),
+  Object.freeze({
+    id: 'vikings', name: 'Drakkars des fjords', elements: Object.freeze(['neige', 'eau']),
+    description: 'Compagnie viking et Furie : Eirik rassemble les guerriers, la Valkyrie cherche les renforts et les marées dégagent leurs voies.',
+    cardIds: Object.freeze([
+      ...deux('viking-des-neiges'), 'eirik-du-premier-serment', ...deux('gardien-viking-du-fjord'),
+      ...deux('berserk-des-trois-hivers'), ...deux('scalde-des-runes'), ...deux('guetteuse-des-marees'),
+      ...deux('valkyrie-au-corbeau'), ...deux('archere-viking-du-givre'),
+      ...deux('pilote-de-la-carreira'), 'jarl-au-marteau-de-guerre', 'drakkar-a-tete-de-dragon',
+      'le-cavalier-du-ressac-gele',
+      ...deux('hache-de-la-banquise'), 'lance-de-givre',
+      ...deux('brume-du-fjord'), ...deux('hurlement-du-blizzard'), ...deux('ressac'), 'courant-de-retour',
+    ]),
+  }),
+  Object.freeze({
+    id: 'vampires', name: 'Cour du croissant noir', elements: Object.freeze(['sable', 'tenebres']),
+    description: 'Résonance vampire et Vol de vie : protéger le Général, infiltrer les voies et renforcer les Vampires avec l’Archonte.',
+    cardIds: Object.freeze([
+      ...deux('garde-du-voile'), ...deux('porteur-de-la-plume'), ...deux('rodeuse-des-tombes'),
+      ...deux('danseuse-des-ombres-de-dune'), ...deux('eclipse-silencieuse'),
+      ...deux('sentinelle-des-sables'), ...deux('general-du-croissant-noir'),
+      'veilleur-du-dernier-crepuscule', 'porte-etendard-de-leclipse',
+      ...deux('gardienne-du-croissant'), 'archonte-du-sablier-noir', 'souverain-de-la-lune-noire',
+      ...deux('sabre-du-croissant-noir'), 'khopesh-d-or',
+      ...deux('voile-de-la-lune-noire'), ...deux('nom-efface'), ...deux('le-poids'), 'reanimation',
+    ]),
+  }),
+  Object.freeze({
+    id: 'corsaires', name: 'Flotte de l’abordage', elements: Object.freeze(['sable', 'eau']),
+    description: 'Abordage et Butin : remplir les cales, piocher avec la Lettre de marque et lancer le Grand Débarquement.',
+    cardIds: Object.freeze([
+      ...deux('mousse-des-galiotes'), ...deux('pilote-de-la-carreira'), ...deux('negociant-des-ranscons'),
+      ...deux('rais-de-la-galiote'), ...deux('cotre-de-course'), ...deux('le-renegat'),
+      ...deux('guetteuse-des-marees'), ...deux('galion-de-la-flotte'),
+      ...deux('la-vengeance-de-la-reine-anne'), 'la-barbe-rousse', 'le-chasseur-d-ocracoke',
+      ...deux('grappin-d-abordage'), 'sphere-de-rotation',
+      ...deux('lettre-de-marque'), ...deux('le-grand-debarquement'), ...deux('le-routier'), 'ressac',
     ]),
   }),
 ]);

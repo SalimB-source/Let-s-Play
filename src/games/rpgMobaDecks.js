@@ -24,7 +24,7 @@ export function rpgMobaDeckTourAleatoire(rng = Math.random) {
   return MOBA_DECKS_TOURS[Math.min(MOBA_DECKS_TOURS.length - 1, Math.max(0, Math.floor(rng() * MOBA_DECKS_TOURS.length)))] ?? null;
 }
 
-/** Le duel libre affronte l'un des cinq archétypes construits, sans modifier
+/** Le duel libre affronte l'un des archétypes construits, sans modifier
  * les adversaires scénarisés de la campagne ni les decks personnels. */
 export function rpgMobaDeckLibreAleatoire(rng = Math.random) {
   return MOBA_DECKS[Math.min(MOBA_DECKS.length - 1, Math.max(0, Math.floor(rng() * MOBA_DECKS.length)))] ?? null;
