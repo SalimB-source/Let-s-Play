@@ -14,6 +14,26 @@ test('only reviewed official HTTPS domains are shown in footers', () => {
   }
 });
 
+test('Bandai Namco publisher domains are verified and lookalikes remain blocked', () => {
+  for (const url of [
+    'https://www.bandainamcoent.com/news/ace-combat-8-wings-of-theve-game-overview',
+    'https://en.bandainamcoent.eu/ace-combat/ace-combat-8-wings-of-theve',
+  ]) assert.equal(officialSourceUrl(url), url);
+  assert.equal(officialSourceUrl('https://bandainamcoent.com.evil.test/'), null);
+  assert.equal(officialSourceUrl('https://fakebandainamcoent.eu/'), null);
+});
+
+test('only the S-GAME Phantom Blade Zero listing is allowed, never the whole Epic store', () => {
+  const url = 'https://store.epicgames.com/p/phantom-blade-zero-e78a35';
+  assert.equal(officialSourceUrl(url), url);
+  for (const other of [
+    'https://store.epicgames.com/',
+    'https://store.epicgames.com/p/another-game',
+    'https://store.epicgames.com/p/phantom-blade-zero-e78a35?unreviewed=1',
+    'https://fake-store.epicgames.com/p/phantom-blade-zero-e78a35',
+  ]) assert.equal(officialSourceUrl(other), null);
+});
+
 test('mixed legacy attribution text never leaks into official source footer', () => {
   const source = articleFooterSource({sourceUrl: 'https://www.remedygames.com/article/test', source: 'Remedy et ActuGaming', sourceDetail: 'Lire ActuGaming'});
   assert.deepEqual(source, {href: 'https://www.remedygames.com/article/test'});

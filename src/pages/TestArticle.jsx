@@ -14,6 +14,7 @@ function Check(){ return <span aria-hidden="true">✓</span>; }
 function Cross(){ return <span aria-hidden="true">–</span>; }
 
 const COVER_NAMES = {
+  'phantom-blade-zero': 'PHANTOM BLADE ZERO',
   'ace-combat-8-wings-of-theve': 'ACE COMBAT 8',
   'call-of-duty-modern-warfare-4': 'MODERN WARFARE 4',
   wolverine: 'WOLVERINE',

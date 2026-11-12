@@ -11,6 +11,94 @@ export const scoreLabel = (score, lang = 'fr') => String(score).replace('.', lan
 
 export const gameTests = [
   {
+    slug: 'phantom-blade-zero',
+    route: '/reviews/phantom-blade-zero',
+    name: 'PHANTOM BLADE ZERO',
+    headingName: 'PHANTOM BLADE ZERO',
+    compactHeading: true,
+    accent: 'L’ART DU COMBAT.',
+    cardTitle: 'PHANTOM BLADE ZERO : L’ART DU COMBAT.',
+    eyebrow: 'TEST · S-GAME · ACTION-RPG',
+    date: '29.10.2026',
+    dateLong: '29 OCTOBRE 2026',
+    platforms: 'PC · PS5',
+    genre: 'ACTION-RPG',
+    studio: 'S-GAME',
+    duration: 'ENV. 40 H SELON LE RYTHME',
+    readTime: 4,
+    score: 8.5,
+    image: img('phantom-blade-zero.webp'),
+    alt: 'Visuel officiel de Phantom Blade Zero : Soul, le visage à moitié caché sous son chapeau, brandit son sabre',
+    coverKicker: 'UNE LAME CONTRE LE DESTIN',
+    byline: 'PAR CHAFT · RÉDACTEUR EN CHEF',
+    testContextLabel: 'REPÈRES',
+    testContext: 'Sorti le 29 octobre 2026 sur PC et PS5, Phantom Blade Zero est une aventure solo. Chaft estime sa durée à environ 40 heures, selon le rythme de chacun.',
+    excerpt: 'Combats chorégraphiés, boss redoutables et univers wuxia : Chaft découvre une aventure qui frôle la masterclass.',
+    dek: 'Un mélange de cinéma kung-fu, de combats exigeants et de folie visuelle : Phantom Blade Zero tient-il ses promesses ? Chaft sort la lame et rend son verdict.',
+    lead: 'Imaginez un mélange entre les films de kung-fu de Hong Kong, Sekiro et une bonne dose de folie visuelle. Ajoutez des combats ultra-rapides, des boss capables de vous faire regretter d’avoir allumé votre console et une direction artistique complètement dingue : vous obtenez Phantom Blade Zero. Alors, est-ce une masterclass du jeu d’action ? Pour moi, on s’en approche sérieusement.',
+    sections: [
+      {
+        h2: 'UN UNIVERS QUI A DU CARACTÈRE',
+        ps: [
+          'On incarne Soul, un assassin accusé du meurtre de son maître, Mu Tianmiao. Mortellement blessé, il est sauvé par un mystérieux personnage, mais cette seconde chance a un prix : il ne lui reste que 66 jours à vivre. Un destin qui nous entraîne au cœur du Wulin.',
+          'L’univers s’inspire du wuxia, un genre emblématique du cinéma et de la littérature chinoise, avec ses guerriers, ses codes d’honneur et ses combats spectaculaires. Les personnages secondaires ont une vraie place, les dialogues donnent de la profondeur au récit et les documents enrichissent le monde. Ce n’est pas simplement une succession de combats avec un prétexte scénaristique : il y a un véritable univers à découvrir.',
+        ],
+      },
+      {
+        pull: { text: 'Nerveux, technique et incroyablement satisfaisant : le système de combat est la véritable star de Phantom Blade Zero.', by: 'CHAFT, RÉDACTEUR EN CHEF DE LET’S PLAY' },
+      },
+      {
+        h2: 'DES COMBATS À COUPER LE SOUFFLE',
+        ps: [
+          'La grande réussite du jeu, c’est son système de combat. Au cœur des affrontements, le Sha-Chi demande de gérer sa jauge : bloquer ne suffit pas, il faut aussi parer au bon moment pour préserver ses ressources et prendre l’avantage. Les attaques signalées en bleu appellent une parade, tandis que les rouges demandent une esquive.',
+          'On passe de la défense à des enchaînements dévastateurs, avec des animations qui donnent parfois l’impression de regarder une chorégraphie de cinéma. Donnie Yen a participé au projet comme consultant créatif, et cette attention portée aux arts martiaux se ressent. Même face à plusieurs adversaires, les mouvements sont impressionnants : c’est nerveux, technique et franchement satisfaisant.',
+        ],
+      },
+      {
+        h2: 'UN ARSENAL POUR TROUVER SON STYLE',
+        ps: [
+          'Autre point fort : les possibilités offertes par l’arsenal. On dispose d’une trentaine d’armes principales et de nombreuses lames spectrales. Chaque arme possède son style, ses animations et ses possibilités d’enchaînement ; les lames spectrales apportent quant à elles des capacités offensives ou défensives supplémentaires.',
+          'On peut équiper deux armes principales et passer de l’une à l’autre pendant le combat. Améliorer son arsenal et ajuster son équipement en fonction de la situation donne envie d’expérimenter plutôt que de toujours répéter les mêmes gestes.',
+        ],
+      },
+      {
+        h2: 'EXPLORER, PUIS REVENIR',
+        ps: [
+          'Je ne m’attendais pas forcément à trouver autant d’exploration. Phantom Blade Zero ne propose pas un monde ouvert classique, mais plusieurs régions interconnectées, pleines de passages secrets, d’objets et de quêtes secondaires.',
+          'Certaines capacités permettent de revenir dans des zones déjà visitées pour découvrir de nouveaux chemins : une petite inspiration Metroidvania bienvenue. J’estime qu’il faut compter environ 40 heures pour l’aventure, selon votre rythme. Le New Game Plus et quatre fins possibles donnent aussi des raisons de revenir.',
+        ],
+      },
+      {
+        h2: 'DES DÉFAUTS, PARCE QUE RIEN N’EST PARFAIT',
+        ps: [
+          'La difficulté peut être punitive et certains boss demandent beaucoup de patience, d’observation et une bonne maîtrise des mécaniques. Je ne considère pas forcément cela comme un défaut : c’est aussi ce qui rend les victoires aussi satisfaisantes.',
+          'En revanche, le verrouillage manque parfois de précision, notamment face à plusieurs ennemis, et l’infiltration reste assez anecdotique à côté du reste. Sur PS5, des baisses de fluidité peuvent aussi apparaître dans certaines situations chargées. Les modes performance, qualité et équilibré laissent néanmoins le choix ; les graphismes et les cinématiques sous Unreal Engine 5 restent superbes.',
+        ],
+      },
+      {
+        h2: 'VERDICT : UNE LAME BIEN AFFÛTÉE',
+        ps: [
+          'Phantom Blade Zero est-il une masterclass ? Pour moi, on s’en approche sérieusement ! La variété des armes, les mécaniques de parade et la qualité des affrontements contre les boss composent une expérience d’action particulièrement marquante.',
+          'Malgré un verrouillage parfois imprécis, une infiltration en retrait et quelques limites techniques sur PS5, j’ai adoré la richesse de cet univers et sa direction artistique. S-GAME livre une démonstration ambitieuse avec une vraie vision. Contrat accompli : ma note est de 8,5/10 !',
+        ],
+      },
+    ],
+    pros: [
+      'Des combats nerveux et superbement chorégraphiés',
+      'Un arsenal varié et des boss mémorables',
+      'Un univers wuxia riche et une direction artistique marquante',
+      'Des régions interconnectées qui récompensent l’exploration',
+    ],
+    cons: [
+      'Un verrouillage parfois imprécis face à plusieurs ennemis',
+      'Une infiltration anecdotique',
+      'Des baisses de fluidité sur PS5 dans certaines situations',
+    ],
+    verdictTitle: 'LA LAME PRESQUE PARFAITE',
+    verdictText: 'Des combats remarquables, des boss exigeants et un univers qui a du caractère. Quelques défauts freinent le jeu, mais S-GAME s’approche sérieusement de la masterclass.',
+    video: { id: 'qgJBFa952mY', label: 'Bande-annonce de lancement', channel: 'Phantom Blade Zero · S-GAME' },
+  },
+  {
     slug: 'ace-combat-8-wings-of-theve',
     route: '/reviews/ace-combat-8-wings-of-theve',
     name: 'ACE COMBAT 8: WINGS OF THEVE',

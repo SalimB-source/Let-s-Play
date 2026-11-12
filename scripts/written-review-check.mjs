@@ -1,5 +1,5 @@
 // Régression des reviews originales de Chaft : cartes, articles, images,
-// attribution, recherche et métadonnées, sans perdre les contrôles MW4.
+// attribution, recherche et métadonnées, sans perdre les contrôles Ace et MW4.
 // npm run check:written-review
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -84,11 +84,10 @@ for (const image of ['reviews/ace-combat-8.webp', ...aceGallery.items.map(({ src
 }
 assert.ok(fs.existsSync(path.join(root, 'public/screenshots/ace-combat-8/credits.md')));
 
-assert.equal(cards[0]?.getAttribute('href'), aceRoute, 'le nouveau test est à la une');
 const aceCard = cards.find((link) => link.getAttribute('href') === aceRoute);
-// Les deux tests utilisent exactement le même gabarit de carte, sans variante
+// Tous les tests utilisent exactement le même gabarit de carte, sans variante
 // « secondaire » qui réduirait l’image ou la typographie de l’un d’eux.
-assert.ok(cards.length >= 2);
+assert.ok(cards.length >= 3);
 for (const link of cards) {
   assert.equal(link.closest('article').className, 'written-review-card');
   for (const selector of [
@@ -119,9 +118,59 @@ assert.ok(aceArticle.querySelector('.article-gallery-credit a[href^="https://www
 assert.ok(aceArticle.querySelector('.article-gallery-credit a[href^="https://en.bandainamcoent.eu/"]'));
 assert.equal(aceArticle.querySelector('.article-source'), null);
 
+const phantomSlug = 'phantom-blade-zero';
+const phantomRoute = `/reviews/${phantomSlug}`;
+const phantom = getTest(phantomSlug);
+const phantomGallery = getArticleGallery(phantomSlug);
+assert.equal(phantom.route, phantomRoute);
+assert.equal(phantom.score, 8.5);
+assert.match(phantom.byline, /CHAFT.*RÉDACTEUR EN CHEF/);
+assert.equal(phantom.testContextLabel, 'REPÈRES');
+assert.match(phantom.testContext, /PC et PS5.*aventure solo.*Chaft estime.*environ 40 heures/i);
+assert.doesNotMatch(phantom.testContext, /test[ée].*(?:sur|en)\s+(?:PC|PS5|Xbox|\d)/i, 'ne pas inventer les conditions du test');
+assert.equal(phantom.sourceUrl, undefined, 'le texte est un test original de Chaft');
+assert.equal(phantomGallery.items.length, 3);
+assert.ok(phantomGallery.items.every((item) => item.alt && item.caption));
+assert.match(phantomGallery.credit, /promotionnelles officielles.*S-GAME/);
+assert.match(phantomGallery.credit, /ne proviennent pas de la partie de Chaft/);
+for (const image of ['reviews/phantom-blade-zero.webp', ...phantomGallery.items.map(({ src }) => src)]) {
+  assert.ok(fs.statSync(path.join(root, 'public', image)).size > 0, `image absente : ${image}`);
+}
+assert.ok(fs.existsSync(path.join(root, 'public/screenshots/phantom-blade-zero/credits.md')));
+assert.equal(cards[0]?.getAttribute('href'), phantomRoute, 'le nouveau test est à la une');
+assert.equal(cards[1]?.getAttribute('href'), aceRoute, 'Ace reste visible');
+assert.equal(cards[2]?.getAttribute('href'), route, 'MW4 reste visible');
+const phantomCard = cards[0];
+assert.match(phantomCard.textContent, /CHAFT.*RÉDACTEUR EN CHEF/);
+assert.match(phantomCard.textContent, /8,5\s*\/10/);
+assert.match(phantomCard.textContent, /S-GAME.*PLAYSTATION/);
+assert.match(phantomCard.querySelector('.written-review-score').getAttribute('aria-label'), /Note du jeu/);
+
+const phantomArticle = new JSDOM(renderReviewPage(phantomRoute)).window.document;
+assert.match(phantomArticle.querySelector('h1').textContent, /PHANTOM BLADE ZERO/);
+assert.match(phantomArticle.querySelector('.article-byline').textContent, /CHAFT.*RÉDACTEUR EN CHEF/);
+assert.match(phantomArticle.querySelector('.review-test-context').textContent, /REPÈRES.*Chaft estime.*40 heures/i);
+assert.match(phantomArticle.querySelector('.review-score-card').textContent, /8,5\s*\/10/);
+const phantomBody = phantomArticle.querySelector('.article-body').textContent;
+for (const subject of [/66 jours/i, /wuxia/i, /Sha-Chi/i, /parade/i, /esquive/i, /Donnie Yen/i,
+  /armes principales/i, /lames spectrales/i, /Metroidvania/i, /New Game Plus/i, /quatre fins/i,
+  /verrouillage/i, /infiltration/i, /baisses de fluidité.*PS5|PS5.*baisses de fluidité/i, /8,5\/10/]) {
+  assert.match(phantomBody, subject);
+}
+assert.match(phantomBody, /ne considère pas forcément cela comme un défaut/i, 'la difficulté reste nuancée');
+assert.equal(phantomArticle.querySelectorAll('.article-gallery-open').length, 3);
+assert.ok(phantomArticle.querySelector('.article-gallery-credit a[href^="https://store.playstation.com/"]'));
+assert.ok(phantomArticle.querySelector('.article-gallery-credit a[href^="https://blog.playstation.com/"]'));
+assert.ok(phantomArticle.querySelector('.article-gallery-credit a[href="https://store.epicgames.com/p/phantom-blade-zero-e78a35"]'));
+assert.equal(phantomArticle.querySelector('.article-source'), null);
+assert.ok(searchContent('Phantom Blade Zero').some((entry) => entry.route === phantomRoute));
+assert.ok(searchContent('Chaft').some((entry) => entry.route === phantomRoute));
+assert.ok(fs.readFileSync(path.join(root, 'public/sitemap.xml'), 'utf8').includes(`${phantomRoute}</loc>`));
+
 // Bandes-annonces publiées par les chaînes officielles, intégrées sans
 // lecture automatique et accompagnées d'un lien direct de secours.
 for (const [doc, test, id, channel, label] of [
+  [phantomArticle, phantom, 'qgJBFa952mY', 'Phantom Blade Zero · S-GAME', 'Bande-annonce de lancement'],
   [aceArticle, ace, 'F54vGYxj0ts', 'Bandai Namco Entertainment America', 'Bande-annonce de lancement'],
   [article, review, 'yLFRQaQT0qM', 'Call of Duty', 'Bande-annonce de la campagne'],
 ]) {
@@ -157,6 +206,7 @@ const React = await import('react');
 const { createRoot } = await import('react-dom/client');
 const seoRoot = createRoot(document.getElementById('seo-root'));
 for (const [seoRoute, title, image, date] of [
+  [phantomRoute, /Phantom Blade Zero.*Chaft/i, 'reviews/phantom-blade-zero.webp', '2026-10-29'],
   [aceRoute, /Ace Combat 8.*Chaft/i, 'reviews/ace-combat-8.webp', '2026-11-04'],
   [route, /Modern Warfare 4.*Chaft/i, 'reviews/modern-warfare-4.webp', '2026-10-29'],
 ]) {
@@ -177,4 +227,4 @@ delete globalThis.window;
 delete globalThis.document;
 delete globalThis.IS_REACT_ACT_ENVIRONMENT;
 
-console.log('Reviews Ace Combat 8 et MW4 : cartes homogènes, vidéos officielles, notes, galeries, crédits, SEO et recherche OK.');
+console.log('Reviews Phantom Blade Zero, Ace Combat 8 et MW4 : cartes homogènes, vidéos officielles, notes, galeries, crédits, SEO et recherche OK.');
