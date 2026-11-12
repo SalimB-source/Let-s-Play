@@ -449,9 +449,9 @@ const totalCapaciteMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + (c
  * les couleurs proposées. Les decks historiques ne passent pas par ici. */
 function couleursManaEssai(deck, couleurs) {
   const liste = couleurs ?? [...new Set(deck.flatMap((id) => cardColors(id)))];
-  if (!Array.isArray(liste) || liste.length < 1 || liste.length > 3
+  if (!Array.isArray(liste) || liste.length < 1 || liste.length > 2
     || liste.length !== new Set(liste).size || liste.some((couleur) => !RPG_COULEURS.includes(couleur))) {
-    throw new Error('Un duel sans terrains exige une identité de 1 à 3 couleurs.');
+    throw new Error('Un duel sans terrains exige une identité de 1 à 2 couleurs.');
   }
   const valides = [...liste];
   if (deck.some((id) => terrainById(id) || RPG_MANA_ESSAI_CARTES_EXCLUES.includes(id)

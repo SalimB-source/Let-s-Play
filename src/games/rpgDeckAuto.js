@@ -2,7 +2,7 @@
  * La création assistée d'un deck maison — « l'IA » de l'atelier.
  *
  * Le joueur pose les fondations, le moteur compose. Deux choix le guident
- * désormais : les **couleurs** du deck (1 à 3), puis son **style de jeu**
+ * désormais : les **couleurs** du deck (1 à 2), puis son **style de jeu**
  * (`aggro`, `controle` ou `mix`, voir `RPG_STYLES_JEU`). Le moteur bâtit alors
  * un deck de trente cartes **uniquement avec des cartes possédées**, en
  * respectant la courbe de mana, le mix créatures / sorts et les affinités
@@ -500,7 +500,7 @@ export function genererDeckAssiste({
   catalogue,
   taille = RPG_ASSISTANT_TAILLE,
 } = {}) {
-  const identite = [...new Set(couleurs)].slice(0, 3);
+  const identite = [...new Set(couleurs)].slice(0, 2);
   const { cartes = [], couleursDe = () => [], limiteDe = () => 2 } = catalogue ?? {};
   // Toutes les cartes portent leurs couleurs lues : le score et l'état de
   // construction n'ont plus jamais à redemander la règle au catalogue.
@@ -527,14 +527,14 @@ export function genererDeckAssiste({
   };
   for (const id of choixIds) {
     const carte = cartesParId.get(id);
-    if (!carte || !possedees(id)) continue;
+    if (!carte || !possedees(id) || !carte.couleurs.length
+      || !carte.couleurs.every((couleur) => identite.includes(couleur))) continue;
     const plafond = carte.rarity === 'mythique' ? 1 : RPG_ASSISTANT_COPIES;
     poser(id, plafond);
   }
 
   // 2. Le vivier de remplissage : possédé, dans l'identité choisie, jamais
-  //    les cartes déjà au plafond. La signature reste même si une carte de
-  //    choix dépasse l'identité — comme chez le composeur du catalogue.
+  //    les cartes déjà au plafond. Les signatures hors identité sont écartées.
   const vivier = cartesP.filter((carte) => {
     if (!possedees(carte.id)) return false;
     return carte.couleurs.length > 0 && carte.couleurs.every((couleur) => identite.includes(couleur));
@@ -566,7 +566,7 @@ export function genererDeckAssiste({
   const parRaretePuisPuissance = (a, b) => (rangRareteLocale(cartesParId.get(b)) - rangRareteLocale(cartesParId.get(a)))
     || (puissanceCarte(cartesParId.get(b)) - puissanceCarte(cartesParId.get(a)));
   const emblemeChoisi = [...choixIds]
-    .filter((id) => cartesParId.has(id) && possedees(id))
+    .filter((id) => compte.has(id))
     .sort(parRaretePuisPuissance)[0] ?? null;
   // Aucune carte choisie à la main ? Un deck **dicté** porte encore un visage :
   // la plus rare de ses cartes de thème illustre le boîtier (« les Vikings »

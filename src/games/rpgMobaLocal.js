@@ -104,7 +104,7 @@ export const MOBA_MAGIES_CIBLEES = Object.freeze([
   'poigne-de-givre', 'ressac', 'appat-de-la-meute', 'frappe-iaijutsu', 'courant-de-retour', 'haut-fond', 'lame-de-mer', 'feux-de-kitsune', 'defi-du-jarl', 'brise-lame',
   ...MOBA_MAGIES_VOIES, ...MOBA_MAGIES_ALLIEES, ...MOBA_MAGIES_NEUTRES,
 ]);
-export const MOBA_DECK_ESSAI = Object.freeze([
+const ancienDeckEssai = Object.freeze([
   ...MOBA_CARTES_ESSAI.flatMap((id) => ['anqa-des-braises', 'viking-des-neiges'].includes(id) ? [id] : [id, id]),
   ...MOBA_MAGIES_ESSAI.filter((id) => id !== 'rempart-de-dunes').flatMap((id) =>
     ['mur-de-boucliers', 'grand-voile-blanc', 'grand-hiver', 'verglas', 'brume-du-fjord'].includes(id) ? [id] : [id, id]),
@@ -112,27 +112,48 @@ export const MOBA_DECK_ESSAI = Object.freeze([
 ]);
 let nombreGardiennes = 0;
 let nombrePoignes = 0;
-const deckSources = MOBA_DECK_ESSAI.map((id) => {
+const deckSources = ancienDeckEssai.map((id) => {
   if (id === 'mousse-des-galiotes') return 'porteuse-de-cruches';
   if (id === 'gardienne-des-portes-de-sable') return nombreGardiennes++ === 0 ? 'eau-de-la-source' : 'festin-des-vaillants';
   if (id === 'poigne-de-givre') return nombrePoignes++ === 0 ? 'ressac' : 'parade-du-verre';
   return id;
 });
-const deckSahir = [...MOBA_DECK_ESSAI];
+const deckSahir = [...ancienDeckEssai];
 deckSahir[deckSahir.indexOf('ashigaru-des-braises')] = 'sahir-des-braises';
 deckSahir[deckSahir.indexOf('brume-du-fjord')] = 'rempart-de-dunes';
 deckSahir[deckSahir.indexOf('viking-des-neiges')] = 'guerrier-au-bouclier-rond';
 const deckLionne = [...deckSources];
 deckLionne[deckLionne.indexOf('jarl-au-marteau-de-guerre')] = 'lionne-du-midi-ardent';
 deckLionne[deckLionne.indexOf('anqa-des-braises')] = 'maitre-du-marteau';
-const deckPapyrus = MOBA_DECK_ESSAI.map((id) => id === 'mousse-des-galiotes' ? 'guerrier-au-bouclier-rond'
+const deckPapyrus = ancienDeckEssai.map((id) => id === 'mousse-des-galiotes' ? 'guerrier-au-bouclier-rond'
   : id === 'gardienne-des-portes-de-sable' ? 'papyrus' : id);
+// Keep each preconstructed deck's theme while replacing its third colour.
+const sansBraise = (id) => ({
+  'ashigaru-des-braises': 'scalde-des-runes',
+  'anqa-des-braises': 'geant-des-banquises',
+  'tempete-de-foudre-et-de-givre': 'defi-du-jarl',
+  'trait-de-braise': 'hache-de-la-banquise',
+}[id] ?? id);
+export const MOBA_DECK_ESSAI = Object.freeze(ancienDeckEssai.map(sansBraise));
+const sourcesBicolore = deckSources.map(sansBraise);
+const papyrusBicolore = deckPapyrus.map(sansBraise);
+const sahirBicolore = deckSahir.map((id) => ({
+  'mousse-des-galiotes': 'scalde-des-runes',
+  'gardienne-des-portes-de-sable': 'volva-soigneuse',
+  'rempart-de-dunes': 'mur-de-boucliers',
+}[id] ?? id));
+const lionneBicolore = deckLionne.map((id) => ({
+  'porteuse-de-cruches': 'guerrier-au-bouclier-rond',
+  'eau-de-la-source': 'hache-de-la-banquise',
+  'ressac': 'defi-du-jarl',
+  'parade-du-verre': 'lance-de-givre',
+}[id] ?? id));
 export const MOBA_DECKS = Object.freeze([
-  Object.freeze({ id: 'sable', name: 'Sable et givre', description: 'Gardiennes et assauts des neiges.', elements: Object.freeze(['neige', 'sable', 'braise']), cardIds: MOBA_DECK_ESSAI }),
-  Object.freeze({ id: 'sources', name: 'Sources et givre', description: 'Soins de voie, Ressac et Parade de verre.', elements: Object.freeze(['neige', 'eau', 'braise']), cardIds: Object.freeze(deckSources) }),
-  Object.freeze({ id: 'sahir', name: 'Le cercle des braises', description: 'Sahir pioche et frappe ; le Guerrier et Rempart protègent vos créatures.', elements: Object.freeze(['neige', 'sable', 'braise']), cardIds: Object.freeze(deckSahir) }),
-  Object.freeze({ id: 'lionne', name: 'La source ardente', description: 'La Lionne et le Maître frappent à leur arrivée ; les eaux soignent vos voies.', elements: Object.freeze(['neige', 'eau', 'braise']), cardIds: Object.freeze(deckLionne) }),
-  Object.freeze({ id: 'papyrus', name: 'Les serments du papyrus', description: 'Payez des PV de voie pour piocher et protégez vos guerriers.', elements: Object.freeze(['neige', 'braise', 'tenebres']), cardIds: Object.freeze(deckPapyrus) }),
+  Object.freeze({ id: 'sable', name: 'Sable et givre', description: 'Gardiennes et assauts des neiges.', elements: Object.freeze(['neige', 'sable']), cardIds: MOBA_DECK_ESSAI }),
+  Object.freeze({ id: 'sources', name: 'Sources et givre', description: 'Soins de voie, Ressac et Parade de verre.', elements: Object.freeze(['neige', 'eau']), cardIds: Object.freeze(sourcesBicolore) }),
+  Object.freeze({ id: 'sahir', name: 'Le cercle des braises', description: 'Sahir pioche et frappe ; les guerriers et les boucliers protègent vos créatures.', elements: Object.freeze(['neige', 'braise']), cardIds: Object.freeze(sahirBicolore) }),
+  Object.freeze({ id: 'lionne', name: 'Le givre ardent', description: 'La Lionne et le Maître frappent à leur arrivée ; les guerriers protègent vos voies.', elements: Object.freeze(['neige', 'braise']), cardIds: Object.freeze(lionneBicolore) }),
+  Object.freeze({ id: 'papyrus', name: 'Les serments du papyrus', description: 'Payez des PV de voie pour piocher et protégez vos guerriers.', elements: Object.freeze(['neige', 'tenebres']), cardIds: Object.freeze(papyrusBicolore) }),
 ]);
 
 /** Only this audited pool may be used by a player-built MOBA deck. */

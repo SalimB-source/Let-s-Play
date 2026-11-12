@@ -22,7 +22,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Types de cartes',
     cardIds: ['vent-rouge'],
     title: 'Choisissez la couleur de votre nouveau mana',
-    text: 'Un deck contient une à trois couleurs. En multicolore, choisissez la couleur du mana gagné à chaque tour. Les manas déjà acquis gardent leur couleur et la réserve se recharge au début de votre tour.',
+    text: 'Un deck contient une à deux couleurs. En multicolore, choisissez la couleur du mana gagné à chaque tour. Les manas déjà acquis gardent leur couleur et la réserve se recharge au début de votre tour.',
   },
   {
     id: 'arme-maudite',

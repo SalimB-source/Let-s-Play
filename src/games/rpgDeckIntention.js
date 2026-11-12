@@ -521,7 +521,7 @@ export function themesDuCatalogue(catalogue) {
  * « un deck viking » sans couleur dite — les Vikings du catalogue sont de
  * Neige, donc l'intention porte Neige.
  */
-export function couleursDeTheme(cartes, couleursDe = () => [], { max = 3, couverture = 0.6 } = {}) {
+export function couleursDeTheme(cartes, couleursDe = () => [], { max = 2, couverture = 0.6 } = {}) {
   const compte = new Map();
   for (const carte of cartes) {
     for (const couleur of couleursDe(carte) ?? []) compte.set(couleur, (compte.get(couleur) ?? 0) + 1);
@@ -775,11 +775,16 @@ export function verifierIntention(intention, { catalogue, collection = null } = 
     : 'ces couleurs');
 
   // 1. Les cartes de chaque thème retenu, dans l'identité dite.
-  let couleurs = [...(brut.couleurs ?? [])];
+  let couleurs = [...new Set(brut.couleurs ?? [])];
+  const tropDeCouleurs = couleurs.length > 2;
+  if (tropDeCouleurs) {
+    alertes.push({ ton: 'alerte', texte: 'Un deck ne peut contenir que deux couleurs. Choisissez vos couleurs à l’étape suivante.' });
+    couleurs = [];
+  }
   const themesRetenus = [];
   const cartesTheme = (theme) => parTheme.get(theme.id) ?? [];
 
-  if (!couleurs.length && ((brut.themes ?? []).length || (brut.signature ?? []).length)) {
+  if (!couleurs.length && !tropDeCouleurs && ((brut.themes ?? []).length || (brut.signature ?? []).length)) {
     // Aucune couleur dite : on la déduit. Les cartes **nommées** parlent en
     // premier (« avec le Kraken » appelle l'Eau), le thème suit (« un deck
     // viking » est un deck de Neige, parce que les Vikings du catalogue sont
@@ -828,8 +833,8 @@ export function verifierIntention(intention, { catalogue, collection = null } = 
     });
   }
 
-  // 2. Les cartes nommées hors identité : elles restent la signature du joueur,
-  //    mais il faut le dire — le deck sortira alors de ses couleurs.
+  // 2. Signaler les cartes nommées hors identité : le générateur les écartera.
+  //    Il faut le dire avant la génération.
   const signature = (brut.signature ?? []).filter((id) => cartesParId.has(id));
   if (couleurs.length) {
     const horsIdentite = signature
@@ -838,7 +843,8 @@ export function verifierIntention(intention, { catalogue, collection = null } = 
     if (horsIdentite.length) {
       alertes.push({
         ton: 'alerte',
-        texte: `Hors de ${labelIdentite(couleurs)} : ${horsIdentite.map((carte) => `« ${carte.name} »`).join(', ')}. Les cartes nommées restent posées, mais le deck débordera ses couleurs.`,
+        code: 'signature-hors-identite',
+        texte: `Hors de ${labelIdentite(couleurs)} : ${horsIdentite.map((carte) => `« ${carte.name} »`).join(', ')}. Ces cartes nommées seront écartées du deck.`,
       });
     }
     const nonPossedees = signature.filter((id) => !possedee(id));

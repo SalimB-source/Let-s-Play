@@ -5131,7 +5131,7 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     'le deck contient plusieurs cartes exigeant une source Braise et une source Sable');
 });
 
-test('le validateur exige 30 cartes sans terrain, les quotas et une identité de trois couleurs au plus', () => {
+test('le validateur exige 30 cartes sans terrain, les quotas et une identité de deux couleurs au plus', () => {
   assert.equal(rpgValiderDeck(RPG_DECK_JOUEUR_BASE.slice(0, 29)).ok, false);
   assert.equal(rpgValiderDeck([...RPG_DECK_JOUEUR_BASE, 'chien-du-guet']).ok, false);
   const tropDeCopies = [...RPG_DECK_JOUEUR_BASE];
@@ -5151,7 +5151,7 @@ test('le validateur exige 30 cartes sans terrain, les quotas et une identité de
   quatreCouleurs[0] = 'ressac';
   quatreCouleurs[1] = 'loup-des-neiges';
   assert.equal(rpgValiderDeck(quatreCouleurs).ok, false);
-  assert.match(rpgValiderDeck(quatreCouleurs).raison, /1 à 3 couleurs/);
+  assert.match(rpgValiderDeck(quatreCouleurs).raison, /1 à 2 couleurs/);
 });
 
 test('Trait de braise coûte 3, est une magie rapide et inflige 3 dégâts à une créature ou un sorcier', () => {

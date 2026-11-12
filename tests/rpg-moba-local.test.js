@@ -280,7 +280,7 @@ test('provocation and overkill use original combat rules within the lane', () =>
 
 test('the experimental fixed deck respects the existing 30-card and copy rules', () => {
   assert.equal(MOBA_DECK_ESSAI.length, 30);
-  assert.equal(validerDeckManaEssai({ cardIds: MOBA_DECK_ESSAI, elements: ['braise', 'sable', 'neige'] }).ok, true);
+  assert.equal(validerDeckManaEssai({ cardIds: MOBA_DECK_ESSAI, elements: ['sable', 'neige'] }).ok, true);
 });
 
 test('a real zone spell affects only the chosen active lane and reconciles deaths', () => {

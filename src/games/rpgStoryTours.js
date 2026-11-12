@@ -547,7 +547,7 @@ export const RPG_STORY_TOURS = [
   {
     // La tour d'épreuves terminale de la Conquête (hors récit « La Dernière
     // Liste ») : sept étages, sept identités différentes — les cinq
-    // couleurs pures, la Course Sable + Eau, puis le tricolore du sommet.
+    // couleurs pures, la Course Sable + Eau, puis le bicolore du sommet.
     // Chaque gardien joue au niveau `sablier` (le plus fort de `rpgAI.js`)
     // avec un paquet « absolu » : les meilleures cartes de son identité,
     // sans plafond de mythiques ni de rares. Les puissances (8 à 14)
@@ -555,7 +555,7 @@ export const RPG_STORY_TOURS = [
     id: 'tour-du-sablier-renverse',
     nom: 'La Tour du Sablier renversé',
     miniature: 'tour-du-sablier-renverse.jpg',
-    resume: 'Quand le Sablier se renverse, les maîtres de Bab El reviennent à leur sommet. Sept étages, sept manières de perdre : chaque gardien joue le meilleur de son art, sans retenue — et au dernier palier, le Sablier lui-même tient les trois couleurs du temps.',
+    resume: 'Quand le Sablier se renverse, les maîtres de Bab El reviennent à leur sommet. Sept étages, sept manières de perdre : chaque gardien joue le meilleur de son art, sans retenue — et au dernier palier, le Sablier lui-même tient deux couleurs du temps.',
     etages: [
       {
         id: 'sablier-1',
@@ -625,7 +625,7 @@ export const RPG_STORY_TOURS = [
         avatar: null,
         puissance: 14,
         ia: { niveau: 'sablier', style: 'equilibre' },
-        note: 'Il n’a ni visage ni manière : Sable, Braise et Ténèbres dans un seul paquet, plus de vingt mythiques, et quatre coups d’avance sur tout ce que vous jouez. Le sable tombe pour vous.',
+        note: 'Il n’a ni visage ni manière : Sable et Braise dans un seul paquet, des mythiques sans retenue, et quatre coups d’avance sur tout ce que vous jouez. Le sable tombe pour vous.',
       },
     ],
   },
