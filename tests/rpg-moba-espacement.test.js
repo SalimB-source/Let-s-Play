@@ -13,12 +13,29 @@ test('les voies latérales et la main MOBA disposent de plus d’espace', () => 
     assert.equal(style('.moba__lane:first-child .moba__slots').transform, 'translateX(calc(-1 * clamp(4px, 1.6vw, 22px)))');
     assert.equal(style('.moba__lane:nth-child(2) .moba__slots').transform, 'none');
     assert.equal(style('.moba__lane:last-child .moba__slots').transform, 'translateX(clamp(4px, 1.6vw, 22px))');
-    assert.equal(style('.moba__hand-cards').gap, 'clamp(12px, 1.5vw, 22px)');
+    assert.equal(style('.moba__hand-cards').gap, 'clamp(18px, 2.2vw, 30px)');
     // JSDOM normalise désormais min(vw, vh) en px ; vérifier la déclaration
     // d'origine plutôt qu'une sérialisation dépendante de sa version.
     assert.match(css, /\.moba \.moba__hand-item \{ position: relative; flex: 0 1 min\(7\.65vw, 12\.75vh, 105px\)/);
     assert.match(style('.moba__hand-item').maxWidth, /^calc\(14\.333% - /);
   } finally { dom.window.close(); }
+});
+
+test('six cartes restent dans la main après l’augmentation de leur espacement', () => {
+  for (const [width, height, portrait] of [[320, 568, true], [390, 844, true], [650, 360, false], [1366, 768, false]]) {
+    const gap = Math.min(30, Math.max(18, width * .022));
+    const dock = width * (portrait ? .96 : width <= 700 ? .64 : .65);
+    const basis = portrait ? Math.min(width * .1275, height * .0935, 70)
+      : width <= 700 ? Math.min(width * .085, height * .1105, 75)
+        : Math.min(width * .097, height * .152, 180);
+    const maxWidth = width >= 1200
+      ? (dock - 5 * Math.min(22, Math.max(12, width * .015))) / 6
+      : dock * .14333 - Math.min(15.77, Math.max(8.6, width * .01075));
+    assert.ok(6 * Math.min(basis, maxWidth) + 5 * gap <= dock - 4,
+      `${width}×${height} : les six cartes restent visibles, sans défilement`);
+    const ancienGap = Math.min(22, Math.max(12, width * .015));
+    assert.ok(gap > ancienGap, `${width}×${height} : les cartes sont plus espacées`);
+  }
 });
 
 test('le plateau conserve son décor et réduit légèrement les cartes selon le format', () => {

@@ -390,7 +390,9 @@
 .moba__hand-pages { display: flex; align-items: center; gap: 4px; font: 11px system-ui, sans-serif; }
 .moba__hand-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }
 .moba__hand-pages button:disabled { opacity: .45; }
-.moba .moba__hand-cards { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(12px, 1.5vw, 22px); overflow: visible; padding: 4px 2px; }
+/* Les pierres de la main débordent légèrement des cartes : laisser une vraie
+   respiration entre les six cartes de la page, y compris en portrait mobile. */
+.moba .moba__hand-cards { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(18px, 2.2vw, 30px); overflow: visible; padding: 4px 2px; }
 .moba .moba__hand-item { position: relative; flex: 0 1 min(7.65vw, 12.75vh, 105px); min-width: 0; max-width: calc(14.333% - clamp(8.6px, 1.075vw, 15.77px)); }
 .moba .moba__hand-item .moba__real-hand { width: 100%; }
 .moba .moba__card:not(.moba__real-hand) { flex: 0 1 min(9vw, 15vh, 124px); min-width: 0; height: min(18vh, 150px); }
