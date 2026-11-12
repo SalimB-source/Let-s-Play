@@ -322,9 +322,9 @@ export function rpgMobaDefausser(duel, side, index) {
 export function rpgMobaCiblesSite(duel, side) {
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul
     || !MOBA_SIDES.includes(side) || duel.siteEnAttente?.cote !== side) return [];
-  const sourceLane = duel[side].creatures.find((e) => e.id === duel.siteEnAttente.entiteId)?.mobaLane;
-  return duel[side].creatures.filter((entite) => (!sourceLane || mobaPartageVoie(duel.moba, entite.mobaLane, sourceLane)) && duelCardById(entite.carteId)?.kind !== 'site'
-    && mobaVoiesCombat(duel.moba, entite.mobaLane).length > 0).map((entite) => entite.id);
+  if (!duel[side].creatures.some((e) => e.id === duel.siteEnAttente.entiteId)) return [];
+  return duel[side].creatures.filter((entite) => duelCardById(entite.carteId)?.kind !== 'site'
+    && duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, side, voie.id) && voie.slots[side].includes(entite.id))).map((entite) => entite.id);
 }
 
 export function rpgMobaResoudreSite(duel, side, cibleId) {
@@ -636,7 +636,10 @@ export function rpgMobaResoudreArrivee(duel, side, cibleId) {
     const cibleSides = Number.isFinite(attente.abordage) ? [side === 'joueur' ? 'sorcier' : 'joueur'] : MOBA_ARRIVEES_NEUTRES.includes(attente.carteId) ? MOBA_SIDES
       : [MOBA_ARRIVEES_ALLIEES.includes(attente.carteId) ? side : (side === 'joueur' ? 'sorcier' : 'joueur')];
     const cibleSide = cibleSides.find((camp) => duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, camp, voie.id) && voie.slots[camp].includes(cibleId)));
-    if (!cibleSide || !duel[cibleSide].creatures.some((entity) => entity.id === cibleId && mobaPartageVoie(duel.moba, entity.mobaLane, sourceLane))) return fail('cible');
+    // Les arrivées alliées (soins, boucliers, etc.) choisissent sur les trois
+    // voies ; les effets hostiles et neutres restent limités à la voie source.
+    if (!cibleSide || !duel[cibleSide].creatures.some((entity) => entity.id === cibleId
+      && (MOBA_ARRIVEES_ALLIEES.includes(attente.carteId) || mobaPartageVoie(duel.moba, entity.mobaLane, sourceLane)))) return fail('cible');
   }
   if (attente.carteId === 'oni-de-la-fournaise' && !Number.isFinite(attente.abordage)) {
     const candidates = rpgMobaCiblesOni(duel, side);

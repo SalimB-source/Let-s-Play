@@ -63,7 +63,7 @@ test('la Source soigne une créature et lui donne un bouclier, sans modifier les
   const sons = [];
   return plateau(async ({ duel, engine, core, render, click }) => {
   duel.joueur.main = ['ashigaru-des-braises', 'source-de-bimini'];
-  const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
   const source = engine.rpgMobaJouerCreature(duel, 'joueur', 'source-de-bimini', 'left', 1).entite;
   assert.ok(cible); assert.ok(source); cible.pv = 1; cible.def = 1; source.heures.restants = 1;
   core.rpgFinDeTour(duel); core.rpgFinDeTour(duel);
@@ -77,6 +77,27 @@ test('la Source soigne une créature et lui donne un bouclier, sans modifier les
   assert.equal(sons.filter((son) => son === 'soin_vie').length, 1);
   }, { onPlaySfx: (son) => sons.push(son) });
 });
+
+test('arrivée alliée : le soin et le bouclier ciblent un autre flanc via le plateau', () => plateau(async ({ duel, engine, render, click }) => {
+  duel.joueur.main = ['ashigaru-des-braises', 'volva-soigneuse', 'guerrier-au-bouclier-rond'];
+  const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  cible.pv = 1; cible.def = 1;
+  duel.sorcier.main = [];
+  for (const [nom, lane] of [['Völva soigneuse', 'Voie droite'], ['Guerrier au bouclier rond', 'Voie centrale']]) {
+    duel.moba.creaturesJouees.joueur = false;
+    await render();
+    await click(carte(nom));
+    await click(document.querySelector(`.moba__lane[aria-label="${lane}"] .moba__side--joueur .moba__slot.is-empty`));
+    await attendreIA();
+    assert.ok(duel.arriveeEnAttente, `${nom} attend une cible`);
+    const carteCible = document.querySelector(`[data-moba-entity="${cible.id}"] button`);
+    assert.equal(carteCible.disabled, false, `${nom} doit proposer la voie gauche`);
+    await click(carteCible);
+    assert.equal(duel.arriveeEnAttente, null);
+  }
+  assert.equal(cible.pv, cible.pvMax);
+  assert.equal(cible.bouclier, 1);
+}));
 
 test('mouvement réduit : aucune animation d’invocation n’est créée', () => plateau(async ({ duel, render, click }) => {
   duel.joueur.main = ['ashigaru-des-braises']; duel.sorcier.main = [];
