@@ -9506,6 +9506,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setEcran('recit');
   };
 
+  // Les hooks doivent aussi être appelés depuis les menus et le MOBA : la
+  // transition vers la table ne doit pas changer leur nombre. Un retour peut
+  // interrompre le tour et attendre une cible dès que la table est affichée.
+  useEffect(() => {
+    const attente = duel?.arriveeEnAttente;
+    if (ecran === 'partie' && attente?.retour && attente.cote === 'joueur') setCibleEnCours(attente.carteId);
+  }, [ecran, duel, duel?.arriveeEnAttente?.entiteId, duel?.arriveeEnAttente?.cote, duel?.arriveeEnAttente?.retour, duel?.arriveeEnAttente?.carteId]);
+
   if (lectureHistoire) {
     const decksJouablesHistoire = decksTous.filter((deck) => deckSeJoue(deck, collection, exemplaires));
     const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId)
@@ -10032,12 +10040,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     + (cardResonanceGroup(cardById(e.carteId)) === 'samourai' ? bonusBanniereAssaut : 0)), 0);
   const vieTotaleSorcier = Math.max(0, (duel.sorcier.pv ?? 0) + (duel.sorcier.bouclier ?? 0));
   const menaceLetaleActive = Boolean(monTour && phase && !combatEntrant && !duel.brouillardCombat && puissanceDirecte > 0 && puissanceDirecte >= vieTotaleSorcier);
-  // Un retour peut interrompre la transition de tour, y compris hors de notre
-  // tour : sa créature est déjà sur le plateau et attend une désignation.
-  useEffect(() => {
-    const attente = duel.arriveeEnAttente;
-    if (attente?.retour && attente.cote === 'joueur') setCibleEnCours(attente.carteId);
-  }, [duel, duel.arriveeEnAttente?.entiteId, duel.arriveeEnAttente?.cote]);
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   // L'Abordage (set Lettres de Marque) : la créature (ou le porteur du
   // Grappin) vient d'accoster et attend sa prize — la table ne doit allumer
