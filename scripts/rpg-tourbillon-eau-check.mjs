@@ -102,10 +102,12 @@ assert.match(css, /@keyframes rpg-tourbillon-eau-carte\s*\{\s*0% \{ opacity: 1;[
 
 // ── 2 bis. L'ordre : l'eau d'abord, la main ensuite ────────────────────────
 // La carte renvoyée ne doit pas reparaître dans la main pendant le tourbillon.
-assert.match(page, /const cartesEnRenvoi = new Set\(\(tourbillonsEau \?\? \[\]\)\s*\n?\s*\.filter\(\(effet\) => effet\.variante !== 'exil' && effet\.camp !== 'sorcier'\)\s*\n?\s*\.map\(\(effet\) => effet\.cardId\)\);/s,
-  'la table sait quelles cartes l’eau ramène dans VOTRE main, sans confondre un exil');
-assert.match(page, /cartesEnRenvoi\.has\(carteId\) \? 'is-en-renvoi' : ''/,
-  'leur emplacement de main les masque pendant le tourbillon');
+assert.match(page, /trierMainAvecRenvois\(duel\.joueur\.main, empilerCartes, tourbillonsEau\)/,
+  'la main distingue les exemplaires renvoyés de ceux déjà présents');
+assert.match(page, /groupe\.enRenvoi \? 'is-en-renvoi' : ''/,
+  'seul leur emplacement reste masqué pendant le tourbillon');
+assert.match(page, /disabled=\{groupe\.enRenvoi\}/,
+  'les cartes invisibles ne peuvent pas être activées au clavier');
 assert.match(css, /\.rpg-hand__card\.is-en-renvoi\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s,
   'la carte attend, invisible et non cliquable, à sa place dans l’éventail');
 assert.match(css, /\.rpg-hand__card\s*\{[^}]*transition:\s*transform \.2s ease, box-shadow \.2s ease, opacity \.26s ease-out;/s,
@@ -152,7 +154,7 @@ assert.match(animer, /const renvoyees = new Set\(\[\s*\n?\s*\.\.\.entitesRenvoye
   'le renvoi d’un effet de créature lève le même tourbillon que celui d’une magie');
 // Les chemins qui connaissent leur cible continuent de la passer : le journal
 // ne les remplace pas, il les complète.
-const appels = [...page.matchAll(/animerModificationsChamp\([\s\S]{0,240}?\.renvoiEntityId\]\)/g)];
+const appels = [...page.matchAll(/animerModificationsChamp\([\s\S]{0,240}?\.renvoiEntityId\]\s*[,)]/g)];
 assert.ok(appels.length >= 3, `les renvois en main connus passent leur entité (reçu : ${appels.length})`);
 
 console.log('✓ Renvoi en main : l’eau emporte la carte — nappe au sol, spirale qui s’enroule en montant, deux ondes, cinq gouttes, et la carte elle-même qui se dissout — posée sur son emplacement et son inclinaison, sans capter de geste, sans toucher la mise en page : la créature quitte la table, l’eau joue, et la carte ne reparaît dans la main qu’une fois le tourbillon refermé (950 ms) — pour une magie comme pour le rebond d’une créature — silencieux en mouvement réduit');

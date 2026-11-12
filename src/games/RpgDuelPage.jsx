@@ -58,7 +58,7 @@ import {
   adversaireManaEssai,
   deckManaEssaiParId,
 } from './rpgManaEssai.js';
-import { armesPortees, groupEntitesParCarte, trierCartesMainParCout } from './rpgCardStacks.js';
+import { armesPortees, groupEntitesParCarte, trierCartesMainParCout, trierMainAvecRenvois } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
 import {
   RPG_VITESSES_ANIMATION,
@@ -8710,11 +8710,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return prochain;
   });
   const delaiReflexionSorcier = () => rpgDelaiReflexionIA(duel, 'sorcier');
-  // Les cartes que l'eau ramène dans la main du joueur : elles restent hors de
-  // la main tant que le tourbillon joue — le geste se lit avant le résultat.
-  const cartesEnRenvoi = new Set((tourbillonsEau ?? [])
-    .filter((effet) => effet.variante !== 'exil' && effet.camp !== 'sorcier')
-    .map((effet) => effet.cardId));
   useRpgMythicImpact(duel, ecran, tableRef, cardById, jouerSfx);
   const plateau = plateauParId(plateauId) ?? PLATEAU_PAR_DEFAUT;
   // La moitié haute de la table : le terrain du deck adverse. La table n'est
@@ -13200,7 +13195,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
      mode essai (sans terrains) refuse lui la superposition : chaque carte,
      en main comme sur le champ, garde sa place et son identité. */
   const empilerCartes = viewport.mobile && duel.modeMana !== RPG_MODE_MANA_ESSAI;
-  const groupesMain = trierCartesMainParCout(duel.joueur.main, empilerCartes);
+  const groupesMain = trierMainAvecRenvois(duel.joueur.main, empilerCartes, tourbillonsEau);
   // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
   // pour que le joueur voie chaque carte concernée (et que les flèches de
   // blocage, les halos de cible et les destructions trouvent leur élément).
@@ -14702,7 +14697,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 <>
                 <button
                   type="button"
-                  draggable={jouable && !defausseOuverte}
+                  disabled={groupe.enRenvoi}
+                  aria-hidden={groupe.enRenvoi ? true : undefined}
+                  draggable={jouable && !defausseOuverte && !groupe.enRenvoi}
                   onClick={() => cliquerCarteMain(carteId, i)}
                   aria-pressed={defausseOuverte ? defausseSelectionnee : poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? true : undefined}
                   onMouseEnter={(event) => afficherApercuSurvol(carte, event)}
@@ -14715,7 +14712,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     'rpg-hand__card rpg-hand__card--img',
                     // Renvoyée en main : sa place est gardée, mais elle ne
                     // reparaît qu'une fois le tourbillon refermé.
-                    cartesEnRenvoi.has(carteId) ? 'is-en-renvoi' : '',
+                    groupe.enRenvoi ? 'is-en-renvoi' : '',
                     estTerrain ? 'rpg-hand__card--terrain' : '',
                     `rpg-hand__card--type-${cardFrameType(carte)}`,
                     `rpg-hand__card--elem-${carte.element}`,
@@ -14784,7 +14781,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       nombre vit dans la règle imprimée, l'aperçu au survol et
                       le sceau de famille — pas sur la carte. */}
                 </button>
-                {exemplaires > 1 && (
+                {exemplaires > 1 && !groupe.enRenvoi && (
                   <span className="rpg-hand__pile-count" aria-hidden="true">×{exemplaires}</span>
                 )}
                 {enVol && (

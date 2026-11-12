@@ -28,6 +28,30 @@ export function trierCartesMainParCout(main = [], empiler = false) {
   return cartes.sort((a, b) => cardCost(cardById(a.carteId)) - cardCost(cardById(b.carteId)));
 }
 
+/** Préserve les exemplaires déjà en main pendant le tourbillon de renvoi.
+ * Le moteur ajoute les cartes renvoyées en fin de main ; seuls les derniers
+ * exemplaires correspondants restent masqués. Sur mobile une pile mixte ne
+ * montre et ne sélectionne que ses exemplaires déjà disponibles. */
+export function trierMainAvecRenvois(main = [], empiler = false, tourbillons = []) {
+  const comptes = new Map();
+  for (const effet of tourbillons ?? []) {
+    if (effet.variante === 'exil' || effet.camp === 'sorcier' || !effet.cardId) continue;
+    comptes.set(effet.cardId, (comptes.get(effet.cardId) ?? 0) + 1);
+  }
+  const masques = new Set();
+  for (let i = (main?.length ?? 0) - 1; i >= 0; i -= 1) {
+    const restant = comptes.get(main[i]) ?? 0;
+    if (restant > 0) {
+      masques.add(i);
+      comptes.set(main[i], restant - 1);
+    }
+  }
+  return trierCartesMainParCout(main, empiler).map((groupe) => {
+    const visibles = groupe.indices.filter((index) => !masques.has(index));
+    return { ...groupe, indices: visibles.length ? visibles : groupe.indices, enRenvoi: !visibles.length };
+  });
+}
+
 /**
  * Regroupe les exemplaires identiques d'une main.
  * @param {string[]} main identifiants de cartes, dans l'ordre de la main

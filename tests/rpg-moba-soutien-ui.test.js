@@ -563,6 +563,66 @@ for (const reduit of [false, true]) {
   }, { reduit }));
 }
 
+test('un nouvel exil rapide ne disparaît pas derrière le retour précédent', () => plateau(async ({ duel, engine, core, moba, render, click }) => {
+  duel.joueur.main = ['ashigaru-des-braises']; duel.joueur.mana.braise = 30;
+  const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 1).entite;
+  core.rpgFinDeTour(duel); core.rpgFinDeTour(duel);
+  duel.joueur.main = ['guetteuse-des-marees']; duel.joueur.mana.eau = 30; duel.joueur.mana.sable = 30; duel.sorcier.main = [];
+  await render(); await click(carte('Guetteuse des marées'));
+  await click(document.querySelector('.moba__lane[aria-label="Voie droite"] .moba__side--joueur .moba__slot.is-empty'));
+  await attendreIA(); await click(document.querySelector(`[data-moba-entity="${cible.id}"] button`));
+  await click([...document.querySelectorAll('.moba__controls button')].find((button) => button.textContent.includes('Fin du tour')));
+  await attendreIA();
+  const retour = duel.joueur.creatures.find((entity) => entity.carteId === cible.carteId);
+  assert.ok(retour); assert.notEqual(retour.id, cible.id);
+  assert.match(document.body.textContent, /revient d’exil/);
+  // Préparer le tour suivant sans attendre la fin de l’effet de retour : une
+  // seconde Guetteuse renvoie le même exemplaire à peine revenu.
+  const guetteuse = duel.joueur.creatures.find((entity) => entity.carteId === 'guetteuse-des-marees');
+  core.rpgBlesserCreature(duel, 'joueur', guetteuse.id, 99);
+  moba.mobaRetirer(duel.moba, 'joueur', guetteuse.id);
+  core.rpgFinDeTour(duel);
+  duel.moba.creaturesJouees.joueur = false;
+  duel.joueur.main = ['guetteuse-des-marees']; duel.joueur.mana.eau = 30; duel.joueur.mana.sable = 30;
+  duel.sorcier.main = [];
+  await render(); await click(carte('Guetteuse des marées'));
+  await click(document.querySelector('.moba__lane[aria-label="Voie droite"] .moba__side--joueur .moba__slot.is-empty'));
+  await attendreIA(); await click(document.querySelector(`[data-moba-entity="${retour.id}"] button`));
+  assert.ok(duel.joueur.exil.includes(cible.carteId));
+  assert.ok(document.querySelector(`[data-rpg-bounce-id="${retour.id}"]`), 'le nouvel exil possède son propre tourbillon');
+  assert.match(document.body.textContent, /Ashigaru des braises.*Voie droite : exilée/);
+  assert.doesNotMatch(document.body.textContent, /Ashigaru des braises.*revient d’exil/, 'une créature repartie ne doit plus être annoncée présente');
+}, { vitesse: 2 }));
+
+test('un retour dans une autre case efface l’ancien départ et son annonce', () => plateau(async ({ duel, engine, core, moba, render, click }) => {
+  duel.joueur.main = ['ashigaru-des-braises']; duel.joueur.mana.braise = 30;
+  const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 1).entite;
+  core.rpgFinDeTour(duel); core.rpgFinDeTour(duel);
+  duel.joueur.main = ['guetteuse-des-marees']; duel.joueur.mana.eau = 30; duel.joueur.mana.sable = 30; duel.sorcier.main = [];
+  await render(); await click(carte('Guetteuse des marées'));
+  await click(document.querySelector('.moba__lane[aria-label="Voie droite"] .moba__side--joueur .moba__slot.is-empty'));
+  await attendreIA(); await click(document.querySelector(`[data-moba-entity="${cible.id}"] button`));
+  assert.ok(document.querySelector(`[data-rpg-bounce-id="${cible.id}"]`));
+  const guetteuse = duel.joueur.creatures.find(entity => entity.carteId === 'guetteuse-des-marees');
+  core.rpgBlesserCreature(duel, 'joueur', guetteuse.id, 99);
+  moba.mobaRetirer(duel.moba, 'joueur', guetteuse.id);
+  duel.moba.creaturesJouees.joueur = false;
+  duel.joueur.main = ['gardienne-des-portes-de-sable']; duel.joueur.mana.sable = 30;
+  const bloqueur = engine.rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 1).entite;
+  assert.ok(bloqueur); duel.joueur.main = []; duel.sorcier.main = [];
+  await render();
+  await click([...document.querySelectorAll('.moba__controls button')].find(button => button.textContent.includes('Fin du tour')));
+  await attendreIA();
+  const retour = duel.joueur.creatures.find(entity => entity.carteId === cible.carteId);
+  assert.ok(retour);
+  assert.equal(duel.moba.lanes.find(lane => lane.id === 'right').slots.joueur[0], retour.id);
+  assert.equal(duel.moba.lanes.find(lane => lane.id === 'right').slots.joueur[1], bloqueur.id);
+  assert.ok(document.querySelector(`[data-moba-entity="${retour.id}"] .moba__summon-fx--retour-exil`));
+  assert.equal(Boolean(document.querySelector(`[data-rpg-bounce-id="${cible.id}"]`)), false, 'le tourbillon ne cache plus le nouvel occupant');
+  assert.match(document.body.textContent, /Ashigaru des braises.*Voie droite : revient d’exil/);
+  assert.doesNotMatch(document.body.textContent, /Ashigaru des braises.*Voie droite : exilée/);
+}, { vitesse: 2 }));
+
 test('un retour d’exil différé faute de place n’est ni animé ni annoncé prématurément', () => plateau(async ({ duel, engine, core, render, click }) => {
   duel.joueur.main = ['ashigaru-des-braises']; duel.joueur.mana.braise = 30;
   const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 1).entite;
