@@ -1954,6 +1954,31 @@ function creerEntiteCreature(carte) {
   };
 }
 
+/** Déploiement MOBA avant le premier tour : les créatures sont créées par le
+ * moteur commun, mais ne sont ni jouées ni annoncées. Pas de paiement, quota,
+ * sacrifice ou effet d'arrivée ; leurs capacités permanentes restent actives.
+ * Le pont MOBA valide tous les indices/cases avant d'appeler cette fonction. */
+export function rpgDeployerCreaturesMobaDepart(duel, placements) {
+  const entites = { joueur: [], sorcier: [] };
+  for (const cote of ['joueur', 'sorcier']) {
+    const choix = placements.filter((placement) => placement.cote === cote);
+    const cartes = choix.map(({ index }) => duel[cote].main[index]);
+    for (const index of choix.map(({ index }) => index).sort((a, b) => b - a)) duel[cote].main.splice(index, 1);
+    for (const [numero, placement] of choix.entries()) {
+      const entite = creerEntiteCreature(duelCardById(cartes[numero]));
+      entite.emplacement = placement.emplacement;
+      entite.mobaLane = placement.laneId;
+      duel[cote].creatures.push(entite);
+      if (!mobaPlacer(duel.moba, cote, placement.laneId, placement.slot, entite.id).ok) throw new Error('Déploiement MOBA incohérent');
+      entites[cote].push(entite);
+      duel.log.push(`${cote === 'joueur' ? 'Vous déployez' : 'Le sorcier déploie'} ${entite.name} sur ${placement.laneId === 'left' ? 'la voie gauche' : placement.laneId === 'center' ? 'la voie centrale' : 'la voie droite'}.`);
+    }
+  }
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+  return entites;
+}
+
 /** La fiche de l'arme portée par une entité, ou null. */
 function armeCarteDe(entite) {
   return entite?.arme ? armeById(entite.arme.carteId) : null;
