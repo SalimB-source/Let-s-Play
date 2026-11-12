@@ -2198,24 +2198,44 @@ function adversaireGagneProchainCombat(duel, cote) {
   } catch { return null; }
 }
 
-/** Before committing to a downgrade, require a concrete tactical payoff on
+/** Before committing to any sacrifice, require a concrete tactical payoff on
  * an isolated engine simulation, not just the card's mana cost or printed
  * arrival text. A winning attack is an explicit exception. */
 export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null) {
   const n = sacrificesInvocation(carte, duel);
   if (!n) return [];
   let menaceInitiale;
+  let victoireInitiale;
+  const victoireAuCombat = (position) => {
+    if (position.attaqueJouee === cote || !position[cote].creatures.some(moteur.rpgPeutAttaquer)) return false;
+    const essai = copierDuelPourRecherche(position);
+    moteur.rpgReglerHasard(essai, () => 0.5);
+    const attaquants = choisirAttaquantsIA(essai, cote, { rng: () => 0.5 });
+    if (!attaquants.length) return false;
+    const cibles = choisirCiblesRapidesIA(essai, cote, attaquants);
+    const blocs = choisirBloqueursIA(essai, cote, attaquants, cibles);
+    return moteur.rpgLancerAttaque(essai, cote, attaquants, blocs, null, null, cibles).ok
+      && moteur.rpgVainqueur(essai) === cote;
+  };
   for (const victimes of rpgCombinaisonsSacrificesIA(duel, cote, carte)) {
     const ids = victimes.map((e) => e.id);
-    if (!rpgSacrificeEstDeclasseIA(carte, victimes)) return ids;
     try {
       const probe = copierDuelPourRecherche(duel);
       moteur.rpgReglerHasard(probe, () => 0.5);
       const pose = moteur.rpgJouerCreature(probe, cote, carte.id, cibleId, { sacrificeIds: ids });
       if (!pose.ok) continue;
+      if (victoireInitiale === undefined) victoireInitiale = victoireAuCombat(duel);
+      if (victoireInitiale) continue;
       if (moteur.rpgVainqueur(probe) === cote) return ids;
       if (probe.arriveeEnAttente || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length || probe.siteEnAttente || probe.defausseEnAttente) continue;
-      if (evaluerPositionIA(probe, cote) > evaluerPositionIA(duel, cote) + 1.5) return ids;
+      const cout = victimes.reduce((total, victime) => total + 4 + (moteur.rpgPeutAttaquer(victime) ? 4 : 0), 0);
+      const gain = evaluerPositionIA(probe, cote) - evaluerPositionIA(duel, cote) - cout;
+      const progression = (etat) => etat[cote].creatures.some((e) =>
+        duelCardById(e.carteId)?.kind !== 'site' && !e.nePeutPasAttaquer && (Number(e.atk) || 0) > 0);
+      const besoin = duel[autre(cote)].creatures.length > 0
+        || probe[autre(cote)].pv < duel[autre(cote)].pv
+        || (!progression(duel) && progression(probe));
+      if (besoin && gain >= 4) return ids;
       if (menaceInitiale === undefined) menaceInitiale = adversaireGagneProchainCombat(duel, cote);
       if (menaceInitiale === true && adversaireGagneProchainCombat(probe, cote) === false) return ids;
       // A haste creature can close the game now. Resolve a legal attack and
@@ -2272,7 +2292,10 @@ function candidatsCartesIA(duel, cote, options = {}) {
       ...(sacrificeIds.length ? { sacrificeIds } : {}),
       cibleId: evaluation.cibleId ?? null,
       cibleAllieeId: evaluation.cibleAllieeId ?? null,
-      score: evaluation.score + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
+      score: evaluation.score - sacrificeIds.reduce((total, id) => {
+        const victime = camp.creatures.find((e) => e.id === id);
+        return total + 4 + (victime && moteur.rpgPeutAttaquer(victime) ? 4 : 0);
+      }, 0) + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
     });
   }
   return candidats.sort((a, b) => b.score - a.score);

@@ -95,6 +95,9 @@ test('l’IA sait payer le sacrifice et rejouer dans la case libérée', () => {
   rpgFinDeTour(duel);
   duel.sorcier.mana.braise = 30;
   const victim = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  // Sans attaque, la créature ne permet pas d'avancer : remplacer celle-ci
+  // est utile, contrairement à sacrifier un attaquant déjà opérationnel.
+  victim.atk = 0; victim.nePeutPasAttaquer = true;
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   donner(duel, 'sorcier', 'anqa-des-braises');
   const choice = rpgMobaChoisirCreatureIA(duel, 'sorcier');

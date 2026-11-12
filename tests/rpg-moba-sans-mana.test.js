@@ -65,7 +65,8 @@ test('l’IA applique les mêmes règles sans mana et ne rejoue pas une invocati
   d.sorcier.main = ['ashigaru-des-braises', 'anqa-des-braises'];
   const small = rpgMobaJouerCreature(d, 'sorcier', 'ashigaru-des-braises', 'left', 0); assert.ok(small.ok);
   assert.equal(rpgMobaChoisirCreatureIA(d, 'sorcier'), null);
-  rpgFinDeTour(d); rpgFinDeTour(d);
+  small.entite.atk = 0; small.entite.nePeutPasAttaquer = true;
+  rpgFinDeTour(d); rpgFinDeTour(d); d.sorcier.main = ['anqa-des-braises'];
   const choice = rpgMobaChoisirCreatureIA(d, 'sorcier'); assert.equal(choice?.id, 'anqa-des-braises');
   assert.ok(rpgMobaJouerCreature(d, 'sorcier', choice.id, choice.lane, choice.slot, { sacrificeIds: choice.sacrificeIds }).ok);
   donner(d, 'sorcier', 'anqa-des-braises');
