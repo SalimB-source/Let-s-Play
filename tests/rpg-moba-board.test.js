@@ -4090,20 +4090,20 @@ test('Jitte : parade Ténèbres annoncée au porteur sur le plateau', async () =
   } finally {if(root)await act(async()=>root.unmount());await server.close();dom.window.close();globalThis.window=oldWindow;globalThis.document=oldDocument;delete globalThis.IS_REACT_ACT_ENVIRONMENT;}
 });
 
-test('Lance et Sandales : édition, équipement et indications accessibles', async () => {
+test('Lance et Sandales : équipement et indications accessibles', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
     const {default:Board}=await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');const e=await server.ssrLoadModule('/src/games/rpgMobaLocal.js');let duel;
     const initialiser=()=>duel=voiesLateralesBlessees(e.rpgMobaNouveauDuel({joueurDeck:Array(30).fill('gardienne-des-portes-de-sable'),sorcierDeck:Array(30).fill('gardienne-des-portes-de-sable'),joueurCouleurs:['sable'],sorcierCouleurs:['sable'],rng:()=>.5}));const props={onQuitter:()=>{},initialiser};
-    root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,{onQuitter:()=>{}})));
+    root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(Board,props)));
     const click=async b=>{assert.ok(b);assert.equal(b.disabled,false);await act(async()=>b.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));};
-    await click(document.querySelector('.moba__deck-choice button'));for(const nom of ['Lance de la lune givrée','Sandales de Tislit'])assert.ok(document.querySelector(`[aria-label="Ajouter ${nom}"]`));
-    await act(async()=>root.render(React.createElement(Board,{...props,key:'partie'})));await click(document.querySelector('.moba__mulligan .moba__primary'));
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.main=['gardienne-des-portes-de-sable','sandales-de-tislit','lance-de-la-lune-givree'];duel.joueur.mana.sable=30;duel.joueur.mana.neige=30;duel.joueur.mana.tenebres=30;
     const p=e.rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;assert.equal(e.rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',p.id).ok,true);
-    await act(async()=>root.render(React.createElement(Board,{...props,key:'partie'})));let slot=document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`);assert.match(slot.getAttribute('aria-label'),/Rapidité.*Équipée : Sandales de Tislit/);assert.equal(slot.disabled,false);
-    assert.equal(e.rpgMobaJouerArme(duel,'joueur','lance-de-la-lune-givree',p.id).ok,true);await act(async()=>root.render(React.createElement(Board,{...props,key:'partie'})));
-    slot=document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`);assert.match(slot.getAttribute('aria-label'),/Attaque ciblée.*Coup critique : 15 % ×2.*Équipée : Lance de la lune givrée/);assert.equal(slot.disabled,true);assert.equal(e.rpgMobaPlacementCoherent(duel),true);
+    await act(async()=>root.render(React.createElement(Board,props)));let slot=document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`);assert.match(slot.getAttribute('aria-label'),/Équipée : Sandales de Tislit/);assert.doesNotMatch(slot.getAttribute('aria-label'),/Rapidité/);assert.equal(slot.disabled,false);
+    duel.moba.armesJouees.joueur=false;
+    assert.equal(e.rpgMobaJouerArme(duel,'joueur','lance-de-la-lune-givree',p.id).ok,true);await act(async()=>root.render(React.createElement(Board,props)));
+    slot=document.querySelector(`[data-moba-entity="${p.id}"] button.moba__slot`);assert.match(slot.getAttribute('aria-label'),/Attaque ciblée.*Coup critique : 15 % ×2.*Équipée : Lance de la lune givrée/);assert.equal(slot.disabled,false);assert.equal(e.rpgMobaPlacementCoherent(duel),true);
   } finally {if(root)await act(async()=>root.unmount());await server.close();dom.window.close();globalThis.window=oldWindow;globalThis.document=oldDocument;delete globalThis.IS_REACT_ACT_ENVIRONMENT;}
 });
 

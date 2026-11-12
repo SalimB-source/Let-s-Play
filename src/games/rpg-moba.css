@@ -935,8 +935,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba .moba__lanes[data-moba-joined-lane="left"] .moba__lane:nth-child(2) .moba__side.is-joined-center::before,
 .moba .moba__lanes[data-moba-joined-lane="right"] .moba__lane:nth-child(3) .moba__side.is-joined-flank::before { display: none; }
 .moba .moba__lanes[data-moba-joined-lane] .moba__lane:nth-child(2).is-conquered { background: none; }
-.moba .moba__lane.is-conquered .moba__side:not(.is-joined-center) { background: #16100c66; }
-.moba .moba__lane.is-center-conquered .moba__side:not(.is-lost-center) { background: none; }
+/* Les ruines illustrent seules les voies conquises : pas de masque sombre rectangulaire. */
 .moba .moba__side.is-joined-flank .moba__health {
   position: absolute; z-index: 12; top: 0; left: 0; width: 150%; min-height: 24px;
   padding: 4px 8px; border: 1px solid #e5c681; border-radius: 6px;

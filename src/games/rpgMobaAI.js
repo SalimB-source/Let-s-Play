@@ -306,13 +306,6 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
       const discardedEnemy = Math.max(0, duel[enemy].main.length - simulation[enemy].main.length)
         + (simulation.defausseEnAttente?.cote === enemy ? simulation.defausseEnAttente.restant : 0);
       score += discardedEnemy * 2;
-      // Sandals are most valuable when they enable a fresh creature to attack
-      // this turn. Do not value haste after combat or on an already-ready unit.
-      if (id === 'sandales-de-tislit' && duel.attaqueJouee !== side) {
-        const avant = allies.find((e) => e.id === cible);
-        const apres = simulation[side].creatures.find((e) => e.id === cible);
-        if (avant && apres && !rpgPeutAttaquer(avant) && rpgPeutAttaquer(apres)) score += Math.min(6, Math.max(0, apres.atk) * 1.5);
-      }
       // Licou's delayed draw is only insurance while its bearer survives.
       if (id === 'licou-du-chien-de-sable' && simulation[side].deck.length && simulation[side].creatures.some((e) => e.id === cible && e.arme?.carteId === id)) score += 1.25;
       if (id === 'appat-de-la-meute' && !reaction && duel.attaqueJouee !== side

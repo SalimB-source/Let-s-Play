@@ -40,6 +40,12 @@ test('le terrain MOBA continu garde ses trois voies et ses commandes', async () 
   }
 });
 
+test('les voies conquises n’ont plus de masque rectangulaire au-dessus des ruines', async () => {
+  const css = await readFile(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
+  assert.match(css, /\.moba__map-ruin\s*\{[^}]*pointer-events: none/);
+  assert.doesNotMatch(css, /\.moba[^{}]*\.moba__lane\.is-conquered\s+\.moba__side[^{}]*\{[^}]*background\s*:/);
+});
+
 test('les trois versions détruites existent pour chacun des cinq décors et restent transparentes ailleurs', async () => {
   const { MOBA_PLATEAUX } = await import('../src/games/rpgMobaPlateaux.js');
   const css = await readFile(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
