@@ -609,3 +609,19 @@ test('expiration PvP : une cible de retour obligatoire est choisie puis le tour 
   assert.equal(resultat.etat.tour, 'sorcier');
   assert.equal(monde.magasin.duels.get(code).etat.sorcier.pv, pv - 3);
 });
+
+test('le serveur refuse les decks tricolores à l’ouverture et à la jonction', async () => {
+  const { RPG_MANA_ESSAI_DECKS } = await import('../src/games/rpgManaEssai.js');
+  const base = RPG_MANA_ESSAI_DECKS[1].cardIds;
+  const tricolore = [...base.slice(1), 'tempete-de-foudre-et-de-givre'];
+  const monde = creerMonde({ collections: { [HOTE]: tricolore, [INVITE]: tricolore } });
+  const refuse = await api(monde, HOTE, { action: 'ouvrir', deck: tricolore, visibilite: 'lien' });
+  assert.equal(refuse.raison, 'deck-invalide');
+  const ouvert = await api(monde, HOTE, { action: 'ouvrir', deck: DECK_A, visibilite: 'lien' });
+  const rejoint = await api(monde, INVITE, { action: 'rejoindre', code: ouvert.code, deck: tricolore });
+  assert.equal(rejoint.raison, 'deck-invalide');
+  const ancien = monde.magasin.duels.get(ouvert.code);
+  ancien.hote_deck = tricolore;
+  const ancienRefuse = await api(monde, INVITE, { action: 'rejoindre', code: ouvert.code, deck: DECK_B });
+  assert.equal(ancienRefuse.raison, 'deck-invalide');
+});

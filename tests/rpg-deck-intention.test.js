@@ -195,8 +195,8 @@ test('couleursDeTheme trouve la plus petite identité qui couvre le thème', () 
   const catalogue = catalogueDe(cartes);
   assert.deepEqual(couleursDeTheme(cartes, catalogue.couleursDe), ['neige'],
     'une seule couleur suffit à couvrir le thème');
-  assert.deepEqual(couleursDeTheme([carte('d', { element: 'sable' }), ...cartes], catalogue.couleursDe).length <= 3, true,
-    'l’identité ne dépasse jamais trois couleurs');
+  assert.deepEqual(couleursDeTheme([carte('d', { element: 'sable' }), ...cartes], catalogue.couleursDe).length <= 2, true,
+    'l’identité ne dépasse jamais deux couleurs');
 });
 
 test('normaliserIntention rend null quand rien n’est demandé : le score historique est intact', () => {

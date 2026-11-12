@@ -619,15 +619,13 @@ export const RPG_RECETTES_HISTOIRE = {
     ],
   },
   /**
-   * Le Sablier (Sablier 7 — le sommet) : le seul paquet tricolore de la
-   * campagne, Sable + Braise + Ténèbres, les trois couleurs du temps qui
-   * tombe. Sans plafond, le composeur y verse **toutes** les mythiques
-   * des trois identités — plus de vingt cartes d'exception dans trente
-   * places. Tislit et le Trait de braise seuls gardent l'ouverture ;
+   * Le Sablier (Sablier 7 — le sommet) : Sable + Braise.
+   * Sans plafond, le composeur y verse les mythiques de ces deux couleurs.
+   * Tislit et le Trait de braise seuls gardent l'ouverture ;
    * ensuite, chaque carte piochée est une figure.
    */
   'le-sablier': {
-    identite: ['sable', 'braise', 'tenebres'],
+    identite: ['sable', 'braise'],
     terrains: [],
     creatures: 20,
     magies: 9,
@@ -850,7 +848,7 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(3, 3),
     signature: [
       ['tin-hinan', 1], ['sahir-des-braises', 1],
-      ['anqa-des-braises', 1], ['kusayla-roi-des-imazighen', 1],
+      ['anqa-des-braises', 1], ['ifrit-des-ergs', 1],
     ],
   },
   /** Abysses 1 — le Pêcheur de perles : les citernes, rien de mythique. */
@@ -951,7 +949,7 @@ export const RPG_RECETTES_HISTOIRE = {
     armes: 2,
     ...rampeEtage(4, 4),
     signature: [
-      ['la-barbe-rousse', 1], ['la-barbe-noire', 1],
+      ['la-barbe-rousse', 1], ['rais-de-la-galiote', 1],
       ['le-tresor-de-lima', 1], ['la-vengeance-de-la-reine-anne', 1],
     ],
   },

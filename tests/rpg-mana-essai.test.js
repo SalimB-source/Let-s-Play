@@ -35,7 +35,8 @@ import {
 import { choisirCouleurManaIA, choisirMulliganIA } from '../src/games/rpgAI.js';
 
 const rng = () => 0.5;
-const [mono, bi, tri] = RPG_MANA_ESSAI_DECKS;
+const [mono, bi, deux] = RPG_MANA_ESSAI_DECKS;
+const eauSable = RPG_MANA_ESSAI_DECKS[4];
 const nouveau = (joueur = mono, sorcier = adversaireManaEssai(joueur)) => rpgNouveauDuel({
   joueurDeck: joueur.cardIds, sorcierDeck: sorcier.cardIds,
   joueurCouleurs: joueur.elements, sorcierCouleurs: sorcier.elements,
@@ -50,7 +51,7 @@ const total = (camp) => Object.values(camp.manaMax).reduce((somme, quantite) => 
 test('les cinq decks de démonstration partagent le format 30 cartes sans terrain', () => {
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5);
   // Le dernier paquet est Sable + Eau, plus la flamme du Brûlot (Braise).
-  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 3, 1, 2]);
+  assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 2, 1, 2]);
   for (const deck of RPG_MANA_ESSAI_DECKS) {
     assert.equal(deck.cardIds.length, RPG_MANA_ESSAI_TAILLE);
     assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);
@@ -186,7 +187,7 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
   assert.equal(rpgJouerCreature(braise, 'joueur', 'ashigaru-des-braises').ok, true,
     'le Braise préservé permet encore de jouer une autre carte colorée');
 
-  const hybride = commencer(tri);
+  const hybride = commencer(deux);
   repartir(hybride.joueur, ['braise', 'sable', 'eau', 'braise']);
   hybride.joueur.main.push('vent-rouge');
   assert.deepEqual(cardColorCost('vent-rouge'), { braise: 1, sable: 1 });
@@ -217,7 +218,7 @@ test('le générique dépense une autre couleur si possible, sans priver la cart
 });
 
 test('plafond ferme à dix sources sans perdre la répartition ; l’IA acquiert aussi au plus dix', () => {
-  const duel = nouveau(tri, bi);
+  const duel = nouveau(eauSable, bi);
   mulligans(duel);
   rpgDemarrerManaEssai(duel);
   rpgChoisirCouleurMana(duel, 'joueur', 'eau');
@@ -226,7 +227,7 @@ test('plafond ferme à dix sources sans perdre la répartition ; l’IA acquiert
     rpgFinDeTour(duel);
     if (tour <= RPG_MANA_ESSAI_MAX) {
       assert.equal(duel.joueur.manaChoixEnAttente, true);
-      const couleur = tour % 2 ? 'sable' : 'braise';
+      const couleur = tour % 2 ? 'sable' : 'eau';
       assert.equal(rpgChoisirCouleurMana(duel, 'joueur', couleur).ok, true);
     } else {
       assert.equal(duel.joueur.manaChoixEnAttente, false);
@@ -237,14 +238,14 @@ test('plafond ferme à dix sources sans perdre la répartition ; l’IA acquiert
     assert.equal(total(duel.sorcier), Math.min(tour - 1, RPG_MANA_ESSAI_MAX));
     assert.equal(duel.sorcier.manaSources.length, Math.min(tour - 1, RPG_MANA_ESSAI_MAX));
   }
-  assert.deepEqual(duel.joueur.manaSources.slice(0, 4), ['eau', 'braise', 'sable', 'braise']);
-  assert.equal(duel.joueur.manaMax.eau, 1, 'la source Eau choisie au tour 1 reste Eau');
+  assert.deepEqual(duel.joueur.manaSources.slice(0, 4), ['eau', 'eau', 'sable', 'eau']);
+  assert.equal(duel.joueur.manaMax.eau, 6, 'les sources Eau restent Eau');
   assert.equal(total(duel.joueur), 10);
   assert.ok(Object.values(duel.joueur.mana).every((n) => n <= 10));
 });
 
 test('carte chère jouable à huit manas (dont son pip Eau), pas avant', () => {
-  const duel = nouveau(tri);
+  const duel = nouveau(eauSable);
   mulligans(duel);
   rpgDemarrerManaEssai(duel);
   const cher = cardById('jormungandr');
@@ -472,7 +473,7 @@ test('fin de tour : plus de six cartes en main oblige à défausser jusqu’à s
 });
 
 test('IA : choix de couleur d’après les pips en main et mulligan sans rechercher de terrain', () => {
-  const duel = nouveau(mono, tri);
+  const duel = nouveau(mono, eauSable);
   duel.sorcier.main = ['eau-de-la-source', 'ressac', 'jormungandr', 'ressac', 'eau-de-la-source'];
   assert.equal(choisirCouleurManaIA(duel), 'eau');
   assert.deepEqual(choisirMulliganIA(duel), [2], 'la grosse carte repart, pas toutes les cartes sans terrain');

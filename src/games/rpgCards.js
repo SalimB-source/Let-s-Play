@@ -1943,7 +1943,7 @@ export function convertirDeckSansTerrain(ids, collection = null, limiteDe = card
   return retenues;
 }
 
-/** Format commun : trente cartes, zéro terrain, une à trois couleurs. */
+/** Format commun : trente cartes, zéro terrain, une à deux couleurs. */
 export function rpgValiderDeck(deck) {
   if (!Array.isArray(deck) || deck.length !== 30) return { ok: false, raison: '30 cartes exigées' };
   const comptes = {};
@@ -1955,7 +1955,7 @@ export function rpgValiderDeck(deck) {
     comptes[id] = (comptes[id] ?? 0) + 1;
     if (comptes[id] > cardCopyLimit(carte)) return { ok: false, raison: `${id} ${carte.rarity} en ${comptes[id]} exemplaires (${cardCopyLimit(carte)} max)` };
   }
-  if (couleurs.size < 1 || couleurs.size > 3) return { ok: false, raison: '1 à 3 couleurs exigées' };
+  if (couleurs.size < 1 || couleurs.size > 2) return { ok: false, raison: '1 à 2 couleurs exigées' };
   return { ok: true, terrains: 0 };
 }
 

@@ -16,7 +16,7 @@
  * Les trois étapes restent accessibles :
  *
  *   1. **Votre idée** — l'invite de texte, ses exemples cliquables, la lecture ;
- *   2. **Les couleurs** — 1 à 3 des cinq éléments, pré-remplies par la lecture ;
+ *   2. **Les couleurs** — 1 à 2 des cinq éléments, pré-remplies par la lecture ;
  *   3. **Le style de jeu** — aggro, contrôle ou mix (`RPG_STYLES_JEU`,
  *      `rpgDeckAuto.js`), pré-rempli lui aussi.
  *
@@ -153,9 +153,9 @@ export function RpgDeckAssistant({
     setCouleurs((actuelles) => {
       const suivant = new Set(actuelles);
       if (suivant.has(couleur)) suivant.delete(couleur);
-      else if (suivant.size >= 3) {
+      else if (suivant.size >= 2) {
         surSfx('erreur');
-        setMessage('Trois couleurs au plus : le format du duel n’en autorise pas davantage.');
+        setMessage('Deux couleurs au plus : le format du duel n’en autorise pas davantage.');
         return actuelles;
       } else suivant.add(couleur);
       return suivant;
@@ -225,7 +225,7 @@ export function RpgDeckAssistant({
           <h3>{ETAPES[rangEtape].titre}</h3>
           <p className="rpg-assistant__aide">
             {etape === 'idee' && 'Répondez en une phrase : l’atelier lit les couleurs, le thème et le plan de jeu, puis compose avec vos cartes.'}
-            {etape === 'couleurs' && 'Une à trois couleurs : le deck ne sortira jamais de cette identité.'}
+            {etape === 'couleurs' && 'Une à deux couleurs : le deck ne sortira jamais de cette identité.'}
             {etape === 'style' && 'Choisissez un plan de jeu : le moteur compose ensuite avec les cartes que vous possédez.'}
           </p>
         </div>
@@ -382,7 +382,7 @@ export function RpgDeckAssistant({
               <small>{couleurs.has(couleur) ? 'retenue' : 'choisir'}</small>
             </button>
           ))}
-          <p className="rpg-assistant__astuce">Mono, duo ou tri : les cartes hybrides de vos couleurs sont aussi retenues.</p>
+          <p className="rpg-assistant__astuce">Mono ou duo : les cartes hybrides de vos couleurs sont aussi retenues.</p>
         </div>
       )}
 
@@ -398,6 +398,11 @@ export function RpgDeckAssistant({
               Demande lue : <b>{lecture.intention.resume}</b>
             </p>
           )}
+          {lecture && couleurs.size > 0 && verifierIntention(
+            { ...lecture.intention, couleurs: [...couleurs] }, { catalogue: CATALOGUE, collection },
+          ).alertes.filter((alerte) => alerte.code === 'signature-hors-identite').map((alerte) => (
+            <p key={alerte.texte} className="rpg-assistant__message rpg-assistant__message--alerte" role="status">{alerte.texte}</p>
+          ))}
           {collectionTropJuste && (
             <p className="rpg-assistant__message rpg-assistant__message--alerte" role="status">
               Votre collection de ces couleurs permet {potentiel.copies} cartes au plus : le deck généré sera un

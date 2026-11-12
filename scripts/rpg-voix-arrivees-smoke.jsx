@@ -7,25 +7,15 @@ import { installerDeckMaisonDeTest, passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// 26 cartes Sable/Eau conformes à `rpgValiderDeck` (max 2 exemplaires), plus
-// quatre cartes Braise : trois couleurs au plus, la limite d'un duel sans
-// terrains. La main de départ (rng fixe) reçoit la Mousse des galiotes — une
+// 26 cartes Sable/Braise conformes à `rpgValiderDeck` (max 2 exemplaires),
+// plus deux Kenshi Braise et deux Mousses Sable : deux couleurs au plus. La main de départ (rng fixe) reçoit la Mousse des galiotes — une
 // pirate muette, qui garde « Ahoy ! » — et les Kenshi de la forge, qui ont
 // chacun leur échantillon d'arrivée.
 const REMPLISSAGE = [
-  'tercio-de-cuivre',
-  'pilote-de-la-carreira',
-  'le-renegat',
-  'negociant-des-ranscons',
-  'galion-de-la-flotte',
-  'le-routier',
-  'le-grand-debarquement',
-  'haut-fond',
-  'vipere-de-verre',
-  'lettre-de-marque',
-  'grappin-d-abordage',
-  'baton-des-citernes',
-  'cotre-de-course',
+  'tercio-de-cuivre', 'chien-du-guet', 'fennec-des-decombres',
+  'tislit-des-aures', 'faussoyeur-des-dunes', 'gardienne-des-portes-de-sable',
+  'ashigaru-des-braises', 'ghul-des-cendres', 'hatamoto-des-cendres',
+  'messagere-des-cendres', 'novice-des-cendres', 'trait-de-braise', 'vent-rouge',
 ].flatMap((id) => [id, id]);
 
 const DECK_JOUEUR = [
@@ -36,8 +26,7 @@ const DECK_JOUEUR = [
   'mousse-des-galiotes',
 ];
 
-// Le sorcier joue les mêmes couleurs (Sable, Eau, Braise) : au-delà de trois
-// couleurs, `rpgNouveauDuel` refuse un duel sans terrains.
+// Le sorcier joue les mêmes couleurs (Sable et Braise).
 const DECK_SORCIER = [
   ...REMPLISSAGE,
   'kenshi-de-la-forge',

@@ -215,7 +215,7 @@ export function creerArbitre({
 
   /**
    * Le deck est-il jouable ici ? Format d'abord (`rpgValiderDeck` : 30 cartes,
-   * 1–3 couleurs, limites d'exemplaires), puis **possession** : un deck du
+   * 1–2 couleurs, limites d'exemplaires), puis **possession** : un deck du
    * répertoire (archétypes d'entraînement, celui du sorcier, des leçons) est
    * ouvert à tous, un deck du joueur — le seul qui existe depuis les coffrets —
    * exige que chaque carte soit dans la collection du compte
@@ -518,6 +518,8 @@ export function creerArbitre({
       const permis = await deckAutorise(joueur.id, deck);
       if (!permis.ok) return refus(400, permis.raison);
 
+      // Une invitation ancienne peut avoir été créée avant un changement de format.
+      if (!rpgValiderDeck(duel.hote_deck).ok) return refus(400, 'deck-invalide');
       const depart = maintenant();
       const etat = etatInitial(duel.hote_deck, deck, duel.graine);
       const patch = {

@@ -37,7 +37,7 @@ export default function RpgMobaDeckEditor({ deck, joueur, onCancel, onSave }) {
   const resetFilters = () => { setQuery(''); setElement('tous'); setType('tous'); setTri('nom'); setSelection(false); };
   return <div className="moba__overlay moba__editor-overlay" role="dialog" aria-modal="true" aria-label={`Composer le deck de ${joueur}`}>
     <div className="moba__modal moba__editor">
-      <div className="moba__editor-heading"><div><span>ATELIER DE DECK · {joueur.toUpperCase()}</span><h2>Composer votre deck</h2><p>30 cartes · 1 à 3 éléments · limites d’exemplaires habituelles</p></div><span className="moba__editor-crest" aria-hidden="true">✦</span></div>
+      <div className="moba__editor-heading"><div><span>ATELIER DE DECK · {joueur.toUpperCase()}</span><h2>Composer votre deck</h2><p>30 cartes · 1 à 2 éléments · limites d’exemplaires habituelles</p></div><span className="moba__editor-crest" aria-hidden="true">✦</span></div>
       <div className="moba__editor-summary" aria-live="polite">
         <div className="moba__editor-progress"><strong>{ids.length} / 30 cartes</strong><span className="moba__editor-meter" aria-hidden="true"><i style={{ width: `${Math.min(100, ids.length / 30 * 100)}%` }} /></span></div>
         <span>Couleurs : {elements.join(', ') || 'aucune'}</span>

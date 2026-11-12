@@ -49,12 +49,13 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
     cardIds: [...RPG_DECK_HYBRIDE_BASE],
   },
   {
+    // Identifiant historique conservé pour les anciennes sélections enregistrées.
     id: 'essai-mana-trois-couleurs',
     name: 'La Croisée des Heures',
     element: 'hybride',
-    elements: ['sable', 'braise', 'eau'],
-    boxArt: 'sonneur-fele',
-    description: 'Sable + Braise + Eau : anticipez les sorts de trois couleurs.',
+    elements: ['sable', 'braise'],
+    boxArt: 'sahir-des-braises',
+    description: 'Sable + Braise : anticipez les sorts de deux couleurs.',
     cardIds: [
       ...copies('tislit-des-aures', 2), ...copies('fennec-des-decombres', 2),
       ...copies('chien-du-guet', 2), ...copies('faussoyeur-des-dunes', 2),
@@ -62,8 +63,9 @@ export const RPG_MANA_ESSAI_DECKS = Object.freeze([
       ...copies('ashigaru-des-braises', 2), ...copies('ghul-des-cendres', 2),
       ...copies('hatamoto-des-cendres', 2), ...copies('trait-de-braise', 2),
       'ronin-du-soleil-rouge', 'nuage-de-cendres',
-      'eau-de-la-source', ...copies('ressac', 2), ...copies('porteuse-de-cruches', 2),
-      ...copies('vipere-de-verre', 2), 'sonneur-fele', 'lame-de-mer', 'jormungandr',
+      ...copies('messagere-des-cendres', 2), ...copies('novice-des-cendres', 2),
+      ...copies('chasseuse-de-braise', 2), ...copies('sentinelle-du-brasier', 2),
+      'sahir-des-braises', 'anqa-des-braises',
     ],
   },
   {
@@ -114,9 +116,9 @@ export function validerDeckManaEssai(deck) {
   const ids = deck?.cardIds;
   const couleurs = deck?.elements;
   if (!Array.isArray(ids) || ids.length !== RPG_MANA_ESSAI_TAILLE) return { ok: false, raison: '30 cartes exigées' };
-  if (!Array.isArray(couleurs) || couleurs.length < 1 || couleurs.length > 3
+  if (!Array.isArray(couleurs) || couleurs.length < 1 || couleurs.length > 2
     || new Set(couleurs).size !== couleurs.length || couleurs.some((c) => !RPG_ELEMENTS.includes(c))) {
-    return { ok: false, raison: '1 à 3 couleurs valides exigées' };
+    return { ok: false, raison: '1 à 2 couleurs valides exigées' };
   }
   const quantites = new Map();
   for (const id of ids) {
@@ -139,7 +141,7 @@ export function deckManaEssaiParId(id) {
 }
 
 /** Un adversaire différent selon le deck testé ; l'IA choisit aussi ses
- * couleurs quand elle joue un paquet bicolore ou tricolore. */
+ * couleurs quand elle joue un paquet bicolore. */
 export function adversaireManaEssai(deck) {
   const index = RPG_MANA_ESSAI_DECKS.findIndex((candidate) => candidate.id === deck?.id);
   return RPG_MANA_ESSAI_DECKS[(index + 1) % RPG_MANA_ESSAI_DECKS.length];

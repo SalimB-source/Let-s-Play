@@ -49,7 +49,7 @@ export function RpgDeckModeChoice({ onAssiste, onManuel, onRetour, surSfx = () =
           </span>
           <span className="rpg-creation__desc">
             Dites le deck que vous voulez — « un deck viking neige ténèbres, avec quelques sorts de contrôle » —
-            et l’atelier cherche les cartes pour vous. Ou choisissez une à trois couleurs, puis un plan de jeu :
+            et l’atelier cherche les cartes pour vous. Ou choisissez une à deux couleurs, puis un plan de jeu :
             aggro, contrôle ou mix. Dans les deux cas, 30 cartes prises dans votre collection.
           </span>
           <span className="rpg-creation__cta">Commencer →</span>

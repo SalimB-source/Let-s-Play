@@ -37,7 +37,7 @@ const DECK_JOUEUR = [
 // 26 + 4 = 30 cartes. Main de départ du sorcier : Mousse (1), Raïs (2), Barbe-Rousse (6).
 const DECK_SORCIER = [
   ...REMPLISSAGE_PIRATE,
-  'la-barbe-noire',
+  'eau-de-la-source',
   'la-barbe-rousse',
   'rais-de-la-galiote',
   'mousse-des-galiotes',

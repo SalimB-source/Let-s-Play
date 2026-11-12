@@ -203,7 +203,7 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
     'les quatre manières de jouer sont représentées');
 
   // Chaque étage a son paquet et son identité : les cinq couleurs pures,
-  // la Course Sable + Eau, puis le tricolore du sommet.
+  // la Course Sable + Eau, puis le bicolore du sommet.
   const identites = tour.etages.map((etage) => {
     const deck = deckHistoire(etage.deck);
     const validation = rpgValiderDeck(deck);
@@ -215,7 +215,7 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
   assert.deepEqual(new Set(identites.slice(0, 5)), new Set(['sable', 'braise', 'eau', 'neige', 'tenebres']),
     'les cinq couleurs pures ouvrent la tour');
   assert.equal(identites[5], 'eau+sable', 'le sixième étage est la Course');
-  assert.equal(identites[6].split('+').length, 3, 'le sommet joue trois couleurs');
+  assert.equal(identites[6], 'braise+sable', 'le sommet joue Sable et Braise');
   const manieres = tour.etages.map((etage, i) => `${identites[i]}/${etage.ia.style}`);
   assert.equal(new Set(manieres).size, 7, 'chaque étage est un type de duel différent');
 
@@ -228,7 +228,7 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
   // Depuis les coffrets et la rampe des Tours, les sommets de **chaque** Tour
   // n'ont plus de plafond non plus : le Sablier ne se distingue donc plus par
   // un nombre de mythiques supérieur à tout le reste, mais par ses sept
-  // identités, sa puissance d'étage et son tricolore. Ce qui reste vrai et
+  // identités, sa puissance d'étage et son bicolore. Ce qui reste vrai et
   // vérifiable : aucun paquet absolu n'est plafonné, et chacun aligne les
   // figures de son identité.
   for (const etage of tour.etages) {
@@ -240,7 +240,7 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
     assert.ok(mythiques(etage.deck) >= 5,
       `${etage.deck} aligne au moins cinq figures (${mythiques(etage.deck)})`);
   }
-  assert.ok(mythiques('le-sablier') >= 20, 'le Sablier verse plus de vingt mythiques dans trente cartes');
+  assert.ok(mythiques('le-sablier') >= 15, 'le Sablier aligne de nombreuses mythiques dans deux couleurs');
   assert.ok(deckHistoire('flamme-absolue').includes('kagutsuchi-flamme-originelle')
     && deckHistoire('flamme-absolue').includes('orochi'), 'la Braise absolue a ses deux plus grandes figures');
   assert.ok(deckHistoire('hiver-absolu').includes('pere-des-corbeaux')
