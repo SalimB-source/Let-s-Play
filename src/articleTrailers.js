@@ -111,6 +111,93 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"xbox-sorties-semaine-9-13-novembre-2026": {
+  "label": "CETTE SEMAINE SUR XBOX",
+  "meta": "XBOX WIRE",
+  "items": [],
+  "credit": "Visuel officiel Xbox Wire : TANUKI: Pon’s Summer, en illustration du calendrier de la semaine.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucun trailer d’une autre saison ou démonstration inventée n’est ajouté."
+},
+"cinema/nobody-wants-this-saison-4-renouvellement": {
+  "label": "NOBODY WANTS THIS",
+  "meta": "NETFLIX",
+  "items": [],
+  "credit": "Image officielle de la série publiée par Netflix Tudum pour l’annonce du renouvellement ; ce n’est pas une photo de tournage de la saison 4.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucun trailer d’une autre saison ou démonstration inventée n’est ajouté."
+},
+"tech/google-language-explorer-diversite-linguistique": {
+  "label": "LANGUAGE EXPLORER",
+  "meta": "GOOGLE RESEARCH",
+  "items": [],
+  "credit": "Illustration officielle Language Explorer publiée par Google Research.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucun trailer d’une autre saison ou démonstration inventée n’est ajouté."
+},
+"gta-6-xbox-one-cloud-gaming-19-novembre": {
+  "label": "GTA VI",
+  "meta": "XBOX WIRE",
+  "items": [
+    {
+      "id": "rz1B4B2yBZY",
+      "kind": "trailer",
+      "title": "Grand Theft Auto VI Launch Trailer",
+      "channel": "Rockstar Games",
+      "verified": "10.11.2026",
+      "note": "Vidéo officielle publiée le 15 octobre 2026. Utilisée en illustration de cette édition du 10.11.2026 ; pas une démonstration technique du service ni un test de la rédaction."
+    }
+  ],
+  "credit": "Artwork officiel GTA VI publié sur Xbox Wire. Trailer Rockstar du 15 octobre utilisé uniquement pour présenter le jeu, pas comme démonstration du cloud."
+},
+"cinema/the-debut-a24-deuxieme-bande-annonce": {
+  "label": "THE DEBUT",
+  "meta": "A24",
+  "items": [
+    {
+      "id": "lF9n06SMDPU",
+      "kind": "trailer",
+      "title": "The Debut | Official Trailer 2 HD | A24",
+      "channel": "A24",
+      "verified": "10.11.2026",
+      "note": "Vidéo officielle publiée le 10 novembre 2026. Utilisée en illustration de cette édition du 10.11.2026 ; pas une démonstration technique du service ni un test de la rédaction."
+    }
+  ],
+  "credit": "Miniature et deuxième bande-annonce officielles : A24, 10 novembre 2026."
+},
+"tech/windows-11-kb5132061-securite-audio-usb": {
+  "label": "WINDOWS 11",
+  "meta": "MICROSOFT SUPPORT",
+  "items": [],
+  "credit": "Logo officiel Microsoft, visuel de marque uniquement : ce n’est pas une capture de la mise à jour Windows.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucun trailer d’une autre saison ou démonstration inventée n’est ajouté."
+},
+"playstation-plus-novembre-2026-catalogue-extra-premium": {
+  "label": "PLAYSTATION PLUS",
+  "meta": "PLAYSTATION BLOG",
+  "items": [],
+  "credit": "Visuel officiel de la sélection PlayStation Plus de novembre, Sony Interactive Entertainment.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucun trailer d’une autre saison ou démonstration inventée n’est ajouté."
+},
+"cinema/the-body-netflix-sortie-11-novembre": {
+  "label": "THE BODY",
+  "meta": "NETFLIX",
+  "items": [
+    {
+      "id": "wl7uj7n7DoY",
+      "kind": "trailer",
+      "title": "The Body | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "verified": "11.11.2026",
+      "note": "Vidéo officielle publiée le 12 octobre 2026. Utilisée en illustration de cette édition du 11.11.2026 ; pas une démonstration technique du service ni un test de la rédaction."
+    }
+  ],
+  "credit": "Miniature et trailer officiels Netflix, vidéo publiée le 12 octobre 2026 pour la sortie annoncée le 11 novembre."
+},
+"tech/google-sensorwm-sante-montres-recherche": {
+  "label": "SENSORWM",
+  "meta": "GOOGLE RESEARCH",
+  "items": [],
+  "credit": "Schéma de recherche officiel Google Research : cadre expérimental d’âge de santé et de simulations SensorWM.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucun trailer d’une autre saison ou démonstration inventée n’est ajouté."
+},
 "gta-6-nouvelles-images-voitures-galerie-lancement": {
   "label": "GRAND THEFT AUTO VI",
   "meta": "ROCKSTAR GAMES · TRAILER D’ARCHIVE",

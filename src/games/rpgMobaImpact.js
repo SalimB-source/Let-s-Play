@@ -35,7 +35,7 @@ export function rpgMobaImpactIndividuel(combat, resultat, positions, noms = {}) 
     point: positions?.entities?.[item.entiteId], critique: (resultat.resume?.critiques ?? []).some((critical) => critical.entiteId === item.sourceId) }));
   for (const event of directs) impacts.push({ id: laneKey, montant: event.damage, point: positions?.lanes?.[laneKey], critique: (resultat.resume?.critiques ?? []).some((critical) => critical.entiteId === sourceId) });
   const annonce = impacts.map(({ id, montant }) => `${noms[id] ?? (id === laneKey ? `voie ${voie === 'left' ? 'gauche' : voie === 'right' ? 'droite' : 'centrale'}` : 'créature')} : ${montant} dégâts`).join(' ; ');
-  return { positions, source: positions?.entities?.[sourceId],
+  return { positions, tirCible: Boolean(combat.cibleIndividuelle.ciblee && cibleId), source: positions?.entities?.[sourceId],
     destination: cibleId ? positions?.entities?.[cibleId] : positions?.lanes?.[laneKey],
     impacts, annonce };
 }

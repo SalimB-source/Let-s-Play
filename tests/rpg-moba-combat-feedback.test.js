@@ -32,3 +32,17 @@ test('a Sphere return identifies which combatant left without showing a miss', (
   assert.match(result.annonce, /A : attaque ciblée annulée, attaquant renvoyé par la Sphère/);
   assert.match(result.annonce, /B : attaque ciblée annulée, cible renvoyée par la Sphère/);
 });
+
+test('les retours de combats rapprochés conservent leurs annonces et leurs jetons', async () => {
+  const { rpgMobaFusionnerFeedback } = await import('../src/games/rpgMobaCombatFeedback.js');
+  const premier = { miss: { a: { token: 1 } }, critiques: { c: { token: 1, fois: 4 } }, annonce: 'A manque' };
+  const second = { miss: { b: { token: 2 } }, critiques: { c: { token: 2, fois: 4 } }, annonce: 'B manque' };
+  const avant = JSON.stringify({ premier, second });
+  const ensemble = rpgMobaFusionnerFeedback({ 1: premier, 2: second });
+  assert.deepEqual(ensemble.miss, { a: { token: 1 }, b: { token: 2 } });
+  assert.deepEqual(ensemble.critiques, { c: { token: 2, fois: 4 } });
+  assert.equal(ensemble.annonce, 'A manque ; B manque');
+  assert.equal(JSON.stringify({ premier, second }), avant, 'la fusion ne modifie pas les résultats');
+  assert.deepEqual(rpgMobaFusionnerFeedback({ 2: second }), second);
+  assert.deepEqual(rpgMobaFusionnerFeedback(null), { miss: {}, critiques: {}, annonce: '' });
+});
