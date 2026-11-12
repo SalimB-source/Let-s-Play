@@ -10,10 +10,17 @@
  */
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import ArticleGallery from '../src/components/ArticleGallery';
+import Gallery from '../src/components/ArticleGallery';
+import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { articleGalleries, getArticleGallery } from '../src/articleGalleries';
 
-export { React, renderToString, ArticleGallery, articleGalleries, getArticleGallery };
+export { React, renderToString, articleGalleries, getArticleGallery };
+
+// Comme dans le site, la vraie galerie reçoit son contexte d’interface.
+// La langue imposée garde les assertions du banc d’essai déterministes.
+export function ArticleGallery(props) {
+  return <LanguageProvider lang="fr"><Gallery {...props} /></LanguageProvider>;
+}
 
 /** Rendu serveur de la galerie : sert à vérifier qu'aucune visionneuse n'y est rendue. */
 export function renderGallery(props) {

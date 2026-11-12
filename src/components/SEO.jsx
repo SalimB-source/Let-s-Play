@@ -41,6 +41,15 @@ const pageMeta = {
     description: 'Retrouvez les tests et analyses de jeux vidéo de Let’s Play : gameplay, technique, direction artistique et verdict.',
     type: 'website',
   },
+  '/reviews/phantom-blade-zero': {
+    title: 'Test Phantom Blade Zero — le verdict de Chaft — Let’s Play',
+    description: 'Chaft explore Phantom Blade Zero : combats kung-fu, boss, univers wuxia et verdict. Son avis sur le jeu de S-GAME : 8,5/10.',
+    image: 'reviews/phantom-blade-zero.webp',
+    type: 'article',
+    published: '2026-10-29',
+    section: 'Tests',
+    author: 'Chaft',
+  },
   '/reviews/ace-combat-8-wings-of-theve': {
     title: 'Test Ace Combat 8: Wings of Theve — le verdict de Chaft — Let’s Play',
     description: 'Chaft prend son envol dans Ace Combat 8 : campagne, combats aériens, progression et mode en ligne. Son verdict : 9/10.',

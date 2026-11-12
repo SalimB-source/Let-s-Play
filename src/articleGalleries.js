@@ -17,6 +17,24 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // Test original de Chaft : visuels promotionnels de S-GAME, distincts des
+  // captures de sa partie et publiés sur les pages officielles du jeu.
+  'phantom-blade-zero': {
+    label: 'PHANTOM BLADE ZERO',
+    meta: 'S-GAME · VISUELS OFFICIELS',
+    items: [
+      { src: 'screenshots/phantom-blade-zero/wulin.webp', alt: 'Soul s’avance sur un pont sous la pluie dans le Wulin', caption: '01 / Le Wulin sous la pluie' },
+      { src: 'screenshots/phantom-blade-zero/lame.webp', alt: 'Une lame ondulée au premier plan face à une porte dans Phantom Blade Zero', caption: '02 / Une lame face au danger' },
+      { src: 'screenshots/phantom-blade-zero/boss.webp', alt: 'Soul fait face à une créature massive sous des lanternes rouges', caption: '03 / Un affrontement au cœur du Wulin' },
+    ],
+    credit: 'Couverture et images promotionnelles officielles de S-GAME, publiées sur PlayStation et Epic Games Store. Ces visuels illustrent le test et ne proviennent pas de la partie de Chaft.',
+    creditSources: [
+      { label: 'PlayStation Store — page officielle du jeu', href: 'https://store.playstation.com/en-us/concept/10017620' },
+      { label: 'PlayStation Blog — combat et exploration', href: 'https://blog.playstation.com/2026/10/28/phantom-blade-zero-how-boss-weapons-transform-combat-and-exploration/' },
+      { label: 'PlayStation Blog — présentation de S-GAME', href: 'https://blog.playstation.com/2026/08/17/phantom-blade-zero-state-of-play-dives-deep-into-combat-and-the-wulin-world/' },
+      { label: 'Epic Games Store — page officielle du jeu', href: 'https://store.epicgames.com/p/phantom-blade-zero-e78a35' },
+    ],
+  },
   // Test original de Chaft : visuels promotionnels officiels de Bandai Namco,
   // distincts des images de sa propre partie.
   'ace-combat-8-wings-of-theve': {

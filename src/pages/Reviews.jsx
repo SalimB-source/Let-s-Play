@@ -42,6 +42,13 @@ const shortReviewVideo = {
 // précédents. La portée de chaque note et le crédit visuel restent explicites.
 const writtenReviewFeatures = [
   {
+    slug: 'phantom-blade-zero',
+    kicker: 'S-GAME · ACTION-RPG SOLO',
+    credit: 'S-GAME · PLAYSTATION',
+    detail: 'AVENTURE SOLO · PC & PS5',
+    scoreScope: 'Note du jeu',
+  },
+  {
     slug: 'ace-combat-8-wings-of-theve',
     kicker: 'WINGS OF THEVE · SOLO & ONLINE',
     credit: 'BANDAI NAMCO',
