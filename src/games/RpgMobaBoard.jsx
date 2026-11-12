@@ -18,9 +18,10 @@ import { rpgMobaPositionsImpact, rpgMobaImpactIndividuel, rpgMobaDecalerChiffres
 import { rpgMobaSoinsCreatures, rpgMobaSoinsVoies, rpgMobaBoucliersAjoutes } from './rpgMobaSoutien.js';
 import { rpgMobaNouvellesConquetes } from './rpgMobaConqueteFx.js';
 import { rpgMobaSorties, rpgMobaSortieRemplacee } from './rpgMobaSorties.js';
+import { rpgMobaMouvementsCartes, rpgMobaTrajetCarte } from './rpgMobaCartesFx.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaArrowTarget, rpgMobaCombatIndicators } from './rpgMobaCombatIndicators.js';
-import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgNombreBlessures, rpgBlessuresDepuis, rpgRenvoisEnMain, rpgExils, rpgConsommerSoins, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
+import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgNombreBlessures, rpgBlessuresDepuis, rpgRenvoisEnMain, rpgExils, rpgConsommerSoins, rpgConsommerPresentations, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
 import {
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaSortBlocageInterdit, MOBA_DECKS, MOBA_EMBUSCADES_COMBAT, rpgMobaValiderDeck, MOBA_ARMES, MOBA_CONTRESORTS, MOBA_ARRIVEES_HOSTILES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_NEUTRES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_VOIES, MOBA_MAGIES_SOINS, MOBA_MAGIES_PRIX, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_ZONE_REPONSE, MOBA_MAGIES_ZONE_TOTALE_REPONSE, MOBA_MAGIES_RENFORT_REPONSE, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCiblesPrise, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaCiblesAttaque, rpgMobaDeclarerAttaque, rpgMobaDeclarerBlocages, rpgMobaDefausser, rpgMobaPeutEmbuscade, rpgMobaJouerCreature, rpgMobaJouerArme,
   rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan,
@@ -290,6 +291,35 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [entreesVisuelles, ajouterEntrees, effacerEntrees] = useEffetsTemporairesMoba(3000);
   const [conquetesVisuelles, ajouterConquetes, effacerConquetes] = useEffetsTemporairesMoba(1500);
   const [sortiesVisuelles, ajouterSorties, effacerSorties] = useEffetsTemporairesMoba(1100);
+  const [mouvementsCartes, ajouterMouvementsCartes, effacerMouvementsCartes] = useEffetsTemporairesMoba(1500);
+  const duelCartesPrecedent = useRef(null);
+  const sequenceCartes = useRef(0);
+  // Le moteur émet les mouvements, et non la différence de tailles de main :
+  // jouer un sort ou placer une créature ne doit jamais ressembler à une défausse.
+  useEffect(() => {
+    const evenements = rpgConsommerPresentations(duel);
+    if (duelCartesPrecedent.current !== duel) {
+      duelCartesPrecedent.current = duel;
+      effacerMouvementsCartes();
+      return; // distribution initiale / nouvelle partie, sans trajectoire
+    }
+    if (!evenements.length || etape === 'choix' || etape === 'mulligan') return;
+    const plateau = document.querySelector('.moba');
+    if (!plateau) return;
+    const nouveaux = {};
+    rpgMobaMouvementsCartes(evenements).forEach((event, index) => {
+      const piles = plateau.querySelector(`.moba__piles--${event.cote}`);
+      const paquet = piles?.querySelector('.rpg-card-pile--deck .rpg-card-pile__stack, .rpg-card-pile--deck, .moba__pile-fallback:first-child');
+      const cimetiere = piles?.querySelector('.rpg-card-pile--graveyard .rpg-card-pile__stack, .rpg-card-pile--graveyard, .moba__pile-fallback:last-child');
+      const main = plateau.querySelector(event.cote === 'joueur' ? '.moba__hand-cards' : '.rpg-hidden-hand__cards, .moba__hidden-hand > div');
+      const source = event.type === 'pioche' ? paquet : main;
+      const cible = event.type === 'pioche' ? main : cimetiere;
+      const trajet = rpgMobaTrajetCarte(source?.getBoundingClientRect(), cible?.getBoundingClientRect());
+      if (!trajet) return;
+      nouveaux[++sequenceCartes.current] = { ...event, ...trajet, delai: Math.min(index, 5) * 110 };
+    });
+    ajouterMouvementsCartes(nouveaux);
+  });
   const [retoursExil, ajouterRetoursExil, effacerRetoursExil] = useEffetsTemporairesMoba(1400);
   const [fantomes, setFantomes] = useState([]);
   const [cerclesSacrifice, setCerclesSacrifice] = useState([]);
@@ -1371,6 +1401,11 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {['sorcier', 'joueur'].map((side) => <div className={`moba__piles moba__piles--${side}`} role="group" aria-label={side === 'joueur' ? 'Vos zones de cartes' : 'Zones de l’IA'} key={side}>
       {rendu?.CardPile ? <><rendu.CardPile count={duel[side].deck.length} label="Paquet" variant="deck" /><rendu.CardPile count={duel[side].cimetiere.length} label="Cimetière" variant="graveyard" topCard={duel[side].cimetiere.at(-1)} onClick={(event) => ouvrirCimetiere(side, event)} /></> : <><span className="moba__pile-fallback">Paquet · {duel[side].deck.length}</span><button type="button" className="moba__pile-fallback" disabled={!duel[side].cimetiere.length} onClick={(event) => ouvrirCimetiere(side, event)}>Cimetière · {duel[side].cimetiere.length}</button></>}
     </div>)}
+    <p className="moba__sr-only" role="status" aria-live="polite">{Object.values(mouvementsCartes).map((mouvement) => `${mouvement.cote === 'joueur' ? 'Vous' : 'Le sorcier'} ${mouvement.type === 'pioche' ? (mouvement.cote === 'joueur' ? 'piochez' : 'pioche') : (mouvement.cote === 'joueur' ? 'défaussez' : 'défausse')} ${mouvement.nombre} carte${mouvement.nombre > 1 ? 's' : ''}.`).join(' ')}</p>
+    {Object.entries(mouvementsCartes).map(([id, mouvement]) => <span key={id} className={`moba__card-flight moba__card-flight--${mouvement.type}`} data-moba-card-move={`${mouvement.cote}-${mouvement.type}`} aria-hidden="true" style={{ left: mouvement.x, top: mouvement.y, '--flight-dx': `${mouvement.dx}px`, '--flight-dy': `${mouvement.dy}px`, '--flight-delay': `${mouvement.delai}ms` }}>
+      <span className="moba__card-flight-face" style={mouvement.cote === 'joueur' && mouvement.type === 'defausse' ? { backgroundImage: `url("${cardArt(mouvement.carteId)}")` } : undefined} />
+      <span className="moba__card-flight-label">{mouvement.type === 'pioche' ? 'PIOCHE' : 'DÉFAUSSE'}{mouvement.nombre > 1 ? ` ×${mouvement.nombre}` : ''}</span>
+    </span>)}
     <div className="moba__ai-status" role="status">{iaBloquee ? <><span>{erreur} </span><button type="button" onClick={() => { setErreur(''); setIaBloquee(false); }}>Réessayer</button></> : iaAgit ? 'L’IA réfléchit…' : ''}</div>
     <div inert={iaAgit}>
     {duel.mobaSortEnAttente && !fini && (() => {

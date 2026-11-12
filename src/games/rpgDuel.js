@@ -814,6 +814,7 @@ export function rpgDefausserCarte(duel, cote = 'joueur', indexOuCarteId = null) 
   if (index < 0 || index >= camp.main.length) return { ok: false, raison: 'hors-main' };
   const [carteId] = camp.main.splice(index, 1);
   camp.cimetiere.push(carteId);
+  presenter(duel, { type: 'defausse', cote, carteId });
   const nom = cardById(carteId)?.name ?? carteId;
   duel.log.push(`${cote === 'joueur' ? 'Vous défaussez' : 'Le sorcier défausse'} ${nom}.`);
   if (duel.defausseEnAttente?.cote === cote) {
@@ -5271,6 +5272,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const camp = duel[campCible];
         const defaussees = camp.main.splice(0, camp.main.length);
         camp.cimetiere.push(...defaussees);
+        for (const carteId of defaussees) presenter(duel, { type: 'defausse', cote: campCible, carteId });
         if (defaussees.length) {
           duel.log.push(`${campCible === 'joueur' ? 'Vous défaussez' : 'Le sorcier défausse'} ${defaussees.length} carte${defaussees.length > 1 ? 's' : ''} de sa main.`);
         }

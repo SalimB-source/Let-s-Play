@@ -1499,3 +1499,38 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   }
   .moba__mulligan-overlay .moba__mulligan > button { min-height: 44px; padding: 8px 18px; font-size: 14px; }
 }
+
+/* Les cartes circulent au-dessus du plateau depuis les vraies zones mesurées.
+   Le calque ne capte jamais les clics (main, cases et cimetière restent actifs). */
+.moba__card-flight {
+  position: fixed; z-index: 90; width: 40px; height: 56px;
+  pointer-events: none; transform-origin: center;
+  animation: moba-card-flight calc(.82s * var(--rpg-anim-scale, 1)) calc(var(--flight-delay) * var(--rpg-anim-scale, 1)) cubic-bezier(.2, .7, .3, 1) both;
+}
+.moba__card-flight-face {
+  display: block; width: 100%; height: 100%; border: 1px solid #e3bd76;
+  border-radius: 4px; background: var(--moba-card-back) center / cover;
+  box-shadow: 0 3px 15px #000d, 0 0 13px #ffd6959c;
+}
+.moba__card-flight--defausse .moba__card-flight-face { box-shadow: 0 3px 15px #000d, 0 0 15px #e8a989bb; }
+.moba__card-flight-label {
+  position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  white-space: nowrap; padding: 2px 5px; border-radius: 3px;
+  color: #fff1d4; background: #24180df0; text-shadow: 0 1px 2px #000;
+  font: 700 9px/1.3 system-ui, sans-serif; letter-spacing: .07em;
+}
+@keyframes moba-card-flight {
+  0% { opacity: 0; transform: translate(0, 0) scale(.7) rotate(-12deg); }
+  18% { opacity: 1; }
+  70% { opacity: 1; transform: translate(calc(var(--flight-dx) * .78), calc(var(--flight-dy) * .78 - 26px)) scale(1.12) rotate(8deg); }
+  100% { opacity: 0; transform: translate(var(--flight-dx), var(--flight-dy)) scale(.78) rotate(0deg); }
+}
+/* Un libellé fixe subsiste quand les mouvements sont désactivés. */
+.rpg-battle--moba.is-reduced .moba__card-flight { opacity: 1; transform: none; }
+.rpg-battle--moba.is-reduced .moba__card-flight-face { display: none; }
+.rpg-battle--moba.is-reduced .moba__card-flight-label { top: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .moba__card-flight { opacity: 1; transform: none; }
+  .moba__card-flight-face { display: none; }
+  .moba__card-flight-label { top: 0; }
+}
