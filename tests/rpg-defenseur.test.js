@@ -52,6 +52,19 @@ test('solo : un Défenseur attire les tirs même engagé ou gelé, et ne force p
   assert.equal(attaquer(duel, 'normal').ok, true, 'sans Défenseur les règles restent inchangées');
 });
 
+test('le Drakkar posé en duel attire les Attaques ciblées', () => {
+  const duel = scene();
+  duel.sorcier.creatures = duel.sorcier.creatures.filter(e => e.id === 'normal');
+  duel.sorcier.mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
+  duel.sorcier.main.push('drakkar-a-tete-de-dragon');
+  duel.sorcier.creatures.push({ id: 'victime', carteId: 'chien-du-guet', name: 'Chien', atk: 1, def: 1, pv: 1 });
+  const pose = rpgJouerCreature(duel, 'sorcier', 'drakkar-a-tete-de-dragon', null, { sacrificeId: 'victime' });
+  assert.equal(pose.ok, true, JSON.stringify(pose));
+  assert.equal(pose.entite.defenseur, true);
+  assert.equal(attaquer(duel, 'normal').raison, 'defenseur');
+  assert.equal(attaquer(duel, pose.entite.id).ok, true);
+});
+
 test('PvP refuse une autre cible sans mutation puis accepte un Défenseur', () => {
   const duel = scene();
   const avant = JSON.stringify(duel);
@@ -104,7 +117,7 @@ test('la fiche et la carte sur table montrent la nouvelle icône Défenseur', as
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
   try {
     const { PastillesCarte, IconesCarte } = await vite.ssrLoadModule('/src/games/effetIcons.jsx');
-    for (const carte of [cardById('tour-de-sable'), cardById('pourfendeur-des-djinns')]) {
+    for (const carte of [cardById('tour-de-sable'), cardById('pourfendeur-des-djinns'), cardById('drakkar-a-tete-de-dragon')]) {
       const rendu = (Composant) => new JSDOM(renderToStaticMarkup(React.createElement(Composant, { carte }))).window.document;
       const pastille = rendu(PastillesCarte).querySelector('[data-pastille="defenseur"]');
       assert.match(pastille?.textContent ?? '', /Défenseur/);
