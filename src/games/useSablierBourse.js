@@ -70,6 +70,7 @@ import {
 } from './rpgQuetes.js';
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
 import { ouvrirBooster, ouvrirBoosterOffert, ouvrirCoffret, rayonsOuverts } from './rpgBoosters.js';
+import { acheterCarteCatalogue as acheterDansCatalogue } from './rpgCatalogueAchat.js';
 import {
   acheterCarteDirecte as acheterDansEtal,
   ouvrirEtalDuJour,
@@ -683,6 +684,22 @@ export function useSablierBourse({
     return achat;
   }, [appliquer, pousser, onCartesRangees, compteId]);
 
+  /** Achat immédiat d'une carte absente, indépendamment de l'étal du jour. */
+  const acheterCarteCatalogue = useCallback((cardId) => {
+    const avant = etatRef.current;
+    const collection = collectionJoueur({
+      acquis: chargerAcquis(),
+      distante: chargerCollectionDistante(),
+      souk: avant.bourse.cartes,
+    });
+    const achat = acheterDansCatalogue({ portefeuille: avant.bourse, cardId, collection });
+    if (!achat.ok) return achat;
+    appliquer(achat.portefeuille, avant.quetes, avant.profil);
+    pousser();
+    onCartesRangees?.();
+    return achat;
+  }, [appliquer, pousser, onCartesRangees]);
+
   /**
    * L'achat d'une **illustration alternative** à la boutique du Catalogue : un
    * débit de crédits, une peinture de plus, aucun tirage. Le prix vient de la
@@ -926,6 +943,7 @@ export function useSablierBourse({
     ouvrirPaquetCoffre,
     rangerCoffret,
     acheterCarteDirecte,
+    acheterCarteCatalogue,
     acheterIllustration,
     basculerIllustration,
     rafraichirEtal,

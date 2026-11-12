@@ -21,18 +21,17 @@ test('le terrain MOBA continu garde ses trois voies et ses commandes', async () 
   let root;
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const initialiser = () => rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 });
     root = createRoot(document.getElementById('root'));
-    await act(async () => root.render(React.createElement(Board, { onQuitter: () => {} })));
+    await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser })));
     assert.match(document.querySelector('.moba').style.getPropertyValue('--moba-map'), /sablier-moba\/champ-trois-voies-rapprochees\.webp/);
     const lanes = [...document.querySelectorAll('.moba__lane')];
     assert.deepEqual(lanes.map((lane) => lane.getAttribute('aria-label')), ['Voie gauche', 'Voie centrale', 'Voie droite']);
     assert.deepEqual(lanes.map((lane) => lane.querySelectorAll('[data-moba-position]').length), [4, 2, 4]);
     const click = async (button) => { assert.ok(button && !button.disabled); await act(async () => button.click()); };
-    await click([...document.querySelectorAll('button')].find((button) => button.textContent.includes('Commencer le duel')));
-    await click([...document.querySelectorAll('button')].find((button) => button.textContent.includes('Garder ma main')));
-    assert.ok(document.querySelector('.moba__choice button'));
-    await click(document.querySelector('.moba__choice button'));
-    assert.equal(document.querySelector('.moba__choice'), null);
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    assert.ok([...document.querySelectorAll('.moba__controls button')].some((button) => button.textContent.includes('Fin du tour')));
     assert.equal(document.querySelectorAll('.moba__lane').length, 3);
   } finally {
     if (root) await act(async () => root.unmount());
@@ -45,6 +44,8 @@ test('les chaînes remplissent la voie conquise et le verrou reste au centre à 
   const css = await readFile(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
   assert.match(css, /\.moba__conquest-chains \{[^}]*inset: 0; width: 100%; height: 100%/);
   assert.match(css, /\.moba__conquest-lock \{[^}]*top: 50%; left: 50%; transform: translate\(-50%, -50%\)/);
+  assert.match(css, /\.moba__conquest \{[^}]*pointer-events: none/);
+  assert.match(css, /\.moba__lane\.is-conquered \.moba__side\.is-joined-center \{[^}]*z-index: 3/);
   assert.match(css, /\.moba__conquest-links ellipse \{[^}]*stroke: #ead2a1/);
   assert.match(css, /container-type:\s*size/);
   assert.match(css, /hypot\(100cqw, 100cqh\)/);
@@ -99,16 +100,20 @@ test('une voie conquise affiche les chaînes et le verrou du bon camp sans désa
     assert.ok(!center.querySelector('.moba__side').hasAttribute('inert'));
     assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie gauche conquise par Vous ; voie fermée/);
     assert.equal(duel.moba.winner, null);
-    mobaInfliger(duel.moba, 'sorcier', 'center', 10);
+    assert.equal(mobaInfliger(duel.moba, 'sorcier', 'center', 15).conquered, true);
     await act(async () => root.render(React.createElement(Board, props)));
     assert.ok(center.classList.contains('is-conquered--sorcier'));
-    assert.equal(center.querySelector('.moba__conquest'), null, 'le centre ne reçoit pas le sceau d’une voie définitivement fermée');
-    const { mobaRattacherCentre } = await server.ssrLoadModule('/src/games/rpgMoba.js');
-    assert.equal(mobaRattacherCentre(duel.moba, 'sorcier', 'right').ok, true);
-    await act(async () => root.render(React.createElement(Board, props)));
+    const sceauCentre = center.querySelector('.moba__conquest');
+    assert.ok(sceauCentre, 'la voie centrale reçoit aussi le sceau');
+    assert.equal(sceauCentre.querySelectorAll('.moba__conquest-photo-chain').length, 2);
+    assert.equal(sceauCentre.querySelectorAll('.moba__conquest-links ellipse').length, 42);
+    assert.match(sceauCentre.querySelector('.moba__conquest-lock img').getAttribute('src'), /icons\/sablier\/verrou-voie\.svg$/);
+    assert.match(sceauCentre.textContent, /Voie conquise.*L’IA.*Case sur les flancs/);
+    assert.equal(sceauCentre.getAttribute('aria-hidden'), 'true');
     assert.equal(center.querySelector('.moba__side--sorcier').hasAttribute('inert'), false);
+    assert.ok(center.querySelector('.moba__side--sorcier').classList.contains('is-joined-center'));
     assert.equal(center.querySelector('.moba__side--joueur').getAttribute('aria-hidden'), 'true');
-    assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie centrale conquise par IA ; centre rattaché à Voie droite/);
+    assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie centrale conquise par IA ; présence sur les deux voies latérales actives/);
     assert.ok(!right.querySelector('.moba__conquest'));
     assert.equal(duel.moba.winner, null, 'une voie par camp ne termine pas la partie');
     mobaInfliger(duel.moba, 'sorcier', 'right', 30);
@@ -135,4 +140,41 @@ test('la fiche de contre classique nomme correctement le camp MOBA', async () =>
     assert.match(vue('sorcier', 'IA'), /CONTRE · IA/);
     assert.match(vue('sorcier'), /CONTRE DU SORCIER/, 'le libellé classique reste inchangé');
   } finally { await server.close(); }
+});
+
+test('le centre fermé en seconde conquête porte le verrou même sans case conservée', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
+    for (const side of ['joueur', 'sorcier']) {
+      const initialiser = () => {
+        const duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 });
+        assert.equal(mobaInfliger(duel.moba, side, 'left', 20).conquered, true);
+        assert.equal(mobaInfliger(duel.moba, side, 'center', 15).winner, side);
+        assert.equal(duel.moba.centerJoined, null);
+        return duel;
+      };
+      root = createRoot(document.getElementById('root'));
+      await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser })));
+      const center = document.querySelector('.moba__lane[aria-label="Voie centrale"]');
+      const sceau = center.querySelector('.moba__conquest');
+      assert.ok(sceau.querySelector('.moba__conquest-lock img'));
+      assert.equal(sceau.querySelectorAll('.moba__conquest-photo-chain').length, 2);
+      assert.match(sceau.textContent, side === 'joueur' ? /VOUS.*Voie fermée/ : /L’IA.*Voie fermée/);
+      assert.ok([...center.querySelectorAll('.moba__side')].every((camp) => camp.hasAttribute('inert')));
+      await act(async () => root.unmount());
+      root = null;
+    }
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
 });

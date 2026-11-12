@@ -15900,3 +15900,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-sceau--arme .rpg-arme-sigil { position: relative; }
 /* En main, les bonus d'arme occupent déjà le bas de la carte. */
 .rpg-hand__sceau.rpg-sort-sceau--arme { bottom: 24%; }
+
+/* Achat d'une carte manquante : repère discret sur la vignette, caisse dans
+   la fiche. Le bouton Fermer reste disponible à côté, même sur petit écran. */
+.rpg-card-catalogue__prix {
+  position: absolute; z-index: 3; left: 50%; bottom: 5px; transform: translateX(-50%);
+  padding: 3px 8px; border: 1px solid #d8b87599; border-radius: 4px;
+  background: #1a130ef0; color: #f9dda0; font: 800 11px/1.2 var(--mono, monospace);
+  white-space: nowrap; pointer-events: none;
+}
+.rpg-card-peek__bar { flex-wrap: wrap; }
+.rpg-catalogue-achat { display: grid; justify-items: center; gap: 4px; }
+.rpg-catalogue-achat__action { display: flex; align-items: center; gap: 8px; }
+.rpg-catalogue-achat__bouton {
+  min-height: 44px; padding: 8px 14px; border: 1px solid #e5c485; border-radius: 7px;
+  background: linear-gradient(135deg, #76552c, #3b291a); color: #fff0cd;
+  box-shadow: inset 0 1px #f9dda04d, 0 4px 12px #0008;
+  font: 800 12px/1.2 var(--mono, monospace); cursor: pointer;
+}
+.rpg-catalogue-achat__bouton:hover:not(:disabled) { background: linear-gradient(135deg, #99713b, #573d24); }
+.rpg-catalogue-achat__bouton:focus-visible { outline: 2px solid #ffe1a1; outline-offset: 3px; }
+.rpg-catalogue-achat__bouton:disabled { opacity: .65; cursor: not-allowed; }
+.rpg-catalogue-achat__action small { color: #e5cfa4; font: 600 10px/1.3 var(--mono, monospace); }
+.rpg-catalogue-achat__retour { margin: 0; color: #f2b4a4; font: 700 10px/1.3 var(--mono, monospace); }
+.rpg-catalogue-achat__retour.is-ok { color: #bde6c9; }
+@media (max-width: 600px) {
+  .rpg-catalogue-achat__action { flex-wrap: wrap; justify-content: center; }
+  .rpg-catalogue-achat__bouton { min-height: 44px; }
+}

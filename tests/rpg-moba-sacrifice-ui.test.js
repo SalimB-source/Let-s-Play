@@ -36,7 +36,11 @@ test('le plateau permet de choisir une victime puis de la remplacer dans le cent
     await act(async () => root.render(React.createElement(Board, props)));
     await click([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('Anqa')));
     assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /0\/1/);
-    const center = document.querySelector('.moba__lane[aria-label="Voie centrale"] .moba__side--joueur');
+    const voieCentrale = document.querySelector('.moba__lane[aria-label="Voie centrale"]');
+    assert.match(voieCentrale.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Case sur les flancs/);
+    assert.ok(voieCentrale.querySelector('.moba__conquest-lock img'));
+    const center = voieCentrale.querySelector('.moba__side--joueur');
+    assert.equal(center.hasAttribute('inert'), false);
     await click(center.querySelector('.moba__slot.has-creature'));
     assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /1\/1/);
     await click(center.querySelector('.moba__slot.has-creature'));
