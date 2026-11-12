@@ -1427,8 +1427,8 @@ const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
  *  s'élargissent au-delà du cadre en s'effaçant, sur un liseré qui reste
  *  allumé. `variante` ne change que la teinte — bleue pour la résonance,
  *  jaune pour les cartes qui impriment une aura (la forge des Samouraïs, les
- *  Ksour, le héros du sable), violette pour la Malédiction (La Barbe Noire) :
- *  même sonar, même cadence, une couleur par sens de l'effet. Le calque est
+ *  Ksour, le héros du sable), violette pour la Malédiction (La Barbe Noire),
+ *  rouge pour Défenseur ou Provocation : même sonar et même cadence. Le calque est
  *  purement décoratif (`aria-hidden`) : l'effet est déjà annoncé par l'icône
  *  et par la description lue de la carte. Les ondes sont décalées d'un tiers
  *  de cycle pour qu'une nouvelle vague parte toujours avant que la précédente
@@ -1436,6 +1436,7 @@ const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
 const CLASSE_VARIANTE_ONDES = Object.freeze({
   aura: 'rpg-card__resonance--aura',
   malediction: 'rpg-card__resonance--malediction',
+  garde: 'rpg-card__resonance--garde',
 });
 
 function AuraOndes({ variante = 'resonance', phase = 0 }) {
@@ -2841,6 +2842,9 @@ export function TableCard({
 }) {
   const carte = moba ? rpgMobaCartePourApercu(cardById(entite.carteId)) : cardById(entite.carteId);
   const estSite = carte?.kind === 'site';
+  // Défenseur et Provocation partagent un seul signal rouge, même cumulés.
+  // Les propriétés d'entité tiennent compte des capacités acquises ou perdues.
+  const auraGarde = !estSite && Boolean(entite.defenseur || entite.prioriteAttaqueRapide || entite.provocation);
   const hybride = cardColors(carte).length > 1;
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : cardById(entite.armes?.[0]);
@@ -2942,6 +2946,7 @@ export function TableCard({
         carte?.resonance ? 'has-resonance' : '',
         carte?.aura ? 'has-aura' : '',
         carte?.malediction ? 'has-malediction' : '',
+        auraGarde ? 'has-garde' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -3051,6 +3056,7 @@ export function TableCard({
       {/* La Malédiction projette le même sonar, en violet : la source du malus
           se lit à sa couleur, comme celle d'un bonus. */}
       {carte?.malediction ? <AuraOndes variante="malediction" phase={phaseAura(entite)} /> : null}
+      {auraGarde ? <AuraOndes variante="garde" phase={phaseAura(entite)} /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
           aile qui passe — décalé lui aussi par entité. */}
       {entite.envol && (
