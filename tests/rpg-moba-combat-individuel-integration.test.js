@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgReglerHasard } from '../src/games/rpgDuel.js';
+import { rpgConsommerPresentations, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgReglerHasard } from '../src/games/rpgDuel.js';
 import { mobaVoie } from '../src/games/rpgMoba.js';
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaLancerMagie, rpgMobaJouerArme, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 
@@ -149,14 +149,134 @@ test('Contre-attaque ciblée riposte même si la créature ciblée est détruite
   assert.equal(a.pv, 7);
 });
 
-test('les effets qui exigent un blocage ne se déclenchent pas dans l’échange normal', () => {
+test('Vampire : l’effet à l’attaque tue la cible avant le duel et empêche sa riposte', () => {
   const { d, a, c } = partie();
-  // Le Vampire infligerait un dégât préalable s'il était bloqué en classique.
-  a.carteId = 'vampire-des-braises'; a.atk = 0; a.pv = 5; a.pvMax = 5; a.def = 5;
-  c.atk = 0; const defense = c.pv;
+  a.carteId = 'vampire-des-braises'; a.atk = 0; a.pv = a.pvMax = a.def = 5;
+  c.atk = 5; const pv = a.pv, hp = mobaVoie(d.moba, 'left').hp.sorcier;
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
-  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
-  assert.equal(c.pv, defense);
+  assert.equal(c.pv, c.pvMax, 'l’effet attend la fin de la fenêtre de réponse');
+  assert.deepEqual(rpgConsommerPresentations(d).filter((event) => event.type === 'effet'), []);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(rpgConsommerPresentations(d).filter((event) => event.type === 'effet').map((event) => event.carteId), ['vampire-des-braises']);
+  assert.deepEqual(result.resume.effetsAvantCombat, [{ entiteId: c.id, sourceId: a.id, montant: 1 }]);
+  assert.deepEqual(result.resume.blessures, []);
+  assert.equal(a.pv, pv); assert.ok(!d.sorcier.creatures.some((e) => e.id === c.id));
+  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp);
+  assert.ok(rpgMobaPlacementCoherent(d));
+});
+
+test('Sahir : dégâts à l’attaque avant les blessures, puis riposte simultanée des survivants', () => {
+  const { d, a, c } = partie();
+  a.carteId = 'sahir-des-braises'; a.atk = 2; a.pv = a.pvMax = a.def = 3;
+  c.pv = c.pvMax = c.def = 3; c.atk = 1;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.resume.effetsAvantCombat, [{ entiteId: c.id, sourceId: a.id, montant: 2 }]);
+  assert.deepEqual(result.resume.blessures, [
+    { entiteId: c.id, sourceId: a.id, montant: 2 },
+    { entiteId: a.id, sourceId: c.id, montant: 1 },
+  ]);
+  assert.equal(a.pv, 2); assert.ok(!d.sorcier.creatures.some((e) => e.id === c.id));
+});
+
+test('Sahir en défense : l’effet au blocage tue l’attaquant avant sa frappe', () => {
+  const { d, a, c } = partie();
+  a.atk = 9; a.pv = a.pvMax = a.def = 2;
+  c.carteId = 'sahir-des-braises'; c.atk = 0; c.pv = c.pvMax = c.def = 3;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.resume.effetsAvantCombat, [{ entiteId: a.id, sourceId: c.id, montant: 2 }]);
+  assert.deepEqual(result.resume.blessures, []);
+  assert.equal(c.pv, 3); assert.ok(!d.joueur.creatures.some((e) => e.id === a.id));
+  assert.ok(rpgMobaPlacementCoherent(d));
+});
+
+test('les effets opposés frappent ensemble : aucun des deux Vampires ne porte son coup normal', () => {
+  const { d, a, c } = partie();
+  for (const e of [a, c]) { e.carteId = 'vampire-des-braises'; e.atk = 4; e.pv = e.pvMax = e.def = 1; }
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.resume.effetsAvantCombat, [
+    { entiteId: c.id, sourceId: a.id, montant: 1 },
+    { entiteId: a.id, sourceId: c.id, montant: 1 },
+  ]);
+  assert.deepEqual(result.resume.blessures, []);
+  assert.equal(d.joueur.creatures.length, 0); assert.equal(d.sorcier.creatures.length, 0);
+  assert.ok(rpgMobaPlacementCoherent(d));
+});
+
+test('Tour de Braise : le dégât magique de défense tue avant la frappe de l’attaquant', () => {
+  const { d, a, c } = partie();
+  c.carteId = 'tour-de-braise'; c.atk = 0; c.pv = c.pvMax = c.def = 4;
+  a.pv = a.pvMax = a.def = 1; a.atk = 9;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.resume.effetsAvantCombat, [{ entiteId: a.id, sourceId: c.id, montant: 1 }]);
+  assert.deepEqual(result.resume.blessures, []);
+  assert.equal(c.pv, 4); assert.ok(!d.joueur.creatures.some((e) => e.id === a.id));
+});
+
+test('Tour de Braise : effet magique de défense avant le duel, stoppé par le Bouclier de lumière', () => {
+  const { d, a, c } = partie();
+  c.carteId = 'tour-de-braise'; c.atk = 0; c.pv = c.pvMax = c.def = 4;
+  a.bouclierLumiere = true; const pv = a.pv;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.resume.effetsAvantCombat, []);
+  assert.equal(a.bouclierLumiere, false); assert.equal(a.pv, pv);
+});
+
+test('Attaque ciblée : les effets de défense ne partent pas sans duel ordinaire', () => {
+  const { d, a, c } = partie();
+  a.coupRapide = true; a.pv = a.pvMax = a.def = 5;
+  c.carteId = 'sahir-des-braises'; c.atk = 0; c.pv = c.pvMax = c.def = 4;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.equal(result.resume.effetsAvantCombat, undefined);
+  assert.equal(a.pv, 5);
+});
+
+test('frappe directe : sans duel, l’effet « à l’attaque » du Sahir ne part pas', () => {
+  const { d, a, c } = partie();
+  a.carteId = 'sahir-des-braises'; a.infiltration = true; a.atk = 2;
+  const pv = c.pv, hp = mobaVoie(d.moba, 'left').hp.sorcier;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.equal(result.resume.effetsAvantCombat, undefined);
+  assert.equal(c.pv, pv);
+  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp - 2);
+});
+
+test('une cible devenue illégale en réponse ne reçoit pas d’effet précombat', () => {
+  const { d, a, c } = partie();
+  a.carteId = 'sahir-des-braises'; a.atk = 0;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  c.infiltration = true;
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.equal(result.annule, true);
+  assert.equal(c.pv, c.pvMax);
+  assert.equal(result.resume.effetsAvantCombat, undefined);
+});
+
+test('Tour des Flots : le renvoi imprimé après les blessures conserve le plateau cohérent', () => {
+  const { d, a, c } = partie();
+  c.carteId = 'tour-des-flots'; c.atk = 0; c.pv = c.pvMax = c.def = 4;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.equal(c.pv, 3);
+  assert.ok(!d.joueur.creatures.some((e) => e.id === a.id));
+  assert.ok(d.joueur.main.includes(a.carteId));
+  assert.ok(rpgMobaPlacementCoherent(d));
 });
 
 test('une cible qui quitte le plateau après l’annonce annule l’attaque sans viser la voie', async () => {

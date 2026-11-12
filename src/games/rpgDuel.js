@@ -3122,6 +3122,7 @@ function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, ap
       && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))
       && paradeZoneBloque(duel, attaquant, 'capacite', autre(coteBloqueur), coteBloqueur)) return;
     if (renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite')) {
+      if (duel.moba) mobaRetirer(duel.moba, autre(coteBloqueur), attaquant.id);
       duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire après les blessures de combat.`);
     }
   }
@@ -8872,7 +8873,37 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
     const cibleAvant = { ...cible };
     const rate = ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable
       && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
-    if (tenterRenvoiSphere(duel, cote, attaquant, adv, cible)
+    // En MOBA, une attaque normale contre une créature est l'unique duel :
+    // la cible y déclenche ses effets « au blocage », sans phase de blocage
+    // séparée. Les deux capacités frappent ensemble AVANT l'échange normal.
+    // Une Attaque ciblée n'est pas un duel et ne déclenche pas ces effets.
+    if (!ciblee) {
+      const coupsAvantCombat = [];
+      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(coupsAvantCombat, cote, duelCardById(attaquant.carteId), cible, attaquant, 'attaque-bloquee');
+      if (!estGelee(cible)) ajouterDegatsCapaciteAvantCombat(coupsAvantCombat, adv, duelCardById(cible.carteId), attaquant, cible, 'blocage');
+      if (coupsAvantCombat.length) {
+        const sourcesPresentees = new Set();
+        for (const coup of coupsAvantCombat) {
+          const source = duel[coup.sourceCote].creatures.find((e) => e.id === coup.sourceId);
+          if (!source || sourcesPresentees.has(source.id)) continue;
+          presenterEffet(duel, coup.sourceCote, source.carteId);
+          sourcesPresentees.add(source.id);
+        }
+        resume.effetsAvantCombat = [];
+        appliquerDegatsDeCombatSimultanes(duel, coupsAvantCombat, {
+          onBlessure: (coup, montant) => resume.effetsAvantCombat.push({ entiteId: coup.entiteId, sourceId: coup.sourceId, montant }),
+          onFurie: (entite, camp) => resume.furies.push({ entiteId: entite.id, carteId: entite.carteId, cote: camp }),
+        });
+      }
+      if (!duel.moba.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
+        && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId);
+    }
+    // Une capacité peut tuer l'un ou les deux combattants : aucun coup
+    // normal, retour de Sphère ni transfert Overkill ne part dans ce cas.
+    if (duel.moba.winner || !duel[cote].creatures.some((e) => e.id === attaquantId)
+      || !duel[adv].creatures.some((e) => e.id === cibleId)) {
+      if (!ciblee) resume.paires.push([attaquant.name, cible.name]);
+    } else if (tenterRenvoiSphere(duel, cote, attaquant, adv, cible)
       || tenterRenvoiSphere(duel, adv, cible, cote, attaquant)) {
       annule = true;
     } else {
@@ -8919,6 +8950,9 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
           resume.frappeSorcier = degatsVoie;
           if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
         }
+        // Les rares cartes dont le texte précise « après les blessures »
+        // (Tour des Flots, Cavalier de vapeur) conservent cet ordre imprimé.
+        if (!ciblee && !duel.moba.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
       } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
     }
   } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {
