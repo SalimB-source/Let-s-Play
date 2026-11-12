@@ -136,8 +136,8 @@ assert.match(battleCss, /\.rpg-hover-card-preview--catalogue \.rpg-hover-card-pr
   'la fiche ouverte révèle le texte complet de chaque arme');
 assert.doesNotMatch(hoverPreviewSource, /rpg-hover-card-preview__rule--equipment/,
   'plus de ligne bleue d’équipement : le bonus se lit sur la miniature de l’arme et dans le libellé accessible');
-assert.match(tableCardSource, /<CardElementBadge carte=\{carte\} \/>[\s\S]*?rpg-card__compteurs\$\{hybride \? ' rpg-card__compteurs--hybride' : ''\}[\s\S]*?<CompteurCarte type="heures"[\s\S]*?<CompteurCarte type="sable"/,
-  'les compteurs d’Heures et de sable restent accessibles, sous le coût d’une hybride et sous la couleur d’une mono');
+assert.match(tableCardSource, /rpg-card__compteurs\$\{hybride \? ' rpg-card__compteurs--hybride' : ''\}[\s\S]*?<CompteurCarte type="sable"[\s\S]*?rpg-card__compteurs-creature[\s\S]*?<CompteurCarte type="heures"/,
+  'le sable garde son groupe tandis que les Heures ont leur propre emplacement');
 assert.match(compteursSource, /data-compteur=\{type\}/,
   'le losange des compteurs animés porte toujours son repère `data-compteur`');
 assert.match(tableCardSource, /<CompteurCarte type="heures" valeur=\{entite\.heures\.restants\} \/>/,

@@ -3086,13 +3086,9 @@ export function TableCard({
         <span className="rpg-card__frost-glow" />
       </span>}
 
-      {/* Les compteurs de durabilité et de cale se lisent sous les couleurs.
-          Les Heures et le sable restent sous le coût pour les hybrides. */}
-      {(entite.heures?.restants > 0 || (armeCarte && (entite.arme?.compteurs > 0 || (!hybride && durabiliteArme > 0))) || (entite.enCale && !hybride)) && (
+      {/* Les compteurs d'arme gardent leur emplacement propre. */}
+      {(armeCarte && (entite.arme?.compteurs > 0 || (!hybride && durabiliteArme > 0))) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
-          {entite.heures?.restants > 0 && (
-            <CompteurCarte type="heures" valeur={entite.heures.restants} />
-          )}
           {!hybride && armeCarte && durabiliteArme > 0 && (
             <CompteurCarte
               type="durabilite"
@@ -3103,23 +3099,24 @@ export function TableCard({
           {armeCarte && entite.arme?.compteurs > 0 && (
             <CompteurCarte type="sable" valeur={entite.arme.compteurs} titre="Compteurs de sable de l’arme" />
           )}
-          {entite.enCale && !hybride && (
-            <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
-              <span>⛓</span>
-            </span>
-          )}
         </span>
       )}
-      {/* Sur une hybride, un seul rang sous les deux couleurs accueille la
-          durabilité et la cale, côte à côte lorsqu'elles coexistent. */}
-      {hybride && (entite.enCale || (armeCarte && durabiliteArme > 0)) && (
+      {/* Sur une hybride, la durabilité reste sous les deux couleurs. */}
+      {hybride && armeCarte && durabiliteArme > 0 && (
         <span className="rpg-card__compteurs rpg-card__compteurs--cale" aria-hidden="true">
-          {armeCarte && durabiliteArme > 0 && (
-            <CompteurCarte
-              type="durabilite"
-              valeur={durabiliteArme}
-              titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`}
-            />
+          <CompteurCarte
+            type="durabilite"
+            valeur={durabiliteArme}
+            titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`}
+          />
+        </span>
+      )}
+      {/* Les marqueurs de créature se partagent le centre, entre coût et effets.
+          Empilés s'ils coexistent, ils ne prennent pas la place des armes. */}
+      {(entite.heures?.restants > 0 || entite.enCale) && (
+        <span className="rpg-card__compteurs-creature" aria-hidden="true">
+          {entite.heures?.restants > 0 && (
+            <CompteurCarte type="heures" valeur={entite.heures.restants} />
           )}
           {entite.enCale && (
             <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
@@ -3140,7 +3137,7 @@ export function TableCard({
         <IconesCarte
           carte={carte}
           entite={entite}
-          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0))
+          className={`rpg-card-icones--colonne${hybride && armeCarte && entite.arme?.compteurs > 0
             ? ' rpg-card-icones--sous-compteurs'
             : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />

@@ -293,11 +293,8 @@
   box-shadow: 0 0 0 2px rgba(255, 214, 25, .35);
 }
 
-/* Les compteurs d'effet de la créature (Heures) ou de son arme (sable) se
-   rangent juste SOUS sa couleur, ou sous le coût si la carte est hybride : ses
-   pastilles de couleur empilées occupent déjà la gauche. Un losange par type,
-   côte à côte si elle porte les deux ; la valeur demeure droite dans le carré
-   pivoté. L'échelle suit celle du repère, même sur une petite carte tactile. */
+/* Les compteurs d'arme se rangent sous la couleur, ou à droite
+   pour le sable d'une hybride. L'échelle suit celle du repère. */
 .rpg-card__compteurs {
   --rpg-card-counter-size: clamp(10px, calc(var(--rpg-card-marker-size, 26px) * .58), 18px);
   position: absolute;
@@ -316,6 +313,23 @@
   left: auto;
   right: calc(6% + (var(--rpg-card-marker-size, 26px) - var(--rpg-card-counter-size)) / 2 - 1px);
   gap: clamp(1px, calc(var(--rpg-card-counter-size) * .12), 3px);
+}
+/* Marqueurs de créature : centrés entre coût et effets. Plusieurs marqueurs
+   s'empilent avec assez d'espace pour leurs losanges pivotés ; le conteneur
+   porte le positionnement afin de préserver les animations de chaque marqueur. */
+.rpg-card__compteurs-creature {
+  --rpg-card-counter-size: clamp(8px, calc(var(--rpg-card-marker-size, 26px) * .58), 18px);
+  position: absolute;
+  z-index: 5;
+  top: calc(var(--rpg-card-element-marker-top, 5%) + (var(--rpg-cout-taille, 26.88px) - var(--rpg-card-counter-size)) / 2);
+  left: 50%;
+  width: var(--rpg-card-counter-size);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--rpg-card-counter-size) * .42 + 2px);
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 .rpg-card__compteur {
   display: grid;
@@ -341,10 +355,8 @@
   background: linear-gradient(145deg, #426888, #1c344e);
 }
 .rpg-card__compteur--heures > span { color: #e8f6ff; }
-/* Durabilité et cale d'une créature HYBRIDE : leurs losanges quittent le rang des
-   autres compteurs (qui se rangent sous le coût, à droite) et se place sous le
-   bloc de couleur, à gauche. Ce bloc empile deux pastilles — deux fois le
-   repère, plus leur écart — : c'est cette hauteur qui décale le losange. */
+/* Durabilité d'une arme sur une créature hybride : elle reste sous les deux
+   couleurs. Le nom historique de cette classe conserve les styles existants. */
 .rpg-card__compteurs--cale {
   top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 26px) * 2 + 2px + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(var(--rpg-card-element-marker-left, 6%) + (var(--rpg-card-marker-size, 26px) - var(--rpg-card-counter-size)) / 2);
