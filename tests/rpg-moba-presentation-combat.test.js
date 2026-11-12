@@ -20,6 +20,7 @@ test('les notes de combat expliquent les priorités et restrictions MOBA', () =>
   assert.match(rpgMobaNotesCarte(cardById('gardien-de-la-porte-ardente')).join(' '), /priorité/);
   assert.match(rpgMobaNotesCarte(cardById('gardienne-des-portes-de-sable')).join(' '), /attaques venant de sa voie/);
   assert.match(rpgMobaNotesCarte(cardById('feriel')).join(' '), /tout le plateau/);
+  assert.match(rpgMobaNotesCarte(cardById('danseuse-des-ombres-de-dune')).join(' '), /Infiltration : peut attaquer directement sauf priorité accessible/);
 });
 
 test('les nouveaux indicateurs dirigent aussi les attaques ciblées hors de la voie', async () => {

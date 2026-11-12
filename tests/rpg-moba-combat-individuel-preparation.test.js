@@ -170,3 +170,14 @@ for (const side of ['joueur', 'sorcier']) {
     });
   }
 }
+
+test('Infiltration peut choisir la voie même face aux créatures, sans ignorer les priorités MOBA', () => {
+  const d = position({ infiltration: true }, [entite('sol', 'left'), entite('vol', 'left', { envol: true })]);
+  assert.deepEqual(choix(d), { cibles: ['sol'], directe: true });
+  d.joueur.creatures[0].envol = true;
+  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: true }, 'Infiltration reste efficace contre un volant');
+  d.sorcier.creatures[0].defenseur = true;
+  assert.deepEqual(choix(d), { cibles: ['sol'], directe: false });
+  d.sorcier.creatures[0].defenseur = false; d.sorcier.creatures[1].provocation = true;
+  assert.deepEqual(choix(d), { cibles: ['vol'], directe: false });
+});
