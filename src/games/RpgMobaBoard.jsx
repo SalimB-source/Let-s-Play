@@ -798,12 +798,12 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       lancerMagie(id);
     } else { setSacrificesChoisis([]); setCarte(carte === id ? null : id); setPrixLane(null); setCibleSortPrimaire(null); setErreur(''); }
   };
-  const poser = (lane, slot, carteId = carte) => {
+  const poser = (lane, slot, carteId = carte, sacrificeIds = sacrificesChoisis) => {
     if (!carteId) return;
     const avantDestructions = instantaneDestructions();
     const nombre = rpgMobaSacrificesInvocation(duel, mainSide, cardById(carteId));
-    if (sacrificesChoisis.length !== nombre) { setErreur(`Choisissez ${nombre} créature${nombre > 1 ? 's' : ''} à sacrifier.`); return; }
-    const result = rpgMobaJouerCreature(duel, mainSide, carteId, lane, slot, { ouvrirReponse: true, sacrificeIds: sacrificesChoisis });
+    if (sacrificeIds.length !== nombre) { setErreur(`Choisissez ${nombre} créature${nombre > 1 ? 's' : ''} à sacrifier.`); return; }
+    const result = rpgMobaJouerCreature(duel, mainSide, carteId, lane, slot, { ouvrirReponse: true, sacrificeIds });
     if (!afficherResultat(result)) return;
     montrerDestructions(avantDestructions, false, result.sacrificeIds, result.entite?.id);
     if (result.damageEvents?.length) setEvents(result.damageEvents);
@@ -978,17 +978,28 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     });
     setErreur('');
   };
+  // Un dépôt sur la dernière victime choisit aussi sa case : pas de second
+  // clic nécessaire pour les sacrifices, au doigt comme à la souris.
+  const sacrificesPourPosition = (card, position) => {
+    const nombre = rpgMobaSacrificesInvocation(duel, mainSide, card);
+    if (!nombre) return position.id === null && !sacrificesChoisis.length ? [] : null;
+    if (!position.id) return null;
+    if (sacrificesChoisis.length === nombre && sacrificesChoisis.includes(position.id)) return sacrificesChoisis;
+    const victime = getEntity('joueur', position.id);
+    return sacrificesChoisis.length === nombre - 1 && victime && !sacrificesChoisis.includes(victime.id)
+      && cardById(victime.carteId)?.kind !== 'site' ? [...sacrificesChoisis, victime.id] : null;
+  };
   const peutDeposer = (drag, position) => {
     if (!drag || !position || fini || iaAgit || destruction || site || apercu || confirmerSortie || parametresOuverts || cimetiere || recherche || defausse) return false;
     const lane = duel.moba.lanes.find((item) => item.id === position.lane);
     if (!lane || (drag.type === 'creature' && !mobaVoieJouable(duel.moba, 'joueur', lane.id))) return false;
     if (drag.type === 'creature') {
       const card = cardById(drag.id);
+      if (!card || !Number.isInteger(position.slot) || position.slot < 0 || position.slot >= lane.slots.joueur.length) return false;
+      const victimes = sacrificesPourPosition(card, { ...position, id: lane.slots.joueur[position.slot] });
       return etape === 'tour' && actif === 'joueur' && !cibleRapideEnCours && !camp.manaChoixEnAttente
-        && position.side === 'joueur' && Number.isInteger(position.slot)
-        && (rpgMobaSacrificesInvocation(duel, mainSide, card) > 0
-          ? sacrificesChoisis.includes(lane.slots.joueur[position.slot]) : lane.slots.joueur[position.slot] === null)
-        && sacrificesChoisis.length === rpgMobaSacrificesInvocation(duel, mainSide, card) && duel.joueur.main.includes(drag.id) && ['creature', 'hero', 'site'].includes(card?.kind) && rpgMobaPeutPayer(duel, 'joueur', card);
+        && position.side === 'joueur' && victimes !== null && duel.joueur.main.includes(drag.id)
+        && ['creature', 'hero', 'site'].includes(card.kind) && rpgMobaPeutPayer(duel, 'joueur', card);
     }
     if (drag.type !== 'bloqueur' || duel.combatDeclare?.cibleIndividuelle || etape !== 'blocage' || defenseur !== 'joueur' || carte || position.side !== actif) return false;
     const attacker = getEntity(actif, position.id);
@@ -1007,8 +1018,12 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const finGlissement = () => { glissementRef.current = null; setGlissement(null); };
   const deposerGlissement = (drag, position) => {
     if (!peutDeposer(drag, position)) return;
-    if (drag.type === 'creature') poser(position.lane, position.slot, drag.id);
-    else assigner(drag.id, position.id, false);
+    if (drag.type === 'creature') {
+      const id = duel.moba.lanes.find((lane) => lane.id === position.lane).slots.joueur[position.slot];
+      const victimes = sacrificesPourPosition(cardById(drag.id), { ...position, id });
+      setSacrificesChoisis(victimes);
+      poser(position.lane, position.slot, drag.id, victimes);
+    } else assigner(drag.id, position.id, false);
   };
   const glisserSouris = (event, drag) => {
     debutGlissement(drag);
@@ -1341,7 +1356,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <p>Trois voies indépendantes : 20 / 15 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide ou une Embuscade avant les dégâts. Il n’y a pas de blocage. Une attaque normale vise une créature accessible dans la même voie et les dégâts sont simultanés ; à défaut elle frappe directement la voie. Envol permet aussi la frappe directe s’il n’y a pas d’ennemi volant accessible. Infiltration permet aussi la frappe directe et protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation impose une cible accessible prioritaire ; à défaut, Défenseur impose une cible accessible dans la voie de l’attaquant.</p>
         <p>Après la conquête du centre, le vainqueur conserve sa case centrale et peut y jouer. Les créatures centrales participent aux deux voies latérales actives ; les PV restants du centre disparaissent.</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade hors tour est une invocation spéciale supplémentaire, limitée à une par camp et par tour ; Tojiro ne demande pas de sacrifice en Embuscade si un Djinn adverse est présent. Chaque camp peut aussi jouer un sort et une arme par tour. Toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites), puis posez la nouvelle créature sur la case de l’une d’elles.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade hors tour est une invocation spéciale supplémentaire, limitée à une par camp et par tour ; Tojiro ne demande pas de sacrifice en Embuscade si un Djinn adverse est présent. Chaque camp peut aussi jouer un sort et une arme par tour. Toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -1371,7 +1386,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <div className="moba__pending-copy"><small>{attente.armeMoba ? 'ARME' : 'SORT'} {attente.cote === 'sorcier' ? 'ADVERSE' : 'JOUÉ'} · EN ATTENTE</small><strong title={carteAttendue.name}>{carteAttendue.name}</strong><span title={cibleAttendue}>⌖ {cibleAttendue}</span></div>
       </div>;
     })()}
-    {carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte))}. {sacrificesChoisis.length < rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) ? "Cliquez sur vos créatures à sacrifier, puis sur la case d’une victime." : "Choisissez la case d’une victime pour invoquer."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></div>}
+    {carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte))}. {rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) === 1 ? "Touchez une créature à sacrifier : la nouvelle prendra sa place immédiatement." : "Touchez les créatures à sacrifier : la dernière choisie sera remplacée immédiatement."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></div>}
     {/* Chaque voie conquise révèle uniquement son calque de ruines, à la même
         projection que la carte. Le centre garde sa case au camp vainqueur. */}
     {duel.moba.lanes.filter((lane) => !lane.active).map((lane) =>
@@ -1433,7 +1448,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             const carteTransfert = carte && MOBA_MAGIES_TRANSFERT.includes(carte);
             const nombreSacrifices = rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte));
             const maySacrifice = (etape === 'tour' && side === actif || side === mainSide && rpgMobaPeutEmbuscade(duel, side, carte)) && entity && carte && nombreSacrifices > 0
-              && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && cardById(entity.carteId)?.kind !== 'site' && !fini;
+              && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && cardById(entity.carteId)?.kind !== 'site'
+              && mobaVoieJouable(duel.moba, side, lane.id) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
             const sacrificeCible = Boolean(entity && sacrificesChoisis.includes(id));
             const mayPlace = (etape === 'tour' && side === actif || ['blocage', 'fin', 'reponse-creature', 'reponse-sort', 'reponse-arrivee'].includes(etape) && side === mainSide && rpgMobaPeutEmbuscade(duel, side, carte)) && (nombreSacrifices > 0 ? sacrificeCible : !id) && mobaVoieJouable(duel.moba, side, lane.id) && carte
               && sacrificesChoisis.length === nombreSacrifices && (!carteCiblee || carteArmeVivante) && !carteSoin && !cartePrix && !carteTransfert && !MOBA_MAGIES_SPATIALES.includes(carte) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
@@ -1481,7 +1497,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
                 <img className="moba__sacrifice-victim" src={cardArt(effet.cardId)} alt="" />
                 <rendu.CercleMagique effet={{ ...effet, relativementAuSlot: true }} onTermine={(effectId) => setCerclesSacrifice((old) => old.filter((item) => item.effectId !== effectId))} />
               </div>) : null;
-            const action = () => { if (destruction) { if (mayDeathTarget) choisirCibleDestruction(id); return; } if (site) { if (maySiteTarget) choisirCibleSite(id); return; } if (maySacrifice) { setSacrificesChoisis((old) => [...old, id]); return; } if (mayPlace) { if (carteReanimation || carteArmeVivante) lancerMagie(carte, null, lane.id, null, null, i); else poser(lane.id, i); } else if (mayArrivalTarget) choisirCibleArrivee(id); else if (mayTargetRapide) choisirCibleRapide(id); else if (maySpellTarget) lancerSurCreature(id); else if (mayTarget) setCible(id); else if (mayBlock) assigner(id); else if (mayAttack) choisirAttaquant(id); };
+            const action = () => { if (destruction) { if (mayDeathTarget) choisirCibleDestruction(id); return; } if (site) { if (maySiteTarget) choisirCibleSite(id); return; } if (maySacrifice) { const victimes = [...sacrificesChoisis, id]; setSacrificesChoisis(victimes); if (victimes.length === nombreSacrifices) poser(lane.id, i, carte, victimes); return; } if (mayPlace) { if (carteReanimation || carteArmeVivante) lancerMagie(carte, null, lane.id, null, null, i); else poser(lane.id, i); } else if (mayArrivalTarget) choisirCibleArrivee(id); else if (mayTargetRapide) choisirCibleRapide(id); else if (maySpellTarget) lancerSurCreature(id); else if (mayTarget) setCible(id); else if (mayBlock) assigner(id); else if (mayAttack) choisirAttaquant(id); };
             if (entity && rendu?.TableCard) {
               const TableCard = rendu.TableCard;
               return <div className={`moba__real-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps} {...interactionsApercu(entity.carteId, entity)}>

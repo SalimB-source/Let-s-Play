@@ -5,7 +5,7 @@ import { createServer } from 'vite';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
-test('le plateau permet de choisir une victime puis de la remplacer dans le centre conquis', async () => {
+for (const mode of ['clic', 'glisser']) test(`un seul geste de ${mode} sacrifie et remplace une créature dans le centre conquis`, async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -43,9 +43,13 @@ test('le plateau permet de choisir une victime puis de la remplacer dans le cent
     assert.equal(voieCentrale.querySelector('.moba__side--joueur').hasAttribute('inert'), false);
     const center = voieCentrale.querySelector('.moba__side--joueur');
     assert.equal(center.hasAttribute('inert'), false);
-    await click(center.querySelector('.moba__slot.has-creature'));
-    assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /1\/1/);
-    await click(center.querySelector('.moba__slot.has-creature'));
+    if (mode === 'clic') await click(center.querySelector('.moba__slot.has-creature'));
+    else {
+      const drag = (element, type) => { const event = new dom.window.Event(type, { bubbles: true, cancelable: true }); Object.defineProperty(event, 'dataTransfer', { value: { setData() {}, effectAllowed: '', dropEffect: '' } }); return act(async () => element.dispatchEvent(event)); };
+      await drag([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('Anqa')), 'dragstart');
+      await drag(center.querySelector('[data-moba-position]'), 'drop');
+    }
+    assert.equal(document.querySelector('.moba__sacrifice-hint'), null, 'la carte est annoncée dès le premier geste');
     assert.deepEqual(duel.mobaCreatureEnAttente?.sacrificeIds, [victim.id]);
     assert.equal(duel.mobaCreatureEnAttente?.laneId, 'center');
   } finally {
