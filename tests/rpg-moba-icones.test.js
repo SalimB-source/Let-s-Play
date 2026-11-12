@@ -22,7 +22,7 @@ test('les repères des cartes posées en MOBA sont équilibrés sans changer la 
         'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 6px)',
         'la couleur suit le coût sans le chevaucher');
       assert.equal(colonne.getPropertyValue('--rpg-plaque-taille'),
-        moba === '.moba__hand-item' ? '26cqw' : 'clamp(18px,22cqw,30px)');
+        moba === '.moba__hand-item' ? '26cqw' : 'clamp(21px,26cqw,36px)');
       if (moba === '.moba__real-slot') {
         assert.notEqual(colonne.getPropertyValue('--rpg-plaque-taille'), originale.getPropertyValue('--rpg-plaque-taille'),
           'les effets posés en MOBA ont leur propre taille, sans modifier le duel classique');
@@ -39,17 +39,18 @@ test('les repères des cartes posées en MOBA sont équilibrés sans changer la 
     const titre = style('.moba__real-slot .rpg-card__title, .moba__real-slot .rpg-hand__title');
     const effets = style('.moba__real-slot .rpg-card-icones');
     for (const repere of [couleur, titre]) {
-      assert.equal(repere.getPropertyValue('--rpg-plaque-taille'), 'clamp(16px,18cqw,26px)',
-        'coût et couleur réduits sur les créatures posées');
-      assert.equal(repere.getPropertyValue('--rpg-card-marker-size'), 'clamp(16px,18cqw,26px)',
+      assert.equal(repere.getPropertyValue('--rpg-plaque-taille'), 'clamp(18px,22cqw,30px)',
+        'coût et couleur agrandis sur les créatures posées, sans atteindre la taille du duel classique');
+      assert.equal(repere.getPropertyValue('--rpg-card-marker-size'), 'clamp(18px,22cqw,30px)',
         'les compteurs suivent les nouveaux repères');
       assert.equal(repere.getPropertyValue('--rpg-cout-taille').replaceAll(' ', ''),
         'calc(var(--rpg-plaque-taille)*1.12)');
     }
-    assert.equal(effets.getPropertyValue('--rpg-plaque-taille'), 'clamp(18px,22cqw,30px)');
+    assert.equal(effets.getPropertyValue('--rpg-plaque-taille'), 'clamp(21px,26cqw,36px)');
+    assert.equal(effets.gap, 'clamp(3px, 1.5cqw, 5px)', 'les icônes d’une même créature restent distinctes');
     for (const largeur of [48, 95, 132]) {
       const clamp = (min, ratio, max) => Math.min(max, Math.max(min, largeur * ratio));
-      assert.ok(clamp(18, .22, 30) >= clamp(16, .18, 26) * 1.12,
+      assert.ok(clamp(21, .26, 36) >= clamp(18, .22, 30) * 1.12,
         `à ${largeur}px, les effets sont au moins aussi visibles que le coût`);
     }
     assert.equal(style('.card-row .rpg-card-element-badge').getPropertyValue('--rpg-plaque-taille'),
