@@ -153,14 +153,16 @@ test('solo game keeps the AI hand private and allows human responses', async () 
     assert.equal(duel.mulliganFait.sorcier, true);
     await click(byText('.moba__choice button', 'braise'));
     await click(byText('.moba__controls button', 'Fin du tour'));
-    assert.equal(document.querySelector('.moba__hand'), null, 'AI hand is not rendered in response window');
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible dans la réponse adverse');
+    assert.ok([...document.querySelectorAll('.moba__hand .moba__card')].every((card) => card.disabled));
     assert.match(document.querySelector('.moba__hint').textContent, /IA réfléchit/);
     const tick = async () => act(async () => new Promise((resolve) => setTimeout(resolve, 500)));
     for (let i = 0; i < 15 && !(duel.tour === 'sorcier' && duel.finDeTour); i++) {
       await tick();
       if (duel.mobaCreatureEnAttente) await click(byText('.moba__controls button', 'Passer et laisser entrer'));
       if (duel.tour === 'sorcier' && !duel.finDeTour && !duel.combatDeclare && !duel.effetCreatureEnAttente) {
-        assert.equal(document.querySelector('.moba__hand'), null, 'AI hand remains absent during its turn');
+        assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible durant le tour adverse');
+        assert.ok([...document.querySelectorAll('.moba__hand .moba__card')].every((card) => card.disabled));
       }
     }
     assert.ok(duel.sorcier.creatures.length, 'AI has summoned a creature');
@@ -231,7 +233,8 @@ test('AI responds to a human declaration and assigns mandatory blocks automatica
     await click([...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').startsWith('Jarl')));
     await click([...document.querySelectorAll('.moba__controls button')].find((b) => b.textContent.includes('Déclarer')));
     assert.ok(duel.combatDeclare);
-    assert.equal(document.querySelector('.moba__hand'), null, 'no access to AI hand');
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible, celle de l’IA cachée');
+    assert.ok([...document.querySelectorAll('.moba__hand .moba__card')].every((card) => card.disabled));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.combatDeclare, null, 'AI finished its defense');
     assert.ok(!duel.sorcier.creatures.some((e) => e.id === blocker.entite.id), 'AI satisfied provocation and blocked');
@@ -962,8 +965,9 @@ test('exit confirmation pauses the AI without rendering its hidden hand', async 
     const before = JSON.stringify(duel);
     await act(async () => new Promise((resolve) => setTimeout(resolve, 650)));
     assert.equal(JSON.stringify(duel), before, 'AI must not play while confirmation is open');
-    assert.equal(document.querySelector('.moba__hand'), null);
-    assert.ok(document.querySelector('[aria-label="Main de l’IA masquée"]'));
+    assert.ok(document.querySelector('[aria-label="Votre main"]'));
+    assert.ok([...document.querySelectorAll('.moba__hand .moba__card')].every((card) => card.disabled));
+    assert.ok(document.querySelector('.moba__hidden-hand'), 'la main adverse reste cachée');
     await click([...document.querySelectorAll('[aria-labelledby="moba-quitter-title"] button')].find((b) => b.textContent.includes('Continuer')));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 650)));
     assert.notEqual(JSON.stringify(duel), before, 'AI resumes after the dialog closes');
@@ -1764,7 +1768,7 @@ test('human targeted spell gives the AI an automatic response without revealing 
     await click([...document.querySelectorAll('.moba__slot.has-creature')].find((slot) => slot.getAttribute('aria-label').includes('cible de magie')));
     assert.equal(duel.mobaSortEnAttente?.cibleId, target.id);
     assert.equal(target.pv, 2);
-    assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     assert.doesNotMatch(document.querySelector('.moba__hidden-hand').textContent, /Parade/);
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(target.bouclier, 1, 'AI shielded the threatened creature');
@@ -1895,7 +1899,7 @@ test('human lane spell waits for the hidden AI response before showing damage', 
     await click(document.querySelector('[aria-label="Cibler Voie centrale de IA"]'));
     assert.equal(duel.mobaSortEnAttente?.laneId, 'center');
     assert.equal(duel.moba.lanes[1].hp.sorcier, 3);
-    assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     assert.doesNotMatch(document.querySelector('.moba__hidden-hand').textContent, /Le Poids/);
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.moba.lanes[1].hp.sorcier, 5, 'AI heals before the pending spell');
@@ -1982,7 +1986,7 @@ test('player shield announcement lets AI remove the friendly target before the s
     assert.equal(duel.mobaSortEnAttente?.cibleId, target.id);
     assert.match(document.querySelector('.moba__hint').textContent, /Parade de verre.*Gardienne.*Vous/);
     assert.equal(target.bouclier, 0);
-    assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.ok(!duel.joueur.creatures.includes(target), 'AI kills the target before the shield');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
@@ -2073,7 +2077,7 @@ test('human lane heal is announced, then shows its animation and sound only afte
     assert.match(document.querySelector('.moba__hint').textContent, /Eau de la source.*Voie droite.*Vous/);
     assert.equal(duel.moba.lanes[2].hp.joueur, 4);
     assert.equal(sounds.includes('soin_vie'), false);
-    assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.moba.lanes[2].hp.joueur, 8);
     assert.equal(duel.mobaSortEnAttente, null);
@@ -2207,7 +2211,7 @@ test('human La Grande Pesée pays its chosen lane before AI passes and only then
     assert.equal(duel.moba.lanes[1].hp.joueur, 5); assert.equal(duel.moba.lanes[1].hp.sorcier, 10);
     assert.equal(duel.joueur.deck.length, deck); assert.equal(sounds.includes('card_draw'), false);
     assert.match(document.querySelector('.moba__hint').textContent, /La Grande Pesée.*Voie centrale.*IA/);
-    assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.moba.lanes[1].hp.joueur, 8); assert.equal(duel.moba.lanes[1].hp.sorcier, 7);
     assert.equal(duel.moba.lanes[2].hp.joueur, 9, 'price not paid a second time');
@@ -2332,7 +2336,7 @@ test('AI can remove an injured ally before the human Festin heals', async () => 
     await act(async () => root.render(React.createElement(Board, props)));
     await click([...document.querySelectorAll('.moba__card')].find((card) => card.textContent.includes('Festin des vaillants')));
     await click(document.querySelector('[aria-label="Soigner Voie gauche de Vous"]'));
-    assert.equal(target.pv, 2); assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.equal(target.pv, 2); assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     assert.doesNotMatch(document.querySelector('.moba__hidden-hand').textContent, /Éclair/);
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.ok(!duel.joueur.creatures.includes(target));
@@ -2414,7 +2418,7 @@ test('human Les feuillets announces the AI deck, then mills only after AI passes
     assert.match(document.querySelector('.moba__hint').textContent, /Les feuillets.*Pioche.*IA/);
     assert.equal(duel.sorcier.deck.length, 4); assert.equal(duel.sorcier.cimetiere.length, 0);
     assert.doesNotMatch(document.body.textContent, /Gardienne des portes de sable|Ashigaru des braises/);
-    assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.deepEqual(duel.sorcier.deck, ['viking-des-neiges']);
     assert.deepEqual(duel.sorcier.cimetiere, ['loup-des-neiges', 'ashigaru-des-braises', 'gardienne-des-portes-de-sable']);
@@ -2528,7 +2532,7 @@ test('AI shields its injured ally in response to the human hostile wave', async 
     await act(async () => root.render(React.createElement(Board, props)));
     await click([...document.querySelectorAll('.moba__card')].find((card) => card.textContent.includes('Tempête de sable')));
     assert.match(document.querySelector('.moba__hint').textContent, /Tempête de sable.*Créatures.*IA/);
-    assert.equal(target.pv, 3); assert.equal(document.querySelector('[aria-label="Votre main"]'), null);
+    assert.equal(target.pv, 3); assert.ok(document.querySelector('[aria-label="Votre main"]'), 'la main du joueur reste visible pendant la réponse adverse');
     assert.doesNotMatch(document.querySelector('.moba__hidden-hand').textContent, /Parade/);
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.ok(target.bouclier > 0); assert.equal(duel.mobaSortEnAttente?.carteId, 'tempete-de-sable');
