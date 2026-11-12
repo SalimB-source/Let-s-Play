@@ -3126,7 +3126,7 @@ function degatsCreatureCombattue(carte, quand) {
 /** Effet de blocage déclaré par une carte. Le renvoi de la Tour des Flots
  * attend la fin des blessures normales ; la Tour de Neige ne gèle qu'à son arrivée.
  */
-function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null) {
+function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null, avantBlessures = false) {
   const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId) ?? bloqueurSnapshot;
   const attaquant = duel[autre(coteBloqueur)]?.creatures.find((e) => e.id === attaquantId);
   const combat = bloqueur && duelCardById(bloqueur.carteId)?.combat;
@@ -3142,7 +3142,7 @@ function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, ap
       && paradeZoneBloque(duel, attaquant, 'capacite', autre(coteBloqueur), coteBloqueur)) return;
     if (renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite')) {
       if (duel.moba) mobaRetirer(duel.moba, autre(coteBloqueur), attaquant.id);
-      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire après les blessures de combat.`);
+      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire ${avantBlessures ? 'avant' : 'après'} les blessures de combat.`);
     }
   }
 }
@@ -6012,7 +6012,13 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.a
     .filter(([attaquantId]) => attaquantsActifs.has(attaquantId)).flatMap(([, ids]) => ids);
   const ciblesAttaque = Object.entries(combat?.ciblesAttaque ?? {})
     .filter(([attaquantId]) => attaquantsActifs.has(attaquantId)).map(([, id]) => id);
-  const vampiresBloqueurs = allies.some((entite) => bloqueurs.includes(entite.id)
+  // La cible d'une attaque individuelle normale déclenche les effets de
+  // blocage, mais n'est pas la cible d'une capacité « Attaque ciblée ».
+  // Le PvP conserve ses conditions historiques.
+  const cibleDuel = !duel.moba && !duel.pvp && attaquants.length
+    ? combat?.cibleIndividuelle?.cibleId : null;
+  const vampiresBloqueurs = allies.some((entite) => (bloqueurs.includes(entite.id)
+    || (cibleDuel === entite.id && !combat.cibleIndividuelle.ciblee))
     && cardHasPrintedType(entite.carteId, 'Vampire'));
   const vampiresVises = allies.some((entite) => cardHasPrintedType(entite.carteId, 'Vampire')
     && ciblesAttaque.includes(entite.id));
@@ -7924,7 +7930,7 @@ export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
  *
  * @param {Array<{id: string, armeId: string|null, creature: number, sorcier: number}>} bilans
  */
-function declencherArmesAttaquants(duel, cote, bilans) {
+function declencherArmesAttaquants(duel, cote, bilans, { seulementAttaque = false, inclureAttaque = true } = {}) {
   let declenche = false;
   const adv = autre(cote);
   for (const bilan of bilans) {
@@ -7936,10 +7942,10 @@ function declencherArmesAttaquants(duel, cote, bilans) {
     // résout au moment des blessures, pas à l'attachement de l'arme.
     const carte = carteLiee(brut, lienSatisfait(brut, duel[cote].creatures));
     const effets = [];
-    if (carte.porteurAttaque) effets.push(carte.porteurAttaque);
-    if (carte.porteurBlesse && bilan.creature + bilan.sorcier > 0) effets.push(carte.porteurBlesse);
-    if (carte.porteurBlesseCreature && bilan.creature > 0) effets.push(carte.porteurBlesseCreature);
-    if (carte.porteurBlesseSorcier && bilan.sorcier > 0) effets.push(carte.porteurBlesseSorcier);
+    if (inclureAttaque && carte.porteurAttaque) effets.push(carte.porteurAttaque);
+    if (!seulementAttaque && carte.porteurBlesse && bilan.creature + bilan.sorcier > 0) effets.push(carte.porteurBlesse);
+    if (!seulementAttaque && carte.porteurBlesseCreature && bilan.creature > 0) effets.push(carte.porteurBlesseCreature);
+    if (!seulementAttaque && carte.porteurBlesseSorcier && bilan.sorcier > 0) effets.push(carte.porteurBlesseSorcier);
     for (const effet of effets) {
       // Retour-main avec chance sur chaque créature blessée (sphère de rotation :
       // 15 % par créature touchée par le porteur). Les cibles sont des
@@ -8888,11 +8894,10 @@ export function rpgLancerAttaque(
   return { ok: true, resume };
 }
 
-/** Résolution d'une attaque individuelle MOBA préalablement
- * validée par l'adaptateur. N'utilise jamais les chemins de blocage classiques.
- * Les blessures des deux combattants sont recueillies avant toute destruction. */
-export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleId, ciblee, { resoudreDegatsDirects, surTransfertMoba, voieAttaque = null } = {}) {
-  if (!duel?.moba || !['joueur', 'sorcier'].includes(cote) || typeof resoudreDegatsDirects !== 'function') return { ok: false, raison: 'combat' };
+/** Échange individuel commun : les blessures des deux combattants sont
+ * recueillies avant toute destruction. Les adaptateurs valident les cibles. */
+function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { resoudreDegatsDirects, surTransfertMoba, voieAttaque = null, classique = false } = {}) {
+  if (!duel || !['joueur', 'sorcier'].includes(cote) || typeof resoudreDegatsDirects !== 'function') return { ok: false, raison: 'combat' };
   const adv = autre(cote);
   const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
   let cible = cibleId === null ? null : duel[adv].creatures.find((e) => e.id === cibleId);
@@ -8917,6 +8922,9 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
   let degatsVoie = 0;
   let sourceExileeParConquete = null;
   let annule = false;
+  if (classique) {
+    declencherArmesAttaquants(duel, cote, [{ id: attaquantId, armeId, creature: 0, sorcier: 0 }], { seulementAttaque: true });
+  }
   if (cible) {
     const cibleAvant = { ...cible };
     const rate = ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable
@@ -8943,12 +8951,16 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
           onFurie: (entite, camp) => resume.furies.push({ entiteId: entite.id, carteId: entite.carteId, cote: camp }),
         });
       }
-      if (!duel.moba.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
+      if (!duel.moba?.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
         && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId);
+      // En classique individuel, tous les effets « au blocage », y compris
+      // les renvois, se résolvent avant les blessures ordinaires.
+      if (classique && !duel.moba?.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
+        && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant, true);
     }
     // Une capacité peut tuer l'un ou les deux combattants : aucun coup
     // normal, retour de Sphère ni transfert Overkill ne part dans ce cas.
-    if (duel.moba.winner || !duel[cote].creatures.some((e) => e.id === attaquantId)
+    if (duel.moba?.winner || !duel[cote].creatures.some((e) => e.id === attaquantId)
       || !duel[adv].creatures.some((e) => e.id === cibleId)) {
       if (!ciblee) resume.paires.push([attaquant.name, cible.name]);
     } else if (tenterRenvoiSphere(duel, cote, attaquant, adv, cible)
@@ -8991,16 +9003,16 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
           riposteSurAttaqueCiblee(duel, defenseur, cote, attaquantId);
           if (coup.contreAttaqueAtteinte) riposteDeContreAttaque(duel, defenseur, { type: 'creature', cote, entiteId: attaquantId });
         }
-        if (exces > 0 && touche && !duel.moba.winner) {
+        if (exces > 0 && touche && !duel.moba?.winner) {
           const frappe = resoudreDegatsDirects(exces);
           degatsVoie = frappe?.recus ?? 0;
           sourceExileeParConquete = frappe?.sourceExileeParConquete ? sourceAuContact : null;
           resume.frappeSorcier = degatsVoie;
-          if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
+          if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba?.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
         }
-        // Les rares cartes dont le texte précise « après les blessures »
-        // (Tour des Flots, Cavalier de vapeur) conservent cet ordre imprimé.
-        if (!ciblee && !duel.moba.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
+        // En MOBA, les cartes indiquant « après les blessures » conservent
+        // cet ordre. En classique individuel, le blocage a déjà été résolu.
+        if (!classique && !ciblee && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
       } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
     }
   } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {
@@ -9009,14 +9021,14 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
     degatsVoie = frappe?.recus ?? 0;
     sourceExileeParConquete = frappe?.sourceExileeParConquete ? sourceAuContact : null;
     resume.frappeSorcier = degatsVoie;
-    if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
+    if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba?.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
   }
   if (annule) duel.log.push(`${attaquant.name} ne trouve plus sa cible : son attaque est annulée.`);
-  else if (cibleId === null) duel.log.push(`${attaquant.name} frappe sa voie adverse (${degatsVoie} dégâts).`);
+  else if (cibleId === null) duel.log.push(`${attaquant.name} frappe ${classique ? 'le sorcier adverse' : 'sa voie adverse'} (${degatsVoie} dégâts).`);
   else if (resume.coupsRapides[0]?.rate) duel.log.push(`${attaquant.name} rate son Attaque ciblée contre ${cible?.name ?? 'sa cible'}.`);
   else duel.log.push(`${attaquant.name} attaque ${cible?.name ?? 'sa cible'} (${degatsCreature} dégâts).`);
-  if (!duel.moba.winner && !annule) {
-    declencherArmesAttaquants(duel, cote, [{ id: attaquantId, armeId, mobaLane: lane, creature: degatsCreature, sorcier: degatsVoie, cibles: [] }]);
+  if (!duel.moba?.winner && !annule) {
+    declencherArmesAttaquants(duel, cote, [{ id: attaquantId, armeId, mobaLane: lane, creature: degatsCreature, sorcier: degatsVoie, cibles: [] }], { inclureAttaque: !classique });
     const bilans = [{ id: attaquantId, sorcier: degatsVoie, sourceExileeParConquete }];
     declencherButins(duel, cote, bilans);
     declencherTributs(duel, cote, bilans, surTransfertMoba);
@@ -9025,6 +9037,27 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
   if (cibleId !== null && !ciblee) retirerUnCompteurDurabiliteArme(duel, adv, cibleId, 'défense');
   rpgActionsEtat(duel);
   return { ok: true, annule, resume };
+}
+
+/** Adaptateur MOBA : conserve la validation et les règles propres aux voies. */
+export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleId, ciblee, options = {}) {
+  if (!duel?.moba) return { ok: false, raison: 'combat' };
+  return resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { ...options, classique: false });
+}
+
+/** Adaptateur classique solo ; l'appelant valide la déclaration et la cible. */
+export function rpgResoudreEchangeIndividuelClassique(duel, cote, attaquantId, cibleId, ciblee) {
+  const combat = duel?.combatDeclare;
+  if (!duel || duel.moba || duel.pvp || !combat?.cibleIndividuelle || combat.cote !== cote
+    || duel.tour !== cote || duel.phase !== 'blocage' || !duel.fenetreReponse
+    || combat.attaquants?.length !== 1 || combat.attaquants[0] !== attaquantId
+    || combat.cibleIndividuelle.cibleId !== cibleId || combat.cibleIndividuelle.ciblee !== ciblee) {
+    return { ok: false, raison: 'combat' };
+  }
+  return resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, {
+    classique: true,
+    resoudreDegatsDirects: (montant) => rpgInfligerSorcier(duel, autre(cote), montant),
+  });
 }
 
 /**
@@ -9380,7 +9413,27 @@ export function rpgPeutRepondre(duel, cote) {
  *  joueur) : au plus une carte, la plus utile selon son profil. */
 export function rpgSorcierMagieRapide(duel, rng = Math.random, combat = null) {
   const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true, combat });
-  if (!coup) return null;
+  if (!coup) {
+    // En classique solo, les Embuscades sont elles aussi des réponses : tester
+    // leur pose sur une copie évite de payer ou de sacrifier pour un coup illégal.
+    if (duel.pvp || duel.moba || duel.tour !== 'joueur' || !duel.fenetreReponse) return null;
+    for (const id of new Set(duel.sorcier.main)) {
+      const carte = duelCardById(id);
+      if (!carte?.reactionTourAdverse || !rpgConditionEmbuscadeRemplie(duel, 'sorcier', carte)
+        || !invocationPossible(duel, 'sorcier', carte) || !rpgPeutPayer(duel.sorcier, carte)
+        || !rpgContreJouable(duel, 'sorcier', carte)) continue;
+      const cibles = [...new Set([rpgCibleAuto(duel, 'sorcier', carte), null,
+        ...duel.joueur.creatures.map((e) => e.id), ...duel.sorcier.creatures.map((e) => e.id), 'sorcier'])];
+      for (const cibleId of cibles) {
+        const copie = structuredClone(duel);
+        rpgReglerHasard(copie, () => 0.5);
+        if (!rpgJouerCreature(copie, 'sorcier', id, cibleId).ok) continue;
+        const res = rpgJouerCreature(duel, 'sorcier', id, cibleId);
+        if (res.ok) return { ...res, carteId: id, cibleId };
+      }
+    }
+    return null;
+  }
   const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
   // La cible repart avec le résultat : la page en a besoin pour dire, au-dessus
   // des piles du sorcier, ce que le sort vient de frapper.
