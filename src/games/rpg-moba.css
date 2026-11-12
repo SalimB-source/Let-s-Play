@@ -743,7 +743,7 @@
 .moba__plateau-picker { min-width: 0; margin: 8px 0 12px; padding: 8px 0 0; border: 0; border-top: 1px solid #bda07055; }
 .moba__plateau-picker legend { padding: 0 8px 0 0; color: #f2dbaf; font: 600 12px system-ui,sans-serif; }
 .moba__plateau-options { display: flex; flex-wrap: wrap; gap: 9px; }
-.moba__setup .moba__plateau-option { display: grid; gap: 3px; width: clamp(122px, 15vw, 190px); min-height: 0; padding: 4px; border: 1px solid #977b57; border-radius: 6px; background: #151b20; color: #efdfc1; text-align: left; font: 600 11px/1.2 system-ui,sans-serif; }
+.moba__setup .moba__plateau-option { display: grid; gap: 3px; width: clamp(118px, 13vw, 160px); min-height: 0; padding: 4px; border: 1px solid #977b57; border-radius: 6px; background: #151b20; color: #efdfc1; text-align: left; font: 600 11px/1.2 system-ui,sans-serif; }
 .moba__plateau-option img { display: block; width: 100%; aspect-ratio: 2.4 / 1; object-fit: cover; border-radius: 3px; }
 .moba__plateau-option span { padding: 3px; }
 .moba__setup .moba__plateau-option.is-selected { border-color: #f2d3a0; box-shadow: 0 0 0 2px #d5ae73a8; }
@@ -759,6 +759,16 @@
 .moba--temple-du-nil-egyptien .moba__slot.is-empty { border-color: #f8deb3a6; background-color: #76532340; }
 .moba--temple-du-nil-egyptien .moba__health { background: #2b211acb; }
 .moba--temple-du-nil-egyptien .moba__health-bar { background: #173c4c; border-color: #9ac8c5; }
+.moba--port-des-corsaires { background-color: #36596a; }
+.moba--port-des-corsaires .moba__lane + .moba__lane { border-left-color: #a9d4d3a6; }
+.moba--port-des-corsaires .moba__slot.is-empty { border-color: #b4dcdfab; background-color: #17384464; }
+.moba--port-des-corsaires .moba__health { background: #132c37d9; }
+.moba--port-des-corsaires .moba__health-bar { background: #193542; border-color: #79adae; }
+.moba--erg-des-ksour { background-color: #ad8454; }
+.moba--erg-des-ksour .moba__lane + .moba__lane { border-left-color: #f2d09aa6; }
+.moba--erg-des-ksour .moba__slot.is-empty { border-color: #efd4a6b8; background-color: #6944245b; }
+.moba--erg-des-ksour .moba__health { background: #382719d9; }
+.moba--erg-des-ksour .moba__health-bar { background: #684926; border-color: #d3a973; }
 @media (max-width: 650px) {
   .moba__setup .moba__plateau-option { width: calc((100% - 18px) / 3); font-size: 10px; }
 }

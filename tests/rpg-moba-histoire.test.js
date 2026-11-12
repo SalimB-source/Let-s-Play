@@ -10,9 +10,9 @@ import { MOBA_HISTOIRE, prochainChapitreMoba } from '../src/games/rpgMobaHistoir
 import { RPG_PLATEAU_MUSIC_FILES } from '../src/games/rpgPlateauMusic.js';
 import { cardById } from '../src/games/rpgCards.js';
 
-test('trois chapitres distincts, decks compatibles, musiques classiques et portraits des vraies cartes', async () => {
-  assert.deepEqual(MOBA_HISTOIRE.map((c) => c.plateau?.id), ['trois-voies', 'lac-gele-viking', 'temple-du-nil-egyptien']);
-  assert.deepEqual(MOBA_HISTOIRE.map((c) => c.deck?.id), ['tour-listes-1', 'tour-fjord-3', 'tour-sablier-5']);
+test('cinq chapitres distincts, decks compatibles, musiques classiques et portraits des vraies cartes', async () => {
+  assert.deepEqual(MOBA_HISTOIRE.map((c) => c.plateau?.id), ['trois-voies', 'port-des-corsaires', 'erg-des-ksour', 'lac-gele-viking', 'temple-du-nil-egyptien']);
+  assert.deepEqual(MOBA_HISTOIRE.map((c) => c.deck?.id), ['tour-listes-1', 'tour-corsaires-1', 'tour-souk-2', 'tour-fjord-3', 'tour-sablier-5']);
   assert.equal(MOBA_HISTOIRE[0].portrait, 'guetteur-du-beffroi');
   assert.ok(MOBA_HISTOIRE[0].deck.cardIds.includes(MOBA_HISTOIRE[0].portrait));
   for (const chapitre of MOBA_HISTOIRE) {
@@ -20,6 +20,7 @@ test('trois chapitres distincts, decks compatibles, musiques classiques et portr
     assert.ok(RPG_PLATEAU_MUSIC_FILES[chapitre.plateau.musique], chapitre.plateau.nom);
     if (chapitre.portrait) {
       assert.ok(cardById(chapitre.portrait), chapitre.portrait);
+      if (chapitre.plateau.id !== 'lac-gele-viking') assert.ok(chapitre.deck.cardIds.includes(chapitre.portrait), chapitre.deck.name);
       const art = await readFile(new URL(`../public/cards/${chapitre.portrait}.jpg`, import.meta.url));
       assert.equal(art[0], 0xff);
       assert.equal(art[1], 0xd8);
@@ -31,10 +32,16 @@ test('trois chapitres distincts, decks compatibles, musiques classiques et portr
   assert.equal(prochainChapitreMoba(0, 'nul'), null);
   assert.equal(prochainChapitreMoba(0, 'joueur'), MOBA_HISTOIRE[1]);
   assert.equal(prochainChapitreMoba(1, 'joueur'), MOBA_HISTOIRE[2]);
-  assert.equal(prochainChapitreMoba(2, 'joueur'), null);
-  assert.equal(MOBA_HISTOIRE[1].ambiance, 'neige');
-  assert.equal(MOBA_HISTOIRE[2].ambiance, undefined);
+  assert.equal(prochainChapitreMoba(2, 'joueur'), MOBA_HISTOIRE[3]);
+  assert.equal(prochainChapitreMoba(3, 'joueur'), MOBA_HISTOIRE[4]);
+  assert.equal(prochainChapitreMoba(4, 'joueur'), null);
+  assert.deepEqual(MOBA_HISTOIRE.map((chapitre) => chapitre.ambiance), ['braises', 'embruns', 'sable', 'neige', 'brume']);
   const css = await readFile(new URL('../src/games/rpgMobaHistoire.css', import.meta.url), 'utf8');
+  for (const ambiance of MOBA_HISTOIRE.map((chapitre) => chapitre.ambiance)) {
+    assert.match(css, new RegExp(`moba__interlude-particles--${ambiance}`));
+  }
+  assert.match(css, /moba__interlude-particles i[^}]*animation: none/);
+  assert.match(css, /moba__interlude-particles--brume::before[^}]*animation: none/);
   assert.match(css, /moba-interlude-approche[^]*?scale\(1\.075\)/);
   assert.match(css, /prefers-reduced-motion: reduce/);
 });
@@ -66,7 +73,7 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
       assert.equal(partie.ok, true);
       // Simule le verdict du moteur, sans modifier ses règles de jeu.
       // La première visite du fjord échoue : le récit doit rester à cet étage.
-      partie.duel.moba.winner = adverse.id === 'tour-fjord-3' && parties.length === 2 ? 'sorcier' : 'joueur';
+      partie.duel.moba.winner = adverse.id === 'tour-fjord-3' && parties.length === 4 ? 'sorcier' : 'joueur';
       return partie.duel;
     };
     const retourMobaRef = { current: null };
@@ -80,7 +87,7 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
     assert.ok(premierMaster);
     assert.match(premierMaster.textContent, /LE PREMIER AFFRONTEMENT/);
     assert.match(premierMaster.querySelector('.moba__interlude-hero img').src, /guetteur-du-beffroi\.jpg/);
-    assert.equal(premierMaster.querySelectorAll('.moba__interlude-snow i').length, 0);
+    assert.equal(premierMaster.querySelectorAll('.moba__interlude-particles--braises i').length, 36);
     assert.equal(document.querySelector('.moba__setup-overlay'), null);
     assert.ok(lectures.some((audio) => audio.src.endsWith(RPG_PLATEAU_MUSIC_FILES['table-des-heures'])));
     await act(async () => retourMobaRef.current());
@@ -92,21 +99,21 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
     assert.equal(document.querySelector('.moba__interlude'), null);
     assert.equal(parties[0][0].id, deck.id);
     assert.equal(parties[0][1].id, MOBA_HISTOIRE[0].deck.id);
-    assert.match(document.querySelector('.moba__end-chapter').textContent, /Chapitre 1 \/ 3/);
+    assert.match(document.querySelector('.moba__end-chapter').textContent, /Chapitre 1 \/ 5/);
     for (let index = 1; index < MOBA_HISTOIRE.length; index++) {
-      if (index === 2) {
+      if (index === 4) {
         assert.equal(document.querySelector('.moba__interlude'), null);
         assert.match(document.querySelector('.moba__end-actions .moba__primary').textContent, /Réessayer ce chapitre/);
         await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
-        assert.equal(parties[2][1].id, MOBA_HISTOIRE[1].deck.id);
-        assert.equal(document.querySelector('.moba').dataset.mobaPlateau, MOBA_HISTOIRE[1].plateau.id);
+        assert.equal(parties[4][1].id, MOBA_HISTOIRE[3].deck.id);
+        assert.equal(document.querySelector('.moba').dataset.mobaPlateau, MOBA_HISTOIRE[3].plateau.id);
       }
       await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
       const interlude = document.querySelector('.moba__interlude');
       assert.ok(interlude);
       assert.ok(interlude.querySelector('.moba__interlude-hero img'), 'Le personnage occupe le master, sans cadre de carte');
       assert.equal(interlude.querySelector('.moba__interlude-portrait'), null);
-      assert.equal(interlude.querySelectorAll('.moba__interlude-snow i').length, index === 1 ? 36 : 0);
+      assert.equal(interlude.querySelectorAll(`.moba__interlude-particles--${MOBA_HISTOIRE[index].ambiance} i`).length, 36);
       assert.match(interlude.querySelector('img').src, new RegExp(`${MOBA_HISTOIRE[index].portrait}\\.jpg`));
       assert.match(interlude.style.getPropertyValue('--moba-interlude-decor'), new RegExp(MOBA_HISTOIRE[index].decor));
       assert.match(interlude.textContent, new RegExp(MOBA_HISTOIRE[index].deck.name));
@@ -117,7 +124,7 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
       assert.equal(parties.at(-1)[1].id, MOBA_HISTOIRE[index].deck.id);
       assert.equal(document.querySelector('.moba').dataset.mobaPlateau, MOBA_HISTOIRE[index].plateau.id);
       assert.match(document.querySelector('.moba__notice').textContent, new RegExp(MOBA_HISTOIRE[index].deck.name));
-      assert.match(document.querySelector('.moba__end-chapter').textContent, new RegExp(`Chapitre ${index + 1} \\/ 3`));
+      assert.match(document.querySelector('.moba__end-chapter').textContent, new RegExp(`Chapitre ${index + 1} \\/ ${MOBA_HISTOIRE.length}`));
     }
     assert.match(document.querySelector('.moba__end-panel h2').textContent, /Histoire accomplie/);
     assert.equal(document.querySelector('.moba__interlude'), null);
@@ -125,11 +132,11 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
     const partiesTerminees = parties.length;
     await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
     assert.equal(parties.length, partiesTerminees, 'Recommencer réaffiche le premier master avant de recréer un duel');
-    assert.match(document.querySelector('.moba__interlude').textContent, /CHAPITRE 1 \/ 3/);
+    assert.match(document.querySelector('.moba__interlude').textContent, /CHAPITRE 1 \/ 5/);
     await act(async () => document.querySelector('.moba__interlude-actions button:last-child').click());
     assert.match(document.querySelector('.moba__end-panel h2').textContent, /Histoire accomplie/);
-    assert.match(document.querySelector('.moba__end-chapter').textContent, /Chapitre 3 \/ 3/);
-    assert.equal(document.querySelector('.moba').dataset.mobaPlateau, MOBA_HISTOIRE[2].plateau.id);
+    assert.match(document.querySelector('.moba__end-chapter').textContent, /Chapitre 5 \/ 5/);
+    assert.equal(document.querySelector('.moba').dataset.mobaPlateau, MOBA_HISTOIRE[4].plateau.id);
     assert.equal(parties.length, partiesTerminees);
     await act(async () => document.querySelector('.moba__end-actions .moba__primary').click());
     await act(async () => document.querySelector('.moba__interlude .moba__primary').click());

@@ -28,16 +28,47 @@
 .moba__interlude-actions button.moba__primary { color: #241a0e; background: #e8c486; }
 .moba__interlude-actions button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
-/* Neige légère en avant-plan : vitesse, profondeur et dérive individuelles,
-   aucune texture vidéo ni minuteur JS. Présente uniquement sur le lac gelé. */
-.moba__interlude-snow { position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
-.moba__interlude-snow i { position: absolute; left: var(--flake-x); top: var(--flake-y); width: var(--flake-size); height: var(--flake-size); border-radius: 50%; background: #f2faff; box-shadow: 0 0 7px #c7e8ff; opacity: 0; animation: moba-interlude-flocon var(--flake-duration) linear var(--flake-delay) infinite; }
+/* Chaque master possède son souffle : braises au seuil, pluie sur les quais,
+   sable des ksour, neige du fjord et brume du Styx. Animation CSS sans JS. */
+.moba__interlude-particles { position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
+.moba__interlude-particles i { position: absolute; left: var(--particle-x); top: var(--particle-y); width: var(--particle-size); height: var(--particle-size); border-radius: 50%; opacity: 0; animation-duration: var(--particle-duration); animation-timing-function: linear; animation-delay: var(--particle-delay); animation-iteration-count: infinite; }
+.moba__interlude-particles--neige i { background: #f2faff; box-shadow: 0 0 7px #c7e8ff; animation-name: moba-interlude-flocon; }
+.moba__interlude-particles--braises i { background: #f6bf65; box-shadow: 0 0 9px #f6a44c; animation-name: moba-interlude-braise; }
+.moba__interlude-particles--embruns i { width: 1px; height: calc(var(--particle-size) * 3); border-radius: 1px; background: #b8dfe8; box-shadow: 0 0 4px #d8f2ff; animation-name: moba-interlude-embrun; }
+.moba__interlude-particles--sable i { background: #e9bf87; box-shadow: 0 0 5px #edcc98; animation-name: moba-interlude-sable; }
+.moba__interlude-particles--brume i { width: calc(var(--particle-size) * 4); height: calc(var(--particle-size) * 2); background: #b2d7db88; filter: blur(3px); animation-name: moba-interlude-brume; }
+.moba__interlude-particles--brume::before { content: ''; position: absolute; inset: 30% -15% -15%; background: radial-gradient(ellipse at 55% 75%, #b2d7db32, transparent 58%); animation: moba-interlude-nappe 16s ease-in-out infinite alternate; }
 @keyframes moba-interlude-flocon {
   0% { transform: translate3d(0, -15vh, 0); opacity: 0; }
   13% { opacity: .74; }
   83% { opacity: .62; }
-  100% { transform: translate3d(var(--flake-drift), 88vh, 0); opacity: 0; }
+  100% { transform: translate3d(var(--particle-drift), 88vh, 0); opacity: 0; }
 }
+@keyframes moba-interlude-braise {
+  0% { transform: translate3d(0, 12vh, 0); opacity: 0; }
+  17% { opacity: .72; }
+  78% { opacity: .55; }
+  100% { transform: translate3d(var(--particle-drift), -28vh, 0); opacity: 0; }
+}
+@keyframes moba-interlude-embrun {
+  0% { transform: translate3d(14vw, -15vh, 0) rotate(16deg); opacity: 0; }
+  15% { opacity: .62; }
+  84% { opacity: .45; }
+  100% { transform: translate3d(-12vw, 85vh, 0) rotate(16deg); opacity: 0; }
+}
+@keyframes moba-interlude-sable {
+  0% { transform: translate3d(-20vw, 5vh, 0); opacity: 0; }
+  18% { opacity: .7; }
+  80% { opacity: .48; }
+  100% { transform: translate3d(32vw, -10vh, 0); opacity: 0; }
+}
+@keyframes moba-interlude-brume {
+  0% { transform: translate3d(14vw, 5vh, 0); opacity: 0; }
+  18% { opacity: .55; }
+  80% { opacity: .4; }
+  100% { transform: translate3d(-18vw, -9vh, 0); opacity: 0; }
+}
+@keyframes moba-interlude-nappe { from { transform: translateX(-5%); opacity: .45; } to { transform: translateX(6%); opacity: .8; } }
 
 @media (max-width: 650px) {
   .moba__story-start { flex-wrap: wrap; }
@@ -63,5 +94,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .moba__interlude-hero img { animation: none; }
-  .moba__interlude-snow i { animation: none; opacity: .35; }
+  .moba__interlude-particles i, .moba__interlude-particles--brume::before { animation: none; opacity: .35; }
 }
