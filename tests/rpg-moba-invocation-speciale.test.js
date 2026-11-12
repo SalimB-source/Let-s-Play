@@ -43,7 +43,7 @@ for (const side of ['joueur', 'sorcier']) {
     assert.equal(d.moba.embuscadesJouees[side], false);
     assert.equal(sacrificesInvocation(cardById('tojiro-le-pourfendeur'), d, side), 1);
   });
-  test(`${side} : une Embuscade contrée consomme le quota spécial`, () => {
+  test(`${side} : une Embuscade contrée n'empêche pas une autre Embuscade`, () => {
     const d = partie(), ennemi = side === 'joueur' ? 'sorcier' : 'joueur';
     if (d.tour !== ennemi) rpgFinDeTour(d);
     d[ennemi].main = ['djinn-du-dernier-brasier', 'ecueil'];
@@ -53,7 +53,7 @@ for (const side of ['joueur', 'sorcier']) {
     assert.ok(rpgMobaJouerCreature(d, side, 'tojiro-le-pourfendeur', 'left', 0, { ouvrirReponse: true, sacrificeIds: [] }).ok);
     assert.ok(rpgMobaLancerMagie(d, ennemi, 'ecueil').contre);
     assert.equal(d.moba.embuscadesJouees[side], true);
-    assert.equal(rpgMobaPeutEmbuscade(d, side, 'tojiro-le-pourfendeur'), false);
+    assert.equal(rpgMobaPeutEmbuscade(d, side, 'tojiro-le-pourfendeur'), true);
   });
 }
 

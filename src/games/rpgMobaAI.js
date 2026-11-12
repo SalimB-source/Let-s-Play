@@ -1,4 +1,5 @@
 import { sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
+import { MOBA_EMBUSCADES_CONDITIONS } from './rpgMobaEmbuscades.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
@@ -9,7 +10,7 @@ import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasa
 import {
   MOBA_EMBUSCADES_COMBAT, MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
+  rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
 } from './rpgMobaLocal.js';
 
@@ -43,17 +44,17 @@ const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
   const combat = duel.combatDeclare;
   let meilleur = null;
-  for (const id of [...MOBA_EMBUSCADES_COMBAT, 'sorcier-du-ressac-noir']) {
+  for (const id of [...new Set([...MOBA_EMBUSCADES_COMBAT, ...Object.keys(MOBA_EMBUSCADES_CONDITIONS), 'sorcier-du-ressac-noir'])]) {
     if (!rpgMobaPeutEmbuscade(duel, side, id)) continue;
     if (id === 'tojiro-le-pourfendeur') {
-      // Tester chaque sacrifice et chaque case, y compris la case libérée.
-      // Les sondes résolvent aussi les effets de mort et l'annonce suspendue.
+      // Une invocation spéciale ne sacrifie jamais. Les sondes résolvent
+      // aussi l'annonce suspendue et les éventuels effets de mort.
       const baseline = copie(duel);
       if (baseline.mobaCreatureEnAttente) resoudreMenaceCreature(baseline, side);
       else if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
       else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
       resoudreDestructionsSurCopie(baseline);
-      const sacrifices = sacrificesInvocation(cardById(id), duel, side) ? victimesInvocation(duel[side]) : [null];
+      const sacrifices = rpgMobaSacrificesInvocation(duel, side, cardById(id)) ? victimesInvocation(duel[side]) : [null];
       for (const victime of sacrifices) for (const lane of duel.moba.lanes) for (let slot = 0; slot < lane.slots[side].length; slot++) {
         if (lane.slots[side][slot] !== null && lane.slots[side][slot] !== victime?.id) continue;
         const probe = copie(duel);
@@ -126,6 +127,20 @@ export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
       if (cible && !rpgMobaResoudreArrivee(probe, side, cible).ok) continue;
       if (probe.effetCreatureEnAttente && !rpgMobaPasserEffetCreature(probe, autre(side)).ok) continue;
       resoudreDestructionsSurCopie(probe);
+      if (Object.hasOwn(MOBA_EMBUSCADES_CONDITIONS, id) && !combat) {
+        const baseline = copie(duel);
+        if (baseline.mobaCreatureEnAttente) resoudreMenaceCreature(baseline, side);
+        else if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
+        else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
+        if (probe.mobaCreatureEnAttente) resoudreMenaceCreature(probe, side);
+        else if (probe.mobaSortEnAttente) rpgMobaPasserSort(probe, side);
+        else if (probe.effetCreatureEnAttente) rpgMobaPasserEffetCreature(probe, side);
+        resoudreDestructionsSurCopie(baseline);
+        resoudreDestructionsSurCopie(probe);
+        const score = valeurPosition(probe, side) - valeurPosition(baseline, side);
+        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, score };
+        continue;
+      }
       const threatened = (probe.combatDeclare?.attaquants ?? []).map((attackerId) => probe[combat.cote].creatures.find((e) => e.id === attackerId))
         .filter((attacker) => attacker && !combat.ciblesAttaque?.[attacker.id] && rpgPeutBloquerAttaquant(arrived.entite, attacker)
           && !rpgEstProtegee(attacker, cardColors(cardById(id))));
@@ -375,7 +390,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     }
   }
   let menaceInitiale;
-  for (const card of cards) for (const lane of lanes) for (const victimes of rpgCombinaisonsSacrificesIA(duel, side, card)) {
+  for (const card of cards) for (const lane of lanes) for (const victimes of (rpgMobaPeutEmbuscade(duel, side, card.id) ? [[]] : rpgCombinaisonsSacrificesIA(duel, side, card))) {
     const sacrificeIds = victimes.map((e) => e.id);
     const libre = lane.slots[side].indexOf(null);
     const slot = libre >= 0 ? libre : lane.slots[side].findIndex((id) => sacrificeIds.includes(id));

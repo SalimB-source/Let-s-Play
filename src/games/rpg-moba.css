@@ -108,6 +108,14 @@
 .moba .moba__hand-item .moba__real-hand { display: flex; width: 100%; height: auto; aspect-ratio: 4 / 5; min-height: 0; padding: 0; overflow: visible; overflow: clip; overflow-clip-margin: 40px; transform: none; }
 .moba .moba__hand-item .moba__real-hand:hover:not(:disabled) { transform: translateY(-7px); }
 .moba .moba__hand-item .moba__real-hand.is-selected { transform: translateY(-7px); outline: 2px solid #f0ca80; }
+/* Halo extérieur uniquement : ni recadrage de la face, ni masque sur les icônes. */
+.moba .moba__hand-cards .moba__real-hand.is-special-ambush:not(:disabled),
+.moba .moba__hand-cards .moba__card.is-special-ambush:not(:disabled) {
+  outline: 2px solid #7edbff;
+  outline-offset: 2px;
+  box-shadow: 0 0 9px 3px #35b7ffbb, 0 0 20px 6px #319efb77;
+}
+.moba .moba__hand-cards .moba__real-hand.is-special-ambush.is-selected { outline-color: #b3edff; }
 @media(max-width: 650px) { .moba .moba__real-slot { flex-basis: 95px; width: 95px; }.moba .moba__hand-item { flex-basis: 115px; } }
 .moba .rpg-card-peek { z-index: 10020; }
 .moba .moba__mulligan-item { flex: 0 0 140px; min-width: 0; }
