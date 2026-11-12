@@ -11,6 +11,8 @@ const texteSansRapidite = (texte = '') => texte
  * les cartes du duel classique ne sont jamais modifiées. */
 export function rpgMobaCartePourApercu(carte) {
   if (!carte) return carte;
+  // Les fiches doivent conserver le timing propre au MOBA pour les renvois.
+  carte = { ...carte, presentationCombatMoba: true };
   if (carte.id === 'sandales-de-tislit') return { ...carte, donne: { ...carte.donne, rapidite: false },
     bonus: { ...carte.bonus, atk: 1, def: 1 },
     text: 'Arme — Le porteur gagne +1/+1 en MOBA. Se joue uniquement pendant votre tour.' };

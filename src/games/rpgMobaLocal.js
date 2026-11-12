@@ -150,11 +150,9 @@ export function rpgMobaCreerPartie(joueur, sorcier, options = {}) {
   }) };
 }
 
-/** Quotas d'annonces par camp et par tour, y compris les réponses. */
+/** Seules les invocations normales de créatures sont limitées par tour. */
 export function rpgMobaLimiteCarte(duel, side, carte) {
   if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte) return null;
-  if (carteEstArme(carte) && duel.moba.armesJouees?.[side]) return 'arme-limite';
-  if (carte.kind === 'magie' && !carteEstArme(carte) && duel.moba.sortsJoues?.[side]) return 'sort-limite';
   return limiteInvocationMoba(duel, side, carte);
 }
 

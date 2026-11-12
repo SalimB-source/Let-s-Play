@@ -57,7 +57,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
   assert.equal(texte('gardienne-du-croissant'),
     'À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier.',
     'le bénéfice distinct et la cible restent, pas la mécanique du Bouclier');
-  assert.match(texte('vampire-des-braises'), /Quand elle bloque une créature/u,
+  assert.match(texte('vampire-des-braises'), /Quand elle attaque une créature ou est visée par une attaque normale/u,
     'les blessures préalables sans pastille restent visibles');
   assert.match(texte('lame-de-mer'), /^Cible : une créature\. Si sa défense.*Avec Le Seigneur des mâchoires en jeu : -4\/-4/u,
     'le chiffre de base passe dans la pastille, mais l’exil et le Lien restent');
@@ -158,6 +158,13 @@ test('toutes les variantes de preview ne redisent pas les effets de leurs pastil
     const lame = rendre('lame-de-mer');
     assert.ok(lame.querySelector('[data-pastille="debuff"]'));
     assert.equal(lame.querySelector('.rpg-hover-card-preview__stats--modif'), null, 'les chiffres du malus sont sur la pastille');
+    const envol = rendre('valkyrie-au-corbeau');
+    assert.match(envol.querySelector('[data-pastille="envol"]')?.getAttribute('aria-label') ?? '', /au sol ou en vol/);
+    assert.doesNotMatch(envol.querySelector('[data-pastille="envol"]')?.getAttribute('aria-label') ?? '', /bloqu/);
+    const ciblee = rendre('feriel');
+    assert.match(ciblee.querySelector('[data-pastille="coupRapide"]')?.getAttribute('aria-label') ?? '', /créature adverse ou directement/);
+    const tour = rendre('tour-des-flots');
+    assert.match(tour.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /attaque normale.*avant les blessures/);
     const vampire = rendre('vampire-des-braises');
     assert.match(vampire.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /avant les blessures de combat/u,
       'un effet non expliqué par la pastille reste visible');

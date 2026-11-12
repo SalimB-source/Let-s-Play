@@ -133,7 +133,7 @@ import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { conditionEmbuscadeCourtePourApercu, regleCarteLongue, resumeCarte, texteApercuSansDoublons } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte, PlaqueForme, ELEMENT_TEINTES } from './effetIcons.jsx';
-import { definitionPastille, effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
+import { definitionPastille, effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles, texteCombatIndividuel } from './effetIcons.js';
 import { capacitesDuCatalogue, carteACapacite } from './rpgCatalogueCapacites.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
@@ -3943,7 +3943,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       data-card-id={carte.id}
       data-mulligan-index={index}
       aria-pressed={selectionnee}
-      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 
@@ -4027,7 +4027,7 @@ function VoletMulligan({
 
 function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
   if (!carte) return null;
-  const effets = cardEffectLines(carte.text);
+  const effets = cardEffectLines(texteCombatIndividuel(carte));
   return (
     <div
       className="rpg-spell-confirm-backdrop"
@@ -4099,7 +4099,7 @@ function SpellAnnouncement({ annonce, camp = 'joueur', nomLanceur = null }) {
             le même sort qui retombe, pas une nouvelle magie. */}
         <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? (nomLanceur ? `CONTRE · ${nomLanceur.toUpperCase()}` : 'CONTRE DU SORCIER') : vague ? 'SECONDE VAGUE' : nomLanceur ? `MAGIE · ${nomLanceur.toUpperCase()}` : sorcier ? 'SORT DU SORCIER' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
-        <p>{regleCarteLongue(carte) ? resumeCarte(carte, 92) : carte.text}</p>
+        <p>{regleCarteLongue(carte) ? resumeCarte(carte, 92) : texteCombatIndividuel(carte)}</p>
         <div className="rpg-spell-played__target">
           {(annonce.cible.illustrationUrl || annonce.cible.illustrationId)
             ? <img src={annonce.cible.illustrationUrl ?? cardArt(annonce.cible.illustrationId)} alt="" />
@@ -14817,7 +14817,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
                   data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''}${sacrificesInvocation(carte, duel) ? ` — invocation : ${sacrificesInvocation(carte, duel)} sacrifice(s), en plus du mana` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel) ? ` — invocation : ${sacrificesInvocation(carte, duel)} sacrifice(s), en plus du mana` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 

@@ -11,8 +11,8 @@ import { rpgMobaConditionImprimee } from './rpgMobaEmbuscadesImprimees.js';
  *
  * Règles : la partie commence avec une main de 5 cartes et une table vide
  * (3 cartes dans le mode sans terrains, voir `rpgManaEssai.js`).
- * Les terrains produisent du mana coloré, les créatures ont le mal
- * d'invocation, les attaquants sont déclarés avant le combat et le défenseur
+ * Les terrains produisent du mana coloré. Les créatures peuvent attaquer dès
+ * leur arrivée ; les attaquants sont déclarés avant le combat et le défenseur
  * choisit ses bloqueurs. Les magies rapides ouvrent une fenêtre de réponse.
  */
 
@@ -1864,9 +1864,8 @@ function creerEntiteCreature(carte, duel) {
     // En MOBA, Rapidité imprimée devient une condition d'Embuscade pour les
     // cartes de main ; les jetons de Tarek et Kusayla restent prêts à agir.
     rapidite: Boolean(carte.rapidite && !duel.moba),
-    // En MOBA, chaque créature est prête dès son entrée en jeu. Le duel
-    // classique conserve son mal d'invocation.
-    malInvocation: !duel.moba,
+    // Toute créature peut attaquer dès son entrée, quel que soit le mode.
+    malInvocation: false,
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
@@ -1912,7 +1911,7 @@ function creerEntiteCreature(carte, duel) {
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
-    ready: Boolean(duel.moba || carte.rapidite),
+    ready: true,
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
@@ -2303,10 +2302,7 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.contreAttaque) entite.contreAttaque = Boolean(duelCardById(entite.carteId)?.contreAttaque);
   if (carteArme.donne?.rapidite) {
     entite.rapidite = Boolean(!duel.moba && duelCardById(entite.carteId)?.rapidite);
-    // Une attaque déjà déclarée reste légale même si la Rapidité disparaît
-    // pendant la réponse ; elle ne pourra pas être déclarée une seconde fois.
-    const dejaDeclaree = duel.combatDeclare?.cote === cote && duel.combatDeclare.attaquants.includes(entite.id);
-    if (entite.malInvocation && !entite.rapidite && !entite.rapiditeAccordee && !dejaDeclaree) entite.ready = false;
+    // Retirer Rapidité ne rend plus une créature récemment arrivée indisponible.
   }
   // Le crochet rendu, le coût du porteur retombe à son imprimé.
   if (carteArme.coutPorteur) {
@@ -3691,12 +3687,10 @@ function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
     // La détenue reprend sa présence : ses statistiques sont celles de la
     // prise, ses auras déjà comptées dans ses chiffres (`auraSableBonus` et
     // consorts), donc `rafraichirAuras` ne les comptera pas deux fois. Seul
-    // l'engagement se remet à neuf ; en MOBA, comme toute entrée en jeu,
-    // la créature revenue peut attaquer dès son retour.
-    const carte = duelCardById(prisonniere.carteId);
-    prisonniere.malInvocation = !duel.moba;
+    // l'engagement se remet à neuf : elle peut attaquer dès son retour.
+    prisonniere.malInvocation = false;
     prisonniere.rapiditeAccordee = false;
-    prisonniere.ready = Boolean(duel.moba || carte?.rapidite || armeCarteDe(prisonniere)?.donne?.rapidite);
+    prisonniere.ready = true;
     prisonniere.attaquee = false;
     camp.creatures.push(prisonniere);
     const prefere = duel.moba ? offset + slotMoba : prisonniere.emplacement;
@@ -7121,8 +7115,7 @@ export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
   && entite.ready && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
-// Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
-// qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
+// Toute créature qui n'a pas attaqué peut bloquer dès son arrivée.
 // Le gel, lui, ferme aussi la défense.
 const peutBloquer = (entite) => entite && !estSite(entite)
   && !entite.attaquee && !estGelee(entite)

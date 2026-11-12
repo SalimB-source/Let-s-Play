@@ -28,9 +28,9 @@ test('le catalogue présente les cinq Tours et le Pourfendeur avec Défenseur et
     const { pastilles, texte } = effetsDetailles(carte);
     const pastille = pastilles.find(p => p.cle === 'defenseur');
     assert.equal(pastille?.label, 'Défenseur');
-    assert.match(pastille.description, /Attaque ciblée/);
+    assert.match(pastille.description, /attaque adverse.*priorité/i);
     assert.match(pastille.description, /ne force pas à attaquer/i);
-    if (carte.mur) { assert.match(texte, /bloquer si possible/i); assert.doesNotMatch(carte.text, /Priorité d’attaque rapide/); }
+    if (carte.mur) { assert.match(texte, /ne peut ni attaquer ni être équipée/i); assert.doesNotMatch(carte.text, /Priorité d’attaque rapide/); }
   }
   const chevalier = cardById('pourfendeur-des-djinns');
   assert.deepEqual([chevalier.element, chevalier.cost, chevalier.atk, chevalier.def, chevalier.contreAttaque], ['sable', 4, 3, 4, true]);
@@ -121,7 +121,7 @@ test('la fiche et la carte sur table montrent la nouvelle icône Défenseur', as
       const rendu = (Composant) => new JSDOM(renderToStaticMarkup(React.createElement(Composant, { carte }))).window.document;
       const pastille = rendu(PastillesCarte).querySelector('[data-pastille="defenseur"]');
       assert.match(pastille?.textContent ?? '', /Défenseur/);
-      assert.match(pastille?.getAttribute('aria-label') ?? '', /Attaque ciblée/);
+      assert.match(pastille?.getAttribute('aria-label') ?? '', /attaque adverse.*priorité/i);
       assert.ok(rendu(IconesCarte).querySelector('[data-effet="defenseur"] use[href="#i-defenseur"]'));
     }
   } finally { await vite.close(); }

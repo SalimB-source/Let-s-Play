@@ -29,7 +29,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['sabre-maudit', 'samourai-du-torii'],
     title: 'Une arme reste attachée à son porteur',
-    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. Comme toutes les créatures, son porteur peut attaquer dès son arrivée. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
   },
   {
     id: 'destruction-arme',
@@ -141,7 +141,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['fennec-des-decombres'],
     title: 'Rapidité et Esquive changent les échanges',
-    text: 'Rapidité permet d’attaquer dès le tour où la créature arrive. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
+    text: 'Toutes les créatures peuvent attaquer dès le tour où elles arrivent. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
   },
   {
     id: 'contre-attaque',
@@ -267,6 +267,6 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['sentinelle-des-sables', 'eclipse-silencieuse', 'embuscade'],
     title: 'Embuscade : jouer pendant le tour adverse',
-    text: 'Embuscade autorise la créature à entrer en jeu pendant le tour adverse — mais seulement si sa condition imprimée est remplie (« seulement si l’adversaire attaque », « seulement si une créature adverse de force 2 ou plus attaque »…) et seulement dans une fenêtre de réponse : une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, ou la fin du tour adverse. Hors fenêtre, la carte reste éteinte dans la main. Pendant VOTRE tour, la condition ne vous est jamais opposée : une Embuscade est alors une créature ordinaire, que la Sentinelle des sables joue pendant son propre tour même sans attaque adverse. La pastille se lit sur la carte posée comme sur la fiche, où un cadre violet reprend la condition en clair. Deux règles suivent la pose : le mana ne se recharge qu’au début de votre tour, donc une Embuscade se paie avec la réserve gardée la veille ; et la créature arrivée chez l’adversaire peut bloquer immédiatement, mais n’attaquera qu’à votre prochain tour — sauf Rapidité. Attention à l’homonyme : la Sorcellerie Neige nommée « Embuscade » est un sort de zone (−2/−2 et blocage forcé), sans aucun lien avec le mot-clé.',
+    text: 'Embuscade autorise la créature à entrer en jeu pendant le tour adverse — mais seulement si sa condition imprimée est remplie (« seulement si l’adversaire attaque », « seulement si une créature adverse de force 2 ou plus attaque »…) et seulement dans une fenêtre de réponse : une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, ou la fin du tour adverse. Hors fenêtre, la carte reste éteinte dans la main. Pendant VOTRE tour, la condition ne vous est jamais opposée : une Embuscade est alors une créature ordinaire, que la Sentinelle des sables joue pendant son propre tour même sans attaque adverse. La pastille se lit sur la carte posée comme sur la fiche, où un cadre violet reprend la condition en clair. Deux règles suivent la pose : le mana ne se recharge qu’au début de votre tour, donc une Embuscade se paie avec la réserve gardée la veille ; et la créature arrivée chez l’adversaire peut bloquer immédiatement. Attention à l’homonyme : la Sorcellerie Neige nommée « Embuscade » est un sort de zone (−2/−2 et blocage forcé), sans aucun lien avec le mot-clé.',
   },
 ]);

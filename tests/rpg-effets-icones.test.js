@@ -19,6 +19,7 @@ import {
   pastillesPourCarte,
   iconePourLigne,
   effetsDetailles,
+  texteCombatIndividuel,
   effetsEpuisesPourEntite,
   effetsFurieInactifs,
   definitionPastille,
@@ -286,8 +287,8 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Rapidité', 'Attaque ciblée']);
   assert.equal(feriel.pastilles[0].description, 'Peut attaquer le tour où elle arrive.',
     '« Rapidité. » ne s’explique pas sur la fiche : le glossaire prend le relais');
-  assert.match(feriel.pastilles[1].description, /^Sélectionnée pour attaquer, Fériel peut frapper.*Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier\.$/u,
-    'la bulle reprend la phrase imprimée, précision comprise');
+  assert.match(feriel.pastilles[1].description, /créature adverse ou directement.*15 %/u,
+    'la bulle décrit la nouvelle attaque ciblée');
   assert.equal(feriel.texte, '', 'tout le texte de Fériel est passé dans ses pastilles');
 
   const faussoyeur = effetsDetailles(cardById('faussoyeur-des-dunes'));
@@ -307,14 +308,14 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
     'Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +2/+0.',
     'la fiche dit seulement « Furie 2. » : la pastille explique l’état, en une phrase');
   assert.equal(jarl.pastilles.find((pastille) => pastille.cle === 'overkill').description,
-    'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.');
+    'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.');
   assert.equal(jarl.texte, '', 'les mots-clés sobres ne laissent aucun pavé de règle sur la face');
 
   const berserk = effetsDetailles(cardById('berserk-des-trois-hivers'));
   assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['provocation', 'overkill', 'furie']);
   assert.equal(berserk.pastilles.find((pastille) => pastille.cle === 'provocation').description,
-    'Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
-    'la pastille Provocation reprend l’explication imprimée');
+    'Les attaques adverses doivent la viser en priorité si elle est accessible, avant les Défenseurs. Elle gagne +0/+1 jusqu’à la fin du tour pour chaque attaque qui la cible.',
+    'la pastille Provocation explique la priorité et son bonus');
   assert.equal(berserk.texte, '', 'Furie et Provocation vivent entièrement dans leurs pastilles');
 
   const corbeau = effetsDetailles(cardById('valkyrie-au-corbeau'));
@@ -325,7 +326,7 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
 
   const mur = effetsDetailles(cardById('mur-de-boucliers'));
   assert.equal(mur.pastilles.find((pastille) => pastille.cle === 'overkill').description,
-    'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.');
+    'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.');
   assert.equal(mur.texte, cardById('mur-de-boucliers').text,
     'la portée collective et la durée restent écrites sur le sort');
 
@@ -411,7 +412,7 @@ test('une pastille dit tout ce que la fiche imprime de son mot-clé', () => {
       ...pastilles.map(libelle),
       ...pastilles.map((pastille) => pastille.description),
     ].filter(Boolean).join(' '));
-    for (const mot of mots(carte.text)) {
+    for (const mot of mots(texteCombatIndividuel(carte))) {
       assert.ok(affiches.has(mot), `${carte.id} : « ${mot} » s’affiche nulle part dans son aperçu`);
     }
   }
