@@ -3037,8 +3037,14 @@ export function TableCard({
         aria-hidden="true"
       />
       {cartesArmes.length > 0 && (
-        <span className="rpg-card__arme-vignette" data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
+        <span className={`rpg-card__arme-vignette${durabiliteArme > 0 || entite.arme?.compteurs > 0 ? ' has-compteurs' : ''}`} data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
           <img src={cardArt(cartesArmes[0])} alt="" />
+          {(durabiliteArme > 0 || entite.arme?.compteurs > 0) && (
+            <span className="rpg-card__arme-compteurs">
+              {durabiliteArme > 0 && <CompteurCarte type="durabilite" valeur={durabiliteArme} titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`} />}
+              {entite.arme?.compteurs > 0 && <CompteurCarte type="sable" valeur={entite.arme.compteurs} titre="Compteurs de sable de l’arme" />}
+            </span>
+          )}
           {cartesArmes.length > 1 && <span className="rpg-card__arme-nombre">+{cartesArmes.length - 1}</span>}
         </span>
       )}
@@ -3086,23 +3092,11 @@ export function TableCard({
         <span className="rpg-card__frost-glow" />
       </span>}
 
-      {/* Les compteurs de durabilité et de cale se lisent sous les couleurs.
-          Les Heures et le sable restent sous le coût pour les hybrides. */}
-      {(entite.heures?.restants > 0 || (armeCarte && (entite.arme?.compteurs > 0 || (!hybride && durabiliteArme > 0))) || (entite.enCale && !hybride)) && (
+      {/* Seuls les compteurs de la créature restent sous ses couleurs : ceux
+          de l'arme sont désormais incrustés dans sa vignette. */}
+      {(entite.heures?.restants > 0 || (entite.enCale && !hybride)) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
-          {entite.heures?.restants > 0 && (
-            <CompteurCarte type="heures" valeur={entite.heures.restants} />
-          )}
-          {!hybride && armeCarte && durabiliteArme > 0 && (
-            <CompteurCarte
-              type="durabilite"
-              valeur={durabiliteArme}
-              titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`}
-            />
-          )}
-          {armeCarte && entite.arme?.compteurs > 0 && (
-            <CompteurCarte type="sable" valeur={entite.arme.compteurs} titre="Compteurs de sable de l’arme" />
-          )}
+          {entite.heures?.restants > 0 && <CompteurCarte type="heures" valeur={entite.heures.restants} />}
           {entite.enCale && !hybride && (
             <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
               <span>⛓</span>
@@ -3110,22 +3104,11 @@ export function TableCard({
           )}
         </span>
       )}
-      {/* Sur une hybride, un seul rang sous les deux couleurs accueille la
-          durabilité et la cale, côte à côte lorsqu'elles coexistent. */}
-      {hybride && (entite.enCale || (armeCarte && durabiliteArme > 0)) && (
+      {hybride && entite.enCale && (
         <span className="rpg-card__compteurs rpg-card__compteurs--cale" aria-hidden="true">
-          {armeCarte && durabiliteArme > 0 && (
-            <CompteurCarte
-              type="durabilite"
-              valeur={durabiliteArme}
-              titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`}
-            />
-          )}
-          {entite.enCale && (
-            <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
-              <span>⛓</span>
-            </span>
-          )}
+          <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
+            <span>⛓</span>
+          </span>
         </span>
       )}
       <header className="rpg-card__title">
@@ -3140,7 +3123,7 @@ export function TableCard({
         <IconesCarte
           carte={carte}
           entite={entite}
-          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0))
+          className={`rpg-card-icones--colonne${hybride && entite.heures?.restants > 0
             ? ' rpg-card-icones--sous-compteurs'
             : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />

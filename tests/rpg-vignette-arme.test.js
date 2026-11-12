@@ -27,8 +27,28 @@ test('la vignette suit les armes réelles des deux camps et leur disparition', a
       assert.equal(cibleApercuClicDroit(badge.querySelector('img')).arme, true);
       assert.equal(cibleApercuClicDroit(doc.querySelector('.rpg-card__img')).carteId, 'chien-du-guet');
       assert.match(doc.querySelector('button.rpg-card').getAttribute('aria-label'), /armes équipées : Armure de cendres/);
-      assert.ok(doc.querySelector('[data-compteur="durabilite"]'));
+      assert.equal(badge.querySelector('[data-compteur="durabilite"]')?.textContent, '2');
+      assert.equal(doc.querySelector('.rpg-card__compteurs [data-compteur="durabilite"]'), null);
     }
+    const jitte = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 }, heures: { restants: 2 } }));
+    const vignette = jitte.querySelector('.rpg-card__arme-vignette');
+    assert.deepEqual([...vignette.querySelectorAll('[data-compteur]')].map((node) => [node.dataset.compteur, node.textContent]), [['durabilite', '2'], ['sable', '3']]);
+    assert.deepEqual([...jitte.querySelectorAll('.rpg-card__compteurs [data-compteur]')].map((node) => node.dataset.compteur), ['heures']);
+    const moba = new JSDOM(renderToStaticMarkup(React.createElement(TableCard, {
+      entite: entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 } }),
+      moba: { className: 'moba__slot', disabled: true, ariaLabel: 'Créature équipée' },
+    }))).window.document;
+    assert.equal(moba.querySelector('.rpg-card__arme-vignette [data-compteur="sable"]')?.textContent, '3');
+    const hybride = rendre(entite({ carteId: 'chercheuse-des-armes-ensevelies', arme: { carteId: 'jitte-d-amayas', durabilite: 1, compteurs: 1 } }));
+    assert.equal(hybride.querySelector('.rpg-card__arme-vignette [data-compteur="durabilite"]')?.textContent, '1');
+    assert.equal(hybride.querySelector('.rpg-card__arme-vignette [data-compteur="sable"]')?.textContent, '1');
+    assert.equal(hybride.querySelector('.rpg-card__compteurs--cale [data-compteur="durabilite"]'), null);
+    const avecCale = rendre(entite({ carteId: 'rais-de-la-galiote', arme: { carteId: 'armure-de-cendres', durabilite: 1 }, enCale: { name: 'Prisonnière', carteId: 'chien-du-guet' } }));
+    assert.equal(avecCale.querySelector('.rpg-card__arme-vignette [data-compteur="durabilite"]')?.textContent, '1');
+    assert.equal(avecCale.querySelector('.rpg-card__compteurs--cale [data-compteur="cale"]')?.textContent, '⛓');
+    const epuisee = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 0, compteurs: 0 } }));
+    assert.equal(epuisee.querySelector('.rpg-card__arme-compteurs'), null);
+    assert.equal(epuisee.querySelector('.rpg-card__compteurs [data-compteur="sable"]'), null);
     const multi = rendre(entite({ arme: { carteId: 'armure-de-cendres' }, armes: ['sabre-maudit'] }));
     assert.equal(multi.querySelector('.rpg-card__arme-nombre').textContent, '+1');
     assert.equal(cibleApercuClicDroit(multi.querySelector('.rpg-card__arme-nombre')).carteId, 'armure-de-cendres');
@@ -47,6 +67,9 @@ test('le losange est centré à cheval, interactif, sans boîtier métallique', 
   assert.match(css, /\.rpg-card__arme-vignette\s*\{[^}]*left:\s*50%;[^}]*top:\s*0;[^}]*transform:\s*translate\(-50%,\s*-50%\)/s);
   assert.match(css, /\.rpg-card__arme-vignette\s*\{[^}]*pointer-events:\s*auto/s);
   assert.match(css, /\.rpg-card__arme-vignette > img\s*\{[^}]*clip-path:\s*polygon\(50% 0, 100% 50%, 50% 100%, 0 50%\)/s);
+  assert.match(css, /\.rpg-card__arme-vignette\.has-compteurs\s*\{\s*width: max\(34%, 26px\)/);
+  assert.match(css, /\.rpg-card__arme-compteurs\s*\{[^}]*position: absolute;[^}]*top: 54%;[^}]*left: 50%;[^}]*transform: translate\(-50%, -50%\)/s);
+  assert.match(css, /\.rpg-card__arme-compteurs \.rpg-card__compteur > span\s*\{[^}]*transform: none;/s);
   assert.match(css, /\.rpg-card\.has-arme:is\(\.has-resonance, \.has-aura, \.has-malediction\)\s*\{[^}]*overflow-clip-margin:\s*58px/s);
   assert.match(css, /\.rpg-card\.has-arme\s*\{[^}]*overflow-clip-margin:/s);
   assert.doesNotMatch(css, /\.rpg-card\.has-arme::before\s*\{/);
