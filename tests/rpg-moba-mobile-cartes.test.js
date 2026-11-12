@@ -37,7 +37,11 @@ test('mise en page ciblée : statistiques en colonne à gauche, sans changer la 
   const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
   const mobile = css.slice(css.lastIndexOf('/* Seules les cartes posées du MOBA mobile'));
   assert.match(mobile, /@media \(max-width: 700px\), \(hover: none\) and \(pointer: coarse\)/);
-  assert.match(mobile, /\.moba__real-slot \.rpg-card--img \.rpg-card__foot\s*\{[^}]*left: 5%;[^}]*right: auto;[^}]*flex-direction: column;/s);
+  const duelMobile = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
+  assert.match(duelMobile, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--img \.rpg-hand__stats\s*\{\s*display: grid !important;\s*grid-template-columns: repeat\(2,/);
+  // Le footer est déjà une grille !important : flex-direction n'a aucun effet.
+  // Il faut remplacer explicitement les deux colonnes par une seule.
+  assert.match(mobile, /\.moba__real-slot \.rpg-card--img \.rpg-card__foot\s*\{[^}]*left: 5%;[^}]*right: auto;[^}]*grid-template-columns: max-content;[^}]*grid-template-rows: auto auto;/s);
   assert.match(mobile, /\.rpg-card-icones--colonne:has\(\.rpg-card-icone:nth-child\(4\)\)/);
   assert.match(mobile, /\.moba__slots \.rpg-card \.rpg-card-icones--colonne\.is-moba-compact-overflow/);
   assert.doesNotMatch(mobile, /\.rpg-hand__card/);

@@ -1571,9 +1571,13 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
     right: auto;
     bottom: 4%;
     width: max-content;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-end;
+    /* rpg-mobile.css impose display: grid !important en deux colonnes :
+       modifier flex-direction ne pouvait donc pas empiler ces deux valeurs. */
+    grid-template-columns: max-content;
+    grid-template-rows: auto auto;
+    grid-auto-flow: row;
+    justify-items: start;
+    align-content: end;
     gap: 1px;
   }
   .moba :is(.moba__plain-slot, .moba__ghost-slot) .moba__slot-label small {
