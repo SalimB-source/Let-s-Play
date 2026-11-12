@@ -2297,9 +2297,9 @@ test('Harakiri damages its own opposing lane when no enemy creature exists', () 
   }
 });
 
-test('Harakiri chooses an enemy creature across lanes and respects its shield', () => {
+test('Harakiri chooses an enemy creature in its lane and respects its shield', () => {
   const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 20;
-  const target = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'right', 0).entite;
+  const target = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
   target.bouclier = 1; const hp = target.pv;
   rpgFinDeTour(duel); duel.joueur.mana.braise = 20; duel.joueur.mana.tenebres = 20;
   duel.joueur.main = ['hatamoto-des-cendres', 'effacement-des-faibles'];

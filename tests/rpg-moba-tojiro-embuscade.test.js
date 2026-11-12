@@ -87,10 +87,10 @@ for(const side of ['joueur','sorcier']){
   const {d,actif,tojiro,autre}=tojiroEnJeu(side);rpgReglerHasard(d,()=>0);const hp=d.moba.lanes.find(l=>l.id==='left').hp[actif];
   assert.ok(rpgMobaLancerMagie(d,actif,'trait-de-braise',tojiro.id).ok);assert.equal(tojiro.pv,5);assert.equal(d.moba.lanes.find(l=>l.id==='left').hp[actif],hp-5);assert.equal(autre.pv,4);
  });
- test(`Harakiri choisit une créature adverse même dans une autre voie (${side})`,()=>{
+ test(`Harakiri ignore une créature adverse dans une autre voie (${side})`,()=>{
   const {d,actif,tojiro,autre}=tojiroEnJeu(side);tojiro.pv=1;tojiro.def=1;rpgReglerHasard(d,()=>.5);
   const hp=d.moba.lanes.find(l=>l.id==='left').hp[actif];assert.ok(rpgMobaLancerMagie(d,actif,'trait-de-braise',tojiro.id).ok);
-  assert.ok(!d[side].creatures.includes(tojiro));assert.equal(autre.pv,3);assert.equal(d.moba.lanes.find(l=>l.id==='left').hp[actif],hp-5);
+  assert.ok(!d[side].creatures.includes(tojiro));assert.equal(autre.pv,4);assert.equal(d.moba.lanes.find(l=>l.id==='left').hp[actif],hp-6);
  });
  test(`Harakiri ignore un Site et frappe la voie adverse à défaut de créature (${side})`,()=>{
   const {d,actif,tojiro,autre}=tojiroEnJeu(side);autre.carteId='source-de-bimini';tojiro.pv=1;tojiro.def=1;rpgReglerHasard(d,()=>.5);
