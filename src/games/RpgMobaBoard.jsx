@@ -30,7 +30,7 @@ import {
 import RpgMobaDeckEditor from './RpgMobaDeckEditor.jsx';
 import { SACRIFICE_ANIMATION, victimesSacrificeSurVoies } from './rpgSacrificeAnimation.js';
 import { mobaVieMaxPourCamp, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
-import { rpgMobaDeckMaison, rpgMobaDeckTourAleatoire } from './rpgMobaDecks.js';
+import { rpgMobaDeckMaison, rpgMobaDeckLibreAleatoire } from './rpgMobaDecks.js';
 import { MOBA_PLATEAUX, MOBA_PLATEAU_PAR_DEFAUT } from './rpgMobaPlateaux.js';
 import { MOBA_HISTOIRE, prochainChapitreMoba } from './rpgMobaHistoire.js';
 import { RpgConqueteMusic } from './rpgConqueteMusic.js';
@@ -1652,7 +1652,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <div className="moba__setup-actions">
           <button type="button" onClick={onQuitter}>← Retour au menu</button>
           <button type="button" onClick={() => setEdition('joueur')}>{deckPour('joueur') ? 'Personnaliser le deck' : 'Créer un deck'}</button>
-          <button type="button" className="moba__primary" disabled={!validationDeckJoueur.ok} onClick={() => { if (!validationDeckJoueur.ok) return; const adversaire = rpgMobaDeckTourAleatoire() ?? MOBA_DECKS[0]; setModeHistoire(false); setDeckSorcier(adversaire); setDuel(nouveau(deckPour('joueur'), adversaire)); setEtape('mulligan'); }}>Commencer le duel libre <span aria-hidden="true">→</span></button>
+          <button type="button" className="moba__primary" disabled={!validationDeckJoueur.ok} onClick={() => { if (!validationDeckJoueur.ok) return; const adversaire = rpgMobaDeckLibreAleatoire() ?? MOBA_DECKS[0]; setModeHistoire(false); setDeckSorcier(adversaire); setDuel(nouveau(deckPour('joueur'), adversaire)); setEtape('mulligan'); }}>Commencer le duel libre <span aria-hidden="true">→</span></button>
         </div>
       </div>
     </div>}
