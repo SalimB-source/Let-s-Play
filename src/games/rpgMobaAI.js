@@ -1,5 +1,3 @@
-import { victimesInvocation } from './rpgInvocation.js';
-import { MOBA_EMBUSCADES_CONDITIONS } from './rpgMobaEmbuscades.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
@@ -8,7 +6,7 @@ import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
 import { rpgCombinaisonsSacrificesIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana } from './rpgDuel.js';
 import {
-  MOBA_EMBUSCADES_COMBAT, MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
+  MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
   rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
@@ -40,117 +38,24 @@ const copie = (duel) => {
 };
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 
-/** Test each supported Embuscade and its arrival on isolated copies. */
+/** Own-turn special summons are considered independently of the normal summon
+ * quota. Probe placements on copies; never play a creature as a reaction. */
 export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
-  const combat = duel.combatDeclare;
+  if (duel?.tour !== side || !['principale', 'principale2'].includes(duel.phase)) return null;
   let meilleur = null;
-  for (const id of [...new Set([...MOBA_EMBUSCADES_COMBAT, ...Object.keys(MOBA_EMBUSCADES_CONDITIONS), 'sorcier-du-ressac-noir'])]) {
+  for (const id of new Set(duel[side].main)) {
     if (!rpgMobaPeutEmbuscade(duel, side, id)) continue;
-    if (id === 'tojiro-le-pourfendeur') {
-      // Une invocation spéciale ne sacrifie jamais. Les sondes résolvent
-      // aussi l'annonce suspendue et les éventuels effets de mort.
-      const baseline = copie(duel);
-      if (baseline.mobaCreatureEnAttente) resoudreMenaceCreature(baseline, side);
-      else if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
-      else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
-      resoudreDestructionsSurCopie(baseline);
-      const sacrifices = rpgMobaSacrificesInvocation(duel, side, cardById(id)) ? victimesInvocation(duel[side]) : [null];
-      for (const victime of sacrifices) for (const lane of duel.moba.lanes) for (let slot = 0; slot < lane.slots[side].length; slot++) {
-        if (lane.slots[side][slot] !== null && lane.slots[side][slot] !== victime?.id) continue;
+    for (const lane of duel.moba.lanes) {
+      if (!mobaVoieJouable(duel.moba, side, lane.id)) continue;
+      for (let slot = 0; slot < lane.slots[side].length; slot++) {
+        if (lane.slots[side][slot] !== null) continue;
         const probe = copie(duel);
-        if (!rpgMobaJouerCreature(probe, side, id, lane.id, slot, { ouvrirReponse: true, sacrificeIds: victime ? [victime.id] : [] }).ok) continue;
-        const arrivee = rpgMobaPasserCreature(probe, autre(side));
-        if (arrivee.ok && probe.moba.winner === side) return { id, lane: lane.id, slot, sacrificeIds: victime ? [victime.id] : [], score: 10000 };
-        if (!arrivee.entite) continue;
+        const pose = rpgMobaJouerCreature(probe, side, id, lane.id, slot, { sacrificeIds: [] });
+        if (!pose.ok) continue;
         resoudreDestructionsSurCopie(probe);
-        if (probe.mobaCreatureEnAttente) resoudreMenaceCreature(probe, autre(probe.mobaCreatureEnAttente.cote));
-        else if (probe.mobaSortEnAttente) rpgMobaPasserSort(probe, autre(probe.mobaSortEnAttente.cote));
-        else if (probe.effetCreatureEnAttente) rpgMobaPasserEffetCreature(probe, autre(probe.effetCreatureEnAttente.cote));
-        resoudreDestructionsSurCopie(probe);
-        const menace = (probe.combatDeclare?.attaquants ?? []).map((attackerId) => probe[autre(side)].creatures.find((e) => e.id === attackerId))
-          .filter((attacker) => attacker && !probe.combatDeclare.ciblesAttaque?.[attacker.id]
-            && attacker.mobaLane === arrivee.entite.mobaLane && rpgPeutBloquerAttaquant(arrivee.entite, attacker) && !rpgEstProtegee(attacker, cardColors(cardById(id))));
-        const blocage = combat?.cibleIndividuelle ? 0 : menace.reduce((best, attacker) => Math.max(best, attacker.atk ?? 0), 0);
-        const blocageAvant = (baseline.combatDeclare?.attaquants ?? []).map((attackerId) => baseline[autre(side)].creatures.find((e) => e.id === attackerId))
-          .filter((attacker) => attacker && !baseline.combatDeclare.ciblesAttaque?.[attacker.id]
-            && baseline[side].creatures.some((e) => e.mobaLane === attacker.mobaLane && rpgPeutBloquerAttaquant(e, attacker) && !rpgEstProtegee(attacker, cardColors(cardById(e.carteId)))))
-          .reduce((best, attacker) => Math.max(best, attacker.atk ?? 0), 0);
-        const cout = victime ? 4 + (rpgPeutAttaquer(victime) ? 4 : 0) : 0;
-        const score = valeurPosition(probe, side) - valeurPosition(baseline, side) + Math.max(0, blocage - blocageAvant) * 2 - cout;
-        // Une embuscade payante doit changer le cours de la menace, pas
-        // simplement remplacer une créature par une carte plus chère.
-        if (victime && score < 4 && probe.moba.winner !== side) continue;
-        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, sacrificeIds: victime ? [victime.id] : [], score };
+        const score = valeurPosition(probe, side) - valeurPosition(duel, side);
+        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, sacrificeIds: [], score };
       }
-      continue;
-    }
-    for (const lane of duel.moba.lanes) for (let slot = 0; slot < lane.slots[side].length; slot++) {
-      if (lane.slots[side][slot] !== null) continue;
-      const probe = copie(duel);
-      if (!rpgMobaJouerCreature(probe, side, id, lane.id, slot, { ouvrirReponse: true }).ok) continue;
-      const arrived = rpgMobaPasserCreature(probe, autre(side));
-      if (!arrived.entite) continue;
-      if (id === 'sanguinaire-des-dunes') {
-        const baseline = copie(duel);
-        if (baseline.mobaCreatureEnAttente) resoudreMenaceCreature(baseline, side);
-        else if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
-        else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
-        if (probe.mobaCreatureEnAttente) resoudreMenaceCreature(probe, side);
-        else if (probe.mobaSortEnAttente) rpgMobaPasserSort(probe, side);
-        else if (probe.effetCreatureEnAttente) rpgMobaPasserEffetCreature(probe, side);
-        resoudreDestructionsSurCopie(baseline); resoudreDestructionsSurCopie(probe);
-        const gain = valeurPosition(probe, side) - valeurPosition(baseline, side);
-        if (gain > 0 && (!meilleur || gain > meilleur.score)) meilleur = { id, lane: lane.id, slot, score: gain };
-        continue;
-      }
-      if (id === 'gardienne-du-croissant') {
-        const cible = rpgMobaChoisirArriveeIA(probe, side);
-        if (!cible || !rpgMobaResoudreArrivee(probe, side, cible).ok) continue;
-        const baseline = copie(duel);
-        if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
-        else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
-        if (probe.mobaSortEnAttente) rpgMobaPasserSort(probe, side);
-        else if (probe.effetCreatureEnAttente) rpgMobaPasserEffetCreature(probe, side);
-        resoudreDestructionsSurCopie(probe);
-        const gain = valeurPosition(probe, side) - valeurPosition(baseline, side);
-        if (gain > 0 && (!meilleur || gain > meilleur.score)) meilleur = { id, lane: lane.id, slot, score: gain };
-        continue;
-      }
-      if (id === 'porte-etendard-de-leclipse') {
-        const gain = valeurPosition(probe, side) - valeurPosition(duel, side);
-        if (gain > 0 && (!meilleur || gain > meilleur.score)) meilleur = { id, lane: lane.id, slot, score: gain };
-        continue;
-      }
-      if (id === 'sorcier-du-ressac-noir') {
-        const score = valeurPosition(probe, side) - valeurPosition(duel, side) + (cardById(duel.mobaCreatureEnAttente.carteId)?.cost ?? 0) * 2;
-        if (!meilleur || score > meilleur.score) meilleur = { id, lane: lane.id, slot, score };
-        continue;
-      }
-      const cible = probe.arriveeEnAttente ? rpgMobaChoisirArriveeIA(probe, side) : null;
-      if (cible && !rpgMobaResoudreArrivee(probe, side, cible).ok) continue;
-      if (probe.effetCreatureEnAttente && !rpgMobaPasserEffetCreature(probe, autre(side)).ok) continue;
-      resoudreDestructionsSurCopie(probe);
-      if (Object.hasOwn(MOBA_EMBUSCADES_CONDITIONS, id) && !combat) {
-        const baseline = copie(duel);
-        if (baseline.mobaCreatureEnAttente) resoudreMenaceCreature(baseline, side);
-        else if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
-        else if (baseline.effetCreatureEnAttente) rpgMobaPasserEffetCreature(baseline, side);
-        if (probe.mobaCreatureEnAttente) resoudreMenaceCreature(probe, side);
-        else if (probe.mobaSortEnAttente) rpgMobaPasserSort(probe, side);
-        else if (probe.effetCreatureEnAttente) rpgMobaPasserEffetCreature(probe, side);
-        resoudreDestructionsSurCopie(baseline);
-        resoudreDestructionsSurCopie(probe);
-        const score = valeurPosition(probe, side) - valeurPosition(baseline, side);
-        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id, lane: lane.id, slot, score };
-        continue;
-      }
-      const threatened = (probe.combatDeclare?.attaquants ?? []).map((attackerId) => probe[combat.cote].creatures.find((e) => e.id === attackerId))
-        .filter((attacker) => attacker && !combat.ciblesAttaque?.[attacker.id] && rpgPeutBloquerAttaquant(arrived.entite, attacker)
-          && !rpgEstProtegee(attacker, cardColors(cardById(id))));
-      const block = combat?.cibleIndividuelle ? 0 : threatened.reduce((best, e) => Math.max(best, e.atk ?? 0), 0);
-      if (!block && !cible && !combat?.cibleIndividuelle) continue;
-      const score = valeurPosition(probe, side) - valeurPosition(duel, side) + block * 2;
-      if (!meilleur || score > meilleur.score) meilleur = { id, lane: lane.id, slot, score };
     }
   }
   return meilleur;
