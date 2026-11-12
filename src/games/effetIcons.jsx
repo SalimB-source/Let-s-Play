@@ -29,6 +29,7 @@ import {
   iconePourLigne,
 } from './effetIcons.js';
 import { pierreEffet, plaqueEffet, plaqueNue, PLAQUE_COTE, ELEMENT_TEINTES } from './effetPlaques.js';
+import { tailleBadgesMoba } from './rpgMobaBadgeFit.js';
 
 export { ELEMENT_TEINTES };
 
@@ -398,6 +399,37 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
   // moment que le mot qu'elle ouvre.
   const epuises = new Set([...effetsEpuisesPourEntite(carte, entite), ...(effetsEpuises ?? [])]);
   const inactifs = new Set([...effetsFurieInactifs(carte, entite), ...(effetsInactifs ?? [])]);
+  const colonneRef = useRef(null);
+  const nombreBadges = pastilles.reduce((total, pastille) => total
+    + (pastille.cle === 'protection' && pastille.contres?.length > 1 ? pastille.contres.length : 1), 0);
+  useLayoutEffect(() => {
+    const colonne = colonneRef.current;
+    if (!colonne) return undefined;
+    const nettoyer = () => {
+      colonne.classList.remove('is-moba-compact-overflow');
+      colonne.style.removeProperty('--moba-effect-size');
+      colonne.style.removeProperty('--moba-effect-columns');
+      colonne.style.removeProperty('--moba-effect-rows');
+    };
+    nettoyer();
+    const cartePosee = colonne.closest('.moba__real-slot .rpg-card');
+    if (!cartePosee || nombreBadges <= 3) return undefined;
+    const recalculer = () => {
+      nettoyer();
+      if (!window.matchMedia?.('(max-width: 700px), (hover: none) and (pointer: coarse)').matches) return;
+      const taille = tailleBadgesMoba(colonne, cartePosee);
+      if (taille === null) return;
+      colonne.style.setProperty('--moba-effect-size', `${taille.taille}px`);
+      colonne.style.setProperty('--moba-effect-columns', taille.colonnes);
+      colonne.style.setProperty('--moba-effect-rows', taille.lignes);
+      colonne.classList.add('is-moba-compact-overflow');
+    };
+    recalculer();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalculer) : null;
+    observer?.observe(cartePosee);
+    window.addEventListener('resize', recalculer);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', recalculer); };
+  }, [nombreBadges, className, entite?.id]);
   const texteBadge = (pastille) => (
     `${pastilleTexte(pastille)}${epuises.has(pastille.cle)
       ? (pastille.cle === 'tenacite' ? ' (déjà utilisée)' : ' (tombé)')
@@ -420,6 +452,7 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
   );
   return (
     <span
+      ref={colonneRef}
       className={`rpg-card-icones${className ? ` ${className}` : ''}`}
       aria-label={`Effets : ${pastilles.map(texteBadge).join(', ')}`}
     >

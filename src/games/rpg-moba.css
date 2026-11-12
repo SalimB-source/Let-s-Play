@@ -312,9 +312,8 @@
   /* One continuous map keeps the central river aligned with the middle lane
      even on narrow screens; the side meadows remain visible on both sides. */
   background: #263d31 var(--moba-map) center / 100% 100% no-repeat;
-  /* Créatures et cases du plateau légèrement moins grandes, sans toucher
-     aux cartes de la main ni à la lecture de leurs effets. */
-  --moba-card-size: min(9.6vw, 13.5vh, 126px);
+  /* Agrandir légèrement les cartes posées et leurs cases, sans toucher à la main. */
+  --moba-card-size: min(10.5vw, 14.5vh, 138px);
 }
 .moba > div[inert] { position: absolute; inset: 0; }
 /* Les quinze calques partagent exactement la projection du décor. Leur fond
@@ -401,7 +400,7 @@
 .moba__journal[open] { width: min(320px, 90vw); max-height: none; overflow: visible; }.moba__journal summary { min-height: 0; }
 .moba__journal-pages { display: flex; align-items: center; justify-content: center; gap: 8px; }.moba__journal-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }.moba__journal-pages button:disabled { opacity: .45; }
 @media (max-width: 700px) {
-  .moba { --moba-card-size: min(12.5vw, 14.3vh, 87px); }
+  .moba { --moba-card-size: min(13.5vw, 15.2vh, 96px); }
   .moba__header { top: 4px; right: 4px; padding: 3px 5px; gap: 5px; }.moba__brand > span { font-size: 7px; }.moba__brand h1 { font-size: 13px; }
   .moba__back { min-height: 25px; padding: 3px 5px; font-size: 9px !important; }
   .moba__intro { top: 4px; left: 4px; }.moba__rules summary { padding: 4px; font-size: 9px; }
@@ -420,8 +419,8 @@
 @media (max-width: 700px) and (orientation: portrait) {
   /* En portrait, les cases occupent presque toute la largeur : étaler la
      carte horizontalement pour garder les chemins sous les cases latérales. */
-  .moba { --moba-card-size: min(16.3vw, 10.5vh, 78px); background-size: 145% 100%; }
-  .moba__slots { gap: 14px; }
+  .moba { --moba-card-size: min(17vw, 11.3vh, 86px); background-size: 145% 100%; }
+  .moba__slots { gap: 10px; }
   .moba__map-ruin { background-size: 145% 100%; }
   .moba__header { max-width: 48%; }.moba__header-meta { flex-wrap: nowrap; }.moba__back span { white-space: nowrap; }
   .moba__hidden-hand { top: 5%; }.moba__hidden-hand > div { height: 4vh; }.moba__hidden-hand > div span { width: 24px; }
@@ -1426,7 +1425,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
    positions and the complete 4:5 card faces; short landscape and portrait
    layouts retain their separate, tighter rules in rpg-moba.css. */
 @media (min-width: 1200px) and (min-height: 740px) and (orientation: landscape) {
-  .moba { --moba-card-size: min(12vw, 15.8vh, 186px); }
+  .moba { --moba-card-size: min(12.6vw, 16.5vh, 196px); }
   .moba .moba__hand-item {
     flex-basis: min(9.7vw, 15.2vh, 180px);
     max-width: calc((100% - 5 * clamp(12px, 1.5vw, 22px)) / 6);
@@ -1563,3 +1562,50 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba .moba__hand-cards .is-new-card::after { opacity: 1; scale: 1; }
 }
 .moba__card-flight--recherche .moba__card-flight-face { border-color: #b6eced; box-shadow: 0 3px 15px #000d, 0 0 16px #93dce4bb; }
+
+/* Seules les cartes posées du MOBA mobile changent : la main, les aperçus et
+   les cartes du duel classique conservent leurs repères et leur taille. */
+@media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot {
+    left: 5%;
+    right: auto;
+    bottom: 4%;
+    width: max-content;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 1px;
+  }
+  .moba :is(.moba__plain-slot, .moba__ghost-slot) .moba__slot-label small {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  /* Ne plus masquer le quatrième effet (ni les suivants) : la mesure réelle
+     de la carte décide si une réduction est nécessaire. */
+  .rpg-battle.rpg-battle--moba .moba .moba__slots .rpg-card .rpg-card-icones--colonne:has(.rpg-card-icone:nth-child(4)) .rpg-card-icone:nth-child(n + 3) {
+    display: inline-flex;
+  }
+  .rpg-battle.rpg-battle--moba .moba .moba__slots .rpg-card .rpg-card-icones--colonne.is-moba-compact-overflow {
+    right: 2%;
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(var(--moba-effect-columns), var(--moba-effect-size));
+    grid-template-rows: repeat(var(--moba-effect-rows), var(--moba-effect-size));
+    width: max-content;
+    gap: 0;
+    transform: none;
+  }
+  .rpg-battle.rpg-battle--moba .moba .moba__slots .rpg-card .rpg-card-icones--colonne.is-moba-compact-overflow .rpg-card-icone {
+    flex: 0 0 var(--moba-effect-size);
+    width: var(--moba-effect-size);
+    min-width: 0;
+    height: var(--moba-effect-size);
+    min-height: 0;
+  }
+  .rpg-battle.rpg-battle--moba .moba .moba__slots .rpg-card .rpg-card-icones--colonne.is-moba-compact-overflow .rpg-effet-icone {
+    width: 100%;
+    height: 100%;
+  }
+}
