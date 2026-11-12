@@ -2035,7 +2035,7 @@ test('AI announces a lane heal and the human can conquer that lane before it res
     await click(document.querySelector('[aria-label="Cibler Voie centrale de IA"]'));
     assert.equal(duel.moba.lanes[1].conqueredBy, 'joueur');
     const voieConquise = document.querySelector('[aria-label="Voie centrale"].is-conquered--joueur');
-    assert.ok(voieConquise); assert.match(voieConquise.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Voie fermée/);
+    assert.ok(voieConquise); assert.ok(document.querySelector('[data-moba-ruin="center"]'));
     assert.match(document.querySelector('.moba__sr-only[role=status]:not(.moba__combat-result)').textContent, /Voie centrale conquise par Vous/);
     assert.equal(duel.mobaSortEnAttente?.carteId, 'eau-de-la-source', 'no nested response');
     await click([...document.querySelectorAll('.moba__controls button')].find((button) => button.textContent.includes('Passer et résoudre le sort')));
@@ -2121,7 +2121,7 @@ test('AI responds to the human lane heal before it resolves and hidden cards sta
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.moba.lanes[1].conqueredBy, 'sorcier');
     const voieConquise = document.querySelector('[aria-label="Voie centrale"].is-conquered--sorcier');
-    assert.ok(voieConquise); assert.match(voieConquise.querySelector('.moba__conquest').textContent, /Voie conquise.*L’IA.*Voie fermée/);
+    assert.ok(voieConquise); assert.ok(document.querySelector('[data-moba-ruin="center"]'));
     assert.equal(duel.mobaSortEnAttente?.carteId, 'eau-de-la-source');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.mobaSortEnAttente, null);
