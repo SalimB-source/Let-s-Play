@@ -39,3 +39,28 @@ export function rpgMobaImpactIndividuel(combat, resultat, positions, noms = {}) 
     destination: cibleId ? positions?.entities?.[cibleId] : positions?.lanes?.[laneKey],
     impacts, annonce };
 }
+
+/** Des impacts rapprochés sur une même cible gardent chacun leur chiffre
+ * lisible. Le décalage est fixé à la création : un ancien chiffre qui disparaît
+ * ne déplace pas brusquement les suivants. Les éclats restent sur la cible. */
+export function rpgMobaDecalerChiffres(impact, precedents) {
+  const occupes = new Map();
+  for (const precedent of Object.values(precedents ?? {})) {
+    for (const marque of precedent.impacts ?? []) {
+      if (!occupes.has(marque.id)) occupes.set(marque.id, new Set());
+      occupes.get(marque.id).add(marque.decalageX ?? 0);
+    }
+  }
+  const impacts = impact.impacts.map((marque) => {
+    if (!occupes.has(marque.id)) occupes.set(marque.id, new Set());
+    const positions = occupes.get(marque.id);
+    let n = 0, decalageX = 0;
+    while (positions.has(decalageX)) {
+      n += 1;
+      decalageX = Math.ceil(n / 2) * 48 * (n % 2 ? 1 : -1);
+    }
+    positions.add(decalageX);
+    return { ...marque, decalageX };
+  });
+  return { ...impact, impacts };
+}

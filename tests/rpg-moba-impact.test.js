@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { rpgMobaImpactIndividuel, rpgMobaPositionsImpact } from '../src/games/rpgMobaImpact.js';
+import { readFileSync } from 'node:fs';
+import { rpgMobaImpactIndividuel, rpgMobaPositionsImpact, rpgMobaDecalerChiffres } from '../src/games/rpgMobaImpact.js';
 
 const combat = { cote: 'joueur', attaquants: ['a'], cibleIndividuelle: { cibleId: 'b', voie: 'left' } };
 const positions = { width: 500, height: 400, entities: { a: { x: 100, y: 200 }, b: { x: 100, y: 100 } }, lanes: { '@moba:left:sorcier': { x: 100, y: 30 } } };
@@ -46,4 +47,23 @@ test('capture les positions dans le repère local même si le plateau est agrand
   assert.deepEqual(capture.entities.a, { x: 75, y: 125 });
   assert.deepEqual(capture.lanes['@moba:left:sorcier'], { x: 75, y: 25 });
   dom.window.close();
+});
+
+
+test('les chiffres rapprochés d’une même cible restent séparés et conservent leur place', () => {
+  const nouvelImpact = { impacts: [{ id: 'cible', montant: 2 }, { id: 'autre', montant: 1 }, { id: 'cible', montant: 1 }] };
+  const avant = { premier: { impacts: [{ id: 'cible', decalageX: 0 }] }, second: { impacts: [{ id: 'cible', decalageX: 48 }] } };
+  const copie = JSON.stringify({ nouvelImpact, avant });
+  const resultat = rpgMobaDecalerChiffres(nouvelImpact, avant);
+  assert.deepEqual(resultat.impacts.map(marque => marque.decalageX), [-48, 0, 96]);
+  assert.equal(JSON.stringify({ nouvelImpact, avant }), copie, 'les effets précédents ne sont pas modifiés');
+  assert.deepEqual(rpgMobaDecalerChiffres({ impacts: [{ id: 'cible' }] }, {}).impacts[0].decalageX, 0);
+});
+
+
+test('le mouvement réduit conserve les chiffres mais supprime trajectoire et flash', () => {
+  const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-battle--moba\.is-reduced \.moba__impact-source[^}]*\.moba__impact-trail[^}]*\.moba__impact-burst\s*\{\s*display:\s*none;/s);
+  assert.match(css, /\.rpg-battle--moba\.is-reduced \.moba__impact-number\s*\{\s*opacity:\s*1;/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.moba \.moba__impact-number\s*\{\s*animation:\s*none;\s*opacity:\s*1;/);
 });

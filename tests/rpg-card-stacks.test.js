@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { armesPortees, groupCartesMain, groupEntitesParCarte, trierCartesMainParCout } from '../src/games/rpgCardStacks.js';
+import { armesPortees, groupCartesMain, groupEntitesParCarte, trierCartesMainParCout, trierMainAvecRenvois } from '../src/games/rpgCardStacks.js';
 
 const creature = (id, carteId) => ({ id, carteId, name: carteId, atk: 1, pv: 1 });
 
@@ -66,6 +66,33 @@ test('les nouvelles cartes rejoignent leur palier de coût et une main vide rest
     assert.deepEqual(trierCartesMainParCout(null, empiler), []);
     assert.deepEqual(trierCartesMainParCout(undefined, empiler), []);
   }
+});
+
+test('le renvoi ne masque que les exemplaires ajoutés à la main', () => {
+  const main = Object.freeze(['chien-du-guet', 'desert', 'chien-du-guet', 'chien-du-guet']);
+  const effets = [{ cardId: 'chien-du-guet', camp: 'joueur', variante: 'eau' }];
+  const groupes = trierMainAvecRenvois(main, false, effets).filter(g => g.carteId === 'chien-du-guet');
+  assert.deepEqual(groupes.map(g => [g.indices, g.enRenvoi]), [
+    [[0], false], [[2], false], [[3], true],
+  ]);
+  const pile = trierMainAvecRenvois(main, true, effets).find(g => g.carteId === 'chien-du-guet');
+  assert.deepEqual(pile.indices, [0, 2]);
+  assert.equal(pile.enRenvoi, false);
+  assert.deepEqual(main, ['chien-du-guet', 'desert', 'chien-du-guet', 'chien-du-guet']);
+});
+
+test('les renvois simultanés et leur fin sont comptés indépendamment des exils et du camp adverse', () => {
+  const main = ['chien-du-guet', 'chien-du-guet', 'desert'];
+  const eau = { cardId: 'chien-du-guet', camp: 'joueur', variante: 'eau' };
+  const effets = [eau, eau, { ...eau, variante: 'exil' }, { ...eau, camp: 'sorcier' }];
+  const pile = trierMainAvecRenvois(main, true, effets).find(g => g.carteId === 'chien-du-guet');
+  assert.deepEqual(pile.indices, [0, 1]);
+  assert.equal(pile.enRenvoi, true);
+  const apres = trierMainAvecRenvois(main, true, effets.slice(1)).find(g => g.carteId === 'chien-du-guet');
+  assert.deepEqual(apres.indices, [0]);
+  assert.equal(apres.enRenvoi, false);
+  assert.equal(trierMainAvecRenvois(main, false, effets).find(g => g.carteId === 'desert').enRenvoi, false);
+  assert.deepEqual(trierMainAvecRenvois(null, false, effets), []);
 });
 
 test('board copies pile up per card, per camp, without mixing sides', () => {

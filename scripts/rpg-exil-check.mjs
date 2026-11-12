@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 import { RPG_SFX_NAMES, rpgSfx } from '../src/games/rpgAudio.js';
+import { trierMainAvecRenvois } from '../src/games/rpgCardStacks.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const engine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -106,8 +107,9 @@ assert.match(blocExil, /variante: 'exil',/, 'le calque reçoit la variante blanc
 assert.match(blocExil, /effectId: `exil-\$\{token\}-\$\{entite\.entityId\}`/, 'chaque exil possède son effet');
 assert.match(blocExil, /if \(!mouvementReduit\) \{/, 'le mouvement réduit supprime seulement la chorégraphie');
 assert.match(blocExil, /const duree = 950;/, 'la sortie garde les 950 ms du renvoi');
-assert.match(page, /effet\.variante !== 'exil' && effet\.camp !== 'sorcier'/,
-  'un exil ne masque jamais un autre exemplaire dans la main');
+assert.equal(trierMainAvecRenvois(['chien-du-guet'], false,
+  [{ cardId: 'chien-du-guet', camp: 'joueur', variante: 'exil' }])[0].enRenvoi, false,
+'un exil ne masque jamais un autre exemplaire dans la main');
 
 // ── 4. Le vent est un échantillon livré, pas une synthèse ──────────────────
 assert.ok(RPG_SFX_NAMES.includes('cold_wind'), 'le vent est bien catalogué parmi les bruitages');

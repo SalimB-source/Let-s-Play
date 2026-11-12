@@ -263,9 +263,10 @@ export function rpgConsommerArriveesDwarf(duel) {
   return journal;
 }
 
-function journaliserArriveeCreature(duel, cote, entite, origine = null) {
+function journaliserArriveeCreature(duel, cote, entite, origine = null, exilEntityId = null) {
   const carte = duelCardById(entite.carteId);
-  const evenement = { entityId: entite.id, carteId: entite.carteId, cote, ...(origine ? { origine } : {}) };
+  const evenement = { entityId: entite.id, carteId: entite.carteId, cote,
+    ...(origine ? { origine } : {}), ...(exilEntityId ? { exilEntityId } : {}) };
   // Le journal général reçoit toute entrée en jeu : la page y lit les voix
   // propres aux cartes (celles qui supplantent l'accueil générique).
   const toutes = arriveesCreatureAudioParDuel.get(duel) ?? [];
@@ -5474,7 +5475,7 @@ function exilerPourFinDeTour(duel, cote, entite, sourceCarteId) {
   if (!exilerEntite(duel, cote, entite, sourceCarteId)) return;
   if (duel.moba) mobaRetirer(duel.moba, cote, entite.id);
   if (!entite.jeton) (duel.retoursExilFinTour ??= []).push({ cote, carteId: entite.carteId,
-    ...(voie ? { mobaLane: voie.id, mobaSlot: slot } : {}) });
+    ...(voie ? { mobaLane: voie.id, mobaSlot: slot, exilEntityId: entite.id } : {}) });
 }
 
 function resoudreExilsFinTour(duel, retours) {
@@ -5508,7 +5509,7 @@ function resoudreExilsFinTour(duel, retours) {
       placerDansEmplacement(duel, retour.cote, entite, offset + slot);
       if (!mobaPlacer(duel.moba, retour.cote, voie.id, slot, entite.id).ok) throw new Error('Retour d’exil MOBA incohérent');
     } else placerDansEmplacement(duel, retour.cote, entite);
-    journaliserArriveeCreature(duel, retour.cote, entite, 'retour-exil');
+    journaliserArriveeCreature(duel, retour.cote, entite, 'retour-exil', retour.exilEntityId);
     duel.log.push(`${carte.name} revient en jeu à la fin du tour.`);
     const decksAvant = duel.moba ? ['joueur', 'sorcier'].map((side) => duel[side].deck.length) : null;
     if (!preparerArriveeDeRetour(duel, retour.cote, carte, entite)) appliquerArriveeDeRetour(duel, retour.cote, carte, entite);

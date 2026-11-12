@@ -14,10 +14,14 @@ export function rpgMobaSorties(avant, renvois, exils, duel) {
   });
 }
 
-/** Une carte tout juste revenue dans sa case remplace visuellement son propre
- * départ : ne pas réannoncer l'exil pendant l'animation de retour. */
+/** Une carte revenue met fin à sa propre animation de départ, même si sa
+ * case d'origine est occupée et qu'elle est revenue ailleurs dans sa voie. */
 export function rpgMobaSortieRemplacee(sortie, retours) {
-  return sortie.variante === 'exil' && Object.values(retours ?? {}).some((retour) =>
-    retour.side === sortie.side && retour.laneId === sortie.laneId
-    && retour.slot === sortie.slot && retour.cardId === sortie.cardId);
+  return sortie.variante === 'exil' && Object.values(retours ?? {}).some((retour) => {
+    if (retour.side !== sortie.side || retour.cardId !== sortie.cardId) return false;
+    if (retour.exilEntityId) return retour.exilEntityId === sortie.entityId;
+    // Les anciennes sauvegardes ne connaissent pas l'identifiant d'origine :
+    // ne les associer qu'à la même case, pour éviter d'effacer une autre carte.
+    return retour.laneId === sortie.laneId && retour.slot === sortie.slot;
+  });
 }

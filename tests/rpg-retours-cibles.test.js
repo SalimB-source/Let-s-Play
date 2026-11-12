@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rpgFinDeTour, rpgBlesserCreature } from '../src/games/rpgDuel.js';
+import { rpgFinDeTour, rpgBlesserCreature, rpgConsommerArriveesCreature } from '../src/games/rpgDuel.js';
 import { rpgMobaNouveauDuel, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaPlacementCoherent, rpgMobaTerminerTour, rpgMobaPasserFinDeTour } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirArriveeIA } from '../src/games/rpgMobaAI.js';
 import { mobaInfliger, mobaVoie } from '../src/games/rpgMoba.js';
@@ -66,15 +66,35 @@ test('exil réel : le retour choisit une cible, puis le tour passe', () => {
   poser(duel, 'joueur', 'guetteuse-des-marees', 'right', 1);
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', vipere.id).ok, true);
   assert.ok(duel.joueur.exil.includes(vipere.carteId));
+  assert.equal(JSON.parse(JSON.stringify(duel)).retoursExilFinTour[0].exilEntityId, vipere.id);
+  rpgConsommerArriveesCreature(duel);
   const oldAtk = b.atk;
   const result = terminer(duel, 'joueur');
   assert.equal(result.arriveeEnAttente, true); assert.equal(duel.tour, 'joueur');
+  const arrivee = rpgConsommerArriveesCreature(duel).find(event => event.origine === 'retour-exil');
+  assert.equal(arrivee.exilEntityId, vipere.id);
+  assert.notEqual(arrivee.entityId, vipere.id);
   assert.equal(duel.arriveeEnAttente.carteId, vipere.carteId);
   assert.equal(b.atk, oldAtk);
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', b.id).ok, true);
   assert.equal(b.atk, Math.max(0, oldAtk - 2));
   assert.equal(duel.tour, 'sorcier'); assert.equal(duel.phase, 'principale');
   assert.equal(duel.transitionRetours, null); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('la provenance d’un retour d’exil survit à une sauvegarde JSON', () => {
+  const duel = partie();
+  const cible = poser(duel, 'joueur', 'ashigaru-des-braises', 'right', 0);
+  poser(duel, 'joueur', 'guetteuse-des-marees', 'right', 1);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', cible.id).ok, true);
+  const reprise = JSON.parse(JSON.stringify(duel));
+  assert.equal(reprise.retoursExilFinTour[0].exilEntityId, cible.id);
+  terminer(reprise, 'joueur');
+  const arrivee = rpgConsommerArriveesCreature(reprise).find(event => event.origine === 'retour-exil');
+  assert.ok(arrivee);
+  assert.equal(arrivee.exilEntityId, cible.id);
+  assert.notEqual(arrivee.entityId, cible.id);
+  assert.equal(rpgMobaPlacementCoherent(reprise), true);
 });
 
 test('plusieurs retours ne sont ni perdus ni appliqués avant leur choix', () => {
