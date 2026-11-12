@@ -1361,3 +1361,39 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__summon-fx--retour-exil i { background: #f3fbff; box-shadow: 0 0 8px #cceefa; animation-name: moba-exil-return-spark; }
 @keyframes moba-exil-return-ring { 0% { opacity: 0; transform: scale(1.35) rotate(-45deg); } 30% { opacity: .9; } 100% { opacity: 0; transform: scale(.65) rotate(0deg); } }
 @keyframes moba-exil-return-spark { 0% { opacity: 0; transform: translateY(-45px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(0); } }
+
+/* Le même X que dans le duel, superposé aux coordonnées d'avant résolution. */
+.moba .moba__counterattack-slashes { z-index: 86; }
+.moba .moba__counterattack-slashes .rpg-counterattack-slashes__slash { animation-duration: calc(.62s * var(--rpg-anim-scale, 1)); }
+.moba .moba__counterattack-slashes .rpg-counterattack-slashes__slash--b { animation-delay: calc(.09s * var(--rpg-anim-scale, 1)); }
+
+/* Les signatures classiques suivent la vitesse du MOBA, y compris leurs
+   étincelles. Elles restent indépendantes des cartes et des autres effets. */
+.moba .rpg-roue-feu, .moba .rpg-roue-feu__lueur, .moba .rpg-roue-feu__flammes, .moba .rpg-roue-feu__braise { animation-duration: calc(.9s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-roue-feu__flamme { animation-duration: calc(var(--dur, 480ms) * var(--rpg-anim-scale, 1)); }
+.moba .rpg-roue-feu__flamme, .moba .rpg-roue-feu__braise { animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1)); }
+.moba .rpg-eclair-marteau, .moba .rpg-eclair-marteau__flash, .moba .rpg-eclair-marteau__onde,
+.moba .rpg-eclair-marteau__eclair, .moba .rpg-eclair-marteau__fourche, .moba .rpg-eclair-marteau__fissure { animation-duration: calc(.95s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-eclair-marteau__arc { animation-duration: calc(.5s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-eclair-marteau__etincelle { animation-duration: calc(.55s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-eclair-marteau__arc, .moba .rpg-eclair-marteau__etincelle { animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1)); }
+.moba__exchange-clash { position: absolute; z-index: 50; width: 42px; height: 42px; translate: -50% -50%; pointer-events: none; opacity: 0; animation: moba-exchange-clash calc(.7s * var(--rpg-anim-scale, 1)) ease-out both; }
+.moba__exchange-clash::before, .moba__exchange-clash::after, .moba__exchange-clash i { content: ''; position: absolute; left: 50%; top: 50%; width: 100%; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, #fff5c5, transparent); box-shadow: 0 0 8px #f8c470; transform: translate(-50%, -50%) rotate(45deg); }
+.moba__exchange-clash::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.moba__exchange-clash i { width: 65%; transform: translate(-50%, -50%) rotate(0deg); }
+.moba__exchange-clash i:last-child { transform: translate(-50%, -50%) rotate(90deg); }
+@keyframes moba-exchange-clash { 0%, 23% { opacity: 0; scale: .3; } 38% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.5; } }
+.moba .rpg-bouclier-impact, .moba .rpg-bouclier-impact .rpg-bouclier__ecu { animation-duration: calc(.85s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-impact__flash, .moba .rpg-bouclier__ecu-fissure { animation-duration: calc(.42s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier__ecu-fissure { animation-delay: calc(.18s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-impact__anneau { animation-duration: calc(.78s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-impact__anneau--b { animation-delay: calc(.12s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-impact__eclat, .moba .rpg-bouclier-verre__fragment { animation-duration: calc(.66s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-impact__eclat { animation-delay: calc((.12s + var(--d, 0ms)) * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-verre__fragment { animation-delay: calc((.12s + var(--delai, 0ms)) * var(--rpg-anim-scale, 1)); }
+.moba .rpg-bouclier-verre__fissures { animation-duration: calc(.56s * var(--rpg-anim-scale, 1)); }
+/* Pour la flèche, attendre son arrivée avant l'éclat et le chiffre. */
+.moba__impact-cinema.is-targeted .moba__impact-burst { animation-name: moba-targeted-impact-burst; }
+.moba__impact-cinema.is-targeted .moba__impact-number { animation-name: moba-targeted-impact-number; }
+@keyframes moba-targeted-impact-burst { 0%, 65% { opacity: 0; transform: scale(.3); } 78% { opacity: 1; } 100% { opacity: 0; transform: scale(1.65); } }
+@keyframes moba-targeted-impact-number { 0%, 40% { opacity: 0; } 48%, 76% { opacity: 1; } 100% { opacity: 0; translate: 0 -24px; } }

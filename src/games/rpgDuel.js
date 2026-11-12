@@ -2663,7 +2663,17 @@ function bonusTraquePirates(attaquant, cible) {
 function journaliserAnimationCombat(duel, animation) {
   const seq = (Number(duel.combatAnimationSeq) || 0) + 1;
   duel.combatAnimationSeq = seq;
+  // Garder la case de la cible d'une riposte MOBA avant que celle-ci ne
+  // disparaisse : une créature invoquée et détruite pendant la même action
+  // n'existe ni dans l'instantané précédent ni dans le plateau final.
+  if (duel.moba && animation.type === 'contre-attaque' && animation.cible?.type === 'creature') {
+    const { cote, entiteId } = animation.cible;
+    const lane = duel.moba.lanes.find((voie) => voie.slots[cote]?.includes(entiteId));
+    if (lane) animation = { ...animation, cible: { ...animation.cible,
+      mobaLane: lane.id, mobaSlot: lane.slots[cote].indexOf(entiteId) } };
+  }
   duel.combatAnimations = [...(duel.combatAnimations ?? []).slice(-31), { id: seq, ...animation }];
+  return seq;
 }
 
 /**
@@ -2724,7 +2734,7 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   if (source?.type === 'sorcier') {
     if (!duel[source.cote]) return false;
     presenterEffet(duel, coteDefenseur, defenseur.carteId);
-    journaliserAnimationCombat(duel, {
+    const animationId = journaliserAnimationCombat(duel, {
       type: 'contre-attaque',
       depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
       cible: { type: 'sorcier', cote: source.cote },
@@ -2735,10 +2745,17 @@ function riposteDeContreAttaque(duel, defenseur, source) {
     const blessure = duel.moba
       ? mobaPerdreVieAdverse(duel, coteDefenseur, defenseur.mobaLane, force)
       : rpgInfligerSorcier(duel, source.cote, force);
-    if (duel.moba && blessure.ok) journaliserDegatsCapaciteMoba(duel, {
-      ...blessure, laneId: defenseur.mobaLane, targetSide: source.cote,
-      cardId: defenseur.carteId, entityId: defenseur.id, contreAttaque: true,
-    });
+    if (duel.moba) {
+      // La résolution peut conquérir une voie et modifier les rattachements :
+      // mémoriser les voies réellement touchées, pas celles encore actives après.
+      const voies = blessure.ok ? (blessure.voies?.map((voie) => voie.laneId) ?? [defenseur.mobaLane]) : [];
+      duel.combatAnimations = duel.combatAnimations.map((event) => event.id === animationId
+        ? { ...event, cible: { ...event.cible, mobaVoies: voies } } : event);
+      if (blessure.ok) journaliserDegatsCapaciteMoba(duel, {
+        ...blessure, laneId: defenseur.mobaLane, targetSide: source.cote,
+        cardId: defenseur.carteId, entityId: defenseur.id, contreAttaque: true,
+      });
+    }
     if (!duel.moba?.winner && defenseur.volDeVie) gagnerVieDepuisCreature(duel, coteDefenseur, defenseur, Math.ceil((duel.moba ? blessure.damage : blessure.recus) / 2));
     return true;
   }

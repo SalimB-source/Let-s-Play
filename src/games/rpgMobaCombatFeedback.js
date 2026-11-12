@@ -23,3 +23,18 @@ export function rpgMobaCombatFeedback(resume, entities, token) {
   }
   return { miss, critiques, annonce: phrases.join(' ; ') };
 }
+
+/** Chaque résolution garde son propre délai. Les effets encore visibles sont
+ * réunis sans modifier les anciens ; pour une même créature, le plus récent
+ * fournit le jeton qui relance son animation. */
+export function rpgMobaFusionnerFeedback(effets) {
+  const miss = {};
+  const critiques = {};
+  const annonces = [];
+  for (const effet of Object.values(effets ?? {})) {
+    Object.assign(miss, effet.miss);
+    Object.assign(critiques, effet.critiques);
+    if (effet.annonce) annonces.push(effet.annonce);
+  }
+  return { miss, critiques, annonce: annonces.join(' ; ') };
+}

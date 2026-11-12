@@ -204,6 +204,7 @@ test('la Contre-attaque d’une créature centrale riposte aux deux voies active
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, 17);
   assert.equal(mobaVoie(d.moba, 'right').hp.sorcier, 17);
   assert.deepEqual(result.damageEvents.filter((e) => e.contreAttaque).map((e) => e.laneId).sort(), ['left', 'right']);
+  assert.deepEqual(d.combatAnimations.filter((e) => e.type === 'contre-attaque').at(-1).cible.mobaVoies, ['left', 'right']);
   assert.ok(rpgMobaPlacementCoherent(d));
 });
 
@@ -230,4 +231,29 @@ test('une capacité centrale qui conquiert un flanc met fin à la partie sans re
   assert.equal(mobaVoie(d.moba, 'center').slots.joueur[0], result.entite.id);
   assert.ok(d.joueur.creatures.includes(result.entite));
   assert.ok(rpgMobaPlacementCoherent(d));
+});
+
+test('les animations de riposte centrale mémorisent les voies réellement frappées, même conquises', () => {
+  const d = partie(); centre(d, 'joueur');
+  const source = poser(d, 'joueur', 'viking-des-neiges', 'center');
+  source.contreAttaque = true; source.atk = 3; source.esquive = true; source.esquiveChance = 1;
+  mobaInfliger(d.moba, 'joueur', 'left', 18);
+  tour(d, 'sorcier'); d.sorcier.main = ['trait-de-braise']; rpgReglerHasard(d, () => 0);
+  assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'trait-de-braise', source.id).ok);
+  const event = d.combatAnimations.filter((e) => e.type === 'contre-attaque').at(-1);
+  // Le centre déjà conquis fait de ce flanc la voie gagnante : aucune
+  // seconde riposte ne peut avoir lieu après la fin de partie.
+  assert.deepEqual(event.cible.mobaVoies, ['left']);
+  assert.equal(mobaVoie(d.moba, 'left').conqueredBy, 'joueur');
+});
+
+test('la riposte centrale ne vise pas un flanc déjà fermé', () => {
+  const d = partie(); centre(d, 'joueur');
+  const source = poser(d, 'joueur', 'viking-des-neiges', 'center');
+  source.contreAttaque = true; source.atk = 3; source.esquive = true; source.esquiveChance = 1;
+  mobaInfliger(d.moba, 'sorcier', 'left', 20);
+  tour(d, 'sorcier'); d.sorcier.main = ['trait-de-braise']; rpgReglerHasard(d, () => 0);
+  assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'trait-de-braise', source.id).ok);
+  const event = d.combatAnimations.filter((e) => e.type === 'contre-attaque').at(-1);
+  assert.deepEqual(event.cible.mobaVoies, ['right']);
 });
