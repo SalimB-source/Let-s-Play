@@ -396,11 +396,11 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     }
     return essai.moba.winner === side;
   };
-  for (const card of cards) for (const lane of lanes) for (const victimes of (rpgMobaPeutEmbuscade(duel, side, card.id) ? [[]] : rpgCombinaisonsSacrificesIA(duel, side, card))) {
+  for (const card of cards) for (const lane of lanes) for (const victimes of (rpgMobaPeutEmbuscade(duel, side, card.id) ? [[]] : rpgCombinaisonsSacrificesIA(duel, side, card)))
+  for (const slot of (victimes.length
+      ? lane.slots[side].flatMap((id, index) => victimes.some((e) => e.id === id) ? [index] : [])
+      : [lane.slots[side].indexOf(null)].filter((index) => index >= 0))) {
     const sacrificeIds = victimes.map((e) => e.id);
-    const libre = lane.slots[side].indexOf(null);
-    const slot = libre >= 0 ? libre : lane.slots[side].findIndex((id) => sacrificeIds.includes(id));
-    if (slot < 0) continue;
     const simulation = copie(duel);
     const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot, { sacrificeIds });
     if (!pose.ok) continue;

@@ -443,6 +443,16 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   const arriveeGlobale = MOBA_ARRIVEES_GLOBALES.includes(cardId) || ['tiziri-du-djurdjura', 'pilote-de-la-carreira', 'pretre-de-la-bouche'].includes(cardId);
   if ((carte.arrivee && carte.arrivee.type !== 'pioche' && !soinArrivee && !arriveeCiblee && !arriveeGlobale) || (Number.isFinite(carte.abordage) && !MOBA_ABORDAGE_IMPRIME.includes(cardId)) || carte.interceptionAttaque
     || carte.prixPv || (carte.kind !== 'site' && duel[side].abordageDesArrivees)) return fail('effet-non-pris-en-charge');
+  // Une invocation payée par sacrifice prend physiquement la place d'une
+  // des victimes choisies, y compris après la fenêtre de réponse. Laisser le
+  // moteur commun signaler les listes de victimes manquantes ou invalides.
+  const nombreSacrifices = resoudreEnAttente ? attente.sacrificeIds.length : sacrificesInvocation(carte, duel, side, speciale);
+  if (nombreSacrifices && sacrificesDemandes === null) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
+  if (nombreSacrifices && Array.isArray(sacrificesDemandes)
+    && sacrificesDemandes.length === nombreSacrifices
+    && new Set(sacrificesDemandes).size === nombreSacrifices
+    && sacrificesDemandes.every((id) => victimesInvocation(duel[side]).some((e) => e.id === id))
+    && !sacrificesDemandes.includes(lane.slots[side][slot])) return fail('emplacement-sacrifice');
   const before = JSON.stringify(duel);
   const restore = () => {
     const snapshot = JSON.parse(before);

@@ -14,8 +14,9 @@ test('le plateau permet de choisir une victime puis de la remplacer dans le cent
   let root;
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
-    const { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaChoisirVoieCentrale } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
     const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
+    const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => {
       duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 });
@@ -26,12 +27,11 @@ test('le plateau permet de choisir une victime puis de la remplacer dans le cent
     await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => { assert.ok(button, 'commande présente'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
     await click(document.querySelector('.moba__mulligan .moba__primary'));
-    await click([...document.querySelectorAll('.moba__choice button')].find((b) => b.textContent.includes('braise')));
     duel.joueur.mana.braise = 20;
     const victim = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0).entite;
     assert.ok(victim);
-    mobaInfliger(duel.moba, 'joueur', 'center', 10);
-    assert.equal(rpgMobaChoisirVoieCentrale(duel, 'joueur', 'right').ok, true);
+    assert.ok(mobaInfliger(duel.moba, 'joueur', 'center', 15).conquered);
+    rpgFinDeTour(duel); rpgFinDeTour(duel);
     duel.joueur.main = ['anqa-des-braises'];
     await act(async () => root.render(React.createElement(Board, props)));
     await click([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('Anqa')));
