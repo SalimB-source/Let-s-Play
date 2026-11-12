@@ -45,10 +45,11 @@ for (const side of ['joueur', 'sorcier']) {
     rpgFinDeTour(d); d[side].main = ['lionne-du-midi-ardent', 'chien-du-guet'];
     const before = JSON.stringify(d); const choix = rpgMobaChoisirCreatureIA(d, side);
     assert.equal(choix?.id, 'lionne-du-midi-ardent'); assert.deepEqual(choix.sacrificeIds, [ancien.id]);
+    assert.equal(choix.lane, 'left'); assert.equal(choix.slot, 0);
     assert.equal(JSON.stringify(d), before); assert.ok(rpgMobaPlacementCoherent(d));
   });
   test(`${side} : un sacrifice permet de gagner immédiatement par attaque réelle`, () => {
-    const d = partie(side); const ancien = poser(d, side, 'ashigaru-des-braises', 'center', 0);
+    const d = partie(side); const ancien = poser(d, side, 'ashigaru-des-braises', 'right', 0);
     assert.ok(mobaInfliger(d.moba, side, 'left', 20).conquered);
     mobaInfliger(d.moba, side, 'right', 15);
     prochainTour(d); d[side].main = ['ifrit-des-ergs', 'chien-du-guet'];
@@ -68,6 +69,7 @@ for (const side of ['joueur', 'sorcier']) {
     d[side].main = ['anqa-des-braises']; const avant = JSON.stringify(d);
     const choix = rpgMobaChoisirCreatureIA(d, side);
     assert.equal(choix?.id, 'anqa-des-braises'); assert.deepEqual(choix.sacrificeIds, [ancien.id]);
+    assert.equal(choix.lane, 'left'); assert.equal(choix.slot, 0);
     assert.equal(JSON.stringify(d), avant);
   });
   test(`${side} : conserve les créatures si l'attaque disponible gagne déjà`, () => {
@@ -84,7 +86,7 @@ for (const side of ['joueur', 'sorcier']) {
 for (const side of ['joueur', 'sorcier']) {
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
   test(`${side} : remplace un allié pour empêcher une défaite aérienne imminente`, () => {
-    const d = partie(side); const ancien = poser(d, side, 'ashigaru-des-braises', 'center', 0);
+    const d = partie(side); const ancien = poser(d, side, 'ashigaru-des-braises', 'right', 0);
     Object.assign(ancien, { atk: 8, pv: 8, def: 8, pvMax: 8 });
     rpgFinDeTour(d); const menace = poser(d, enemy, 'ashigaru-des-braises', 'right', 0);
     Object.assign(menace, { atk: 5, pv: 6, def: 6, pvMax: 6, envol: true });
