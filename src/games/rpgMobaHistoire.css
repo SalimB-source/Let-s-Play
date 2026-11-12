@@ -1,5 +1,6 @@
-/* Masters de transition : décors peints, portraits prélevés sans retouche sur
-   les vraies cartes. Le format paysage ET le portrait mobile restent lisibles. */
+/* Interludes : le personnage est la peinture originale de sa carte, en plein
+   écran, sans cadre ni portrait réinventé. Seuls les bords se fondent dans un
+   décor d'extension ; la peinture elle-même reste la source de l'image. */
 .moba__story-start { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 8px 0 12px; padding: 10px 13px; border: 1px solid #bc925a; border-radius: 6px; background: linear-gradient(100deg, #333326, #151e25); text-align: left; }
 .moba__story-start > div { display: grid; gap: 3px; }
 .moba__story-start span { color: #edcd84; font: 700 10px system-ui,sans-serif; letter-spacing: .13em; }
@@ -8,10 +9,14 @@
 .moba__story-start button { flex: 0 0 auto; margin: 0; min-height: 40px; padding: 8px 14px; }
 .moba__story-start button:disabled { opacity: .5; cursor: not-allowed; }
 .moba__end-chapter { color: #f2d293 !important; font-weight: 700; }
-.moba__interlude { position: fixed; z-index: 10001; inset: 0; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); align-items: center; gap: clamp(10px, 4vw, 80px); box-sizing: border-box; overflow-y: auto; padding: max(22px, env(safe-area-inset-top)) max(5vw, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(5vw, env(safe-area-inset-left)); color: #f8e9d0; background: #0a1519; }
-.moba__interlude-scene { position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, #061115ed 0%, #091619b0 42%, #06101184 100%), var(--moba-interlude-decor) center / cover no-repeat; }
-.moba__interlude::before { content: ''; position: absolute; inset: 10px; border: 1px solid #d3a86977; box-shadow: inset 0 0 0 5px #101a1a8c, 0 0 0 1px #080b0b; pointer-events: none; }
-.moba__interlude-copy { position: relative; width: min(100%, 600px); padding: 10px 0 10px clamp(12px, 2vw, 30px); text-shadow: 0 2px 14px #000; }
+
+.moba__interlude { position: fixed; z-index: 10001; inset: 0; isolation: isolate; display: flex; align-items: center; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; padding: max(22px, env(safe-area-inset-top)) max(5vw, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(5vw, env(safe-area-inset-left)); color: #f8e9d0; background: #0a1519; }
+.moba__interlude-scene { position: absolute; z-index: 0; inset: 0; pointer-events: none; background: linear-gradient(90deg, #061115d6 0%, #0916199c 47%, #06101189 100%), var(--moba-interlude-decor) center / cover no-repeat; }
+.moba__interlude-hero { position: absolute; z-index: 1; top: 0; bottom: 0; right: -1%; width: min(59vw, 900px); overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 19%, #000 87%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 19%, #000 87%, transparent 100%); }
+.moba__interlude-hero img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; transform-origin: 54% 35%; animation: moba-interlude-approche 18s ease-in-out infinite alternate; }
+@keyframes moba-interlude-approche { from { transform: scale(1); } to { transform: scale(1.075); } }
+.moba__interlude::before { content: ''; position: absolute; z-index: 2; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 68% 43%, transparent 14%, #040a103d 74%, #040a10b8 100%), linear-gradient(90deg, #06111543 0%, transparent 60%); }
+.moba__interlude-copy { position: relative; z-index: 3; width: min(48%, 610px); padding: 12px 0 12px clamp(12px, 2vw, 30px); text-shadow: 0 2px 16px #000; }
 .moba__interlude-kicker, .moba__interlude-eyebrow, .moba__interlude-destination { color: #e6be7f; font: 700 clamp(10px, 1.1vw, 13px)/1.5 system-ui,sans-serif; letter-spacing: .16em; }
 .moba__interlude-rule { display: block; margin: clamp(15px, 3vh, 32px) 0; color: #e6be7f; letter-spacing: .2em; }
 .moba__interlude-eyebrow { margin: 0 0 8px; }
@@ -22,20 +27,30 @@
 .moba__interlude-actions button { min-height: 42px; margin: 0; padding: 9px 16px; border: 1px solid #ad8a5c; border-radius: 5px; color: #fff3db; background: #182329d9; font: 700 12px/1.2 system-ui,sans-serif; cursor: pointer; }
 .moba__interlude-actions button.moba__primary { color: #241a0e; background: #e8c486; }
 .moba__interlude-actions button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
-.moba__interlude-portrait { position: relative; justify-self: center; width: min(100%, 360px, 38vw); margin: 0; padding: 9px; border: 1px solid #e6bd81; background: #101b1e; box-shadow: 0 20px 90px #000e, 0 0 0 5px #15191bd9, 0 0 0 6px #bd986394; transform: rotate(2deg); }
-.moba__interlude-portrait img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
-.moba__interlude-portrait figcaption { padding: 9px 4px 2px; color: #e9cf9c; font: 700 9px/1.3 system-ui,sans-serif; letter-spacing: .12em; text-align: center; }
+
+/* Neige légère en avant-plan : vitesse, profondeur et dérive individuelles,
+   aucune texture vidéo ni minuteur JS. Présente uniquement sur le lac gelé. */
+.moba__interlude-snow { position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none; }
+.moba__interlude-snow i { position: absolute; left: var(--flake-x); top: var(--flake-y); width: var(--flake-size); height: var(--flake-size); border-radius: 50%; background: #f2faff; box-shadow: 0 0 7px #c7e8ff; opacity: 0; animation: moba-interlude-flocon var(--flake-duration) linear var(--flake-delay) infinite; }
+@keyframes moba-interlude-flocon {
+  0% { transform: translate3d(0, -15vh, 0); opacity: 0; }
+  13% { opacity: .74; }
+  83% { opacity: .62; }
+  100% { transform: translate3d(var(--flake-drift), 88vh, 0); opacity: 0; }
+}
+
 @media (max-width: 650px) {
   .moba__story-start { flex-wrap: wrap; }
   .moba__story-start button { width: 100%; }
-  .moba__interlude { grid-template-columns: 1fr; gap: 8px; justify-items: center; align-content: center; padding: max(22px, env(safe-area-inset-top)) 24px max(22px, env(safe-area-inset-bottom)); text-align: center; }
-  .moba__interlude-scene { background: linear-gradient(#071014bf, #071014e8), var(--moba-interlude-decor) center / cover no-repeat; }
-  .moba__interlude-copy { order: 2; padding: 0; }
-  .moba__interlude-portrait { order: 1; width: min(40vw, 175px); padding: 5px; transform: rotate(-2deg); }
-  .moba__interlude-portrait figcaption { font-size: 7px; padding: 5px 0 0; }
-  .moba__interlude-rule { margin: 5px 0; }
-  .moba__interlude h2 { font-size: clamp(29px, 8vw, 48px); }
-  .moba__interlude-text { margin: 10px 0; font-size: 14px; }
+  .moba__interlude { align-items: flex-end; padding: max(18px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); text-align: center; }
+  .moba__interlude-scene { background: linear-gradient(#0710146e, #071014c0), var(--moba-interlude-decor) center / cover no-repeat; }
+  .moba__interlude-hero { inset: 0; width: 100%; -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 89%); mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 89%); }
+  .moba__interlude-hero img { object-position: 55% 25%; transform-origin: 56% 30%; }
+  .moba__interlude::before { background: linear-gradient(to bottom, #050e1280 0%, transparent 31%, #07111773 55%, #071117e8 75%, #071117 100%); }
+  .moba__interlude-copy { width: 100%; padding: 0; }
+  .moba__interlude-rule { margin: 7px 0; }
+  .moba__interlude h2 { margin: 0 auto; font-size: clamp(29px, 8vw, 48px); }
+  .moba__interlude-text { margin: 10px auto; font-size: 14px; }
   .moba__interlude-destination { margin-bottom: 10px; }
   .moba__interlude-actions { justify-content: center; }
 }
@@ -45,5 +60,8 @@
   .moba__interlude h2 { font-size: clamp(25px, 4vw, 42px); }
   .moba__interlude-text { margin: 8px 0; font-size: 13px; }
   .moba__interlude-destination { margin-bottom: 8px; }
-  .moba__interlude-portrait { width: min(25vw, 175px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moba__interlude-hero img { animation: none; }
+  .moba__interlude-snow i { animation: none; opacity: .35; }
 }
