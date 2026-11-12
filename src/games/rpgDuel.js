@@ -659,6 +659,12 @@ export function rpgConsommerPresentations(duel) {
   return file;
 }
 
+// Une recherche MOBA ajoute une carte choisie du paquet à la main sans être
+// une pioche ordinaire. L'événement reste privé et hors de l'état sauvegardé.
+export function rpgPresenterRechercheMoba(duel, cote, carteId) {
+  presenter(duel, { type: 'recherche', cote, carteId });
+}
+
 // Les soins, eux aussi hors de l'état sauvegardé : chaque gain de vie RÉEL —
 // donc jamais nul — y laisse `{ cote, entityId, montant }`, `entityId` nul
 // quand c'est le sorcier lui-même qui regagne des PV. La page en tire l'éclat

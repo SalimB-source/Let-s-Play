@@ -9,7 +9,7 @@ import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js
 import {
   rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
-  rpgResoudreEchangeIndividuelMoba, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher,
+  rpgResoudreEchangeIndividuelMoba, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgPresenterRechercheMoba,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
@@ -238,6 +238,7 @@ export function rpgMobaResoudreRecherche(duel, side, cardId) {
   if (!rpgMobaCandidatsRecherche(duel, side).includes(cardId)) return fail('cible');
   const [id] = duel[side].deck.splice(duel[side].deck.indexOf(cardId), 1);
   duel[side].main.push(id);
+  rpgPresenterRechercheMoba(duel, side, id);
   const source = duelCardById(duel.mobaRechercheEnAttente.sourceCarteId)?.name ?? 'La capacité';
   // Do not leak the AI's searched card through the shared log.
   duel.log.push(`${source} trouve une carte dans son deck et l’ajoute à sa main.`);
