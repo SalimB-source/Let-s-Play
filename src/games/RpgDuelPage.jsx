@@ -143,6 +143,8 @@ import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import { accueilSablierPret } from './useStatutSyncSablier.js';
 import RpgSouk from './RpgSouk.jsx';
+import RpgCatalogueAchat from './RpgCatalogueAchat.jsx';
+import { prixCarteCatalogue } from './rpgCatalogueAchat.js';
 import RpgOffreLancement from './RpgOffreLancement.jsx';
 import { FIN_OFFRE_LANCEMENT, offreLancementActive } from './rpgOffreLancement.js';
 import { diapoSuivante } from './rpgDiaporama.js';
@@ -3875,7 +3877,7 @@ function ApercuCarteCatalogue({
   carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [],
   prisonniere = null, surface = 'CATALOGUE', onFermer,
   niveau = 1, portefeuille = null, credits = 0, avecVitrine = true, possede = true,
-  onAcheterIllustration = null, onBasculerIllustration = null, onPlaySfx = null,
+  onAcheterIllustration = null, onBasculerIllustration = null, onAcheterCarte = null, onPlaySfx = null,
   clicDroit = null,
 }) {
   const boutonFermerRef = useRef(null);
@@ -3914,6 +3916,7 @@ function ApercuCarteCatalogue({
         ) : null}
       </div>
       <div className="rpg-card-peek__bar">
+        {onAcheterCarte && <RpgCatalogueAchat key={carte.id} carte={carte} possede={possede} credits={credits} onAcheter={onAcheterCarte} onPlaySfx={onPlaySfx} />}
         <button
           type="button"
           ref={boutonFermerRef}
@@ -5898,7 +5901,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               <div>
                 <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
                 <h2>Catalogue</h2>
-                <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
+                <p>Parcourez les cartes de Bab El : ouvrez une carte pour lire ses effets ou acheter un exemplaire manquant avec vos crédits.</p>
                 <p className="rpg-card-catalogue__alternatives-resume">
                   {(() => {
                     // L'échelle et la boutique se comptent séparément : ce qui
@@ -6003,6 +6006,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   const estTerrain = carte.kind === 'terrain';
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
+                  const prix = verrouillee ? prixCarteCatalogue(carte.id) : null;
                   const exemplaires = nombreExemplaires(collection, carte.id);
                   // Le sceau de la famille au coin libre de la vignette : c'est
                   // là qu'on feuillette la collection, et c'est là qu'il faut
@@ -6026,9 +6030,10 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         type="button"
                         className="rpg-card-catalogue__ouvrir"
                         data-catalogue-open={carte.id}
-                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${verrouillee ? ', carte verrouillée' : ''}`}
+                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${verrouillee ? ', carte verrouillée' : ''}${prix !== null ? `, disponible pour ${creditsLisible(prix)} crédits` : ''}`}
                         onClick={() => onOpenCardPreview?.(carte)}
                       />
+                      {prix !== null && <span className="rpg-card-catalogue__prix" aria-hidden="true">{creditsLisible(prix)} ◈</span>}
                       <div
                         className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
                         style={cardFrameStyle(carte)}
@@ -6996,7 +7001,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, rangerCoffret, fermerOuverture, ouverture: ouvertureSouk,
     ouvrirPaquetCoffre,
-    acheterCarteDirecte, rafraichirEtal,
+    acheterCarteDirecte, acheterCarteCatalogue, rafraichirEtal,
     acheterIllustration, basculerIllustration,
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
     // que chaque palier franchi fait ouvrir au hasard.
@@ -9554,6 +9559,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             possede={possedeCarte(collection, apercuCatalogue)}
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
+            onAcheterCarte={ecran === 'catalogue' ? acheterCarteCatalogue : null}
             onPlaySfx={jouerSfx}
             clicDroit={apercuCatalogueClicDroit}
             onFermer={fermerApercuCatalogue}
@@ -9742,6 +9748,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             possede={possedeCarte(collection, apercuCatalogue)}
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
+            onAcheterCarte={ecran === 'catalogue' ? acheterCarteCatalogue : null}
             onPlaySfx={jouerSfx}
             clicDroit={apercuCatalogueClicDroit}
             onFermer={fermerApercuCatalogue}
