@@ -12,6 +12,7 @@ const officialDomains = [
   'deepmind.google', 'openai.com', 'nvidia.com', 'netflix.com',
   'koeitecmoamerica.com', 'merlinentertainments.biz', 'minecraft.net',
   'thewitcher.com', 'remedygames.com', 'tgs.cesa.or.jp', 'callofduty.com',
+  'research.google',
   'dropbox.com', 'press.disney.co.uk',
   'longcat.ai', 'st.com', 'lightyearfrontier.com',
 ];

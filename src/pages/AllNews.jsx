@@ -1,3 +1,6 @@
+import { dailyNewsListing as news20261111 } from '../news/daily/2026-11-11';
+import { dailyNewsListing as news20261110 } from '../news/daily/2026-11-10';
+import { dailyNewsListing as news20261109 } from '../news/daily/2026-11-09';
 import { dailyNewsListing as news20261108 } from '../news/daily/2026-11-08';
 import { dailyNewsListing as news20261105 } from '../news/daily/2026-11-05';
 import { dailyNewsListing as news20261104 } from '../news/daily/2026-11-04';
@@ -32,7 +35,7 @@ export const allNewsArticles = [...new Map(
 // Réutiliser les données éditoriales lorsqu’elles sont disponibles : mêmes
 // titres, badges, dates/sources, miniatures et sentiments que les cartes Actus.
 const newsListingByRoute = new Map(
-  [...news20261108, ...news20261105, ...news20261104, ...news20261103, ...news20261102, ...edition20261101, ...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing20261015, ...dailyNewsListing20261016, ...dailyNewsListing20261017, ...dailyNewsListing, ...gamingNews20261029, ...cultureTechNews20261029].map((story) => [story.to, story]),
+  [...news20261111, ...news20261110, ...news20261109, ...news20261108, ...news20261105, ...news20261104, ...news20261103, ...news20261102, ...edition20261101, ...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing20261015, ...dailyNewsListing20261016, ...dailyNewsListing20261017, ...dailyNewsListing, ...gamingNews20261029, ...cultureTechNews20261029].map((story) => [story.to, story]),
 );
 
 const COPY = {

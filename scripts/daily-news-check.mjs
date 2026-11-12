@@ -1,3 +1,4 @@
+import { dailyStories as catchup09, dailySeoEntries as seo09, editionDate as date09, editionIsoDate as iso09 } from '../src/news/daily/2026-11-09.js';
 // Contrôle éditorial des éditions quotidiennes : le contenu actuel, les pages
 // historiques ajoutées en plusieurs fournées, leurs routes, cartes, vidéos,
 // recherches, SEO, archives et versions traduites. Les contrôles du sélecteur et
@@ -11,8 +12,8 @@ import { JSDOM } from 'jsdom';
 import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-18.js';
 import { dailyStories as cultureTechStories20261029, dailyNewsListing as cultureTechListing20261029, dailySeoEntries as cultureTechSeo20261029 } from '../src/news/daily/2026-10-29-cinema-tech.js';
 import { dailyStories as gamingStories20261029, dailyNewsListing as gamingListing20261029, dailySeoEntries as gamingSeo20261029, editionDate as gamingDate20261029 } from '../src/news/daily/2026-10-29-gaming.js';
-import { dailyStories as currentEditionStories, dailyNewsListing as currentEditionListing, dailySeoEntries as currentEditionSeoEntries, editionDate as currentEditionDate, editionIsoDate as currentEditionIsoDate } from '../src/news/daily/2026-11-08.js';
-import { dailyStories as previousEditionStories, dailySeoEntries as previousEditionSeoEntries, editionDate as previousEditionDate, editionIsoDate as previousEditionIsoDate } from '../src/news/daily/2026-11-05.js';
+import { dailyStories as currentEditionStories, dailyNewsListing as currentEditionListing, dailySeoEntries as currentEditionSeoEntries, editionDate as currentEditionDate, editionIsoDate as currentEditionIsoDate } from '../src/news/daily/2026-11-11.js';
+import { dailyStories as previousEditionStories, dailySeoEntries as previousEditionSeoEntries, editionDate as previousEditionDate, editionIsoDate as previousEditionIsoDate } from '../src/news/daily/2026-11-10.js';
 import { dailySeoEntries as generatedDailySeoEntries } from '../src/news/daily/seo-index.js';
 import { dailyStories as dailyStories20261011, dailyNewsListing as dailyNewsListing20261011, dailySeoEntries as dailySeoEntries20261011, editionDate as editionDate20261011, editionIsoDate as editionIsoDate20261011 } from '../src/news/daily/2026-10-11.js';
 import { dailyStories as dailyStories20261014, dailyNewsListing as dailyNewsListing20261014, dailySeoEntries as dailySeoEntries20261014, editionDate as editionDate20261014, editionIsoDate as editionIsoDate20261014 } from '../src/news/daily/2026-10-14.js';
@@ -327,6 +328,7 @@ for (const category of ['cinema', 'tech']) {
   assert.ok(doc.querySelector('.section-label').textContent.includes(currentEditionDate));
 }
 for (const { stories, date, isoDate, seo } of [
+  { stories: catchup09, date: date09, isoDate: iso09, seo: seo09 },
   { stories: currentEditionStories, date: currentEditionDate, isoDate: currentEditionIsoDate, seo: currentEditionSeoEntries },
   { stories: previousEditionStories, date: previousEditionDate, isoDate: previousEditionIsoDate, seo: previousEditionSeoEntries },
 ]) {
