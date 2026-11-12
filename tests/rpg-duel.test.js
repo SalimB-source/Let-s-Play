@@ -1084,10 +1084,10 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.deepEqual(
     {
       cost: drakkar.cost, atk: drakkar.atk, def: drakkar.def,
-      nePeutPasAttaquer: drakkar.nePeutPasAttaquer, destruction: drakkar.destruction,
+      defenseur: drakkar.defenseur, nePeutPasAttaquer: drakkar.nePeutPasAttaquer, destruction: drakkar.destruction,
     },
     {
-      cost: 5, atk: 2, def: 6, nePeutPasAttaquer: true,
+      cost: 5, atk: 2, def: 6, defenseur: true, nePeutPasAttaquer: true,
       destruction: { type: 'pioche', amount: 1 },
     },
     'le Drakkar devient un 2/6 qui ne peut pas attaquer et ne rend qu’une carte',

@@ -1155,9 +1155,10 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'rare',
     typeLine: 'Créature — Navire viking',
     art: 'drakkar-a-tete-de-dragon',
+    defenseur: true,
     nePeutPasAttaquer: true,
     destruction: { type: 'pioche', amount: 1 },
-    text: 'Le Drakkar ne peut pas attaquer. Quand il est détruit : l’épave rend ses coffres — piochez une carte.',
+    text: 'Défenseur. Le Drakkar ne peut pas attaquer. Quand il est détruit : l’épave rend ses coffres — piochez une carte.',
     flavor: 'Quarante rameurs, une proue de dragon, et la brume qui s’ouvre.',
   },
   // ── Bêtes marines mythiques (deck Marée des abysses) ───────────────────

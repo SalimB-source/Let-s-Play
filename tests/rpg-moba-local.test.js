@@ -1734,6 +1734,33 @@ test('removing one targeted attacker during a response keeps the remaining decla
   assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 9);
 });
 
+test('le Drakkar Défenseur attire les attaques dans sa voie sans pouvoir attaquer', async () => {
+  const { rpgMobaCiblesIndividuelles } = await import('../src/games/rpgMobaAttaqueIndividuelle.js');
+  const duel = partieCombat();
+  const poser = (side, id, lane, slot, options) => {
+    if (duel.tour !== side) rpgFinDeTour(duel);
+    duel[side].main = [id];
+    const result = rpgMobaJouerCreature(duel, side, id, lane, slot, options);
+    assert.equal(result.ok, true, JSON.stringify(result));
+    return result.entite;
+  };
+  const victime = poser('sorcier', 'ashigaru-des-braises', 'left', 0);
+  const attaquant = poser('joueur', 'feriel', 'left', 0);
+  const drakkar = poser('sorcier', 'drakkar-a-tete-de-dragon', 'left', 0, { sacrificeIds: [victime.id] });
+  const lateral = poser('joueur', 'ashigaru-des-braises', 'right', 0);
+  const autre = poser('sorcier', 'ashigaru-des-braises', 'left', 1);
+  rpgFinDeTour(duel);
+  const autreVoie = poser('sorcier', 'ashigaru-des-braises', 'right', 0);
+  rpgFinDeTour(duel);
+  assert.equal(drakkar.defenseur, true);
+  drakkar.ready = true;
+  assert.equal(rpgPeutAttaquer(drakkar), false);
+  assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', attaquant.id, 'left'), { cibles: [drakkar.id], directe: false });
+  assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', lateral.id, 'right'), { cibles: [autreVoie.id], directe: false });
+  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: autre.id }).raison, 'cible');
+  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: drakkar.id }).ok, true);
+});
+
 test('only a defender in the same lane attracts targeted attacks', () => {
   const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 10;
   duel.sorcier.main.push('ashigaru-des-braises', 'ashigaru-des-braises');

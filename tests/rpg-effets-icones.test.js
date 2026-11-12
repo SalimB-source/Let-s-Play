@@ -262,7 +262,9 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
   }
 
   const drakkar = cardById('drakkar-a-tete-de-dragon');
-  const [interdiction, naufrage] = drakkar.text.split(/(?<=[.!?])\s+/);
+  const [defenseur, interdiction, naufrage] = drakkar.text.split(/(?<=[.!?])\s+/);
+  assert.equal(iconePourLigne(drakkar, defenseur), 'defenseur');
+  assert.ok(pastillesDe('drakkar-a-tete-de-dragon').includes('Défenseur'));
   assert.equal(iconePourLigne(drakkar, interdiction), null,
     '« ne peut pas attaquer » ne reçoit pas une icône d’attaque');
   assert.equal(iconePourLigne(drakkar, naufrage), 'pioche',
