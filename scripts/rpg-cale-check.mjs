@@ -71,31 +71,19 @@ assert.equal(docLibre.querySelector('.rpg-card__prisonniere'), null,
 assert.equal(docLibre.querySelector('[data-compteur="cale"]'), null,
   'sans prise en cale, pas de losange ⛓ non plus');
 
-// ── 2 bis. Le losange ⛓ se range SOUS les couleurs ─────────────────────────
-// Les créatures à Abordage du set sont hybrides (sable + eau) : leur bloc de
-// couleur empile deux pastilles à gauche, et le losange de la cale se range
-// dessous. Il ne rejoint donc pas les compteurs d'Heures et de sable, qui se
-// lisent sous le coût, à droite.
+// ── 2 bis. La cale rejoint les marqueurs de créature au centre ─────────────
 const docHybride = documentDe(rendu.capitaine.html);
-const rangCale = docHybride.querySelector('.rpg-card__compteurs--cale');
+const rangCale = docHybride.querySelector('.rpg-card__compteurs-creature');
 assert.ok(rangCale?.querySelector('[data-compteur="cale"]'),
-  'le Cotre hybride : le losange ⛓ occupe son propre rang, sous les couleurs');
-assert.equal(rangCale.querySelector('[data-compteur="heures"], [data-compteur="sable"]'), null,
-  'le rang de la cale ne porte que la cale');
-assert.equal(docHybride.querySelector('.rpg-card__compteurs--hybride [data-compteur="cale"]'), null,
-  'le losange ⛓ ne remonte pas dans le rang des compteurs du coût');
-const ordreReperes = [...docHybride.querySelectorAll('.rpg-card-element-badge, .rpg-card__compteurs--cale')]
-  .map((noeud) => (noeud.classList.contains('rpg-card__compteurs--cale') ? 'cale' : 'couleurs'));
-assert.deepEqual(ordreReperes, ['couleurs', 'cale'],
-  'le losange ⛓ est rendu juste après la pastille de couleur, pas avant');
+  'hybride : la cale occupe le groupe centré de la créature');
+assert.equal(rangCale.querySelector('[data-compteur="sable"], [data-compteur="durabilite"]'), null,
+  'les compteurs d’armes restent séparés');
+assert.equal(docHybride.querySelector('.rpg-card__compteurs [data-compteur="cale"]'), null);
 
-// Une créature à Abordage d'une seule couleur (La Barbe Noire) n'a qu'une
-// pastille : la cale garde le rang commun. Les Deux Visages ont disparu —
-// plus de compteur 🎭 — et la Malédiction s'annonce dans la description lue.
 const docMono = documentDe(rendu.mono.html);
 const caleMono = docMono.querySelector('[data-compteur="cale"]');
-assert.ok(caleMono?.parentElement.matches('.rpg-card__compteurs:not(.rpg-card__compteurs--hybride)'),
-  'mono : le losange ⛓ reste dans le rang commun des compteurs, sous la couleur');
+assert.ok(caleMono?.parentElement.matches('.rpg-card__compteurs-creature'),
+  'mono : la cale est également centrée');
 assert.equal(caleMono.parentElement.querySelector('[data-compteur="visage"]'), null,
   'mono : le compteur des Deux Visages n’est plus rendu');
 assert.match(docMono.querySelector('.rpg-card')?.getAttribute('aria-label') ?? '', /malédiction/i,
@@ -244,22 +232,12 @@ assert.match(pageSource,
   /className="rpg-card-prison"\s*\n\s*style=\{caseEssai \? \{ '--case-essai': caseEssai \} : undefined\}/,
   'la case du mode sans terrains est posée sur le wrapper comme sur la carte');
 
-// Le losange ⛓ sous les couleurs : la règle commune part du haut de la carte
-// plus la hauteur du bloc de couleur, et le bloc hybride compte ses DEUX
-// pastilles (repère × 2 + leur écart). Sur la table, les pastilles posées
-// mesurent 19 cqw et leur écart 1.5 cqw : c'est cette mesure qui déplace le
-// losange, pas le repère commun de 27 cqw.
-const blocRangCale = css.slice(css.indexOf('.rpg-card__compteurs--cale {'), css.indexOf('.rpg-card__compteur--cale {'));
-assert.match(blocRangCale,
-  /top:\s*calc\(var\(--rpg-card-element-marker-top, 5%\) \+ var\(--rpg-card-marker-size, 26px\) \* 2 \+ 2px/,
-  'le losange ⛓ descend sous les deux pastilles empilées d’une hybride');
-assert.match(blocRangCale,
-  /left:\s*calc\(var\(--rpg-card-element-marker-left, 6%\) \+ \(var\(--rpg-card-marker-size, 26px\) - var\(--rpg-card-counter-size\)\) \/ 2\)/,
-  'il reste centré sur la colonne des couleurs, comme celui d’une mono');
-const feuilleMobile = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
-assert.match(feuilleMobile,
-  /\.rpg-card__compteurs\.rpg-card__compteurs--cale \{\s*top:\s*calc\(5% \+ 19cqw \* 2 \+ 1\.5cqw \+ var\(--rpg-card-counter-size\) \* \.21 \+ 4px\);/,
-  'sur la table, la hauteur du bloc de couleur est celle des pips réels (19 cqw, écart 1.5 cqw)');
+// La cale partage le positionnement central des autres marqueurs de créature.
+const blocCompteursCreature = css.slice(css.indexOf('.rpg-card__compteurs-creature {'), css.indexOf('.rpg-card__compteur {'));
+assert.match(blocCompteursCreature, /left:\s*50%/);
+assert.match(blocCompteursCreature, /flex-direction:\s*column/);
+assert.match(blocCompteursCreature, /gap:\s*calc\(var\(--rpg-card-counter-size\) \* \.42 \+ 2px\)/,
+  'les losanges empilés ne se chevauchent pas');
 
 console.log('✓ La prisonnière se glisse derrière son capteur sur la table ; dans la fiche, elle apparaît en petite carte dans la description.');
 

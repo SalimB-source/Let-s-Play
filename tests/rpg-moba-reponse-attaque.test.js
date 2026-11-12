@@ -31,12 +31,21 @@ test('aucune réponse, magie trop chère et contresort sans cible', () => {
 
 test('une réponse légale conserve la fenêtre sans altérer la partie', () => {
   const { duel } = attaque();
-  for (const id of ['trait-de-braise', 'grand-voile-blanc', 'parade-du-verre', 'papyrus', 'le-poids', 'garde-du-trone-givre']) {
+  for (const id of ['trait-de-braise', 'grand-voile-blanc', 'parade-du-verre', 'papyrus', 'le-poids']) {
     duel.joueur.main = [id];
     const avant = JSON.stringify(duel);
     assert.equal(rpgMobaPeutRepondreAttaque(duel, 'joueur'), true, id);
     assert.equal(JSON.stringify(duel), avant, `${id} ne modifie pas le duel`);
   }
+});
+
+test('une Embuscade ne retient pas la réponse pendant le tour adverse, même si sa condition est remplie', () => {
+  const { duel, cible } = attaque();
+  cible.pv = cible.pvMax - 1;
+  duel.joueur.main = ['garde-du-trone-givre'];
+  const avant = JSON.stringify(duel);
+  assert.equal(rpgMobaPeutRepondreAttaque(duel, 'joueur'), false);
+  assert.equal(JSON.stringify(duel), avant);
 });
 
 test('une magie sans cible légale ne retient pas la fenêtre', () => {

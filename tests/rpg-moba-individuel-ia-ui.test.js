@@ -125,3 +125,44 @@ test('une attaque directe sans réponse se résout automatiquement sur la voie',
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('une Embuscade en main ne bloque pas la résolution automatique pendant le tour adverse', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
+    let duel;
+    const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 }));
+    root = createRoot(document.getElementById('root'));
+    const props = { initialiser, onQuitter: () => {} };
+    const render = () => act(async () => root.render(React.createElement(Board, props)));
+    await render();
+    await act(async () => document.querySelector('.moba__mulligan .moba__primary').click());
+    duel.joueur.main = ['ashigaru-des-braises'];
+    const cible = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+    cible.pvMax = 3; cible.def = 3; cible.pv = 2;
+    rpgFinDeTour(duel); duel.sorcier.main = ['ashigaru-des-braises'];
+    const attaquant = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+    attaquant.ready = true; attaquant.atk = 3; attaquant.pv = attaquant.pvMax = attaquant.def = 5;
+    duel.sorcier.main = []; duel.joueur.main = ['garde-du-trone-givre'];
+    await render();
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
+    assert.equal(duel.combatDeclare?.cibleIndividuelle?.cibleId, cible.id);
+    assert.match(document.querySelector('.moba__controls').textContent, /Résolution automatique/);
+    const garde = [...document.querySelectorAll('.moba__hand button')].find((button) => button.textContent.includes('Garde du trône givré'));
+    assert.ok(garde && garde.disabled, 'l’Embuscade ne se joue pas pendant le tour adverse');
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
+    assert.equal(duel.combatDeclare, null);
+    assert.ok(!duel.joueur.creatures.some((e) => e.id === cible.id));
+    assert.deepEqual(duel.joueur.main, ['garde-du-trone-givre']);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

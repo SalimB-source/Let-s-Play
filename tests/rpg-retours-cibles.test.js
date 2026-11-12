@@ -38,7 +38,8 @@ function terminer(duel, cote) {
 
 test('Ténacité : la créature revient, attend la cible choisie et termine le début du tour une seule fois', () => {
   const duel = partie(), [a, b] = adversaires(duel);
-  const sacrifice = poser(duel, 'joueur', 'ashigaru-des-braises', 'left', 0);
+  const sacrifice = poser(duel, 'joueur', 'ashigaru-des-braises', 'right', 0);
+  // L'invocation prend la place physique de la victime choisie.
   const marteau = poser(duel, 'joueur', 'maitre-du-marteau', 'right', 0, { sacrificeIds: [sacrifice.id] });
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', 'sorcier').ok, true);
   rpgBlesserCreature(duel, 'joueur', marteau.id, 99);

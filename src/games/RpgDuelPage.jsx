@@ -3092,23 +3092,18 @@ export function TableCard({
         <span className="rpg-card__frost-glow" />
       </span>}
 
-      {/* Seuls les compteurs de la créature restent sous ses couleurs : ceux
-          de l'arme sont désormais incrustés dans sa vignette. */}
-      {(entite.heures?.restants > 0 || (entite.enCale && !hybride)) && (
-        <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
-          {entite.heures?.restants > 0 && <CompteurCarte type="heures" valeur={entite.heures.restants} />}
-          {entite.enCale && !hybride && (
+      {/* Les marqueurs de créature se partagent le centre, entre coût et effets.
+          Empilés s'ils coexistent, ils ne prennent pas la place des armes. */}
+      {(entite.heures?.restants > 0 || entite.enCale) && (
+        <span className="rpg-card__compteurs-creature" aria-hidden="true">
+          {entite.heures?.restants > 0 && (
+            <CompteurCarte type="heures" valeur={entite.heures.restants} />
+          )}
+          {entite.enCale && (
             <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
               <span>⛓</span>
             </span>
           )}
-        </span>
-      )}
-      {hybride && entite.enCale && (
-        <span className="rpg-card__compteurs rpg-card__compteurs--cale" aria-hidden="true">
-          <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
-            <span>⛓</span>
-          </span>
         </span>
       )}
       <header className="rpg-card__title">
@@ -3116,16 +3111,13 @@ export function TableCard({
       </header>
       {/* Sur la table, les icônes d'effets de la créature se rangent en colonne
           à la place du coût (qui ne s'imprime plus sur une carte posée), sur le
-          même axe. Si le coin est pris — losanges de compteurs d'une hybride,
-          bouton de capacité activée —, la colonne descend pour les laisser
-          lisibles. */}
+          même axe. Si le bouton de capacité activée occupe le coin, la colonne
+          descend pour le laisser lisible. */}
       {iconesEffets && (
         <IconesCarte
           carte={carte}
           entite={entite}
-          className={`rpg-card-icones--colonne${hybride && entite.heures?.restants > 0
-            ? ' rpg-card-icones--sous-compteurs'
-            : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
+          className={`rpg-card-icones--colonne${activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />
       )}
       {activation && cote === 'joueur' && onActiver && (

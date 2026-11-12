@@ -33,7 +33,7 @@ test('la vignette suit les armes réelles des deux camps et leur disparition', a
     const jitte = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 }, heures: { restants: 2 } }));
     const vignette = jitte.querySelector('.rpg-card__arme-vignette');
     assert.deepEqual([...vignette.querySelectorAll('[data-compteur]')].map((node) => [node.dataset.compteur, node.textContent]), [['durabilite', '2'], ['sable', '3']]);
-    assert.deepEqual([...jitte.querySelectorAll('.rpg-card__compteurs [data-compteur]')].map((node) => node.dataset.compteur), ['heures']);
+    assert.deepEqual([...jitte.querySelectorAll('.rpg-card__compteurs-creature [data-compteur]')].map((node) => node.dataset.compteur), ['heures']);
     const moba = new JSDOM(renderToStaticMarkup(React.createElement(TableCard, {
       entite: entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 } }),
       moba: { className: 'moba__slot', disabled: true, ariaLabel: 'Créature équipée' },
@@ -45,7 +45,7 @@ test('la vignette suit les armes réelles des deux camps et leur disparition', a
     assert.equal(hybride.querySelector('.rpg-card__compteurs--cale [data-compteur="durabilite"]'), null);
     const avecCale = rendre(entite({ carteId: 'rais-de-la-galiote', arme: { carteId: 'armure-de-cendres', durabilite: 1 }, enCale: { name: 'Prisonnière', carteId: 'chien-du-guet' } }));
     assert.equal(avecCale.querySelector('.rpg-card__arme-vignette [data-compteur="durabilite"]')?.textContent, '1');
-    assert.equal(avecCale.querySelector('.rpg-card__compteurs--cale [data-compteur="cale"]')?.textContent, '⛓');
+    assert.equal(avecCale.querySelector('.rpg-card__compteurs-creature [data-compteur="cale"]')?.textContent, '⛓');
     const epuisee = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 0, compteurs: 0 } }));
     assert.equal(epuisee.querySelector('.rpg-card__arme-compteurs'), null);
     assert.equal(epuisee.querySelector('.rpg-card__compteurs [data-compteur="sable"]'), null);
