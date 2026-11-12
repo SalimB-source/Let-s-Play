@@ -39,6 +39,8 @@ test('le plateau permet de choisir une victime puis de la remplacer dans le cent
     const voieCentrale = document.querySelector('.moba__lane[aria-label="Voie centrale"]');
     assert.match(voieCentrale.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Case sur les flancs/);
     assert.ok(voieCentrale.querySelector('.moba__conquest-lock img'));
+    assert.ok(voieCentrale.querySelector('.moba__side--sorcier > .moba__conquest--center'));
+    assert.equal(Boolean(voieCentrale.querySelector('.moba__side--joueur .moba__conquest')), false);
     const center = voieCentrale.querySelector('.moba__side--joueur');
     assert.equal(center.hasAttribute('inert'), false);
     await click(center.querySelector('.moba__slot.has-creature'));

@@ -222,7 +222,7 @@ test('une conquête adverse emploie la même animation sans changer sa propriét
   await render(); await attendreIA();
   assert.equal(duel.combatDeclare?.cote, 'sorcier', JSON.stringify({ tour: duel.tour, phase: duel.phase, main: duel.sorcier.main, log: duel.log.slice(-6), ready: attaquant.ready, erreur: document.querySelector('.moba__error')?.textContent }));
   assert.equal(document.querySelector('.moba__conquest-fx'), null);
-  await click([...document.querySelectorAll('.moba__controls button')].find((button) => /Passer et résoudre l’attaque/.test(button.textContent)));
+  await attendreIA(); // aucune réponse : la résolution est automatique
   assert.equal(duel.moba.lanes[0].conqueredBy, 'sorcier');
   assert.ok(document.querySelector('.moba__lane[aria-label="Voie gauche"] .moba__conquest-fx--sorcier'));
 }));
