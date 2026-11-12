@@ -739,6 +739,29 @@
 .moba__setup .moba__deck-choice button { width: 100%; margin-top: 2px; padding: 9px; }
 .moba__setup-actions { display: flex; justify-content: space-between; gap: 10px; }
 .moba__setup-actions button { margin: 0; }
+/* Le décor se choisit indépendamment du deck et n'altère aucune case. */
+.moba__plateau-picker { min-width: 0; margin: 8px 0 12px; padding: 8px 0 0; border: 0; border-top: 1px solid #bda07055; }
+.moba__plateau-picker legend { padding: 0 8px 0 0; color: #f2dbaf; font: 600 12px system-ui,sans-serif; }
+.moba__plateau-options { display: flex; flex-wrap: wrap; gap: 9px; }
+.moba__setup .moba__plateau-option { display: grid; gap: 3px; width: clamp(122px, 15vw, 190px); min-height: 0; padding: 4px; border: 1px solid #977b57; border-radius: 6px; background: #151b20; color: #efdfc1; text-align: left; font: 600 11px/1.2 system-ui,sans-serif; }
+.moba__plateau-option img { display: block; width: 100%; aspect-ratio: 2.4 / 1; object-fit: cover; border-radius: 3px; }
+.moba__plateau-option span { padding: 3px; }
+.moba__setup .moba__plateau-option.is-selected { border-color: #f2d3a0; box-shadow: 0 0 0 2px #d5ae73a8; }
+.moba__setup .moba__plateau-option[aria-pressed="true"] span::before { content: '✓ '; color: #c8e9ed; }
+/* Sur la glace, les emplacements restent lisibles sans modifier la géométrie. */
+.moba--lac-gele-viking { background-color: #9ebac6; }
+.moba--lac-gele-viking .moba__lane + .moba__lane { border-left-color: #d7f2ff9c; }
+.moba--lac-gele-viking .moba__slot.is-empty { border-color: #d7eff8aa; background-color: #1a41565c; }
+.moba--lac-gele-viking .moba__health { background: #132c3edb; }
+.moba--lac-gele-viking .moba__health-bar { background: #193c4d; border-color: #6ca6ad; }
+.moba--temple-du-nil-egyptien { background-color: #b48d59; }
+.moba--temple-du-nil-egyptien .moba__lane + .moba__lane { border-left-color: #f2dfa9af; }
+.moba--temple-du-nil-egyptien .moba__slot.is-empty { border-color: #f8deb3a6; background-color: #76532340; }
+.moba--temple-du-nil-egyptien .moba__health { background: #2b211acb; }
+.moba--temple-du-nil-egyptien .moba__health-bar { background: #173c4c; border-color: #9ac8c5; }
+@media (max-width: 650px) {
+  .moba__setup .moba__plateau-option { width: calc((100% - 18px) / 3); font-size: 10px; }
+}
 .moba__editor { width: min(100%, 1000px); max-height: calc(100dvh - 36px); border-color: #a28356; background: radial-gradient(ellipse at 70% -40%, #57412e, transparent 65%), #1a191a; }
 .moba__editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .moba__editor-heading > div > span { color: #c8a875; font: 700 10px system-ui,sans-serif; letter-spacing: .16em; }
