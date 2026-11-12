@@ -13,9 +13,9 @@ test('les effets des cartes posées en MOBA sont agrandis sans changer la main n
   </main></div><div class="rpg-battle"><div class="moba__slots"><button class="rpg-card rpg-card--img"><span class="rpg-card-icones rpg-card-icones--colonne"></span></button></div></div>`);
   try {
     const style = (selector) => dom.window.getComputedStyle(dom.window.document.querySelector(selector)).getPropertyValue('--rpg-plaque-taille').replaceAll(/\s+/g, '');
-    assert.equal(style('.rpg-battle--moba .moba__slots .rpg-card-icones'), 'clamp(18px,22cqw,30px)');
-    assert.notEqual(style('.moba__hand .rpg-card-icones'), 'clamp(18px,22cqw,30px)');
-    assert.notEqual(style('.moba__preview-layer .rpg-card-icones'), 'clamp(18px,22cqw,30px)');
-    assert.notEqual(style('.rpg-battle:not(.rpg-battle--moba) .rpg-card-icones'), 'clamp(18px,22cqw,30px)');
+    assert.equal(style('.rpg-battle--moba .moba__slots .rpg-card-icones'), 'clamp(21px,26cqw,36px)');
+    assert.notEqual(style('.moba__hand .rpg-card-icones'), 'clamp(21px,26cqw,36px)');
+    assert.notEqual(style('.moba__preview-layer .rpg-card-icones'), 'clamp(21px,26cqw,36px)');
+    assert.notEqual(style('.rpg-battle:not(.rpg-battle--moba) .rpg-card-icones'), 'clamp(21px,26cqw,36px)');
   } finally { dom.window.close(); }
 });

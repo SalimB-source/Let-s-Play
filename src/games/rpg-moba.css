@@ -1019,18 +1019,17 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   --rpg-envol-descente: -3px;
 }
 
-/* Sur les créatures posées en MOBA, coût et couleur étaient trop grands tandis
-   que les effets étaient minuscules. Les mesures vivent sur les enfants de la
-   carte (le cqw se rapporte à la face) ; la colonne d'effets les agrandit seule.
-   Main, aperçu, cartes des autres modes et cases vides restent inchangés. */
+/* Sur les créatures posées en MOBA, agrandir coût, couleur et capacités sans
+   changer la main, les aperçus ni les cartes du duel classique. Le cqw se
+   rapporte à la face : les pierres suivent la taille réelle de chaque case. */
 .rpg-battle--moba .moba .moba__slots .rpg-card--img > * {
-  --rpg-card-marker-size: clamp(16px, 18cqw, 26px);
-  --rpg-plaque-taille: clamp(16px, 18cqw, 26px);
+  --rpg-card-marker-size: clamp(18px, 22cqw, 30px);
+  --rpg-plaque-taille: clamp(18px, 22cqw, 30px);
   --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
 }
 .rpg-battle--moba .moba .moba__slots .rpg-card--img .rpg-card-icones.rpg-card-icones--colonne {
-  --rpg-plaque-taille: clamp(18px, 22cqw, 30px);
-  gap: clamp(2px, 1cqw, 3px);
+  --rpg-plaque-taille: clamp(21px, 26cqw, 36px);
+  gap: clamp(1px, .6cqw, 2px);
 }
 
 /* Sélection du deck : des sachets en perspective, purement visuels. Ils ne
