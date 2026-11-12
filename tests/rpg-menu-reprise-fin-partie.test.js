@@ -224,3 +224,42 @@ test('après « Retour aux tours », un duel terminé ne propose plus de le repr
     dom.window.close();
   }
 });
+
+test('un duel classique démarre depuis le menu et reste accessible après un retour au menu', async () => {
+  const dom = installerDom();
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false },
+    ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
+    appType: 'custom', logLevel: 'silent',
+  });
+  let root;
+  try {
+    const { default: Page } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const { RPG_PROFIL_STORAGE_KEY, xpTotalDuNiveau } = await vite.ssrLoadModule('/src/games/rpgProfil.js');
+    const { installerDeckMaisonDeTest, lancerDuelDepuisMenu, passerMulligan } = await vite.ssrLoadModule('/scripts/rpg-duel-start.js');
+    const { convertirDeckSansTerrain } = await vite.ssrLoadModule('/src/games/rpgCards.js');
+    const deck = convertirDeckSansTerrain(['trait-de-braise']);
+    window.localStorage.clear();
+    window.localStorage.setItem('letsplay_sablier_sound_v1', 'off');
+    window.localStorage.setItem(RPG_PROFIL_STORAGE_KEY, JSON.stringify({ version: 1, xp: xpTotalDuNiveau(2), boostersOfferts: 0 }));
+    installerDeckMaisonDeTest(deck);
+    const container = document.createElement('div'); document.body.appendChild(container);
+    root = createRoot(container);
+    const cliquer = async (el) => { assert.ok(el, 'bouton présent'); await act(async () => el.click()); };
+    await act(async () => root.render(React.createElement(Page, { joueurDeck: deck, rng: () => .5 })));
+    const lancer = await lancerDuelDepuisMenu(container, cliquer);
+    assert.ok(lancer, 'le deck permet de lancer le duel');
+    assert.ok(container.querySelector('[data-scene="duel"]'), 'la table classique est affichée');
+    assert.ok(container.querySelector('.rpg-mulligan__valider'), 'la main de départ est proposée');
+    await passerMulligan(container, cliquer);
+    await cliquer(container.querySelector('.rpg-duel-nav__burger'));
+    const menu = [...container.querySelectorAll('.rpg-duel-nav__menu button')].find((b) => b.textContent.includes('Menu'));
+    await cliquer(menu);
+    assert.ok(container.querySelector('[data-scene="menu"]'));
+    await cliquer(container.querySelector('.rpg-menu-button--resume'));
+    assert.ok(container.querySelector('[data-scene="duel"]'), 'le duel reprend sans plantage');
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await vite.close(); dom.window.close();
+  }
+});
