@@ -20,6 +20,7 @@ import { portefeuilleVide, reclamerRecompenseTutoriel } from '../src/games/rpgCr
 import {
   RPG_TUTORIELS,
   appliquerManaInitialTutoriel,
+  choisirManaTutoriel,
   cartesDeLaLecon,
   paquetDeLaLecon,
   preparerDuelTutoriel,
@@ -58,7 +59,7 @@ test('le menu propose six leçons — cinq decks et le mot-clé Embuscade — ch
     'balance-des-heures',
     'serment-du-soleil-rouge',
     'serment-des-neuf-hivers',
-    'balance-des-heures',
+    'sentiers-de-cendre',
   ]);
   for (const tutoriel of RPG_TUTORIELS) {
     assert.ok(tutoriel.reward > 0, `${tutoriel.id} paie ses crédits`);
@@ -100,7 +101,7 @@ test('la préparation installe la main, le mana et la scène de chaque leçon', 
       sorcierDeck: deckDe(tutoriel.opponentDeckId), modeMana: RPG_MODE_MANA_ESSAI, rng: () => .91 });
     preparerDuelTutoriel(autreTirage, tutoriel);
     assert.deepEqual(autreTirage.joueur.main, duel.joueur.main, `${tutoriel.id} : compléments déterministes`);
-    const manaAttendu = tutoriel.playerMana ?? { [RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutoriel.deckId).element]: 1 };
+    const manaAttendu = tutoriel.playerMana ?? { [tutoriel.element]: 1 };
     for (const [couleur, montant] of Object.entries(manaAttendu)) {
       assert.equal(duel.joueur.mana[couleur], montant, `${tutoriel.id} : mana ${couleur}`);
     }
@@ -117,6 +118,22 @@ test('la préparation installe la main, le mana et la scène de chaque leçon', 
       }
     }
   }
+});
+
+test('chaque nouveau tour guidé choisit sa couleur sans bloquer les actions', () => {
+  const fondations = tutorielParId('fondations-du-sablier');
+  const duel = duelDeLecon(fondations);
+  assert.equal(duel.joueur.manaChoixEnAttente, false);
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  assert.equal(duel.joueur.manaChoixEnAttente, true);
+  assert.equal(choisirManaTutoriel(duel, fondations), true);
+  assert.equal(duel.joueur.manaChoixEnAttente, false);
+  assert.equal(duel.joueur.manaSources.at(-1), 'sable');
+  const embuscade = duelDeLecon(tutorielParId('embuscade-de-la-lune-noire'));
+  assert.equal(embuscade.joueur.manaSources.length, 10, 'la réserve guidée contient cinq sources de chaque couleur');
+  assert.equal(embuscade.joueur.manaSources.filter((c) => c === 'sable').length, 5);
+  assert.equal(embuscade.joueur.manaSources.filter((c) => c === 'tenebres').length, 5);
 });
 
 test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () => {
@@ -178,8 +195,11 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   const ashigaru = duel.joueur.creatures.find((entite) => entite.carteId === 'ashigaru-des-braises');
   assert.equal(ashigaru.atk, 2);
   assert.equal(ashigaru.pv, 2, 'la Résonance du torii renforce l’Ashigaru');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge').ok, true);
-  assert.equal(duel.joueur.creatures.length, 5, 'le Daimyō crée deux jetons : cinq créatures, la limite');
+  const viking = duel.joueur.creatures.find((entite) => entite.carteId === 'viking-des-neiges');
+  assert.ok(viking, 'la leçon prête un Viking à sacrifier, sans toucher au deck');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge', null,
+    { sacrificeIds: [viking.id] }).ok, true);
+  assert.equal(duel.joueur.creatures.length, 5, 'le Daimyō remplace le Viking et crée deux jetons');
   assert.equal(duel.joueur.mana.braise, 0, 'les trois poses coûtent exactement dix manas');
 
   rpgFinDeTour(duel);
@@ -190,7 +210,7 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   rpgOuvrirFenetreReponse(duel, 'joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', ids, null, null, null, {}, { attaqueDeclaree: true }).ok, true);
   assert.ok(duel.sorcier.pv < pvAvant);
-  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk), [3, 4, 5, 3, 3],
+  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk).sort((a, b) => a - b), [3, 3, 3, 4, 5],
     'la Bannière grandit chaque Samouraï qui attaque');
 });
 

@@ -25,8 +25,8 @@
  * 4. **Les apports du compte** — des cartes gagnées sur un autre appareil,
  *    mises en cache local (`chargerCollectionDistante`) et fusionnées.
  *
- * Les **decks du catalogue** (les sept boîtiers de départ) ne consultent jamais
- * la collection : ce sont des decks préconstruits, jouables d'entrée de jeu.
+ * Les **huit archétypes thématiques** ne consultent jamais la collection :
+ * ce sont les préconstruits des duels, de l'IA et des leçons.
  * Seuls les decks maison y sont tenus.
  *
  * Le compte connecté porte le tout sur le serveur (`rpgSablierRemote.js`, table

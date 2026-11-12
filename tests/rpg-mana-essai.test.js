@@ -2,16 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   RPG_MANA_ESSAI_CHAMP_MAX,
-  RPG_MANA_ESSAI_DECKS,
+  RPG_MANA_ESSAI_DECKS as DECKS_THEMATIQUES,
   RPG_MANA_ESSAI_MAIN_DEPART,
   RPG_MANA_ESSAI_MAIN_MAX,
   RPG_MANA_ESSAI_MAX,
   RPG_MANA_ESSAI_TAILLE,
   RPG_MODE_MANA_ESSAI,
-  adversaireManaEssai,
   validerDeckManaEssai,
 } from '../src/games/rpgManaEssai.js';
-import { cardById, cardColorCost, rpgValiderDeck, RPG_DECK_JOUEUR_BASE, RPG_ELEMENTS } from '../src/games/rpgCards.js';
+import { cardById, cardColorCost, rpgValiderDeck, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import {
   rpgChoisirCouleurMana,
   rpgDefausserCarte,
@@ -33,6 +32,8 @@ import {
   rpgVainqueur,
 } from '../src/games/rpgDuel.js';
 import { choisirCouleurManaIA, choisirMulliganIA } from '../src/games/rpgAI.js';
+import { DECKS_ESSAI_HISTORIQUES as RPG_MANA_ESSAI_DECKS, DECK_ESSAI_MONO_FIXTURE as RPG_DECK_JOUEUR_BASE } from './fixtures/legacyManaEssaiDecks.js';
+const adversaireManaEssai = (deck) => RPG_MANA_ESSAI_DECKS[(RPG_MANA_ESSAI_DECKS.indexOf(deck) + 1) % RPG_MANA_ESSAI_DECKS.length];
 
 const rng = () => 0.5;
 const [mono, bi, deux] = RPG_MANA_ESSAI_DECKS;
@@ -48,7 +49,12 @@ const mulligans = (duel, indices = []) => {
 };
 const total = (camp) => Object.values(camp.manaMax).reduce((somme, quantite) => somme + quantite, 0);
 
-test('les cinq decks de démonstration partagent le format 30 cartes sans terrain', () => {
+test('les huit préconstruits remplacent les anciens essais ; les fixtures gardent le moteur mono-couleur sous test', () => {
+  assert.equal(DECKS_THEMATIQUES.length, 8);
+  for (const deck of DECKS_THEMATIQUES) {
+    assert.equal(deck.elements.length, 2);
+    assert.deepEqual(validerDeckManaEssai(deck), { ok: true });
+  }
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5);
   // Le dernier paquet est Sable + Eau, plus la flamme du Brûlot (Braise).
   assert.deepEqual(RPG_MANA_ESSAI_DECKS.map((deck) => deck.elements.length), [1, 2, 2, 1, 2]);

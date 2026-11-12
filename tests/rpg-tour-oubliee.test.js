@@ -65,6 +65,7 @@ import {
   rpgSorcierPv,
 } from '../src/games/rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
+import { RPG_DECKS_THEMATIQUES } from '../src/games/rpgDecksThematiques.js';
 import { RPG_NIVEAUX_IA, rpgProfilIA } from '../src/games/rpgAI.js';
 import {
   plateauDeDeck,
@@ -245,12 +246,13 @@ test('aucune carte de l’Oubliée n’est obtenable : ni dotation, ni révélat
 
 // ── 2. Les paquets et la rampe ──────────────────────────────────────────────
 
-test('les six paquets de la tour sont valides, entièrement composés du set et intacts après conversion', () => {
+test('les six listes historiques de l’Oubliée restent valides ; la campagne joue les Vampires bicolores', () => {
   assert.equal(Object.keys(RPG_TOUR_OUBLIEE_DECKS).length, 6);
   const setIds = new Set(RPG_TOUR_OUBLIEE_CARTES.map((carte) => carte.id));
+  const vampires = RPG_DECKS_THEMATIQUES.find((deck) => deck.id === 'vampires');
   for (const [deckId, liste] of Object.entries(RPG_TOUR_OUBLIEE_DECKS)) {
-    assert.equal(deckHistoire(deckId), liste, `${deckId} est enregistré dans RPG_STORY_DECKS`);
-    assert.equal(RPG_STORY_DECKS[deckId], liste);
+    assert.equal(deckHistoire(deckId), RPG_STORY_DECKS[deckId]);
+    assert.equal(deckHistoire(deckId), vampires.cardIds, `${deckId} joue les Vampires`);
     assert.equal(liste.length, 30, `${deckId} : trente cartes`);
     const validation = rpgValiderDeck(liste);
     assert.equal(validation.ok, true, `${deckId} : ${validation.raison}`);
@@ -402,7 +404,7 @@ test('chaque étage de la tour a son paquet, son plateau connu et son ambiance',
       assert.ok(rang[cardById(etage.avatar).rarity] >= 1, `${etage.id} : le portrait n’est pas une carte de base`);
       assert.equal(cardById(etage.avatar).typeLine.includes('légendaire'), true,
         `${etage.id} : le portrait est une figure légendaire`);
-      assert.ok(deckHistoire(etage.deck).includes(etage.avatar), `${etage.id} : son portrait joue dans son paquet`);
+      assert.ok(deckHistoire(etage.deck).includes('general-du-croissant-noir'), `${etage.id} : la Cour vampire affronte le joueur`);
     }
   }
   // La rampe des visages suit celle des paquets : deux figures ordinaires en

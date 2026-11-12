@@ -11,6 +11,7 @@
  * Lancer : `npm run check:rpg-pvp`.
  */
 
+import { DECKS_ESSAI_HISTORIQUES as RPG_MANA_ESSAI_DECKS } from './fixtures/legacyManaEssaiDecks.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -19,7 +20,7 @@ import {
   rpgMulligan,
   rpgDemarrerManaEssai,
 } from '../src/games/rpgDuel.js';
-import { RPG_MANA_ESSAI_DECKS, RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
+import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
 import {
   RPG_PVP_HORLOGES,
@@ -298,9 +299,9 @@ test('les deux sièges remplacent réellement leurs cartes au mulligan avant le 
 });
 
 test('combat PvP en deux temps : déclaration publique, blocage adverse et identifiants monotones', async () => {
-  const { RPG_DECKS_ARCHETYPES, cardById } = await import('../src/games/rpgCards.js');
-  const deckA = RPG_DECKS_ARCHETYPES[0].cardIds;
-  const deckB = RPG_DECKS_ARCHETYPES[1].cardIds;
+  const { cardById } = await import('../src/games/rpgCards.js');
+  const deckA = DECK_A;
+  const deckB = DECK_B;
   const duel = rpgNouveauDuel({
     joueurDeck: deckA,
     sorcierDeck: deckB,

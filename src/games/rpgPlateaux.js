@@ -257,7 +257,7 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'veilleurs-du-desert': 'erg-du-sahara',
   // La Cour des Djinns garde la table d'origine.
   'cour-des-djinns': 'table-des-heures',
-  'sentiers-de-cendre': 'caravane-de-gourara',
+  'sentiers-de-cendre': 'necropole-des-dalles', // identifiant historique, deck Vampire
   'maree-des-abysses': 'ruines-de-tipaza',
   // Le Nord : le Serment des Neuf Hivers se bat sur la place du village viking.
   'serment-des-neuf-hivers': 'village-viking',
@@ -273,6 +273,14 @@ export const RPG_PLATEAUX_PAR_DECK = {
   // du galion corsaire vu de dessus, en duel libre comme en mode sans terrains.
   'lettres-de-marque': 'navire-pirate',
   'essai-mana-lettres-de-marque': 'navire-pirate',
+  // Essai mana : les huit archétypes bicolores ont chacun un décor cohérent.
+  'essai-mana-sable': 'erg-du-sahara',
+  'essai-mana-sources': 'ruines-de-tipaza',
+  'essai-mana-sable-braise': 'table-des-heures',
+  'essai-mana-trois-couleurs': 'cour-de-l-empereur', // alias sauvegardé, Samouraïs neige/braise
+  'essai-mana-tenebres': 'necropole-des-dalles',
+  'essai-mana-vikings': 'village-viking',
+  'essai-mana-vampires': 'necropole-des-dalles',
   // Campagne (clés de `RPG_STORY_DECKS`) : la Souffleuse tient la piste de
   // caravane du deck hybride dont elle vient ; le Grand Horloger, lui, reçoit
   // dans la salle haute de la Chambre, sur la table d'origine. Les quatre

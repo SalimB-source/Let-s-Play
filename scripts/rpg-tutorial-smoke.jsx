@@ -64,8 +64,11 @@ export async function checkRpgTutorial(assert) {
 
     await harnais.click(harnais.next(), 'l’étape d’accueil');
     assert.equal(harnais.step(), 'main');
-    assert.deepEqual([...container.querySelectorAll('.rpg-hand__card')].map((element) => element.dataset.cardId),
-      RPG_TUTORIELS[0].openingHand, 'la main guidée est celle de la leçon');
+    const mainVisible = [...container.querySelectorAll('.rpg-hand__card')].map((element) => element.dataset.cardId);
+    assert.equal(mainVisible.length, 5, 'la main guidée contient cinq cartes du préconstruit bicolore');
+    for (const id of RPG_TUTORIELS[0].openingHand) {
+      assert.ok(mainVisible.includes(id), `${id} reste disponible après le tri par coût`);
+    }
 
     await avancerInfos(harnais, 'creature');
     assert.equal(harnais.step(), 'creature');
@@ -380,7 +383,11 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await harnais.click(harnais.next(), 'la règle de la Résonance');
     assert.equal(harnais.step(), 'daimyo');
     await harnais.click(harnais.card('daimyo-du-soleil-rouge'), 'le Daimyō du Soleil rouge');
-    await act(async () => { await wait(850); });
+    assert.ok(container.querySelector('.rpg-sacrifice-choix'), 'le prix d’invocation attend le Viking');
+    await harnais.click(container.querySelector('.rpg-sacrifice-choix__sacrifier'), 'confirmer le prix du Daimyō');
+    assert.equal(harnais.tuto(), null, 'le voile laisse sélectionner la victime sur le champ');
+    await harnais.click(harnais.carteChamp('equipe', 'viking-des-neiges'), 'sacrifier le Viking, pas les Samouraïs');
+    await act(async () => { await wait(1900); });
     assert.equal(harnais.step(), 'banniere');
     await harnais.click(harnais.next(), 'la règle de la Bannière');
     assert.equal(harnais.step(), 'fin-tour-soleil');

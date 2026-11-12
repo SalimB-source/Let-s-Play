@@ -97,6 +97,7 @@ import {
 } from '../src/games/rpgCards.js';
 import { rpgExils, rpgLancerMagie, rpgRenvoisEnMain, rpgDefausserCarte, rpgPeutEngagerPourMana } from '../src/games/rpgDuel.js';
 import { choisirMulliganIA } from '../src/games/rpgAI.js';
+import { RPG_DECKS_THEMATIQUES } from '../src/games/rpgDecksThematiques.js';
 import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR, cardArtFurie } from '../src/games/rpgCardArt.js';
 
 /** Main de départ générique, mélangée de façon fixe. */
@@ -4782,13 +4783,14 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
   assert.equal(empreintes.size, 37, 'les peintures Neige sont toutes différentes');
 });
 
-test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {
+test('le Serment des Neuf Hivers joue les Vikings neige/eau ; sa recette Neige reste testable', () => {
   const deck = RPG_DECKS_ARCHETYPES.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
-  assert.equal(deck.element, 'neige');
+  assert.equal(deck.element, 'hybride');
+  assert.deepEqual(deck.elements, ['neige', 'eau']);
   assert.equal(deck.terrain, 'glacier');
-  assert.equal(deck.cardIds, RPG_DECK_NEIGE_BASE, 'la sélection joue la liste de 30 cartes du deck');
+  assert.equal(deck.cardIds, RPG_DECKS_THEMATIQUES.find((theme) => theme.id === 'vikings').cardIds);
   const valide = rpgValiderDeck(deck.cardIds);
   assert.equal(valide.ok, true, valide.raison);
   assert.equal(valide.terrains, 0, 'aucun terrain dans le format automatique');
@@ -4796,7 +4798,8 @@ test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrai
   assert.equal(deck.cardIds.filter((id) => id === 'glacier-des-arches').length, 0);
   for (const id of new Set(deck.cardIds)) {
     const carte = cardById(id);
-    assert.deepEqual(cardColors(carte), ['neige'], `${id} reste dans l’identité Neige du deck`);
+    assert.ok(cardColors(carte).every((couleur) => deck.elements.includes(couleur)),
+      `${id} reste dans l’identité Neige/Eau des Vikings`);
   }
 
   // Les raretés sont celles de Magic : seule la mythique est unique ; la
@@ -5042,7 +5045,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(serpent.bouclier, 1);
 });
 
-test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
+test('les listes historiques restent valides et le catalogue joue les huit thèmes', () => {
   assert.deepEqual(RPG_DECKS_ARCHETYPES.map(({ id }) => id),
     ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge', 'balance-des-heures', 'lettres-de-marque'],
     'les huit decks du catalogue, dont les deux cultures de Braise, les Ténèbres et la Régence');
@@ -5105,8 +5108,9 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   const deckHybride = RPG_DECKS_ARCHETYPES.find(({ id }) => id === 'sentiers-de-cendre');
   assert.ok(deckHybride, 'le deck hybride apparaît dans la sélection');
   assert.equal(deckHybride.role, 'joueur');
-  assert.deepEqual(deckHybride.elements, ['sable', 'braise']);
-  assert.equal(deckHybride.cardIds, RPG_DECK_HYBRIDE_BASE, 'la sélection utilise le deck hybride de 30 cartes');
+  assert.deepEqual(deckHybride.elements, ['sable', 'tenebres']);
+  assert.equal(deckHybride.cardIds, RPG_DECKS_THEMATIQUES.find((theme) => theme.id === 'vampires').cardIds,
+    'la sélection utilise le deck Vampire bicolore');
   const valide = rpgValiderDeck(deckHybride.cardIds);
   assert.equal(valide.ok, true, valide.raison);
   assert.equal(valide.terrains, 0);
@@ -5120,8 +5124,8 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
   }
   for (const id of new Set(RPG_DECK_HYBRIDE_BASE)) {
     const carte = cardById(id);
-    assert.ok(cardColors(carte).every((couleur) => deckHybride.elements.includes(couleur)),
-      `${id} reste dans l’identité Sable/Braise du deck`);
+    assert.ok(cardColors(carte).every((couleur) => ['sable', 'braise'].includes(couleur)),
+      `${id} reste dans l’identité Sable/Braise de la recette historique`);
   }
   const cartesHybrides = new Set(RPG_DECK_HYBRIDE_BASE.filter((id) => {
     const cout = cardColorCost(cardById(id));

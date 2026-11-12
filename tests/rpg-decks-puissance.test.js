@@ -1,7 +1,8 @@
 /**
- * Les decks du Sablier sont **composés** : ces contrôles tiennent la règle
- * « les meilleures cartes d'abord » (`rpgCardPower.js`, `rpgDeckComposer.js`,
- * `rpgDeckRecipes.js`).
+ * Les recettes historiques restent composables : ces contrôles tiennent la
+ * règle « les meilleures cartes d'abord » (`rpgCardPower.js`,
+ * `rpgDeckComposer.js`, `rpgDeckRecipes.js`). Les listes effectivement jouées
+ * sont contrôlées aussi par rpg-decks-thematiques-modes.test.js.
  *
  * Trois familles d'assertions :
  *
@@ -22,7 +23,7 @@ import assert from 'node:assert/strict';
 
 import {
   CATALOGUE_DU_COMPOSEUR,
-  RPG_DECKS_ARCHETYPES,
+  RPG_DECKS_ARCHETYPES as ARCHETYPES_JOUES,
   RPG_DUEL_CARDS,
   carteJouableSansTerrain,
   cardById,
@@ -33,10 +34,31 @@ import {
 import { RPG_RECETTES_DECKS, RPG_RECETTES_HISTOIRE } from '../src/games/rpgDeckRecipes.js';
 import { composerDeck } from '../src/games/rpgDeckComposer.js';
 import { comparerCartesParPuissance, puissanceCarte, rangRarete } from '../src/games/rpgCardPower.js';
-import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
+import { RPG_STORY_DECKS as DECKS_HISTOIRE_JOUES } from '../src/games/rpgStoryTours.js';
+import { RPG_DECKS_THEMATIQUES } from '../src/games/rpgDecksThematiques.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 
+// Les recettes restent un moteur testable, mais ne sont plus les listes
+// préconstruites jouées. Vérifier leurs invariants sur leurs propres sorties,
+// et le catalogue actif sur le contrat inter-modes séparé.
+const ART_RECETTES = {
+  'veilleurs-du-desert': 'cavalier-amazigh-du-desert',
+  'cour-des-djinns': 'anqa-des-braises', 'sentiers-de-cendre': 'feriel',
+  'maree-des-abysses': 'leviathan', 'serment-des-neuf-hivers': 'valkyrie-des-glaces',
+  'serment-du-soleil-rouge': 'kagutsuchi-flamme-originelle',
+  'balance-des-heures': 'la-devoreuse', 'lettres-de-marque': 'la-barbe-rousse',
+};
+const RPG_DECKS_ARCHETYPES = ARCHETYPES_JOUES.map((deck) => ({ ...deck,
+  boxArt: ART_RECETTES[deck.id],
+  cardIds: composerDeck(RPG_RECETTES_DECKS[deck.id], CATALOGUE_DU_COMPOSEUR),
+}));
+const RPG_STORY_DECKS = {
+  ...Object.fromEntries(RPG_DECKS_ARCHETYPES.map((deck) => [deck.id, deck.cardIds])),
+  ...Object.fromEntries(Object.entries(RPG_RECETTES_HISTOIRE).map(([id, recette]) =>
+    [id, composerDeck(recette, CATALOGUE_DU_COMPOSEUR)])),
+};
 const RECETTES = { ...RPG_RECETTES_DECKS, ...RPG_RECETTES_HISTOIRE };
+
 const carteParId = new Map(RPG_DUEL_CARDS.map((carte) => [carte.id, carte]));
 
 /** Les couleurs admises dans une liste : celles du vivier (`identite`), plus
@@ -69,7 +91,13 @@ function mieuxClasse(a, b) {
   return rangA > rangB || (rangA === rangB && puissanceA > puissanceB);
 }
 
-// ── 1. Chaque deck vaut la composition de sa recette ────────────────────────
+test('les decks joués et les recettes anciennes restent distincts', () => {
+  const actives = new Set(RPG_DECKS_THEMATIQUES.map((deck) => deck.cardIds.join('|')));
+  for (const deck of ARCHETYPES_JOUES) assert.ok(actives.has(deck.cardIds.join('|')), deck.id);
+  for (const cartes of Object.values(DECKS_HISTOIRE_JOUES)) assert.ok(actives.has(cartes.join('|')));
+});
+
+// ── 1. Les recettes historiques restent composables ────────────────────────
 
 test('chaque recette somme 30 cartes sans terrain et désigne un quota cohérent', () => {
   for (const [deckId, recette] of Object.entries(RECETTES)) {
@@ -81,7 +109,7 @@ test('chaque recette somme 30 cartes sans terrain et désigne un quota cohérent
   }
 });
 
-test('les decks du catalogue et de l’Histoire sont composés par leur recette', () => {
+test('les anciennes recettes restent reproductibles, sans remplacer les decks joués', () => {
   for (const deck of RPG_DECKS_ARCHETYPES) {
     const recette = RPG_RECETTES_DECKS[deck.id];
     assert.ok(recette, `${deck.id} a sa recette`);

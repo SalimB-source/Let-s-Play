@@ -227,38 +227,20 @@ test('la Tour du Corbeau dresse quatre étages hybrides avant la tour du Sablier
   }
 });
 
-test('les quatre paquets de la tour sont hybrides, valides et composés par leur recette', () => {
+test('la Tour du Corbeau conserve ses quatre étapes avec le deck Tombes neige/ténèbres', () => {
+  const modele = deckHistoire(DECKS[0]);
   for (const deckId of DECKS) {
     const recette = RPG_RECETTES_HISTOIRE[deckId];
-    assert.ok(recette, `${deckId} a sa recette`);
-    assert.deepEqual(recette.identite, ['neige', 'tenebres'], `${deckId} est hybride Neige + Ténèbres`);
-    assert.deepEqual(RPG_STORY_DECKS[deckId], composerDeck(recette, CATALOGUE_DU_COMPOSEUR),
-      `${deckId} vaut la composition de sa recette`);
-
+    assert.deepEqual(recette.identite, ['neige', 'tenebres']);
+    assert.equal(composerDeck(recette, CATALOGUE_DU_COMPOSEUR).length, 30,
+      'la recette historique reste composable pour les tests du moteur');
     const deck = deckHistoire(deckId);
-    const validation = rpgValiderDeck(deck);
-    assert.equal(validation.ok, true, `${deckId} : ${validation.raison}`);
+    assert.equal(deck, RPG_STORY_DECKS[deckId]);
+    assert.equal(deck, modele, `${deckId} joue le thème des tombes`);
+    assert.equal(rpgValiderDeck(deck).ok, true, deckId);
     assert.equal(deck.length, 30);
-    const couleurs = [...new Set(deck.flatMap((id) => cardColors(cardById(id))))].sort();
-    assert.deepEqual(couleurs, ['neige', 'tenebres'], `${deckId} ne sort pas de son identité`);
-  }
-
-  // La difficulté des paquets monte : le premier étage ménage ses mythiques,
-  // le dernier les aligne.
-  const mythiques = (deckId) => deckHistoire(deckId).filter((id) => cardById(id).rarity === 'mythique').length;
-  const suite = DECKS.map(mythiques);
-  assert.deepEqual(suite, [...suite].sort((a, b) => a - b), 'les mythiques s’ajoutent d’étage en étage');
-  assert.ok(suite.at(-1) >= 5, 'le Maître des corbeaux aligne au moins cinq figures mythiques');
-
-  const boss = deckHistoire('maitre-des-corbeaux');
-  assert.ok(boss.includes('maitre-des-corbeaux'), 'la figure du sommet joue dans son propre paquet');
-  assert.ok(boss.includes('pere-des-corbeaux'), 'et son état d’origine aussi : le set raconte le retournement');
-  assert.ok(boss.includes('valkyrie-des-neuf-nuits') && boss.includes('neige-noire'),
-    'les deux rares signature du set montent avec lui');
-  for (const deckId of DECKS) {
-    for (const id of deckHistoire(deckId).filter((carteId) => cardById(carteId).set === RPG_CORBEAU_SET_ID)) {
-      assert.ok(RPG_CORBEAU_CARDS.some((carte) => carte.id === id), `${deckId} : ${id} est une carte du set`);
-    }
+    assert.deepEqual(new Set(deck.flatMap((id) => cardColors(cardById(id)))), new Set(['neige', 'tenebres']));
+    assert.ok(deck.includes('corbeau-de-givre'), 'le corbeau reste une carte du thème');
   }
 });
 

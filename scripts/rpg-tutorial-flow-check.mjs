@@ -38,9 +38,12 @@ try {
   await checkRpgTutorialEau(assert);
   await checkRpgTutorialAutresLecons(assert);
   await checkRpgTutorialEmbuscade(assert);
-  await checkRpgCardGuide(assert);
+  // Permet de vérifier le parcours des six leçons indépendamment du guide
+  // des cartes, qui constitue un autre écran et un autre contrôle.
+  if (!process.argv.includes('--lecons-only')) await checkRpgCardGuide(assert);
 } finally {
   dom.window.close();
 }
 
-console.log('✓ Tutoriels du Sablier : choix des leçons, parcours complet des 6 leçons (dont l’Embuscade pendant le tour adverse), fin de leçon sans laisser la partie ouverte, récompense unique et guide des cartes');
+console.log('✓ Tutoriels du Sablier : parcours complet des 6 leçons, fin de leçon et récompense unique' +
+  (process.argv.includes('--lecons-only') ? '' : ', et guide des cartes'));

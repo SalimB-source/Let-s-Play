@@ -182,6 +182,7 @@ import {
 } from './rpgProfil.js';
 import {
   appliquerManaInitialTutoriel,
+  choisirManaTutoriel,
   paquetDeLaLecon,
   preparerDuelTutoriel,
   preparerEtapeTutoriel,
@@ -312,8 +313,6 @@ import {
   cardHybridGradient,
   terrainManaColors,
   RPG_ELEMENTS,
-  RPG_DECK_JOUEUR_BASE,
-  RPG_DECK_SORCIER_BASE,
   RPG_DECKS,
   RPG_DECKS_ARCHETYPES,
   RPG_DUEL_CARDS,
@@ -8388,10 +8387,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     duelRef.current = rpgNouveauDuel({
       joueurDeck: convertirDeckSansTerrain(deckEssai?.cardIds ?? (modeTutoriel
         ? paquetDeLaLecon(tutoriel) ?? RPG_TUTORIAL_PLAYER_DECK
-        : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE)),
+        : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECKS_ARCHETYPES[0].cardIds)),
       sorcierDeck: convertirDeckSansTerrain(adversaireEssai?.cardIds ?? (modeTutoriel
         ? deckTutorielAdverse?.cardIds ?? RPG_TUTORIAL_OPPONENT_DECK
-        : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECK_SORCIER_BASE)),
+        : etageCourant ? deckHistoire(etageCourant.deck) : sorcierDeck ?? deckAdverse?.cardIds ?? RPG_DECKS_ARCHETYPES[1].cardIds)),
       sorcierPuissance: modeTutoriel ? 0 : etageCourant ? etageCourant.puissance : sorcierPuissance,
       // En duel libre, le sorcier joue désormais au niveau Veilleur : il
       // anticipe plusieurs coups au lieu de s'arrêter au meilleur score local.
@@ -8746,6 +8745,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, RPG_ANNONCE_TOUR_DUREE);
     return () => window.clearTimeout(minuterie);
   }, [campDuTour, ecran, voletMulliganOuvert, duelTermine]);
+
+  // Chaque nouveau tour d'un deck bicolore demande une couleur. Dans une
+  // leçon guidée ce choix n'est pas une étape : le faire avant de reprendre
+  // le parcours évite de bloquer les attaques et les cartes derrière le voile.
+  useEffect(() => {
+    if (tutorielActif && tutorielCourant && choisirManaTutoriel(duel, tutorielCourant)) force();
+  }, [tutorielActif, tutorielCourant, duel?.tour, duel?.joueur?.manaChoixEnAttente]);
 
   // Une étape d'attente se referme toute seule quand la table offre ce qu'elle
   // attend : le tour revient au joueur, l'assaut adverse est déclaré. Aucune
@@ -15017,7 +15023,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onPlaySfx={jouerSfx}
         />
       )}
-      {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert && (
+      {/* Le rituel d'invocation possède sa propre fenêtre et sa sélection sur
+          le champ : le voile guidé doit leur céder les clics jusqu'à la pose. */}
+      {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert
+        && !sacrificeDemande && !sacrificeEnCours && !sacrificeFx && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}
           step={etapeTutoriel}

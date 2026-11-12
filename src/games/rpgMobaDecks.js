@@ -13,8 +13,10 @@ export const MOBA_DECKS_TOURS_TOTAL = RPG_STORY_TOURS.reduce((total, tour) => to
 export const MOBA_DECKS_TOURS = Object.freeze(RPG_STORY_TOURS.flatMap((tour) => tour.etages.flatMap((etage) => {
   const cardIds = deckHistoire(etage.deck);
   if (!cardIds) return [];
+  const theme = MOBA_DECKS.find((candidate) => candidate.cardIds === cardIds);
   const deck = {
-    id: `tour-${etage.id}`, name: etage.nom, description: tour.nom,
+    id: `tour-${etage.id}`, name: theme?.name ?? etage.nom,
+    description: `${etage.nom} · ${tour.nom}`,
     cardIds, elements: [...new Set(cardIds.flatMap((id) => cardColors(cardById(id))))],
   };
   return rpgMobaValiderDeck(deck).ok ? [deck] : [];

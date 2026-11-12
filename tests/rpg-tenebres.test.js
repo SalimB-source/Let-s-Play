@@ -1,3 +1,4 @@
+import { DECKS_ESSAI_HISTORIQUES as RPG_MANA_ESSAI_DECKS } from './fixtures/legacyManaEssaiDecks.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
@@ -21,7 +22,6 @@ import {
   RPG_TENEBRES_MAGIES,
 } from '../src/games/rpgTenebres.js';
 import {
-  RPG_MANA_ESSAI_DECKS,
   RPG_MODE_MANA_ESSAI,
   adversaireManaEssai,
   validerDeckManaEssai,
@@ -150,8 +150,8 @@ test('La Balance des Heures tient dans le banc d’essai', () => {
   assert.equal(deck.cardIds.length, 30);
   assert.deepEqual(deck.elements, ['tenebres']);
   assert.deepEqual(validerDeckManaEssai(deck), { ok: true }, deck.name);
-  assert.equal(adversaireManaEssai(deck).id, 'essai-mana-lettres-de-marque',
-    'la rotation enchaîne sur le deck des Lettres de Marque, cinquième du banc');
+  assert.equal(adversaireManaEssai(deck).id, 'essai-mana-vikings',
+    'la rotation du catalogue commun enchaîne sur les Vikings');
 });
 
 const rng = () => 0.5;
