@@ -1379,7 +1379,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     <div className="moba__lanes" data-moba-joined-lane={rattachement?.laneId || undefined} data-moba-joined-side={rattachement?.side || undefined}>
       {duel.moba.lanes.map((lane) => <section key={lane.id} className={`moba__lane${lane.active ? '' : ` is-conquered is-conquered--${lane.conqueredBy}${lane.id !== 'center' ? ' is-sealed' : ''}`}`} aria-label={voies[lane.id]}>
         {conquetesVisuelles[lane.id] && <div key={conquetesVisuelles[lane.id].token} className={`moba__conquest-fx moba__conquest-fx--${conquetesVisuelles[lane.id].side}`} aria-hidden="true"><i /><i /><i /></div>}
-        {!lane.active && lane.id !== 'center' && <div className="moba__conquest" aria-hidden="true">
+        {!lane.active && <div className="moba__conquest" aria-hidden="true">
           <svg className="moba__conquest-chains" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             <path className="moba__conquest-chain-shadow" d="M5 5 95 95 M95 5 5 95" />
             <path className="moba__conquest-chain-core" d="M5 5 95 95 M95 5 5 95" />
@@ -1395,7 +1395,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
           <span className="moba__conquest-kicker">Voie conquise</span>
           <span className="moba__conquest-lock"><img src={`${import.meta.env.BASE_URL}icons/sablier/verrou-voie.svg`} alt="" /></span>
           <strong className="moba__conquest-owner">{lane.conqueredBy === 'joueur' ? 'VOUS' : 'L’IA'}</strong>
-          <span className="moba__conquest-closed">Voie fermée</span>
+          <span className="moba__conquest-closed">{lane.id === 'center' && mobaVoieJouable(duel.moba, lane.conqueredBy, lane.id) ? 'Case sur les flancs' : 'Voie fermée'}</span>
         </div>}
         {['sorcier', 'joueur'].map((side) => <div className={`moba__side moba__side--${side}${rattachement?.side === side && lane.id === 'center' ? ' is-joined-center' : ''}${rattachement?.side === side && lane.id === rattachement.laneId ? ' is-joined-flank' : ''}`} key={side} inert={!mobaVoieJouable(duel.moba, side, lane.id)} aria-hidden={!mobaVoieJouable(duel.moba, side, lane.id)}>
           {side === 'joueur' && <div className="moba__frontline" aria-hidden="true"><span>✦</span></div>}
