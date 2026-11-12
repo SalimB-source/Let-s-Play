@@ -23,9 +23,9 @@ test('les voies latérales et la main MOBA disposent de plus d’espace', () => 
 
 test('le plateau n’est plus assombri et ses cartes grandissent selon le format', () => {
   assert.doesNotMatch(css, /\.moba::(?:before|after)\s*\{/);
-  assert.match(css, /--moba-card-size:\s*min\(11vw, 15\.5vh, 145px\)/);
-  assert.match(css, /--moba-card-size:\s*min\(14\.3vw, 16\.5vh, 99px\)/);
-  assert.match(css, /--moba-card-size:\s*min\(18\.7vw, 12\.1vh, 88px\)/);
+  assert.match(css, /--moba-card-size:\s*min\(10\.4vw, 14\.6vh, 136px\)/);
+  assert.match(css, /--moba-card-size:\s*min\(13\.5vw, 15\.5vh, 94px\)/);
+  assert.match(css, /--moba-card-size:\s*min\(17\.7vw, 11\.5vh, 84px\)/);
 });
 
 test('sur PC paysage, les cinq positions et la main grossissent sans déborder', () => {
@@ -36,7 +36,7 @@ test('sur PC paysage, les cinq positions et la main grossissent sans déborder',
         && rule.conditionText?.includes('orientation: landscape'));
     assert.ok(media, 'les formats courts et portrait gardent leurs propres tailles');
     const declaration = (selector, property) => [...media.cssRules].find((rule) => rule.selectorText === selector)?.style.getPropertyValue(property).trim();
-    assert.equal(declaration('.moba', '--moba-card-size').replaceAll(' ', ''), 'min(14vw,18.5vh,220px)');
+    assert.equal(declaration('.moba', '--moba-card-size').replaceAll(' ', ''), 'min(13vw,17vh,202px)');
     assert.equal(declaration('.moba .moba__hand-item', 'flex-basis').replaceAll(' ', ''), 'min(9.7vw,15.2vh,180px)');
     assert.match(declaration('.moba .moba__hand-item', 'max-width'), /100%.*clamp\(12px, 1\.5vw, 22px\)/);
     assert.match(css, /grid-template-columns: 2fr 1fr 2fr/);
@@ -44,7 +44,7 @@ test('sur PC paysage, les cinq positions et la main grossissent sans déborder',
     // Une rangée de cartes + leur marge et leur jauge doit tenir dans la
     // moitié du plateau (60 % de la hauteur) aux tailles PC courantes.
     for (const [width, height] of [[1366, 768], [1568, 883], [1920, 1080]]) {
-      const card = Math.min(width * .14, height * .185, 220);
+      const card = Math.min(width * .13, height * .17, 202);
       const hand = Math.min(width * .097, height * .152, 180);
       assert.ok(card * 1.25 + 18 + 30 <= height * .30, `${width}×${height} : deux rangées entières`);
       assert.ok(hand * 1.25 + 8 <= height * .21, `${width}×${height} : main entière`);

@@ -251,10 +251,6 @@
 .moba__empty-label { color: #d2bc98; }
 .moba__controls { border-color: #8a704c; }
 .moba__hand { border-color: #756047; box-shadow: inset 0 1px #c9aa6d20; }
-.moba__opponent-hand { display: flex; align-items: center; gap: 12px; max-width: 1500px; margin: 0 auto; padding: 15px 18px; border: 1px solid #5f503f; background: #181719; color: #d9c6aa; }
-.moba__opponent-hand > span { display: grid; place-items: center; width: 34px; height: 42px; border: 1px solid #947753; background: #26201b; color: #d4b77c; font-size: 24px; }
-.moba__opponent-hand > div { display: grid; gap: 3px; font: 12px/1.3 system-ui, sans-serif; }
-.moba__opponent-hand small { color: #bcae98; }
 .moba__journal { padding: 12px 15px; border: 1px solid #514536; background: #171618; }
 .moba__journal summary { min-height: 26px; font-weight: 700; }
 .moba__overlay { padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); }
@@ -316,7 +312,9 @@
   /* One continuous map keeps the central river aligned with the middle lane
      even on narrow screens; the side meadows remain visible on both sides. */
   background: #263d31 var(--moba-map) center / 100% 100% no-repeat;
-  --moba-card-size: min(11vw, 15.5vh, 145px);
+  /* Créatures et cases du plateau légèrement moins grandes, sans toucher
+     aux cartes de la main ni à la lecture de leurs effets. */
+  --moba-card-size: min(10.4vw, 14.6vh, 136px);
 }
 .moba > div[inert] { position: absolute; inset: 0; }
 .moba__header { position: absolute; z-index: 25; top: 8px; right: 1%; max-width: none; margin: 0; padding: 5px 8px; border: 1px solid #92774e; border-radius: 9px; background: #100e0ce8; gap: 12px; }
@@ -389,12 +387,11 @@
 .moba .moba__hand-item .moba__real-hand { width: 100%; }
 .moba .moba__card:not(.moba__real-hand) { flex: 0 1 min(9vw, 15vh, 124px); min-width: 0; height: min(18vh, 150px); }
 .moba__card-art { height: 55%; }.moba__card-info { padding: 3px; }.moba__cardtext { display: none; }
-.moba__opponent-hand { position: absolute; left: 25%; bottom: 5%; padding: 6px; background: #17130fd9; }.moba__opponent-hand > span { display: none; }
 .moba__journal { position: absolute; z-index: 15; right: 1%; bottom: 3%; width: 16%; margin: 0; padding: 5px 8px; border-radius: 7px; background: #17130fea; }
 .moba__journal[open] { width: min(320px, 90vw); max-height: none; overflow: visible; }.moba__journal summary { min-height: 0; }
 .moba__journal-pages { display: flex; align-items: center; justify-content: center; gap: 8px; }.moba__journal-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }.moba__journal-pages button:disabled { opacity: .45; }
 @media (max-width: 700px) {
-  .moba { --moba-card-size: min(14.3vw, 16.5vh, 99px); }
+  .moba { --moba-card-size: min(13.5vw, 15.5vh, 94px); }
   .moba__header { top: 4px; right: 4px; padding: 3px 5px; gap: 5px; }.moba__brand > span { font-size: 7px; }.moba__brand h1 { font-size: 13px; }
   .moba__back { min-height: 25px; padding: 3px 5px; font-size: 9px !important; }
   .moba__intro { top: 4px; left: 4px; }.moba__rules summary { padding: 4px; font-size: 9px; }
@@ -413,7 +410,7 @@
 @media (max-width: 700px) and (orientation: portrait) {
   /* En portrait, les cases occupent presque toute la largeur : étaler la
      carte horizontalement pour garder les chemins sous les cases latérales. */
-  .moba { --moba-card-size: min(18.7vw, 12.1vh, 88px); background-size: 145% 100%; }
+  .moba { --moba-card-size: min(17.7vw, 11.5vh, 84px); background-size: 145% 100%; }
   .moba__header { max-width: 48%; }.moba__header-meta { flex-wrap: nowrap; }.moba__back span { white-space: nowrap; }
   .moba__hidden-hand { top: 5%; }.moba__hidden-hand > div { height: 4vh; }.moba__hidden-hand > div span { width: 24px; }
   .moba__scoreboard { top: 11%; bottom: auto; left: 2%; width: 96%; height: 33px; }
@@ -424,7 +421,7 @@
   .moba__choice { top: 75%; right: 2%; width: 48%; }
   .moba__controls { top: 76%; left: 2%; right: 2%; width: auto; display: flex; align-items: center; }.moba__buttons { display: flex; flex-wrap: nowrap; justify-content: flex-end; }.moba__buttons button { flex: initial; }
   .moba__hand { left: 2%; right: 2%; height: 16%; }.moba .moba__hand-item { flex-basis: min(11vw, 11vh, 82px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(11vw, 11vh, 82px); height: 14vh; }
-  .moba__journal { bottom: 17%; right: 2%; width: auto; }.moba__opponent-hand { bottom: 3%; left: 2%; }
+  .moba__journal { bottom: 17%; right: 2%; width: auto; }
   .moba__ai-status { top: 15%; right: 2%; left: auto; width: auto; }
 }
 
@@ -1179,6 +1176,18 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   font-size: clamp(6px, 12cqw, 15px);
 }
 
+/* Le mulligan MOBA porte les effets sur le bord droit de chaque face.
+   Le badge est frère de la carte, pas enfant de sa face rognée : il reste
+   visible même lorsque le cadre arrondit l’illustration. Sur petit écran,
+   les pierres restent à l’intérieur du bord pour ne pas gêner la voisine. */
+.moba .moba__mulligan-overlay .moba__mulligan-item { position: relative; }
+.moba .moba__mulligan-overlay .rpg-card-icones--mulligan-moba {
+  --rpg-plaque-taille: clamp(14px, 2.2vw, 22px);
+  --rpg-plaque-bord: 0%;
+  top: 5%; right: 3px; bottom: auto; left: auto;
+  gap: 2px;
+}
+
 /* Choix compact : une seule rangée de paquets et des actions toujours visibles. */
 .moba__setup-overlay { display: flex; align-items: center; justify-content: center; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
 .moba__setup { box-sizing: border-box; max-height: calc(100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom))); overflow-y: auto; overscroll-behavior: contain; }
@@ -1425,7 +1434,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
    positions and the complete 4:5 card faces; short landscape and portrait
    layouts retain their separate, tighter rules in rpg-moba.css. */
 @media (min-width: 1200px) and (min-height: 740px) and (orientation: landscape) {
-  .moba { --moba-card-size: min(14vw, 18.5vh, 220px); }
+  .moba { --moba-card-size: min(13vw, 17vh, 202px); }
   .moba .moba__hand-item {
     flex-basis: min(9.7vw, 15.2vh, 180px);
     max-width: calc((100% - 5 * clamp(12px, 1.5vw, 22px)) / 6);
@@ -1460,8 +1469,6 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba__hint, .moba__error { font-size: 13px; }
   .moba__buttons { gap: 7px; }
   .moba__buttons button { min-height: 40px; padding: 8px 10px; font-size: 13px; }
-  .moba__opponent-hand { padding: 9px 12px; }
-  .moba__opponent-hand > div { font-size: 13px; }
   .moba__journal { padding: 7px 10px; font-size: 13px; }
   .moba__journal summary { min-height: 22px; }
 
@@ -1481,17 +1488,22 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba__setup-actions button { min-height: 46px; font-size: 14px; }
 
   .moba__mulligan-overlay .moba__mulligan {
-    width: min(100%, 1020px);
-    height: min(calc(100dvh - 36px), 600px);
-    padding: 20px 18px;
-    --moba-mulligan-gap: clamp(16px, 1.5vw, 22px);
+    width: min(100%, 1300px);
+    height: min(calc(100dvh - 36px), 660px);
+    padding: 20px;
+    --moba-mulligan-gap: clamp(26px, 2.25vw, 34px);
   }
   .moba__mulligan-intro h2 { font-size: clamp(28px, 3vw, 38px); }
   .moba__mulligan-intro p { font-size: 15px; }
-  .moba__mulligan-overlay .moba__mulligan-cards { padding: 0 18px; }
+  .moba__mulligan-overlay .moba__mulligan-cards { padding: 0 24px; }
   .moba .moba__mulligan-overlay .moba__mulligan-item,
   .moba__mulligan-overlay .moba__mulligan-card {
-    flex-basis: min(calc((100% - 4 * var(--moba-mulligan-gap)) / 5), calc(80cqh - 22px), 180px);
+    flex-basis: min(calc((100% - 4 * var(--moba-mulligan-gap)) / 5), calc(80cqh - 22px), 220px);
+  }
+  .moba .moba__mulligan-overlay .rpg-card-icones--mulligan-moba {
+    --rpg-plaque-taille: clamp(24px, 2.3vw, 34px);
+    --rpg-plaque-bord: 35%;
+    top: 6%; right: 0; gap: 4px;
   }
   .moba__mulligan-overlay .moba__mulligan > button { min-height: 44px; padding: 8px 18px; font-size: 14px; }
 }

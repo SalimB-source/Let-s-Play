@@ -471,8 +471,11 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     : etape === 'reponse-arrivee' && duel.effetCreatureEnAttente ? autre(duel.effetCreatureEnAttente.cote) : defenseur;
   const mainSide = destruction ? destruction.cote : defausse ? duel.defausseEnAttente.cote : etape === 'arrivee' ? arriveeSide : (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) ? repondant : actif);
   const campMain = duel[mainSide];
+  // La main affichée reste celle du joueur, même lorsque l'IA a la main.
+  // mainSide désigne uniquement le camp autorisé à agir/répondre.
+  const campMainVisible = duel.joueur;
   const poidsLie = carte === 'le-poids' && lienSatisfait(cardById('le-poids'), campMain.creatures);
-  const nombrePagesMain = Math.max(1, Math.ceil(campMain.main.length / TAILLE_PAGE_MAIN));
+  const nombrePagesMain = Math.max(1, Math.ceil(campMainVisible.main.length / TAILLE_PAGE_MAIN));
   const pageMainVisible = Math.min(pageMain, nombrePagesMain - 1);
   const debutPageMain = pageMainVisible * TAILLE_PAGE_MAIN;
   const lignesJournal = duel.log.slice(-12).reverse();
@@ -481,8 +484,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const pagesJournal = Math.max(1, Math.ceil(contenuJournal.length / 2));
   const pageJournalVisible = Math.min(pageJournal, pagesJournal - 1);
   useEffect(() => {
-    if (mainSide === 'joueur') setPageMain((page) => Math.min(page, nombrePagesMain - 1));
-  }, [mainSide, nombrePagesMain]);
+    setPageMain((page) => Math.min(page, nombrePagesMain - 1));
+  }, [nombrePagesMain]);
   const getEntity = (side, id) => duel[side].creatures.find((e) => e.id === id);
   const rattachement = duel.moba.centerJoined;
   const scores = Object.fromEntries(['joueur', 'sorcier'].map((side) => [side, duel.moba.lanes.filter((lane) => lane.conqueredBy === side).length]));
@@ -1418,10 +1421,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       {!destruction && (carte || cibleRapideEnCours) && !defausse && !fini && <button type="button" className="moba__cancel-choice" onClick={annulerChoix}>Annuler le choix</button>}
     </div>}
     </div>
-    {mainSide === 'joueur' && ['tour', 'arrivee', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && <section className="moba__hand" aria-label="Votre main"><div className="moba__handhead"><div><span>VOTRE RÉSERVE</span><h2>Votre main</h2></div><span className="moba__deck-count">PIOCHE <b>{campMain.deck.length}</b></span>{nombrePagesMain > 1 && <div className="moba__hand-pages" aria-label="Pages de la main"><button type="button" aria-label="Page précédente de la main" disabled={pageMainVisible === 0} onClick={() => setPageMain(pageMainVisible - 1)}>‹</button><span>{pageMainVisible + 1} / {nombrePagesMain}</span><button type="button" aria-label="Page suivante de la main" disabled={pageMainVisible >= nombrePagesMain - 1} onClick={() => setPageMain(pageMainVisible + 1)}>›</button></div>}</div><div className="moba__hand-cards">{campMain.main.slice(debutPageMain, debutPageMain + TAILLE_PAGE_MAIN).map((id, pageIndex) => {
+    {['tour', 'arrivee', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && <section className="moba__hand" aria-label="Votre main"><div className="moba__handhead"><div><span>VOTRE RÉSERVE</span><h2>Votre main</h2></div><span className="moba__deck-count">PIOCHE <b>{campMainVisible.deck.length}</b></span>{nombrePagesMain > 1 && <div className="moba__hand-pages" aria-label="Pages de la main"><button type="button" aria-label="Page précédente de la main" disabled={pageMainVisible === 0} onClick={() => setPageMain(pageMainVisible - 1)}>‹</button><span>{pageMainVisible + 1} / {nombrePagesMain}</span><button type="button" aria-label="Page suivante de la main" disabled={pageMainVisible >= nombrePagesMain - 1} onClick={() => setPageMain(pageMainVisible + 1)}>›</button></div>}</div><div className="moba__hand-cards">{campMainVisible.main.slice(debutPageMain, debutPageMain + TAILLE_PAGE_MAIN).map((id, pageIndex) => {
       const index = debutPageMain + pageIndex;
       const card = cardById(id);
-      const disabled = fini || Boolean(destruction || (site && !defausse)) || (!defausse && (rpgMobaSortBlocageInterdit(id) || (id === 'memoire-de-l-armurerie' && !campMain.cimetiere.includes('sabre-maudit')) || !!cibleRapideEnCours || etape === 'arrivee' || campMain.manaChoixEnAttente || (MOBA_CONTRESORTS.includes(id) && !(etape === 'reponse-sort' && (duel.mobaSortEnAttente?.armeMoba ? id === 'contresort-des-abimes' : id !== 'ecueil') && duel.mobaSortEnAttente?.cote !== mainSide || etape === 'reponse-creature' && (id === 'contresort-des-abimes' || (id === 'ecueil' && cardById(duel.mobaCreatureEnAttente?.carteId)?.kind !== 'site')) && duel.mobaCreatureEnAttente?.cote !== mainSide)) || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !card.instant && !(['blocage', 'fin', 'reponse-creature', 'reponse-sort', 'reponse-arrivee'].includes(etape) && rpgMobaPeutEmbuscade(duel, mainSide, id))) || !rpgMobaPeutPayer(duel, mainSide, card)));
+      const disabled = mainSide !== 'joueur' || fini || Boolean(destruction || (site && !defausse)) || (!defausse && (rpgMobaSortBlocageInterdit(id) || (id === 'memoire-de-l-armurerie' && !campMainVisible.cimetiere.includes('sabre-maudit')) || !!cibleRapideEnCours || etape === 'arrivee' || campMainVisible.manaChoixEnAttente || (MOBA_CONTRESORTS.includes(id) && !(etape === 'reponse-sort' && (duel.mobaSortEnAttente?.armeMoba ? id === 'contresort-des-abimes' : id !== 'ecueil') && duel.mobaSortEnAttente?.cote !== mainSide || etape === 'reponse-creature' && (id === 'contresort-des-abimes' || (id === 'ecueil' && cardById(duel.mobaCreatureEnAttente?.carteId)?.kind !== 'site')) && duel.mobaCreatureEnAttente?.cote !== mainSide)) || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !card.instant && !(['blocage', 'fin', 'reponse-creature', 'reponse-sort', 'reponse-arrivee'].includes(etape) && rpgMobaPeutEmbuscade(duel, mainSide, id))) || !rpgMobaPeutPayer(duel, mainSide, card)));
       const specialementJouable = !disabled && ['creature', 'hero'].includes(card.kind) && rpgMobaPeutEmbuscade(duel, mainSide, id);
       const selected = carte === id && !defausse;
       const peutGlisserCarte = !disabled && !iaAgit && etape === 'tour' && actif === 'joueur' && ['creature', 'site'].includes(card.kind) && !defausse;
@@ -1441,7 +1444,6 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       return <button type="button" key={`${id}-${index}`} className={`moba__card${selected ? ' is-selected' : ''}${specialementJouable ? ' is-special-ambush' : ''}`} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} onClick={() => jouerCarte(id, index)} title={rpgMobaSortBlocageInterdit(id) ? 'Injouable en MOBA : impose un blocage.' : card.text} aria-label={rpgMobaSortBlocageInterdit(id) ? `${card.name}. Injouable en MOBA : impose un blocage.` : undefined}><span className="moba__card-art"><img src={cardArt(id)} alt="" /><i>{card.cost}</i></span><span className="moba__card-info"><b>{card.name}</b><small>{card.kind === 'magie' ? 'MAGIE' : card.kind === 'arme' ? 'ARME' : card.kind === 'site' ? 'SITE' : `⚔ ${card.atk}  ◆ ${card.def}`}</small><small className="moba__cardtext">{card.text || 'Aucune capacité.'}</small></span></button>;
     })}</div></section>}
     </div>
-    {mainSide !== 'joueur' && <div className="moba__opponent-hand" aria-label="Main de l’IA masquée"><span aria-hidden="true">◇</span><div><strong>Tour de l’adversaire</strong><small>Les cartes de l’IA restent cachées.</small></div></div>}
     <details className="moba__journal"><summary>Journal du duel</summary>
       {rendu?.CombatFeedEvent && <div className="moba__journal-tabs" role="group" aria-label="Vue du journal"><button type="button" aria-pressed={vueJournal === 'texte'} onClick={() => { setVueJournal('texte'); setPageJournal(0); }}>Événements</button><button type="button" aria-pressed={vueJournal === 'combat'} onClick={() => { setVueJournal('combat'); setPageJournal(0); }}>Combats</button></div>}
       {vueJournal === 'combat' && rendu?.CombatFeedEvent ? <ol className="rpg-combat-feed__list" aria-label="Échanges de combat">{contenuJournal.slice(pageJournalVisible * 2, pageJournalVisible * 2 + 2).map((event) => <rendu.CombatFeedEvent key={event.id} event={event} />)}</ol> : contenuJournal.slice(pageJournalVisible * 2, pageJournalVisible * 2 + 2).map((line, i) => <p key={i}>{line}</p>)}
@@ -1497,7 +1499,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const toggle = () => setMulliganIndices((ids) => ids.includes(index) ? ids.filter((n) => n !== index) : [...ids, index]);
       if (rendu?.CarteMulligan) {
         const CarteMulligan = rendu.CarteMulligan;
-        return <div className="moba__mulligan-item" key={`${id}-${index}`} {...interactionsApercu(id)}><CarteMulligan carte={card} index={index} selectionnee={choisi} onBasculer={toggle} /></div>;
+        return <div className="moba__mulligan-item" key={`${id}-${index}`} {...interactionsApercu(id)}>
+          <CarteMulligan carte={card} index={index} selectionnee={choisi} onBasculer={toggle} />
+          <IconesCarte carte={rpgMobaCartePourApercu(card)} className="rpg-card-icones--colonne rpg-card-icones--mulligan-moba" />
+        </div>;
       }
       return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : `COÛT ${card.cost}`}</small></button>;
     })}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}<button type="button" className="moba__primary" onClick={confirmerMulligan}>{mulliganIndices.length ? `Échanger ${mulliganIndices.length} carte(s)` : 'Garder ma main'} →</button></div></div>}
