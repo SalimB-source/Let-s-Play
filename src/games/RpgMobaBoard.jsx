@@ -165,8 +165,7 @@ function etatsCreature(entity) {
   if (entity.site) etats.push('Site indestructible : ne peut ni attaquer ni bloquer');
   if (entity.gelToursRestants > 0) etats.push('Gelée');
   else if (entity.attaquee) etats.push('A attaqué');
-  else if (!entity.ready) etats.push('Arrivée récente');
-  if (entity.rapidite) etats.push('Rapidité');
+  else if (!entity.ready) etats.push('Non prête');
   if (entity.coupRapide) etats.push('Attaque ciblée');
   if (entity.coupCritique?.chance) etats.push(`Coup critique : ${Math.round(entity.coupCritique.chance * 100)} % ×${entity.coupCritique.fois}`);
   if (entity.mur) etats.push('Mur : ne peut pas attaquer ni être équipé');
@@ -1356,7 +1355,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <p>Trois voies indépendantes : 20 / 15 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide ou une Embuscade avant les dégâts. Il n’y a pas de blocage. Une attaque normale vise une créature accessible dans la même voie et les dégâts sont simultanés ; à défaut elle frappe directement la voie. Envol permet aussi la frappe directe s’il n’y a pas d’ennemi volant accessible. Infiltration permet aussi la frappe directe et protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation impose une cible accessible prioritaire ; à défaut, Défenseur impose une cible accessible dans la voie de l’attaquant.</p>
         <p>Après la conquête du centre, le vainqueur conserve sa case centrale et peut y jouer. Les créatures centrales participent aux deux voies latérales actives ; les PV restants du centre disparaissent.</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade hors tour est une invocation spéciale supplémentaire, limitée à une par camp et par tour ; Tojiro ne demande pas de sacrifice en Embuscade si un Djinn adverse est présent. Chaque camp peut aussi jouer un sort et une arme par tour. Toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Toutes les créatures peuvent attaquer dès leur arrivée, sans avoir besoin de Rapidité (sauf si un autre effet leur interdit d’attaquer). Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade hors tour est une invocation spéciale supplémentaire, limitée à une par camp et par tour ; Tojiro ne demande pas de sacrifice en Embuscade si un Djinn adverse est présent. Chaque camp peut aussi jouer un sort et une arme par tour. Toute annonce compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>

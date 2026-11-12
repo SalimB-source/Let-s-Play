@@ -1813,7 +1813,7 @@ export function rpgNoterCompteurEntites(duel) {
   return duel.prochainUid;
 }
 
-function creerEntiteCreature(carte) {
+function creerEntiteCreature(carte, duel) {
   return {
     id: nextId(),
     carteId: carte.id,
@@ -1852,9 +1852,10 @@ function creerEntiteCreature(carte) {
     // l’attachement et plafonds de coût le lisent.
     coutBonusArme: 0,
     rapidite: Boolean(carte.rapidite),
-    // L'âge de la présence est distinct de ready : la Rapidité peut rendre
-    // prête une créature encore soumise au mal d'invocation.
-    malInvocation: true,
+    // En MOBA, chaque créature est prête dès son entrée en jeu ; la Rapidité
+    // imprimée n'apporte aucun avantage supplémentaire. Le duel classique
+    // conserve son mal d'invocation.
+    malInvocation: !duel.moba,
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
@@ -1900,7 +1901,7 @@ function creerEntiteCreature(carte) {
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
-    ready: Boolean(carte.rapidite),
+    ready: Boolean(duel.moba || carte.rapidite),
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
@@ -2342,7 +2343,7 @@ function armeDePorteurMort(duel, cote, entite) {
       const carte = duelCardById(entite.carteId);
       if (index < 0 || !carte || !placesLibresChamp(duel, cote)) return;
       camp.cimetiere.splice(index, 1);
-      const revenant = creerEntiteCreature(carte);
+      const revenant = creerEntiteCreature(carte, duel);
       revenant.pv = revenant.def = revenant.pvMax = 1;
       camp.creatures.push(revenant);
       placerDansEmplacement(duel, cote, revenant, entite.emplacement);
@@ -3670,11 +3671,12 @@ function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
     // La détenue reprend sa présence : ses statistiques sont celles de la
     // prise, ses auras déjà comptées dans ses chiffres (`auraSableBonus` et
     // consorts), donc `rafraichirAuras` ne les comptera pas deux fois. Seul
-    // l'engagement se remet à neuf : le retour ne donne pas d'attaque gratuite.
+    // l'engagement se remet à neuf ; en MOBA, comme toute entrée en jeu,
+    // la créature revenue peut attaquer dès son retour.
     const carte = duelCardById(prisonniere.carteId);
-    prisonniere.malInvocation = true;
+    prisonniere.malInvocation = !duel.moba;
     prisonniere.rapiditeAccordee = false;
-    prisonniere.ready = Boolean(carte?.rapidite || armeCarteDe(prisonniere)?.donne?.rapidite);
+    prisonniere.ready = Boolean(duel.moba || carte?.rapidite || armeCarteDe(prisonniere)?.donne?.rapidite);
     prisonniere.attaquee = false;
     camp.creatures.push(prisonniere);
     const prefere = duel.moba ? offset + slotMoba : prisonniere.emplacement;
@@ -4400,7 +4402,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             : voies.find((v) => v.slots[cote].some((_, index) => libre(v, index)));
           if (!voie) break;
           const slot = placement ? placement.slot : voie.slots[cote].findIndex((_, index) => libre(voie, index));
-          const jeton = creerEntiteCreature(modele);
+          const jeton = creerEntiteCreature(modele, duel);
           if (effet.ephemere) jeton.detruireFinDuTour = true;
           jeton.mobaLane = mobaVoieCombat(duel.moba, cote, voie.id);
           jeton.emplacement = offsets[voie.id] + slot;
@@ -4412,7 +4414,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // Classic fixed-field cap and placement are unchanged.
         crees = Math.min(nombre, placesLibresChamp(duel, cote));
         for (let i = 0; i < crees; i += 1) {
-          const jeton = creerEntiteCreature(modele);
+          const jeton = creerEntiteCreature(modele, duel);
           if (effet.ephemere) jeton.detruireFinDuTour = true;
           duel[cote].creatures.push(jeton);
           placerDansEmplacement(duel, cote, jeton);
@@ -5003,7 +5005,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       }
       const [carteRevivee] = camp.cimetiere.splice(index, 1);
       const carte = duelCardById(carteRevivee);
-      const entite = creerEntiteCreature(carte);
+      const entite = creerEntiteCreature(carte, duel);
       camp.creatures.push(entite);
       if (duel.moba) {
         if (typeof options?.placerReanimationMoba === 'function') options.placerReanimationMoba(entite);
@@ -5520,7 +5522,7 @@ function resoudreExilsFinTour(duel, retours) {
       continue;
     }
     camp.exil.splice(index, 1);
-    const entite = creerEntiteCreature(carte);
+    const entite = creerEntiteCreature(carte, duel);
     if (voie) entite.mobaLane = mobaVoieCombat(duel.moba, retour.cote, voie.id);
     camp.creatures.push(entite);
     if (voie) {
@@ -6496,7 +6498,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     camp.prochaineArriveeAbordage = false;
     camp.prochaineArriveeAbordageSeuilPlein = false;
   }
-  const entite = creerEntiteCreature(carte);
+  const entite = creerEntiteCreature(carte, duel);
   if (carte.kind === 'site') {
     entite.heures = {
       restants: Math.max(0, Math.trunc(Number(carte.site?.compteurs) || 0)),
@@ -9183,7 +9185,7 @@ function resoudreRetoursProgrammes(duel, retours) {
       continue;
     }
     camp.cimetiere.splice(indexCimetiere, 1);
-    const entite = creerEntiteCreature(carte);
+    const entite = creerEntiteCreature(carte, duel);
     if (retour.tenacite) {
       // Renaissance de Tenacité : un point de défense, et plus aucune
       // Tenacité — la carte a dépensé sa seule renaissance de la partie.

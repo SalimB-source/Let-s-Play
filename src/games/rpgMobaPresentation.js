@@ -12,6 +12,7 @@ export function rpgMobaCartePourApercu(carte) {
 export function rpgMobaNotesCarte(carte) {
   if (!carte) return [];
   const notes = [];
+  if (carte.rapidite || carte.donne?.rapidite) notes.push('En MOBA, Rapidité ne confère aucun bonus : toutes les créatures peuvent attaquer dès leur arrivée.');
   if (carte.conditionEmbuscade === 'deux-attaquants') notes.push('En MOBA, cette créature ne possède pas Embuscade ; son effet d’arrivée reste actif.');
   if (MOBA_EMBUSCADES_CONDITIONS[carte.id]) notes.push(`Embuscade MOBA — ${MOBA_EMBUSCADES_CONDITIONS[carte.id]} Invocation spéciale sans sacrifice et sans quota, sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour.`);
   if (['appat-de-la-meute', 'embuscade'].includes(carte.id)) notes.push('Injouable en MOBA : ce sort impose un blocage.');

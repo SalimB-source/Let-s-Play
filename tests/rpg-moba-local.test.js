@@ -6031,7 +6031,7 @@ test('Abordage MOBA : libère la case, puis rend la présence dans sa voie à la
   assert.equal(mobaVoie(duel.moba,'right').slots.sorcier[1],null);assert.equal(rpgMobaPlacementCoherent(duel),true);
   capteur.pv=capteur.def=1;duel.sorcier.main=['trait-de-braise'];duel.sorcier.mana.braise=20;duel.tour='sorcier';
   assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',capteur.id).ok,true);
-  assert.equal(mobaVoie(duel.moba,'right').slots.sorcier[1],victime.id);assert.equal(victime.ready,false);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.equal(mobaVoie(duel.moba,'right').slots.sorcier[1],victime.id);assert.equal(victime.ready,true);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Abordage MOBA : le porteur perd son Sabre, même après libération', () => {
@@ -7849,23 +7849,27 @@ test('Lance de la lune MOBA : contre, remplacement et cumul critique de Kagutsuc
   assert.deepEqual(porteur.coupCritique,{chance:.15,fois:4});assert.equal(porteur.coupRapide,true);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Sandales MOBA : Rapidité sur une créature fraîche, retirée si elles sont remplacées avant attaque', () => {
+test('Sandales MOBA : Rapidité ne change plus la capacité à attaquer, même après remplacement', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','sandales-de-tislit','cuirasse-de-sel'];duel.joueur.mana.sable=30;
   const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','center',0).entite;
-  assert.equal(rpgPeutAttaquer(porteur),false);assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
+  assert.equal(rpgPeutAttaquer(porteur),true);assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
   assert.equal(rpgPeutAttaquer(porteur),true);assert.equal(porteur.arme.durabilite,2);
+  // On isole le remplacement de l'arme du quota d'une arme par tour.
+  duel.moba.armesJouees.joueur=false;
   assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);
-  assert.equal(porteur.rapidite,false);assert.equal(rpgPeutAttaquer(porteur),false);assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).raison,'pas-pret');
+  assert.equal(porteur.rapidite,false);assert.equal(rpgPeutAttaquer(porteur),true);
+  assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);
   assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Sandales MOBA : enlever les sandales ne retire ni la Rapidité imprimée ni la maturité acquise', () => {
+test('Sandales MOBA : enlever les sandales ne retire pas la disponibilité immédiate ni la Rapidité imprimée', () => {
   for(const rapide of [false,true]){
     const duel=partie();const creature=rapide?'fennec-des-decombres':'gardienne-des-portes-de-sable';
     duel.joueur.main=[creature,'sandales-de-tislit','cuirasse-de-sel'];duel.joueur.mana.sable=30;duel.joueur.mana.tenebres=30;
     const porteur=rpgMobaJouerCreature(duel,'joueur',creature,'center',0).entite;assert.ok(porteur);
     if(!rapide){rpgFinDeTour(duel);rpgFinDeTour(duel);assert.equal(porteur.malInvocation,false);duel.joueur.mana.sable=30;}
     assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
+    duel.moba.armesJouees.joueur=false;
     assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);
     assert.equal(rpgPeutAttaquer(porteur),true);assert.equal(porteur.rapidite,rapide);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
@@ -7903,7 +7907,7 @@ for (const arme of ['sandales-de-tislit','lance-de-la-lune-givree','javelot-du-b
   // Barbe-Rousse coûte trop pour Effacement : une magie ciblée destructrice est jouée au tour du joueur.
   rpgFinDeTour(duel);duel.joueur.main=['le-jugement-des-colosses'];duel.joueur.mana.tenebres=30;
   const result=rpgMobaLancerMagie(duel,'joueur','le-jugement-des-colosses',rousse.id);assert.equal(result.ok,true,JSON.stringify(result));
-  assert.ok(duel.joueur.creatures.includes(victime));assert.equal(victime.ready,false);assert.equal(victime.malInvocation,true);assert.equal(victime.atk,1);assert.equal(victime.pv,2);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.ok(duel.joueur.creatures.includes(victime));assert.equal(victime.ready,true);assert.equal(victime.malInvocation,false);assert.equal(victime.atk,1);assert.equal(victime.pv,2);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 function fixtureGrappin({ reponse = true } = {}) {
