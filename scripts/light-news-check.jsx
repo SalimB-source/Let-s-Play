@@ -1,9 +1,10 @@
 /**
- * SSR entry used by scripts/light-news-check.mjs.
+ * SSR entry used by scripts/light-news-check.mjs and
+ * scripts/light-mobile-menu-check.mjs.
  *
  * Renders the Actus hub, its article archive and its three feeds
  * (/news, /news/articles, /news/gaming, /news/cinema, /news/tech)
- * as static HTML, for the light-theme audit to walk the real DOM with jsdom.
+ * as static HTML, for the light-theme audits to walk the real DOM with jsdom.
  *
  * Same mechanism as scripts/i18n-smoke.jsx : the .mjs compiles this file with
  * `vite build --ssr`, then calls renderPages().

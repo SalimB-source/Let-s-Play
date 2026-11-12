@@ -5031,6 +5031,9 @@ les dossiers et les tests à la fois, puisque tout passe par le même composant
   ≤ 800 px et pointeur grossier), sans dépendre de la largeur de fenêtre.
 - `npm run check:light-news` : le thème clair des pages Actus, galeries
   comprises.
+- `npm run check:light-mobile-menu` : le tiroir plein écran du burger en
+  thème clair (390 px, requêtes média aplaties) — libellés, recherche et
+  boutons mesurés au seuil AA 4,5:1, état invité comme connecté.
 
 ## Édition du 15.10.2026 : bande-annonce de GTA VI
 

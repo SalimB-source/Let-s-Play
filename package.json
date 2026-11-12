@@ -28,6 +28,7 @@
     "check:daily-news": "node scripts/daily-news-check.mjs",
     "check:written-review": "node scripts/written-review-check.mjs",
     "check:light-news": "node scripts/light-news-check.mjs",
+    "check:light-mobile-menu": "node scripts/light-mobile-menu-check.mjs",
     "check:headlines": "node scripts/headlines-check.mjs",
     "check:phone-css": "node scripts/phone-css-check.mjs",
     "check:phone-layout": "node scripts/phone-layout-check.mjs",
