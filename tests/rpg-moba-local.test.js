@@ -7889,7 +7889,7 @@ test('Sandales MOBA : Rapidité ne change plus la capacité à attaquer, même a
   assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Sandales MOBA : enlever les sandales ne retire pas la disponibilité immédiate ni la Rapidité imprimée', () => {
+test('Sandales MOBA : les remplacer ne retire pas la disponibilité immédiate et n’accorde pas Rapidité', () => {
   for(const rapide of [false,true]){
     const duel=partie();const creature=rapide?'fennec-des-decombres':'gardienne-des-portes-de-sable';
     duel.joueur.main=[creature,'sandales-de-tislit','cuirasse-de-sel'];duel.joueur.mana.sable=30;duel.joueur.mana.tenebres=30;
@@ -7898,11 +7898,11 @@ test('Sandales MOBA : enlever les sandales ne retire pas la disponibilité immé
     assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
     duel.moba.armesJouees.joueur=false;
     assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);
-    assert.equal(rpgPeutAttaquer(porteur),true);assert.equal(porteur.rapidite,rapide);assert.equal(rpgMobaPlacementCoherent(duel),true);
+    assert.equal(rpgPeutAttaquer(porteur),true);assert.equal(porteur.rapidite,false);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
 
-test('Sandales MOBA : l’attaque déclarée reste légale si Brise-lame retire la Rapidité en réponse', () => {
+test('Sandales MOBA : l’attaque déclarée reste légale si Brise-lame retire leur bonus en réponse', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','sandales-de-tislit'];duel.joueur.mana.sable=30;
   const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;
   assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
