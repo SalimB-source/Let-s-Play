@@ -982,6 +982,18 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
    spécifique ci-dessus), et les autres passent devant les cartes. */
 .moba .moba__side > .moba__health { position: relative; z-index: 3; }
 
+/* Une frappe directe se choisit là où les dégâts vont tomber. Le bouton
+   couvre temporairement la jauge sans modifier ses dimensions ni les cartes. */
+.moba .moba__attack-direct {
+  position: absolute; z-index: 4; inset: 50% 0 auto;
+  transform: translateY(-50%); width: 100%; min-height: 34px;
+  padding: 4px 3px; border: 1px solid #ffcf83; border-radius: 6px;
+  background: linear-gradient(#9b4931, #62281f); color: #fff4da;
+  box-shadow: 0 0 12px #f6854e99; cursor: pointer;
+  font: 700 clamp(9px, 1.1vw, 12px) system-ui, sans-serif;
+}
+.moba .moba__attack-direct:focus-visible { outline: 3px solid #fff2bf; outline-offset: 2px; }
+
 /* Le conteneur remplace le bouton « i » pour l'accès clavier à la fiche. */
 .moba .moba__real-slot:focus-visible,
 .moba .moba__hand-item:focus-visible,
