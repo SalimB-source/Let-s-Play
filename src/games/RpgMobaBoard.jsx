@@ -80,13 +80,13 @@ const MOBA_PHASE_STEPS = [
   { id: 'fin', label: 'Réponse', title: 'Réponse de fin de tour' },
 ];
 // Répartition fixe : pas de tirage aléatoire à chaque rendu du master.
-const FLOCONS_INTERLUDE = Array.from({ length: 36 }, (_, index) => ({
-  '--flake-x': `${(index * 37 + index * index * 3) % 100}%`,
-  '--flake-y': `${(index * 29 + 11) % 100}%`,
-  '--flake-size': `${2 + index % 4}px`,
-  '--flake-delay': `${-((index * 13) % 120) / 10}s`,
-  '--flake-duration': `${9 + index % 7 * 2}s`,
-  '--flake-drift': `${(index * 19) % 55 - 27}px`,
+const PARTICULES_INTERLUDE = Array.from({ length: 36 }, (_, index) => ({
+  '--particle-x': `${(index * 37 + index * index * 3) % 100}%`,
+  '--particle-y': `${(index * 29 + 11) % 100}%`,
+  '--particle-size': `${2 + index % 4}px`,
+  '--particle-delay': `${-((index * 13) % 120) / 10}s`,
+  '--particle-duration': `${9 + index % 7 * 2}s`,
+  '--particle-drift': `${(index * 19) % 55 - 27}px`,
 }));
 const TAILLE_PAGE_MAIN = 6;
 const noms = { joueur: 'Vous', sorcier: 'IA', tous: 'Vous + IA' };
@@ -1586,7 +1586,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         </fieldset>
         {!validationDeckJoueur.ok && <p className="moba__setup-warning" role="status">{deckPour('joueur') ? `Deck non compatible : ${validationDeckJoueur.raison}` : validationDeckJoueur.raison}</p>}
         <div className="moba__story-start">
-          <div><span>✦ CAMPAGNE · 3 CHAPITRES</span><strong>Du seuil au Styx</strong><small>Trois duels, trois plateaux, trois adversaires. Votre deck vous accompagne ; chaque victoire ouvre le chapitre suivant.</small></div>
+          <div><span>✦ CAMPAGNE · {MOBA_HISTOIRE.length} CHAPITRES</span><strong>Du seuil au Styx</strong><small>{MOBA_HISTOIRE.length} duels, {MOBA_HISTOIRE.length} plateaux, {MOBA_HISTOIRE.length} adversaires. Votre deck vous accompagne ; chaque victoire ouvre le chapitre suivant.</small></div>
           <button type="button" className="moba__primary" disabled={!validationDeckJoueur.ok} onClick={demarrerHistoire}>Jouer l’histoire →</button>
         </div>
         <div className="moba__setup-actions">
@@ -1637,10 +1637,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     </div>}
     {confirmerSortie && !fini && <div className="moba__overlay" role="dialog" aria-modal="true" aria-labelledby="moba-quitter-title" aria-describedby="moba-quitter-description" onKeyDown={clavierConfirmation}><div className="moba__modal moba__quit-modal"><span>FIN DE PARTIE</span><h2 id="moba-quitter-title">Quitter le duel ?</h2><p id="moba-quitter-description">La partie en cours ne sera pas sauvegardée.</p><button type="button" autoFocus className="moba__primary" onClick={fermerConfirmation}>Continuer le duel</button><button type="button" onClick={onQuitter}>Quitter sans sauvegarder</button></div></div>}
     {recherche?.cote === 'joueur' && !fini && !confirmerSortie && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Recherche dans votre deck"><div className="moba__modal moba__mulligan"><span>CAPACITÉ D’ARRIVÉE</span><h2>Choisissez une carte</h2><p>{cardById(recherche.sourceCarteId)?.name} cherche dans votre deck. Choisissez une carte admissible à ajouter à votre main.</p><div className="moba__mulligan-cards moba__search-cards">{rpgMobaCandidatsRecherche(duel, 'joueur').map((id, index) => <div className="moba__search-item" key={id} {...interactionsApercu(id)}><button type="button" autoFocus={index === 0} className="moba__mulligan-card" onClick={() => afficherResultat(rpgMobaResoudreRecherche(duel, 'joueur', id))}><img src={cardArt(id)} alt="" /><b>{cardById(id)?.name}</b><small>COÛT {cardById(id)?.cost}</small><small className="moba__search-text">{cardById(id)?.text}</small></button></div>)}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div></div>}
-    {chapitreAnnonce && <section className={`moba__interlude${chapitreAnnonce.ambiance === 'neige' ? ' moba__interlude--neige' : ''}`} role="dialog" aria-modal="true" aria-labelledby="moba-interlude-titre" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); if (annoncePremier) revenirDeLAnnonce(); else setInterlude(false); } else if (event.key === 'Tab') { const boutons = [...event.currentTarget.querySelectorAll('button')]; if (event.shiftKey && document.activeElement === boutons[0]) { event.preventDefault(); boutons.at(-1)?.focus(); } else if (!event.shiftKey && document.activeElement === boutons.at(-1)) { event.preventDefault(); boutons[0]?.focus(); } } }} style={{ '--moba-interlude-decor': `url("${import.meta.env.BASE_URL}${chapitreAnnonce.decor}")` }}>
+    {chapitreAnnonce && <section className={`moba__interlude moba__interlude--${chapitreAnnonce.ambiance}`} role="dialog" aria-modal="true" aria-labelledby="moba-interlude-titre" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); if (annoncePremier) revenirDeLAnnonce(); else setInterlude(false); } else if (event.key === 'Tab') { const boutons = [...event.currentTarget.querySelectorAll('button')]; if (event.shiftKey && document.activeElement === boutons[0]) { event.preventDefault(); boutons.at(-1)?.focus(); } else if (!event.shiftKey && document.activeElement === boutons.at(-1)) { event.preventDefault(); boutons[0]?.focus(); } } }} style={{ '--moba-interlude-decor': `url("${import.meta.env.BASE_URL}${chapitreAnnonce.decor}")` }}>
       <div className="moba__interlude-scene" aria-hidden="true" />
       <div className="moba__interlude-hero"><img src={cardArt(chapitreAnnonce.portrait)} alt={`La peinture originale de ${cardById(chapitreAnnonce.portrait)?.name ?? chapitreAnnonce.deck.name}, prêt à vous affronter`} draggable={false} /></div>
-      {chapitreAnnonce.ambiance === 'neige' && <div className="moba__interlude-snow" aria-hidden="true">{FLOCONS_INTERLUDE.map((style, index) => <i key={index} style={style} />)}</div>}
+      <div className={`moba__interlude-particles moba__interlude-particles--${chapitreAnnonce.ambiance}`} aria-hidden="true">{PARTICULES_INTERLUDE.map((style, index) => <i key={index} style={style} />)}</div>
       <div className="moba__interlude-copy">
         <span className="moba__interlude-kicker">LE SABLIER · CHAPITRE {annoncePremier ? 1 : chapitreIndex + 2} / {MOBA_HISTOIRE.length}</span>
         <span className="moba__interlude-rule" aria-hidden="true">✦ ─────────── ✦</span>
