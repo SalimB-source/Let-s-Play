@@ -28,10 +28,9 @@ export function cheminSalon() {
 }
 
 /**
- * Les decks qu'un joueur peut aligner en ligne : **ses** decks —
- * celui de son coffret et ceux de l'atelier. Depuis les coffrets de bienvenue,
- * l'étagère du catalogue est vide ; l'appelant passe donc les decks de la
- * maison (`chargerDecksMaison`).
+ * Filtre les decks jouables transmis par le salon : les huit préconstruits
+ * thématiques et les decks personnels sont passés par l'appelant. L'absence
+ * de liste ne crée jamais implicitement un deck à la place du joueur.
  */
 export function decksPourDefi(decks = RPG_DECKS) {
   return (Array.isArray(decks) ? decks : []).filter((deck) => deckEstSelectionnable(deck));

@@ -1066,6 +1066,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__booster-face-name { display: flex; align-items: center; justify-content: center; min-height: 29px; padding: 2px 5px; color: #f4e4c4; font: 700 9px/1.1 Georgia,serif; text-align: center; }
 .moba__booster-stamp { padding: 4px 2px 5px; border-top: 1px solid #a1804e; background: repeating-linear-gradient(0deg, #101011 0 2px, #3b3023 2px 3px); font-size: 6px; }
 .moba__booster-name { min-height: 2.4em; display: flex; align-items: center; justify-content: center; color: inherit; font: 700 12px/1.2 system-ui,sans-serif; }
+.moba__booster-category { color: #d9b87f; font: 700 9px/1.3 system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; }
 .moba__booster-state { margin-top: 4px; color: #c4b092; font: 11px/1.3 system-ui,sans-serif; }
 .moba__booster.is-selected .moba__booster-state { color: #ffe2a0; font-weight: 700; }
 .moba__booster-item.is-unavailable .moba__booster-scene { opacity: .55; filter: grayscale(.55); }

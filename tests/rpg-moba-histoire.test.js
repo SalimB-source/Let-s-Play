@@ -82,6 +82,10 @@ test('l’histoire enchaîne victoire, master de carte, nouveau plateau, nouvel 
     const retourMobaRef = { current: null };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, { decksMaison: [deck], creerPartie, onQuitter: () => {}, onBackRef: retourMobaRef })));
+    // La liste thématique est maintenant proposée par défaut ; le deck
+    // personnel reste disponible et conserve son choix pendant la campagne.
+    await act(async () => [...document.querySelectorAll('.moba__booster')]
+      .find((button) => button.querySelector('.moba__booster-name')?.textContent === deck.name).click());
     assert.ok(document.querySelector('.moba__story-start button'));
     assert.equal(document.querySelector('.moba').dataset.mobaPlateau, 'trois-voies');
     await act(async () => document.querySelector('.moba__story-start button').click());

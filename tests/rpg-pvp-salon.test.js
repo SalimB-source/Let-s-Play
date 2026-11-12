@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { RPG_DECKS_ARCHETYPES, rpgValiderDeck } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, RPG_DECKS_PRECONSTRUITS, rpgValiderDeck } from '../src/games/rpgCards.js';
 import {
   SALON_TEXTES,
   cheminSalon,
@@ -119,9 +119,10 @@ test('le compte à rebours reste lisible, sans échéance il ne ment pas', () =>
 });
 
 test('les decks proposés au salon sont ceux du joueur, et seulement les valides', () => {
-  // Depuis les coffrets de bienvenue, l'étagère du catalogue est vide : le
-  // salon propose les decks de la maison — celui du coffret, ceux de l'atelier.
-  assert.deepEqual(decksPourDefi(), [], 'sans deck de la maison, le salon ne propose rien');
+  // Le salon passe les huit thèmes et les decks personnels au même validateur.
+  assert.deepEqual(decksPourDefi(), [], 'le filtre n’invente pas un deck sans liste');
+  assert.deepEqual(decksPourDefi(RPG_DECKS_PRECONSTRUITS).map((deck) => deck.id),
+    RPG_DECKS_PRECONSTRUITS.map((deck) => deck.id), 'les huit préconstruits passent tous la validation du salon');
   const decks = decksPourDefi(RPG_DECKS_ARCHETYPES);
   assert.ok(decks.length >= 4, `${decks.length} decks seulement`);
   for (const deck of decks) {
