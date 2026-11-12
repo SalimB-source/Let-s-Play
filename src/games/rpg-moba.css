@@ -1361,7 +1361,6 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__summon-fx--retour-exil i { background: #f3fbff; box-shadow: 0 0 8px #cceefa; animation-name: moba-exil-return-spark; }
 @keyframes moba-exil-return-ring { 0% { opacity: 0; transform: scale(1.35) rotate(-45deg); } 30% { opacity: .9; } 100% { opacity: 0; transform: scale(.65) rotate(0deg); } }
 @keyframes moba-exil-return-spark { 0% { opacity: 0; transform: translateY(-45px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(0); } }
-
 /* Le même X que dans le duel, superposé aux coordonnées d'avant résolution. */
 .moba .moba__counterattack-slashes { z-index: 86; }
 .moba .moba__counterattack-slashes .rpg-counterattack-slashes__slash { animation-duration: calc(.62s * var(--rpg-anim-scale, 1)); }
@@ -1397,3 +1396,78 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__impact-cinema.is-targeted .moba__impact-number { animation-name: moba-targeted-impact-number; }
 @keyframes moba-targeted-impact-burst { 0%, 65% { opacity: 0; transform: scale(.3); } 78% { opacity: 1; } 100% { opacity: 0; transform: scale(1.65); } }
 @keyframes moba-targeted-impact-number { 0%, 40% { opacity: 0; } 48%, 76% { opacity: 1; } 100% { opacity: 0; translate: 0 -24px; } }
+
+/* Desktop sizing for the full-screen MOBA table. Keep the five 2 / 1 / 2
+   positions and the complete 4:5 card faces; short landscape and portrait
+   layouts retain their separate, tighter rules in rpg-moba.css. */
+@media (min-width: 1200px) and (min-height: 740px) and (orientation: landscape) {
+  .moba { --moba-card-size: min(14vw, 18.5vh, 220px); }
+  .moba .moba__hand-item {
+    flex-basis: min(9.7vw, 15.2vh, 180px);
+    max-width: calc((100% - 5 * clamp(12px, 1.5vw, 22px)) / 6);
+  }
+  .moba__header { gap: 16px; padding: 8px 12px; }
+  .moba__brand > span { font-size: 11px; }
+  .moba__brand h1 { font-size: 21px; }
+  .moba__header-meta { gap: 8px; }
+  .moba__back { min-height: 36px; padding: 7px 11px; font-size: 12px !important; }
+
+  .moba__player { gap: 10px; padding: 10px; }
+  .moba__player-emblem { width: 55px; height: 55px; flex-basis: 55px; }
+  .moba__player-name small { font-size: 10px; }
+  .moba__player-name strong { font-size: 18px; }
+  .moba__player-score { font-size: 12px; }
+  .moba .moba__piles { gap: 10px; }
+  .moba .moba__piles .rpg-card-pile { padding: 5px 7px; font-size: 12px; }
+  .moba .moba__piles .rpg-card-pile__stack,
+  .moba .moba__piles .rpg-card-pile__card { width: 42px; height: 56px; }
+  .moba .moba__piles .rpg-card-pile small { font-size: 10px; }
+
+  .moba__lanehead strong { font-size: 12px; }
+  .moba__health { padding: 4px 6px; font-size: 12px; }
+  .moba__health strong { font-size: 15px; }
+  .moba__health strong small { font-size: 10px; }
+  .moba__health-bar { height: 8px; }
+  .moba__empty-label { font-size: 10px; }
+  .moba__empty-label i { font-size: 24px; }
+
+  .moba .moba__controls { gap: 8px; padding: 12px; }
+  .moba__phase strong { font-size: 15px; }
+  .moba__hint, .moba__error { font-size: 13px; }
+  .moba__buttons { gap: 7px; }
+  .moba__buttons button { min-height: 40px; padding: 8px 10px; font-size: 13px; }
+  .moba__opponent-hand { padding: 9px 12px; }
+  .moba__opponent-hand > div { font-size: 13px; }
+  .moba__journal { padding: 7px 10px; font-size: 13px; }
+  .moba__journal summary { min-height: 22px; }
+
+  /* Les deux écrans de préparation utilisent la même échelle PC que le
+     plateau ; les petits écrans gardent leurs dialogues compacts. */
+  .moba__setup { width: min(100%, 1140px); padding: 28px 30px; }
+  .moba__setup > p { font-size: 15px; }
+  .moba__setup .moba__deck-picker-heading h3 { font-size: 32px; }
+  .moba__setup .moba__booster-list { gap: 14px; padding: 10px 8px 13px; }
+  .moba__setup .moba__booster-item { flex-basis: 165px; }
+  .moba__setup .moba__booster-scene { height: min(26dvh, 220px); width: auto; margin: 4px auto 12px; }
+  .moba__booster-seal { font-size: 9px; }
+  .moba__booster-face-name { font-size: 11px; }
+  .moba__booster-stamp { font-size: 8px; }
+  .moba__booster-name { font-size: 14px; }
+  .moba__booster-state { font-size: 12px; }
+  .moba__setup-actions button { min-height: 46px; font-size: 14px; }
+
+  .moba__mulligan-overlay .moba__mulligan {
+    width: min(100%, 1020px);
+    height: min(calc(100dvh - 36px), 600px);
+    padding: 20px 18px;
+    --moba-mulligan-gap: clamp(16px, 1.5vw, 22px);
+  }
+  .moba__mulligan-intro h2 { font-size: clamp(28px, 3vw, 38px); }
+  .moba__mulligan-intro p { font-size: 15px; }
+  .moba__mulligan-overlay .moba__mulligan-cards { padding: 0 18px; }
+  .moba .moba__mulligan-overlay .moba__mulligan-item,
+  .moba__mulligan-overlay .moba__mulligan-card {
+    flex-basis: min(calc((100% - 4 * var(--moba-mulligan-gap)) / 5), calc(80cqh - 22px), 180px);
+  }
+  .moba__mulligan-overlay .moba__mulligan > button { min-height: 44px; padding: 8px 18px; font-size: 14px; }
+}
