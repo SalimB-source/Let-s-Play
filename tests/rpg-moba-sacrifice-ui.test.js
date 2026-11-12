@@ -37,10 +37,10 @@ test('le plateau permet de choisir une victime puis de la remplacer dans le cent
     await click([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('Anqa')));
     assert.match(document.querySelector('.moba__sacrifice-hint').textContent, /0\/1/);
     const voieCentrale = document.querySelector('.moba__lane[aria-label="Voie centrale"]');
-    assert.match(voieCentrale.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Case sur les flancs/);
-    assert.ok(voieCentrale.querySelector('.moba__conquest-lock img'));
-    assert.ok(voieCentrale.querySelector('.moba__side--sorcier > .moba__conquest--center'));
-    assert.equal(Boolean(voieCentrale.querySelector('.moba__side--joueur .moba__conquest')), false);
+    assert.ok(document.querySelector('[data-moba-ruin="center"]'));
+    assert.equal(voieCentrale.querySelector('.moba__conquest'), null);
+    assert.ok(voieCentrale.querySelector('.moba__side--sorcier').hasAttribute('inert'));
+    assert.equal(voieCentrale.querySelector('.moba__side--joueur').hasAttribute('inert'), false);
     const center = voieCentrale.querySelector('.moba__side--joueur');
     assert.equal(center.hasAttribute('inert'), false);
     await click(center.querySelector('.moba__slot.has-creature'));

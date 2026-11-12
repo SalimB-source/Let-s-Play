@@ -317,6 +317,13 @@
   --moba-card-size: min(10.4vw, 14.6vh, 136px);
 }
 .moba > div[inert] { position: absolute; inset: 0; }
+/* Les quinze calques partagent exactement la projection du décor. Leur fond
+   transparent permet de montrer deux voies conquises sans masquer la troisième. */
+.moba__map-ruin {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-position: center; background-size: 100% 100%; background-repeat: no-repeat;
+}
+
 .moba__header { position: absolute; z-index: 25; top: 8px; right: 1%; max-width: none; margin: 0; padding: 5px 8px; border: 1px solid #92774e; border-radius: 9px; background: #100e0ce8; gap: 12px; }
 .moba__brand > span { display: block; font-size: 9px; white-space: nowrap; }
 .moba__brand h1 { margin: 0; font-size: 16px; }
@@ -354,7 +361,6 @@
 .moba__lanes { width: 100%; height: 100%; grid-template-columns: 2fr 1fr 2fr; gap: 0; }
 .moba .moba__lane, .moba .moba__lane.is-conquered { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0 5px; border: 0; background: none; box-shadow: none; }
 .moba .moba__lane + .moba__lane { border-left: 1px solid #f4deb27a; }
-.moba .moba__lane.is-conquered { background: #16100c66; }
 .moba__lanehead { position: absolute; top: -16px; left: 0; right: 0; display: flex; justify-content: center; min-height: 0; padding: 0; border: 0; text-shadow: 0 1px 4px #000; }
 .moba__lane-number { display: none; }.moba__lanehead strong { padding: 0; color: #fff1d5; font-size: 10px; }.moba__lane-state { display: none; }
 .moba__lane.is-conquered .moba__lane-state { display: block; flex: initial; margin: 0; color: #ffe0a5; }
@@ -411,6 +417,7 @@
   /* En portrait, les cases occupent presque toute la largeur : étaler la
      carte horizontalement pour garder les chemins sous les cases latérales. */
   .moba { --moba-card-size: min(17.7vw, 11.5vh, 84px); background-size: 145% 100%; }
+  .moba__map-ruin { background-size: 145% 100%; }
   .moba__header { max-width: 48%; }.moba__header-meta { flex-wrap: nowrap; }.moba__back span { white-space: nowrap; }
   .moba__hidden-hand { top: 5%; }.moba__hidden-hand > div { height: 4vh; }.moba__hidden-hand > div span { width: 24px; }
   .moba__scoreboard { top: 11%; bottom: auto; left: 2%; width: 96%; height: 33px; }
@@ -855,73 +862,16 @@
   .moba__buttons button { min-height: 34px; padding: 5px 7px; }
 }
 
-/* Une voie conquise se ferme sur la carte : deux chaînes croisées
-   rejoignent un verrou central. Le terrain reste visible et le camp vainqueur
-   conserve sa couleur. La case centrale conservée reste jouable. */
-.moba .moba__lane.is-sealed {
-  --conquest-accent: #c39c6b;
-  --conquest-glow: #a7804652;
-  background: linear-gradient(90deg, #100e0dc7, #12100dc2 50%, #100e0dc7);
-  animation: none;
-}
-.moba .moba__lane.is-conquered--joueur { --conquest-accent: #9cd4c6; --conquest-glow: #5aa99880; }
-.moba .moba__lane.is-conquered--sorcier { --conquest-accent: #e0a186; --conquest-glow: #b4543e80; }
+/* Les cases restent cachées sur une voie latérale détruite. Au centre,
+   seule la moitié perdante se ferme ; la case du vainqueur reste jouable. */
+.moba .moba__lane.is-sealed { background: none; animation: none; }
 .moba__lane.is-sealed .moba__lane-state { display: none; }
 .moba__lane.is-sealed .moba__health,
 .moba__lane.is-sealed .moba__slot { visibility: hidden; }
-.moba__conquest {
-  position: absolute; z-index: 2; inset: 0; overflow: hidden; pointer-events: none;
-  color: #f5e7cb; text-align: center; text-shadow: 0 2px 5px #000;
-  background: linear-gradient(90deg, #0a0908a6, var(--conquest-glow) 50%, #0a0908a6);
-  box-shadow: inset 1px 0 #e6c89455, inset -1px 0 #e6c89455;
-  animation: moba-conquest-reveal calc(.7s * var(--rpg-anim-scale, 1)) ease-out both;
-}
-/* Au centre, seul le camp qui a perdu est scellé : le décor est contenu
-   dans sa moitié, jamais sur la case conservée par le vainqueur. */
 .moba .moba__lane.is-center-conquered { background: none; }
 .moba .moba__lane.is-conquered .moba__side.is-joined-center { z-index: 3; }
 .moba__side.is-lost-center .moba__health,
 .moba__side.is-lost-center .moba__slot { visibility: hidden; }
-.moba__conquest--center .moba__conquest-lock { width: clamp(30px, 3vw, 48px); border-radius: 10px; }
-.moba__conquest--center .moba__conquest-kicker { top: 4%; }
-.moba__conquest--center .moba__conquest-owner { bottom: 15%; }
-.moba__conquest--center .moba__conquest-closed { bottom: 3%; }
-.moba__conquest-chains { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 3px 4px #000c); }
-.moba__conquest-chain-shadow, .moba__conquest-chain-core, .moba__conquest-links ellipse {
-  fill: none; vector-effect: non-scaling-stroke;
-}
-.moba__conquest-chain-shadow { stroke: #130e0a; stroke-width: 11px; }
-.moba__conquest-chain-core { stroke: #977652; stroke-width: 6px; }
-.moba__conquest-links ellipse { stroke: #ead2a1; stroke-width: 2px; }
-.moba__conquest-lock {
-  position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  display: grid; place-items: center; width: clamp(46px, 5vw, 76px); aspect-ratio: 1;
-  border: 2px solid var(--conquest-accent); border-radius: 18px;
-  background: radial-gradient(circle, #4c3621 10%, #19120d 76%);
-  box-shadow: 0 0 0 4px #14100be8, 0 0 22px var(--conquest-glow), inset 0 0 12px #000a;
-}
-.moba__conquest-lock img { display: block; width: 88%; height: 92%; object-fit: contain; }
-.moba__conquest-kicker, .moba__conquest-owner, .moba__conquest-closed {
-  position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
-  max-width: calc(100% - 8px); padding: 3px 7px; white-space: nowrap;
-  border: 1px solid #e5c68170; border-radius: 4px; background: #17120ee8;
-}
-.moba__conquest-kicker { top: 11%; color: #e8d3ad; font: 600 clamp(8px, .7vw, 11px)/1.2 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
-.moba__conquest-owner { bottom: 13%; color: var(--conquest-accent); font: 800 clamp(9px, .9vw, 13px)/1.2 system-ui, sans-serif; letter-spacing: .06em; }
-.moba__conquest-closed { bottom: 5%; color: #ddccb1; font: 500 clamp(8px, .7vw, 10px)/1.2 system-ui, sans-serif; }
-@keyframes moba-conquest-reveal { from { opacity: 0; filter: brightness(1.7); } to { opacity: 1; filter: brightness(1); } }
-@media (max-width: 700px) {
-  .moba__conquest-lock { width: clamp(36px, 7vw, 50px); border-radius: 12px; }
-  .moba__conquest-kicker, .moba__conquest-owner, .moba__conquest-closed { padding: 2px 3px; }
-  .moba__conquest-kicker, .moba__conquest-owner { font-size: 8px; letter-spacing: 0; }
-  .moba__conquest-closed { font-size: 8px; }
-}
-@media (max-height: 500px) {
-  .moba__conquest-lock { width: clamp(32px, 5vw, 48px); }
-  .moba__conquest-kicker { top: 4%; }
-  .moba__conquest-owner { bottom: 17%; }
-  .moba__conquest-closed { bottom: 2%; }
-}
 
 /* La fiche classique anime le lancement au centre. Ce rappel compact reste
    visible jusqu'au passage ou au contre, y compris sur les écrans tactiles où
@@ -1327,23 +1277,6 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 @media (max-width: 700px) and (orientation: portrait) {
   .moba .moba__controls { top: 75%; transform: none; flex-wrap: wrap; }
   .moba .moba__controls .moba__directive { flex: 1 1 100%; }
-}
-
-/* Chaînes en fer forgé : les dimensions et l'angle suivent les proportions
-   réelles de chaque voie, sans étirer les maillons. L'ancien SVG reste une
-   solution de repli sur les navigateurs sans unités de conteneur/trigonométrie. */
-.moba__conquest { container-type: size; }
-.moba__conquest-photo-chains { display: none; }
-@supports (width: hypot(100cqw, 100cqh)) and (transform: rotate(atan2(100cqh, 100cqw))) {
-  .moba__conquest-chains { display: none; }
-  .moba__conquest-photo-chains { display: block; position: absolute; inset: 0; }
-  .moba__conquest-photo-chain {
-    position: absolute; top: 50%; left: 50%;
-    width: calc(hypot(100cqw, 100cqh) * 1.03); max-width: none; height: auto;
-    filter: drop-shadow(0 3px 3px #000d);
-  }
-  .moba__conquest-photo-chain--down { transform: translate(-50%, -50%) rotate(atan2(100cqh, 100cqw)); }
-  .moba__conquest-photo-chain--up { transform: translate(-50%, -50%) rotate(calc(-1 * atan2(100cqh, 100cqw))); }
 }
 
 /* Le texte imprimé reste consultable ; les adaptations propres au mode le priment. */
