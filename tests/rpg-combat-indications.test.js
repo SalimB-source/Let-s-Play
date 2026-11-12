@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cardById } from '../src/games/rpgCards.js';
-import { rpgSortBloqueParBouclier } from '../src/games/rpgCombatIndications.js';
+import { rpgSortBloqueParBouclier, rpgCiblesFlechesAttaque } from '../src/games/rpgCombatIndications.js';
 
 test('l’indication distingue les boucliers généraux et les couleurs du sort', () => {
   const eau = cardById('ressac');
@@ -59,4 +59,12 @@ test('flèches d’attaque : cible choisie ou sorcier, jusqu’au blocage', asyn
   combat.blocages = {};
   assert.equal(rpgCiblesFlechesAttaque(duel, combat)[0].cibleId, null);
   assert.deepEqual(rpgCiblesFlechesAttaque(duel, null), []);
+});
+
+test('la flèche individuelle montre la cible annoncée, même sans bloqueur', () => {
+  const duel = { joueur: { creatures: [{ id: 'a', name: 'Attaquant' }] }, sorcier: { creatures: [{ id: 'b', name: 'Cible' }] } };
+  const combat = { coteAttaquant: 'joueur', attaquants: ['a'], blocages: {}, ciblesAttaque: {}, cibleIndividuelle: { cibleId: 'b' } };
+  assert.equal(rpgCiblesFlechesAttaque(duel, combat)[0].cibleId, 'b');
+  combat.cibleIndividuelle.cibleId = null;
+  assert.equal(rpgCiblesFlechesAttaque(duel, combat)[0].cibleId, null);
 });

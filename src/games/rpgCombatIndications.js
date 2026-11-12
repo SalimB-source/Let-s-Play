@@ -57,6 +57,12 @@ export function rpgCiblesFlechesAttaque(duel, combat) {
   return (combat.attaquants ?? []).flatMap((id) => {
     const attaquant = attaquants.find((entite) => entite.id === id);
     if (!attaquant) return [];
+    if (combat.cibleIndividuelle) {
+      const cibleId = combat.cibleIndividuelle.cibleId;
+      if (cibleId == null) return [{ attaquantId: id, attaquant: attaquant.name, cibleId: null, cible: null, coteDefense: defense }];
+      const cible = adversaires.find((entite) => entite.id === cibleId);
+      return cible ? [{ attaquantId: id, attaquant: attaquant.name, cibleId, cible: cible.name, coteDefense: defense }] : [];
+    }
     const cibleId = combat.ciblesAttaque?.[id];
     if (cibleId) {
       const cible = adversaires.find((entite) => entite.id === cibleId);

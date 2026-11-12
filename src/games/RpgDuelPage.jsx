@@ -1,3 +1,4 @@
+import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from './rpgCombatIndividuelClassique.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
 export { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaCartePourApercu } from './rpgMobaPresentation.js';
@@ -6557,6 +6558,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => { vivant = false; };
   }, [authUser, authContext?.isDemo]);
   const [tutorielActif, setTutorielActif] = useState(false);
+  // Les leçons scénarisées enseignent encore le combat collectif historique.
+  const combatCollectif = modePvp || tutorielActif;
   const [tutorielId, setTutorielId] = useState(null);
   const [etapeTutorielId, setEtapeTutorielId] = useState(null);
   // La récompense affichée après la dernière étape (le temps d'un toast).
@@ -10077,8 +10080,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const ciblesLegales = ciblesCoupRapideLegales(attaquant, 'joueur');
     return ciblesLegales.length > 0 && !ciblesLegales.some((cible) => cible.id === selections?.[id]);
   }) ?? null;
-  const cibleAttaqueEnCours = phase ? prochainCoupRapideSansCible(attaquants) : null;
-  const attaqueCibleeSansCibleLegale = phase && duel.sorcier.creatures.length > 0
+  const cibleAttaqueEnCours = phase ? (combatCollectif ? prochainCoupRapideSansCible(attaquants) : (attaquants[0] && !ciblesAttaque[attaquants[0]] ? attaquants[0] : null)) : null;
+  const choixIndividuel = !combatCollectif && phase && attaquants[0] ? rpgCiblesIndividuellesClassique(duel, 'joueur', attaquants[0]) : { cibles: [], directe: false };
+  const attaqueCibleeSansCibleLegale = combatCollectif && phase && duel.sorcier.creatures.length > 0
     && attaquants.some((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
       return attaquant?.coupRapide && !ciblesCoupRapideLegales(attaquant).length;
@@ -10086,7 +10090,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Une seule phase d'attaque par tour : le moteur note le camp qui a déjà joué
   // la sienne (`duel.attaqueJouee`) et refuse la déclaration suivante. Une
   // attaque déjà déclarée, en attente de blocage, la consomme aussi.
-  const attaqueJouee = duel.attaqueJouee === 'joueur' || combatEntrant?.coteAttaquant === 'joueur';
+  const attaqueJouee = combatCollectif && (duel.attaqueJouee === 'joueur' || combatEntrant?.coteAttaquant === 'joueur');
   const apercuBlocages = rpgApercuBlocages(duel, combatEntrant);
   const repartitionValide = !combatEntrant || combatEntrant.attaquants.every((id) => {
     const coteAttaquant = combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
@@ -10348,7 +10352,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const boualem = duel.boualemEnAttente?.cote === 'joueur';
     const effet = duel.effetCreatureEnAttente?.cote === 'sorcier';
     const arrivee = duel.arriveeEnAttente?.cote === 'joueur' && duel.arriveeEnAttente?.retour;
-    if (!destruction && !site && !boualem && !effet && !arrivee) return false;
+    const defausse = duel.defausseEnAttente?.cote === 'joueur';
+    if (!destruction && !site && !boualem && !effet && !arrivee && !defausse) return false;
     repriseSorcierRef.current = reprendre;
     force();
     return true;
@@ -11429,7 +11434,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       annoncerVoixArrivee(carteId);
       // Une arrivée qui pioche ou fouille le deck a déjà montré/déplacé des
       // cartes : la pose devient irréversible, comme un sort résolu.
-      if (arriveeConsulteDeck(carte) && !res.arriveeEnAttente) invaliderAnnulation();
+      if ((!modePvp && duel.tour !== 'joueur') || (arriveeConsulteDeck(carte) && !res.arriveeEnAttente)) invaliderAnnulation();
       else conserverAnnulation(etatAvantAction);
       // La créature sacrifiée a déjà eu son animation de déchirement : pas de
       // second fantôme de destruction pour elle.
@@ -11871,6 +11876,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       finDuTour();
       return;
     }
+    if (res.ok && !duel.defausseEnAttente && !modePvp) reprendreSorcier();
     force();
   };
 
@@ -12111,8 +12117,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const dejaSelectionnee = attaquants.includes(entite.id);
     const ids = dejaSelectionnee
       ? attaquants.filter((id) => id !== entite.id)
-      : [...attaquants, entite.id];
-    const cibles = { ...ciblesAttaque };
+      : combatCollectif ? [...attaquants, entite.id] : [entite.id];
+    const cibles = combatCollectif ? { ...ciblesAttaque } : {};
     if (dejaSelectionnee) delete cibles[entite.id];
     setAttaquants(ids);
     setCiblesAttaque(cibles);
@@ -12179,7 +12185,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       resoudreActivation(entite);
       return;
     }
-    if (reponseActive && combatEntrant?.coteAttaquant === 'sorcier') {
+    if (combatCollectif && reponseActive && combatEntrant?.coteAttaquant === 'sorcier') {
       if (!bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id)) {
         jouerSfx('erreur');
       } else if (bloqueurSelectionne === entite.id) {
@@ -12265,6 +12271,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // entendre. Cliquer une proie légale la désigne au premier attaquant qui en
     // a besoin ; plusieurs attaquants peuvent choisir la même proie. Une fois
     // toutes les cibles désignées, un nouveau clic retire une désignation.
+    if (phase && !combatCollectif) {
+      if (!choixIndividuel.cibles.includes(entite.id)) { jouerSfx('erreur'); return; }
+      setCiblesAttaque({ [attaquants[0]]: entite.id });
+      jouerSfx('select'); force(); return;
+    }
     if (phase) {
       const candidats = attaquants
         .map((id) => duel.joueur.creatures.find((candidate) => candidate.id === id))
@@ -12298,6 +12309,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const lancerAttaque = () => {
+    if (!combatCollectif) {
+      const id = attaquants[0];
+      const cible = ciblesAttaque[id];
+      if (!id || !cible) { jouerSfx('erreur'); return; }
+      const res = rpgDeclarerAttaqueIndividuelleClassique(duel, 'joueur', id, cible === 'sorcier' ? null : cible);
+      if (!res.ok) { jouerSfx('erreur'); force(); return; }
+      invaliderAnnulation(); setPhase(false); setAttaquants([]); setCiblesAttaque({});
+      const combat = { coteAttaquant: 'joueur', attaquants: [id], blocages: {}, repartitions: {}, ciblesAttaque: {}, cibleIndividuelle: duel.combatDeclare.cibleIndividuelle };
+      resoudreAttaqueJoueur(combat);
+      return;
+    }
     const ids = [...new Set(attaquants)];
     const attaquantsValides = ids.length && ids.every((id) => duel.joueur.creatures
       .some((entite) => entite.id === id && rpgPeutAttaquer(entite)));
@@ -12463,6 +12485,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    if (!combatCollectif && phase && attaquants[0]) {
+      if (!choixIndividuel.directe) { jouerSfx('erreur'); return; }
+      setCiblesAttaque({ [attaquants[0]]: 'sorcier' }); jouerSfx('select'); force(); return;
+    }
     if (!monTour) return;
     // Pendant la déclaration d'attaque, désigner le sorcier est le geste du
     // Attaque ciblée qui y renonce : les proies désignées s'effacent et toutes les
@@ -12542,8 +12568,30 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, 300);
   };
 
+  const resoudreCombatIndividuel = (cote, combat) => {
+    const champAvant = prendreInstantaneChamp();
+    const debutJournal = rpgNombreDestructions(duel);
+    const res = rpgResoudreAttaqueIndividuelleClassique(duel, cote);
+    if (!res.ok) { jouerSfx('erreur'); force(); return; }
+    const id = combat.attaquants[0];
+    const cible = combat.cibleIndividuelle.cibleId ?? 'sorcier';
+    declencherLignesCharge(cote, [id], { [id]: cible }, champAvant);
+    animerModificationsChamp(champAvant, [id], debutJournal);
+    for (const son of rpgSonsResolutionCombat(res.resume)) jouerSfx(son.nom, son.delai);
+    if (res.resume.frappeSorcier > 0) declencherImpactEcran(cote === 'joueur' ? 'dealt' : 'received');
+    if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
+    setCombatEntrant(null); setCibleEnCours(null); setBloqueurSelectionne(null);
+    force();
+    if (cote === 'sorcier' && !rpgVainqueur(duel)) {
+      if (!pauseSiAttenteJoueur(declarerAttaqueSorcier)) later(declarerAttaqueSorcier, delaiReflexionSorcier());
+    }
+  };
+
   const resoudreAttaqueEnnemie = () => {
     if (!combatEntrant || duel.arriveeEnAttente) return;
+    if (!combatCollectif && combatEntrant.cibleIndividuelle) {
+      resoudreCombatIndividuel('sorcier', combatEntrant); return;
+    }
     const attaquantsVivants = combatEntrant.attaquants
       .filter((id) => duel.sorcier.creatures.some((entite) => entite.id === id));
     if (!attaquantsVivants.length) {
@@ -12640,6 +12688,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         animerModificationsChamp(champAvantReponse, [], debutJournalReponse);
       }
     }
+    if (!combatCollectif && combat.cibleIndividuelle) {
+      if (pauseSiAttenteJoueur(() => resoudreCombatIndividuel('joueur', combat))) return;
+      resoudreCombatIndividuel('joueur', combat); return;
+    }
     const attaquantsVivants = combat.attaquants
       .filter((id) => duel.joueur.creatures.some((entite) => entite.id === id));
     if (!attaquantsVivants.length) {
@@ -12723,6 +12775,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const resoudreCombat = () => {
+    if (!combatCollectif && combatEntrant?.cibleIndividuelle) { resoudreAttaqueEnnemie(); return; }
     if (combatEntrant?.coteAttaquant === 'sorcier' && !combatEntrant.blocagesDeclares) {
       if (!repartitionValide || !blocageForceValide || !provocationValide) return;
       setBloqueurSelectionne(null);
@@ -12785,6 +12838,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     rpgOuvrirFinDeTour(duel);
 
     const fermerTour = () => {
+      if (pauseSiAttenteJoueur(fermerTour)) return;
       if (rpgVainqueur(duel)) { force(); return; }
       sorcierApresCombatRef.current = false;
       if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
@@ -12831,7 +12885,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         if (joueurToucheDepuis(degatsAvant)) declencherImpactEcran('received');
       }
       force();
-      later(fermerTour, reponse ? 1100 : 300);
+      if (!pauseSiAttenteJoueur(fermerTour)) later(fermerTour, reponse ? 1100 : 300);
     }, 600);
   };
 
@@ -13070,6 +13124,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = () => {
       if (pauseSiAttenteJoueur(declarerAttaqueSorcier)) return;
+      if (!combatCollectif) {
+        const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier');
+        if (!choix) { apresCombatSorcier(); return; }
+        const res = rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', choix.attaquantId, choix.cibleId);
+        if (!res.ok) { apresCombatSorcier(); return; }
+        setCombatEntrant({ coteAttaquant: 'sorcier', attaquants: [choix.attaquantId], blocages: {}, repartitions: {}, ciblesAttaque: {}, cibleIndividuelle: duel.combatDeclare.cibleIndividuelle });
+        force(); return;
+      }
       // Une leçon de défense impose son assaut : les créatures déjà en scène
       // attaquent, même si l'IA estimerait l'échange défavorable.
       const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
@@ -13156,7 +13218,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const combatPourFleches = vainqueur ? null : combatEntrant ?? (phase
-    ? { coteAttaquant: 'joueur', attaquants, ciblesAttaque, blocages: {} }
+    ? { coteAttaquant: 'joueur', attaquants, ciblesAttaque, blocages: {}, ...(!combatCollectif && ciblesAttaque[attaquants[0]] ? { cibleIndividuelle: { cibleId: ciblesAttaque[attaquants[0]] === 'sorcier' ? null : ciblesAttaque[attaquants[0]] } } : {}) }
     : attenteBlocageAdverse ? { coteAttaquant: 'joueur', ...duel.combatDeclare } : null);
   const flechesAttaque = rpgCiblesFlechesAttaque(duel, combatPourFleches);
   const destinationsAttaque = flechesAttaque.reduce((destinations, fleche) => {
@@ -13165,7 +13227,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return destinations;
   }, {});
 
-  const bloqueursDisponibles = duel.joueur.creatures.filter((e) => !e.attaquee && !(e.gelToursRestants > 0));
+  const bloqueursDisponibles = combatCollectif ? duel.joueur.creatures.filter((e) => !e.attaquee && !(e.gelToursRestants > 0)) : [];
   const bloqueursSelectionnes = new Set(Object.values(combatEntrant?.blocages ?? {}).flat());
   const piochesJoueur = animationsPioche.filter((animation) => animation.side === 'joueur');
   const piochesSorcier = animationsPioche.filter((animation) => animation.side === 'sorcier');
@@ -13257,6 +13319,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee))
         && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))) ?? liste[0];
     }
+    if (cibleAttaqueEnCours && !combatCollectif) return liste.find((entite) => choixIndividuel.cibles.includes(entite.id)) ?? liste[0];
     if (cibleAttaqueEnCours) {
       const legales = ciblesCoupRapideLegales(
         duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
@@ -13389,7 +13452,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   ? {
                     cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}:${blocageForceValide ? 'force-ok' : 'force'}:${provocationValide ? 'provocation-ok' : 'provocation'}`,
                     classe: 'rpg-combat-prompt',
-                    texte: combatEntrant.coteAttaquant === 'joueur'
+                    texte: !combatCollectif && combatEntrant.cibleIndividuelle
+                      ? `Attaque annoncée contre ${combatEntrant.cibleIndividuelle.cibleId ? (duel.joueur.creatures.find(e => e.id === combatEntrant.cibleIndividuelle.cibleId)?.name ?? 'une créature') : 'vous'} — jouez une réponse ou résolvez`
+                      : combatEntrant.coteAttaquant === 'joueur'
                       ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
                       : combatEntrant.blocagesDeclares
                         ? 'Blocages déclarés — jouez une magie rapide ou une créature avec Embuscade, puis résolvez le combat'
@@ -13405,7 +13470,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     ? {
                       cle: `attaque:${cibleAttaqueEnCours ?? 'aucune'}:${attaquants.length}`,
                       classe: 'rpg-attack-prompt',
-                      texte: attaqueCibleeSansCibleLegale
+                      texte: !combatCollectif ? (attaquants.length ? (cibleAttaqueEnCours ? 'Choisissez une créature adverse ou le sorcier si la cible est légale' : 'Cible choisie — confirmez l’attaque') : 'Choisissez une créature attaquante')
+                        : attaqueCibleeSansCibleLegale
                         ? 'Attaque ciblée — aucune créature adverse ne peut être visée ; retirez cet attaquant'
                         : cibleAttaqueEnCours
                           ? 'Attaque ciblée — choisissez une créature adverse avant de confirmer'
@@ -13758,7 +13824,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (sorcierEstCibleDuSort || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${(cibleEnCours && (sorcierEstCibleDuSort || arriveeViseSorcierEnAttente)) || (!combatCollectif && phase && choixIndividuel.directe) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
@@ -13878,12 +13944,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (attenteAbordage && cibleAbordageLegale(entite))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige'))
-                        || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
+                        || (!combatCollectif && phase && choixIndividuel.cibles.includes(entite.id))
+                        || (combatCollectif && cibleAttaqueEnCours && ciblesCoupRapideLegales(
                           duel.joueur.creatures.find((attaquant) => attaquant.id === cibleAttaqueEnCours),
                           'joueur',
                         ).some((cible) => cible.id === entite.id))
                       )}
-                      canReceiveBlocker={Boolean(reponseActive && !combatEntrant?.blocagesDeclares && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id] && !entite.infiltration)}
+                      canReceiveBlocker={Boolean(combatCollectif && reponseActive && !combatEntrant?.blocagesDeclares && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id] && !entite.infiltration)}
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
@@ -13961,7 +14028,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={sacrificesChoisis.includes(entite.id) || attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id) || Boolean(!combatCollectif && combatEntrant?.cibleIndividuelle?.cibleId === entite.id)}
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
@@ -13985,7 +14052,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         && !combatEntrant && !reponseActive
                         && (activationEnCours === entite.id || rpgPeutActiverCapacite(duel, 'joueur', entite.id)))}
                       onActiver={() => activerCapacite(entite)}
-                      canDragBlocker={Boolean(reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
+                      canDragBlocker={Boolean(combatCollectif && reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
                       draggedBlocker={bloqueurGlisse === entite.id}
                       onStartBlockerDrag={commencerGlisserBloqueur}
                       onEndBlockerDrag={terminerGlisserBloqueur}
@@ -14360,14 +14427,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
                     data-key-hint="Espace"
                     onClick={resoudreCombat}
-                    disabled={!combatEntrant.blocagesDeclares && (!repartitionValide || !blocageForceValide || !provocationValide)}
+                    disabled={combatCollectif ? (!combatEntrant.blocagesDeclares && (!repartitionValide || !blocageForceValide || !provocationValide)) : Boolean(duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.siteEnAttente || duel.boualemEnAttente || duel.defausseEnAttente)}
                     title={!blocageForceValide
                       ? 'Blocage forcé : assignez chaque créature marquée à un attaquant qu’elle peut légalement bloquer'
                       : !provocationValide
                         ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
                         : 'Raccourci clavier : Espace'}
                   >
-                    {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : combatEntrant.blocagesDeclares ? '⚔ Résoudre le combat' : '✓ Déclarer les bloqueurs'}
+                    {!combatCollectif && combatEntrant.cibleIndividuelle ? '⚔ Résoudre l’attaque' : combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : combatEntrant.blocagesDeclares ? '⚔ Résoudre le combat' : '✓ Déclarer les bloqueurs'}
                   </button>
                 )}
                 {cibleEnCours && !attenteSiteBimini && !duel.arriveeEnAttente?.retour && (
@@ -14576,7 +14643,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
           <PhaseTrack current={phaseDuelActive} jouees={attaqueJouee ? ['attaque'] : []} />
           <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
-            {!phase && (
+            {combatCollectif && !phase && (
                   <button
                     type="button"
                     className={`rpg-btn rpg-btn--attaque rpg-btn--attaque-tous${attaqueJouee ? ' is-jouee' : ''}`}
