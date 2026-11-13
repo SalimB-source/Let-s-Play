@@ -1682,7 +1682,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : `COÛT ${card.cost}`}</small></button>;
     })}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}<button type="button" className="moba__primary" onClick={confirmerMulligan}>{mulliganIndices.length ? `Échanger ${mulliganIndices.length} carte(s)` : 'Garder ma main'} →</button></div></div>}
 
-    {apercuAnnonceOuvert && <section className="rpg-annonce-sort moba__card-announcement" role="dialog" aria-modal="true" aria-label={`L’IA annonce ${carteAnnonce.name}. Cible : ${cibleAnnonce}.`} onKeyDown={clavierAnnonce}>
+    {apercuAnnonceOuvert && <section className={`rpg-annonce-sort moba__card-announcement${carteAnnonce.kind === 'magie' ? ' rpg-annonce-sort--magie' : ''}`} role="dialog" aria-modal="true" aria-label={`L’IA annonce ${carteAnnonce.name}. Cible : ${cibleAnnonce}.`} onKeyDown={clavierAnnonce}>
       <div className="rpg-annonce-sort__panel">
         {(() => {
           const commandes = <div className="rpg-annonce-sort__controls">

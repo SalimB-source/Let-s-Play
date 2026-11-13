@@ -22,7 +22,8 @@ globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.win
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
-  const { checkCombatIndividuel, checkEmbuscadeContreAttaqueDirecte } = await import('../node_modules/.cache/rpg-classique-individuel/rpg-classique-individuel-smoke.js');
+  const { checkCombatIndividuel, checkEmbuscadeContreAttaqueDirecte, checkFlechesAvatars } = await import('../node_modules/.cache/rpg-classique-individuel/rpg-classique-individuel-smoke.js');
+  await checkFlechesAvatars(assert);
   await checkCombatIndividuel(assert);
   await checkEmbuscadeContreAttaqueDirecte(assert);
 } finally { dom.window.close(); }

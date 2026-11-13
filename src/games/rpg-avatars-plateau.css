@@ -1,0 +1,136 @@
+/* Duel classique : des sprites détourés derrière les créatures. La plaque
+   adverse reste le véritable bouton de ciblage, PV et animations compris. */
+.rpg-battle[data-scene="duel"] .card-table > .rpg-wizard-plate,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate {
+  position: absolute;
+  z-index: 6;
+  left: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2);
+  right: auto;
+  display: block;
+  width: clamp(64px, 8vw, 106px);
+  max-width: none;
+  height: clamp(74px, 12vh, 120px);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  overflow: visible;
+}
+.rpg-battle[data-scene="duel"] .card-table > .rpg-wizard-plate--ennemi,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--ennemi { top: 1%; bottom: auto; }
+.rpg-battle[data-scene="duel"] .card-table > .rpg-wizard-plate--joueur,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur { top: auto; bottom: 24%; }
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .7));
+}
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__zones, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name),
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__zones, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name) { display: none; }
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__pv.rpg-jauge-vie {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: auto;
+  right: auto;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__shield-value {
+  display: inline-block;
+  color: #fff2ce;
+  font-size: 10px;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+}
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate.is-ciblable,
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate.is-spell-target {
+  outline: 2px solid #72e6d0;
+  outline-offset: 2px;
+  border-radius: 30%;
+  box-shadow: 0 0 18px rgba(91, 240, 218, .55);
+}
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate:focus-visible { outline: 3px solid #fff0a2; outline-offset: 3px; }
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate__thinking { top: 0; left: calc(100% + 4px); transform: none; }
+
+/* La main part de la gauche et garde toute la largeur disponible : les cartes
+   continuent de se resserrer lorsque la main est chargée. */
+.rpg-battle[data-scene="duel"] .rpg-hand-dock .rpg-hand { justify-content: flex-start; }
+
+/* Au doigt, les avatars se positionnent par rapport à la table, pas à la
+   colonne de mana ; les jauges et les commandes restent à leur place. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate {
+  position: absolute;
+  left: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2);
+  right: auto;
+  width: clamp(44px, calc(var(--duel-card) * 1.05), 84px);
+  max-width: none;
+  height: clamp(52px, calc(var(--duel-card) * 1.2), 96px);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  contain: none;
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { top: 2px; bottom: auto; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { top: auto; bottom: calc(var(--rpg-touch-hand) + 2px); }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-wizard-plate__avatar { width: 100%; height: 100%; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-jauge-vie__rond { width: clamp(28px, calc(var(--duel-card) * .55), 40px); height: clamp(28px, calc(var(--duel-card) * .55), 40px); }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate__thinking { font-size: 7px; padding: 4px 6px; }
+
+/* Les lignes auparavant dimensionnées par les plaques restent réservées pour
+   ne pas déplacer les jauges de mana sur les champs. */
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
+  grid-template-rows: var(--rpg-touch-nav) clamp(25px, calc(var(--duel-card) * .55), 45px) minmax(0, 1fr) minmax(0, 1fr) clamp(25px, calc(var(--duel-card) * .55), 45px) var(--rpg-touch-hand);
+}
+
+/* Les compteurs autrefois dans la capsule restent visibles au doigt, à leur
+   ancien emplacement, sans intercepter les terrains ni les jauges de mana. */
+.rpg-table-zones { display: none; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-table-zones {
+  position: absolute;
+  z-index: 6;
+  left: calc(var(--terrain-inset) * .2);
+  width: calc(var(--rpg-touch-left) - var(--terrain-inset) * .2);
+  display: block;
+  color: #fff2d2;
+  font: 600 clamp(8px, calc(var(--duel-card) * .14), 10px)/1.2 var(--mono, monospace);
+  text-shadow: 0 1px 3px #000, 0 0 4px #000;
+  pointer-events: none;
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--ennemi { top: calc(var(--rpg-touch-nav) + var(--rpg-touch-pad) + 4px); }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--joueur { bottom: calc(var(--rpg-touch-hand) + 5px); }

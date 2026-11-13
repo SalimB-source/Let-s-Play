@@ -29,6 +29,7 @@ import './rpg-deckbox.css';
 import './rpg-mana-essai.css';
 import './rpg-soins.css';
 import './rpg-vie-compteurs.css';
+import './rpg-avatars-plateau.css';
 import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
@@ -95,7 +96,7 @@ import { enregistrerDerniereTour, lireDerniereTour, resumeConquete } from './rpg
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
-import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
+import { personnageEtage, portraitHistoire, standHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExemplaires } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
@@ -3228,7 +3229,9 @@ function BlockerArrows({ tableRef, assignments, attaque = false, resolveTarget =
       if (!width || !height) return;
 
       const cards = [...table.querySelectorAll('[data-entity-id]')];
-      const findCard = (id) => resolveTarget?.(table, id) ?? (id === '@sorcier' ? table.querySelector('.rpg-wizard-plate--ennemi') : id === '@joueur' ? table.querySelector('.rpg-wizard-plate--joueur') : cards.find((card) => card.dataset.entityId === id));
+      const cibleSorcier = (camp) => table.querySelector(`[data-scene-avatar="${camp}"]`)
+        ?? table.querySelector(`.rpg-wizard-plate--${camp}`);
+      const findCard = (id) => resolveTarget?.(table, id) ?? (id === '@sorcier' ? cibleSorcier('ennemi') : id === '@joueur' ? cibleSorcier('joueur') : cards.find((card) => card.dataset.entityId === id));
       const arrows = [];
       const point = (rect) => ({
         x: rect.left + rect.width / 2 - tableRect.left + table.scrollLeft,
@@ -3309,7 +3312,7 @@ function BlockerArrows({ tableRef, assignments, attaque = false, resolveTarget =
     const table = tableRef.current;
     if (observer && table) {
       observer.observe(table);
-      table.querySelectorAll('[data-entity-id], .rpg-wizard-plate').forEach((card) => observer.observe(card));
+      table.querySelectorAll('[data-entity-id], .rpg-wizard-plate, [data-scene-avatar]').forEach((card) => observer.observe(card));
       if (resolveTarget) Object.keys(assignments ?? {}).forEach((id) => {
         const target = resolveTarget(table, id);
         if (target) observer.observe(target);
@@ -7676,7 +7679,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const selecteurPlaque = cote === 'joueur'
       ? '.rpg-wizard-plate--ennemi'
       : '.rpg-wizard-plate--joueur';
-    const plaqueRect = table?.querySelector(selecteurPlaque)?.getBoundingClientRect();
+    const plaqueRect = (table?.querySelector(`${selecteurPlaque} .rpg-wizard-plate__avatar`)
+      ?? table?.querySelector(selecteurPlaque))?.getBoundingClientRect();
     const x2 = plaqueRect
       ? plaqueRect.left + plaqueRect.width / 2 - tableRect.left
       : tableRect.width / 2;
@@ -7756,7 +7760,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const selecteurPlaque = cote === 'joueur'
         ? '.rpg-wizard-plate--ennemi'
         : '.rpg-wizard-plate--joueur';
-      const plaqueRect = table?.querySelector(selecteurPlaque)?.getBoundingClientRect();
+      const plaqueRect = (table?.querySelector(`${selecteurPlaque} .rpg-wizard-plate__avatar`)
+        ?? table?.querySelector(selecteurPlaque))?.getBoundingClientRect();
       arrivee = plaqueRect
         ? {
           x: plaqueRect.left + plaqueRect.width / 2 - tableRect.left,
@@ -9883,6 +9888,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const personnageSorcier = personnageEtage(histoireEtageId);
   const portraitSorcierAdverse = (personnageSorcier && portraitHistoire(personnageSorcier, import.meta.env.BASE_URL, cardArt))
     || cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche));
+  // Les portraits carrés servent aux fiches ; seuls les sprites détourés vont sur la table.
+  const avatarPlateauAdverse = standHistoire(personnageSorcier ?? 'ifrit-ergs', import.meta.env.BASE_URL)
+    ?? standHistoire('ifrit-ergs', import.meta.env.BASE_URL);
+  const avatarPlateauJoueur = standHistoire(avatarDeProfil(profilJoueur)?.id ?? 'salem', import.meta.env.BASE_URL);
   const cibleAnnoncee = carteAnnoncee?.kind === 'magie'
     ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse)
     : carteAnnoncee?.kind === 'arme'
@@ -13871,8 +13880,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
-          title={modePvp ? nomSorcierAdverse : 'Le sorcier adverse'}>
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" aria-hidden="true"><img src={portraitSorcierAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
+          title={modePvp ? nomSorcierAdverse : 'Le sorcier adverse'}
+          aria-label={`${nomSorcierAdverse} : ${duel.sorcier.pv} points de vie${duel.sorcier.bouclier ? `, ${duel.sorcier.bouclier} de bouclier` : ''}`}>
+          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" data-scene-avatar="ennemi" aria-hidden="true"><img src={avatarPlateauAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
             <strong>{modePvp ? nomSorcierAdverse : etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
@@ -13894,6 +13904,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {nbMainAdverse}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckAdverse}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
           {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>
+        <div className="rpg-table-zones rpg-table-zones--ennemi" aria-label={`Zones adverses : main ${nbMainAdverse}, paquet ${nbDeckAdverse}, cimetière ${duel.sorcier.cimetiere.length}`}>
+          Main {nbMainAdverse} · Paquet {nbDeckAdverse} · Cimetière {duel.sorcier.cimetiere.length}
+        </div>
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
           null
@@ -14384,10 +14397,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <CardPile count={nbDeckJoueur} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
 
-        <div className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
+        <div role="group" aria-label={`${nomJoueurAffiche} : ${duel.joueur.pv} points de vie${duel.joueur.bouclier ? `, ${duel.joueur.bouclier} de bouclier` : ''}`}
+          className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
           data-soin={soinJoueur ? soinJoueur.montant : undefined}
           data-tutorial-target={cibleTutoriel('player-health') ? 'player-health' : undefined}>
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" aria-hidden="true"><img src={cardArt('tin-hinan')} alt="" /></span>
+          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" data-scene-avatar="joueur" aria-hidden="true"><img src={avatarPlateauJoueur} alt="" /></span>
           <span className="rpg-wizard-plate__profile-name">{nomJoueurAffiche}</span>
           <span className="rpg-wizard-plate__identity"><strong>{modePvp ? nomJoueurAffiche : 'VOUS'}</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
           <PlaqueVie
@@ -14400,6 +14414,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
           {soinJoueur && <EclatSoin key={soinJoueur.token} />}
+        </div>
+        <div className="rpg-table-zones rpg-table-zones--joueur" aria-label={`Vos zones : main ${duel.joueur.main.length}, paquet ${nbDeckJoueur}, cimetière ${duel.joueur.cimetiere.length}`}>
+          Main {duel.joueur.main.length} · Paquet {nbDeckJoueur} · Cimetière {duel.joueur.cimetiere.length}
         </div>
 
         <div className="rpg-bottombar">
@@ -14625,7 +14642,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
         {apercuAnnonceOuvert && (
           <section
-            className="rpg-annonce-sort"
+            className={`rpg-annonce-sort${carteAnnoncee?.kind === 'magie' ? ' rpg-annonce-sort--magie' : ''}`}
             data-tutorial-target={cibleTutoriel('spell-announcement') ? 'spell-announcement' : undefined}
             role="status"
             aria-live="polite"
