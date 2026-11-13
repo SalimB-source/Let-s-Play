@@ -4978,6 +4978,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: linear-gradient(110deg, #e4bd60, #c1922c);
   box-shadow: inset 0 1px 0 rgba(255, 244, 206, .55);
   color: #000;
+  text-shadow: none;
   font: 600 13px/1.4 Georgia, serif;
 }
 .rpg-hover-card-preview__embuscade strong {

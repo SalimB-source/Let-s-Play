@@ -85,6 +85,8 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*background: linear-gradient\(110deg, #e4bd60, #c1922c\);[^}]*color: #000;/s,
     'le cadre de condition est doré et son texte noir');
+  assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*text-shadow:\s*none;/s,
+    'le texte et ses repères ne reprennent pas l’ombre de la fiche');
   assert.match(css, /\.rpg-hover-card-preview__embuscade strong \{[^}]*color: #000;/, 'le titre est noir');
   assert.match(css, /\.rpg-hover-card-preview__embuscade b \{[^}]*color: #000;/, 'les repères en gras sont noirs');
   assert.match(css, /\.rpg-hover-card-preview__embuscade b \{[^}]*font-weight: 800;/,
