@@ -49,6 +49,7 @@ import {
   rpgMulligan,
   rpgNoterCompteurEntites,
   rpgPeutBloquerAttaquant,
+  rpgPeutAttaquer,
   rpgPeutMulligan,
   rpgPreparerDefausseFinDeTour,
   rpgReglerHasard,
@@ -385,13 +386,7 @@ function refus(resultat) {
 }
 
 function creaturePreteAttaque(entite) {
-  return Boolean(
-    entite
-    && entite.ready
-    && !entite.attaquee
-    && !(entite.gelToursRestants > 0)
-    && !(entite.empecheAttaqueToursRestants > 0),
-  );
+  return Boolean(rpgPeutAttaquer(entite));
 }
 
 function creaturePeutBloquer(entite) {

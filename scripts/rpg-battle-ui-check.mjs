@@ -437,8 +437,8 @@ assert.match(battleCss, /\.rpg-terrains::-webkit-scrollbar\s*\{\s*display:\s*non
   'la barre de défilement bleue des terrains est masquée sans supprimer le défilement horizontal');
 assert.match(battleCss, /\.rpg-terrain\s*\{\s*width:\s*clamp\(74px, 6\.6vw, 96px\)/,
   'les terrains posés sont nettement plus grands et restent responsifs');
-assert.match(battlePage, /const malInvocation = cote === 'joueur' && playerTurn && !entite\.ready/,
-  'le gris du mal d’invocation dépend bien du tour du joueur propriétaire');
+assert.match(battlePage, /const malInvocation = !estSite && rpgSouffreMalInvocation\(entite\)/,
+  'le mal est visible pour les deux camps tant que Rapidité ne le neutralise pas');
 assert.match(battlePage, /rpgChoisirBloqueurs\(duel, 'joueur', ids, ciblesFinales\)/,
   'le sorcier choisit ses bloqueurs après la déclaration, hors attaquants de l’Attaque ciblée');
 assert.match(battlePage, /if \(!attaquantsBloques\.length\) \{[\s\S]*?resoudreAttaqueJoueur\(combat\);[\s\S]*?return;/,

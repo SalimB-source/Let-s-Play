@@ -91,7 +91,7 @@ test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pi
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
-  assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Embuscade', 'Butin']);
+  assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Invocation spéciale', 'Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
     'le Scorpion affiche Poison, sans l’ancien effet de mort');
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
@@ -112,9 +112,9 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
     'Tiziri ne produit plus de mana et ne porte pas de pastille de mana');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
-  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Embuscade', 'Esquive', 'Contre-attaque'],
+  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Invocation spéciale', 'Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
-  assert.deepEqual(pastillesDe('salem'), ['Embuscade', 'Attaque ciblée', 'Contre-attaque', 'Bouclier'],
+  assert.deepEqual(pastillesDe('salem'), ['Invocation spéciale', 'Rapidité', 'Attaque ciblée', 'Contre-attaque', 'Bouclier'],
     'Salem affiche Rapidité, Attaque ciblée, Contre-attaque et sa parade anti-sort');
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');
@@ -284,10 +284,11 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
 
 test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte de l’aperçu', () => {
   const feriel = effetsDetailles(cardById('feriel'));
-  assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Embuscade', 'Attaque ciblée']);
+  assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Invocation spéciale', 'Rapidité', 'Attaque ciblée']);
   assert.equal(feriel.pastilles[0].description, 'Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : Vous contrôlez une créature Sable et une créature Braise distinctes, dont une blessée. Invocation spéciale sans sacrifice ni quota.',
-    '« Rapidité. » ne s’explique pas sur la fiche : le glossaire prend le relais');
-  assert.match(feriel.pastilles[1].description, /créature adverse ou directement.*15 %/u,
+    'la condition de l’Embuscade reste indépendante de Rapidité');
+  assert.match(feriel.pastilles[1].description, /attaquer le tour où elle arrive/);
+  assert.match(feriel.pastilles[2].description, /créature adverse ou directement.*15 %/u,
     'la bulle décrit la nouvelle attaque ciblée');
   assert.equal(feriel.texte, '', 'tout le texte de Fériel est passé dans ses pastilles');
 
@@ -460,15 +461,15 @@ test('le chiffre de la carte se lit aussi hors des pastilles', () => {
 test('Embuscade nomme la réaction pendant le tour adverse et fournit une pastille explicative', () => {
   const cartes = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse);
   assert.ok(cartes.length > 0);
-  assert.equal(EFFET_ICONE.reactionTourAdverse, 'i-embuscade');
+  assert.equal(EFFET_ICONE.reactionTourAdverse, 'i-invocation-speciale');
   for (const carte of cartes) {
     const { pastilles, texte } = effetsDetailles(carte);
     const pastille = pastilles.find((p) => p.cle === 'reactionTourAdverse');
-    assert.equal(pastille?.label, 'Embuscade', carte.id);
+    assert.equal(pastille?.label, 'Invocation spéciale', carte.id);
     assert.match(pastille.description, /jouer .* pendant le tour adverse/i, carte.id);
-    assert.match(carte.text, /Embuscade —/, carte.id);
-    assert.doesNotMatch(texte, /Embuscade —/, carte.id);
-    assert.match(pastillesCarte(carte), /#i-embuscade/, carte.id);
+    assert.match(carte.text, /Invocation spéciale —/, carte.id);
+    assert.doesNotMatch(texte, /(?:Embuscade|Invocation spéciale) —/, carte.id);
+    assert.match(pastillesCarte(carte), /#i-invocation-speciale/, carte.id);
   }
   assert.ok(!pastillesPourCarte(cardById('chien-du-guet')).some((p) => p.cle === 'reactionTourAdverse'));
   assert.ok(pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle possède désormais Embuscade');
@@ -485,4 +486,16 @@ test('Vol de vie a son icône et sa pastille explicative sur les cartes et le Sa
   assert.equal(iconePourLigne({}, 'Vol de vie — Vous gagnez autant de points de vie que les dégâts infligés.'), 'volDeVie');
   const code = readFileSync(new URL('../src/games/effetIcons.jsx', import.meta.url), 'utf8');
   assert.match(code, /if \(entite\.volDeVie\) ajouter\('volDeVie'/);
+});
+
+test('Invocation spéciale accepte aussi les anciens textes sans modifier le sort homonyme', () => {
+  const original = cardById('sentinelle-des-sables');
+  const ancienne = { ...original, text: original.text.replace('Invocation spéciale —', 'Embuscade —') };
+  for (const carte of [original, ancienne]) {
+    const lecture = effetsDetailles(carte);
+    assert.equal(lecture.pastilles.find((p) => p.cle === 'reactionTourAdverse')?.label, 'Invocation spéciale');
+    assert.doesNotMatch(lecture.texte, /^(?:Embuscade|Invocation spéciale) —/);
+  }
+  assert.equal(cardById('embuscade').name, 'Embuscade');
+  assert.equal(iconePourLigne(original, 'Invocation spéciale — Pendant le tour adverse.'), 'reactionTourAdverse');
 });

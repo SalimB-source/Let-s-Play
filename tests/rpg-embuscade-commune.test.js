@@ -91,7 +91,7 @@ test('les aperçus indiquent la condition commune et la pastille Embuscade', () 
     assert.equal(conditionEmbuscadePourApercu(carte), rpgTexteConditionEmbuscade(id));
     const lecture = effetsDetailles(carte);
     assert.ok(lecture.pastilles.some(p => p.cle === 'reactionTourAdverse'));
-    assert.ok(!lecture.pastilles.some(p => p.cle === 'rapidite'));
+    assert.equal(lecture.pastilles.some(p => p.cle === 'rapidite'), Boolean(carte.rapidite));
     assert.ok(!lecture.texte.includes('pendant le tour adverse seulement'));
   }
 });

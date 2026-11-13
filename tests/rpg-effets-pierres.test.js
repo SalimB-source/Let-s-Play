@@ -110,7 +110,7 @@ test('les couleurs demandées suivent le symbole sans recolorer les autres effet
     'i-poison': 'venin',
     'i-rapidite': 'braise', 'i-contre-attaque': 'braise', 'i-provocation': 'braise',
     'i-rebond': 'braise', 'i-vol-de-vie': 'braise', 'i-exil': 'braise',
-    'i-bouclier': 'tenebres', 'i-embuscade': 'tenebres',
+    'i-bouclier': 'tenebres', 'i-invocation-speciale': 'tenebres',
     'i-recherche': 'azur',
   };
   const fonds = new Set();

@@ -25,7 +25,7 @@ for (const side of ['joueur', 'sorcier']) {
     duel[side].main = ['ashigaru-des-braises'];
     const attacker = rpgMobaJouerCreature(duel, side, 'ashigaru-des-braises', 'left', 0).entite;
     assert.ok(attacker);
-    Object.assign(attacker, { ready: true, atk: 5, pv: 20, pvMax: 20 });
+    Object.assign(attacker, { ready: true, malInvocation: false, atk: 5, pv: 20, pvMax: 20 });
     assert.equal(mobaInfliger(duel.moba, side, 'left', 19).conquered, false);
     assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 1);
     let jets = 0;

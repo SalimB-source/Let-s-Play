@@ -1691,11 +1691,10 @@ function creerEntiteCreature(carte, duel) {
     // tant que l’arme tient (voir `rpgCoutEntite`) — seuil d’Abordage à
     // l’attachement et plafonds de coût le lisent.
     coutBonusArme: 0,
-    // En MOBA, Rapidité imprimée devient une condition d'Embuscade pour les
-    // cartes de main ; les jetons de Tarek et Kusayla restent prêts à agir.
-    rapidite: Boolean(carte.rapidite && !duel.moba),
-    // Toute créature peut attaquer dès son entrée, quel que soit le mode.
-    malInvocation: false,
+    // Conserver le mal même sous Rapidité : si elle est retirée avant le
+    // prochain tour, la créature ne peut plus attaquer. Les Sites sont exclus.
+    rapidite: Boolean(carte.rapidite),
+    malInvocation: carte.kind !== 'site',
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
@@ -2061,7 +2060,6 @@ function attacherArme(duel, cote, entite, carteArme) {
   }
   if (carteArme.donne?.rapidite && !duel.moba) {
     entite.rapidite = true;
-    entite.ready = true;
   }
   // Le Grappin d'abordage alourdit d'abord son porteur (`coutPorteur`) :
   // son coût en jeu grimpe tant que le crochet tient.
@@ -2131,8 +2129,7 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.volDeVie) recalculerVolDeVie(entite);
   if (carteArme.donne?.contreAttaque) entite.contreAttaque = Boolean(duelCardById(entite.carteId)?.contreAttaque);
   if (carteArme.donne?.rapidite) {
-    entite.rapidite = Boolean(!duel.moba && duelCardById(entite.carteId)?.rapidite);
-    // Retirer Rapidité ne rend plus une créature récemment arrivée indisponible.
+    entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   }
   // Le crochet rendu, le coût du porteur retombe à son imprimé.
   if (carteArme.coutPorteur) {
@@ -3190,6 +3187,7 @@ function annulerInfiltrations(duel) {
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of [...duel[cote].creatures, ...prisonnieresMoba(duel, cote)]) {
       entite.infiltrationTour = false;
+      entite.rapiditeAccordee = false;
       entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
         || Boolean(armeCarteDe(entite)?.donne?.infiltration);
     }
@@ -3517,8 +3515,8 @@ function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
     // La détenue reprend sa présence : ses statistiques sont celles de la
     // prise, ses auras déjà comptées dans ses chiffres (`auraSableBonus` et
     // consorts), donc `rafraichirAuras` ne les comptera pas deux fois. Seul
-    // l'engagement se remet à neuf : elle peut attaquer dès son retour.
-    prisonniere.malInvocation = false;
+    // l'engagement se remet à neuf, mais ce retour est une nouvelle arrivée.
+    prisonniere.malInvocation = true;
     prisonniere.rapiditeAccordee = false;
     prisonniere.ready = true;
     prisonniere.attaquee = false;
@@ -4958,7 +4956,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.infiltrationTour = true;
           duel.log.push(`${entite.name} gagne Infiltration jusqu’à la fin du tour.`);
         }
-        if (effet.donne?.rapidite) { entite.ready = true; entite.rapiditeAccordee = true; }
+        if (effet.donne?.rapidite) entite.rapiditeAccordee = true;
       }
       return;
     }
@@ -6948,8 +6946,9 @@ export function rpgModesArme(duel, cote, entiteId) {
 // Mur (Tours de défense) et `nePeutPasAttaquer` (le Drakkar) : ne peuvent
 // jamais attaquer, même prêts — seul le Mur interdit aussi l'équipement.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
+export const rpgSouffreMalInvocation = (entite) => Boolean(entite?.malInvocation && !entite.rapidite && !entite.rapiditeAccordee);
 export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
-  && entite.ready && !entite.attaquee && !estGelee(entite)
+  && entite.ready && !entite.attaquee && !rpgSouffreMalInvocation(entite) && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
 // Toute créature qui n'a pas attaqué peut bloquer dès son arrivée.
@@ -7847,10 +7846,13 @@ export function rpgLancerAttaque(
   if (!attaquants.length) return { ok: false, raison: 'personne' };
   if (attaquants.length !== ids.length) return { ok: false, raison: 'absent' };
   for (const entite of attaquants) {
-    // Le gel interdit une nouvelle déclaration, mais ne doit pas bloquer
-    // la résolution d'une attaque déjà déclarée avant la réponse adverse.
-    if (!pret(entite) && !(attaqueDeclaree && estGelee(entite)
-      && entite.ready && !entite.attaquee)) return { ok: false, raison: 'pas-pret' };
+    // Le gel ou la perte de Rapidité après l'annonce ne retirent pas une
+    // attaque déjà déclarée. Les autres restrictions restent en vigueur.
+    const resolutionAnnonce = attaqueDeclaree && entite.ready && !entite.attaquee
+      && !estSite(entite) && !entite.mur && !entite.nePeutPasAttaquer
+      && !(entite.empecheAttaqueToursRestants > 0)
+      && (estGelee(entite) || rpgSouffreMalInvocation(entite));
+    if (!pret(entite) && !resolutionAnnonce) return { ok: false, raison: 'pas-pret' };
   }
   const forceCombat = (entite) => estGelee(entite) ? 0 : entite.atk;
 

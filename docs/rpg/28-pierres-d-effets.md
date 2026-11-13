@@ -24,7 +24,7 @@ Deux choses se lisent d'un coup d'œil, sans lire le mot :
 | Famille | Forme | Pierre | Effets |
 | --- | --- | --- | --- |
 | **Assaut** | hexagone | braise | Dégâts, Affaiblissement, Coup critique, Attaque ciblée, Traque, Overkill, Furie, Harakiri, Abordage, Prise, les quatre Destructions |
-| **Tempo** | hexagone | azur | Rapidité, Envol, Esquive, Contre-attaque, Embuscade, Rebond |
+| **Tempo** | hexagone | azur | Rapidité, Envol, Esquive, Contre-attaque, Invocation spéciale, Rebond |
 | **Garde** | hexagone | bleu | Protection (et ses variantes de sorts), Bouclier, Ténacité, Défenseur, Provocation, Aura, Bannière, Renfort, Résonance, Compagnie |
 | **Ombre** | hexagone | ténèbres | Malédiction, Vol de vie, Furtivité, Infiltration, Exil, Réanimation, Contresort, Transfert, Tribut, Défausses, Blocages interdits, Cale |
 | **Flux** | hexagone | violet | Pioche, Recherche, Butin, Cargaison, Mana, Soin, Recyclage, Heures, Jetons, Lien |

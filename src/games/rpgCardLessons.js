@@ -29,7 +29,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['sabre-maudit', 'samourai-du-torii'],
     title: 'Une arme reste attachée à son porteur',
-    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. Comme toutes les créatures, son porteur peut attaquer dès son arrivée. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. L’Attaque ciblée ne donne pas Rapidité : un porteur qui vient d’arriver doit attendre son prochain tour, sauf s’il possède Rapidité. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
   },
   {
     id: 'destruction-arme',
@@ -141,7 +141,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['fennec-des-decombres'],
     title: 'Rapidité et Esquive changent les échanges',
-    text: 'Toutes les créatures peuvent attaquer dès le tour où elles arrivent. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
+    text: 'Rapidité permet d’attaquer dès l’arrivée ; sans elle, une créature attend le début du prochain tour de son camp, mais peut défendre immédiatement. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
   },
   {
     id: 'contre-attaque',
@@ -266,7 +266,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'embuscade',
     section: 'Capacités des créatures',
     cardIds: ['sentinelle-des-sables', 'eclipse-silencieuse', 'embuscade'],
-    title: 'Embuscade : jouer pendant le tour adverse',
-    text: 'Embuscade autorise la créature à entrer en jeu pendant le tour adverse — mais seulement si sa condition imprimée est remplie (« seulement si l’adversaire attaque », « seulement si une créature adverse de force 2 ou plus attaque »…) et seulement dans une fenêtre de réponse : une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, ou la fin du tour adverse. Hors fenêtre, la carte reste éteinte dans la main. Pendant VOTRE tour, la condition ne vous est jamais opposée : une Embuscade est alors une créature ordinaire, que la Sentinelle des sables joue pendant son propre tour même sans attaque adverse. La pastille se lit sur la carte posée comme sur la fiche, où un cadre violet reprend la condition en clair. En classique et en PvP, cette invocation spéciale ne demande aucun sacrifice et ne consomme pas l’invocation normale ; la créature arrivée chez l’adversaire peut bloquer immédiatement. Attention à l’homonyme : la Sorcellerie Neige nommée « Embuscade » est un sort de zone (−2/−2 et blocage forcé), sans aucun lien avec le mot-clé.',
+    title: 'Invocation spéciale : jouer pendant le tour adverse',
+    text: 'Invocation spéciale autorise la créature à entrer en jeu pendant le tour adverse — mais seulement si sa condition imprimée est remplie (« si l’adversaire contrôle une créature », « si une créature adverse a une force de 2 ou plus »…) et seulement dans une fenêtre de réponse : une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, ou la fin du tour adverse. Hors fenêtre, la carte reste éteinte dans la main. Pendant VOTRE tour, la condition ne vous est jamais opposée : une créature avec Invocation spéciale se joue alors normalement : la Sentinelle des sables peut être jouée pendant son propre tour même sans attaque adverse. La pastille se lit sur la carte posée comme sur la fiche, où un cadre violet reprend la condition en clair. En classique et en PvP, cette invocation spéciale ne demande aucun sacrifice et ne consomme pas l’invocation normale ; la créature arrivée chez l’adversaire peut bloquer immédiatement. La Sorcellerie Neige nommée « Embuscade » est un sort de zone (−2/−2 et blocage forcé), sans aucun lien avec le mot-clé.',
   },
 ]);

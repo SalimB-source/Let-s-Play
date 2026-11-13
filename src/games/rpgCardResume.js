@@ -171,7 +171,7 @@ export function conditionEmbuscadePourApercu(carte) {
   if (conditionCommune) return conditionCommune;
   if (!carte?.reactionTourAdverse || !carte?.conditionEmbuscade) return null;
   const phrase = carte.text?.match(
-    /^Embuscade\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement (?:si |en réponse à )([^.]+)\./u,
+    /^(?:Embuscade|Invocation spéciale)\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement (?:si |en réponse à )([^.]+)\./u,
   );
   return phrase?.[1]?.trim() ?? null;
 }
