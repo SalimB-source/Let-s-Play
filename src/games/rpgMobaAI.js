@@ -431,6 +431,7 @@ export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
 export function rpgMobaChoisirAttaqueIndividuelleIA(duel, side = 'sorcier') {
   const initial = valeurPosition(duel, side);
   let meilleur = null;
+  let meilleurePriorite = -1;
   for (const attacker of duel[side].creatures.filter(rpgPeutAttaquer)) {
     for (const voie of mobaVoiesCombat(duel.moba, attacker.mobaLane)) {
       const choix = rpgMobaCiblesIndividuelles(duel, side, attacker.id, voie);
@@ -440,8 +441,20 @@ export function rpgMobaChoisirAttaqueIndividuelleIA(duel, side = 'sorcier') {
         if (!rpgMobaDeclarerAttaqueIndividuelle(probe, side, attacker.id, cibleId, voie).ok) continue;
         if (!rpgMobaResoudreAttaqueIndividuelle(probe, side).ok) continue;
         resoudreDestructionsSurCopie(probe);
+        if (probe.moba.winner === autre(side)) continue;
         const score = valeurPosition(probe, side) - initial;
-        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { attaquantId: attacker.id, cibleId, voie, score };
+        // La conquête exile aussi nos créatures : le score matériel peut donc
+        // baisser au moment même où l'on gagne une voie (surtout à 1 PV).
+        // Une victoire ou une nouvelle voie passe avant cette perte normale ;
+        // hors conquête, on garde le seuil de rentabilité habituel.
+        const priorite = probe.moba.winner === side ? 2
+          : duel.moba.lanes.some((lane) => lane.active
+            && probe.moba.lanes.find((apres) => apres.id === lane.id)?.conqueredBy === side) ? 1 : 0;
+        if (priorite === 0 && score <= 0) continue;
+        if (priorite > meilleurePriorite || (priorite === meilleurePriorite && score > meilleur.score)) {
+          meilleur = { attaquantId: attacker.id, cibleId, voie, score };
+          meilleurePriorite = priorite;
+        }
       }
     }
   }
