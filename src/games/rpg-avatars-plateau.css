@@ -92,6 +92,11 @@
    colonne de mana ; les jauges et les commandes restent à leur place. */
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate {
+  /* Les anciennes plaques occupaient les cellules de la colonne gauche.
+     Un élément absolu garde cette cellule comme bloc de référence tant que
+     son grid-area est défini : remettre les quatre lignes à auto pour mesurer
+     le centrage par rapport à toute la table, et non à cette colonne. */
+  grid-area: auto;
   position: absolute;
   left: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2);
   right: auto;
@@ -111,6 +116,10 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-wizard-plate__avatar { width: 100%; height: 100%; }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-jauge-vie__rond { width: clamp(28px, calc(var(--duel-card) * .55), 40px); height: clamp(28px, calc(var(--duel-card) * .55), 40px); }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate__thinking { font-size: 7px; padding: 4px 6px; }
+/* L'éventail adverse ne doit pas recouvrir le personnage centré. Le nombre
+   de cartes reste visible dans les compteurs de zones à gauche. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-hidden-hand { justify-content: flex-start; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hidden-hand__count { display: none; }
 
 /* Les lignes auparavant dimensionnées par les plaques restent réservées pour
    ne pas déplacer les jauges de mana sur les champs. */
