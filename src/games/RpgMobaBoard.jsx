@@ -826,7 +826,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       return;
     }
     if (!['tour', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) || campMain.manaChoixEnAttente) return;
-    if (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !cardById(id)?.instant) return;
+    if (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !cardById(id)?.instant && !rpgMobaPeutEmbuscade(duel, mainSide, id)) return;
     if ((MOBA_MAGIES_ESSAI.includes(id) || MOBA_MAGIES_IMMEDIATES.includes(id)) && MOBA_MAGIES_SPATIALES.includes(id)) {
       setCarte(id); setPrixLane(null); setErreur('');
     } else if (MOBA_MAGIES_ESSAI.includes(id) || MOBA_MAGIES_IMMEDIATES.includes(id) || MOBA_CONTRESORTS.includes(id)) {
@@ -868,7 +868,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier');
     if (result.healingEvents?.length) { setSoinsVoies(result.healingEvents); if (result.healingEvents.some((event) => event.healing > 0)) jouerSonSoin(); }
     if (result.effetEnAttente) setEtape('reponse-arrivee');
-    else setEtape(result.arriveeEnAttente ? 'arrivee' : duel.mobaSortEnAttente ? 'reponse-sort' : duel.effetCreatureEnAttente ? 'reponse-arrivee' : embuscadeCombat && duel.combatDeclare ? 'blocage' : 'tour');
+    else setEtape(result.arriveeEnAttente ? 'arrivee' : duel.mobaCreatureEnAttente ? 'reponse-creature' : duel.mobaSortEnAttente ? 'reponse-sort' : duel.effetCreatureEnAttente ? 'reponse-arrivee' : duel.finDeTour ? 'fin' : embuscadeCombat && duel.combatDeclare ? 'blocage' : 'tour');
   };
   const passerEffetCreature = () => {
     const avantDestructions = instantaneDestructions();
@@ -880,7 +880,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (result.healingEvents?.length) { setSoinsVoies(result.healingEvents); if (result.healingEvents.some((event) => event.healing > 0)) jouerSonSoin(); }
     if (result.damageEvents?.length) setEvents(result.damageEvents);
     if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier');
-    setCarte(null); setEtape(embuscadeCombat && duel.combatDeclare ? 'blocage' : 'tour');
+    setCarte(null); setEtape(duel.mobaCreatureEnAttente ? 'reponse-creature' : duel.mobaSortEnAttente ? 'reponse-sort' : duel.effetCreatureEnAttente ? 'reponse-arrivee' : duel.finDeTour ? 'fin' : embuscadeCombat && duel.combatDeclare ? 'blocage' : 'tour');
   };
   const passerCreature = () => {
     const attente = duel.mobaCreatureEnAttente;
@@ -1032,7 +1032,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const card = cardById(drag.id);
       if (!card || !Number.isInteger(position.slot) || position.slot < 0 || position.slot >= lane.slots.joueur.length) return false;
       const victimes = sacrificesPourPosition(card, { ...position, id: lane.slots.joueur[position.slot] });
-      return etape === 'tour' && actif === 'joueur' && !cibleRapideEnCours && !camp.manaChoixEnAttente
+      return ((etape === 'tour' && actif === 'joueur') || (mainSide === 'joueur' && rpgMobaPeutEmbuscade(duel, 'joueur', drag.id))) && !cibleRapideEnCours && !camp.manaChoixEnAttente
         && position.side === 'joueur' && victimes !== null && duel.joueur.main.includes(drag.id)
         && ['creature', 'hero', 'site'].includes(card.kind) && rpgMobaPeutPayer(duel, 'joueur', card);
     }
@@ -1243,11 +1243,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         if (afficherResultat(result) && !result.restant && finDeTour) finTour();
       } else if (etape === 'tour') {
           const creature = rpgMobaChoisirCreatureIA(duel);
-          const embuscade = rpgMobaChoisirEmbuscadeIA(duel);
           const magie = rpgMobaChoisirMagieIA(duel);
           if (magie && (!creature || magie.score >= 35)) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
-          else if (embuscade || creature) {
-            const choixCreature = embuscade ?? creature;
+          else if (creature) {
+            const choixCreature = creature;
             const avant = instantaneDestructions();
             const result = rpgMobaJouerCreature(duel, 'sorcier', choixCreature.id, choixCreature.lane, choixCreature.slot, { ouvrirReponse: true, sacrificeIds: choixCreature.sacrificeIds });
             if (afficherResultat(result)) { montrerDestructions(avant, false, result.sacrificeIds, result.entite?.id); if (result.damageEvents?.length) setEvents(result.damageEvents); if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier'); if (result.creatureEnAttente) setEtape('reponse-creature'); else if (result.arriveeEnAttente) setEtape('arrivee'); }
@@ -1265,8 +1264,12 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         if (cibleIA) choisirCibleArrivee(cibleIA);
         else { setErreur("L’IA ne trouve pas de cible pour sa capacité."); setIaBloquee(true); }
       } else {
+        const embuscade = rpgMobaChoisirEmbuscadeIA(duel, 'sorcier');
         const magie = rpgMobaChoisirMagieIA(duel, 'sorcier', true);
-        if (magie) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
+        if (embuscade && (!magie || embuscade.score >= magie.score)) {
+          const result = rpgMobaJouerCreature(duel, 'sorcier', embuscade.id, embuscade.lane, embuscade.slot, { ouvrirReponse: true, sacrificeIds: [] });
+          if (afficherResultat(result)) { if (result.creatureEnAttente) setEtape('reponse-creature'); else if (result.arriveeEnAttente) setEtape('arrivee'); }
+        } else if (magie) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
         else if (etape === 'blocage') resoudre(duel.combatDeclare?.cibleIndividuelle ? {} : (duel.combatDeclare?.blocages ?? rpgMobaChoisirBlocagesIA(duel, actif, attaquants)));
         else if (etape === 'fin') passerFinTour();
         else if (etape === 'reponse-sort') passerSort();
@@ -1388,7 +1391,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <p>Trois voies indépendantes : 20 / 15 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide avant les dégâts. Il n’y a pas de choix de bloqueurs : la créature visée par une attaque normale déclenche ses effets « au blocage ». Les dégâts des effets « à l’attaque » et « au blocage » frappent juste avant le duel, puis les créatures encore en jeu échangent leurs dégâts simultanément ; les effets imprimés « après les blessures » se résolvent ensuite. À défaut de cible, l’attaque frappe directement la voie. Envol permet aussi la frappe directe s’il n’y a pas d’ennemi volant accessible. Infiltration permet aussi la frappe directe et protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation impose une cible accessible prioritaire ; à défaut, Défenseur impose une cible accessible dans la voie de l’attaquant.</p>
         <p>Après la conquête du centre, le vainqueur conserve sa case centrale et peut y jouer. Les créatures centrales participent aux deux voies latérales actives ; les PV restants du centre disparaissent.</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Toutes les créatures peuvent attaquer dès leur arrivée (sauf si un autre effet leur interdit d’attaquer). En MOBA, les créatures imprimées avec Rapidité gagnent plutôt une Embuscade propre à chacune, indiquée sur leur fiche : elles peuvent être invoquées spécialement pendant leur propre phase principale si leur condition est remplie. Les Sandales de Tislit donnent +1/+1 en MOBA et s’attachent uniquement pendant votre tour ; les jetons ne se jouent pas depuis la main, mais Tarek et Kusayla peuvent arriver en Embuscade. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade se joue uniquement pendant votre phase principale : c’est une invocation spéciale sans sacrifice ni quota, qui ne consomme pas la pose normale. Ses conditions portent sur tout le plateau, parfois aussi sur votre main ou votre cimetière. Les sorts et les armes ne sont pas limités en nombre par tour. Toute invocation normale annoncée compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Toutes les créatures peuvent attaquer dès leur arrivée (sauf si un autre effet leur interdit d’attaquer). En MOBA, les créatures imprimées avec Rapidité gagnent plutôt une Embuscade propre à chacune, indiquée sur leur fiche : elles peuvent être invoquées spécialement dans une fenêtre de réponse du tour adverse si leur condition est remplie. Les Sandales de Tislit donnent +1/+1 en MOBA et s’attachent uniquement pendant votre tour ; les jetons ne se jouent pas depuis la main, mais Tarek et Kusayla peuvent arriver en Embuscade. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Embuscade se joue pendant une fenêtre de réponse du tour adverse : c’est une invocation spéciale sans sacrifice ni quota, qui ne consomme pas la pose normale. Ses conditions portent sur tout le plateau, parfois aussi sur votre main ou votre cimetière. Les sorts et les armes ne sont pas limités en nombre par tour. Toute invocation normale annoncée compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -1488,7 +1491,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
               && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && cardById(entity.carteId)?.kind !== 'site'
               && mobaVoieJouable(duel.moba, side, lane.id) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
             const sacrificeCible = Boolean(entity && sacrificesChoisis.includes(id));
-            const mayPlace = (etape === 'tour' && side === actif) && (nombreSacrifices > 0 ? sacrificeCible : !id) && mobaVoieJouable(duel.moba, side, lane.id) && carte
+            const mayPlace = ((etape === 'tour' && side === actif) || (side === mainSide && rpgMobaPeutEmbuscade(duel, mainSide, carte))) && (nombreSacrifices > 0 ? sacrificeCible : !id) && mobaVoieJouable(duel.moba, side, lane.id) && carte
               && sacrificesChoisis.length === nombreSacrifices && (!carteCiblee || carteArmeVivante) && !carteSoin && !cartePrix && !carteTransfert && !MOBA_MAGIES_SPATIALES.includes(carte) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
             const campCibleMagie = MOBA_ARMES.includes(carte) || MOBA_MAGIES_ALLIEES.includes(carte) || (carte === 'defi-du-jarl' && !cibleSortPrimaire) ? mainSide : autre(mainSide);
             const maySpellTarget = ['tour', 'blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && (side === campCibleMagie || MOBA_MAGIES_NEUTRES.includes(carte)) && mobaVoiesCombat(duel.moba, entity?.mobaLane).length > 0 && carteCiblee && !defausse && !fini
@@ -1573,10 +1576,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const index = debutPageMain + pageIndex;
       const reception = receptionsMain.find((mouvement) => mouvement.indexMain === index);
       const card = rpgMobaCartePourApercu(cardById(id));
-      const disabled = mainSide !== 'joueur' || fini || Boolean(destruction || (site && !defausse)) || (!defausse && (rpgMobaSortBlocageInterdit(id) || (id === 'memoire-de-l-armurerie' && !campMainVisible.cimetiere.includes('sabre-maudit')) || !!cibleRapideEnCours || etape === 'arrivee' || (MOBA_CONTRESORTS.includes(id) && !(etape === 'reponse-sort' && (duel.mobaSortEnAttente?.armeMoba ? id === 'contresort-des-abimes' : id !== 'ecueil') && duel.mobaSortEnAttente?.cote !== mainSide || etape === 'reponse-creature' && (id === 'contresort-des-abimes' || (id === 'ecueil' && cardById(duel.mobaCreatureEnAttente?.carteId)?.kind !== 'site')) && duel.mobaCreatureEnAttente?.cote !== mainSide)) || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !card.instant) || !rpgMobaPeutPayer(duel, mainSide, card)));
+      const disabled = mainSide !== 'joueur' || fini || Boolean(destruction || (site && !defausse)) || (!defausse && (rpgMobaSortBlocageInterdit(id) || (id === 'memoire-de-l-armurerie' && !campMainVisible.cimetiere.includes('sabre-maudit')) || !!cibleRapideEnCours || etape === 'arrivee' || (MOBA_CONTRESORTS.includes(id) && !(etape === 'reponse-sort' && (duel.mobaSortEnAttente?.armeMoba ? id === 'contresort-des-abimes' : id !== 'ecueil') && duel.mobaSortEnAttente?.cote !== mainSide || etape === 'reponse-creature' && (id === 'contresort-des-abimes' || (id === 'ecueil' && cardById(duel.mobaCreatureEnAttente?.carteId)?.kind !== 'site')) && duel.mobaCreatureEnAttente?.cote !== mainSide)) || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && !card.instant && !rpgMobaPeutEmbuscade(duel, mainSide, id)) || !rpgMobaPeutPayer(duel, mainSide, card)));
       const specialementJouable = !disabled && ['creature', 'hero'].includes(card.kind) && rpgMobaPeutEmbuscade(duel, mainSide, id);
       const selected = carte === id && !defausse;
-      const peutGlisserCarte = !disabled && !iaAgit && etape === 'tour' && actif === 'joueur' && ['creature', 'hero', 'site'].includes(card.kind) && !defausse;
+      const peutGlisserCarte = !disabled && !iaAgit && ((etape === 'tour' && actif === 'joueur') || specialementJouable) && ['creature', 'hero', 'site'].includes(card.kind) && !defausse;
       if (rendu?.ManaCost && rendu?.CardStatIcon) {
         const { ManaCost, CardStatIcon } = rendu;
         const creature = ['creature', 'hero'].includes(card.kind);

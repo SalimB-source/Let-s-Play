@@ -6129,15 +6129,16 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const contreCreatureMoba = Boolean(duel.moba && carte.id === 'sorcier-du-ressac-noir'
     && annonceCreatureMobaOrigine && annonceCreatureMobaOrigine.cote === autre(cote)
     && (annonceCreatureMobaOrigine === duel.mobaCreatureEnAttente || annonceCreatureMobaOrigine === attenteMoba?.origineCreature));
-  if (duel.moba && (duel.tour !== cote || annonceCreatureMobaOrigine)) return { ok: false, raison: 'pas-votre-tour' };
+  if (duel.moba && annonceCreatureMobaOrigine) return { ok: false, raison: 'pas-votre-tour' };
+  if (duel.moba && duel.tour !== cote && !invocationSpecialeMoba) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.moba && invocationSpecialeMoba && !dejaPayee
-    && (!['principale', 'principale2'].includes(duel.phase) || duel.fenetreReponse
-      || duel.combatDeclare || duel.finDeTour || duel.mobaCreatureEnAttente
+    && (duel.tour === cote || !duel.fenetreReponse
       || !(rpgMobaConditionSpeciale(duel, cote, carteId)
         || rpgMobaConditionRapidite(duel, cote, carteId)
         || rpgMobaConditionImprimee(duel, cote, carteId)))) return { ok: false, raison: 'condition-embuscade' };
   if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || reponseIA)) return { ok: false, raison: 'timing' };
-  if (!contreCreatureMoba && !(dejaPayee && (attenteMoba.embuscadeCombat || attenteMoba.embuscadeSuspendue)) && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
+  if (!contreCreatureMoba && !(duel.moba && invocationSpecialeMoba)
+    && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (rpgArriveeExigeAttaquant(duel, carte) && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba);
@@ -9207,8 +9208,12 @@ export function rpgOuvrirFinDeTour(duel) {
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id) ?? duelCardById(id);
-    // En MOBA, les Embuscades sont réservées aux phases principales du
-    // contrôleur ; elles ne doivent pas ouvrir de fenêtre de réponse.
+    if (duel.moba && duel.tour !== cote && (
+      rpgMobaConditionSpeciale(duel, cote, id) || rpgMobaConditionRapidite(duel, cote, id)
+      || rpgMobaConditionImprimee(duel, cote, id))) {
+      return invocationPossible(duel, cote, carte, true) && rpgPeutPayer(duel[cote], carte)
+        && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, cote, lane.id) && lane.slots[cote].some((slot) => slot === null));
+    }
     if (duel.moba && (carte?.reactionTourAdverse || Object.hasOwn(MOBA_RAPIDITE_EMBUSCADES, id))) return false;
     if (carte?.reactionTourAdverse && duel.tour !== cote) {
       return rpgPeutPayer(duel[cote], carte)
