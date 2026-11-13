@@ -14728,18 +14728,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
               const peutRepondre = reponseActive && carte.instant;
-              // Une seule règle pour le halo de jouabilité — l'azur pour toute
-              // la main, l'or pour une mythique (voir « La teinte de la lueur
-              // de jouabilité », dans `rpg-battle.css`) —, le
-              // glisser-déposer et le clic : deux copies de la règle
-              // finissaient par diverger, et une carte allumée mais injouable
-              // enferme le joueur.
+              // La même règle commande le halo, le clic et le glisser :
+              // une carte allumée mais injouable enfermerait le joueur.
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
-              // La lueur de jouabilité est en azur pour toute la main ; la
-              // rareté seule la teinte — une mythique jouable s'allume d'or,
-              // créature, sort ou terrain (voir « Lueur d'or »,
-              // `rpg-battle.css`).
+              // Violet uniquement pour une invocation spéciale réellement
+              // disponible en réponse, jamais pour une pose normale ou défausse.
+              const embuscadeJouable = baseJouable && !groupe.enRenvoi && estCreature
+                && duel.tour === 'sorcier' && duel.fenetreReponse && reponseActive
+                && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse);
+              // Une mythique normale garde son halo doré ; une Embuscade
+              // jouable prend le violet, quelle que soit sa rareté.
               const estMythique = cardRarityInfo(carte).key === 'mythique';
               const mythiqueJouable = baseJouable && estMythique;
               // La carte liée dont l'ancre mythique est en jeu : elle s'allume
@@ -14800,6 +14799,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'is-targeting is-pose-en-cours' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
                     mythiqueJouable ? 'is-mythique-jouable' : '',
+                    embuscadeJouable ? 'is-special-ambush' : '',
                     lienActifMain ? 'is-lien-actif' : '',
                     carteGlissee === carteId ? 'is-dragging' : '',
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
@@ -14825,9 +14825,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
                   data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
+                  data-embuscade-jouable={embuscadeJouable ? 'true' : undefined}
                   data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', jouable (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Embuscade jouable' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 

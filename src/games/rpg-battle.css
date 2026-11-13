@@ -3863,6 +3863,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hand__card.is-lien-actif,
   .rpg-card.is-lien-actif { animation: none !important; }
 }
+/* L'Embuscade jouable en réponse prend le violet même si elle est mythique.
+   Les variables alimentent aussi le survol et l'animation d'or existants ;
+   le filet intérieur du Lien et la couleur du cadre restent inchangés. */
+.rpg-hand__card.is-playable.is-special-ambush,
+.rpg-hand__card.is-playable.is-special-ambush.is-mythique-jouable {
+  --rpg-play-halo: 163, 91, 255;
+  --rpg-play-halo-clair: 200, 155, 255;
+}
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
 .rpg-hand__card.is-dragging { opacity: .58; transform: translateY(-22px) scale(.94); }
 .rpg-hand__flight-placeholder { display: block; flex: none; aspect-ratio: 4 / 5; visibility: hidden; pointer-events: none; }
@@ -10767,11 +10775,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    toute la main s'allume en **azur**, le cyan des cartes jouables de MTG
    Arena, créature, héros, terrain, arme, Magie Rapide, Sorcellerie. Seule la
    rareté change la teinte — une mythique prend l'**or** (bloc « Lueur d'or »,
-   plus haut) —, et c'est la seule exception.
+   plus haut). Les Embuscades jouables en réponse prennent aussi le violet.
 
    Il n'y a donc plus rien à déclarer ici : l'azur est posé une fois sur la
-   règle commune (`--rpg-play-halo`, `--rpg-play-halo-clair`), et la seule
-   autre teinte de la feuille est l'or mythique. Le halo reste un
+   règle commune (`--rpg-play-halo`, `--rpg-play-halo-clair`), et les
+   autres teintes sont l'or mythique et le violet de l'Embuscade. Le halo reste un
    ÉTAT, jamais une couleur de cadre : le filet de la carte garde la teinte de
    son élément, y compris sous une lueur d'or.
    ------------------------------------------------------------------------- */
