@@ -112,7 +112,7 @@ function nouveau(joueur = MOBA_DECKS[0], sorcier = MOBA_DECKS[0]) {
 
 // The wrapper is a visual selector for an existing deck, not a purchasable
 // booster. Its face uses a real card from that deck; rules never depend on art.
-function BoosterDeck({ deck, selected, onSelect, autoFocus = false }) {
+function BoosterDeck({ deck, selected, onSelect, category = null, autoFocus = false }) {
   const validation = rpgMobaValiderDeck(deck);
   const illustration = (Array.isArray(deck.cardIds) ? deck.cardIds : [])
     .find((id) => ['creature', 'hero'].includes(cardById(id)?.kind)) ?? 'ashigaru-des-braises';
@@ -132,6 +132,7 @@ function BoosterDeck({ deck, selected, onSelect, autoFocus = false }) {
         </span>
       </span>
       <span className="moba__booster-name">{deck.name}</span>
+      {category && <span className="moba__booster-category">{category}</span>}
       <span className="moba__booster-state">{!validation.ok ? 'Non compatible' : selected ? '✓ Sélectionné' : 'Choisir ce deck'}</span>
     </button>
     {!validation.ok && <small className="moba__booster-reason">{validation.raison}</small>}
@@ -577,12 +578,13 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const getEntity = (side, id) => duel[side].creatures.find((e) => e.id === id);
   const rattachement = duel.moba.centerJoined;
   const scores = Object.fromEntries(['joueur', 'sorcier'].map((side) => [side, duel.moba.lanes.filter((lane) => lane.conqueredBy === side).length]));
-  const decksDuJoueur = decksMaison.map(rpgMobaDeckMaison);
-  // No hidden fallback to a predefined MOBA deck: pick a compatible personal
-  // deck initially, or require the player to create one.
+  const decksPersonnels = decksMaison.map(rpgMobaDeckMaison);
+  // Les huit listes communes sont proposées en premier ; les decks maison
+  // restent disponibles tels qu'ils ont été sauvegardés.
+  const decksDuJoueur = [...MOBA_DECKS, ...decksPersonnels];
   const deckPour = (side) => side === 'sorcier' ? (deckSorcier ?? MOBA_DECKS[0])
     : decksPersonnalises.joueur ?? (deckJoueur === null
-      ? decksDuJoueur.find((deck) => rpgMobaValiderDeck(deck).ok)
+      ? decksPersonnels.find((deck) => rpgMobaValiderDeck(deck).ok) ?? MOBA_DECKS[0]
       : decksDuJoueur.find((deck) => deck.id === deckJoueur)) ?? null;
   const validationDeckJoueur = deckPour('joueur') ? rpgMobaValiderDeck(deckPour('joueur')) : { ok: false, raison: 'Choisissez ou créez un deck compatible.' };
   const choisirDeck = (id) => {
@@ -1627,12 +1629,12 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <h2>Préparez votre duel</h2>
         <p>Deux decks. Trois voies. Une seule victoire.</p>
         <div className="moba__setup-rules"><span><b>03</b> voies</span><span><b>20 / 15 / 20</b> PV par voie</span><span><b>02</b> conquêtes pour gagner</span></div>
-        <div className="moba__deck-picker-heading"><div><span>VOTRE CAMP</span><h3>Choisissez votre deck</h3></div><p>Vos decks sont représentés par des paquets, sans achat.</p></div>
-        <section className="moba__booster-group" aria-label="Vos decks">
+        <div className="moba__deck-picker-heading"><div><span>VOTRE CAMP</span><h3>Choisissez votre deck</h3></div><p>Huit decks thématiques bicolores, et vos decks personnels conservés.</p></div>
+        <section className="moba__booster-group" aria-label="Decks thématiques et personnels">
           <div className="moba__booster-list">
-            {decksPersonnalises.joueur && <BoosterDeck deck={decksPersonnalises.joueur} selected onSelect={() => {}} />}
-            {decksDuJoueur.map((option) => <BoosterDeck key={option.id} deck={option} selected={!decksPersonnalises.joueur && deckPour('joueur')?.id === option.id} onSelect={() => choisirDeck(option.id)} />)}
-            {!decksPersonnalises.joueur && !decksDuJoueur.length && <p className="moba__setup-empty">Vous n’avez pas encore de deck. Créez-en un pour commencer.</p>}
+            {decksPersonnalises.joueur && <BoosterDeck deck={decksPersonnalises.joueur} selected category="Personnalisé pour ce duel" onSelect={() => {}} />}
+            {MOBA_DECKS.map((option) => <BoosterDeck key={option.id} deck={option} category="Thématique" selected={!decksPersonnalises.joueur && deckPour('joueur')?.id === option.id} onSelect={() => choisirDeck(option.id)} />)}
+            {decksPersonnels.map((option) => <BoosterDeck key={option.id} deck={option} category="Personnel" selected={!decksPersonnalises.joueur && deckPour('joueur')?.id === option.id} onSelect={() => choisirDeck(option.id)} />)}
           </div>
         </section>
         <fieldset className="moba__plateau-picker">

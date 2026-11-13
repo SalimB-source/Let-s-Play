@@ -315,6 +315,7 @@ import {
   terrainManaColors,
   RPG_ELEMENTS,
   RPG_DECKS,
+  RPG_DECKS_PRECONSTRUITS,
   RPG_DECKS_ARCHETYPES,
   RPG_DUEL_CARDS,
   cardArtId,
@@ -4670,9 +4671,9 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
     play('menu');
     try { await onSignOut?.(); } catch { /* la session locale est déjà coupée */ }
   };
-  // L'étagère : **les decks de la maison** (celui du coffret, puis ceux de
-  // l'atelier) — plus aucun deck de base depuis les coffrets de bienvenue.
-  const decksTous = [...RPG_DECKS, ...decksMaison];
+  // Les huit préconstruits sont proposés avant les decks personnels, sans
+  // transformer ni écraser les sauvegardes du coffret et de l'atelier.
+  const decksTous = [...RPG_DECKS_PRECONSTRUITS, ...RPG_DECKS, ...decksMaison];
   const selectedDeck = decksTous.find((deck) => deck.id === selectedDeckId) ?? decksMaison[0] ?? null;
   const playerDeck = deckSeJoue(selectedDeck, collection, exemplaires) ? selectedDeck : deckParDefaut(decksMaison, collection, exemplaires);
   // Le sorcier joue la Cour des Djinns — sauf si c'est le deck du joueur : il prend alors un autre deck.
@@ -5502,8 +5503,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               <aside className="rpg-deck-catalog__rail">
               <div className="rpg-deck-catalog__intro">
                 <span className="rpg-mode-menu__eyebrow">COLLECTION</span>
-                <h2>Vos decks</h2>
-                <p>Cliquez un boîtier pour voir ses cartes ; «{'\u00a0'}Sélectionner{'\u00a0'}» le retient pour vos prochaines parties. Le boîtier « Nouveau deck » ouvre l’atelier.</p>
+                <h2>Decks thématiques et personnels</h2>
+                <p>Choisissez l’un des huit préconstruits bicolores, ou gardez vos decks personnels. Cliquez un boîtier pour voir ses cartes ; «{'\u00a0'}Sélectionner{'\u00a0'}» le retient pour vos prochaines parties.</p>
                 <p className="rpg-deck-catalog__sync" role="status">
                   {statutSync === 'synchronise'
                     ? '☁ Synchronisé avec votre compte'
@@ -5580,7 +5581,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         onClick={() => { play(ouvert ? 'annuler' : 'select'); setSuppressionEnCours(false); setOpenDeckId(ouvert ? null : deck.id); }}
                       >
                         <span className="rpg-deck-choice__text">
-                          <small>{deck.maison ? 'DECK MAISON' : jouable ? 'DECK JOUEUR' : 'DECK INCOMPLET'}</small>
+                          <small>{deck.maison ? 'DECK PERSONNEL' : 'DECK THÉMATIQUE'}</small>
                           <strong>{deck.name}</strong>
                           <em>{deckColorGlyph(deck)} {deckColorLabel(deck)}{deckColors(deck).length > 1 ? ' · Hybride' : ' · Mono'}</em>
                           <span className="rpg-deck-choice__meta">
@@ -5634,7 +5635,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 <button type="button" className="rpg-menu-link rpg-deck-detail__close" onClick={() => { play('annuler'); setOpenDeckId(null); }}>✕ Fermer le deck</button>
                 <header className="rpg-deck-detail__header">
                   <DeckBox deck={openDeck} size="showcase" />
-                  <div><span className="rpg-mode-menu__eyebrow">{openDeck.maison ? 'DECK MAISON' : openJouable ? 'VOTRE DECK' : 'DECK INCOMPLET'} · {deckColorGlyph(openDeck)} {deckColorLabel(openDeck).toUpperCase()} · {deckColors(openDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{openDeck.name}</h2><p>{openDeck.archetype ?? (openDeck.maison ? 'Composé dans votre atelier.' : null)}</p></div>
+                  <div><span className="rpg-mode-menu__eyebrow">{openDeck.maison ? 'DECK PERSONNEL' : 'DECK THÉMATIQUE'} · {deckColorGlyph(openDeck)} {deckColorLabel(openDeck).toUpperCase()} · {deckColors(openDeck).length > 1 ? 'HYBRIDE' : 'MONO'}</span><h2>{openDeck.name}</h2><p>{openDeck.archetype ?? (openDeck.maison ? 'Composé dans votre atelier.' : null)}</p></div>
                 </header>
                 <p className="rpg-deck-detail__description">{openDeck.description}</p>
                 <div className="rpg-deck-detail__stats" aria-label="Répartition du deck">
@@ -6929,7 +6930,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     supprimerDeckMaison,
     noterVictoireEtage,
   } = useDecksSablier();
-  const decksTous = [...RPG_DECKS, ...decksMaison];
+  const decksTous = [...RPG_DECKS_PRECONSTRUITS, ...RPG_DECKS, ...decksMaison];
   // Le deck de jeu : celui que le joueur a sélectionné lors d'un lancement précédent
   // (mémorisé sur l'appareil), sinon le premier deck jouable de son étagère.
   const [deckSelectionneId, setDeckSelectionneId] = useState(() => chargerDeckChoisi(decksMaison, collection, exemplaires) ?? deckParDefaut(decksMaison, collection, exemplaires)?.id ?? '');

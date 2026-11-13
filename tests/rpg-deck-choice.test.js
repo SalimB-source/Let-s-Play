@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_DECKS, RPG_DECKS_ARCHETYPES } from '../src/games/rpgCards.js';
+import { RPG_DECKS, RPG_DECKS_ARCHETYPES, RPG_DECKS_PRECONSTRUITS } from '../src/games/rpgCards.js';
 import { composerCoffret, coffretEnDeckMaison } from '../src/games/rpgCoffretBienvenue.js';
+import { RPG_DECKS_MAISON_STORAGE_KEY } from '../src/games/rpgDeckBuilder.js';
 import { portefeuilleVide, rangerCoffretDansPortefeuille, exemplairesDuPortefeuille } from '../src/games/rpgCredits.js';
 import { fusionnerCollections } from '../src/games/rpgCollection.js';
 
@@ -70,6 +71,12 @@ test('l’étagère n’a plus de deck de base : le défaut est le deck de la ma
   // préconstruit : l'étagère du catalogue est vide, et ses decks sont les siens.
   assert.deepEqual(RPG_DECKS, [], 'aucun deck de base sur l’étagère');
   assert.equal(RPG_DECKS_ARCHETYPES.length, 8, 'les archétypes restent écrits pour l’IA, les leçons et le PvP');
+  assert.equal(RPG_DECKS_PRECONSTRUITS.length, 8, 'les huit nouveaux boîtiers du joueur sont distincts du casier personnel');
+  assert.equal(new Set(RPG_DECKS_PRECONSTRUITS.map((deck) => deck.id)).size, 8);
+  for (const deck of RPG_DECKS_PRECONSTRUITS) {
+    assert.ok(deck.id.startsWith('preconstruit-'));
+    assert.equal(deckSeJoue(deck, {}, {}), true, `${deck.name} se joue sans détenir toutes ses cartes`);
+  }
   for (const deck of RPG_DECKS_ARCHETYPES) {
     assert.equal(deckEstSelectionnable(deck), true, `${deck.name} reste un paquet valide`);
   }
@@ -102,6 +109,8 @@ test('le sorcier joue la Cour des Djinns, sauf contre elle : jamais le même dec
   assert.equal(deckAdversePour(deckParId('cour-des-djinns')).id, 'veilleurs-du-desert',
     'face à la Cour des Djinns, le sorcier prend le deck de départ du joueur');
   assert.equal(deckAdversePour('cour-des-djinns').id, 'veilleurs-du-desert');
+  assert.notEqual(deckAdversePour('preconstruit-sahir').cardIds, RPG_DECKS_PRECONSTRUITS.find((deck) => deck.id === 'preconstruit-sahir').cardIds,
+    'le sorcier ne prend pas les mêmes cartes que le préconstruit Sahir');
   assert.equal(deckAdversePour(undefined).id, 'cour-des-djinns', 'sans deck de joueur, le sorcier garde son deck par défaut');
   assert.equal(deckAdversePour('deck-inconnu').id, 'cour-des-djinns');
   for (const deck of RPG_DECKS_ARCHETYPES) {
@@ -130,15 +139,23 @@ test('le choix du deck survit à un aller-retour de sauvegarde', () => {
   assert.equal(RPG_DECK_STORAGE_KEY, 'letsplay_sablier_deck_v1', 'la clé suit la convention letsplay_sablier_*_v1');
 });
 
-test('un deck de base du catalogue n’est plus sélectionnable ; un deck de la maison l’est', () => {
+test('les huit préconstruits et les decks personnels sont mémorisables sans toucher au casier', () => {
   const { donnees, stockage } = stockageEnMemoire();
   const { deck, collection, comptes } = coffretOuvert('neige');
+  const casierEnregistre = JSON.stringify({ decks: [deck], supprimes: [] });
+  donnees.set(RPG_DECKS_MAISON_STORAGE_KEY, casierEnregistre);
   avecStockage(stockage, () => {
-    assert.equal(sauverDeckChoisi('cour-des-djinns'), false, 'l’étagère du catalogue est vide');
+    assert.equal(sauverDeckChoisi('cour-des-djinns'), false, 'les identifiants historiques restent réservés à l’IA');
     assert.equal(donnees.has(RPG_DECK_STORAGE_KEY), false, 'rien n’est écrit');
+    for (const theme of RPG_DECKS_PRECONSTRUITS) {
+      assert.equal(sauverDeckChoisi(theme.id, [deck], collection, comptes), true);
+      assert.equal(chargerDeckChoisi([deck], collection, comptes), theme.id);
+    }
     assert.equal(sauverDeckChoisi(deck.id, [deck], collection, comptes), true);
     assert.equal(donnees.get(RPG_DECK_STORAGE_KEY), JSON.stringify({ deckId: deck.id }));
-    assert.equal(chargerDeckChoisi([deck], collection, comptes), deck.id, 'il est relu au lancement suivant');
+    assert.equal(chargerDeckChoisi([deck], collection, comptes), deck.id, 'le deck personnel est toujours relu au lancement suivant');
+    assert.equal(donnees.get(RPG_DECKS_MAISON_STORAGE_KEY), casierEnregistre,
+      'choisir un thème ne modifie ni ne supprime le casier personnel');
   });
 });
 

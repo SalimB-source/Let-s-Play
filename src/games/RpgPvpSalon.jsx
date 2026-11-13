@@ -14,6 +14,7 @@ import { coffretEnDeckMaison } from './rpgCoffretBienvenue.js';
 import { collectionJoueur } from './rpgCollection.js';
 import { exemplairesDuPortefeuille } from './rpgCredits.js';
 import { deckSeJoue, sauverDeckChoisi } from './rpgDeckChoice.js';
+import { RPG_DECKS_PRECONSTRUITS } from './rpgCards.js';
 import { deckColors } from './rpgDeckFilter.js';
 import { DeckBox, deckColorModifier, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
 import {
@@ -153,7 +154,7 @@ function SelecteurDeck({ decks, valeur, onChange, desactive }) {
             >
               <span className="rpg-deck-choice__text">
                 <strong>{deck.name}</strong>
-                <em>{couleursDuDeck(deck) || 'Catalogue'}</em>
+                <em>{deck.maison ? 'Personnel' : 'Thématique'} · {couleursDuDeck(deck) || 'Catalogue'}</em>
                 <span className="rpg-deck-choice__meta">
                   <span className="rpg-deck-choice__cta">{choisie ? '✓ Choisi' : 'Choisir'}</span>
                 </span>
@@ -184,10 +185,12 @@ function DecksDuSalon({ children }) {
   const [bloque, setBloque] = useState(true);
   const [deckId, setDeckId] = useState('');
   const decks = useMemo(
-    () => decksPourDefi(decksMaison).filter((deck) => deckSeJoue(deck, collection, exemplaires)),
+    () => decksPourDefi([...RPG_DECKS_PRECONSTRUITS, ...decksMaison])
+      .filter((deck) => deckSeJoue(deck, collection, exemplaires)),
     [decksMaison, collection, exemplaires],
   );
-  const deck = decks.find((candidat) => candidat.id === deckId) ?? decks[0] ?? null;
+  const deck = decks.find((candidat) => candidat.id === deckId)
+    ?? decks.find((candidat) => candidat.maison) ?? decks[0] ?? null;
   const couche = (
     <RpgCoffretBienvenue
       pret={pret}

@@ -1,16 +1,11 @@
 /**
  * Deck de jeu choisi par le joueur (bouton « Sélectionner » de l'onglet Deck).
  *
- * Depuis les **coffrets de bienvenue** (`rpgCoffretBienvenue.js`), il n'y a plus
- * de deck de base : l'étagère du joueur (`RPG_DECKS`) est vide, et ses decks sont
- * **ses decks de la maison** — celui de son coffret, puis ceux qu'il compose dans
- * l'atelier au fil des boosters. Ce module ne parle donc plus que de deux
- * familles :
- *
- *   - **les decks du joueur** (`decksMaison`) : ce qu'il peut sélectionner ;
- *   - **les archétypes** (`RPG_DECKS_ARCHETYPES`) : le répertoire de l'IA, du
- *     tutoriel et des duels en ligne — jamais proposé au joueur comme deck de
- *     départ, mais toujours jouable en face.
+ * L'étagère propose les huit listes thématiques (`RPG_DECKS_PRECONSTRUITS`)
+ * et les decks personnels (`decksMaison`), sans modifier le casier sauvegardé.
+ * Les identifiants historiques des archétypes (`RPG_DECKS_ARCHETYPES`) restent
+ * réservés à l'IA, aux leçons et aux anciens duels. Les coffrets de bienvenue
+ * ne créent toujours que des decks personnels.
  *
  * Le choix est mémorisé sur l'appareil : au prochain lancement du jeu, le menu
  * repart sur le deck déjà choisi au lieu du premier de l'étagère.
@@ -21,7 +16,7 @@
  * sur le premier deck jouable, sans jamais casser le menu.
  */
 
-import { RPG_DECKS, RPG_DECKS_ARCHETYPES, rpgValiderDeck } from './rpgCards.js';
+import { RPG_DECKS, RPG_DECKS_ARCHETYPES, RPG_DECKS_PRECONSTRUITS, rpgValiderDeck } from './rpgCards.js';
 import { deckMaisonEstSelectionnable, deckMaisonParId } from './rpgDeckBuilder.js';
 import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
@@ -38,7 +33,7 @@ export function deckMaisonJouable(deckId, decksMaison = [], collection = null, c
   return deck ? deckMaisonEstSelectionnable(deck, collection, comptes) : false;
 }
 
-/** Un deck — du joueur ou archétype — se joue-t-il ? Les archétypes ne consultent jamais la collection. */
+/** Les préconstruits et archétypes ne consomment pas la collection ; les decks maison, si. */
 export function deckSeJoue(deck, collection = null, comptes = null) {
   if (!deck) return false;
   return deck.maison ? deckMaisonEstSelectionnable(deck, collection, comptes) : deckEstSelectionnable(deck);
@@ -46,9 +41,9 @@ export function deckSeJoue(deck, collection = null, comptes = null) {
 
 /**
  * Deck de jeu tant que le joueur n'a rien choisi : **le premier deck de la
- * maison qui se joue** (celui du coffret, en pratique). Sans aucun deck — avant
- * l'ouverture du coffret —, il n'y a rien à jouer et la fonction rend `null` :
- * l'écran de bienvenue est là pour ça.
+ * maison qui se joue** (celui du coffret, en pratique). Sans deck personnel,
+ * cette fonction rend `null` : le choix d'un thème reste explicite sur
+ * l'étagère, sans écraser le choix antérieur du joueur.
  */
 export function deckParDefaut(decksMaison = [], collection = null, comptes = null) {
   const premiers = [...decksMaison, ...RPG_DECKS];
@@ -74,8 +69,13 @@ export function deckAdverseParDefaut() {
  */
 export function deckAdversePour(deckJoueur) {
   const joueurId = typeof deckJoueur === 'string' ? deckJoueur : deckJoueur?.id;
+  const joueur = typeof deckJoueur === 'string'
+    ? (RPG_DECKS_PRECONSTRUITS.find((deck) => deck.id === joueurId) ?? archetypeParId(joueurId))
+    : deckJoueur;
   return [deckAdverseParDefaut(), ...RPG_DECKS_ARCHETYPES]
-    .find((deck) => deck && deck.id !== joueurId && deckEstSelectionnable(deck)) ?? null;
+    .find((deck) => deck && deck.id !== joueurId
+      && (!joueur?.cardIds || deck.cardIds !== joueur.cardIds)
+      && deckEstSelectionnable(deck)) ?? null;
 }
 
 /** Un archétype par son identifiant (tutoriel, PvP, mode Histoire). */
@@ -86,10 +86,10 @@ export function archetypeParId(id) {
 function estDeckJouable(deckId, decksMaison = [], collection = null, comptes = null) {
   if (typeof deckId !== 'string') return false;
   if (deckId.startsWith('maison-')) return deckMaisonJouable(deckId, decksMaison, collection, comptes);
-  // Les archétypes restent des identifiants valides — un duel en ligne ou une
-  // leçon peut les nommer — mais ils ne sont plus sur l'étagère : les nommer ne
-  // suffit pas à les sélectionner côté joueur, `sauverDeckChoisi` s'en charge.
-  return RPG_DECKS.some((deck) => deck.id === deckId && deckEstSelectionnable(deck));
+  // Les anciens IDs d'archétypes ne sont pas des choix de joueur : seuls les
+  // nouveaux IDs thématiques et les decks maison peuvent être mémorisés.
+  return [...RPG_DECKS_PRECONSTRUITS, ...RPG_DECKS]
+    .some((deck) => deck.id === deckId && deckEstSelectionnable(deck));
 }
 
 /** Identifiant du deck jouable décrit par une sauvegarde (`{ deckId }`), sinon `null`. */

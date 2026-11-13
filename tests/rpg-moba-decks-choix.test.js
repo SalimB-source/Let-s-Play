@@ -22,7 +22,7 @@ async function setup() {
 }
 const deck = (id, name, source = MOBA_DECKS[0]) => ({ ...source, id, name });
 
-test('seuls les decks personnels sont sélectionnables, les blocs récapitulatifs ont disparu', async () => {
+test('les huit thèmes précèdent les decks personnels et restent sélectionnables', async () => {
   const ui = await setup();
   const valide = deck('maison-valide', 'Mon deck créé');
   const autre = deck('maison-autre', 'Mon autre deck', MOBA_DECKS[1]);
@@ -30,13 +30,19 @@ test('seuls les decks personnels sont sélectionnables, les blocs récapitulatif
   try {
     await ui.render([invalide, valide, autre]);
     const maison = ui.button('Mon deck créé'), second = ui.button('Mon autre deck'), interdit = ui.button('Deck incomplet');
-    assert.equal(document.querySelectorAll('.moba__booster').length, 3);
-    assert.equal(document.querySelector('[aria-label="Decks MOBA"]'), null);
+    assert.equal(document.querySelectorAll('.moba__booster').length, MOBA_DECKS.length + 3);
+    assert.deepEqual([...document.querySelectorAll('.moba__booster')].slice(0, 8)
+      .map((button) => button.querySelector('.moba__booster-name').textContent), MOBA_DECKS.map((theme) => theme.name));
     assert.equal(document.querySelector('.moba__setup-details'), null);
     assert.equal(document.querySelector('.moba__opponent-deck'), null);
-    assert.equal(maison.getAttribute('aria-pressed'), 'true'); assert.equal(interdit.disabled, true);
+    assert.equal(maison.getAttribute('aria-pressed'), 'true', 'un deck personnel existant reste le choix par défaut');
+    assert.equal(ui.button(MOBA_DECKS[0].name).getAttribute('aria-pressed'), 'false');
+    assert.equal(interdit.disabled, true);
+    assert.match(maison.textContent, /Personnel/);
     assert.match(interdit.closest('.moba__booster-item').textContent, /30 cartes exigées/);
     assert.ok(maison.querySelector('.moba__booster-face img')); assert.ok(maison.querySelector('.moba__booster-edge'));
+    await act(async () => ui.button(MOBA_DECKS[0].name).click());
+    assert.equal(ui.button(MOBA_DECKS[0].name).getAttribute('aria-pressed'), 'true', 'le thème est sélectionnable');
     await act(async () => second.click());
     assert.equal(second.getAttribute('aria-pressed'), 'true'); assert.equal(maison.getAttribute('aria-pressed'), 'false');
     await ui.render([invalide, valide, { ...autre, cardIds: [] }]);
@@ -49,20 +55,20 @@ test('seuls les decks personnels sont sélectionnables, les blocs récapitulatif
   } finally { await ui.cleanup(); }
 });
 
-test('sans deck personnel jouable il faut en créer un, sans démarrage silencieux avec un deck MOBA', async () => {
+test('sans deck personnel les huit thèmes permettent de jouer et de créer un deck maison', async () => {
   const ui = await setup();
   try {
     await ui.render();
-    assert.equal(document.querySelectorAll('.moba__booster').length, 0);
-    assert.equal(ui.button('Commencer le duel').disabled, true);
-    assert.match(document.querySelector('.moba__setup-empty').textContent, /créez-en un/i);
-    await act(async () => ui.button('Créer un deck').click());
+    assert.equal(document.querySelectorAll('.moba__booster').length, 8);
+    assert.equal(ui.button('Commencer le duel').disabled, false);
+    assert.equal(document.querySelector('.moba__setup-empty'), null);
+    await act(async () => ui.button('Personnaliser le deck').click());
     assert.ok(document.querySelector('[aria-label="Composer le deck de Vous"]'));
-    assert.match(document.querySelector('.moba__editor-summary').textContent, /0 \/ 30/);
-    assert.equal(ui.button('Utiliser ce deck').disabled, true);
+    assert.equal(ui.button('Utiliser ce deck').disabled, false, 'le thème sélectionné sert de point de départ à la personnalisation');
     await act(async () => ui.button('Annuler').click());
     await ui.render([{ ...deck('invalid', 'Invalide'), cardIds: [] }]);
-    assert.equal(ui.button('Commencer le duel').disabled, true);
+    assert.equal(ui.button('Commencer le duel').disabled, false, 'un deck personnel incomplet ne masque pas les thèmes jouables');
+    assert.equal(ui.button('Invalide').disabled, true);
   } finally { await ui.cleanup(); }
 });
 

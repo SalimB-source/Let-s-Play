@@ -3056,13 +3056,20 @@ export const RPG_DECKS_ARCHETYPES = ARCHETYPES_HISTORIQUES.map((ancien) => {
     description: theme.description, cardIds: theme.cardIds };
 });
 
+/** Les huit boîtiers visibles et sélectionnables par le joueur. Le préfixe
+ * évite toute collision avec les identifiants de campagne historiques et les
+ * decks « maison-* » déjà enregistrés ; aucune sauvegarde n'est réécrite. */
+export const RPG_DECKS_PRECONSTRUITS = Object.freeze(RPG_DECKS_THEMATIQUES.map((theme) => Object.freeze({
+  id: `preconstruit-${theme.id}`,
+  name: theme.name, role: 'joueur', element: 'hybride', elements: theme.elements,
+  boxArt: theme.cardIds.find((id) => cardById(id)?.rarity === 'mythique') ?? theme.cardIds[0],
+  archetype: theme.elements.join(' + '), description: theme.description, cardIds: theme.cardIds,
+})));
+
 /**
- * L'**étagère du joueur** : vide, et c'est voulu.
- *
- * Aucun deck n'est offert d'entrée de jeu depuis les coffrets de bienvenue —
- * le joueur joue le deck de son coffret (enregistré comme deck de la maison à
- * l'ouverture, `coffretEnDeckMaison`), puis ceux qu'il compose dans l'atelier
- * avec les cartes du Souk. L'export reste : il porte la forme et la place de
- * l'étagère dans toute l'interface (`decksTous = [...RPG_DECKS, ...decksMaison]`).
+ * Les anciens decks de base gratuits : aucun depuis les coffrets de bienvenue.
+ * Les huit préconstruits thématiques visibles vivent séparément dans
+ * `RPG_DECKS_PRECONSTRUITS`. Les decks du coffret et de l'atelier restent dans
+ * le casier personnel et ne sont ni migrés ni supprimés.
  */
 export const RPG_DECKS = [];
