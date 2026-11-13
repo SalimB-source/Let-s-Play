@@ -33,9 +33,9 @@ test('beaucoup d’effets : deux colonnes sans débord vertical ni horizontal', 
   assert.ok(ajustement.colonnes * ajustement.taille <= 70 - 4);
 });
 
-test('mise en page ciblée : statistiques en colonne à gauche, sans changer la main ou le duel', () => {
+test('mise en page commune : statistiques en colonne à gauche sur les créatures mobiles', () => {
   const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
-  const mobile = css.slice(css.lastIndexOf('/* Seules les cartes posées du MOBA mobile'));
+  const mobile = css.slice(css.lastIndexOf('/* Les créatures posées partagent la même lecture'));
   assert.match(mobile, /@media \(max-width: 700px\), \(hover: none\) and \(pointer: coarse\)/);
   const duelMobile = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
   assert.match(duelMobile, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--img \.rpg-hand__stats\s*\{\s*display: grid !important;\s*grid-template-columns: repeat\(2,/);
@@ -46,7 +46,7 @@ test('mise en page ciblée : statistiques en colonne à gauche, sans changer la 
   assert.match(mobile, /\.moba__slot-label small\s*\{[^}]*font-size: 11px;/s);
   assert.match(mobile, /\.rpg-card-icones--colonne:has\(\.rpg-card-icone:nth-child\(4\)\)/);
   assert.match(mobile, /\.moba__slots \.rpg-card \.rpg-card-icones--colonne\.is-moba-compact-overflow/);
-  assert.doesNotMatch(mobile, /\.rpg-hand__card/);
+  assert.match(mobile, /\[data-scene="duel"\] \.card-table > \.card-row \.rpg-card--img \.rpg-card__foot/);
   assert.match(css, /--moba-card-size: min\(17vw, 11\.3vh, 86px\)/);
   assert.match(css, /--moba-card-size: min\(12\.6vw, 16\.5vh, 196px\)/);
 });

@@ -30,6 +30,7 @@ import {
 } from './effetIcons.js';
 import { pierreEffet, plaqueEffet, plaqueNue, PLAQUE_COTE, ELEMENT_TEINTES } from './effetPlaques.js';
 import { tailleBadgesMoba } from './rpgMobaBadgeFit.js';
+import { ajustementIconesCarte } from './rpgEffectBadgeFit.js';
 
 export { ELEMENT_TEINTES };
 
@@ -347,8 +348,8 @@ function estBouclierDeLumiere(carte) {
 }
 
 /**
- * Les badges d'une face de carte : la pierre d'emblème seule, chevillée au
- * bord du cadre (`effet-icons.css`).
+ * Les badges d'une face de carte : la pierre d'emblème seule, à l'intérieur
+ * du cadre (`effet-icons.css`).
  * `entite` (sur la table) ajoute ses états vivants — infiltration accordée,
  * esquive courante, bouclier en place ou tombé — aux mots-clés imprimés de la
  * fiche ; `effetsEpuises` / `effetsInactifs` servent aux surfaces qui n'ont pas
@@ -404,31 +405,55 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
     + (pastille.cle === 'protection' && pastille.contres?.length > 1 ? pastille.contres.length : 1), 0);
   useLayoutEffect(() => {
     const colonne = colonneRef.current;
-    if (!colonne) return undefined;
+    if (!colonne || !className.includes('rpg-card-icones--colonne')) return undefined;
+    // Le mulligan MOBA pose ses badges à côté de la face, dans son wrapper.
+    const cadre = colonne.closest('.rpg-card, .rpg-hand__card, .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art, .moba__mulligan-item');
+    if (!cadre) return undefined;
+    const carteMoba = colonne.closest('.moba__real-slot .rpg-card');
     const nettoyer = () => {
       colonne.classList.remove('is-moba-compact-overflow');
-      colonne.style.removeProperty('--moba-effect-size');
-      colonne.style.removeProperty('--moba-effect-columns');
-      colonne.style.removeProperty('--moba-effect-rows');
+      for (const propriete of ['--moba-effect-size', '--moba-effect-columns', '--moba-effect-rows', '--rpg-plaque-taille', 'top', 'gap']) {
+        colonne.style.removeProperty(propriete);
+      }
     };
-    nettoyer();
-    const cartePosee = colonne.closest('.moba__real-slot .rpg-card');
-    if (!cartePosee || nombreBadges <= 3) return undefined;
     const recalculer = () => {
       nettoyer();
-      if (!window.matchMedia?.('(max-width: 700px), (hover: none) and (pointer: coarse)').matches) return;
-      const taille = tailleBadgesMoba(colonne, cartePosee);
-      if (taille === null) return;
-      colonne.style.setProperty('--moba-effect-size', `${taille.taille}px`);
-      colonne.style.setProperty('--moba-effect-columns', taille.colonnes);
-      colonne.style.setProperty('--moba-effect-rows', taille.lignes);
-      colonne.classList.add('is-moba-compact-overflow');
+      // Le MOBA compact garde sa grille à deux colonnes quand elle est utile.
+      if (carteMoba && nombreBadges > 3 && window.matchMedia?.('(max-width: 700px), (hover: none) and (pointer: coarse)').matches) {
+        const taille = tailleBadgesMoba(colonne, carteMoba);
+        // Si un repère occupe presque toute la face, le calcul commun peut
+        // remonter la colonne au lieu de la laisser déborder sous le cadre.
+        const tailleMoba = taille && cadre.clientWidth > 0
+          ? Math.min(taille.taille, Math.floor(cadre.clientWidth * .26 * 100) / 100)
+          : taille?.taille;
+        if (taille !== null && (cadre.clientHeight === 0 || colonne.offsetTop + taille.lignes * tailleMoba <= cadre.clientHeight - 2)) {
+          colonne.style.setProperty('--moba-effect-size', `${tailleMoba}px`);
+          colonne.style.setProperty('--moba-effect-columns', taille.colonnes);
+          colonne.style.setProperty('--moba-effect-rows', taille.lignes);
+          colonne.classList.add('is-moba-compact-overflow');
+          return;
+        }
+      }
+      const badges = [...colonne.children].filter((badge) => badge.offsetHeight > 0);
+      if (!badges.length) return;
+      const ajustement = ajustementIconesCarte({
+        largeur: cadre.clientWidth,
+        hauteur: cadre.clientHeight,
+        haut: colonne.offsetTop,
+        taille: badges[0].offsetHeight,
+        nombre: badges.length,
+        espace: parseFloat(window.getComputedStyle(colonne).rowGap) || 0,
+      });
+      if (!ajustement) return;
+      colonne.style.setProperty('--rpg-plaque-taille', `${ajustement.taille}px`);
+      colonne.style.top = `${ajustement.haut}px`;
+      colonne.style.gap = `${ajustement.espace}px`;
     };
     recalculer();
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalculer) : null;
-    observer?.observe(cartePosee);
+    observer?.observe(cadre);
     window.addEventListener('resize', recalculer);
-    return () => { observer?.disconnect(); window.removeEventListener('resize', recalculer); };
+    return () => { observer?.disconnect(); window.removeEventListener('resize', recalculer); nettoyer(); };
   }, [nombreBadges, className, entite?.id]);
   const texteBadge = (pastille) => (
     `${pastilleTexte(pastille)}${epuises.has(pastille.cle)

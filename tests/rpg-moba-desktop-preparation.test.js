@@ -19,7 +19,7 @@ test('les paquets et la main de départ s’agrandissent seulement sur PC paysag
     assert.equal(value('.moba__mulligan-overlay .moba__mulligan', 'width'), 'min(100%, 1300px)');
     assert.match(value('.moba .moba__mulligan-overlay .moba__mulligan-item,\n  .moba__mulligan-overlay .moba__mulligan-card', 'flex-basis'), /calc\(\(100% - 4 \* var\(--moba-mulligan-gap\)\) \/ 5\).*220px/);
     assert.equal(value('.moba__mulligan-overlay .moba__mulligan-cards', 'padding'), '0px 24px');
-    assert.equal(value('.moba .moba__mulligan-overlay .rpg-card-icones--mulligan-moba', '--rpg-plaque-bord'), '35%');
+    assert.equal(value('.moba .moba__mulligan-overlay .rpg-card-icones--mulligan-moba', '--rpg-plaque-bord'), '0%');
     // Six paquets tiennent sans rognage dans le sélecteur ; cinq faces 4:5
     // gardent au moins 26 px entre elles pour les pierres débordantes.
     const packs = 6 * 165 + 5 * 14 + 2 * 8;
