@@ -24,7 +24,7 @@ export async function checkCombatIndividuel(assert) {
     assert.ok(duel);
     for (const [camp, cote] of [['joueur', 'joueur'], ['ennemi', 'sorcier']]) {
       const plaque = container.querySelector(`.rpg-wizard-plate--${camp}`);
-      assert.ok(plaque.querySelector(`[data-scene-avatar="${camp}"] img[src*="/stands/stand-"]`), 'sprite détouré sur la plaque');
+      assert.ok(plaque.querySelector(`[data-scene-avatar="${camp}"] img[src*="/avatars/avatar-"]`), 'visage détouré sur la plaque');
       assert.equal(plaque.querySelector('.rpg-wizard-plate__hp-value').textContent, String(duel[cote].pv));
       assert.match(plaque.getAttribute('aria-label'), new RegExp(`${duel[cote].pv} points de vie`));
     }

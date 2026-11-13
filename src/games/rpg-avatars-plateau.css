@@ -50,10 +50,11 @@
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__pv.rpg-jauge-vie {
   position: absolute;
   z-index: 2;
-  left: 50%;
+  /* La jauge accompagne le visage sans cacher ses traits. */
+  left: 100%;
   top: auto;
   right: auto;
-  bottom: -4px;
+  bottom: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -62,7 +63,7 @@
   height: auto;
   margin: 0;
   padding: 0;
-  transform: translateX(-50%);
+  transform: translateX(-20%);
   border: 0;
   background: transparent;
   box-shadow: none;

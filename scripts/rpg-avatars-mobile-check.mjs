@@ -6,6 +6,9 @@ import { chromium } from 'playwright';
 
 const feuilles = ['rpg-battle.css', 'rpg-mobile.css', 'rpg-story.css', 'rpg-deckbox.css', 'rpg-mana-essai.css', 'rpg-soins.css', 'rpg-vie-compteurs.css', 'rpg-avatars-plateau.css'];
 const css = (await Promise.all(feuilles.map((nom) => readFile(new URL(`../src/games/${nom}`, import.meta.url), 'utf8')))).join('\n');
+const imagesVisages = Object.fromEntries(await Promise.all(['salem', 'ifrit-ergs'].map(async (nom) => [
+  nom, `data:image/webp;base64,${(await readFile(new URL(`../public/sablier-story/avatars/avatar-${nom}.webp`, import.meta.url))).toString('base64')}`,
+])));
 const executablePath = process.env.RPG_TEST_CHROMIUM || undefined;
 const browser = await chromium.launch({ headless: true, executablePath, args: ['--no-sandbox'] });
 try {
@@ -18,10 +21,10 @@ try {
         <div class="rpg-battle rpg-battle--touch" data-scene="duel" ${mode === 'essai' ? 'data-mode-mana="essai"' : ''}>
           <div class="card-table">
             <div class="rpg-hidden-hand"><div class="rpg-hidden-hand__cards"><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span></div><span class="rpg-hidden-hand__count">Main adverse · 7</span></div>
-            <button class="rpg-wizard-plate rpg-wizard-plate--ennemi"><span class="rpg-wizard-plate__avatar" data-scene-avatar="ennemi"></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span></span></button>
+            <button class="rpg-wizard-plate rpg-wizard-plate--ennemi"><span class="rpg-wizard-plate__avatar" data-scene-avatar="ennemi"><img src="${imagesVisages['ifrit-ergs']}" alt=""></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span></span></button>
             <div class="card-row card-row--ennemi"><button class="rpg-card" style="--case-essai:3" data-entity-id="enemy">Adversaire</button></div>
             <div class="card-row card-row--equipe"><button class="rpg-card" style="--case-essai:3" data-entity-id="test">Créature</button></div>
-            <div class="rpg-wizard-plate rpg-wizard-plate--joueur"><span class="rpg-wizard-plate__avatar" data-scene-avatar="joueur"></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span></span></div>
+            <div class="rpg-wizard-plate rpg-wizard-plate--joueur"><span class="rpg-wizard-plate__avatar" data-scene-avatar="joueur"><img src="${imagesVisages.salem}" alt=""></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span></span></div>
             <div class="rpg-hand-dock"><div class="rpg-hand"><button class="rpg-hand__card">Carte</button></div></div>
           </div>
         </div>`);
@@ -48,13 +51,18 @@ try {
       assert.ok(mesures.ennemiCreature.bottom <= mesures.creature.top + 1, 'les créatures des deux camps ne se chevauchent pas');
       assert.ok(mesures.joueur.top >= mesures.creature.bottom - 1, 'la créature centrale ne recouvre pas l’avatar');
       assert.ok(mesures.vieJoueur.top >= mesures.creature.bottom - 1, 'les PV du joueur ne sont pas cachés par la créature');
+      assert.ok(mesures.vieJoueur.left >= mesures.joueur.right - 10, 'les PV ne recouvrent pas le visage du joueur');
+      assert.ok(mesures.vieEnnemi.left >= mesures.ennemi.right - 10, 'les PV ne recouvrent pas le visage adverse');
       assert.ok(mesures.mainJoueur.top >= mesures.vieJoueur.bottom, 'la main ne couvre pas les PV du joueur');
       assert.ok(mesures.mainJoueur.right - mesures.mainJoueur.left >= 44, 'une carte seule reste une cible tactile de 44 px');
       assert.ok(mesures.mainAdverse.right <= mesures.ennemi.left + 1, 'les cartes adverses ne recouvrent pas l’avatar');
       const cible = await page.evaluate(() => {
         const avatar = document.querySelector('.rpg-wizard-plate--ennemi');
         const r = avatar.getBoundingClientRect();
-        return document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(15, r.height / 4))?.closest('.rpg-wizard-plate--ennemi') === avatar;
+        const vie = avatar.querySelector('.rpg-jauge-vie__rond').getBoundingClientRect();
+        const teteCible = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(15, r.height / 4))?.closest('.rpg-wizard-plate--ennemi') === avatar;
+        const vieCible = document.elementFromPoint(vie.left + vie.width / 2, vie.top + vie.height / 2)?.closest('.rpg-wizard-plate--ennemi') === avatar;
+        return teteCible && vieCible && [...document.querySelectorAll('[data-scene-avatar] img')].every((img) => img.complete && img.naturalWidth === 192);
       });
       assert.ok(cible, `${largeur}×${hauteur} ${mode} : avatar adverse accessible au toucher`);
       for (const nombre of [4, 7, 12]) {
