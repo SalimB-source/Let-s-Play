@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import RpgDuelPage, { RPG_RENDU_MOBA } from '../src/games/RpgDuelPage.jsx';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgJouerCreature } from '../src/games/rpgDuel.js';
 import { installerDeckMaisonDeTest, passerMulligan } from './rpg-duel-start.js';
@@ -22,6 +22,13 @@ export async function checkCombatIndividuel(assert) {
     await passerMulligan(container, click); await pause();
     const duel = window.__RPG_DUEL__;
     assert.ok(duel);
+    for (const [camp, cote] of [['joueur', 'joueur'], ['ennemi', 'sorcier']]) {
+      const plaque = container.querySelector(`.rpg-wizard-plate--${camp}`);
+      assert.ok(plaque.querySelector(`[data-scene-avatar="${camp}"] img[src*="/stands/stand-"]`), 'sprite détouré sur la plaque');
+      assert.equal(plaque.querySelector('.rpg-wizard-plate__hp-value').textContent, String(duel[cote].pv));
+      assert.match(plaque.getAttribute('aria-label'), new RegExp(`${duel[cote].pv} points de vie`));
+    }
+    assert.ok(container.querySelector('.rpg-hand-dock .rpg-hand'), 'main jouable conservée');
     for (const cote of ['joueur', 'sorcier']) duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map((e) => [e, 40]));
     duel.joueur.manaChoixEnAttente = null; duel.sorcier.main = [];
     const poser = (cote) => {
@@ -206,4 +213,35 @@ export async function checkEmbuscadeContreAttaqueDirecte(assert) {
   } finally {
     await act(async () => root.unmount()); container.remove();
   }
+}
+
+// La géométrie utilise le sprite, pas l'ancienne capsule de la plaque.
+export async function checkFlechesAvatars(assert) {
+  const container = document.createElement('div'); document.body.append(container);
+  const tableRef = { current: null };
+  const root = createRoot(container);
+  const { BlockerArrows } = RPG_RENDU_MOBA;
+  const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+  try {
+    await act(async () => root.render(<div ref={(node) => { tableRef.current = node; }}>
+      <div data-entity-id="a" />
+      <div className="rpg-wizard-plate--ennemi"><span data-scene-avatar="ennemi" /></div>
+      <div className="rpg-wizard-plate--joueur"><span data-scene-avatar="joueur" /></div>
+    </div>));
+    const table = tableRef.current;
+    table.getBoundingClientRect = () => rect(0, 0, 400, 400);
+    table.querySelector('[data-entity-id]').getBoundingClientRect = () => rect(100, 200, 80, 100);
+    table.querySelector('[data-scene-avatar="ennemi"]').getBoundingClientRect = () => rect(120, 20, 40, 80);
+    table.querySelector('[data-scene-avatar="joueur"]').getBoundingClientRect = () => rect(120, 320, 40, 60);
+    const render = async (destination) => act(async () => root.render(<div ref={(node) => { tableRef.current = node; }}>
+      <div data-entity-id="a" />
+      <div className="rpg-wizard-plate--ennemi"><span data-scene-avatar="ennemi" /></div>
+      <div className="rpg-wizard-plate--joueur"><span data-scene-avatar="joueur" /></div>
+      <BlockerArrows tableRef={tableRef} assignments={{ [destination]: ['a'] }} attaque />
+    </div>));
+    await render('@sorcier');
+    assert.equal(container.querySelector('.rpg-attack-arrow__shaft').getAttribute('d'), 'M 140 200 Q 140 150 140 100');
+    await render('@joueur');
+    assert.equal(container.querySelector('.rpg-attack-arrow__shaft').getAttribute('d'), 'M 140 300 Q 140 310 140 320');
+  } finally { await act(async () => root.unmount()); container.remove(); }
 }
