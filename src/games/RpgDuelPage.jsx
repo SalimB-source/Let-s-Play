@@ -12221,6 +12221,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
+      // Si le camp adverse n'a aucune créature, il n'y a aucune cible à
+      // choisir : un seul clic déclare directement l'attaque contre le sorcier.
+      if (!combatCollectif && rpgPeutAttaquer(entite)
+        && !duel.sorcier.creatures.some((e) => cardById(e.carteId)?.kind !== 'site')
+        && rpgCiblesIndividuellesClassique(duel, 'joueur', entite.id).directe) {
+        signalerTutoriel('attaque-declaree', { entiteId: entite.id });
+        lancerAttaque('sorcier', entite.id);
+        return;
+      }
       setPhase(true);
       if (rpgPeutAttaquer(entite)) {
         setAttaquants([entite.id]);
@@ -12313,9 +12322,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const lancerAttaque = (cibleChoisie = null) => {
+  const lancerAttaque = (cibleChoisie = null, attaquantChoisi = null) => {
     if (!combatCollectif) {
-      const id = attaquants[0];
+      const id = attaquantChoisi ?? attaquants[0];
       const cible = cibleChoisie ?? ciblesAttaque[id];
       if (!id || !cible) { jouerSfx('erreur'); return; }
       const res = rpgDeclarerAttaqueIndividuelleClassique(duel, 'joueur', id, cible === 'sorcier' ? null : cible);
@@ -12580,15 +12589,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!res.ok) { jouerSfx('erreur'); force(); return; }
     const id = combat.attaquants[0];
     const cible = combat.cibleIndividuelle.cibleId ?? 'sorcier';
-    declencherLignesCharge(cote, [id], { [id]: cible }, champAvant);
-    animerModificationsChamp(champAvant, [id], debutJournal);
+    if (!res.annule) declencherLignesCharge(cote, [id], { [id]: cible }, champAvant);
+    animerModificationsChamp(champAvant, res.annule ? [] : [id], debutJournal);
     for (const son of rpgSonsResolutionCombat(res.resume)) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran(cote === 'joueur' ? 'dealt' : 'received');
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     setCombatEntrant(null); setCibleEnCours(null); setBloqueurSelectionne(null);
+    if (cote === 'joueur' && res.choisirNouvelleCible) {
+      setPhase(true); setAttaquants([res.attaquantId]); setCiblesAttaque({});
+    }
     force();
     if (cote === 'sorcier' && !rpgVainqueur(duel)) {
-      if (!pauseSiAttenteJoueur(declarerAttaqueSorcier)) later(declarerAttaqueSorcier, delaiReflexionSorcier());
+      const reprendre = () => declarerAttaqueSorcier(res.choisirNouvelleCible ? res.attaquantId : null);
+      if (!pauseSiAttenteJoueur(reprendre)) later(reprendre, delaiReflexionSorcier());
     }
   };
 
@@ -12804,13 +12817,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && !duel.destructionsEnAttente?.length && !duel.siteEnAttente && !duel.boualemEnAttente && !duel.defausseEnAttente
     && !carteEnVol && !confirmationSort && !cibleEnCours && !poseEnCours && !sacrificeDemande && !sacrificeEnCours && !sacrificeFx
     && !apercuAppui && !apercuCatalogue && !cimetiereOuvert && !navParametresOuvert && !messagerieVoletOuvert
-    && !duel.joueur.main.some((id) => peutJouerCarte(cardById(id))));
+    && (duel.combatDeclare?.cibleIndividuelle?.interrompueParEmbuscade
+      || !duel.joueur.main.some((id) => peutJouerCarte(cardById(id)))));
   resolutionAttaqueAutoRef.current = { possible: resolutionAttaqueAutomatique, duel,
     combat: duel.combatDeclare, resoudre: resoudreAttaqueEnnemie,
     verifier: () => Boolean(duel.fenetreReponse && !rpgVainqueur(duel) && !duel.annonce
       && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente && !duel.destructionsEnAttente?.length
       && !duel.siteEnAttente && !duel.boualemEnAttente && !duel.defausseEnAttente
-      && !duel.joueur.main.some((id) => peutJouerCarte(cardById(id)))) };
+      && (duel.combatDeclare?.cibleIndividuelle?.interrompueParEmbuscade
+        || !duel.joueur.main.some((id) => peutJouerCarte(cardById(id))))) };
 
   // Fin de tour du joueur : phase de fin. Le sorcier peut y jouer une magie
   // rapide (il garde son mana d'un tour à l'autre) ; puis le tour se ferme.
@@ -13147,12 +13162,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
-  const declarerAttaqueSorcier = () => {
-      if (pauseSiAttenteJoueur(declarerAttaqueSorcier)) return;
+  const declarerAttaqueSorcier = (attaquantImpose = null) => {
+      if (pauseSiAttenteJoueur(() => declarerAttaqueSorcier(attaquantImpose))) return;
       const etapeScript = tutorielActif && etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
       if (etapeScript?.skipOpponentTurn) { finirTourSorcier(); return; }
       if (!combatCollectif) {
-        const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier');
+        const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier', attaquantImpose)
+          ?? (attaquantImpose ? rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier') : null);
         if (!choix) { apresCombatSorcier(); return; }
         const res = rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', choix.attaquantId, choix.cibleId);
         if (!res.ok) { apresCombatSorcier(); return; }

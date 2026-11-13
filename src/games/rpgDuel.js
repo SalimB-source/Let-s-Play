@@ -6394,6 +6394,15 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // Le MOBA réserve la case avant toute capacité d'arrivée, qui peut tuer
   // la nouvelle créature ou déclencher une conquête en chaîne.
   if (typeof onEntitePlacee === 'function') onEntitePlacee(entite);
+  // Une Embuscade effectivement posée interrompt une attaque directe en
+  // classique individuel. On attend la fin de ses effets d'arrivée avant de
+  // rendre la main à l'attaquant pour qu'il choisisse à nouveau sa cible.
+  const attaqueIndividuelle = duel.combatDeclare?.cibleIndividuelle;
+  if (!duel.moba && !duel.pvp && duel.tour !== cote && duel.fenetreReponse
+    && duel.combatDeclare?.cote === autre(cote) && attaqueIndividuelle?.cibleId === null
+    && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)) {
+    attaqueIndividuelle.interrompueParEmbuscade = true;
+  }
   duel.log.push(`${cote === 'joueur' ? 'Vous posez' : 'Le sorcier pose'} ${carte.name}.`);
   // Le son d'arrivée suit l'entrée en jeu elle-même, avant même la résolution
   // des effets d'arrivée (qui peuvent ouvrir une attente et rendre la main
@@ -9320,6 +9329,9 @@ export function rpgFinDeTour(duel) {
   // Une attente sans cible légale se dissipe d'abord : elle ne bloque rien.
   rpgDissiperDestructionsSansCible(duel);
   if (duel.destructionsEnAttente?.length) return duel;
+  // Une attaque interrompue qu'on n'a pas reprise ne conserve pas son
+  // déclenchement de Bannière pour le prochain tour.
+  for (const entite of duel[duel.tour].creatures) delete entite.repriseAttaqueIndividuelle;
   duel.phase = 'fin';
   duel.finDeTour = null;
   while (duel.defausseEnAttente?.restant > 0 && duel[duel.defausseEnAttente.cote]?.main.length) {
