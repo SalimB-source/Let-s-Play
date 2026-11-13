@@ -50,11 +50,11 @@
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__pv.rpg-jauge-vie {
   position: absolute;
   z-index: 2;
-  /* La jauge accompagne le visage sans cacher ses traits. */
-  left: 100%;
-  top: auto;
+  /* Les PV sont centrés sous le visage sans le recouvrir. */
+  left: 50%;
+  top: 100%;
   right: auto;
-  bottom: 0;
+  bottom: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,7 +63,7 @@
   height: auto;
   margin: 0;
   padding: 0;
-  transform: translateX(-20%);
+  transform: translateX(-50%);
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -139,34 +139,31 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--ennemi { top: calc(var(--rpg-touch-nav) + var(--rpg-touch-pad) + 4px); }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--joueur { bottom: calc(var(--rpg-touch-hand) + 5px); }
 
-/* Sur mobile, le joueur dispose d'une vraie bande entre son champ et sa main.
-   La plaque n'est plus posée sur la case centrale : une créature, son halo et
-   les PV du joueur restent ainsi distincts, même en partie chargée. */
+/* Sur mobile, la frontière neutre partage la table en deux : les créatures
+   du joueur commencent au-dessous de 50 %, sans toucher celles du sorcier.
+   L'avatar descend à hauteur de la main ; celle-ci reste à gauche et défile
+   si nécessaire pour ne jamais passer sous le visage ou les PV. */
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
   --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .82));
   --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.38 + env(safe-area-inset-bottom, 0px));
   --rpg-avatar-height: clamp(44px, calc(var(--duel-card) * .95), 75px);
-  --rpg-player-avatar-row: calc(var(--rpg-avatar-height) + 8px);
-  /* La bande de navigation réserve aussi la hauteur de l'avatar adverse.
-     Sur les petits paysages, on réduit au besoin les cartes du champ juste
-     assez pour qu'aucune ne recouvre les PV ou la rangée opposée. */
-  --rpg-avatar-nav: max(var(--rpg-touch-nav), calc(var(--rpg-avatar-height) + 2px));
-  --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(36px, calc((100dvh - 2 * var(--rpg-touch-pad) - var(--rpg-avatar-nav) - var(--rpg-player-avatar-row) - var(--rpg-touch-hand) - 4 * var(--rpg-touch-gap)) * .4 - 7px)));
+  --rpg-avatar-vie: clamp(28px, calc(var(--duel-card) * .55), 40px);
+  --rpg-avatar-nav: calc(var(--rpg-avatar-height) + var(--rpg-avatar-vie) + 4px);
+  --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(34px, calc((50dvh - var(--rpg-avatar-height) - var(--rpg-avatar-vie) - 18px - env(safe-area-inset-bottom, 0px)) * .8)));
   --rpg-field-min: min(40px, var(--rpg-field-card));
   --rpg-field-center-offset: 0px;
-  grid-template-rows: var(--rpg-avatar-nav) minmax(0, 1fr) minmax(0, 1fr) var(--rpg-player-avatar-row) var(--rpg-touch-hand);
+  grid-template-rows: var(--rpg-avatar-nav) minmax(0, calc(50% - var(--rpg-avatar-nav) - 1.5 * var(--rpg-touch-gap))) minmax(0, 1fr) var(--rpg-touch-hand);
   grid-template-areas:
     "coin nav nav"
     "enemy-mana enemy controls"
     "mana allies controls"
-    "player-profile player-avatar controls"
     "hand hand hand";
 }
 @supports (height: 100svh) {
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
-    --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(36px, calc((100svh - 2 * var(--rpg-touch-pad) - var(--rpg-avatar-nav) - var(--rpg-player-avatar-row) - var(--rpg-touch-hand) - 4 * var(--rpg-touch-gap)) * .4 - 7px)));
+    --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(34px, calc((50svh - var(--rpg-avatar-height) - var(--rpg-avatar-vie) - 18px - env(safe-area-inset-bottom, 0px)) * .8)));
   }
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi,
@@ -176,17 +173,65 @@
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur {
-  grid-area: player-avatar;
-  position: relative;
-  inset: auto;
-  justify-self: center;
-  align-self: center;
+  grid-area: auto;
+  position: absolute;
+  top: auto;
+  bottom: calc(var(--rpg-avatar-vie) + env(safe-area-inset-bottom, 0px) + 5px);
   width: var(--rpg-avatar-height);
   height: var(--rpg-avatar-height);
-  transform: none;
+  transform: translateX(-50%);
 }
-/* La taille du champ reste inchangée ; seule la main diminue légèrement,
-   avec un minimum tactile de 44 px tant que la largeur le permet. */
-.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand :is(.rpg-hand__card:not(.rpg-card-flight), .rpg-hand__pile) {
+/* Les cases et les cartes partagent toujours la même grille et le même haut. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--equipe {
+  align-items: start;
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-row--equipe .rpg-creature-slots {
+  align-items: start;
+}
+/* Une longue main reste lisible et entièrement accessible par défilement
+   horizontal ; les cartes ne se rétrécissent pas sous la cible tactile. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
+  box-sizing: border-box;
+  width: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2 - var(--rpg-avatar-height) / 2 - 12px);
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  pointer-events: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(241, 210, 145, .7) transparent;
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand::-webkit-scrollbar { display: block; height: 3px; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand::-webkit-scrollbar-thumb { background: rgba(241, 210, 145, .7); border-radius: 3px; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand > :is(.rpg-hand__card:not(.rpg-card-flight), .rpg-hand__pile) {
+  flex: 0 0 var(--rpg-hand-card-mobile);
+  width: var(--rpg-hand-card-mobile);
   max-width: var(--rpg-hand-card-mobile);
 }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand__pile > .rpg-hand__card:not(.rpg-card-flight) {
+  width: 100%;
+  max-width: var(--rpg-hand-card-mobile);
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi,
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-row--ennemi .rpg-creature-slots {
+  align-items: start;
+}
+
+/* Même principe à la souris : la ligne neutre précède les cases et le
+   portrait descend dans la place libérée, à côté de la main. */
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .card-row--equipe {
+  top: calc(50% + 4px);
+  bottom: auto;
+  align-items: start;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-row--equipe .rpg-creature-slots { align-items: start; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur {
+  top: auto;
+  bottom: calc(clamp(34px, 2.5vw, 40px) + 5px);
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: flex-start; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
+  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - clamp(64px, 8vw, 106px) / 2 - 28px);
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }
