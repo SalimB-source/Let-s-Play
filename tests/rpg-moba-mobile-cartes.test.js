@@ -35,7 +35,7 @@ test('beaucoup d’effets : deux colonnes sans débord vertical ni horizontal', 
 
 test('mise en page commune : statistiques en colonne à gauche sur les créatures mobiles', () => {
   const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
-  const mobile = css.slice(css.lastIndexOf('/* Les créatures posées partagent la même lecture'));
+  const mobile = css.slice(css.lastIndexOf('/* Sur mobile, les créatures posées du duel'));
   assert.match(mobile, /@media \(max-width: 700px\), \(hover: none\) and \(pointer: coarse\)/);
   const duelMobile = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
   assert.match(duelMobile, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--img \.rpg-hand__stats\s*\{\s*display: grid !important;\s*grid-template-columns: repeat\(2,/);

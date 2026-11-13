@@ -68,3 +68,17 @@ test('la flèche individuelle montre la cible annoncée, même sans bloqueur', (
   combat.cibleIndividuelle.cibleId = null;
   assert.equal(rpgCiblesFlechesAttaque(duel, combat)[0].cibleId, null);
 });
+
+test('la sélection masque seulement les flèches vers le sorcier, pas les cibles confirmées', async () => {
+  const duel = { joueur: { creatures: [{ id: 'a', name: 'Soldat' }, { id: 'b', name: 'Archer', coupRapide: true }] },
+    sorcier: { creatures: [{ id: 'c', name: 'Garde' }] } };
+  const selection = { coteAttaquant: 'joueur', attaquants: ['a', 'b'], ciblesAttaque: { b: 'c' }, blocages: {} };
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, selection, { selectionEnCours: true }).map((f) => [f.attaquantId, f.cibleId]), [['b', 'c']]);
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, selection).map((f) => [f.attaquantId, f.cibleId]), [['a', null], ['b', 'c']]);
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, { ...selection, cibleIndividuelle: { cibleId: null } }, { selectionEnCours: true }), []);
+  const ennemi = { coteAttaquant: 'sorcier', attaquants: ['c'], blocages: {} };
+  assert.equal(rpgCiblesFlechesAttaque(duel, ennemi)[0].coteDefense, 'joueur');
+  const { readFileSync } = await import('node:fs');
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  assert.match(page, /rpgCiblesFlechesAttaque\(duel, combatPourFleches, \{ selectionEnCours: Boolean\(phase && !combatEntrant\) \}\)/);
+});

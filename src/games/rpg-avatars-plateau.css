@@ -192,6 +192,7 @@
    horizontal ; les cartes ne se rétrécissent pas sous la cible tactile. */
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
   box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
   width: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2 - var(--rpg-avatar-height) / 2 - 12px);
   justify-content: flex-start;
   overflow-x: auto;
@@ -232,6 +233,7 @@
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: flex-start; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
+  padding-left: calc(clamp(8px, 1.5vw, 24px) + 12px);
   width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - clamp(64px, 8vw, 106px) / 2 - 28px);
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }

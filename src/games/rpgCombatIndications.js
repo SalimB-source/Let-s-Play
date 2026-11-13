@@ -47,8 +47,9 @@ export function rpgApercuBlocages(duel, combat) {
   });
 }
 
-/** Cibles annoncées avant le blocage, sans prévoir l'issue du combat. */
-export function rpgCiblesFlechesAttaque(duel, combat) {
+/** Cibles annoncées avant le blocage, sans prévoir l'issue du combat.
+ * Pendant la sélection, éviter de suggérer une attaque directe non déclarée. */
+export function rpgCiblesFlechesAttaque(duel, combat, { selectionEnCours = false } = {}) {
   if (!duel || !combat) return [];
   const cote = combat.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
   const defense = cote === 'joueur' ? 'sorcier' : 'joueur';
@@ -72,5 +73,5 @@ export function rpgCiblesFlechesAttaque(duel, combat) {
     if (attaquant.coupRapide && adversaires.length) return [];
     if ((combat.blocages?.[id] ?? []).length) return [];
     return [{ attaquantId: id, attaquant: attaquant.name, cibleId: null, cible: null, coteDefense: defense }];
-  });
+  }).filter((fleche) => !selectionEnCours || fleche.cibleId != null);
 }

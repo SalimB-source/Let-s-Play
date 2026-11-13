@@ -56,6 +56,7 @@ try {
       assert.ok(mesures.vieJoueur.bottom <= mesures.table.bottom, 'PV du joueur dans la table');
       assert.ok(mesures.vieEnnemi.top >= mesures.ennemi.bottom - 1 && Math.abs(mesures.vieEnnemi.center - mesures.ennemi.center) < 2, 'PV centrés sous le visage adverse');
       assert.ok(mesures.mainJoueur.right <= mesures.joueur.left, 'la main ne couvre pas le joueur');
+      assert.ok(mesures.mainJoueur.left >= mesures.table.left + 12, 'la main commence légèrement à droite du bord');
       assert.ok(!touch || mesures.mainJoueur.right - mesures.mainJoueur.left >= 44, 'une carte seule reste une cible tactile de 44 px');
       assert.ok(mesures.mainAdverse.right <= mesures.ennemi.left + 1, 'les cartes adverses ne recouvrent pas l’avatar');
       const cible = await page.evaluate(() => {

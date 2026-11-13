@@ -553,20 +553,23 @@
   --rpg-plaque-taille: 26cqw;
   --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
 }
-/* Les créatures en main partagent les proportions de la main MOBA. */
-.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--img.rpg-hand__card--type-creature .rpg-hand__stat,
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
-/* Sur les créatures, reprendre aussi les deux plaques colorées de la main
-   MOBA ; les bonus d'armes conservent leur présentation propre. */
+/* En duel, les créatures en main reprennent les plaques neutres du champ.
+   Les armes et leurs bonus gardent leur présentation propre. */
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature { container-type: inline-size; }
 .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat {
-  border-color: rgba(0, 0, 0, .85);
-  box-shadow: none;
-  color: #fff1c9;
+  min-width: 0;
+  border-color: rgba(255, 255, 255, .34);
+  background: rgba(0, 0, 0, .68);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
+  color: #fff8e8;
+  font: 900 14cqw/1.2 Georgia, serif;
+  padding: 2cqw 3cqw;
+  gap: 1cqw;
   text-shadow: 0 1px 2px #000;
 }
-.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat--atk { background: rgba(114, 47, 26, .9); }
-.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat--def { background: rgba(34, 73, 91, .92); }
-.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat .rpg-stat-icon { width: 1em; height: 1em; flex-basis: 1em; }
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stats { gap: 2cqw; }
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
 /* Les pierres gardent leur forme et leur placement classiques, mais suivent
    proportionnellement la taille réduite de la main MOBA. */
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main {
@@ -1586,9 +1589,10 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 }
 .moba__card-flight--recherche .moba__card-flight-face { border-color: #b6eced; box-shadow: 0 3px 15px #000d, 0 0 16px #93dce4bb; }
 
-/* Les créatures posées partagent la même lecture en colonne sur mobile,
-   en duel comme en MOBA. La main et les aperçus gardent leur propre grille. */
+/* Sur mobile, les créatures posées du duel et du MOBA et les créatures
+   en main du duel se lisent en colonne. Les aperçus gardent leur grille. */
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stats,
   .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot,
   .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot {
     left: 5%;
@@ -1606,6 +1610,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   }
   /* Les chiffres et leurs pictogrammes suivent l'échelle de la carte, mais
      restent lisibles sur les flancs étroits du mode portrait. */
+  .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat,
   .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
   .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt) {
     font-size: clamp(9px, 16cqw, 14px);
