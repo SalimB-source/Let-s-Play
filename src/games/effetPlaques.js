@@ -155,7 +155,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
   'i-envol': 'tempo',
   'i-esquive': 'tempo',
   'i-contre-attaque': 'tempo',
-  'i-embuscade': 'tempo',
+  'i-invocation-speciale': 'tempo',
   'i-rebond': 'tempo',
   'i-exil': 'ombre',
 });
@@ -172,7 +172,7 @@ const PIERRE_SPECIALE_PAR_SYMBOLE = Object.freeze({
   'i-vol-de-vie': 'braise',
   'i-exil': 'braise',
   'i-bouclier': 'tenebres',
-  'i-embuscade': 'tenebres',
+  'i-invocation-speciale': 'tenebres',
   'i-recherche': 'azur',
 });
 

@@ -4,9 +4,9 @@ export const RPG_PROMO_DEBUT = 3;
 export const RPG_PROMO_SLIDES = Object.freeze([
   {
     id: 'vampires', annonce: 'Booster Vampires', fond: 'fond-vampires.webp', paquet: 'paquet-vampires.webp',
-    titre: ['LA NUIT', 'RIPOSTE.'], capacite: 'EMBUSCADE', accent: '#ef9d72',
+    titre: ['LA NUIT', 'RIPOSTE.'], capacite: 'INVOCATION SPÉCIALE', accent: '#ef9d72',
     texte: 'Jouez une créature pendant le tour adverse si sa condition est remplie.',
-    description: 'Booster Vampires — La nuit riposte. Embuscade : jouez une créature pendant le tour adverse si sa condition est remplie. 140 crédits, rare garantie, plus de chances de trouver des Vampires parmi toutes les cartes du Souk.',
+    description: 'Booster Vampires — La nuit riposte. Invocation spéciale : jouez une créature pendant le tour adverse si sa condition est remplie. 140 crédits, rare garantie, plus de chances de trouver des Vampires parmi toutes les cartes du Souk.',
   },
   {
     id: 'pirates', annonce: 'Booster Pirates', fond: 'fond-pirates.webp', paquet: 'paquet-pirates.webp',

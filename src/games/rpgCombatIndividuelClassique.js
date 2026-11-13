@@ -95,7 +95,7 @@ export function rpgResoudreAttaqueIndividuelleClassique(duel, cote) {
     duel.combatDeclare = null;
     duel.fenetreReponse = false;
     duel.phase = 'principale';
-    duel.log.push('L’Embuscade interrompt l’attaque directe : l’attaquant doit choisir à nouveau sa cible.');
+    duel.log.push('L’Invocation spéciale interrompt l’attaque directe : l’attaquant doit choisir à nouveau sa cible.');
     return { ok: true, annule: true, choisirNouvelleCible: Boolean(attaquant && rpgPeutAttaquer(attaquant)), attaquantId,
       resume: { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], critiques: [], blessures: [] } };
   }

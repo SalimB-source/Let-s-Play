@@ -3777,7 +3777,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    teinte du halo n'est écrite qu'à deux endroits dans la feuille — l'azur de la
    règle commune, l'or ici.
    ------------------------------------------------------------------------- */
-.rpg-hand__card.is-mythique-jouable.is-playable {
+.rpg-hand__card.is-mythique-jouable.is-playable,
+.rpg-hand__card.is-special-ambush.is-playable {
   --rpg-play-halo: 255, 152, 14;
   --rpg-play-halo-clair: 255, 214, 120;
   overflow: visible;
@@ -3789,7 +3790,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: brightness(1.08) saturate(1.14);
   animation: rpg-mythique-halo-pulse 0.9s ease-in-out infinite alternate;
 }
-.rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
+.rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled),
+.rpg-hand__card.is-special-ambush.is-playable:hover:not(:disabled) {
   box-shadow:
     0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
     0 0 5px rgba(var(--rpg-play-halo-clair), 1),
@@ -3797,7 +3799,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 8px 20px rgba(0, 0, 0, .62);
   filter: brightness(1.14) saturate(1.18);
 }
-.rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
+.rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img,
+.rpg-hand__card.is-special-ambush.is-playable .rpg-hand__img {
   border-radius: inherit;
 }
 /* L'or respire : halo concentré qui ondule, collé à la carte. L'écart entre les
@@ -3822,7 +3825,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpg-hand__card.is-mythique-jouable.is-playable {
+  .rpg-hand__card.is-mythique-jouable.is-playable,
+  .rpg-hand__card.is-special-ambush.is-playable {
     animation: none !important;
     filter: brightness(1.08) saturate(1.14);
     box-shadow:
@@ -3862,14 +3866,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-hand__card.is-lien-actif,
   .rpg-card.is-lien-actif { animation: none !important; }
-}
-/* L'Embuscade jouable en réponse prend le violet même si elle est mythique.
-   Les variables alimentent aussi le survol et l'animation d'or existants ;
-   le filet intérieur du Lien et la couleur du cadre restent inchangés. */
-.rpg-hand__card.is-playable.is-special-ambush,
-.rpg-hand__card.is-playable.is-special-ambush.is-mythique-jouable {
-  --rpg-play-halo: 163, 91, 255;
-  --rpg-play-halo-clair: 200, 155, 255;
 }
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
 .rpg-hand__card.is-dragging { opacity: .58; transform: translateY(-22px) scale(.94); }
@@ -10845,11 +10841,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    toute la main s'allume en **azur**, le cyan des cartes jouables de MTG
    Arena, créature, héros, terrain, arme, Magie Rapide, Sorcellerie. Seule la
    rareté change la teinte — une mythique prend l'**or** (bloc « Lueur d'or »,
-   plus haut). Les Embuscades jouables en réponse prennent aussi le violet.
+   plus haut). Les Invocations spéciales disponibles partagent le halo doré.
 
    Il n'y a donc plus rien à déclarer ici : l'azur est posé une fois sur la
    règle commune (`--rpg-play-halo`, `--rpg-play-halo-clair`), et les
-   autres teintes sont l'or mythique et le violet de l'Embuscade. Le halo reste un
+   autre teinte est l'or des mythiques et des Invocations spéciales disponibles. Le halo reste un
    ÉTAT, jamais une couleur de cadre : le filet de la carte garde la teinte de
    son élément, y compris sous une lueur d'or.
    ------------------------------------------------------------------------- */

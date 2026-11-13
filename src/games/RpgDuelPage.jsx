@@ -3481,7 +3481,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       )}
       {conditionEmbuscade && (
         <p className="rpg-hover-card-preview__embuscade" data-condition-embuscade={carte.conditionEmbuscade}>
-          <strong>Embuscade</strong>
+          <strong>Invocation spéciale</strong>
           <span>Condition : {conditionEmbuscade.map((morceau, index) => index % 2
             ? <b key={index}>{morceau}</b> : morceau)}.</span>
         </p>
@@ -13513,7 +13513,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       : combatEntrant.coteAttaquant === 'joueur'
                       ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
                       : combatEntrant.blocagesDeclares
-                        ? 'Blocages déclarés — jouez une magie rapide ou une créature avec Embuscade, puis résolvez le combat'
+                        ? 'Blocages déclarés — jouez une magie rapide ou une créature avec Invocation spéciale, puis résolvez le combat'
                       : !blocageForceValide
                         ? 'Blocage forcé — assignez chaque créature marquée à un attaquant qu’elle peut bloquer'
                         : !provocationValide
@@ -14625,15 +14625,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 au-dessus de la main — et non en tête de table, où le bloc tombait. */}
             {fenetreFinTour && (
               <div className="rpg-annonce-sort__compact rpg-fin-tour" role="group"
-                aria-label="Fin du tour du sorcier : jouez une magie rapide ou une Embuscade, ou passez">
+                aria-label="Fin du tour du sorcier : jouez une magie rapide ou une Invocation spéciale, ou passez">
                 <span className="rpg-annonce-sort__compact-label">
                   <span>Fin du tour du sorcier</span>
-                  <b>Magie rapide ou Embuscade ?</b>
+                  <b>Magie rapide ou Invocation spéciale ?</b>
                 </span>
                 <button
                   type="button"
                   className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
-                  aria-label="Passer : ne pas jouer de magie rapide ni d’Embuscade"
+                  aria-label="Passer : ne pas jouer de magie rapide ni d’Invocation spéciale"
                   onClick={() => { jouerSfx('pass'); passerFinTourSorcier(); }}
                 >
                   <span aria-hidden="true">➜</span>
@@ -14769,13 +14769,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // une carte allumée mais injouable enfermerait le joueur.
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
-              // Violet uniquement pour une invocation spéciale réellement
+              // Or uniquement pour une invocation spéciale réellement
               // disponible en réponse, jamais pour une pose normale ou défausse.
               const embuscadeJouable = baseJouable && !groupe.enRenvoi && estCreature
                 && duel.tour === 'sorcier' && duel.fenetreReponse && reponseActive
                 && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse);
-              // Une mythique normale garde son halo doré ; une Embuscade
-              // jouable prend le violet, quelle que soit sa rareté.
+              // Une invocation spéciale disponible partage le halo doré des mythiques.
               const estMythique = cardRarityInfo(carte).key === 'mythique';
               const mythiqueJouable = baseJouable && estMythique;
               // La carte liée dont l'ancre mythique est en jeu : elle s'allume
@@ -14865,7 +14864,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-embuscade-jouable={embuscadeJouable ? 'true' : undefined}
                   data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Embuscade jouable' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Invocation spéciale disponible' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 

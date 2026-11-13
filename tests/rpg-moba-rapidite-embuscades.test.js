@@ -37,7 +37,7 @@ test('audit de toutes les Rapidités, jetons et Embuscades imprimées', () => {
     const apercu = rpgMobaCartePourApercu(carte);
     assert.equal(apercu.reactionTourAdverse, false, carte.id);
     assert.equal(apercu.rapidite, true, carte.id);
-    assert.match(apercu.text, /Embuscade MOBA.*tour adverse/, carte.id);
+    assert.match(apercu.text, /Invocation spéciale.*tour adverse/, carte.id);
     assert.ok(apercu.text.includes('Rapidité') || !carte.text.includes('Rapidité'), carte.id);
     assert.equal(cardById(carte.id).reactionTourAdverse, undefined, 'catalogue classique inchangé');
   }

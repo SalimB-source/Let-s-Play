@@ -137,7 +137,7 @@ test('toutes les variantes de preview ne redisent pas les effets de leurs pastil
       assert.ok(!pastille?.getAttribute('aria-label')?.includes(conditionEmbuscadePourApercu(carte)),
         `${carte.id} : la pastille ne répète pas la condition`);
       assert.equal(cadre?.dataset.conditionEmbuscade, carte.conditionEmbuscade, `${carte.id} : ${variante || 'survol'}`);
-      assert.equal(cadre?.textContent, `EmbuscadeCondition : ${condition.join('')}.`);
+      assert.equal(cadre?.textContent, `Invocation spécialeCondition : ${condition.join('')}.`);
       assert.deepEqual([...cadre.querySelectorAll('b')].map((mot) => mot.textContent), condition.filter((_, i) => i % 2),
         `${carte.id} : les mots clés ressortent en gras`);
       dom.window.close();
