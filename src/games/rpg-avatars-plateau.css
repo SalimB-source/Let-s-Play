@@ -121,12 +121,6 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-hidden-hand { justify-content: flex-start; }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hidden-hand__count { display: none; }
 
-/* Les lignes auparavant dimensionnées par les plaques restent réservées pour
-   ne pas déplacer les jauges de mana sur les champs. */
-.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
-  grid-template-rows: var(--rpg-touch-nav) clamp(25px, calc(var(--duel-card) * .55), 45px) minmax(0, 1fr) minmax(0, 1fr) clamp(25px, calc(var(--duel-card) * .55), 45px) var(--rpg-touch-hand);
-}
-
 /* Les compteurs autrefois dans la capsule restent visibles au doigt, à leur
    ancien emplacement, sans intercepter les terrains ni les jauges de mana. */
 .rpg-table-zones { display: none; }
@@ -143,3 +137,55 @@
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--ennemi { top: calc(var(--rpg-touch-nav) + var(--rpg-touch-pad) + 4px); }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--joueur { bottom: calc(var(--rpg-touch-hand) + 5px); }
+
+/* Sur mobile, le joueur dispose d'une vraie bande entre son champ et sa main.
+   La plaque n'est plus posée sur la case centrale : une créature, son halo et
+   les PV du joueur restent ainsi distincts, même en partie chargée. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
+  --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .82));
+  --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.38 + env(safe-area-inset-bottom, 0px));
+  --rpg-avatar-height: clamp(44px, calc(var(--duel-card) * .95), 75px);
+  --rpg-player-avatar-row: calc(var(--rpg-avatar-height) + 8px);
+  /* La bande de navigation réserve aussi la hauteur de l'avatar adverse.
+     Sur les petits paysages, on réduit au besoin les cartes du champ juste
+     assez pour qu'aucune ne recouvre les PV ou la rangée opposée. */
+  --rpg-avatar-nav: max(var(--rpg-touch-nav), calc(var(--rpg-avatar-height) + 2px));
+  --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(36px, calc((100dvh - 2 * var(--rpg-touch-pad) - var(--rpg-avatar-nav) - var(--rpg-player-avatar-row) - var(--rpg-touch-hand) - 4 * var(--rpg-touch-gap)) * .4 - 7px)));
+  --rpg-field-min: min(40px, var(--rpg-field-card));
+  --rpg-field-center-offset: 0px;
+  grid-template-rows: var(--rpg-avatar-nav) minmax(0, 1fr) minmax(0, 1fr) var(--rpg-player-avatar-row) var(--rpg-touch-hand);
+  grid-template-areas:
+    "coin nav nav"
+    "enemy-mana enemy controls"
+    "mana allies controls"
+    "player-profile player-avatar controls"
+    "hand hand hand";
+}
+@supports (height: 100svh) {
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
+    --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(36px, calc((100svh - 2 * var(--rpg-touch-pad) - var(--rpg-avatar-nav) - var(--rpg-player-avatar-row) - var(--rpg-touch-hand) - 4 * var(--rpg-touch-gap)) * .4 - 7px)));
+  }
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+  width: var(--rpg-avatar-height);
+  height: var(--rpg-avatar-height);
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur {
+  grid-area: player-avatar;
+  position: relative;
+  inset: auto;
+  justify-self: center;
+  align-self: center;
+  width: var(--rpg-avatar-height);
+  height: var(--rpg-avatar-height);
+  transform: none;
+}
+/* La taille du champ reste inchangée ; seule la main diminue légèrement,
+   avec un minimum tactile de 44 px tant que la largeur le permet. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand :is(.rpg-hand__card:not(.rpg-card-flight), .rpg-hand__pile) {
+  max-width: var(--rpg-hand-card-mobile);
+}
