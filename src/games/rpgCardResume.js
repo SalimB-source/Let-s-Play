@@ -1,3 +1,4 @@
+import { rpgTexteConditionEmbuscade } from './rpgEmbuscade.js';
 /**
  * Le Sablier — le texte court des aperçus de cartes.
  *
@@ -16,6 +17,8 @@
  * fiches lisibles continuent de recevoir la règle d'origine.
  */
 
+import { texteCombatIndividuel } from './effetIcons.js';
+
 /** Au-delà, une règle est « longue » : l'aperçu ajoute son résumé et défile. */
 export const SEUIL_REGLE_LONGUE = 180;
 
@@ -32,14 +35,14 @@ const RACCOURCIS = [
   [/Rapidité\s*[-—:]\s*(?:Cette créature )?[Pp]eut attaquer le tour où (?:elle|il) arrive\.?/gu, 'Rapidité : attaque dès l’arrivée.'],
   [/Butin\s*[-—:]\s*Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une\.?/gu, 'Butin : piochez 1, défaussez 1.'],
   [/Envol\s*[-—:]\s*Ne peut être bloqué[e]? que par une créature avec Envol\.?/gu, 'Envol.'],
-  [/Provocation\s*[-—:]\s*Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible\.?/gu, 'Provocation : doit être bloquée.'],
+  [/Provocation\s*[-—:]\s*[^.]*\./gu, 'Provocation : cible prioritaire.'],
   [/Tenacité\s*[-—:]\s*Une fois par partie, quand (?:il|elle) meurt \(sauf exilé\), (?:il|elle) revient en jeu au début de votre prochain tour avec 1 point de défense\.?/gu, 'Tenacité : revient une fois.'],
   [/Overkill\s*[-—:]\s*Quand (?:il|elle) attaque et qu[’']on (?:le|la) bloque, l[’']excédent de sa force au-delà des bloqueurs perce jusqu[’']au sorcier adverse\.?/gu, 'Overkill : perce les bloqueurs.'],
   [/Protection contre les sorts\s*[-—:]\s*Aucun sort \(Magie Rapide ou Sorcellerie\) ne peut (?:le|la) cibler ni (?:le|la) blesser\.?/gu, 'Immunisé contre les sorts.'],
   [/Mur\s*[-—:]\s*Cette créature ne peut pas attaquer et ne peut pas être équipée\.?/gu, 'Mur : ne peut pas attaquer.'],
   [/Doit bloquer\s*[-—:]\s*Cette créature doit bloquer une créature attaquante adverse chaque tour si possible\.?/gu, 'Doit bloquer.'],
   [/Priorité d[’']attaque rapide\s*[-—:]\s*Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent\.?/gu, 'Attire les attaques rapides.'],
-  [/Attaque ciblée\s*[-—:]\s*Sélectionné[e]? pour attaquer,[^.]*\./gu, 'Attaque ciblée : peut attaquer n’importe quelle créature adverse.'],
+  [/Attaque ciblée\s*[-—:]\s*[^.]*\./gu, 'Attaque ciblée : créature adverse ou attaque directe, selon les priorités.'],
   // Le nom du porteur n'est pas figé : Eirik, Tojiro, Kusayla — la capacité est
   // la même, la phrase qui la définit aussi.
   // Deux formulations coexistent dans le catalogue : « quand c’est un sort qui
@@ -52,7 +55,7 @@ const RACCOURCIS = [
 ];
 
 function texteBrut(carte) {
-  const brut = typeof carte === 'string' ? carte : carte?.text;
+  const brut = typeof carte === 'string' ? carte : texteCombatIndividuel(carte);
   if (typeof brut !== 'string') return '';
   const propre = brut.replace(/\s+/gu, ' ').trim();
   return propre && propre !== '—' ? propre : '';
@@ -164,6 +167,8 @@ export function regleCarteLongue(carte, seuil = SEUIL_REGLE_LONGUE) {
  * d'encadré.
  */
 export function conditionEmbuscadePourApercu(carte) {
+  const conditionCommune = rpgTexteConditionEmbuscade(carte);
+  if (conditionCommune) return conditionCommune;
   if (!carte?.reactionTourAdverse || !carte?.conditionEmbuscade) return null;
   const phrase = carte.text?.match(
     /^Embuscade\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement (?:si |en réponse à )([^.]+)\./u,
@@ -194,6 +199,8 @@ const CONDITIONS_EMBUSCADE_COURTES = {
 
 /** Texte du cadre ; le texte imprimé reste un repli pour un futur cas inconnu. */
 export function conditionEmbuscadeCourtePourApercu(carte) {
+  const conditionCommune = rpgTexteConditionEmbuscade(carte);
+  if (conditionCommune) return ['', conditionCommune];
   const condition = conditionEmbuscadePourApercu(carte);
   return condition ? (CONDITIONS_EMBUSCADE_COURTES[carte.conditionEmbuscade] ?? [condition]) : null;
 }

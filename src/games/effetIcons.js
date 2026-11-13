@@ -1,3 +1,4 @@
+import { rpgCarteEmbuscade, rpgTexteConditionEmbuscade } from './rpgEmbuscade.js';
 /**
  * Le sprite des icônes d’effets du duel — les symboles validés
  * (`preview-effets-icone.html`), monochromes, dessin au trait 24×24 ;
@@ -301,15 +302,15 @@ export function pastillesPourCarte(carte) {
     pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur, ...details });
   };
 
-  if (carte.reactionTourAdverse) ajouter('reactionTourAdverse', 'Embuscade');
-  if (carte.contreAnnonceCreature) ajouter('contresort', 'Contresort');
+  if (carte.reactionTourAdverse || rpgCarteEmbuscade(carte)) ajouter('reactionTourAdverse', 'Embuscade');
+  if (carte.contreAnnonceCreature && !rpgCarteEmbuscade(carte)) ajouter('contresort', 'Contresort');
   if (carte.envol) ajouter('envol', 'Envol');
   // L'Envol que la Furie prête (le Maître du marteau) ne s'imprime pas : la
   // pastille dit d'où il vient, tant que la Furie n'est pas allumée.
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.volDeVie || carte.donne?.volDeVie || carte.effet?.volDeVie) ajouter('volDeVie', 'Vol de vie');
-  if (carte.rapidite) ajouter('rapidite', 'Rapidité');
+  if (carte.rapidite && !rpgCarteEmbuscade(carte)) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
@@ -638,26 +639,26 @@ export function iconePourLigne(carte, ligne = '') {
    Dans un aperçu de carte la pastille se **déplie** : son détail s’écrit sous le
    mot, parce que le volet ne se survole pas. Ailleurs (grille du catalogue,
    guide), elle reste une puce et son détail s’ouvre au survol (ou au toucher).
-   Le texte imprimé de la carte prime toujours : quand
-   la fiche écrit « Attaque ciblée — … », c’est cette phrase qui remplit la bulle.
-   Le glossaire ci-dessous ne sert que lorsque la carte nomme le mot-clé sans
+   Le texte imprimé prime pour les autres effets. Les mots-clés du combat
+   individuel utilisent les définitions à jour même si le texte imprimé décrit
+   encore les bloqueurs. Le glossaire sert aussi lorsque la carte nomme le mot-clé sans
    l’expliquer (« Rapidité. ») ou ne le nomme pas du tout (Exil, Contresort…). */
 
 /** La définition de chaque effet, au féminin de « la créature » (ou de la carte). */
 export const EFFET_DEFINITIONS = {
   reactionTourAdverse: 'Vous pouvez jouer cette carte pendant le tour adverse, en respectant les fenêtres de réponse.',
-  envol: 'Ne peut être bloquée que par une créature avec Envol.',
-  infiltration: 'Ne peut pas être bloquée.',
+  envol: 'Peut attaquer une créature accessible au sol ou en vol. Une attaque normale au sol ne peut pas la viser. Sans créature volante adverse accessible, elle peut aussi attaquer directement, sauf priorité applicable.',
+  infiltration: 'Peut attaquer directement même si des créatures adverses sont présentes, sauf priorité applicable. Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   furtif: 'Cette créature est détruite à la fin du tour où elle arrive en jeu.',
-  coupRapide: 'Quand elle attaque, elle doit viser une créature adverse s’il y en a une. Elle lui inflige ses dégâts d’attaque sans riposte, avec 15 % de chances de rater. Si aucune créature adverse n’est en jeu, elle peut attaquer le sorcier normalement.',
+  coupRapide: 'Peut attaquer une créature adverse ou directement, sauf priorité applicable. Contre une créature, inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater sauf effet contraire ; certaines capacités peuvent riposter.',
   coupCritique: 'En combat, 15 % de chances de frapper 4 fois la créature adverse.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
-  defenseur: 'Quand une créature adverse avec Attaque ciblée attaque, elle doit choisir un Défenseur adverse comme cible si elle peut en viser un. S’il y en a plusieurs, l’attaquant choisit lequel. Défenseur ne force pas à attaquer.',
-  provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
+  defenseur: 'Une attaque adverse doit la viser en priorité si elle est accessible et qu’aucune Provocation accessible ne prime. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
+  provocation: 'Les attaques adverses doivent la viser en priorité si elle est accessible, avant les Défenseurs. Elle gagne +0/+1 jusqu’à la fin du tour pour chaque attaque qui la cible.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
-  overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
+  overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
   esquive: () => '15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
   contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
@@ -765,6 +766,67 @@ function finDeSection(texte, depuis, limite) {
 const cleDuLibelle = (libelle) => LIBELLES_IMPRIMES
   .find(([, source]) => new RegExp(`^(?:${source})$`, 'u').test(libelle))?.[0] ?? null;
 
+/** Reformule les capacités déclenchées par un blocage en duel individuel.
+ * Le retour en main garde le timing propre au MOBA, distinct du classique. */
+function texteCapacitesCombat(carte) {
+  let texte = carte?.text && carte.text !== '—' ? String(carte.text) : '';
+  if (rpgCarteEmbuscade(carte) && !carte.presentationCombatMoba) {
+    texte = texte.replace(/^Embuscade\s*[—-]\s*[^.]*\.\s*/u, '')
+      .replace(/Rapidité\s*—\s*[^.]*\.\s*/gu, '').replace(/\bRapidité\.\s*/gu, '');
+    if (carte.id === 'sentinelle-des-sables') texte = texte.replace('créature attaquante ciblée', 'créature adverse ciblée');
+    if (carte.id === 'traqueur-des-nuits-sans-lune') texte = texte.replace('créature attaquante ciblée', 'créature adverse ciblée');
+    if (carte.id === 'sorcier-du-ressac-noir') texte = 'À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire.';
+  }
+  texte = texte.replace('Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible.',
+    'Mur — Ne peut ni attaquer ni être équipée.');
+  if (carte?.id === 'vampire-des-braises') {
+    texte = texte.replace('Quand elle est bloquée, elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat. Quand elle bloque une créature, elle lui inflige aussi 1 dégât avant les blessures de combat.',
+      'Quand elle attaque une créature ou est visée par une attaque normale, elle inflige 1 dégât à l’autre créature avant les blessures de combat.');
+  } else if (carte?.id === 'sahir-des-braises') {
+    texte = texte.replace('Quand il attaque ou bloque : avant les blessures de combat et leur répartition, il inflige 2 dégâts à la créature qui le bloque ou qu’il bloque.',
+      'Quand il attaque une créature ou est visé par une attaque normale, il inflige 2 dégâts à l’autre créature avant les blessures de combat.');
+  } else if (carte?.id === 'tour-de-braise') {
+    texte = texte.replace('Quand la Tour bloque une créature, elle lui inflige 1 dégât de sort avant les blessures de combat.',
+      'Quand la Tour est visée par une attaque normale, elle inflige 1 dégât de sort à l’attaquant avant les blessures de combat.');
+  } else if (carte?.id === 'tour-des-flots') {
+    texte = texte.replace('Quand elle bloque : après l’assignation des blessures de combat, elle renvoie l’attaquant dans la main de son propriétaire.',
+      `Quand elle est visée par une attaque normale, elle renvoie l’attaquant dans la main de son propriétaire ${carte.presentationCombatMoba ? 'après' : 'avant'} les blessures de combat.`);
+  } else if (carte?.id === 'le-cavalier-de-vapeur') {
+    texte = texte.replace('Quand il bloque : après les blessures de combat, la créature qu’il bloque repart dans la main de son propriétaire.',
+      `Quand il est visé par une attaque normale, il renvoie l’attaquant dans la main de son propriétaire ${carte.presentationCombatMoba ? 'après' : 'avant'} les blessures de combat.`);
+  }
+  return texte.replace(/Quand le porteur attaque : gagnez 1 mana de sable\./gu, 'La production de mana du Harnais n’a plus d’effet.')
+    .replace(/qui coûtent 3 mana ou moins/gu, 'de coût imprimé 3 ou moins');
+}
+
+/** Les règles de combat imprimées historiques parlent de bloqueurs. Les
+ * remplacer uniquement à la présentation, sans modifier le catalogue ni les
+ * autres capacités de la carte (arrivées, durées et conditions comprises). */
+const MOTS_COMBAT_INDIVIDUEL = new Set(['envol', 'infiltration', 'coupRapide', 'defenseur', 'provocation', 'overkill']);
+export function texteCombatIndividuel(carte) {
+  const brut = texteCapacitesCombat(carte);
+  if (!brut) return brut;
+  const cles = new Set(pastillesPourCarte(carte).map((pastille) => pastille.cle));
+  const sections = [...brut.matchAll(TETE_DE_SECTION)].map((match) => ({
+    cle: cleDuLibelle(match[1]), label: match[1], debut: match.index,
+    finTete: match.index + match[0].length, tiret: match[0].includes('—'),
+  }));
+  let curseur = 0;
+  let texte = '';
+  sections.forEach((section, index) => {
+    if (!cles.has(section.cle) || !MOTS_COMBAT_INDIVIDUEL.has(section.cle)) return;
+    const fin = section.tiret ? finDeSection(brut, section.finTete, sections[index + 1]?.debut ?? brut.length) : section.finTete;
+    texte += `${brut.slice(curseur, section.debut)}${section.label} — ${EFFET_DEFINITIONS[section.cle]} `;
+    curseur = fin;
+  });
+  const condition = !carte?.presentationCombatMoba && rpgTexteConditionEmbuscade(carte);
+  const regleEmbuscade = condition ? `Embuscade — Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : ${condition} Invocation spéciale sans sacrifice ni quota. ` : '';
+  return `${regleEmbuscade}${texte}${brut.slice(curseur)}`
+    .replace(/Quand le porteur attaque : gagnez 1 mana de sable\./gu, 'La production de mana du Harnais n’a plus d’effet.')
+    .replace(/qui coûtent 3 mana ou moins/gu, 'de coût imprimé 3 ou moins')
+    .replace(/\s+/gu, ' ').trim();
+}
+
 /** La définition générique d’une pastille (valeur et couleur comprises). */
 export function definitionPastille(pastille) {
   if (pastille.cle === 'debuff' || pastille.cle === 'buff') {
@@ -818,7 +880,7 @@ export function definitionPastille(pastille) {
  */
 export function effetsDetailles(carte) {
   const pastilles = pastillesPourCarte(carte).map((pastille) => ({ ...pastille, description: '' }));
-  const brut = carte?.text && carte.text !== '—' ? String(carte.text) : '';
+  const brut = texteCapacitesCombat(carte);
   if (!brut || carte?.kind === 'terrain') {
     for (const pastille of pastilles) pastille.description = definitionPastille(pastille);
     return { pastilles, texte: brut };
@@ -845,10 +907,9 @@ export function effetsDetailles(carte) {
   });
 
   for (const pastille of pastilles) {
-    if (!pastille.description) pastille.description = definitionPastille(pastille);
-    if (pastille.cle === 'coupRapide' && !pastille.description.includes('créature adverse est en jeu')
-      && !pastille.description.includes('doit viser')) {
-      pastille.description += ' Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.';
+    if (MOTS_COMBAT_INDIVIDUEL.has(pastille.cle) || !pastille.description) pastille.description = definitionPastille(pastille);
+    if (pastille.cle === 'reactionTourAdverse' && rpgTexteConditionEmbuscade(carte)) {
+      pastille.description = `Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : ${rpgTexteConditionEmbuscade(carte)} Invocation spéciale sans sacrifice ni quota.`;
     }
   }
 

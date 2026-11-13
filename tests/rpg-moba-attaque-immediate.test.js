@@ -56,13 +56,31 @@ test('MOBA : une créature réanimée sans Rapidité attaque aussi immédiatemen
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [creature.id]).ok, true);
 });
 
-test('le duel classique conserve le mal d’invocation ; la fiche MOBA explique Rapidité', () => {
+test('le duel classique permet aussi d’attaquer dès l’arrivée ; la fiche MOBA explique Rapidité', () => {
   const duel = commencer(false);
   duel.joueur.main = ['gardienne-des-portes-de-sable'];
   duel.joueur.mana.sable = 20;
   const pose = rpgJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable');
   assert.equal(pose.ok, true);
-  assert.equal(pose.entite.malInvocation, true);
-  assert.equal(rpgPeutAttaquer(pose.entite), false);
+  assert.equal(pose.entite.malInvocation, false);
+  assert.equal(rpgPeutAttaquer(pose.entite), true);
   assert.match(rpgMobaNotesCarte(cardById('fennec-des-decombres')).join(' '), /toutes les créatures peuvent attaquer dès leur arrivée/);
+});
+
+test('PvP : une créature invoquée par intention peut attaquer immédiatement', async () => {
+  const { rpgPvpAppliquer } = await import('../src/games/rpgPvp.js');
+  const deck = Array(12).fill('gardienne-des-portes-de-sable');
+  const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, pvp: true, rng: () => .5 });
+  assert.ok(rpgMulligan(duel, 'joueur', []).ok);
+  assert.ok(rpgMulligan(duel, 'sorcier', []).ok);
+  duel.joueur.main = ['gardienne-des-portes-de-sable'];
+  duel.joueur.mana.sable = 20;
+  const pose = rpgPvpAppliquer(duel, 'joueur', { type: 'jouer-carte', carteId: 'gardienne-des-portes-de-sable' });
+  assert.equal(pose.ok, true);
+  const creature = duel.joueur.creatures[0];
+  assert.equal(rpgPeutAttaquer(creature), true);
+  creature.gelToursRestants = 1;
+  assert.equal(rpgPeutAttaquer(creature), false, 'le gel continue à interdire les attaques');
+  creature.gelToursRestants = 0;
+  assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: [creature.id] }).ok, true);
 });

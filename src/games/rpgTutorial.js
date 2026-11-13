@@ -6,8 +6,8 @@
  * bicolore des Vampires. Les mains et les scènes pédagogiques peuvent prêter
  * ponctuellement une carte hors du paquet sans modifier le préconstruit.
  *
- * Une leçon est une **partie d'entraînement scriptée** : une main connue, une
- * réserve de mana préparée, un adversaire passif et une suite d'étapes qui
+ * Une leçon est une **partie d'entraînement scriptée** : une main connue, un
+ * adversaire scénarisé et une suite d'étapes qui
  * suivent les gestes réels du duel. Les définitions restent des données pures ;
  * la page ne connaît que les événements qu'elle émet (`creature-jouee`,
  * `magie-lancee`, `bloqueur-assigne`…) et les conditions d'attente qu'elle sait
@@ -18,14 +18,13 @@
  * 1. **Aucune pioche surprise** : les cartes utiles sont placées en main ou
  *    en haut du paquet par `preparerDuelTutoriel` ;
  * 2. **Aucun adversaire taquin** : sa main ne contient que les cartes de la
- *    démonstration et son paquet ne fournit que des cartes trop chères pour
- *    son mana ;
+ *    démonstration ; la page suspend ses choix libres pendant les leçons ;
  * 3. **Une récompense par leçon** : `reward` est versé par la bourse
  *    (`reclamerRecompenseTutoriel`) et retenu dans le portefeuille.
  */
 import { RPG_DECKS_ARCHETYPES, cardById } from './rpgCards.js';
 import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
-import { rpgChoisirCouleurMana, rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
+import { rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
 import { RPG_MANA_ESSAI_MAIN_DEPART } from './rpgManaEssai.js';
 
 // Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
@@ -88,23 +87,15 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   const carte = cardById(cardId);
   if (!carte || !camp) return null;
   const mainAvant = camp.main;
-  const manaAvant = { ...camp.mana };
-  const choixManaAvant = camp.manaChoixEnAttente;
-  // Le coût est payé puis remboursé : la scène de leçon n'a pas à vider la
-  // réserve du camp qui la reçoit.
-  const cout = Number(carte.cost) || 0;
-  const couleurs = Array.isArray(carte.colors)
-    ? carte.colors
-    : [carte.element].filter(Boolean);
-  for (const couleur of couleurs) camp.mana[couleur] = Math.max(camp.mana[couleur] ?? 0, cout);
+  const tourAvant = duel.tour;
+  duel.tour = cote; // Scène préparée, pas une invocation hors tour.
+  const quotaAvant = camp.invocationNormaleJouee;
+  camp.invocationNormaleJouee = false;
   camp.main = [cardId];
-  // Une scène peut précéder le choix du mana d’essai : ce choix appartient
-  // toujours à l’interaction suivante, pas à la mise en place silencieuse.
-  camp.manaChoixEnAttente = false;
   const res = rpgJouerCreature(duel, cote, cardId, null, { cibleDifferee: true });
   camp.main = mainAvant;
-  camp.mana = manaAvant;
-  camp.manaChoixEnAttente = choixManaAvant;
+  camp.invocationNormaleJouee = quotaAvant;
+  duel.tour = tourAvant;
   if (!res.ok) return null;
   if (res.entite) {
     res.entite.ready = ready;
@@ -121,20 +112,6 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   return res.entite;
 }
 
-/** Ajoute un mana initial à un camp, sans dépasser les dix sources du mode. */
-function installerMana(camp, mana, plafond = 10) {
-  if (!camp || !mana) return;
-  for (const [couleur, montant] of Object.entries(mana)) {
-    const n = Math.max(0, Math.min(plafond, Math.floor(Number(montant) || 0)));
-    if (!n) continue;
-    camp.manaMax = { ...(camp.manaMax ?? {}), [couleur]: n };
-    camp.mana = { ...(camp.mana ?? {}), [couleur]: n };
-    camp.manaChoixEnAttente = false;
-  }
-  camp.manaSources = Object.entries(mana).flatMap(([couleur, montant]) =>
-    Array(Math.max(0, Math.min(plafond, Math.floor(Number(montant) || 0)))).fill(couleur));
-}
-
 /** Une leçon par archétype : le choix du menu « Apprendre à jouer ». */
 export const RPG_TUTORIELS = Object.freeze([
   {
@@ -148,15 +125,14 @@ export const RPG_TUTORIELS = Object.freeze([
     deckName: 'Veilleurs du Désert',
     element: 'sable',
     reward: 120,
-    tagline: 'Le tour complet, du mana à l’attaque, sans oublier les bloqueurs ni les armes.',
-    description: 'La leçon complète pour tenir une table : mana automatique, main de départ, mal d’invocation, pioche de début de tour, attaque, défense, équipements et limite de cinq créatures. La partie guidée joue un vrai tour, puis laisse le sorcier attaquer pour apprendre à bloquer.',
+    tagline: 'Le tour complet, de l’invocation à l’attaque, sans oublier la défense ni les armes.',
+    description: 'Les bases : main de départ, invocation sans mana, sacrifices, pioche, attaque, défense et équipements.',
     opponentDeckId: 'veilleurs-du-desert',
     opponentName: 'Sorcier d’entraînement',
     openingHand: ['tislit-des-aures', 'chien-du-guet', 'fennec-des-decombres'],
     playerDraws: ['sandales-de-tislit', 'rapport-du-greffier', 'tempete-de-sable'],
     opponentHand: ['tempete-de-sable', 'cavalier-amazigh-du-desert', 'tempete-de-sable'],
     opponentDraws: [],
-    opponentMana: { sable: 1 },
     opponentDeckFill: 'tempete-de-sable',
     steps: [
       {
@@ -175,17 +151,17 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · VOTRE MAIN',
         title: 'Vos cartes, vos options',
-        text: 'Votre main de départ contient cinq cartes. Le coût et les symboles indiquent ce qu’il faut payer ; les cartes jouables s’allument d’un halo. La main est triée par coût croissant de gauche à droite et ne peut pas dépasser six cartes à la fin de votre tour.',
-        nextLabel: 'Comprendre le mana',
+        text: 'Votre main de départ contient cinq cartes. Les cartes jouables s’allument d’un halo. Le coût imprimé détermine les sacrifices d’une invocation normale, pas une dépense de mana. La main ne peut pas dépasser six cartes à la fin de votre tour.',
+        nextLabel: 'Comprendre l’invocation',
         side: 'top',
       },
       {
         id: 'mana',
         kind: 'info',
-        target: '[data-tutorial-target="mana-track"]',
-        eyebrow: 'ÉTAPE 2 · MANA AUTOMATIQUE',
-        title: 'Un mana de plus à chaque tour',
-        text: 'Aucun terrain à poser ni à engager. Votre réserve se recharge à chaque tour et gagne un mana, jusqu’à dix. En mono-couleur, sa couleur est automatique ; avec plusieurs couleurs, vous choisirez la nouvelle couleur. Votre premier mana est déjà disponible.',
+        target: '[data-tutorial-target="hand"]',
+        eyebrow: 'ÉTAPE 2 · INVOCATION',
+        title: 'Une invocation normale par tour',
+        text: 'Il n’y a plus de mana. Vous pouvez invoquer normalement une créature par tour : coût imprimé 1 à 4, aucun sacrifice ; 5 ou 6, un sacrifice ; 7 ou plus, deux. Les magies et armes n’ont pas de quota. Une Embuscade jouée en réponse ne consomme pas cette invocation et ne demande pas de sacrifice.',
         nextLabel: 'Jouer une créature',
         side: 'top',
       },
@@ -195,7 +171,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="tislit-des-aures"]',
         eyebrow: 'ÉTAPE 3 · CRÉATURE',
         title: 'Jouez une créature',
-        text: 'Tislit coûte un mana Sable. Touchez la carte encadrée pour la jouer : le mana déjà produit paie son coût. À son arrivée, Tislit vous fait piocher une carte.',
+        text: 'Touchez Tislit : son coût imprimé de 1 ne demande aucun sacrifice. À son arrivée, elle vous fait piocher une carte. Cette invocation utilise votre invocation normale du tour.',
         on: 'creature-jouee',
         cardId: 'tislit-des-aures',
         side: 'top',
@@ -205,8 +181,8 @@ export const RPG_TUTORIELS = Object.freeze([
         kind: 'info',
         target: '.card-row--equipe .rpg-card[data-card-id="tislit-des-aures"]',
         eyebrow: 'RÈGLE · ARRIVÉE EN JEU',
-        title: 'Le mal d’invocation',
-        text: 'Une créature ne peut généralement pas attaquer le tour où elle arrive, mais elle peut déjà bloquer. La capacité Rapidité est l’exception : elle permet d’attaquer immédiatement. Au début de votre prochain tour, toutes vos créatures se dégagent et redeviennent prêtes.',
+        title: 'Attaquer dès l’arrivée',
+        text: 'Une créature peut attaquer dès son arrivée, sauf si un autre effet l’en empêche. Au début de votre prochain tour, vos créatures se dégagent et redeviennent prêtes.',
         nextLabel: 'Voir les emplacements',
         side: 'top',
       },
@@ -216,7 +192,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-creature-slots--joueur',
         eyebrow: 'RÈGLE · LE CHAMP',
         title: 'Cinq créatures au maximum',
-        text: 'Chaque camp dispose de cinq emplacements, dessinés sous sa rangée. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre où elle entre en jeu — ou vous l’y glissez directement. Poser une sixième créature ne l’ajoute pas : le jeu vous demande d’en sacrifier une pour libérer sa place. Le champ est plein à cinq, jamais plus.',
+        text: 'Chaque camp dispose de cinq emplacements, dessinés sous sa rangée. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre où elle entre en jeu — ou vous l’y glissez directement. Une invocation sans sacrifice exige une case libre. Pour une invocation avec sacrifices, la nouvelle créature prend la place d’une victime choisie. Le champ est plein à cinq, jamais plus.',
         nextLabel: 'Passer la main',
         side: 'top',
       },
@@ -237,7 +213,7 @@ export const RPG_TUTORIELS = Object.freeze([
         waitFor: 'tour-joueur',
         eyebrow: 'LE TOUR DU SORCIER',
         title: 'Observez son tour',
-        text: 'Le sorcier prépare son mana et passe. Votre tour revient : c’est le moment de regarder ce que le début de tour vous rend.',
+        text: 'Le sorcier passe. Votre tour revient : c’est le moment de regarder ce que le début de tour vous rend.',
         side: 'bottom',
       },
       {
@@ -246,7 +222,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'RÈGLE · DÉBUT DE TOUR',
         title: 'La pioche de début de tour',
-        text: 'Au début de chaque tour, vous piochez une carte — ici, le Rapport du greffier. Votre réserve se recharge et gagne un mana (vous en avez maintenant deux), et vos créatures se dégagent. Ces trois choses arrivent automatiquement, avant votre phase principale.',
+        text: 'Au début de chaque tour, vous piochez une carte — ici, le Rapport du greffier — et vos créatures se dégagent. Votre invocation normale est à nouveau disponible.',
         nextLabel: 'Déclarer l’attaque',
         side: 'top',
       },
@@ -286,7 +262,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="sandales-de-tislit"]',
         eyebrow: 'ÉTAPE 7 · ARME',
         title: 'Une arme se porte',
-        text: 'Les armes ne se posent pas sur la table : elles s’attachent à une créature alliée et lui donnent un bonus. Les Sandales de Tislit coûtent un mana et donnent +0/+1 et Rapidité. Touchez la carte encadrée.',
+        text: 'Les armes ne se posent pas sur la table : elles s’attachent à une créature alliée et lui donnent un bonus. Les Sandales de Tislit donnent +0/+1 et Rapidité et ne coûtent pas de mana. Touchez la carte encadrée.',
         on: 'arme-choisie',
         cardId: 'sandales-de-tislit',
         side: 'top',
@@ -297,7 +273,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="tislit-des-aures"]',
         eyebrow: 'ÉTAPE 8 · PORTEUR',
         title: 'Choisissez le porteur',
-        text: 'Touchez maintenant Tislit : elle portera les Sandales. Une arme reste attachée à sa créature ; si le porteur meurt, l’arme rejoint le cimetière avec lui. Rapidité lui permettra d’attaquer immédiatement les prochains tours.',
+        text: 'Touchez maintenant Tislit : elle portera les Sandales. Une arme reste attachée à sa créature ; si le porteur meurt, l’arme rejoint le cimetière avec lui. Toutes les créatures peuvent attaquer dès leur arrivée, même sans Rapidité.',
         on: 'arme-equipee',
         cardId: 'sandales-de-tislit',
         side: 'top',
@@ -308,7 +284,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="tislit-des-aures"]',
         eyebrow: 'RÈGLE · ÉQUIPEMENT',
         title: 'L’arme suit sa créature',
-        text: 'Les bonus de l’arme sont déjà comptés sur la carte du porteur : Tislit est maintenant 1/2 et possède Rapidité. Certaines armes ont aussi des déclencheurs : le Harnais du méhari produit du mana quand le porteur attaque, le Licou pioche quand le porteur meurt, la Takouba récompense chaque blessure infligée.',
+        text: 'Les bonus de l’arme sont déjà comptés sur la carte du porteur : Tislit est maintenant 1/2 et possède Rapidité. Certaines armes ont aussi des déclencheurs : le Licou pioche quand le porteur meurt, la Takouba récompense chaque blessure infligée. Les effets qui produisent du mana sont sans effet.',
         nextLabel: 'Laisser attaquer le sorcier',
         side: 'top',
       },
@@ -381,7 +357,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'BASES ACQUISES',
         title: 'À vous de jouer',
-        text: 'Vous savez désormais tenir un tour complet : mana automatique, créature, pioche de début de tour, attaque, blocage, arme et limite de cinq créatures. Chaque leçon suivante se concentre sur un deck et ses mécaniques.',
+        text: 'Vous savez désormais tenir un tour complet : invocation sans mana, créature, pioche de début de tour, attaque, blocage, arme et limite de cinq créatures. Chaque leçon suivante se concentre sur un deck et ses mécaniques.',
         nextLabel: 'Terminer le tutoriel',
         side: 'top',
       },
@@ -399,18 +375,12 @@ export const RPG_TUTORIELS = Object.freeze([
     element: 'eau',
     reward: 150,
     tagline: 'Sorcelleries, Magies Rapides et contres : apprendre à répondre au bon moment.',
-    description: 'Le deck bleu de contrôle : une Sorcellerie se lance à votre tour, une Magie Rapide peut répondre à tout instant, et un contre annule une carte annoncée avant sa résolution. La réserve est préparée pour que vous puissiez tout essayer.',
+    description: 'Le deck bleu de contrôle : une Sorcellerie se lance à votre tour, une Magie Rapide peut répondre dans une fenêtre de réponse, et un contre annule une carte annoncée avant sa résolution. Les magies se jouent sans mana et sans quota, dans leurs fenêtres autorisées.',
     opponentDeckId: 'maree-des-abysses',
     opponentName: 'Sorcière des abysses',
     openingHand: ['porteuse-de-cruches', 'eau-de-la-source', 'ressac', 'contresort-des-abimes'],
-    playerMana: { eau: 8 },
     opponentHand: ['lame-de-mer'],
     opponentDraws: ['leviathan', 'seigneur-des-machoires'],
-    // La Lame de mer coûte désormais 3 manas : la réserve adverse doit pouvoir
-    // la payer pour que l’annonce contrée reste légale (voir `contrerAnnonce`).
-    // Le mode essai verse un mana de plus à chaque tour, d’où 2 ici pour 3
-    // au moment de l’annonce — et zéro après la contre, comme l’exige la leçon.
-    opponentMana: { eau: 2 },
     opponentDeckFill: 'leviathan',
     stagedOpponent: [{ cardId: 'vipere-de-verre', ready: false }],
     steps: [
@@ -420,7 +390,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'MARÉE DES ABYSSES · OBJECTIF',
         title: 'Prendre le temps de répondre',
-        text: 'L’Eau ne frappe pas plus fort : elle choisit le bon moment. Cette leçon vous fait jouer une créature, une Sorcellerie, une Magie Rapide, puis contrer un sort adverse. Votre réserve est préparée à huit manas pour la démonstration.',
+        text: 'L’Eau ne frappe pas plus fort : elle choisit le bon moment. Cette leçon vous fait jouer une créature, une Sorcellerie, une Magie Rapide, puis contrer un sort adverse. Il n’y a pas de mana à payer.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -440,7 +410,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="porteuse-de-cruches"]',
         eyebrow: 'ÉTAPE 2 · CRÉATURE',
         title: 'Posez la Porteuse',
-        text: 'Touchez la Porteuse de cruches. Elle coûte deux manas Eau et, à son arrivée, elle vous rend 3 points de vie : une capacité d’arrivée se résout immédiatement, une seule fois.',
+        text: 'Touchez la Porteuse de cruches. À son arrivée, elle vous rend 3 points de vie : une capacité d’arrivée se résout immédiatement, une seule fois.',
         on: 'creature-jouee',
         cardId: 'porteuse-de-cruches',
         side: 'top',
@@ -461,7 +431,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="eau-de-la-source"]',
         eyebrow: 'ÉTAPE 3 · SORCELLERIE',
         title: 'Lancez l’Eau de la source',
-        text: 'Touchez l’Eau de la source. C’est une Sorcellerie : elle ne peut se lancer que pendant VOTRE tour, jamais en réponse. Elle paie son mana, soigne 4 PV, puis rejoint le cimetière.',
+        text: 'Touchez l’Eau de la source. C’est une Sorcellerie : elle ne peut se lancer que pendant VOTRE tour, jamais en réponse. Elle soigne 4 PV, puis rejoint le cimetière.',
         on: 'magie-lancee',
         cardId: 'eau-de-la-source',
         side: 'top',
@@ -493,7 +463,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="vipere-de-verre"]',
         eyebrow: 'ÉTAPE 5 · CIBLE',
         title: 'Renvoyez la Vipère de verre',
-        text: 'Touchez la Vipère de verre encadrée : elle retourne en main. Une créature renvoyée perd ses blessures, ses armes et son mal d’invocation — elle devra être reposée entièrement.',
+        text: 'Touchez la Vipère de verre encadrée : elle retourne en main. Une créature renvoyée perd ses blessures et ses armes : elle devra être reposée entièrement.',
         on: 'magie-lancee',
         cardId: 'ressac',
         side: 'bottom',
@@ -504,7 +474,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'RÈGLE · MAGIE RAPIDE',
         title: 'Une carte qui répond',
-        text: 'Ressac est allé au cimetière après sa résolution. Retenez la différence : Sorcellerie = temps lent, votre tour. Magie Rapide = temps instantané, réponse comprise. Le même coût, deux fenêtres de jeu.',
+        text: 'Ressac est allé au cimetière après sa résolution. Retenez la différence : Sorcellerie = temps lent, votre tour. Magie Rapide = temps instantané, réponse comprise. Deux familles, deux fenêtres de jeu.',
         nextLabel: 'Laisser le sorcier annoncer',
         side: 'top',
       },
@@ -535,7 +505,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="contresort-des-abimes"]',
         eyebrow: 'ÉTAPE 7 · CONTRE',
         title: 'Contrez la Lame de mer',
-        text: 'Le Contresort des abîmes coûte trois manas et peut contrer n’importe quelle carte annoncée. Touchez-le : la Lame de mer paie son coût, puis va au cimetière sans résoudre son effet. Votre contre fait de même.',
+        text: 'Le Contresort des abîmes peut contrer n’importe quelle carte annoncée. Touchez-le : la Lame de mer va au cimetière sans résoudre son effet, puis votre contre la rejoint.',
         on: 'contre-lance',
         cardId: 'contresort-des-abimes',
         side: 'top',
@@ -546,7 +516,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'RÈGLE · LES CONTRE-SORTS',
         title: 'Chaque contre a sa cible',
-        text: 'Écueil ne contre qu’une créature, Silence d’écume qu’une magie, le Contresort des abîmes n’importe quelle carte. Un contre ne sert à rien sans carte annoncée : la main l’éteint alors. La carte contredite ne produit aucun effet, mais son coût est perdu.',
+        text: 'Écueil ne contre qu’une créature, Silence d’écume qu’une magie, le Contresort des abîmes n’importe quelle carte. Un contre ne sert à rien sans carte annoncée : la main l’éteint alors. La carte contredite ne produit aucun effet ; les éventuels prix non liés au mana restent payés.',
         nextLabel: 'Terminer la leçon',
         side: 'top',
       },
@@ -579,11 +549,9 @@ export const RPG_TUTORIELS = Object.freeze([
     opponentName: 'Sorcier du Soleil rouge',
     openingHand: ['chacal-du-seuil', 'pretre-de-la-bouche', 'papyrus', 'momie-de-lin'],
     playerDraws: ['chacal-du-seuil', 'pretre-de-la-bouche'],
-    playerMana: { tenebres: 8 },
     opponentHand: ['feux-de-kitsune'],
     opponentDraws: [],
-    opponentMana: { braise: 4 },
-    opponentDeckFill: 'kagutsuchi-flamme-originelle',
+    opponentDeckFill: 'ashigaru-des-braises',
     steps: [
       {
         id: 'bienvenue',
@@ -591,7 +559,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'LA BALANCE DES HEURES · OBJECTIF',
         title: 'Le poids d’une vie',
-        text: 'Les Ténèbres ne se contentent pas de blesser : elles échangent. Cette leçon montre le Tribut, le Prix payé en points de vie, les effets d’arrivée et ceux qui se déclenchent quand une créature meurt. Votre réserve est préparée à huit manas.',
+        text: 'Les Ténèbres ne se contentent pas de blesser : elles échangent. Cette leçon montre le Tribut, le Prix payé en points de vie, les effets d’arrivée et ceux qui se déclenchent quand une créature meurt. Une invocation normale est permise par tour.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -601,7 +569,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · TROIS MÉCANIQUES',
         title: 'Lire les Ténèbres',
-        text: 'Le Chacal du seuil a Rapidité et Tribut : quand il touche le sorcier, il lui prend 1 PV et vous en rend 1. Le Papyrus porte un Prix : 2 PV en plus de son mana. La Momie de lin, elle, déclenche son effet quand elle meurt. Trois façons de faire parler la balance.',
+        text: 'Le Chacal du seuil a Rapidité et Tribut : quand il touche le sorcier, il lui prend 1 PV et vous en rend 1. Le Papyrus porte un Prix : 2 PV, même sans mana. La Momie de lin, elle, déclenche son effet quand elle meurt. Trois façons de faire parler la balance.',
         nextLabel: 'Jouer le Chacal',
         side: 'top',
       },
@@ -611,7 +579,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="chacal-du-seuil"]',
         eyebrow: 'ÉTAPE 2 · RAPIDITÉ',
         title: 'Le Chacal entre en chasse',
-        text: 'Touchez le Chacal du seuil. Il coûte un mana et possède Rapidité : contrairement aux autres créatures, il peut attaquer le tour même où il arrive.',
+        text: 'Touchez le Chacal du seuil. Son coût imprimé ne demande aucun sacrifice. Comme toutes les créatures, il peut attaquer dès son arrivée.',
         on: 'creature-jouee',
         cardId: 'chacal-du-seuil',
         side: 'top',
@@ -647,12 +615,24 @@ export const RPG_TUTORIELS = Object.freeze([
         side: 'bottom',
       },
       {
+        id: 'fin-tour-pretre', kind: 'action', target: '[data-tutorial-target="end-turn"]',
+        eyebrow: 'RÈGLE · UNE INVOCATION PAR TOUR', title: 'Passez au tour suivant',
+        text: 'Vous avez utilisé votre invocation normale. Terminez votre tour pour en obtenir une nouvelle au prochain tour.',
+        on: 'fin-de-tour', side: 'top',
+      },
+      {
+        id: 'attente-tour-pretre', kind: 'waiting', target: '[data-tutorial-target="enemy-field"]',
+        waitFor: 'tour-joueur', skipOpponentTurn: true,
+        eyebrow: 'LE TOUR ADVERSE', title: 'Le sorcier passe',
+        text: 'L’adversaire d’entraînement passe pour laisser la démonstration reprendre.', side: 'bottom',
+      },
+      {
         id: 'pretre',
         kind: 'action',
         target: '.rpg-hand__card[data-card-id="pretre-de-la-bouche"]',
         eyebrow: 'ÉTAPE 5 · EFFET D’ARRIVÉE',
         title: 'Le Prêtre de la bouche',
-        text: 'Touchez le Prêtre de la bouche, deux manas. Son effet ne demande aucune cible : à son arrivée, le sorcier perd 1 PV et vous en gagnez 1. C’est un transfert, pas des dégâts : votre total peut de nouveau dépasser 25.',
+        text: 'Touchez le Prêtre de la bouche. Son effet ne demande aucune cible : à son arrivée, le sorcier perd 1 PV et vous en gagnez 1. C’est un transfert, pas des dégâts : votre total peut de nouveau dépasser 25.',
         on: 'creature-jouee',
         cardId: 'pretre-de-la-bouche',
         side: 'top',
@@ -663,7 +643,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-health"]',
         eyebrow: 'RÈGLE · ARRIVÉE IMMÉDIATE',
         title: 'Un effet qui se déclenche en entrant',
-        text: 'L’effet d’arrivée du Prêtre s’est résolu dès sa pose, avant même que vous puissiez jouer autre chose. Un effet d’arrivée ne se rejoue pas si la créature est renvoyée en main puis reposée : c’est une nouvelle entrée, donc un nouveau déclenchement.',
+        text: 'L’effet d’arrivée du Prêtre s’est résolu dès sa pose, avant même que vous puissiez jouer autre chose. Si la créature est renvoyée en main puis reposée, c’est une nouvelle entrée : son effet se déclenche à nouveau.',
         nextLabel: 'Payer le Prix',
         side: 'top',
       },
@@ -673,7 +653,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="papyrus"]',
         eyebrow: 'ÉTAPE 6 · LE PRIX',
         title: 'Payez le Prix du Papyrus',
-        text: 'Touchez le Papyrus. Sa ligne de Prix demande 2 PV en plus de son mana. Une fois payé, il vous fait piocher une carte. Le Prix se paie même si le sort est contré : on ne reprend pas ce qui a été donné à la balance.',
+        text: 'Touchez le Papyrus. Sa ligne de Prix demande 2 PV, même sans mana. Une fois payé, il vous fait piocher une carte. Le Prix se paie même si le sort est contré : on ne reprend pas ce qui a été donné à la balance.',
         on: 'magie-lancee',
         cardId: 'papyrus',
         side: 'top',
@@ -689,12 +669,24 @@ export const RPG_TUTORIELS = Object.freeze([
         side: 'top',
       },
       {
+        id: 'fin-tour-momie', kind: 'action', target: '[data-tutorial-target="end-turn"]',
+        eyebrow: 'RÈGLE · UNE INVOCATION PAR TOUR', title: 'Passez au tour suivant',
+        text: 'Vous avez utilisé votre invocation normale. Terminez votre tour pour en obtenir une nouvelle au prochain tour.',
+        on: 'fin-de-tour', side: 'top',
+      },
+      {
+        id: 'attente-tour-momie', kind: 'waiting', target: '[data-tutorial-target="enemy-field"]',
+        waitFor: 'tour-joueur', skipOpponentTurn: true,
+        eyebrow: 'LE TOUR ADVERSE', title: 'Le sorcier passe',
+        text: 'L’adversaire d’entraînement passe pour laisser la démonstration reprendre.', side: 'bottom',
+      },
+      {
         id: 'creature-momie',
         kind: 'action',
         target: '.rpg-hand__card[data-card-id="momie-de-lin"]',
         eyebrow: 'ÉTAPE 7 · EFFET DE MORT',
         title: 'La Momie de lin',
-        text: 'Touchez la Momie de lin. Elle coûte trois manas. Son texte ne parle pas d’arrivée mais de mort : ce qu’elle laisse derrière elle est sa vraie force.',
+        text: 'Touchez la Momie de lin. Son coût imprimé ne demande aucun sacrifice. Son texte ne parle pas d’arrivée mais de mort : ce qu’elle laisse derrière elle est sa vraie force.',
         on: 'creature-jouee',
         cardId: 'momie-de-lin',
         side: 'top',
@@ -770,10 +762,8 @@ export const RPG_TUTORIELS = Object.freeze([
     opponentName: 'Sorcier des djinns',
     openingHand: ['ashigaru-des-braises', 'samourai-du-torii', 'daimyo-du-soleil-rouge'],
     playerDraws: ['ronin-du-soleil-rouge'],
-    playerMana: { braise: 10 },
     opponentHand: ['nuage-de-cendres', 'feux-de-kitsune'],
     opponentDraws: [],
-    opponentMana: { braise: 2 },
     opponentDeckFill: 'kagutsuchi-flamme-originelle',
     steps: [
       {
@@ -782,7 +772,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'SERMENT DU SOLEIL ROUGE · OBJECTIF',
         title: 'Une table, un camp',
-        text: 'Les Samouraïs ne brillent pas seuls : leurs auras se lisent sur le type « Samouraï » et traversent les deux camps. Un Viking attend déjà sur votre table : vous le sacrifierez pour invoquer le Daimyō. Ensuite, attaquez avec tous vos Samouraïs pour voir la Résonance et la Bannière. Votre réserve est préparée à dix manas.',
+        text: 'Les Samouraïs ne brillent pas seuls : leurs auras se lisent sur le type « Samouraï » et traversent les deux camps. Un Viking attend déjà sur votre table : vous le sacrifierez pour invoquer le Daimyō. Ensuite, attaquez avec tous vos Samouraïs pour voir la Résonance et la Bannière. Chaque invocation normale demande un tour distinct.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -802,10 +792,22 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="ashigaru-des-braises"]',
         eyebrow: 'ÉTAPE 2 · LA RECRUE',
         title: 'Posez l’Ashigaru',
-        text: 'Touchez l’Ashigaru des braises. Il coûte un mana : c’est un petit Samouraï 1/1, mais sa valeur viendra de ce qui l’entoure.',
+        text: 'Touchez l’Ashigaru des braises. Son coût imprimé ne demande aucun sacrifice : c’est un petit Samouraï 1/1, mais sa valeur viendra de ce qui l’entoure.',
         on: 'creature-jouee',
         cardId: 'ashigaru-des-braises',
         side: 'top',
+      },
+      {
+        id: 'fin-tour-torii', kind: 'action', target: '[data-tutorial-target="end-turn"]',
+        eyebrow: 'RÈGLE · UNE INVOCATION PAR TOUR', title: 'Passez au tour suivant',
+        text: 'Vous avez utilisé votre invocation normale. Terminez votre tour pour en obtenir une nouvelle au prochain tour.',
+        on: 'fin-de-tour', side: 'top',
+      },
+      {
+        id: 'attente-tour-torii', kind: 'waiting', target: '[data-tutorial-target="enemy-field"]',
+        waitFor: 'tour-joueur', skipOpponentTurn: true,
+        eyebrow: 'LE TOUR ADVERSE', title: 'Le sorcier passe',
+        text: 'L’adversaire d’entraînement passe pour laisser la démonstration reprendre.', side: 'bottom',
       },
       {
         id: 'torii',
@@ -813,7 +815,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="samourai-du-torii"]',
         eyebrow: 'ÉTAPE 3 · LA RÉSONANCE',
         title: 'Le Shogun promu',
-        text: 'Touchez le Shogun promu, quatre manas. À son arrivée, sa Résonance samouraï donne +1/+1 à chaque Samouraï, lui compris, de la table : l’Ashigaru devient 2/2. Regardez les statistiques changer sur le champ.',
+        text: 'Touchez le Shogun promu, sans sacrifice. À son arrivée, sa Résonance samouraï donne +1/+1 à chaque Samouraï, lui compris, de la table : l’Ashigaru devient 2/2. Regardez les statistiques changer sur le champ.',
         on: 'creature-jouee',
         cardId: 'samourai-du-torii',
         side: 'top',
@@ -829,12 +831,24 @@ export const RPG_TUTORIELS = Object.freeze([
         side: 'top',
       },
       {
+        id: 'fin-tour-daimyo', kind: 'action', target: '[data-tutorial-target="end-turn"]',
+        eyebrow: 'RÈGLE · UNE INVOCATION PAR TOUR', title: 'Passez au tour suivant',
+        text: 'Vous avez utilisé votre invocation normale. Terminez votre tour pour en obtenir une nouvelle au prochain tour.',
+        on: 'fin-de-tour', side: 'top',
+      },
+      {
+        id: 'attente-tour-daimyo', kind: 'waiting', target: '[data-tutorial-target="enemy-field"]',
+        waitFor: 'tour-joueur', skipOpponentTurn: true,
+        eyebrow: 'LE TOUR ADVERSE', title: 'Le sorcier passe',
+        text: 'L’adversaire d’entraînement passe pour laisser la démonstration reprendre.', side: 'bottom',
+      },
+      {
         id: 'daimyo',
         kind: 'action',
         target: '.rpg-hand__card[data-card-id="daimyo-du-soleil-rouge"]',
         eyebrow: 'ÉTAPE 4 · LA BANNIÈRE',
         title: 'Le Daimyō et ses deux lames',
-        text: 'Touchez le Daimyō du Soleil rouge : il coûte cinq manas et demande de sacrifier une créature. Confirmez le sacrifice puis désignez le Viking sur votre table, pas un Samouraï. Le Daimyō le remplace et crée deux jetons Samouraï 1/1 : vous atteignez cinq créatures. Sa Bannière renforce les Samouraïs qui attaquent.',
+        text: 'Touchez le Daimyō du Soleil rouge : son coût imprimé de 5 demande de sacrifier une créature. Confirmez le sacrifice puis désignez le Viking sur votre table, pas un Samouraï. Le Daimyō le remplace et crée deux jetons Samouraï 1/1 : vous atteignez cinq créatures. Sa Bannière renforce les Samouraïs qui attaquent.',
         on: 'creature-jouee',
         cardId: 'daimyo-du-soleil-rouge',
         side: 'top',
@@ -855,7 +869,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="end-turn"]',
         eyebrow: 'ÉTAPE 5 · SE DÉGAGER',
         title: 'Laissez-les se lever',
-        text: 'Les créatures posées ce tour ne peuvent pas attaquer : elles ont le mal d’invocation. Terminez le tour, puis revenez au vôtre : elles se dégageront toutes au début de votre phase principale.',
+        text: 'Les créatures peuvent attaquer dès leur arrivée. Pour cette démonstration, terminez le tour et revenez au vôtre : elles seront toutes prêtes.',
         on: 'fin-de-tour',
         side: 'top',
       },
@@ -866,7 +880,7 @@ export const RPG_TUTORIELS = Object.freeze([
         waitFor: 'tour-joueur',
         eyebrow: 'LE TOUR DU SORCIER',
         title: 'Le calme avant la charge',
-        text: 'Le sorcier n’a rien à jouer : il passe. Votre réserve se recharge, vous piochez une carte et vos cinq Samouraïs se dégagent ensemble.',
+        text: 'Le sorcier n’a rien à jouer : il passe. Vous piochez une carte et vos cinq Samouraïs se dégagent ensemble.',
         side: 'bottom',
       },
       {
@@ -927,10 +941,8 @@ export const RPG_TUTORIELS = Object.freeze([
     opponentDeckId: 'serment-des-neuf-hivers',
     opponentName: 'Sorcier du fjord',
     openingHand: ['guerrier-au-bouclier-rond', 'valkyrie-au-corbeau', 'poigne-de-givre'],
-    playerMana: { neige: 10 },
     opponentHand: ['maitre-du-marteau'],
     opponentDraws: [],
-    opponentMana: { neige: 3 },
     opponentDeckFill: 'maitre-du-marteau',
     // Un seul assaillant : la leçon montre qu'un bouclier tombe devant un
     // sort, mais qu'il ne protège pas la créature au combat ensuite.
@@ -947,7 +959,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'SERMENT DES NEUF HIVERS · OBJECTIF',
         title: 'Survivre au premier hiver',
-        text: 'Le Nord ne gagne pas en frappant le premier : il pare un sort, appelle ses renforts, puis revient plus fort. Cette leçon montre le bouclier anti-sort, l’appel viking de la Valkyrie au corbeau et la Furie. Votre réserve est préparée à dix manas pour la démonstration.',
+        text: 'Le Nord ne gagne pas en frappant le premier : il pare un sort, appelle ses renforts, puis revient plus fort. Cette leçon montre le bouclier anti-sort, l’appel viking de la Valkyrie au corbeau et la Furie. Chaque invocation normale demande un tour distinct.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -957,7 +969,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · TROIS RÉPONSES',
         title: 'Lire la main du Nord',
-        text: 'Le Guerrier au bouclier rond est une 2/2 qui arrive avec un bouclier, sans Furie. La Valkyrie au corbeau est une 3/4 avec Envol et Furie 2 : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse — si son bouclier ne la bloque pas. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; un Guerrier adverse protégé est en face.',
+        text: 'Le Guerrier au bouclier rond est une 2/2 qui arrive avec un bouclier, sans Furie. La Valkyrie au corbeau est une 2/4 avec Envol : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse — si son bouclier ne la bloque pas. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; un Guerrier adverse protégé est en face.',
         nextLabel: 'Poser le Guerrier',
         side: 'top',
       },
@@ -967,7 +979,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 2 · LE REMPART',
         title: 'Posez le Guerrier',
-        text: 'Touchez le Guerrier au bouclier rond. Il coûte deux manas. À son arrivée, il reçoit un bouclier — ou le donne à une autre créature alliée : le premier sort adverse qui l’atteindra sera bloqué.',
+        text: 'Touchez le Guerrier au bouclier rond. À son arrivée, il reçoit un bouclier — ou le donne à une autre créature alliée : le premier sort adverse qui l’atteindra sera bloqué.',
         on: 'creature-jouee',
         cardId: 'guerrier-au-bouclier-rond',
         side: 'top',
@@ -989,9 +1001,21 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'RÈGLE · BOUCLIER',
         title: 'Une parade contre un sort',
-        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier ici —, puis le bouclier tombe. Un sort qui la cible est payé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque passe normalement ; un sort ou effet de créature allié passe aussi. Une capacité de créature adverse consomme le bouclier. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
+        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier ici —, puis le bouclier tombe. Un sort qui la cible est lancé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque passe normalement ; un sort ou effet de créature allié passe aussi. Une capacité de créature adverse consomme le bouclier. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
         nextLabel: 'Appeler la Valkyrie',
         side: 'top',
+      },
+      {
+        id: 'fin-tour-valkyrie', kind: 'action', target: '[data-tutorial-target="end-turn"]',
+        eyebrow: 'RÈGLE · UNE INVOCATION PAR TOUR', title: 'Passez au tour suivant',
+        text: 'Vous avez utilisé votre invocation normale. Terminez votre tour pour en obtenir une nouvelle au prochain tour.',
+        on: 'fin-de-tour', side: 'top',
+      },
+      {
+        id: 'attente-tour-valkyrie', kind: 'waiting', target: '[data-tutorial-target="enemy-field"]',
+        waitFor: 'tour-joueur', skipOpponentTurn: true,
+        eyebrow: 'LE TOUR ADVERSE', title: 'Le sorcier passe',
+        text: 'L’adversaire d’entraînement passe pour laisser la démonstration reprendre.', side: 'bottom',
       },
       {
         id: 'valkyrie',
@@ -999,7 +1023,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="valkyrie-au-corbeau"]',
         eyebrow: 'ÉTAPE 3 · L’APPEL DU CORBEAU',
         title: 'La Valkyrie au corbeau',
-        text: 'Touchez la Valkyrie au corbeau, cinq manas. Cette 3/4 avec Envol et Furie 2 ne renforce pas la table : à son arrivée, une carte de type Viking choisie au hasard parmi celles encore dans votre deck rejoint votre main.',
+        text: 'Touchez la Valkyrie au corbeau, sans sacrifice. Cette 2/4 avec Envol ne renforce pas la table : à son arrivée, une carte de type Viking choisie au hasard parmi celles encore dans votre deck rejoint votre main.',
         on: 'creature-jouee',
         cardId: 'valkyrie-au-corbeau',
         side: 'top',
@@ -1020,7 +1044,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="poigne-de-givre"]',
         eyebrow: 'ÉTAPE 4 · MAGIE DE GEL',
         title: 'Préparez la Poigne de givre',
-        text: 'La Poigne de givre est une Magie Rapide à trois manas : 2 dégâts et gel. Touchez la carte, puis désignez le Guerrier adverse. Vous allez voir son bouclier arrêter le sort avant même les dégâts.',
+        text: 'La Poigne de givre est une Magie Rapide sans coût de mana : 2 dégâts et gel. Touchez la carte, puis désignez le Guerrier adverse. Vous allez voir son bouclier arrêter le sort avant même les dégâts.',
         on: 'magie-choisie',
         cardId: 'poigne-de-givre',
         side: 'top',
@@ -1042,7 +1066,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'RÈGLE · SORT BLOQUÉ',
         title: 'Tout le sort, pas seulement les dégâts',
-        text: 'La Poigne de givre gèle normalement sa cible : une créature gelée ne peut ni attaquer ni bloquer et n’inflige aucun dégât de combat. Ici, le bouclier a bloqué le sort entier — le gel compris. La carte a tout de même été payée et rejoint le cimetière ; seule la parade est tombée.',
+        text: 'La Poigne de givre gèle normalement sa cible : une créature gelée ne peut ni attaquer ni bloquer et n’inflige aucun dégât de combat. Ici, le bouclier a bloqué le sort entier — le gel compris. La carte rejoint tout de même le cimetière ; seule la parade est tombée.',
         nextLabel: 'Laisser le loup attaquer',
         side: 'bottom',
       },
@@ -1134,18 +1158,13 @@ export const RPG_TUTORIELS = Object.freeze([
     element: 'tenebres',
     reward: 150,
     tagline: 'Le mot-clé Embuscade : jouer une créature pendant le tour adverse, à sa condition.',
-    description: 'Une leçon transversale, consacrée à un seul mot-clé : Embuscade. La Danseuse des ombres de dune, sans Embuscade, se joue pendant votre tour ; la Sentinelle des sables sort du sable au moment où l’adversaire attaque et frappe avant les blessures de combat, l’Éclipse silencieuse casse l’attaque d’un assaillant, et une créature arrivée en Embuscade bloque immédiatement. Quatre fenêtres de réponse, les conditions des deux Embuscades, et le mana qu’il faut garder pour le tour de l’autre.',
+    description: 'Une leçon transversale, consacrée à un seul mot-clé : Embuscade. La Danseuse des ombres de dune, sans Embuscade, se joue pendant votre tour ; la Sentinelle des sables sort du sable au moment où l’adversaire attaque et frappe avant les blessures de combat, l’Éclipse silencieuse casse l’attaque d’un assaillant, et une créature arrivée en Embuscade bloque immédiatement. Quatre fenêtres de réponse et les conditions des deux Embuscades, sans mana ni sacrifice.',
     opponentDeckId: 'veilleurs-du-desert',
     opponentName: 'Garde des dunes',
     openingHand: ['danseuse-des-ombres-de-dune', 'sentinelle-des-sables', 'eclipse-silencieuse'],
     playerDraws: ['archonte-du-sablier-noir'],
-    // Dix manas, déjà au plafond du mode : la réserve se recharge à chaque tour
-    // sans jamais demander la couleur du nouveau mana — la leçon ne s’arrête
-    // pas sur un choix qui n’a rien à lui apprendre.
-    playerMana: { sable: 5, tenebres: 5 },
     opponentHand: ['tempete-de-sable'],
     opponentDraws: [],
-    opponentMana: { sable: 1 },
     opponentDeckFill: 'tempete-de-sable',
     steps: [
       {
@@ -1154,7 +1173,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'L’EMBUSCADE · OBJECTIF',
         title: 'Frapper pendant son tour',
-        text: 'Jusqu’ici, chaque leçon jouait pendant votre tour. Celle-ci joue pendant le tour du sorcier : c’est le mot-clé **Embuscade**. Vous allez lire une condition, reconnaître la fenêtre qui vous rend la main, poser une créature au milieu de l’assaut adverse et bloquer avec elle. Votre réserve est préparée à dix manas, cinq Sable et cinq Ténèbres.',
+        text: 'Jusqu’ici, chaque leçon jouait pendant votre tour. Celle-ci joue pendant le tour du sorcier : c’est le mot-clé **Embuscade**. Vous allez lire une condition, reconnaître la fenêtre qui vous rend la main, poser une créature au milieu de l’assaut adverse et bloquer avec elle. Les Embuscades ne coûtent ni mana ni sacrifice et ne consomment pas votre invocation normale.',
         nextLabel: 'Lire la main',
         side: 'bottom',
       },
@@ -1164,7 +1183,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · DEUX EMBUSCADES',
         title: 'Le mot-clé s’imprime sur la carte',
-        text: 'Deux cartes portent Embuscade : la Sentinelle des sables demande une créature adverse qui attaque ; l’Éclipse silencieuse demande un attaquant de force 2 ou plus. Leur pastille ouvre la condition pour jouer pendant le tour adverse. La Danseuse n’a plus Embuscade : jouez-la pendant votre tour, puis gardez du mana pour les deux autres.',
+        text: 'Deux cartes portent Embuscade : la Sentinelle des sables demande une créature adverse qui attaque ; l’Éclipse silencieuse demande un attaquant de force 2 ou plus. Leur pastille ouvre la condition pour jouer pendant le tour adverse. La Danseuse n’a plus Embuscade : jouez-la pendant votre tour ; les deux autres attendront une fenêtre de réponse.',
         nextLabel: 'Comprendre la fenêtre',
         side: 'top',
       },
@@ -1184,7 +1203,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="danseuse-des-ombres-de-dune"]',
         eyebrow: 'ÉTAPE 2 · VOTRE TOUR',
         title: 'La Danseuse se joue pendant votre tour',
-        text: 'La Danseuse ne porte plus Embuscade : elle se joue pendant votre tour. Touchez-la : trois manas, dont un Sable et un Ténèbres. Les deux autres cartes attendront une fenêtre pendant le tour adverse.',
+        text: 'La Danseuse ne porte plus Embuscade : elle se joue pendant votre tour. Touchez-la : son coût imprimé ne demande aucun sacrifice. Les deux autres cartes attendront une fenêtre pendant le tour adverse.',
         on: 'creature-jouee',
         cardId: 'danseuse-des-ombres-de-dune',
         side: 'top',
@@ -1195,7 +1214,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="danseuse-des-ombres-de-dune"]',
         eyebrow: 'RÈGLE · VOTRE CRÉATURE EN JEU',
         title: 'Posée tôt, elle attend son heure',
-        text: 'Sur la table, la Danseuse est une 2/2 avec Rapidité, Infiltration et Vol de vie — sa Rapidité lui permettrait d’attaquer tout de suite, nous la gardons pour la défense. Les pastilles Embuscade restent sur la Sentinelle et l’Éclipse en main. Retenez surtout le mana : votre réserve ne se recharge qu’au début de VOTRE tour, et leurs Embuscades se paient pendant le sien.',
+        text: 'Sur la table, la Danseuse est une 2/2 avec Rapidité, Infiltration et Vol de vie — comme toute créature, elle pourrait attaquer tout de suite ; nous la gardons pour la défense. Les pastilles Embuscade restent sur la Sentinelle et l’Éclipse en main. Une Embuscade ne consomme pas votre invocation normale et ne demande aucun sacrifice.',
         nextLabel: 'Passer la main',
         side: 'top',
       },
@@ -1204,8 +1223,8 @@ export const RPG_TUTORIELS = Object.freeze([
         kind: 'action',
         target: '[data-tutorial-target="end-turn"]',
         eyebrow: 'ÉTAPE 3 · PASSER LA MAIN',
-        title: 'Gardez du mana pour son tour',
-        text: 'Il vous reste sept manas sur dix : c’est votre budget d’Embuscade. Touchez « Fin du tour ». Le sorcier va déclarer un assaut avec deux créatures — et c’est là que votre main s’allumera.',
+        title: 'Passez au tour adverse',
+        text: 'Touchez « Fin du tour ». Le sorcier va déclarer un assaut avec deux créatures — et c’est là que votre main s’allumera.',
         on: 'fin-de-tour',
         side: 'top',
       },
@@ -1227,7 +1246,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="sentinelle-des-sables"]',
         eyebrow: 'ÉTAPE 4 · L’EMBUSCADE SORT',
         title: 'Jouez la Sentinelle des sables',
-        text: 'Touchez la Sentinelle des sables, trois manas dont un Sable et un Ténèbres. Sans attaque déclarée, elle serait restée éteinte ; condition remplie et fenêtre ouverte, elle entre en jeu pendant le tour adverse. Une Embuscade posée n’attaquera pas avant votre prochain tour — mais elle peut déjà bloquer.',
+        text: 'Touchez la Sentinelle des sables : aucun mana ni sacrifice n’est demandé. Sans attaque déclarée, elle serait restée éteinte ; condition remplie et fenêtre ouverte, elle entre en jeu pendant le tour adverse. Elle peut bloquer immédiatement et sera prête à attaquer quand ce sera votre tour.',
         on: 'creature-jouee',
         cardId: 'sentinelle-des-sables',
         side: 'top',
@@ -1259,7 +1278,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="eclipse-silencieuse"]',
         eyebrow: 'ÉTAPE 6 · SECONDE EMBUSCADE',
         title: 'Enchaînez avec l’Éclipse',
-        text: 'Une fenêtre ouverte accepte plusieurs cartes. Touchez l’Éclipse silencieuse, trois manas. Sa condition est plus exigeante — « une créature adverse de force 2 ou plus attaque » — et le Faussoyeur des dunes, avec ses 2 d’attaque, la remplit encore.',
+        text: 'Une fenêtre ouverte accepte plusieurs cartes. Touchez l’Éclipse silencieuse, sans mana ni sacrifice. Sa condition est plus exigeante — « une créature adverse de force 2 ou plus attaque » — et le Faussoyeur des dunes, avec ses 2 d’attaque, la remplit encore.',
         on: 'creature-jouee',
         cardId: 'eclipse-silencieuse',
         side: 'top',
@@ -1281,7 +1300,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="faussoyeur-des-dunes"]',
         eyebrow: 'RÈGLE · JUSQU’À LA FIN DU TOUR',
         title: 'Un malus qui s’efface',
-        text: 'Le −2/+0 dure un tour, puis remonte : un malus temporaire se joue au moment précis où il compte, jamais « pour plus tard ». Comptez aussi votre réserve — neuf manas dépensés sur dix. Une Embuscade coûte cher parce qu’elle se paie chez l’autre, et le mana ne revient qu’à votre tour.',
+        text: 'Le −2/+0 dure un tour, puis remonte : un malus temporaire se joue au moment précis où il compte, jamais « pour plus tard ». Les deux Embuscades ont été jouées sans sacrifice ni consommation de l’invocation normale.',
         nextLabel: 'Bloquer avec la Sentinelle',
         side: 'bottom',
       },
@@ -1291,7 +1310,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="sentinelle-des-sables"]',
         eyebrow: 'ÉTAPE 8 · BLOQUER EN EMBUSCADE',
         title: 'La Sentinelle peut déjà bloquer',
-        text: 'Le mal d’invocation n’empêche que les attaques : une créature arrivée pendant le tour adverse bloque immédiatement. Touchez la Sentinelle des sables pour la désigner comme bloqueuse.',
+        text: 'Une créature arrivée pendant le tour adverse peut bloquer immédiatement. Touchez la Sentinelle des sables pour la désigner comme bloqueuse.',
         on: 'bloqueur-selectionne',
         side: 'top',
       },
@@ -1321,7 +1340,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'RÈGLE · RIEN N’EST PASSÉ',
         title: 'Un assaut éteint sans un PV perdu',
-        text: 'Le Chien du guet est tombé sur l’arrivée de la Sentinelle, le Faussoyeur sous son blocage, vidé de ses dégâts par l’Éclipse. Vos 25 PV sont intacts et le sorcier a dépensé son tour : c’est le gain d’une Embuscade, qui se paie au moment où l’adversaire est engagé et plus après. La Danseuse, elle, n’a pas eu à bloquer — mais elle en aurait eu le droit.',
+        text: 'Le Chien du guet est tombé sur l’arrivée de la Sentinelle, le Faussoyeur sous son blocage, vidé de ses dégâts par l’Éclipse. Vos 25 PV sont intacts et le sorcier a dépensé son tour : c’est le gain d’une Embuscade, jouée au moment où l’adversaire est engagé. La Danseuse, elle, n’a pas eu à bloquer — mais elle en aurait eu le droit.',
         nextLabel: 'Terminer la leçon',
         side: 'top',
       },
@@ -1331,7 +1350,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'EMBUSCADE MAÎTRISÉE',
         title: 'Le tour adverse est à vous',
-        text: 'Vous savez lire une condition d’Embuscade, reconnaître les quatre fenêtres de réponse, jouer pendant le tour adverse et bloquer avec une créature qui vient d’arriver. Dernière règle à emporter : une Embuscade posée chez l’adversaire n’attaquera qu’à votre prochain tour, sauf si cette créature possède Rapidité. La Danseuse, sans Embuscade, possède Rapidité et peut attaquer dès sa pose pendant votre tour.',
+        text: 'Vous savez lire une condition d’Embuscade, reconnaître les quatre fenêtres de réponse, jouer pendant le tour adverse et bloquer avec une créature qui vient d’arriver. Les créatures sont prêtes à attaquer dès leur arrivée, sous réserve des autres restrictions et du tour actif.',
         nextLabel: 'Terminer le tutoriel',
         side: 'top',
       },
@@ -1383,7 +1402,7 @@ export const RPG_TUTORIAL_STEPS = Object.freeze(RPG_TUTORIELS[0].steps);
 
 /**
  * Prépare la partie d'entraînement d'une leçon : mains connues, pioches
- * placées, mana éventuellement préparé et créatures déjà en scène. Le duel
+ * placées et créatures déjà en scène. Le duel
  * doit être **déjà créé** (les deux camps ont pioché leur main de départ).
  *
  * Le moteur garde le reste de la partie intact : on ne fait que déplacer des
@@ -1408,7 +1427,6 @@ export function preparerDuelTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
     }
   }
   if (tutoriel.opponentDraws?.length) preparerPioches(duel.sorcier, tutoriel.opponentDraws);
-  if (tutoriel.opponentMana) installerMana(duel.sorcier, tutoriel.opponentMana);
 
   // La main de la leçon est déjà la scène : le mulligan ne doit pas la changer.
   duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };
@@ -1424,25 +1442,9 @@ export function preparerDuelTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
   return duel;
 }
 
-/**
- * Applique la réserve préparée APRÈS `rpgDemarrerManaEssai` : le premier mana
- * automatique a déjà été choisi, la leçon remplace la réserve par celle qu'elle
- * annonce. Sans réserve préparée, le duel suit la règle normale (un mana).
- */
-export function choisirManaTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
-  const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
-  if (!duel?.joueur?.manaChoixEnAttente || !duel.joueur.couleurs.includes(tutoriel.element)) return false;
-  // Les gestes guidés ne comprennent pas de choix de couleur : chaque tour
-  // prend la couleur annoncée par la leçon, sans toucher aux duels libres.
-  return rpgChoisirCouleurMana(duel, 'joueur', tutoriel.element).ok;
-}
-
-export function appliquerManaInitialTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
-  const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
-  if (duel?.joueur && tutoriel.playerMana) installerMana(duel.joueur, tutoriel.playerMana);
-  else choisirManaTutoriel(duel, tutoriel);
-  return duel;
-}
+/** Compatibilité avec les anciens appels : aucun mana n'est préparé ni choisi. */
+export function choisirManaTutoriel() { return false; }
+export function appliquerManaInitialTutoriel(duel) { return duel; }
 
 /**
  * Ce qu'une étape installe en arrivant : une ou plusieurs créatures posées sur

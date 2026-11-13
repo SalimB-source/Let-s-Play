@@ -1,6 +1,6 @@
 import { cardById, cardHasPrintedType } from './rpgCards.js';
 
-// Conditions globales, indépendantes des voies : le duel classique ne les lit pas.
+// Conditions globales, indépendantes des voies, dans tous les modes.
 const autre = (s) => s === 'joueur' ? 'sorcier' : 'joueur';
 const creatures = (d, s) => (d[s]?.creatures ?? []).filter((e) => cardById(e.carteId)?.kind !== 'site');
 const blessee = (e) => e.pv < e.pvMax;
@@ -20,5 +20,5 @@ export const MOBA_EMBUSCADES_IMPRIMEES = Object.freeze({
   'veilleuse-de-la-lune-givree': entree('L’adversaire contrôle une créature de force 3 ou plus.', (d, s) => creatures(d, autre(s)).some((e) => e.atk >= 3)),
 });
 
-export const rpgMobaConditionImprimee = (duel, side, id) => Boolean(duel?.moba
+export const rpgMobaConditionImprimee = (duel, side, id) => Boolean(duel?.[side]
   && MOBA_EMBUSCADES_IMPRIMEES[id]?.condition(duel, side));

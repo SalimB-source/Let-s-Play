@@ -1,11 +1,11 @@
-import { cardById, cardHasPrintedType } from './rpgCards.js';
+import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
+import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js';
 
-/** Prix d'invocation depuis la main, en plus du mana. Les effets qui créent
- * ou réaniment des créatures ne sont pas des invocations depuis la main. */
+/** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
+ * Une Embuscade en réponse est spéciale, sans sacrifice ni quota. */
 export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false) {
-  if (duel?.moba && (specialeMoba || (cote && duel.tour !== cote && carte?.id === 'tojiro-le-pourfendeur'
-    && duel[duel.tour]?.creatures.some((e) => cardHasPrintedType(e.carteId, 'Djinn'))))) return 0;
+  if (embuscade(duel, cote, carte, specialeMoba)) return 0;
   if (!['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return 0;
   const cout = Number(carte.cost) || 0;
   return cout >= 7 ? 2 : cout >= 5 ? 1 : 0;
@@ -16,21 +16,22 @@ export function petiteCreatureMoba(carte) {
   const cout = Number(carte?.cost);
   return ['creature', 'hero'].includes(kind) && cout >= 1 && cout <= 4;
 }
-/** Une Embuscade ne dépense pas l'invocation normale, même à son propre tour.
- * L'ancien témoin `embuscadesJouees` est conservé pour les parties sérialisées,
- * mais ne limite plus les invocations spéciales en chaîne. */
-function embuscadeMoba(duel, cote, carte, specialeMoba = false) {
-  return Boolean(duel?.moba && (specialeMoba || cote !== duel.tour && carte?.reactionTourAdverse));
+/** Les cartes jouées pendant leur propre tour sont des invocations normales.
+ * Les marqueurs MOBA historiques sont conservés pour les parties sérialisées. */
+function embuscade(duel, cote, carte, specialeMoba = false) {
+  return Boolean(duel && cote && (specialeMoba || (cote !== duel.tour && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse))));
 }
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {
-  if (!duel?.moba || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
-  if (embuscadeMoba(duel, cote, carte, specialeMoba)) return null;
-  return duel.moba.creaturesJouees?.[cote] ? 'creature-limite' : null;
+  if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
+  if (embuscade(duel, cote, carte, specialeMoba)) return null;
+  return (duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee) ? 'creature-limite' : null;
 }
 export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false) {
-  if (!duel?.moba || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return;
-  const quota = embuscadeMoba(duel, cote, carte, specialeMoba) ? 'embuscadesJouees' : 'creaturesJouees';
-  (duel.moba[quota] ??= {})[cote] = true;
+  if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return;
+  if (duel.moba) {
+    const quota = embuscade(duel, cote, carte, specialeMoba) ? 'embuscadesJouees' : 'creaturesJouees';
+    (duel.moba[quota] ??= {})[cote] = true;
+  } else if (!embuscade(duel, cote, carte, specialeMoba)) duel[cote].invocationNormaleJouee = true;
 }
 export function victimesInvocation(camp) {
   return (camp?.creatures ?? []).filter(e => cardById(e.carteId)?.kind !== 'site');

@@ -38,10 +38,9 @@ const copie = (duel) => {
 };
 const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 
-/** Own-turn special summons are considered independently of the normal summon
- * quota. Probe placements on copies; never play a creature as a reaction. */
+/** Tester les Embuscades adverses sur copie, sans consommer de sacrifice. */
 export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
-  if (duel?.tour !== side || !['principale', 'principale2'].includes(duel.phase)) return null;
+  if (!duel?.moba || duel.tour === side || !duel.fenetreReponse) return null;
   let meilleur = null;
   for (const id of new Set(duel[side].main)) {
     if (!rpgMobaPeutEmbuscade(duel, side, id)) continue;

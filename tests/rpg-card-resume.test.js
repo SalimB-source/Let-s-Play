@@ -57,7 +57,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
   assert.equal(texte('gardienne-du-croissant'),
     'À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier.',
     'le bénéfice distinct et la cible restent, pas la mécanique du Bouclier');
-  assert.match(texte('vampire-des-braises'), /Quand elle bloque une créature/u,
+  assert.match(texte('vampire-des-braises'), /Quand elle attaque une créature ou est visée par une attaque normale/u,
     'les blessures préalables sans pastille restent visibles');
   assert.match(texte('lame-de-mer'), /^Cible : une créature\. Si sa défense.*Avec Le Seigneur des mâchoires en jeu : -4\/-4/u,
     'le chiffre de base passe dans la pastille, mais l’exil et le Lien restent');
@@ -80,7 +80,7 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
     assert.ok(morceaux.join('').length < conditionEmbuscadePourApercu(carte).length + 12, `${carte.id} : condition concise`);
   }
   const tojiro = cardById('tojiro-le-pourfendeur');
-  assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['il y a un ', 'Djinn', ' en face']);
+  assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['', 'L’adversaire contrôle un Djinn et vous contrôlez une créature blessée.']);
   assert.equal(conditionEmbuscadeCourtePourApercu(cardById('chien-du-guet')), null);
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*border-left: 3px solid #f4a9eb;[^}]*background: linear-gradient\(110deg, rgba\(98, 33, 92/s,
@@ -89,14 +89,14 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
     'les repères de la condition ressortent en gras');
 });
 
-test('la condition d’Embuscade de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
+test('la condition d’Embuscade de chaque Vampire utilise la condition commune', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
   assert.equal(vampires.length, 10, "le nouveau Vampire rejoint les Embuscades conditionnelles");
   for (const carte of vampires) {
     const condition = conditionEmbuscadePourApercu(carte);
     assert.ok(condition, `condition de ${carte.id} absente`);
-    assert.ok(carte.text.includes(`seulement ${carte.contreAnnonceCreature ? 'en réponse à ' : 'si '}${condition}.`), carte.id);
+    assert.deepEqual(conditionEmbuscadeCourtePourApercu(carte).join(''), condition, carte.id);
   }
   assert.equal(conditionEmbuscadePourApercu(cardById('chien-du-guet')), null);
   assert.equal(conditionEmbuscadePourApercu(cardById('embuscade')), null,
@@ -158,6 +158,13 @@ test('toutes les variantes de preview ne redisent pas les effets de leurs pastil
     const lame = rendre('lame-de-mer');
     assert.ok(lame.querySelector('[data-pastille="debuff"]'));
     assert.equal(lame.querySelector('.rpg-hover-card-preview__stats--modif'), null, 'les chiffres du malus sont sur la pastille');
+    const envol = rendre('valkyrie-au-corbeau');
+    assert.match(envol.querySelector('[data-pastille="envol"]')?.getAttribute('aria-label') ?? '', /au sol ou en vol/);
+    assert.doesNotMatch(envol.querySelector('[data-pastille="envol"]')?.getAttribute('aria-label') ?? '', /bloqu/);
+    const ciblee = rendre('feriel');
+    assert.match(ciblee.querySelector('[data-pastille="coupRapide"]')?.getAttribute('aria-label') ?? '', /créature adverse ou directement/);
+    const tour = rendre('tour-des-flots');
+    assert.match(tour.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /attaque normale.*avant les blessures/);
     const vampire = rendre('vampire-des-braises');
     assert.match(vampire.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /avant les blessures de combat/u,
       'un effet non expliqué par la pastille reste visible');

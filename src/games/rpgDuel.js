@@ -1,3 +1,4 @@
+import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
@@ -11,8 +12,8 @@ import { rpgMobaConditionImprimee } from './rpgMobaEmbuscadesImprimees.js';
  *
  * Règles : la partie commence avec une main de 5 cartes et une table vide
  * (3 cartes dans le mode sans terrains, voir `rpgManaEssai.js`).
- * Les terrains produisent du mana coloré, les créatures ont le mal
- * d'invocation, les attaquants sont déclarés avant le combat et le défenseur
+ * Les terrains produisent du mana coloré. Les créatures peuvent attaquer dès
+ * leur arrivée ; les attaquants sont déclarés avant le combat et le défenseur
  * choisit ses bloqueurs. Les magies rapides ouvrent une fenêtre de réponse.
  */
 
@@ -22,7 +23,6 @@ import {
   armeById,
   cardById,
   carteEstArme,
-  cardColorCost,
   cardColors,
   cardHasPrintedType,
   cardResonanceGroup,
@@ -37,7 +37,6 @@ import {
   jetonById,
   magieById,
   terrainById,
-  terrainManaColors,
 } from './rpgCards.js';
 import {
   choisirActivationIA,
@@ -49,9 +48,6 @@ import {
   choisirCiblesRapidesIA,
   choisirDefausseIA,
   choisirMulliganIA,
-  choisirTerrainIA,
-  choisirCouleurManaIA,
-  couleurEngagement,
 } from './rpgAI.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { armesPortees } from './rpgCardStacks.js';
@@ -61,7 +57,6 @@ import {
   RPG_MANA_ESSAI_CHAMP_MAX,
   RPG_MANA_ESSAI_MAIN_DEPART,
   RPG_MANA_ESSAI_MAIN_MAX,
-  RPG_MANA_ESSAI_MAX,
   RPG_MODE_MANA_ESSAI,
 } from './rpgManaEssai.js';
 
@@ -446,7 +441,6 @@ const manaVide = () => ({ braise: 0, eau: 0, sable: 0, neige: 0, tenebres: 0 });
 // Tolère une réserve déclarée sans toutes les couleurs (objets de test,
 // paquets classiques) : une clé absente compte pour zéro, jamais NaN.
 const totalMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + (Number(camp.mana[c]) || 0), 0);
-const totalCapaciteMana = (camp) => RPG_COULEURS.reduce((somme, c) => somme + (camp.manaMax?.[c] ?? 0), 0);
 
 /** Identité fixée au lancement du duel d'essai ; une pioche ne change jamais
  * les couleurs proposées. Les decks historiques ne passent pas par ici. */
@@ -598,16 +592,6 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   // sources de mana permanentes offertes. Une source offerte compte dans le
   // plafond de dix, exactement comme celles de la rampe.
   for (let i = 0; i < atouts.main; i += 1) rpgPiocher(duel, 'sorcier');
-  if (essaiMana && atouts.mana && identiteSorcier.length) {
-    const couleurAtout = identiteSorcier[0];
-    const offertes = Math.min(atouts.mana, RPG_MANA_ESSAI_MAX - totalCapaciteMana(duel.sorcier));
-    duel.sorcier.manaMax[couleurAtout] += offertes;
-    duel.sorcier.mana[couleurAtout] += offertes;
-    for (let i = 0; i < offertes; i += 1) duel.sorcier.manaSources.push(couleurAtout);
-    if (offertes) {
-      duel.log.push(`Le pacte de l’étage offre ${offertes} mana permanent${offertes > 1 ? 's' : ''} au sorcier.`);
-    }
-  }
   if (atouts.pv) duel.log.push(`Le pacte de l’étage accorde ${atouts.pv} PV au sorcier.`);
   if (atouts.bouclier) duel.log.push(`Le pacte de l’étage pose un bouclier de ${atouts.bouclier} sur le sorcier.`);
   // Témoin de la main de départ : le mulligan n'est légal que tant qu'elle est
@@ -615,38 +599,23 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
   duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };
   // Le premier joueur ne pioche pas de sixième carte au tour 1. Son premier
   // mana (même en mono) n'arrive qu'après les mulligans des deux camps.
-  if (essaiMana) duel.joueur.manaChoixEnAttente = true;
+
   return duel;
 }
 
-/** Fin des deux mulligans : ouvre le premier tour et accorde le premier mana.
- * L'interface appelle ceci à la fermeture du volet, jamais pendant l'échange.
- * Le mono choisit tout seul ; en multi, le joueur doit faire son choix. */
+/** Fin des deux mulligans : ouvre le premier tour du mode sans terrains. */
 export function rpgDemarrerManaEssai(duel) {
   if (duel?.modeMana !== RPG_MODE_MANA_ESSAI || duel.manaEssaiDemarre) return { ok: false, raison: 'mode' };
   if (!duel.mulliganFait?.joueur || !duel.mulliganFait?.sorcier) return { ok: false, raison: 'mulligan' };
   duel.manaEssaiDemarre = true;
-  if (duel.moba) { duel.joueur.manaChoixEnAttente = false; return { ok: true }; }
-  if (duel.joueur.couleurs.length === 1) return rpgChoisirCouleurMana(duel, 'joueur', duel.joueur.couleurs[0]);
-  return { ok: true, choixEnAttente: true };
+  duel.joueur.manaChoixEnAttente = false;
+  duel.sorcier.manaChoixEnAttente = false;
+  return { ok: true };
 }
 
-/** Choisit uniquement la couleur du NOUVEAU mana permanent (pas celle des
- * sources des tours passés). Ce choix vaut une fois par tour et ne peut pas
- * dépasser dix sources. L'IA passe exactement par cette même règle. */
-export function rpgChoisirCouleurMana(duel, cote, couleur) {
-  if (duel?.modeMana !== RPG_MODE_MANA_ESSAI || !duel.manaEssaiDemarre) return { ok: false, raison: 'mode' };
-  if (!['joueur', 'sorcier'].includes(cote) || duel.tour !== cote) return { ok: false, raison: 'tour' };
-  const camp = duel[cote];
-  if (!camp.manaChoixEnAttente) return { ok: false, raison: 'deja-choisi' };
-  if (!camp.couleurs.includes(couleur)) return { ok: false, raison: 'couleur' };
-  if (totalCapaciteMana(camp) >= RPG_MANA_ESSAI_MAX) return { ok: false, raison: 'plafond' };
-  camp.manaMax[couleur] += 1;
-  camp.manaSources.push(couleur);
-  camp.mana[couleur] += 1;
-  camp.manaChoixEnAttente = false;
-  duel.log.push(`${cote === 'joueur' ? 'Vous gagnez' : 'Le sorcier gagne'} un mana ${ELEMENT_LABELS[couleur]} permanent (${totalCapaciteMana(camp)}/${RPG_MANA_ESSAI_MAX}).`);
-  return { ok: true, couleur };
+/** Compatibilité des anciennes parties et intentions sérialisées. */
+export function rpgChoisirCouleurMana() {
+  return { ok: false, raison: 'sans-mana' };
 }
 
 // Événements de présentation uniquement : hors de l'état sauvegardé du duel.
@@ -959,120 +928,19 @@ export function rpgMulliganSorcier(duel, rng = Math.random) {
   return rpgMulligan(duel, 'sorcier', choisirMulliganIA(duel, 'sorcier'), rng);
 }
 
-/** Sources présentes en réserve et sur les terrains dégagés. Une source
- *  flexible apparaît une seule fois avec ses deux couleurs possibles. */
-function sourcesManaDisponibles(camp) {
-  const flottant = RPG_COULEURS.flatMap((couleur) => Array.from(
-    { length: Math.max(0, Math.floor(camp.mana[couleur] ?? 0)) },
-    () => ({ colors: [couleur], kind: 'mana' }),
-  ));
-  const terrains = (camp.terrains ?? [])
-    .filter((terrain) => !terrain.tapped)
-    .map((terrain) => ({ colors: terrainManaColors(terrain.carteId), kind: 'terrain', terrainId: terrain.id }))
-    .filter((source) => source.colors.length);
-  return [...flottant, ...terrains];
-}
-
-/** Assigne chaque pip coloré à une source différente (matching biparti). */
-function sourcesCouvrentPips(sources, coutCouleur) {
-  const pips = Object.entries(coutCouleur)
-    .flatMap(([couleur, quantite]) => Array.from({ length: quantite }, () => couleur))
-    .sort((a, b) => sources.filter((source) => source.colors.includes(a)).length
-      - sources.filter((source) => source.colors.includes(b)).length);
-  const affectations = new Map();
-  const affecter = (couleur, vus) => {
-    for (let index = 0; index < sources.length; index += 1) {
-      if (!sources[index].colors.includes(couleur) || vus.has(index)) continue;
-      vus.add(index);
-      const dejaAffectee = affectations.get(index);
-      if (dejaAffectee === undefined || affecter(dejaAffectee, vus)) {
-        affectations.set(index, couleur);
-        return true;
-      }
-    }
-    return false;
-  };
-  return pips.every((couleur) => affecter(couleur, new Set()));
-}
-
-/** Une carte doit avoir assez de sources, et chaque pip coloré doit avoir
- *  une source distincte compatible. */
+/** Le coût en mana est ignoré ; les prix en PV restent applicables. */
 export function rpgPeutPayer(camp, carte, { ignorerPrixPv = false } = {}) {
-  if (camp.manaChoixEnAttente) return false;
-  // Le Prix classique ne peut pas faire descendre le sorcier sous 1 PV.
-  // Un adaptateur peut vérifier séparément un prix payé par une voie MOBA.
-  if (!ignorerPrixPv && (carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return false;
-  if (camp.mobaSansMana) return true;
-  const sources = sourcesManaDisponibles(camp);
-  const cout = Math.max(0, carte.cost ?? 0);
-  return sources.length >= cout && sourcesCouvrentPips(sources, cardColorCost(carte));
+  // Le Prix en PV demeure une condition indépendante du mana.
+  return Boolean(camp && carte && (ignorerPrixPv || !(carte.prixPv > 0) || camp.pv > carte.prixPv));
 }
 
-/** Paie d'abord les pips colorés obligatoires, puis le coût générique. Les
- *  terrains produisant plusieurs couleurs sont réservés aux pips qui en ont besoin. */
+/** Les coûts en PV restent dus, mais aucun mana n'est dépensé. */
 function payer(duel, cote, carte, options = null) {
   const camp = duel[cote];
-  // L'adaptateur MOBA vérifie et paie le Prix sur une voie choisie ; tous
-  // les autres appels conservent le paiement classique en PV de sorcier.
   if ((carte.prixPv ?? 0) > 0) {
     if (duel.moba && typeof options?.payerPrixPv === 'function') options.payerPrixPv(carte.prixPv);
     else camp.pv = Math.max(1, camp.pv - carte.prixPv);
     duel.log.push(`${cote === 'joueur' ? 'Vous payez' : 'Le sorcier paie'} ${carte.prixPv} PV${duel.moba && options?.payerPrixPv ? ' de voie' : ''} pour ${carte.name ?? 'la carte'}.`);
-  }
-  if (duel.moba) return;
-  let reste = Math.max(0, carte.cost ?? 0);
-  const depenserSource = (couleur) => {
-    if (camp.mana[couleur] > 0) {
-      camp.mana[couleur] -= 1;
-      return true;
-    }
-    const terrain = camp.terrains
-      .filter((candidat) => !candidat.tapped && terrainManaColors(candidat.carteId).includes(couleur))
-      .sort((a, b) => terrainManaColors(a.carteId).length - terrainManaColors(b.carteId).length)[0];
-    if (!terrain) return false;
-    const res = rpgEngagerTerrain(duel, cote, terrain.id, couleur);
-    if (!res.ok) return false;
-    camp.mana[couleur] -= 1;
-    return true;
-  };
-
-  const coutCouleur = cardColorCost(carte);
-  for (const couleur of RPG_COULEURS) {
-    for (let pip = 0; pip < (coutCouleur[couleur] ?? 0); pip += 1) {
-      if (!depenserSource(couleur)) return;
-      reste -= 1;
-    }
-  }
-  // Dans l'essai, seul le pip impose sa couleur : pour le générique, utiliser
-  // d'abord les autres réserves afin de garder la couleur exigée pour la suite
-  // du tour. Les duels classiques conservent leur ordre de paiement historique.
-  const prioriteGenerique = duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? [
-        ...RPG_COULEURS.filter((couleur) => !coutCouleur[couleur]),
-        ...RPG_COULEURS.filter((couleur) => coutCouleur[couleur]),
-      ]
-    : RPG_COULEURS;
-  for (const couleur of prioriteGenerique) {
-    // Une réserve sans cette couleur (objet partiel) ne produit ni NaN ni
-    // nouvelle clé : elle ne contribue tout simplement pas au paiement.
-    const dispo = Number.isFinite(camp.mana[couleur]) ? camp.mana[couleur] : 0;
-    const pris = Math.min(dispo, reste);
-    if (Number.isFinite(camp.mana[couleur])) camp.mana[couleur] -= pris;
-    reste -= pris;
-    if (!reste) return;
-  }
-  const couleursCarte = cardColors(carte);
-  while (reste > 0) {
-    const terrain = camp.terrains
-      .filter((candidat) => !candidat.tapped && terrainManaColors(candidat.carteId).length)
-      .sort((a, b) => terrainManaColors(a.carteId).length - terrainManaColors(b.carteId).length)[0];
-    if (!terrain) return;
-    const couleursTerrain = terrainManaColors(terrain.carteId);
-    const couleur = couleursTerrain.includes(carte.element)
-      ? carte.element
-      : couleursCarte.find((candidate) => couleursTerrain.includes(candidate)) ?? couleursTerrain[0];
-    if (!depenserSource(couleur)) return;
-    reste -= 1;
   }
 }
 
@@ -1093,17 +961,8 @@ export function rpgPoserTerrain(duel, cote, carteId) {
 
 /** Engager un terrain dégagé : les terrains flexibles acceptent une couleur
  *  choisie, les terrains de base gardent leur production habituelle. */
-export function rpgEngagerTerrain(duel, cote, terrainId, couleurChoisie = null) {
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI) return { ok: false, raison: 'sans-terrains' };
-  const terrain = duel[cote].terrains.find((t) => t.id === terrainId);
-  if (!terrain) return { ok: false, raison: 'absent' };
-  if (terrain.tapped) return { ok: false, raison: 'deja-engage' };
-  const couleurs = terrainManaColors(terrain.carteId);
-  const couleur = couleurChoisie ?? couleurs[0];
-  if (!couleurs.includes(couleur)) return { ok: false, raison: 'couleur' };
-  terrain.tapped = true;
-  duel[cote].mana[couleur] += 1;
-  return { ok: true, couleur };
+export function rpgEngagerTerrain() {
+  return { ok: false, raison: 'sans-mana' };
 }
 
 /**
@@ -1114,38 +973,9 @@ export function rpgEngagerTerrain(duel, cote, terrainId, couleurChoisie = null) 
  * les mêmes règles qu'une attaque : la créature ne pourra ni attaquer ni
  * bloquer avant son dégagement, au début du prochain tour de son camp.
  */
-export function rpgPeutEngagerPourMana(duel, cote, entiteId) {
-  const entite = duel?.[cote]?.creatures?.find((candidate) => candidate.id === entiteId);
-  if (!entite) return false;
-  const carte = duelCardById(entite.carteId);
-  if (!carte?.manaEngagement) return false;
-  if (duel.tour !== cote) return false;
-  if (estGelee(entite)) return false;
-  // Seul l'état engagé bloque : contrairement à une attaque, la capacité se
-  // lance même sous le mal d'invocation (Tiziri produit son mana dès son
-  // arrivée). Une créature gelée ou déjà tournée ne peut plus s'engager.
-  if (entite.attaquee) return false;
-  const couleur = carte.manaEngagement.couleur;
-  return Boolean(couleur && RPG_COULEURS.includes(couleur));
-}
+export function rpgPeutEngagerPourMana() { return false; }
 
-/** Engage la créature : elle se tourne sur le flanc et produit son mana. */
-export function rpgEngagerPourMana(duel, cote, entiteId) {
-  if (!rpgPeutEngagerPourMana(duel, cote, entiteId)) return { ok: false, raison: 'engagement' };
-  const camp = duel[cote];
-  const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
-  const carte = duelCardById(entite.carteId);
-  const couleur = carte.manaEngagement.couleur;
-  const montant = Math.max(1, Math.floor(Number(carte.manaEngagement.amount) || 1));
-  // L'engagement utilise le même état qu'une attaque : la créature reste
-  // tournée jusqu'au `rpgFinDeTour` qui remet `ready` et `attaquee` à neuf.
-  entite.ready = false;
-  entite.attaquee = true;
-  camp.mana[couleur] = (Number(camp.mana[couleur]) || 0) + montant;
-  duel.log.push(`${entite.name} s’engage et produit ${montant} mana d’${ELEMENT_LABELS[couleur]?.toLowerCase() ?? couleur}.`);
-  rpgActionsEtat(duel);
-  return { ok: true, couleur, amount: montant };
-}
+export function rpgEngagerPourMana() { return { ok: false, raison: 'sans-mana' }; }
 
 export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
@@ -1864,9 +1694,8 @@ function creerEntiteCreature(carte, duel) {
     // En MOBA, Rapidité imprimée devient une condition d'Embuscade pour les
     // cartes de main ; les jetons de Tarek et Kusayla restent prêts à agir.
     rapidite: Boolean(carte.rapidite && !duel.moba),
-    // En MOBA, chaque créature est prête dès son entrée en jeu. Le duel
-    // classique conserve son mal d'invocation.
-    malInvocation: !duel.moba,
+    // Toute créature peut attaquer dès son entrée, quel que soit le mode.
+    malInvocation: false,
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
@@ -1912,7 +1741,7 @@ function creerEntiteCreature(carte, duel) {
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
-    ready: Boolean(duel.moba || carte.rapidite),
+    ready: true,
     attaquee: false,
     resonance: 0,
     honneur: Math.max(0, Number(carte.honneur) || 0),
@@ -2303,10 +2132,7 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.contreAttaque) entite.contreAttaque = Boolean(duelCardById(entite.carteId)?.contreAttaque);
   if (carteArme.donne?.rapidite) {
     entite.rapidite = Boolean(!duel.moba && duelCardById(entite.carteId)?.rapidite);
-    // Une attaque déjà déclarée reste légale même si la Rapidité disparaît
-    // pendant la réponse ; elle ne pourra pas être déclarée une seconde fois.
-    const dejaDeclaree = duel.combatDeclare?.cote === cote && duel.combatDeclare.attaquants.includes(entite.id);
-    if (entite.malInvocation && !entite.rapidite && !entite.rapiditeAccordee && !dejaDeclaree) entite.ready = false;
+    // Retirer Rapidité ne rend plus une créature récemment arrivée indisponible.
   }
   // Le crochet rendu, le coût du porteur retombe à son imprimé.
   if (carteArme.coutPorteur) {
@@ -3691,12 +3517,10 @@ function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
     // La détenue reprend sa présence : ses statistiques sont celles de la
     // prise, ses auras déjà comptées dans ses chiffres (`auraSableBonus` et
     // consorts), donc `rafraichirAuras` ne les comptera pas deux fois. Seul
-    // l'engagement se remet à neuf ; en MOBA, comme toute entrée en jeu,
-    // la créature revenue peut attaquer dès son retour.
-    const carte = duelCardById(prisonniere.carteId);
-    prisonniere.malInvocation = !duel.moba;
+    // l'engagement se remet à neuf : elle peut attaquer dès son retour.
+    prisonniere.malInvocation = false;
     prisonniere.rapiditeAccordee = false;
-    prisonniere.ready = Boolean(duel.moba || carte?.rapidite || armeCarteDe(prisonniere)?.donne?.rapidite);
+    prisonniere.ready = true;
     prisonniere.attaquee = false;
     camp.creatures.push(prisonniere);
     const prefere = duel.moba ? offset + slotMoba : prisonniere.emplacement;
@@ -4231,12 +4055,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'sable':
-      // Un mana RENDU (le Harnais du méhari, à chaque attaque de son
-      // porteur). Il rejoint la réserve ordinaire, celle que remplissent les
-      // terrains : l'ancien champ `camp.sable` ne comptait plus pour rien —
-      // l'effet dormait faute de carte pour le porter. Comme tout mana, il
-      // s'évapore au début du tour suivant s'il n'est pas dépensé.
-      duel[cote].mana.sable += Math.max(0, Number(effet.amount) || 0);
+      // La production de mana n'a plus d'effet.
       return;
     case 'regarder-dessus': {
       // La Boussole du Hoggar : le désert se lit, il ne se pioche pas. On
@@ -5388,7 +5207,7 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null, sourceType = n
 /** Adaptation MOBA du contre du Sorcier du ressac : sur son propre tour,
  * il renvoie une créature non-jeton de coût 3 ou moins, sur tout le plateau. */
 export function rpgRessacMobaArrivee(duel, cote) {
-  if (!duel?.moba) return false;
+  if (!duel?.[cote]) return false;
   const ennemi = autre(cote);
   const couleurs = cardColors(cardById('sorcier-du-ressac-noir'));
   const cible = duel[ennemi].creatures.find((e) => !e.jeton && !estSite(e)
@@ -6000,8 +5819,10 @@ function annonceCreatureDepuisMain(duel, cote, annonce) {
 
 /** Une Embuscade exige son déclencheur seulement pendant le tour adverse. */
 export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.annonce) {
-  // La condition n'interdit jamais la pose pendant son propre tour.
-  if (!carte?.reactionTourAdverse || duel.tour === cote) return true;
+  // La condition n'interdit jamais la pose normale pendant son propre tour.
+  if (duel.tour === cote) return true;
+  if (rpgCarteEmbuscade(carte)) return rpgConditionEmbuscadeCommune(duel, cote, carte);
+  if (!carte?.reactionTourAdverse) return true;
   const adversaires = duel[autre(cote)].creatures;
   const allies = duel[cote].creatures;
   const combat = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare : null;
@@ -6051,16 +5872,13 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.a
   }
 }
 
-/** La Sentinelle MOBA arrive pendant son tour et peut frapper une créature
- * adverse même si elle n'attaque pas. Le duel classique conserve son texte. */
+/** La Sentinelle peut frapper une créature adverse qui n'attaque pas. */
 export const rpgArriveeExigeAttaquant = (duel, carte) => Boolean(carte?.arrivee?.attaquanteSeulement
-  && !(duel.moba && carte.id === 'sentinelle-des-sables'));
+  && carte.id !== 'sentinelle-des-sables');
 
-/** En MOBA, les deux attaquants déclenchent l'Embuscade du Traqueur, mais
- * son texte autorise toute créature adverse de sa voie comme cible. Le duel
- * classique conserve ici sa règle historique. */
+/** Le Traqueur peut viser une créature adverse qui n'attaque pas. */
 export function rpgCibleEmbuscadeLegale(duel, cote, carte, cible) {
-  return (duel.moba && carte?.id === 'traqueur-des-nuits-sans-lune')
+  return carte?.id === 'traqueur-des-nuits-sans-lune'
     || carte?.conditionEmbuscade !== 'deux-attaquants' || duel.tour === cote
     || Boolean(cible && duel.combatDeclare?.cote === autre(cote)
       && duel.combatDeclare.attaquants.includes(cible.id));
@@ -6311,15 +6129,17 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const contreCreatureMoba = Boolean(duel.moba && carte.id === 'sorcier-du-ressac-noir'
     && annonceCreatureMobaOrigine && annonceCreatureMobaOrigine.cote === autre(cote)
     && (annonceCreatureMobaOrigine === duel.mobaCreatureEnAttente || annonceCreatureMobaOrigine === attenteMoba?.origineCreature));
-  if (duel.moba && (duel.tour !== cote || annonceCreatureMobaOrigine)) return { ok: false, raison: 'pas-votre-tour' };
+  if (duel.moba && annonceCreatureMobaOrigine) return { ok: false, raison: 'pas-votre-tour' };
+  if (duel.moba && duel.tour !== cote && !invocationSpecialeMoba) return { ok: false, raison: 'pas-votre-tour' };
+  if (!duel.moba && duel.tour !== cote && !(rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.moba && invocationSpecialeMoba && !dejaPayee
-    && (!['principale', 'principale2'].includes(duel.phase) || duel.fenetreReponse
-      || duel.combatDeclare || duel.finDeTour || duel.mobaCreatureEnAttente
+    && (duel.tour === cote || !duel.fenetreReponse
       || !(rpgMobaConditionSpeciale(duel, cote, carteId)
         || rpgMobaConditionRapidite(duel, cote, carteId)
         || rpgMobaConditionImprimee(duel, cote, carteId)))) return { ok: false, raison: 'condition-embuscade' };
-  if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || duel.pvp || reponseIA)) return { ok: false, raison: 'timing' };
-  if (!contreCreatureMoba && !(dejaPayee && (attenteMoba.embuscadeCombat || attenteMoba.embuscadeSuspendue)) && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
+  if ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour !== cote && !(duel.fenetreReponse || reponseIA)) return { ok: false, raison: 'timing' };
+  if (!contreCreatureMoba && !(duel.moba && invocationSpecialeMoba)
+    && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (rpgArriveeExigeAttaquant(duel, carte) && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba);
@@ -6500,10 +6320,11 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // cimetière AVANT l'arrivée du Vampire. Le Vampire, lui, reste sur le champ.
   // Toutes les validations de pose, de cible et de mana ont déjà eu lieu.
   let carteContree = null;
-  if (carte.contreAnnonceCreature && duel.tour !== cote && !contreCreatureMoba) {
+  if (carte.contreAnnonceCreature && !rpgCarteEmbuscade(carte) && duel.tour !== cote && !contreCreatureMoba) {
     const cible = duelCardById(annonceReponse.carteId);
     if (!rpgPeutPayer(duel[annonceReponse.cote], cible)) return { ok: false, raison: 'mana' };
     payer(duel, annonceReponse.cote, cible);
+    marquerInvocationMoba(duel, annonceReponse.cote, cible);
     const mainAdverse = duel[annonceReponse.cote].main;
     mainAdverse.splice(mainAdverse.indexOf(cible.id), 1);
     duel[annonceReponse.cote].cimetiere.push(cible.id);
@@ -6579,6 +6400,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // tôt) : un pirate salue, un navire accoste au bruit du quai — des deux
   // camps, une seule fois par créature.
   journaliserArriveeCreature(duel, cote, entite);
+  if (!duel.moba && carteId === 'sorcier-du-ressac-noir') rpgRessacMobaArrivee(duel, cote);
   if (entite.protection) {
     const couleur = labelCouleursProtection(entite.protection.contre);
     duel.log.push(`${entite.name} reçoit un bouclier contre les sorts de ${couleur}.`);
@@ -7083,7 +6905,7 @@ export function rpgActiverArme(duel, cote, entiteId, options = {}) {
   if (compteurs) entite.arme.compteurs = Math.max(0, (entite.arme.compteurs ?? 0) - compteurs);
   const prix = compteurs
     ? `${compteurs} compteur${compteurs > 1 ? 's' : ''} de sable`
-    : `${cout} mana${cout > 1 ? 's' : ''}`;
+    : 'sans coût de mana';
   duel.log.push(`${cote === 'joueur' ? 'Vous activez' : 'Le sorcier active'} ${carte.name} (${prix})${mode ? ` — ${mode.label}` : ''}.`);
   appliquer(duel, cote, mode ? mode.effet : activation.effet, options.cibleId ?? null, entite.id, carte.element, null, carte.id);
   appliquerAuraSable(duel, cote);
@@ -7121,8 +6943,7 @@ export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
   && entite.ready && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
-// Le mal d'invocation empêche d'attaquer, pas de défendre : toute créature
-// qui n'a pas attaqué ce tour peut bloquer, même si elle vient d'arriver.
+// Toute créature qui n'a pas attaqué peut bloquer dès son arrivée.
 // Le gel, lui, ferme aussi la défense.
 const peutBloquer = (entite) => entite && !estSite(entite)
   && !entite.attaquee && !estGelee(entite)
@@ -7379,6 +7200,7 @@ function contreCorrespond(effet, carte) {
  *   annonce adverse légale à contrer maintenant.
  */
 export function rpgContreJouable(duel, cote, carte) {
+  if (rpgCarteEmbuscade(carte) && carte?.contreAnnonceCreature) return true;
   if (duel.moba && carte?.contreAnnonceCreature) return duel.tour === cote;
   if (carte?.contreAnnonceCreature) return duel.tour === cote
     || (duel.fenetreReponse && annonceCreatureDepuisMain(duel, cote, duel.annonce));
@@ -7510,7 +7332,10 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   // Payer la carte lancée, même si elle est immédiatement contrecarrée, puis
   // payer le contresort. Les cartes du joueur restent en main jusque-là ; les
   // annonces du sorcier ne paient normalement qu'à leur résolution.
-  if (!reserveMoba) payer(duel, annonce.cote, cible);
+  if (!reserveMoba) {
+    payer(duel, annonce.cote, cible);
+    marquerInvocationMoba(duel, annonce.cote, cible);
+  }
   payer(duel, cote, carte);
   const main = campAnnonce.main;
   if (!reserveMoba && main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
@@ -7548,7 +7373,7 @@ function choisirContreIA(duel, carte) {
   const candidats = duel.sorcier.main
     .map((id) => cardById(id))
     .filter((c) => ((c?.effet?.type === 'contresort' && contreCorrespond(c.effet, carte))
-      || (c?.contreAnnonceCreature && duelCardById(carte.id) && !jetonById(carte.id)
+      || (c?.contreAnnonceCreature && !rpgCarteEmbuscade(c) && duelCardById(carte.id) && !jetonById(carte.id)
         && carte.kind !== 'site' && invocationPossible(duel, 'sorcier', c)))
       && rpgPeutPayer(duel.sorcier, c))
     .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
@@ -8004,9 +7829,6 @@ export function rpgLancerAttaque(
   // La dérogation ne concerne que les blocages enregistrés par l'adaptateur.
   // Elle ne doit jamais assouplir les validations du duel classique.
   blocagesDejaDeclares = Boolean(blocagesDejaDeclares && duel.moba && attaqueDeclaree && duel.combatDeclare?.blocages);
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
-    return { ok: false, raison: 'choix-mana' };
-  }
   // Une seule phase d'attaque par tour : le camp qui a déjà résolu son combat
   // n'en déclare pas un second. Le drapeau n'est posé que sur une déclaration
   // acceptée (plus bas) : un refus ne consomme rien.
@@ -9375,7 +9197,6 @@ export function rpgDefinirPhase(duel, phase) {
  *  donc toujours pendant cette fenêtre. `rpgFinDeTour` ferme ensuite le tour. */
 export function rpgOuvrirFinDeTour(duel) {
   if (duel.siteEnAttente || duel.effetCreatureEnAttente) return null;
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return null;
   if (duel.finDeTour) return duel.finDeTour;
   duel.phase = 'fin';
   duel.finDeTour = { cote: duel.tour };
@@ -9390,10 +9211,14 @@ export function rpgOuvrirFinDeTour(duel) {
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id) ?? duelCardById(id);
-    // En MOBA, les Embuscades sont réservées aux phases principales du
-    // contrôleur ; elles ne doivent pas ouvrir de fenêtre de réponse.
+    if (duel.moba && duel.tour !== cote && (
+      rpgMobaConditionSpeciale(duel, cote, id) || rpgMobaConditionRapidite(duel, cote, id)
+      || rpgMobaConditionImprimee(duel, cote, id))) {
+      return invocationPossible(duel, cote, carte, true) && rpgPeutPayer(duel[cote], carte)
+        && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, cote, lane.id) && lane.slots[cote].some((slot) => slot === null));
+    }
     if (duel.moba && (carte?.reactionTourAdverse || Object.hasOwn(MOBA_RAPIDITE_EMBUSCADES, id))) return false;
-    if (carte?.reactionTourAdverse && duel.tour !== cote) {
+    if (!duel.moba && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse) && duel.tour !== cote) {
       return rpgPeutPayer(duel[cote], carte)
         && invocationPossible(duel, cote, carte)
         && rpgContreJouable(duel, cote, carte)
@@ -9419,7 +9244,7 @@ export function rpgSorcierMagieRapide(duel, rng = Math.random, combat = null) {
     if (duel.pvp || duel.moba || duel.tour !== 'joueur' || !duel.fenetreReponse) return null;
     for (const id of new Set(duel.sorcier.main)) {
       const carte = duelCardById(id);
-      if (!carte?.reactionTourAdverse || !rpgConditionEmbuscadeRemplie(duel, 'sorcier', carte)
+      if (!(rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse) || !rpgConditionEmbuscadeRemplie(duel, 'sorcier', carte)
         || !invocationPossible(duel, 'sorcier', carte) || !rpgPeutPayer(duel.sorcier, carte)
         || !rpgContreJouable(duel, 'sorcier', carte)) continue;
       const cibles = [...new Set([rpgCibleAuto(duel, 'sorcier', carte), null,
@@ -9490,9 +9315,6 @@ export function rpgFinDeTour(duel) {
   if (duel.effetCreatureEnAttente) return duel;
   // Bimini attend que son contrôleur désigne la créature consacrée.
   if (duel.siteEnAttente) return duel;
-  // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
-  // quitter son tour. Ce garde-fou protège aussi les appels hors interface.
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return duel;
   // Une destruction ciblée attend son clic : le tour ne se ferme pas avant
   // elle, sinon le Ghul frapperait pendant le tour suivant — ou pas du tout.
   // Une attente sans cible légale se dissipe d'abord : elle ne bloque rien.
@@ -9612,6 +9434,7 @@ function reprendreTransitionRetours(duel) {
 
 function commencerNouveauTour(duel) {
   duel.tour = autre(duel.tour);
+  duel[duel.tour].invocationNormaleJouee = false;
   if (duel.moba) {
     duel.moba.creaturesJouees = { joueur: false, sorcier: false };
     duel.moba.embuscadesJouees = { joueur: false, sorcier: false };
@@ -9633,10 +9456,9 @@ function commencerNouveauTour(duel) {
   // consommé la sienne, l'autre ouvre la sienne.
   duel.attaqueJouee = null;
   const camp = duel[duel.tour];
-  // La réserve encore disponible couvre les réponses pendant le tour adverse ;
-  // elle ne se cumule jamais d'un tour personnel à l'autre. Les capacités
-  // temporaires de mana ne deviennent pas des sources permanentes.
-  camp.mana = duel.modeMana === RPG_MODE_MANA_ESSAI ? { ...camp.manaMax } : manaVide();
+  // Efface aussi les anciennes réserves d'une partie sérialisée.
+  camp.mana = manaVide();
+  camp.manaChoixEnAttente = false;
   camp.terrainPose = false;         // un nouveau terrain peut être posé (mode classique)
   for (const terrain of camp.terrains) terrain.tapped = false; // on dégage
   if (!rpgPiocher(duel, duel.tour) && duel.modeMana === RPG_MODE_MANA_ESSAI) {
@@ -9688,15 +9510,6 @@ function terminerDebutTour(duel) {
   const camp = duel[duel.tour];
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
   if (duel.moba?.winner) return duel;
-  if (!duel.moba && duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
-    && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
-    camp.manaChoixEnAttente = true;
-    const autoIA = duel.tour === 'sorcier' && !duel.pvp;
-    if (autoIA || camp.couleurs.length === 1) {
-      rpgChoisirCouleurMana(duel, duel.tour, autoIA
-        ? choisirCouleurManaIA(duel, 'sorcier') : camp.couleurs[0]);
-    }
-  }
   duel.phase = 'principale';
   rpgActionsEtat(duel);
   if (duel.moba?.winner) return duel;
@@ -9708,15 +9521,8 @@ function terminerDebutTour(duel) {
  *  le plus utile (kill avant développement, renforts quand le plateau est
  *  garni, burn pour conclure), puis prépare ses attaques. */
 /** Phase de préparation du sorcier : il pose son terrain et engage ses terrains. */
-export function rpgSorcierPrepareTerrain(duel) {
-  // En essai, le mana coloré a été choisi au début du tour du sorcier.
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI) return;
-  const terrainEnMain = choisirTerrainIA(duel, 'sorcier');
-  if (terrainEnMain) rpgPoserTerrain(duel, 'sorcier', terrainEnMain);
-  for (const terrain of duel.sorcier.terrains) {
-    if (terrain.tapped) continue;
-    rpgEngagerTerrain(duel, 'sorcier', terrain.id, couleurEngagement(terrain, duel.sorcier.main));
-  }
+export function rpgSorcierPrepareTerrain() {
+  // Les terrains ne produisent plus de ressource.
 }
 
 /** Le sorcier annonce sa prochaine carte sans la résoudre. La carte paie son

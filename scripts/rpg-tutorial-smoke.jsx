@@ -27,6 +27,14 @@ async function avancerInfos(harnais, jusqua) {
   }
 }
 
+async function passerTourGuide(harnais, container, prochaineEtape, assert) {
+  await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour guidé');
+  for (let i = 0; i < 40 && harnais.step() !== prochaineEtape; i += 1) {
+    await act(async () => { await wait(300); });
+  }
+  assert.equal(harnais.step(), prochaineEtape, `le tour revient à ${prochaineEtape}`);
+}
+
 /**
  * L'assaut adverse se referme en **deux clics** sur le même bouton : d'abord
  * « Déclarer les bloqueurs » (les assignations sont figées, la fenêtre de
@@ -336,7 +344,8 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await harnais.click(container.querySelector('[data-tutorial-target="confirm-attack"]'), 'Valider l’attaque (Chacal)');
     assert.equal(harnais.step(), 'tribut');
     await harnais.click(harnais.next(), 'la règle du Tribut');
-    assert.equal(harnais.step(), 'pretre');
+    assert.equal(harnais.step(), 'fin-tour-pretre');
+    await passerTourGuide(harnais, container, 'pretre', assert);
     await harnais.click(harnais.card('pretre-de-la-bouche'), 'le Prêtre de la bouche');
     await act(async () => { await wait(850); });
     assert.equal(harnais.step(), 'arrivee');
@@ -346,7 +355,8 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await act(async () => { await wait(900); });
     assert.equal(harnais.step(), 'prix-info');
     await harnais.click(harnais.next(), 'la règle du Prix');
-    assert.equal(harnais.step(), 'creature-momie');
+    assert.equal(harnais.step(), 'fin-tour-momie');
+    await passerTourGuide(harnais, container, 'creature-momie', assert);
     await harnais.click(harnais.card('momie-de-lin'), 'la Momie de lin');
     await act(async () => { await wait(850); });
     assert.equal(harnais.step(), 'momie-info');
@@ -376,12 +386,14 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await avancerInfos(harnais, 'ashigaru');
     await harnais.click(harnais.card('ashigaru-des-braises'), 'l’Ashigaru des braises');
     await act(async () => { await wait(850); });
-    assert.equal(harnais.step(), 'torii');
+    assert.equal(harnais.step(), 'fin-tour-torii');
+    await passerTourGuide(harnais, container, 'torii', assert);
     await harnais.click(harnais.card('samourai-du-torii'), 'le Samouraï du torii');
     await act(async () => { await wait(850); });
     assert.equal(harnais.step(), 'resonance');
     await harnais.click(harnais.next(), 'la règle de la Résonance');
-    assert.equal(harnais.step(), 'daimyo');
+    assert.equal(harnais.step(), 'fin-tour-daimyo');
+    await passerTourGuide(harnais, container, 'daimyo', assert);
     await harnais.click(harnais.card('daimyo-du-soleil-rouge'), 'le Daimyō du Soleil rouge');
     assert.ok(container.querySelector('.rpg-sacrifice-choix'), 'le prix d’invocation attend le Viking');
     await harnais.click(container.querySelector('.rpg-sacrifice-choix__sacrifier'), 'confirmer le prix du Daimyō');
@@ -418,7 +430,8 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await act(async () => { await wait(300); });
     assert.equal(harnais.step(), 'bouclier');
     await harnais.click(harnais.next(), 'la règle du Bouclier');
-    assert.equal(harnais.step(), 'valkyrie');
+    assert.equal(harnais.step(), 'fin-tour-valkyrie');
+    await passerTourGuide(harnais, container, 'valkyrie', assert);
     await harnais.click(harnais.card('valkyrie-au-corbeau'), 'la Valkyrie au corbeau');
     await act(async () => { await wait(850); });
     assert.equal(harnais.step(), 'appel-viking');

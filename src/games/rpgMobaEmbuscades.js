@@ -1,7 +1,6 @@
 import { cardById, cardColors, cardHasPrintedType } from './rpgCards.js';
 
-/** Conditions propres au MOBA : les cartes imprimées et le duel classique
- * restent inchangés. Chaque pose réévalue l'état, sans quota de poses spéciales. */
+/** Conditions communes des Embuscades : réévaluées à chaque annonce. */
 export const MOBA_EMBUSCADES_CONDITIONS = Object.freeze({
   'faiseur-de-passage': 'Vous contrôlez une créature Sable.',
   'ghul-des-cendres': 'Vous contrôlez un autre Djinn.',
@@ -15,7 +14,7 @@ export const MOBA_EMBUSCADES_CONDITIONS = Object.freeze({
 });
 
 export function rpgMobaConditionSpeciale(duel, side, cardId) {
-  if (!duel?.moba || !Object.hasOwn(MOBA_EMBUSCADES_CONDITIONS, cardId) || !duel[side]) return false;
+  if (!duel || !Object.hasOwn(MOBA_EMBUSCADES_CONDITIONS, cardId) || !duel[side]) return false;
   const allies = duel[side].creatures.filter((e) => cardById(e.carteId)?.kind !== 'site');
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
   const adversaires = duel[enemy].creatures.filter((e) => cardById(e.carteId)?.kind !== 'site');

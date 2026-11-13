@@ -1,7 +1,7 @@
 import { cardById, cardColors, cardHasPrintedType } from './rpgCards.js';
 
 // Les conditions ne dépendent ni d'une voie ni d'une fenêtre de réponse :
-// elles se lisent sur tout le plateau et pourront être reprises en duel classique.
+// elles se lisent sur tout le plateau, dans tous les modes.
 const ennemi = (s) => s === 'joueur' ? 'sorcier' : 'joueur';
 const creature = (e) => e && cardById(e.carteId)?.kind !== 'site';
 const allies = (d, s) => (d[s]?.creatures ?? []).filter(creature);
@@ -43,5 +43,5 @@ export const MOBA_RAPIDITE_EMBUSCADES = Object.freeze({
 });
 
 export function rpgMobaConditionRapidite(duel, side, cardId) {
-  return Boolean(duel?.moba && duel[side] && MOBA_RAPIDITE_EMBUSCADES[cardId]?.condition(duel, side));
+  return Boolean(duel && duel[side] && MOBA_RAPIDITE_EMBUSCADES[cardId]?.condition(duel, side));
 }
