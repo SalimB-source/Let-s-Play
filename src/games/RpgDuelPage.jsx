@@ -9322,7 +9322,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         if (event.target?.closest?.('button, a, [role="button"]')) return;
         // Une confirmation bloquée attend une cible : Espace ne doit pas
         // passer à une autre commande du tour à sa place.
-        if (coque.querySelector('.rpg-btn--confirmer-attaque:disabled')) {
+        if (coque.querySelector('.rpg-btn--confirmer-attaque:disabled')
+          || (coque.querySelector('.rpg-btn--cancel-attack') && !coque.querySelector('.rpg-btn--confirmer-attaque'))) {
           event.preventDefault();
           return;
         }
@@ -9475,6 +9476,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const attente = duel?.arriveeEnAttente;
     if (ecran === 'partie' && attente?.retour && attente.cote === 'joueur') setCibleEnCours(attente.carteId);
   }, [ecran, duel, duel?.arriveeEnAttente?.entiteId, duel?.arriveeEnAttente?.cote, duel?.arriveeEnAttente?.retour, duel?.arriveeEnAttente?.carteId]);
+
+  // Réutilise la résolution manuelle et son animation, mais sans demander de
+  // confirmation quand aucune carte de réponse n'est jouable. Le hook reste
+  // avant les retours des menus ; la fonction réelle est fournie par la table.
+  const resolutionAttaqueAutoRef = useRef(null);
+  const minuterieAttaqueAutoRef = useRef(null);
+  resolutionAttaqueAutoRef.current = null;
+  useEffect(() => {
+    const choix = resolutionAttaqueAutoRef.current;
+    const minuterie = minuterieAttaqueAutoRef.current;
+    if (!choix?.possible) {
+      if (minuterie) window.clearTimeout(minuterie.id);
+      minuterieAttaqueAutoRef.current = null;
+      return;
+    }
+    if (minuterie?.duel === choix.duel && minuterie.combat === choix.combat) return;
+    if (minuterie) window.clearTimeout(minuterie.id);
+    const id = window.setTimeout(() => {
+      minuterieAttaqueAutoRef.current = null;
+      const courant = resolutionAttaqueAutoRef.current;
+      if (courant?.possible && courant.duel === choix.duel && duelRef.current === choix.duel
+        && courant.combat === choix.combat && choix.duel.combatDeclare === choix.combat
+        && courant.verifier()) courant.resoudre();
+    }, 450);
+    minuterieAttaqueAutoRef.current = { id, duel: choix.duel, combat: choix.combat };
+  });
+  useEffect(() => () => {
+    if (minuterieAttaqueAutoRef.current) window.clearTimeout(minuterieAttaqueAutoRef.current.id);
+    minuterieAttaqueAutoRef.current = null;
+  }, []);
 
   if (lectureHistoire) {
     const decksJouablesHistoire = decksTous.filter((deck) => deckSeJoue(deck, collection, exemplaires));
@@ -12243,15 +12274,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    // Déclaration d'attaque en cours : la frappe de l’Attaque ciblée ne tombe qu'à
-    // la résolution du combat — ici, seul le retour de sélection se fait
-    // entendre. Cliquer une proie légale la désigne au premier attaquant qui en
-    // a besoin ; plusieurs attaquants peuvent choisir la même proie. Une fois
-    // toutes les cibles désignées, un nouveau clic retire une désignation.
+    // En duel individuel, le premier clic sur une cible légale lance
+    // l'attaque. En combat collectif, la sélection reste réversible.
     if (phase && !combatCollectif) {
       if (!choixIndividuel.cibles.includes(entite.id)) { jouerSfx('erreur'); return; }
-      setCiblesAttaque({ [attaquants[0]]: entite.id });
-      jouerSfx('select'); force(); return;
+      lancerAttaque(entite.id);
+      return;
     }
     if (phase) {
       const candidats = attaquants
@@ -12285,10 +12313,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const lancerAttaque = () => {
+  const lancerAttaque = (cibleChoisie = null) => {
     if (!combatCollectif) {
       const id = attaquants[0];
-      const cible = ciblesAttaque[id];
+      const cible = cibleChoisie ?? ciblesAttaque[id];
       if (!id || !cible) { jouerSfx('erreur'); return; }
       const res = rpgDeclarerAttaqueIndividuelleClassique(duel, 'joueur', id, cible === 'sorcier' ? null : cible);
       if (!res.ok) { jouerSfx('erreur'); force(); return; }
@@ -12464,7 +12492,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (!combatCollectif && phase && attaquants[0]) {
       if (!choixIndividuel.directe) { jouerSfx('erreur'); return; }
-      setCiblesAttaque({ [attaquants[0]]: 'sorcier' }); jouerSfx('select'); force(); return;
+      lancerAttaque('sorcier'); return;
     }
     if (!monTour) return;
     // Pendant la déclaration d'attaque, désigner le sorcier est le geste du
@@ -12766,6 +12794,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (combatEntrant?.coteAttaquant === 'joueur') resoudreAttaqueJoueur();
     else resoudreAttaqueEnnemie();
   };
+
+  // Le PvP et le tutoriel conservent leur choix de bloqueurs. En duel
+  // individuel, seuls les choix déjà ouverts ou une carte jouable retiennent
+  // l'attaque ; on revérifie après chaque réponse et à l'expiration du délai.
+  const resolutionAttaqueAutomatique = Boolean(!combatCollectif && combatEntrant?.coteAttaquant === 'sorcier'
+    && combatEntrant.cibleIndividuelle && duel.combatDeclare?.cote === 'sorcier' && duel.fenetreReponse
+    && !rpgVainqueur(duel) && !duel.annonce && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente
+    && !duel.destructionsEnAttente?.length && !duel.siteEnAttente && !duel.boualemEnAttente && !duel.defausseEnAttente
+    && !carteEnVol && !confirmationSort && !cibleEnCours && !poseEnCours && !sacrificeDemande && !sacrificeEnCours && !sacrificeFx
+    && !apercuAppui && !apercuCatalogue && !cimetiereOuvert && !navParametresOuvert && !messagerieVoletOuvert
+    && !duel.joueur.main.some((id) => peutJouerCarte(cardById(id))));
+  resolutionAttaqueAutoRef.current = { possible: resolutionAttaqueAutomatique, duel,
+    combat: duel.combatDeclare, resoudre: resoudreAttaqueEnnemie,
+    verifier: () => Boolean(duel.fenetreReponse && !rpgVainqueur(duel) && !duel.annonce
+      && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente && !duel.destructionsEnAttente?.length
+      && !duel.siteEnAttente && !duel.boualemEnAttente && !duel.defausseEnAttente
+      && !duel.joueur.main.some((id) => peutJouerCarte(cardById(id)))) };
 
   // Fin de tour du joueur : phase de fin. Le sorcier peut y jouer une magie
   // rapide (il garde son mana d'un tour à l'autre) ; puis le tour se ferme.
@@ -13452,7 +13497,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     ? {
                       cle: `attaque:${cibleAttaqueEnCours ?? 'aucune'}:${attaquants.length}`,
                       classe: 'rpg-attack-prompt',
-                      texte: !combatCollectif ? (attaquants.length ? (cibleAttaqueEnCours ? 'Choisissez une créature adverse ou le sorcier si la cible est légale' : 'Cible choisie — confirmez l’attaque') : 'Choisissez une créature attaquante')
+                      texte: !combatCollectif ? (attaquants.length ? 'Cliquez une cible légale pour lancer l’attaque' : 'Choisissez une créature attaquante')
                         : attaqueCibleeSansCibleLegale
                         ? 'Attaque ciblée — aucune créature adverse ne peut être visée ; retirez cet attaquant'
                         : cibleAttaqueEnCours
@@ -14374,7 +14419,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <div className="rpg-actions__combat" role="group" aria-label="Actions de combat">
                 {phase && (
                   <>
-                    <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque"
+                    {combatCollectif && <button type="button" className="rpg-btn rpg-btn--attaque rpg-btn--confirmer-attaque"
                       data-tutorial-target={cibleTutoriel('confirm-attack') ? 'confirm-attack' : undefined}
                       data-key-hint="Espace"
                       data-attaque-totale={puissanceAttaquants > 0 ? puissanceAttaquants : undefined}
@@ -14382,7 +14427,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       title={attaqueCibleeSansCibleLegale ? 'Aucune cible légale : retirez cet attaquant' : cibleAttaqueEnCours ? 'Choisissez une créature adverse pour chaque Attaque ciblée' : puissanceAttaquants > 0 ? `Puissance totale : ${puissanceAttaquants} ATQ ; jusqu’à ${puissanceDirecte} sur le sorcier avant blocages${menaceLetaleActive ? ' (létal potentiel)' : ''} · Raccourci : Espace` : 'Raccourci clavier : Espace'}
                       disabled={!attaquants.length || Boolean(cibleAttaqueEnCours) || attaqueCibleeSansCibleLegale} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer l’attaque ({attaquants.length})
-                    </button>
+                    </button>}
                     <button type="button" className="rpg-btn rpg-btn--ghost rpg-btn--cancel-attack"
                       data-key-hint="Z"
                       title="Raccourci clavier : Z"
@@ -14391,7 +14436,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     </button>
                   </>
                 )}
-                {combatEntrant && (
+                {combatEntrant && !resolutionAttaqueAutomatique && (
                   <button
                     type="button"
                     className="rpg-btn rpg-btn--attaque rpg-btn--resolve-combat"
