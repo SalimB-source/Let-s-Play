@@ -4965,28 +4965,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__hint-tactile { display: none; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-tactile { display: inline; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-souris { display: none; }
-/* La pastille explique l'Embuscade ; ce cadre violet donne seulement la
+/* La pastille explique l'Invocation spéciale ; ce cadre doré donne seulement la
    condition propre à la carte, en une phrase courte avec les repères en gras. */
 .rpg-hover-card-preview__embuscade {
   display: grid;
   gap: 3px;
   margin: 0;
   padding: 8px 10px;
-  border: 1px solid rgba(239, 155, 222, .72);
-  border-left: 3px solid #f4a9eb;
+  border: 1px solid #8a621b;
+  border-left: 3px solid #714b0e;
   border-radius: 6px;
-  background: linear-gradient(110deg, rgba(98, 33, 92, .82), rgba(41, 19, 53, .92));
-  box-shadow: inset 0 1px 0 rgba(255, 217, 248, .12);
-  color: #ffe8f9;
+  background: linear-gradient(110deg, #e4bd60, #c1922c);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 206, .55);
+  color: #000;
   font: 600 13px/1.4 Georgia, serif;
 }
 .rpg-hover-card-preview__embuscade strong {
-  color: #ffc4f1;
+  color: #000;
   font: 800 10px/1.3 var(--sans, system-ui, sans-serif);
   letter-spacing: .07em;
   text-transform: uppercase;
 }
-.rpg-hover-card-preview__embuscade b { color: #fff6fc; font-weight: 800; }
+.rpg-hover-card-preview__embuscade b { color: #000; font-weight: 800; }
 /* La description écrite : ce que fait la carte — hors les phrases des
    mots-clés génériques, qui vivent dans leurs pastilles et leur bulle. */
 .rpg-hover-card-preview__rules {
