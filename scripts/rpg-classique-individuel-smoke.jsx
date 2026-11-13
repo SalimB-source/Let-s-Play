@@ -55,6 +55,7 @@ export async function checkCombatIndividuel(assert) {
     assert.equal(container.querySelector('.rpg-btn--attaque-tous'), null);
     const card = (id) => container.querySelector(`.rpg-card[data-entity-id="${id}"]`);
     await click(card(a.id));
+    assert.equal(container.querySelector('.rpg-attack-arrows'), null, 'la sélection ne vise pas automatiquement le sorcier');
     assert.equal(container.querySelector('.rpg-btn--confirmer-attaque'), null, 'aucune confirmation à cliquer');
     await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true })));
     assert.equal(duel.tour, 'joueur', 'Espace ne termine pas le tour pendant le choix de cible');

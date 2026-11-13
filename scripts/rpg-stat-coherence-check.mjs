@@ -32,11 +32,20 @@ try {
         };
         return [id, { groupe: style(groupe), stats: [...groupe.children].map(style) }];
       })));
-      for (const [a, b] of [['duel', 'moba'], ['duel-main', 'moba-main'], ['duel-apercu', 'moba-apercu'], ['duel-mulligan', 'moba-mulligan']]) {
+      for (const [a, b] of [['duel', 'moba'], ['duel-apercu', 'moba-apercu'], ['duel-mulligan', 'moba-mulligan']]) {
         for (const [i, [x, y]] of mesures[a].stats.map((v, n) => [v, mesures[b].stats[n]]).entries()) {
           for (const prop of ['x', 'y', 'width', 'height', 'icon']) assert.ok(Math.abs(x[prop] - y[prop]) < .2, `${largeur}×${hauteur} ${taille}px ${etat} ${a} stat ${i} ${prop} : ${x[prop]} ≠ ${y[prop]}`);
           for (const prop of ['font', 'color', 'background', 'image', 'border', 'gap', 'padding']) assert.equal(x[prop], y[prop], `${largeur}×${hauteur} ${taille}px ${etat} ${a} stat ${i} ${prop}`);
           assert.ok(x.x >= 0 && x.y >= 0 && x.x + x.width <= taille + 0.2 && x.y + x.height <= taille * 1.25 + 0.2, `${a} : stat dans la carte`);
+        }
+      }
+      // En duel, la main reprend désormais les plaques neutres du champ ;
+      // les états modifiés restent propres aux créatures posées.
+      if (etat === 'normal') {
+        for (const [i, stat] of mesures['duel-main'].stats.entries()) {
+          const champ = mesures.duel.stats[i];
+          for (const prop of ['x', 'y', 'width', 'height', 'icon']) assert.ok(Math.abs(stat[prop] - champ[prop]) < .2, `${largeur}×${hauteur} ${taille}px main/champ stat ${i} ${prop} : ${stat[prop]} ≠ ${champ[prop]}`);
+          for (const prop of ['font', 'color', 'background', 'image', 'border', 'gap', 'padding']) assert.equal(stat[prop], champ[prop], `${largeur}×${hauteur} ${taille}px main/champ stat ${i} ${prop}`);
         }
       }
       const [attaque, defense] = mesures.duel.stats;
@@ -44,6 +53,6 @@ try {
       else assert.ok(attaque.x + attaque.width <= defense.x + .2, 'sur PC, les deux valeurs restent côte à côte');
     }
     await page.close();
-    console.log(`${largeur}×${hauteur} : statistiques du duel et du MOBA cohérentes`);
+    console.log(`${largeur}×${hauteur} : statistiques du champ et de la main cohérentes`);
   }
 } finally { await navigateur.close(); }

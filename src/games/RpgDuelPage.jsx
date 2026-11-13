@@ -13274,7 +13274,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const combatPourFleches = vainqueur ? null : combatEntrant ?? (phase
     ? { coteAttaquant: 'joueur', attaquants, ciblesAttaque, blocages: {}, ...(!combatCollectif && ciblesAttaque[attaquants[0]] ? { cibleIndividuelle: { cibleId: ciblesAttaque[attaquants[0]] === 'sorcier' ? null : ciblesAttaque[attaquants[0]] } } : {}) }
     : attenteBlocageAdverse ? { coteAttaquant: 'joueur', ...duel.combatDeclare } : null);
-  const flechesAttaque = rpgCiblesFlechesAttaque(duel, combatPourFleches);
+  const flechesAttaque = rpgCiblesFlechesAttaque(duel, combatPourFleches, { selectionEnCours: Boolean(phase && !combatEntrant) });
   const destinationsAttaque = flechesAttaque.reduce((destinations, fleche) => {
     const destination = fleche.cibleId ?? `@${fleche.coteDefense}`;
     (destinations[destination] ??= []).push(fleche.attaquantId);
