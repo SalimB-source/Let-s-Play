@@ -499,3 +499,15 @@ test('Invocation spéciale accepte aussi les anciens textes sans modifier le sor
   assert.equal(cardById('embuscade').name, 'Embuscade');
   assert.equal(iconePourLigne(original, 'Invocation spéciale — Pendant le tour adverse.'), 'reactionTourAdverse');
 });
+
+test('Invocation spéciale utilise une étoile pleine à cinq branches sur toutes les surfaces', () => {
+  const symbole = EFFETS_SPRITE.match(/<symbol id="i-invocation-speciale"[^>]*>.*?<\/symbol>/)?.[0];
+  assert.ok(symbole);
+  assert.doesNotMatch(symbole, /<circle/);
+  assert.match(symbole, /fill="currentColor"/);
+  const points = symbole.match(/points="([^"]+)"/)?.[1].split(' ');
+  assert.equal(points?.length, 10, 'cinq pointes et cinq creux');
+  for (const path of ['../public/preview-effets-pierres.html', '../docs/rpg/assets/pierres-effets.svg']) {
+    assert.ok(readFileSync(new URL(path, import.meta.url), 'utf8').includes(symbole), path);
+  }
+});

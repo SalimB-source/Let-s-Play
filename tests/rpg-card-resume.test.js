@@ -83,8 +83,10 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
   assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['', 'L’adversaire contrôle un Djinn et vous contrôlez une créature blessée.']);
   assert.equal(conditionEmbuscadeCourtePourApercu(cardById('chien-du-guet')), null);
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-  assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*border-left: 3px solid #f4a9eb;[^}]*background: linear-gradient\(110deg, rgba\(98, 33, 92/s,
-    'le cadre explicatif reste violet');
+  assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*background: linear-gradient\(110deg, #e4bd60, #c1922c\);[^}]*color: #000;/s,
+    'le cadre de condition est doré et son texte noir');
+  assert.match(css, /\.rpg-hover-card-preview__embuscade strong \{[^}]*color: #000;/, 'le titre est noir');
+  assert.match(css, /\.rpg-hover-card-preview__embuscade b \{[^}]*color: #000;/, 'les repères en gras sont noirs');
   assert.match(css, /\.rpg-hover-card-preview__embuscade b \{[^}]*font-weight: 800;/,
     'les repères de la condition ressortent en gras');
 });
