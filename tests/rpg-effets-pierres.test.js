@@ -110,7 +110,7 @@ test('les couleurs demandées suivent le symbole sans recolorer les autres effet
     'i-poison': 'venin',
     'i-rapidite': 'braise', 'i-contre-attaque': 'braise', 'i-provocation': 'braise',
     'i-rebond': 'braise', 'i-vol-de-vie': 'braise', 'i-exil': 'braise',
-    'i-bouclier': 'tenebres', 'i-invocation-speciale': 'tenebres',
+    'i-bouclier': 'tenebres', 'i-invocation-speciale': 'or',
     'i-recherche': 'azur',
   };
   const fonds = new Set();
@@ -125,7 +125,7 @@ test('les couleurs demandées suivent le symbole sans recolorer les autres effet
     }
     fonds.add(teinteEffet(cle).fond);
   }
-  assert.equal(fonds.size, 4);
+  assert.equal(fonds.size, 5);
 });
 
 test('les alias de Bouclier, Recherche, Rebond et Poison conservent leur couleur', () => {
@@ -256,4 +256,17 @@ test('le pictogramme tient dans 16 unités sans réduire son hexagone', () => {
     const symboles = [...pierre.matchAll(/<use[^>]*x="8" y="8" width="16" height="16"/g)];
     assert.equal(symboles.length, 2, `${cle} : symbole et halo réduits et centrés ensemble`);
   }
+});
+
+
+test('Invocation spéciale porte une étoile noire sur une pierre dorée', () => {
+  for (const cle of ['reactionTourAdverse', 'i-invocation-speciale']) {
+    assert.equal(plaqueEffet(cle).pierre, 'or');
+    const svg = plaqueSvg(cle);
+    assert.match(svg, /data-pierre="or"/);
+    assert.ok(svg.includes(`fill="${PLAQUE_PIERRES.or.fond}"`));
+    assert.match(svg, /<use href="#i-invocation-speciale"[^>]*color="#000000"[^>]*stroke="#000000"/);
+    assert.doesNotMatch(svg, /<use href="#i-invocation-speciale"[^>]*color="#ffffff"/);
+  }
+  assert.match(plaqueSvg('envol'), /color="#ffffff"/);
 });

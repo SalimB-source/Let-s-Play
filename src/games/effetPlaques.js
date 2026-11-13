@@ -4,7 +4,7 @@
  *
  * La grammaire est celle des emblèmes de héros : plus de trait doré posé à
  * même le texte, mais une **pierre taillée** — fond saturé, anneau en creux,
- * liseré sombre, et le symbole en blanc pur au centre.
+ * liseré sombre, et le symbole au centre (blanc, sauf l’étoile noire de l’Invocation spéciale).
  * Deux choses s'y lisent d'un coup d'œil, sans lire le mot :
  *
  * - **la forme dit la famille d'action** — le `diamant` pour ce qui frappe et
@@ -172,7 +172,7 @@ const PIERRE_SPECIALE_PAR_SYMBOLE = Object.freeze({
   'i-vol-de-vie': 'braise',
   'i-exil': 'braise',
   'i-bouclier': 'tenebres',
-  'i-invocation-speciale': 'tenebres',
+  'i-invocation-speciale': 'or',
   'i-recherche': 'azur',
 });
 
@@ -372,7 +372,7 @@ export function plaqueEffet(cle) {
  * intérieur : à la taille d'une carte (18 à 40 px), ces trois couches se
  * mélangeaient en une tache et salissaient la couleur de l'effet. Une pierre,
  * c'est une silhouette, un ourlet et un champ franc. Le pictogramme vient en
- * dernier, blanc, au-dessus de tout.
+ * dernier, au-dessus de tout.
  *
  * `protectionContre` teinte la pierre de l'élément repoussé (le Sable, sans
  * teinte, garde la pierre de sa famille).
@@ -388,14 +388,16 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
 
   const symbole = SYMBOLE_PAR_FORME[plaque.forme];
   const marge = arrondi((PLAQUE_COTE - symbole) / 2);
+  // L'étoile noire contraste avec le fond doré de l'Invocation spéciale.
+  const couleurSymbole = plaque.symbole === 'i-invocation-speciale' ? '#000000' : '#ffffff';
   return [
     `<polygon points="${pointsSvg(silhouette)}" fill="${OR_CONTOUR}" stroke="${OR_CONTOUR}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`,
-    // Le halo d'encre passe avant le blanc : il sépare le pictogramme du champ
+    // Le halo d'encre passe avant le symbole : il le sépare du champ
     // quand la pierre est claire, et le fait lire d'un coup d'œil à 16 px.
     `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" color="${pierre.encre}" fill="none" stroke="${pierre.encre}" stroke-opacity=".55" stroke-width="${HALO_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
-    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" color="#ffffff" fill="none" stroke="#ffffff" stroke-width="${EPAISSEUR_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" color="${couleurSymbole}" fill="none" stroke="${couleurSymbole}" stroke-width="${EPAISSEUR_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
   ].filter(Boolean).join('');
 }
 
