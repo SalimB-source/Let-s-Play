@@ -23,7 +23,7 @@ test('pas de mana ni de choix de couleur, en début de partie ou aux tours suiva
   assert.equal(Object.values(d.sorcier.manaMax).reduce((a,b) => a+b, 0), 0);
 });
 
-test('coûts imprimés 1 à 4 gratuits, sorts et prix en PV séparés ; classique inchangé', () => {
+test('coûts imprimés 1 à 4 gratuits, sorts et prix en PV séparés ; classique sans mana aussi', () => {
   for (const [id, lane, slot] of [['ashigaru-des-braises','left',0], ['gardienne-des-portes-de-sable','left',1], ['ronin-du-soleil-rouge','right',0], ['pourfendeur-des-djinns','right',1]]) {
     const d = partie();
     donner(d, 'joueur', id);
@@ -35,7 +35,7 @@ test('coûts imprimés 1 à 4 gratuits, sorts et prix en PV séparés ; classiqu
   assert.ok(rpgMobaLancerMagie(d, 'joueur', 'trait-de-braise', 'sorcier', 'center').ok);
   assert.equal(Object.values(d.joueur.mana).reduce((a,b) => a+b, 0), 0);
   const classique = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [] });
-  assert.equal(rpgPeutPayer(classique.joueur, cardById('trait-de-braise')), false);
+  assert.equal(rpgPeutPayer(classique.joueur, cardById('trait-de-braise')), true);
 });
 
 test('une seule invocation à sacrifice par camp et par tour, y compris après une annonce contrée', () => {

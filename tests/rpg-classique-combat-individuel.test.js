@@ -10,6 +10,8 @@ function partie() {
   return duel;
 }
 function poser(duel, cote, id = 'ashigaru-des-braises') {
+  // Construction de plateau de test, indépendante du quota d'invocation.
+  duel[cote].invocationNormaleJouee = false;
   duel[cote].main.push(id);
   const res = rpgJouerCreature(duel, cote, id);
   assert.ok(res.ok, res.raison);
@@ -161,13 +163,13 @@ test('une Embuscade remplissant sa condition est permise en fin de tour adverse'
   assert.ok(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').ok);
 });
 
-test('l’effet d’arme à l’attaque est appliqué une fois, même si le porteur meurt avant les blessures', () => {
+test('la production de mana du harnais est sans effet, même si le porteur meurt avant les blessures', () => {
   const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'vampire-des-braises');
   a.arme = { carteId: 'harnais-du-mehari', durabilite: 2 }; a.pv = 1;
   d.joueur.mana.sable = 0;
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
   const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
-  assert.ok(r.ok); assert.equal(d.joueur.mana.sable, 1);
+  assert.ok(r.ok); assert.equal(d.joueur.mana.sable, 0);
   assert.equal(d.joueur.creatures.some(e => e.id === a.id), false);
 });
 

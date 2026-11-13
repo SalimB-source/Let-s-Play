@@ -236,7 +236,7 @@ export function rpgMobaTerminerTour(duel, side) {
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
+  if (!duel.manaEssaiDemarre
     || !['principale', 'principale2'].includes(duel.phase)
     || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.arriveeEnAttente
     || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.siteEnAttente
@@ -369,7 +369,7 @@ export function rpgMobaPeutEmbuscade(duel, side, cardId) {
     && !duel.destructionsEnAttente?.length && !duel.defausseEnAttente
     && !duel.siteEnAttente && !duel.mobaRechercheEnAttente && !duel.mobaReponseSuspendue
     && !duel.moba.winner && !duel.fin?.gagnant && !duel.fin?.nul && !duel.moba.centerChoice
-    && duel.manaEssaiDemarre && !duel[side].manaChoixEnAttente
+    && duel.manaEssaiDemarre
     && !duel[side].prochaineArriveeAbordage && !duel[side].abordageDesArrivees
     && duel[side].main.includes(cardId) && rpgPeutPayer(duel[side], carte)
     && invocationPossible(duel, side, carte, true) && rpgMobaPlacementCoherent(duel)
@@ -390,7 +390,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     : rpgMobaPeutEmbuscade(duel, side, cardId);
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId
     || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
+  if (!duel.manaEssaiDemarre
     || !['principale', 'principale2'].includes(duel.phase)
     || (duel.fenetreReponse && !attente) || duel.finDeTour || duel.combatDeclare
     || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.mobaSortEnAttente
@@ -754,7 +754,7 @@ export function rpgMobaDeclarerAttaqueIndividuelle(duel, side, attackerId, cible
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente || duel.phase !== 'principale'
+  if (!duel.manaEssaiDemarre || duel.phase !== 'principale'
     || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.moba.centerChoice
     || duel.mobaRechercheEnAttente || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente
     || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length
@@ -872,7 +872,7 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente || !['principale', 'principale2'].includes(duel.phase)
+  if (!duel.manaEssaiDemarre || !['principale', 'principale2'].includes(duel.phase)
     || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente || duel.mobaRechercheEnAttente) return fail('timing');
   if (!MOBA_ARMES.includes(cardId)) return fail('effet-non-pris-en-charge');
@@ -922,7 +922,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   ));
   if (duel.tour !== side && !reaction) return fail('pas-votre-tour');
   if (reaction && !magieById(cardId)?.instant) return fail('timing');
-  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
+  if (!duel.manaEssaiDemarre
     || (!reaction && (!['principale', 'principale2'].includes(duel.phase) || duel.fenetreReponse || duel.combatDeclare || duel.finDeTour))
     || duel.arriveeEnAttente || (duel.effetCreatureEnAttente && !reaction)
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente) return fail('timing');

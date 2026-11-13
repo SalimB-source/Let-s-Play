@@ -227,7 +227,10 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
     }
   }
   const actif = rpgPvpCoteActif(duel);
-  const reaction = intention.type === 'jouer-carte' && duel.tour !== cote
+  if (intention.type === 'jouer-carte' && duel.tour !== cote
+    && cardById(intention.carteId)?.reactionTourAdverse && !duel.fenetreReponse)
+    return { ok: false, raison: 'timing' };
+  const reaction = intention.type === 'jouer-carte' && duel.fenetreReponse && duel.tour !== cote
     && cardById(intention.carteId)?.reactionTourAdverse && duel[cote].main.includes(intention.carteId)
     && rpgConditionEmbuscadeRemplie(duel, cote, cardById(intention.carteId))
     && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
@@ -414,9 +417,6 @@ function nettoyerCombatDeclareSiVide(duel) {
 
 function declarerCombatPvp(duel, cote, attaquantIds, ciblesAttaque) {
   const adv = rpgPvpAutreCote(cote);
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
-    return { ok: false, raison: 'choix-mana' };
-  }
   if (duel.attaqueJouee === cote || duel.phase === 'blocage') {
     return { ok: false, raison: 'attaque-jouee' };
   }

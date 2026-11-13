@@ -171,6 +171,8 @@ test('une intention refusée laisse l’état exactement intact', () => {
 
 test('fin de tour : le tour passe à l’autre camp, et à lui seul', () => {
   const duel = partieNeuve(16);
+  // Sans mana, une magie rapide peut toujours ouvrir une réponse de fin de tour.
+  duel.joueur.main = []; duel.sorcier.main = [];
   const fin = rpgPvpAppliquer(duel, 'joueur', { type: 'fin-de-tour' });
   assert.equal(fin.ok, true);
   assert.equal(duel.tour, 'sorcier');
@@ -395,6 +397,8 @@ test('pose PvP : la case choisie voyage dans l’intention, une case occupée es
   assert.equal(pose.ok, true);
   assert.equal(duel.joueur.creatures[0].emplacement, 4, 'la créature entre en jeu sur la case 5 désignée');
 
+  // Isoler la validation d'emplacement du nouveau quota d'invocation.
+  duel.joueur.invocationNormaleJouee = false;
   // La même case, une seconde fois : refus du moteur, état intact.
   const avant = JSON.stringify(duel);
   const refus = rpgPvpAppliquer(duel, 'joueur', {

@@ -1326,32 +1326,16 @@ export function choisirMulliganIA(duel, cote = 'sorcier', options = {}) {
   const profil = options.profil ?? rpgProfilIA(duel?.[cote]?.ia ?? null);
   const main = duel?.[cote]?.main ?? [];
   if (main.length < 2 || profil.niveau === 'recit') return [];
-  if (duel?.modeMana === RPG_MODE_MANA_ESSAI) {
-    // Aucun terrain à chercher : conserver les cartes de début de courbe et
-    // échanger les coûts 5+ quand la main manque de coups à 1–3 manas.
-    const petitsCouts = main.filter((id) => (duelCardById(id) ?? magieById(id) ?? armeById(id))?.cost <= 3).length;
-    return main.flatMap((id, index) => {
-      const cout = (duelCardById(id) ?? magieById(id) ?? armeById(id))?.cost ?? 0;
-      return cout > (petitsCouts >= 2 ? 5 : 3) ? [index] : [];
-    });
-  }
-  const terrains = [];
-  const autres = [];
-  main.forEach((carteId, index) => (terrainById(carteId) ? terrains : autres).push(index));
-  // Renoncer à sa main ne vaut que si le paquet peut mieux faire : sans une
-  // seule source restante, l'échange ne serait qu'un coup de théâtre.
-  const sourcesAuPaquet = (duel[cote].deck ?? []).filter((carteId) => terrainById(carteId)).length;
-  if (!sourcesAuPaquet) return [];
-  // Aucune source : on renvoie tout ce qui ne se paie pas sans mana.
-  if (!terrains.length) return autres;
-  // Le cas inverse : on renvoie les terrains de trop, deux suffisent pour ouvrir.
-  if (!autres.length) return terrains.slice(2);
-  // Une carte qu’aucun terrain de la main ne finance est un tour perdu d’avance.
-  const couleurs = new Set(terrains.flatMap((index) => terrainManaColors(main[index])));
-  const injouables = autres.filter((index) => Object.keys(cardColorCost(main[index]))
-    .some((couleur) => !couleurs.has(couleur)));
-  // Renvoyer sa seule perspective n’en ouvrirait pas une meilleure : on garde.
-  return injouables.length === autres.length ? [] : injouables;
+  // Les terrains ne servent plus : chercher des créatures jouables sans
+  // sacrifice pour commencer, sans écarter les sorts et armes gratuitement jouables.
+  const creatures = main.filter((id) => {
+    const carte = duelCardById(id);
+    return carte && ['creature', 'hero'].includes(carte.kind) && (carte.cost ?? 0) <= 4;
+  }).length;
+  return main.flatMap((id, index) => {
+    const carte = duelCardById(id);
+    return terrainById(id) || (creatures < 2 && carte && ['creature', 'hero'].includes(carte.kind) && carte.cost >= 5) ? [index] : [];
+  });
 }
 
 /** Couleur à préférer quand un terrain flexible (Pétra…) s’engage. */
@@ -1394,9 +1378,10 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
   // Le Prix en PV (set Ténèbres) : sous le seuil, la carte est injouable —
   // le moteur la refuserait de toute façon (`rpgPeutPayer`).
   if ((carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return { score: 0, cibleId: null };
-  // Le même Prix alourdit le rendement : un PV manquant coûte toujours plus
-  // cher que du mana disponible.
-  const cout = Math.max(0, carte.cost ?? 0) + Math.max(0, Number(carte.prixPv) || 0) * 0.6;
+  // Les sorts et armes ne coûtent plus de mana. Pour les créatures, le coût
+  // imprimé garde de l'importance car il détermine les sacrifices.
+  const cout = (['creature', 'hero'].includes(carte.kind) ? Math.max(0, carte.cost ?? 0) : 0)
+    + Math.max(0, Number(carte.prixPv) || 0) * 0.6;
 
   if (carte.kind === 'magie' || magieById(carte.id)) {
     // Le Lien : le sorcier lit l'effet **réellement résolu** — un Vent rouge
@@ -2168,7 +2153,7 @@ export function rpgSacrificeEstDeclasseIA(carte, victimes) {
 /** All legal one- or two-body combinations, cheapest first. The field is
  * bounded in MOBA; sorting also ensures deterministic choices on ties. */
 export function rpgCombinaisonsSacrificesIA(duel, cote, carte) {
-  const n = sacrificesInvocation(carte, duel);
+  const n = sacrificesInvocation(carte, duel, cote);
   if (!n) return [[]];
   const victimes = victimesInvocation(duel[cote]);
   const groupes = [];
@@ -2202,7 +2187,7 @@ function adversaireGagneProchainCombat(duel, cote) {
  * an isolated engine simulation, not just the card's mana cost or printed
  * arrival text. A winning attack is an explicit exception. */
 export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null) {
-  const n = sacrificesInvocation(carte, duel);
+  const n = sacrificesInvocation(carte, duel, cote);
   if (!n) return [];
   let menaceInitiale;
   let victoireInitiale;

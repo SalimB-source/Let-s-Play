@@ -90,6 +90,8 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   const mainAvant = camp.main;
   const manaAvant = { ...camp.mana };
   const choixManaAvant = camp.manaChoixEnAttente;
+  const quotaAvant = camp.invocationNormaleJouee;
+  camp.invocationNormaleJouee = false;
   // Le coût est payé puis remboursé : la scène de leçon n'a pas à vider la
   // réserve du camp qui la reçoit.
   const cout = Number(carte.cost) || 0;
@@ -105,6 +107,7 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   camp.main = mainAvant;
   camp.mana = manaAvant;
   camp.manaChoixEnAttente = choixManaAvant;
+  camp.invocationNormaleJouee = quotaAvant;
   if (!res.ok) return null;
   if (res.entite) {
     res.entite.ready = ready;

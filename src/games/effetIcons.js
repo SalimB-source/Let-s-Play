@@ -810,7 +810,10 @@ export function texteCombatIndividuel(carte) {
     texte += `${brut.slice(curseur, section.debut)}${section.label} — ${EFFET_DEFINITIONS[section.cle]} `;
     curseur = fin;
   });
-  return `${texte}${brut.slice(curseur)}`.replace(/\s+/gu, ' ').trim();
+  return `${texte}${brut.slice(curseur)}`
+    .replace(/Quand le porteur attaque : gagnez 1 mana de sable\./gu, 'La production de mana du Harnais n’a plus d’effet.')
+    .replace(/qui coûtent 3 mana ou moins/gu, 'de coût imprimé 3 ou moins')
+    .replace(/\s+/gu, ' ').trim();
 }
 
 /** La définition générique d’une pastille (valeur et couleur comprises). */

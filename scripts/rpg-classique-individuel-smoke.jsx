@@ -25,6 +25,8 @@ export async function checkCombatIndividuel(assert) {
     for (const cote of ['joueur', 'sorcier']) duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map((e) => [e, 40]));
     duel.joueur.manaChoixEnAttente = null; duel.sorcier.main = [];
     const poser = (cote) => {
+      // Construction de la scène de test, hors quota d'invocation.
+      duel[cote].invocationNormaleJouee = false;
       duel[cote].main.push('ashigaru-des-braises');
       const res = rpgJouerCreature(duel, cote, 'ashigaru-des-braises');
       assert.ok(res.ok, res.raison); res.entite.ready = true; return res.entite;
@@ -49,7 +51,7 @@ export async function checkCombatIndividuel(assert) {
 
     // Terminer le tour et attendre la vraie déclaration de l'IA sur la table.
     const ennemi = poser('sorcier'); ennemi.atk = 8; ennemi.pv = 8;
-    a.atk = 0; b.atk = 0; duel.sorcier.main = []; duel.joueur.main = [];
+    a.atk = 0; b.atk = 0; duel.sorcier.main = []; duel.sorcier.deck = []; duel.joueur.main = [];
     await act(async () => window.__RPG_FORCE__());
     await click(container.querySelector('.rpg-btn--endturn'));
     for (let i = 0; i < 24 && !container.querySelector('.rpg-btn--resolve-combat'); i++) {
