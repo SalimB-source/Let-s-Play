@@ -35,6 +35,15 @@ export async function checkCombatIndividuel(assert) {
     };
     const a = poser('joueur'), b = poser('joueur'), cible = poser('sorcier');
     a.atk = 10; cible.atk = 0;
+    // À son propre tour, l'Embuscade se pose normalement et ne prend pas
+    // le violet de l'invocation spéciale.
+    duel.joueur.invocationNormaleJouee = false;
+    duel.joueur.main = ['garde-du-trone-givre'];
+    await act(async () => window.__RPG_FORCE__());
+    const gardeNormale = container.querySelector('.rpg-hand__card[data-card-id="garde-du-trone-givre"]');
+    assert.equal(gardeNormale?.dataset.jouable, 'true');
+    assert.ok(!gardeNormale.classList.contains('is-special-ambush'));
+    duel.joueur.main = [];
     await act(async () => window.__RPG_FORCE__());
     assert.equal(container.querySelector('.rpg-btn--attaque-tous'), null);
     const card = (id) => container.querySelector(`.rpg-card[data-entity-id="${id}"]`);
@@ -81,9 +90,36 @@ export async function checkCombatIndividuel(assert) {
     assert.equal(container.querySelector('.rpg-btn--resolve-combat'), null, 'pas de confirmation sans réponse');
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
     a.pv = a.pvMax - 1;
+    // Une carte imprimée, une ancienne Rapidité et une mythique reçoivent
+    // toutes le même signal, sans teinter une carte ordinaire ou un sort.
+    const carteEnnemieAvant = ennemi.carteId;
+    ennemi.carteId = 'djinn-du-dernier-brasier';
+    ennemi.pv--;
+    duel.joueur.main = ['garde-du-trone-givre', 'fennec-des-decombres', 'tojiro-le-pourfendeur', 'chien-du-guet', 'trait-de-braise'];
+    await act(async () => window.__RPG_FORCE__());
+    const enMain = (id) => container.querySelector(`.rpg-hand__card[data-card-id="${id}"]`);
+    for (const id of ['garde-du-trone-givre', 'fennec-des-decombres', 'tojiro-le-pourfendeur']) {
+      assert.equal(enMain(id)?.dataset.jouable, 'true', id);
+      assert.equal(enMain(id)?.dataset.embuscadeJouable, 'true', id);
+      assert.ok(enMain(id).classList.contains('is-special-ambush'), id);
+    }
+    assert.ok(enMain('tojiro-le-pourfendeur').classList.contains('is-mythique-jouable'), 'la mythique garde son identité');
+    assert.match(enMain('garde-du-trone-givre').getAttribute('aria-label'), /Embuscade jouable/);
+    duel.defausseEnAttente = { cote: 'joueur', restant: 1 };
+    await act(async () => window.__RPG_FORCE__());
+    assert.ok(!enMain('garde-du-trone-givre').classList.contains('is-special-ambush'), 'défausser ne signifie pas pouvoir invoquer');
+    duel.defausseEnAttente = null;
+    await act(async () => window.__RPG_FORCE__());
+    assert.ok(!enMain('trait-de-braise').classList.contains('is-special-ambush'), 'un sort rapide ne devient pas violet');
+    assert.ok(!enMain('chien-du-guet').classList.contains('is-special-ambush'), 'une créature ordinaire ne devient pas violette');
+    // Si la condition change au cours de la fenêtre, la lueur s'éteint.
+    a.pv = a.pvMax;
+    await act(async () => window.__RPG_FORCE__());
+    assert.equal(enMain('garde-du-trone-givre')?.dataset.embuscadeJouable, undefined);
+    a.pv--;
+    ennemi.carteId = carteEnnemieAvant;
     duel.joueur.main = ['garde-du-trone-givre'];
     await act(async () => window.__RPG_FORCE__());
-    assert.equal(container.querySelector('.rpg-hand__card[data-card-id="garde-du-trone-givre"]')?.dataset.jouable, 'true');
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 700)); });
     assert.ok(duel.combatDeclare?.cibleIndividuelle, 'une Embuscade jouable annule la résolution automatique');
     assert.ok(container.querySelector('.rpg-btn--resolve-combat'));

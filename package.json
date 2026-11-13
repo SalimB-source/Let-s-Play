@@ -177,7 +177,7 @@
     "desktop:dist": "npm --prefix desktop run dist",
     "check:desktop": "node scripts/desktop-check.mjs",
     "check:rpg-combat-controls": "node scripts/rpg-combat-controls-check.mjs",
-    "check:rpg-classique-individuel": "node --test tests/rpg-classique-combat-individuel.test.js tests/rpg-combat-indications.test.js tests/rpg-descriptions-combat-individuel.test.js && node scripts/rpg-classique-individuel-ui-check.mjs",
+    "check:rpg-classique-individuel": "node --test tests/rpg-classique-combat-individuel.test.js tests/rpg-combat-indications.test.js tests/rpg-descriptions-combat-individuel.test.js tests/rpg-embuscade-lueur.test.js tests/rpg-lien-lueur.test.js && node scripts/rpg-classique-individuel-ui-check.mjs",
     "art:aleger": "bash scripts/aleger-art-cartes.sh",
     "check:rpg-art": "node --test tests/rpg-art-allegee.test.js",
     "check:city-rush": "node --test tests/*driving*.test.js tests/blocked-junction-clarity.test.js tests/french-priority.test.js tests/parking-choice-exercise.test.js tests/real-situation-exercises.test.js tests/road-crosswalks.test.js tests/roundabout-road-surface.test.js tests/roundabout-sidewalks.test.js tests/vice-city-free-drive-features.test.js tests/vice-city-roads.test.js tests/vice-city-traffic.test.js tests/city-rush-cars.test.js tests/city-rush-cockpit.test.js tests/city-rush-free-drive.test.js tests/city-rush-audio.test.js tests/city-rush-webgpu.test.js tests/city-rush-performance.test.js tests/vice-city-portrait.test.js",
