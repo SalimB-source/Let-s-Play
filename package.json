@@ -179,6 +179,7 @@
     "desktop:dist": "npm --prefix desktop run dist",
     "check:desktop": "node scripts/desktop-check.mjs",
     "check:rpg-combat-controls": "node scripts/rpg-combat-controls-check.mjs",
+    "check:rpg-annonce-taille": "node scripts/rpg-annonce-taille-check.mjs",
     "check:rpg-annonce-magie": "node --test tests/rpg-annonce-magie.test.js && node scripts/rpg-annonce-magie-check.mjs",
     "check:rpg-avatars-mobile": "node scripts/rpg-avatars-mobile-check.mjs",
     "check:rpg-avatars-visages": "node --test tests/rpg-avatars-visages.test.js",

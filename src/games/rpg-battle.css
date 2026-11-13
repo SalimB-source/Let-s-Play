@@ -10565,6 +10565,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-annonce-sort--magie .rpg-hover-card-preview__type { font-size: 12px; }
 .rpg-annonce-sort--magie .rpg-card-element-badge { font-size: 14px; }
+/* Sur ordinateur, l'annonce reste compacte mais assez grande pour lire
+   l'illustration, le texte et la cible sans plisser les yeux. La hauteur
+   disponible borne la carte et la fiche, les deux choix restent visibles. */
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview--annonce {
+  --rpg-annonce-card-width: clamp(100px, min(22vw, 38dvh), 220px);
+  --rpg-annonce-column-gap: 16px;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__layout {
+  width: min(680px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 18px;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__details-column { gap: 12px; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__details {
+  box-sizing: border-box;
+  max-height: calc(100dvh - 120px);
+  gap: 10px;
+  padding: 14px;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__name { font-size: clamp(20px, 2vw, 26px); }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__type { font-size: 15px; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__rules { font-size: 16px; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__target b { font-size: 15px; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-hover-card-preview__target small { font-size: 9px; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie .rpg-annonce-sort__controls button { min-height: 50px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-annonce-sort__panel { animation: none; }
 }
