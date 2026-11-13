@@ -588,16 +588,8 @@
   .rpg-card-tear-fx > b { animation: none !important; }
 }
 
-/* ── Table : les icônes d'effets le long du bord droit ───────────────────────
-   Sur la table, chaque créature posée montre ses icônes d'effets (mots-clés
-   imprimés et états vivants : bouclier, esquive…) en une colonne verticale
-   chevillée au bord droit, à la place du coût (qui ne s'imprime plus sur une
-   carte posée, voir `rpg-mobile.css`). La colonne part du coin haut droit puis
-   déborde du cadre de 36 % de sa largeur (`effet-icons.css`, « Les emblèmes
-   montés sur le bord ») : la pierre est sur le bord, pas dans l'illustration.
-   La main, elle, suit `.rpg-card-icones--main` dans `effet-icons.css`, puis les
-   mesures serrées de `rpg-mobile.css` : cette feuille ne doit pas lui redonner
-   20 px ensuite. */
+/* Table : les effets se rangent à l'intérieur du bord droit ; leur taille
+   est réduite par IconesCarte si toute la colonne ne tient pas sur la face. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
   /* La pierre, l'hexagone de couleur et le losange de coût partagent la taille
      posée par la carte (`.rpg-card--img`, dans `rpg-battle.css`). */
@@ -617,9 +609,6 @@
   min-width: var(--rpg-plaque-taille, 20px);
   min-height: var(--rpg-plaque-taille, 20px);
 }
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 5) {
-  display: none;
-}
 /* L'icône seule, sans chiffre derrière (Harakiri, Bouclier, Esquive…) : la
    valeur reste dans l'aperçu au survol et dans le libellé de la carte. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone small {
@@ -630,14 +619,8 @@
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--sous-activation {
   top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 3cqw);
 }
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--sous-activation .rpg-card-icone:nth-child(n + 4) {
-  display: none;
-}
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs {
   top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 6cqw + clamp(8px, calc(var(--rpg-card-marker-size, 27cqw) * .58), 18px) * 1.3);
-}
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs .rpg-card-icone:nth-child(n + 3) {
-  display: none;
 }
 
 /* Chaque créature garde sa case : la carte (ou la pile de son arme) se pose

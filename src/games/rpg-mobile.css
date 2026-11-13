@@ -1568,12 +1568,8 @@
     top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
     width: var(--rpg-plaque-taille, 18px);
     gap: 2px;
-    /* 18 px de pierre dans un interstice de 4 px (`--rpg-field-gap`) : le
-       débord sur le bord droit se limite à ~22 % de la pierre, soit 4 px —
-       assez pour qu'elle soit posée sur le cadre, trop peu pour mordre sur la
-       carte voisine (voir `effet-icons.css`, « Les emblèmes montés sur le
-       bord »). */
-    --rpg-plaque-bord: 22%;
+    /* Même avec peu d'espace entre les cartes, la pierre reste dans la face. */
+    --rpg-plaque-bord: 0%;
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
     min-width: var(--rpg-plaque-taille, 18px);
@@ -1593,7 +1589,7 @@
 }
 
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
-  --rpg-plaque-bord: 22%;
+  --rpg-plaque-bord: 0%;
   top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
   width: var(--rpg-plaque-taille, 18px);
   gap: 2px;

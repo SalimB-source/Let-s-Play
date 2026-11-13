@@ -85,6 +85,7 @@
     "check:rpg-coffret-accueil": "node --test tests/rpg-coffret-bienvenue.test.js tests/rpg-sablier-delai.test.js && node scripts/rpg-coffret-accueil-check.mjs",
     "check:rpg-icone-conquete": "node --test tests/rpg-icone-conquete.test.js",
     "check:rpg-nom-conquete": "node --test tests/rpg-nom-conquete.test.js",
+    "check:rpg-icones-cadre": "node --test tests/rpg-icones-ajustement.test.js tests/rpg-icones-bord-carte.test.js && node scripts/rpg-icones-cadre-check.mjs",
     "check:rpg-icones-main-mobile": "node --test tests/rpg-icones-main-mobile.test.js",
     "check:rpg-mode-cards": "node --test tests/rpg-mode-cards.test.js",
     "check:rpg-chemin": "node --test tests/rpg-chemin-timeline.test.js",

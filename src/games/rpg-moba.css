@@ -1498,7 +1498,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   }
   .moba .moba__mulligan-overlay .rpg-card-icones--mulligan-moba {
     --rpg-plaque-taille: clamp(24px, 2.3vw, 34px);
-    --rpg-plaque-bord: 35%;
+    --rpg-plaque-bord: 0%;
     top: 6%; right: 0; gap: 4px;
   }
   .moba__mulligan-overlay .moba__mulligan > button { min-height: 44px; padding: 8px 18px; font-size: 14px; }
