@@ -1,4 +1,4 @@
-import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
+import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js';
 
@@ -16,10 +16,27 @@ export function petiteCreatureMoba(carte) {
   const cout = Number(carte?.cost);
   return ['creature', 'hero'].includes(kind) && cout >= 1 && cout <= 4;
 }
-/** Les cartes jouées pendant leur propre tour sont des invocations normales.
- * Les marqueurs MOBA historiques sont conservés pour les parties sérialisées. */
+/** Invocation spéciale pendant son propre tour : en phase principale, si la
+ * condition est remplie et qu'une place libre permet de poser sans sacrifice.
+ * Sinon la carte reste disponible comme invocation normale. */
+export function rpgInvocationSpecialeSurSonTour(duel, cote, carte) {
+  const camp = duel?.[cote];
+  if (!camp || duel.tour !== cote || !carte || !['creature', 'hero'].includes(carte.kind ?? cardById(carte.id)?.kind)
+    || !camp.main.includes(carte.id) || !rpgCarteEmbuscade(carte)
+    || !['principale', 'principale2'].includes(duel.phase) || duel.fenetreReponse
+    || duel.finDeTour || duel.combatDeclare || duel.annonce || duel.arriveeEnAttente
+    || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length
+    || duel.defausseEnAttente || duel.siteEnAttente || duel.boualemEnAttente
+    || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente || duel.mobaRechercheEnAttente
+    || duel.mobaReponseSuspendue || duel.mobaEmbuscadeArrivee || duel.moba?.centerChoice
+    || duel.fin?.gagnant || duel.fin?.nul || duel.moba?.winner) return false;
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX) return false;
+  return rpgConditionEmbuscadeCommune(duel, cote, carte);
+}
 function embuscade(duel, cote, carte, specialeMoba = false) {
-  return Boolean(duel && cote && (specialeMoba || (cote !== duel.tour && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse))));
+  return Boolean(duel && cote && (specialeMoba
+    || (cote !== duel.tour && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse))
+    || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;

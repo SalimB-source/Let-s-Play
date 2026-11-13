@@ -4,7 +4,7 @@ import { TourbillonEau } from './TourbillonEau.jsx';
 export { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaCartePourApercu } from './rpgMobaPresentation.js';
 import { SACRIFICE_ANIMATION, instantaneSansSacrificesAnimes } from './rpgSacrificeAnimation.js';
-import { sacrificesInvocation, invocationPossible } from './rpgInvocation.js';
+import { sacrificesInvocation, invocationPossible, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { LanguageContext } from '../i18n/LanguageContext';
@@ -3424,7 +3424,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie || arme.effet?.volDeVie);
   const conditionEmbuscade = conditionEmbuscadeCourtePourApercu(carte);
   const lectureBrute = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
-  // La pastille explique la mécanique ; le cadre violet est le seul endroit
+  // La pastille explique la mécanique ; le cadre doré est le seul endroit
   // où lire la condition propre à cette carte, sans répéter la même phrase.
   const lecture = conditionEmbuscade ? {
     ...lectureBrute,
@@ -14769,11 +14769,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // une carte allumée mais injouable enfermerait le joueur.
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
-              // Or uniquement pour une invocation spéciale réellement
-              // disponible en réponse, jamais pour une pose normale ou défausse.
+              // Or uniquement pour une invocation spéciale réellement disponible,
+              // pendant son tour ou en réponse, jamais pour une pose normale ou défausse.
               const embuscadeJouable = baseJouable && !groupe.enRenvoi && estCreature
-                && duel.tour === 'sorcier' && duel.fenetreReponse && reponseActive
-                && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse);
+                && (rpgInvocationSpecialeSurSonTour(duel, 'joueur', carte)
+                  || (duel.tour === 'sorcier' && duel.fenetreReponse && reponseActive
+                    && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)));
               // Une invocation spéciale disponible partage le halo doré des mythiques.
               const estMythique = cardRarityInfo(carte).key === 'mythique';
               const mythiqueJouable = baseJouable && estMythique;

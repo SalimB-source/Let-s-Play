@@ -35,8 +35,8 @@ test('les deux rendus MOBA utilisent le halo dorÃ© et respectent le mouvement rÃ
   assert.match(declarations(found[0]).animation, /rpg-mythique-halo-pulse/);
   assert.ok(found.some((r) => r.parent.name === 'media' && r.parent.params.includes('prefers-reduced-motion')));
   const board = read('RpgMobaBoard.jsx');
-  assert.match(board, /const specialementJouable = !disabled && !defausse && !iaAgit && \['creature', 'hero'\]\.includes\(card.kind\) && rpgMobaPeutEmbuscade/);
+  assert.match(board, /const specialementJouable = !disabled && !defausse && !iaAgit && \['creature', 'hero'\]\.includes\(card.kind\) && rpgMobaInvocationSpecialeDisponible/);
   assert.equal((board.match(/specialementJouable \? ' is-special-ambush'/g) || []).length, 2);
   const duel = read('RpgDuelPage.jsx');
-  assert.match(duel, /const embuscadeJouable = baseJouable && !groupe\.enRenvoi && estCreature\s+&& duel\.tour === 'sorcier' && duel\.fenetreReponse && reponseActive/);
+  assert.match(duel, /const embuscadeJouable = baseJouable && !groupe\.enRenvoi && estCreature\s+&& \(rpgInvocationSpecialeSurSonTour\(duel, 'joueur', carte\)/);
 });

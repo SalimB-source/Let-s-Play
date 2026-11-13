@@ -196,7 +196,7 @@
     "check:live-assistance": "node scripts/driving-live-assistance-check.mjs",
     "check:city-rush-performance": "node --test tests/city-rush-performance.test.js",
     "check:vice-city-portrait": "node --test tests/vice-city-portrait.test.js",
-    "check:rpg-mal-invocation": "node --test tests/rpg-moba-attaque-immediate.test.js tests/rpg-mal-invocation-ui.test.js tests/rpg-embuscade-commune.test.js tests/rpg-moba-embuscade-reponse-sans-mana.test.js tests/rpg-classique-combat-individuel.test.js tests/rpg-moba-ia-conquete.test.js tests/rpg-effets-icones.test.js tests/rpg-tutorial.test.js"
+    "check:rpg-mal-invocation": "node --test tests/rpg-invocation-speciale-tour.test.js tests/rpg-moba-attaque-immediate.test.js tests/rpg-mal-invocation-ui.test.js tests/rpg-embuscade-commune.test.js tests/rpg-moba-embuscade-reponse-sans-mana.test.js tests/rpg-classique-combat-individuel.test.js tests/rpg-moba-ia-conquete.test.js tests/rpg-effets-icones.test.js tests/rpg-tutorial.test.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
