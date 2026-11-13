@@ -96,7 +96,8 @@ import { enregistrerDerniereTour, lireDerniereTour, resumeConquete } from './rpg
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
-import { personnageEtage, portraitHistoire, standHistoire } from './rpgStoryCast.js';
+import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
+import { avatarDuel } from './rpgDuelAvatars.js';
 import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExemplaires } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
@@ -9888,10 +9889,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const personnageSorcier = personnageEtage(histoireEtageId);
   const portraitSorcierAdverse = (personnageSorcier && portraitHistoire(personnageSorcier, import.meta.env.BASE_URL, cardArt))
     || cardArt(etageHistoire ? etageHistoire.avatar ?? 'ifrit-al-ahmar' : deckBoxArtUrl(deckAdverseAffiche));
-  // Les portraits carrés servent aux fiches ; seuls les sprites détourés vont sur la table.
-  const avatarPlateauAdverse = standHistoire(personnageSorcier ?? 'ifrit-ergs', import.meta.env.BASE_URL)
-    ?? standHistoire('ifrit-ergs', import.meta.env.BASE_URL);
-  const avatarPlateauJoueur = standHistoire(avatarDeProfil(profilJoueur)?.id ?? 'salem', import.meta.env.BASE_URL);
+  // Les fiches gardent leurs portraits ; le plateau montre uniquement les têtes détourées.
+  const avatarPlateauAdverse = avatarDuel(personnageSorcier, import.meta.env.BASE_URL)
+    ?? avatarDuel('ifrit-ergs', import.meta.env.BASE_URL);
+  const avatarPlateauJoueur = avatarDuel(avatarDeProfil(profilJoueur)?.id, import.meta.env.BASE_URL)
+    ?? avatarDuel('salem', import.meta.env.BASE_URL);
   const cibleAnnoncee = carteAnnoncee?.kind === 'magie'
     ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse)
     : carteAnnoncee?.kind === 'arme'
