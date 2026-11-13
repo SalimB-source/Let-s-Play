@@ -1,5 +1,5 @@
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
-import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba } from './rpgInvocation.js';
+import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
@@ -6131,8 +6131,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (duel.moba && duel.tour !== cote && !invocationSpecialeMoba) return { ok: false, raison: 'pas-votre-tour' };
   if (!duel.moba && duel.tour !== cote && !(rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.moba && invocationSpecialeMoba && !dejaPayee
-    && (duel.tour === cote || !duel.fenetreReponse
-      || !(rpgMobaConditionSpeciale(duel, cote, carteId)
+    && !(duel.tour === cote ? rpgInvocationSpecialeSurSonTour(duel, cote, carte)
+      : duel.fenetreReponse && (rpgMobaConditionSpeciale(duel, cote, carteId)
         || rpgMobaConditionRapidite(duel, cote, carteId)
         || rpgMobaConditionImprimee(duel, cote, carteId)))) return { ok: false, raison: 'condition-embuscade' };
   if ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour !== cote && !(duel.fenetreReponse || reponseIA)) return { ok: false, raison: 'timing' };
@@ -6322,7 +6322,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const cible = duelCardById(annonceReponse.carteId);
     if (!rpgPeutPayer(duel[annonceReponse.cote], cible)) return { ok: false, raison: 'mana' };
     payer(duel, annonceReponse.cote, cible);
-    marquerInvocationMoba(duel, annonceReponse.cote, cible);
+    marquerInvocationMoba(duel, annonceReponse.cote, cible, Boolean(annonceReponse.invocationSpeciale));
     const mainAdverse = duel[annonceReponse.cote].main;
     mainAdverse.splice(mainAdverse.indexOf(cible.id), 1);
     duel[annonceReponse.cote].cimetiere.push(cible.id);
@@ -7342,7 +7342,7 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   // annonces du sorcier ne paient normalement qu'à leur résolution.
   if (!reserveMoba) {
     payer(duel, annonce.cote, cible);
-    marquerInvocationMoba(duel, annonce.cote, cible);
+    marquerInvocationMoba(duel, annonce.cote, cible, Boolean(annonce.invocationSpeciale));
   }
   payer(duel, cote, carte);
   const main = campAnnonce.main;
@@ -9569,7 +9569,8 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
       refuses.add(coup.carteId);
       continue;
     }
-    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null, ...(coup.sacrificeIds ? { sacrificeIds: coup.sacrificeIds } : {}) };
+    const invocationSpeciale = rpgInvocationSpecialeSurSonTour(duel, 'sorcier', carte);
+    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null, ...(coup.sacrificeIds ? { sacrificeIds: coup.sacrificeIds } : {}), ...(invocationSpeciale ? { invocationSpeciale: true } : {}) };
     duel.fenetreReponse = true;
     duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
     return duel.annonce;
@@ -9586,9 +9587,9 @@ export function rpgSorcierResoudreAnnonce(duel) {
   // La réponse adverse peut avoir changé le plateau : réévaluer avant de
   // sacrifier plutôt que payer aveuglément avec une créature devenue précieuse.
   const creature = duelCardById(annonce.carteId);
-  const sacrifices = creature && sacrificesInvocation(creature, duel)
+  const sacrifices = creature && sacrificesInvocation(creature, duel, 'sorcier')
     ? choisirSacrificesInvocationIA(duel, 'sorcier', creature, annonce.cibleId) : null;
-  if (creature && sacrificesInvocation(creature, duel) && sacrifices === null) {
+  if (creature && sacrificesInvocation(creature, duel, 'sorcier') && sacrifices === null) {
     duel.log.push(`Le sorcier renonce à invoquer ${creature.name} : aucun sacrifice avantageux.`);
     return { ok: false, raison: 'sacrifice-inutile', carteId: annonce.carteId };
   }

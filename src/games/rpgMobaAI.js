@@ -8,7 +8,7 @@ import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasa
 import {
   MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
+  rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
 } from './rpgMobaLocal.js';
 
@@ -293,7 +293,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     }
     return essai.moba.winner === side;
   };
-  for (const card of cards) for (const lane of lanes) for (const victimes of (rpgMobaPeutEmbuscade(duel, side, card.id) ? [[]] : rpgCombinaisonsSacrificesIA(duel, side, card)))
+  for (const card of cards) for (const lane of lanes) for (const victimes of (rpgMobaInvocationSpecialeDisponible(duel, side, card.id) ? [[]] : rpgCombinaisonsSacrificesIA(duel, side, card)))
   for (const slot of (victimes.length
       ? lane.slots[side].flatMap((id, index) => victimes.some((e) => e.id === id) ? [index] : [])
       : [lane.slots[side].indexOf(null)].filter((index) => index >= 0))) {

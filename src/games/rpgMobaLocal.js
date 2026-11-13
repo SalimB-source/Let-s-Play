@@ -13,7 +13,7 @@ import {
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
-import { invocationPossible, limiteInvocationMoba, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
+import { invocationPossible, limiteInvocationMoba, sacrificesInvocation, victimesInvocation, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { MOBA_EMBUSCADES_CONDITIONS, rpgMobaConditionSpeciale } from './rpgMobaEmbuscades.js';
 import { MOBA_RAPIDITE_EMBUSCADES, rpgMobaConditionRapidite } from './rpgMobaRapidite.js';
 import { MOBA_EMBUSCADES_IMPRIMEES, rpgMobaConditionImprimee } from './rpgMobaEmbuscadesImprimees.js';
@@ -159,7 +159,7 @@ export function rpgMobaLimiteCarte(duel, side, carte) {
 /** Whether a displayed card can be paid, including a legal lane for life prices. */
 export function rpgMobaPeutPayer(duel, side, carte) {
   if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte) return false;
-  const speciale = ['creature', 'hero'].includes(carte.kind) && rpgMobaPeutEmbuscade(duel, side, carte.id);
+  const speciale = ['creature', 'hero'].includes(carte.kind) && rpgMobaInvocationSpecialeDisponible(duel, side, carte.id);
   if ((!speciale && rpgMobaLimiteCarte(duel, side, carte)) || !invocationPossible(duel, side, carte, speciale)) return false;
   if (!MOBA_MAGIES_PRIX.includes(carte.id)) return rpgPeutPayer(duel[side], carte);
   return rpgPeutPayer(duel[side], carte, { ignorerPrixPv: true })
@@ -168,7 +168,7 @@ export function rpgMobaPeutPayer(duel, side, carte) {
 
 /** La même lecture du coût que la pose : la condition spéciale dispense de sacrifice. */
 export function rpgMobaSacrificesInvocation(duel, side, carte) {
-  return sacrificesInvocation(carte, duel, side, rpgMobaPeutEmbuscade(duel, side, carte?.id));
+  return sacrificesInvocation(carte, duel, side, rpgMobaInvocationSpecialeDisponible(duel, side, carte?.id));
 }
 
 /** Two human-controlled seats reuse the turn engine, without mana costs or growth.
@@ -384,6 +384,18 @@ export function rpgMobaPeutEmbuscade(duel, side, cardId) {
       && lane.slots[side].some((id) => id === null)));
 }
 
+/** En phase principale, la condition ouvre aussi l'invocation spéciale sur
+ * une case libre ; sans case libre, une invocation normale avec sacrifice reste possible. */
+export function rpgMobaInvocationSpecialeDisponible(duel, side, cardId) {
+  if (rpgMobaPeutEmbuscade(duel, side, cardId)) return true;
+  const carte = duelCardById(cardId);
+  return Boolean(duel?.moba && duel.manaEssaiDemarre && rpgMobaPlacementCoherent(duel)
+    && rpgInvocationSpecialeSurSonTour(duel, side, carte) && rpgPeutPayer(duel[side], carte)
+    && !duel[side].prochaineArriveeAbordage && !duel[side].abordageDesArrivees
+    && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, side, lane.id)
+      && lane.slots[side].some((id) => id === null)));
+}
+
 /** Place a creature from the active player's hand using the engine's payment,
  * restrictions, entity creation and aura recalculation. Effects requiring lane
  * semantics are temporarily rejected rather than executed incorrectly. */
@@ -394,7 +406,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   if (!MOBA_SIDES.includes(side)) return fail('pas-votre-tour');
   const attente = resoudreEnAttente && duel.mobaCreatureEnAttente;
   const speciale = resoudreEnAttente ? Boolean(attente?.invocationSpecialeMoba)
-    : rpgMobaPeutEmbuscade(duel, side, cardId);
+    : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId
     || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
   if (side !== duel.tour && !speciale) return fail('pas-votre-tour');
@@ -446,7 +458,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     let suspendue = null;
     const avaitSuspension = Object.hasOwn(duel, 'mobaReponseSuspendue');
     const suspensionPrecedente = duel.mobaReponseSuspendue;
-    if (speciale && !resoudreEnAttente) {
+    if (speciale && side !== duel.tour && !resoudreEnAttente) {
       for (const [type, cle] of [['creature', 'mobaCreatureEnAttente'], ['sort', 'mobaSortEnAttente'], ['effet', 'effetCreatureEnAttente'], ['fin', 'finDeTour']]) {
         if (duel[cle]) { suspendue = { type, attente: duel[cle] }; duel[cle] = null; break; }
       }
@@ -501,7 +513,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     synchroniserSorties(duel);
     normaliserArriveeMoba(duel);
     if (result.arriveeEnAttente && !duel.arriveeEnAttente) result.arriveeEnAttente = false;
-    if (speciale) {
+    if (speciale && side !== duel.tour) {
       reconcilerCombatDeclare(duel);
       if (duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.mobaRechercheEnAttente) duel.mobaEmbuscadeArrivee = { cote: side };
       else if (duel.mobaReponseSuspendue) reprendreReponseSuspendue(duel);

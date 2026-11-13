@@ -285,7 +285,7 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
 test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte de l’aperçu', () => {
   const feriel = effetsDetailles(cardById('feriel'));
   assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Invocation spéciale', 'Rapidité', 'Attaque ciblée']);
-  assert.equal(feriel.pastilles[0].description, 'Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : Vous contrôlez une créature Sable et une créature Braise distinctes, dont une blessée. Invocation spéciale sans sacrifice ni quota.',
+  assert.equal(feriel.pastilles[0].description, 'Vous pouvez jouer cette carte pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse si sa condition est remplie : Vous contrôlez une créature Sable et une créature Braise distinctes, dont une blessée. Sans sacrifice ni invocation normale ; sinon, invocation normale pendant votre tour.',
     'la condition de l’Embuscade reste indépendante de Rapidité');
   assert.match(feriel.pastilles[1].description, /attaquer le tour où elle arrive/);
   assert.match(feriel.pastilles[2].description, /créature adverse ou directement.*15 %/u,

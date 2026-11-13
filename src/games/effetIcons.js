@@ -646,7 +646,7 @@ export function iconePourLigne(carte, ligne = '') {
 
 /** La définition de chaque effet, au féminin de « la créature » (ou de la carte). */
 export const EFFET_DEFINITIONS = {
-  reactionTourAdverse: 'Vous pouvez jouer cette carte pendant le tour adverse, en respectant les fenêtres de réponse.',
+  reactionTourAdverse: 'Si sa condition est remplie, vous pouvez jouer cette carte pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale. Sinon, vous pouvez l’invoquer normalement pendant votre tour.',
   envol: 'Peut attaquer une créature accessible au sol ou en vol. Une attaque normale au sol ne peut pas la viser. Sans créature volante adverse accessible, elle peut aussi attaquer directement, sauf priorité applicable.',
   infiltration: 'Peut attaquer directement même si des créatures adverses sont présentes, sauf priorité applicable. Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
@@ -819,7 +819,7 @@ export function texteCombatIndividuel(carte) {
     curseur = fin;
   });
   const condition = !carte?.presentationCombatMoba && rpgTexteConditionEmbuscade(carte);
-  const regleEmbuscade = condition ? `Invocation spéciale — Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : ${condition} Invocation spéciale sans sacrifice ni quota. ` : '';
+  const regleEmbuscade = condition ? `Invocation spéciale — Vous pouvez jouer cette carte pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse si sa condition est remplie : ${condition} Sans sacrifice ni invocation normale ; sinon, invocation normale pendant votre tour. ` : '';
   return `${regleEmbuscade}${texte}${brut.slice(curseur)}`
     .replace(/Quand le porteur attaque : gagnez 1 mana de sable\./gu, 'La production de mana du Harnais n’a plus d’effet.')
     .replace(/qui coûtent 3 mana ou moins/gu, 'de coût imprimé 3 ou moins')
@@ -908,7 +908,7 @@ export function effetsDetailles(carte) {
   for (const pastille of pastilles) {
     if (MOTS_COMBAT_INDIVIDUEL.has(pastille.cle) || !pastille.description) pastille.description = definitionPastille(pastille);
     if (pastille.cle === 'reactionTourAdverse' && rpgTexteConditionEmbuscade(carte)) {
-      pastille.description = `Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : ${rpgTexteConditionEmbuscade(carte)} Invocation spéciale sans sacrifice ni quota.`;
+      pastille.description = `Vous pouvez jouer cette carte pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse si sa condition est remplie : ${rpgTexteConditionEmbuscade(carte)} Sans sacrifice ni invocation normale ; sinon, invocation normale pendant votre tour.`;
     }
   }
 

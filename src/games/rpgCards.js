@@ -520,7 +520,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true, conditionEmbuscade: 'attaquant',
     arrivee: { type: 'degats', amount: 3, cible: 'creature', attaquanteSeulement: true },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse attaque. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle une créature. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
     flavor: 'Le désert attend que ses ennemis avancent.',
   },
   ...RPG_SOLEIL_ROUGE_CREATURES,
@@ -1222,7 +1222,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'attaquant', provocation: true, furie: 1,
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire déclare une attaque. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez une créature blessée et l’adversaire contrôle une créature. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
     flavor: 'Il ne cède pas le passage, même quand la glace se teinte de rouge.',
   },
   {
@@ -1248,7 +1248,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 2, def: 1, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'attaquant-force-2',
     arrivee: { type: 'debuff', cible: 'creature', atk: -2, def: 0, tours: 1 },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse de force 2 ou plus attaque. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle une créature de force 2 ou plus. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
     flavor: 'La lumière s’éteint avant que la lame ne frappe.',
   },
   {
@@ -1257,7 +1257,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 3, def: 1, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'allie-cible',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true, bonusDef: 2 },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si une de vos créatures est ciblée par un sort, un effet annoncé ou une Attaque ciblée adverse. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez une créature blessée sans bouclier. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
     flavor: 'Son croissant veille sur ceux qui n’ont plus de soleil.',
   },
   {
@@ -1266,7 +1266,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'deux-attaquants',
     arrivee: { type: 'renvoi-ou-destruction', cible: 'creature', coutRenvoiMin: 4, coutDestructionMax: 3 },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire déclare au moins deux attaquants. À son arrivée : choisissez une créature adverse. Si elle coûte 4 ou plus, renvoyez-la dans la main de son propriétaire ; si elle coûte 3 ou moins, détruisez-la.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins deux créatures. À son arrivée : choisissez une créature adverse. Si elle coûte 4 ou plus, renvoyez-la dans la main de son propriétaire ; si elle coûte 3 ou moins, détruisez-la.',
     flavor: 'Nul ne voit le pas qui l’éloigne.',
   },
   {
@@ -1275,7 +1275,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
     reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
     contreAnnonceCreature: true, coupRapide: true,
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement en réponse à une carte de créature que cet adversaire joue depuis sa main. Si vous la jouez ainsi, contrez cette carte de créature. Le Sorcier du ressac noir arrive ensuite en jeu. Attaque ciblée — Lorsqu’il attaque, il doit viser une créature adverse si possible : il lui inflige ses dégâts d’attaque sans riposte, avec 15 % de chances de rater. Sans créature adverse, il peut attaquer le sorcier avec 100 % de chances de toucher.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez un Vampire, avez une Magie Rapide au cimetière et l’adversaire une créature non-jeton de coût 3 ou moins. Si vous la jouez ainsi, contrez cette carte de créature. Le Sorcier du ressac noir arrive ensuite en jeu. Attaque ciblée — Lorsqu’il attaque, il doit viser une créature adverse si possible : il lui inflige ses dégâts d’attaque sans riposte, avec 15 % de chances de rater. Sans créature adverse, il peut attaquer le sorcier avec 100 % de chances de toucher.',
     flavor: 'Il noie l’invocation avant qu’elle ne touche la rive.',
   },
   {
@@ -1284,7 +1284,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
     arrivee: { type: 'degats', amount: 1, amountSiBlessee: 2, cible: 'toutes-creatures' },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse est déjà blessée. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins deux créatures blessées. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {
@@ -1293,7 +1293,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'vampire-attaque',
     arrivee: { type: 'buff', atk: 0, def: 2, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si un de vos Vampires est visé par une Attaque ciblée adverse ou bloque une attaque. À son arrivée : vos Vampires gagnent +0/+2 jusqu’à la fin du tour.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez deux Vampires, dont un blessé. À son arrivée : vos Vampires gagnent +0/+2 jusqu’à la fin du tour.',
     flavor: 'Sous son étendard, les ombres tiennent bon.',
   },
   {
@@ -1302,7 +1302,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'attaquant-force-3',
     arrivee: { type: 'gel', cible: 'creature' },
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse de force 3 ou plus attaque. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle une créature de force 3 ou plus. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
     flavor: 'Sa veille fige le dernier souffle de la nuit.',
   },
   {

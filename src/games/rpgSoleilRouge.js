@@ -162,7 +162,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     conditionEmbuscade: 'djinn-adverse',
     esquive: true,
     contreAttaque: true,
-    text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire contrôle un Djinn. Esquive — 15 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque, un sort ou une capacité, il contre-attaque quand même. Il riposte aussi si le coup le détruit.',
+    text: 'Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle un Djinn et vous contrôlez une créature blessée. Esquive — 15 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque, un sort ou une capacité, il contre-attaque quand même. Il riposte aussi si le coup le détruit.',
     flavor: 'Ses trois lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({
