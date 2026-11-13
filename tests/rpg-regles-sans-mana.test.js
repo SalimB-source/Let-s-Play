@@ -42,6 +42,11 @@ test('une invocation normale, sacrifices imprimés et réinitialisation par camp
 
 test('l’Embuscade adverse est gratuite et ne consomme pas l’invocation normale', () => {
   const d = partie();
+  d.tour = 'sorcier';
+  d.sorcier.main = ['gardienne-des-portes-de-sable'];
+  const allie = rpgJouerCreature(d, 'sorcier', 'gardienne-des-portes-de-sable').entite;
+  allie.pv--;
+  d.tour = 'joueur';
   d.joueur.main = ['djinn-du-dernier-brasier'];
   assert.ok(rpgJouerCreature(d, 'joueur', 'djinn-du-dernier-brasier').ok);
   d.sorcier.main = ['tojiro-le-pourfendeur', 'chien-du-guet'];
@@ -49,20 +54,26 @@ test('l’Embuscade adverse est gratuite et ne consomme pas l’invocation norma
   assert.equal(rpgJouerCreature(d, 'sorcier', 'tojiro-le-pourfendeur').raison, 'timing');
   rpgOuvrirFinDeTour(d);
   assert.ok(rpgJouerCreature(d, 'sorcier', 'tojiro-le-pourfendeur').ok);
-  assert.equal(d.sorcier.invocationNormaleJouee, undefined);
+  assert.equal(d.sorcier.invocationNormaleJouee, true);
   rpgFinDeTour(d);
   assert.ok(rpgJouerCreature(d, 'sorcier', 'chien-du-guet').ok);
 });
 
 test('PvP : une réaction n’est admise que dans une fenêtre', () => {
   const d = partie(true);
+  d.tour = 'sorcier';
+  d.sorcier.main = ['gardienne-des-portes-de-sable'];
+  const allie = rpgJouerCreature(d, 'sorcier', 'gardienne-des-portes-de-sable').entite;
+  allie.pv--;
+  d.tour = 'joueur';
+  d.sorcier.invocationNormaleJouee = false;
   d.joueur.main = ['djinn-du-dernier-brasier'];
   assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'djinn-du-dernier-brasier' }).ok);
   d.sorcier.main = ['tojiro-le-pourfendeur'];
   assert.equal(rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'tojiro-le-pourfendeur' }).raison, 'timing');
   rpgOuvrirFinDeTour(d);
   assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'tojiro-le-pourfendeur' }).ok);
-  assert.equal(d.sorcier.invocationNormaleJouee, undefined);
+  assert.equal(d.sorcier.invocationNormaleJouee, false);
 });
 
 test('sorts gratuits mais Prix en PV conservé ; les productions de mana sont désactivées', () => {

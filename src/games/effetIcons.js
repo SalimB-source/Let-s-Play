@@ -1,3 +1,4 @@
+import { rpgCarteEmbuscade, rpgTexteConditionEmbuscade } from './rpgEmbuscade.js';
 /**
  * Le sprite des icônes d’effets du duel — les symboles validés
  * (`preview-effets-icone.html`), monochromes, dessin au trait 24×24 ;
@@ -301,15 +302,15 @@ export function pastillesPourCarte(carte) {
     pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur, ...details });
   };
 
-  if (carte.reactionTourAdverse) ajouter('reactionTourAdverse', 'Embuscade');
-  if (carte.contreAnnonceCreature) ajouter('contresort', 'Contresort');
+  if (carte.reactionTourAdverse || rpgCarteEmbuscade(carte)) ajouter('reactionTourAdverse', 'Embuscade');
+  if (carte.contreAnnonceCreature && !rpgCarteEmbuscade(carte)) ajouter('contresort', 'Contresort');
   if (carte.envol) ajouter('envol', 'Envol');
   // L'Envol que la Furie prête (le Maître du marteau) ne s'imprime pas : la
   // pastille dit d'où il vient, tant que la Furie n'est pas allumée.
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.volDeVie || carte.donne?.volDeVie || carte.effet?.volDeVie) ajouter('volDeVie', 'Vol de vie');
-  if (carte.rapidite) ajouter('rapidite', 'Rapidité');
+  if (carte.rapidite && !rpgCarteEmbuscade(carte)) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
@@ -769,6 +770,13 @@ const cleDuLibelle = (libelle) => LIBELLES_IMPRIMES
  * Le retour en main garde le timing propre au MOBA, distinct du classique. */
 function texteCapacitesCombat(carte) {
   let texte = carte?.text && carte.text !== '—' ? String(carte.text) : '';
+  if (rpgCarteEmbuscade(carte) && !carte.presentationCombatMoba) {
+    texte = texte.replace(/^Embuscade\s*[—-]\s*[^.]*\.\s*/u, '')
+      .replace(/Rapidité\s*—\s*[^.]*\.\s*/gu, '').replace(/\bRapidité\.\s*/gu, '');
+    if (carte.id === 'sentinelle-des-sables') texte = texte.replace('créature attaquante ciblée', 'créature adverse ciblée');
+    if (carte.id === 'traqueur-des-nuits-sans-lune') texte = texte.replace('créature attaquante ciblée', 'créature adverse ciblée');
+    if (carte.id === 'sorcier-du-ressac-noir') texte = 'À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire.';
+  }
   texte = texte.replace('Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible.',
     'Mur — Ne peut ni attaquer ni être équipée.');
   if (carte?.id === 'vampire-des-braises') {
@@ -787,7 +795,8 @@ function texteCapacitesCombat(carte) {
     texte = texte.replace('Quand il bloque : après les blessures de combat, la créature qu’il bloque repart dans la main de son propriétaire.',
       `Quand il est visé par une attaque normale, il renvoie l’attaquant dans la main de son propriétaire ${carte.presentationCombatMoba ? 'après' : 'avant'} les blessures de combat.`);
   }
-  return texte;
+  return texte.replace(/Quand le porteur attaque : gagnez 1 mana de sable\./gu, 'La production de mana du Harnais n’a plus d’effet.')
+    .replace(/qui coûtent 3 mana ou moins/gu, 'de coût imprimé 3 ou moins');
 }
 
 /** Les règles de combat imprimées historiques parlent de bloqueurs. Les
@@ -810,7 +819,9 @@ export function texteCombatIndividuel(carte) {
     texte += `${brut.slice(curseur, section.debut)}${section.label} — ${EFFET_DEFINITIONS[section.cle]} `;
     curseur = fin;
   });
-  return `${texte}${brut.slice(curseur)}`
+  const condition = !carte?.presentationCombatMoba && rpgTexteConditionEmbuscade(carte);
+  const regleEmbuscade = condition ? `Embuscade — Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : ${condition} Invocation spéciale sans sacrifice ni quota. ` : '';
+  return `${regleEmbuscade}${texte}${brut.slice(curseur)}`
     .replace(/Quand le porteur attaque : gagnez 1 mana de sable\./gu, 'La production de mana du Harnais n’a plus d’effet.')
     .replace(/qui coûtent 3 mana ou moins/gu, 'de coût imprimé 3 ou moins')
     .replace(/\s+/gu, ' ').trim();
@@ -897,6 +908,9 @@ export function effetsDetailles(carte) {
 
   for (const pastille of pastilles) {
     if (MOTS_COMBAT_INDIVIDUEL.has(pastille.cle) || !pastille.description) pastille.description = definitionPastille(pastille);
+    if (pastille.cle === 'reactionTourAdverse' && rpgTexteConditionEmbuscade(carte)) {
+      pastille.description = `Vous pouvez jouer cette carte pendant le tour adverse, dans une fenêtre de réponse : ${rpgTexteConditionEmbuscade(carte)} Invocation spéciale sans sacrifice ni quota.`;
+    }
   }
 
   let texte = '';

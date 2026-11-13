@@ -1,3 +1,4 @@
+import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
@@ -5206,7 +5207,7 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null, sourceType = n
 /** Adaptation MOBA du contre du Sorcier du ressac : sur son propre tour,
  * il renvoie une créature non-jeton de coût 3 ou moins, sur tout le plateau. */
 export function rpgRessacMobaArrivee(duel, cote) {
-  if (!duel?.moba) return false;
+  if (!duel?.[cote]) return false;
   const ennemi = autre(cote);
   const couleurs = cardColors(cardById('sorcier-du-ressac-noir'));
   const cible = duel[ennemi].creatures.find((e) => !e.jeton && !estSite(e)
@@ -5818,8 +5819,10 @@ function annonceCreatureDepuisMain(duel, cote, annonce) {
 
 /** Une Embuscade exige son déclencheur seulement pendant le tour adverse. */
 export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.annonce) {
-  // La condition n'interdit jamais la pose pendant son propre tour.
-  if (!carte?.reactionTourAdverse || duel.tour === cote) return true;
+  // La condition n'interdit jamais la pose normale pendant son propre tour.
+  if (duel.tour === cote) return true;
+  if (rpgCarteEmbuscade(carte)) return rpgConditionEmbuscadeCommune(duel, cote, carte);
+  if (!carte?.reactionTourAdverse) return true;
   const adversaires = duel[autre(cote)].creatures;
   const allies = duel[cote].creatures;
   const combat = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare : null;
@@ -5869,16 +5872,13 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.a
   }
 }
 
-/** La Sentinelle MOBA arrive pendant son tour et peut frapper une créature
- * adverse même si elle n'attaque pas. Le duel classique conserve son texte. */
+/** La Sentinelle peut frapper une créature adverse qui n'attaque pas. */
 export const rpgArriveeExigeAttaquant = (duel, carte) => Boolean(carte?.arrivee?.attaquanteSeulement
-  && !(duel.moba && carte.id === 'sentinelle-des-sables'));
+  && carte.id !== 'sentinelle-des-sables');
 
-/** En MOBA, les deux attaquants déclenchent l'Embuscade du Traqueur, mais
- * son texte autorise toute créature adverse de sa voie comme cible. Le duel
- * classique conserve ici sa règle historique. */
+/** Le Traqueur peut viser une créature adverse qui n'attaque pas. */
 export function rpgCibleEmbuscadeLegale(duel, cote, carte, cible) {
-  return (duel.moba && carte?.id === 'traqueur-des-nuits-sans-lune')
+  return carte?.id === 'traqueur-des-nuits-sans-lune'
     || carte?.conditionEmbuscade !== 'deux-attaquants' || duel.tour === cote
     || Boolean(cible && duel.combatDeclare?.cote === autre(cote)
       && duel.combatDeclare.attaquants.includes(cible.id));
@@ -6131,12 +6131,13 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     && (annonceCreatureMobaOrigine === duel.mobaCreatureEnAttente || annonceCreatureMobaOrigine === attenteMoba?.origineCreature));
   if (duel.moba && annonceCreatureMobaOrigine) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.moba && duel.tour !== cote && !invocationSpecialeMoba) return { ok: false, raison: 'pas-votre-tour' };
+  if (!duel.moba && duel.tour !== cote && !(rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.moba && invocationSpecialeMoba && !dejaPayee
     && (duel.tour === cote || !duel.fenetreReponse
       || !(rpgMobaConditionSpeciale(duel, cote, carteId)
         || rpgMobaConditionRapidite(duel, cote, carteId)
         || rpgMobaConditionImprimee(duel, cote, carteId)))) return { ok: false, raison: 'condition-embuscade' };
-  if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || reponseIA)) return { ok: false, raison: 'timing' };
+  if ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour !== cote && !(duel.fenetreReponse || reponseIA)) return { ok: false, raison: 'timing' };
   if (!contreCreatureMoba && !(duel.moba && invocationSpecialeMoba)
     && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
@@ -6319,7 +6320,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // cimetière AVANT l'arrivée du Vampire. Le Vampire, lui, reste sur le champ.
   // Toutes les validations de pose, de cible et de mana ont déjà eu lieu.
   let carteContree = null;
-  if (carte.contreAnnonceCreature && duel.tour !== cote && !contreCreatureMoba) {
+  if (carte.contreAnnonceCreature && !rpgCarteEmbuscade(carte) && duel.tour !== cote && !contreCreatureMoba) {
     const cible = duelCardById(annonceReponse.carteId);
     if (!rpgPeutPayer(duel[annonceReponse.cote], cible)) return { ok: false, raison: 'mana' };
     payer(duel, annonceReponse.cote, cible);
@@ -6399,6 +6400,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // tôt) : un pirate salue, un navire accoste au bruit du quai — des deux
   // camps, une seule fois par créature.
   journaliserArriveeCreature(duel, cote, entite);
+  if (!duel.moba && carteId === 'sorcier-du-ressac-noir') rpgRessacMobaArrivee(duel, cote);
   if (entite.protection) {
     const couleur = labelCouleursProtection(entite.protection.contre);
     duel.log.push(`${entite.name} reçoit un bouclier contre les sorts de ${couleur}.`);
@@ -7198,6 +7200,7 @@ function contreCorrespond(effet, carte) {
  *   annonce adverse légale à contrer maintenant.
  */
 export function rpgContreJouable(duel, cote, carte) {
+  if (rpgCarteEmbuscade(carte) && carte?.contreAnnonceCreature) return true;
   if (duel.moba && carte?.contreAnnonceCreature) return duel.tour === cote;
   if (carte?.contreAnnonceCreature) return duel.tour === cote
     || (duel.fenetreReponse && annonceCreatureDepuisMain(duel, cote, duel.annonce));
@@ -7370,7 +7373,7 @@ function choisirContreIA(duel, carte) {
   const candidats = duel.sorcier.main
     .map((id) => cardById(id))
     .filter((c) => ((c?.effet?.type === 'contresort' && contreCorrespond(c.effet, carte))
-      || (c?.contreAnnonceCreature && duelCardById(carte.id) && !jetonById(carte.id)
+      || (c?.contreAnnonceCreature && !rpgCarteEmbuscade(c) && duelCardById(carte.id) && !jetonById(carte.id)
         && carte.kind !== 'site' && invocationPossible(duel, 'sorcier', c)))
       && rpgPeutPayer(duel.sorcier, c))
     .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
@@ -9215,7 +9218,7 @@ export function rpgPeutRepondre(duel, cote) {
         && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, cote, lane.id) && lane.slots[cote].some((slot) => slot === null));
     }
     if (duel.moba && (carte?.reactionTourAdverse || Object.hasOwn(MOBA_RAPIDITE_EMBUSCADES, id))) return false;
-    if (carte?.reactionTourAdverse && duel.tour !== cote) {
+    if (!duel.moba && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse) && duel.tour !== cote) {
       return rpgPeutPayer(duel[cote], carte)
         && invocationPossible(duel, cote, carte)
         && rpgContreJouable(duel, cote, carte)
@@ -9241,7 +9244,7 @@ export function rpgSorcierMagieRapide(duel, rng = Math.random, combat = null) {
     if (duel.pvp || duel.moba || duel.tour !== 'joueur' || !duel.fenetreReponse) return null;
     for (const id of new Set(duel.sorcier.main)) {
       const carte = duelCardById(id);
-      if (!carte?.reactionTourAdverse || !rpgConditionEmbuscadeRemplie(duel, 'sorcier', carte)
+      if (!(rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse) || !rpgConditionEmbuscadeRemplie(duel, 'sorcier', carte)
         || !invocationPossible(duel, 'sorcier', carte) || !rpgPeutPayer(duel.sorcier, carte)
         || !rpgContreJouable(duel, 'sorcier', carte)) continue;
       const cibles = [...new Set([rpgCibleAuto(duel, 'sorcier', carte), null,

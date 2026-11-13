@@ -13,7 +13,10 @@ function poser(duel, cote, id = 'ashigaru-des-braises') {
   // Construction de plateau de test, indépendante du quota d'invocation.
   duel[cote].invocationNormaleJouee = false;
   duel[cote].main.push(id);
+  const tourAvant = duel.tour;
+  duel.tour = cote;
   const res = rpgJouerCreature(duel, cote, id);
+  duel.tour = tourAvant;
   assert.ok(res.ok, res.raison);
   res.entite.ready = true;
   return res.entite;
@@ -95,7 +98,7 @@ test('le déclencheur d’attaque détruit la cible avant les dégâts ordinaire
   assert.equal(a.pv, pv); assert.deepEqual(r.resume.blessures, []);
 });
 
-test('les conditions d’Embuscade distinguent attaque normale et Attaque ciblée', () => {
+test('les conditions d’Embuscade dépendent du plateau, pas du type d’attaque', () => {
   const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier');
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
   assert.equal(rpgConditionEmbuscadeRemplie(d, 'sorcier', cardById('gardienne-du-croissant')), false);
@@ -103,6 +106,8 @@ test('les conditions d’Embuscade distinguent attaque normale et Attaque ciblé
   const d2 = partie(), tireur = poser(d2, 'joueur'), cible = poser(d2, 'sorcier');
   tireur.coupRapide = true;
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d2, 'joueur', tireur.id, cible.id).ok);
+  assert.equal(rpgConditionEmbuscadeRemplie(d2, 'sorcier', cardById('gardienne-du-croissant')), false);
+  cible.pv--;
   assert.equal(rpgConditionEmbuscadeRemplie(d2, 'sorcier', cardById('gardienne-du-croissant')), true);
 });
 
@@ -156,6 +161,7 @@ test('une Embuscade remplissant sa condition est permise en fin de tour adverse'
   const ennemi = poser(d, 'sorcier');
   ennemi.def = ennemi.pvMax = ennemi.pv = 3;
   rpgBlesserCreature(d, 'sorcier', ennemi.id, 1);
+  const autre = poser(d, 'sorcier'); autre.pv--;
   d.joueur.main.push('sanguinaire-des-dunes');
   assert.equal(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').raison, 'timing');
   rpgOuvrirFinDeTour(d);
@@ -216,6 +222,7 @@ test('l’IA utilise une Embuscade légale pendant la réponse à une attaque', 
 test('l’IA peut aussi utiliser une Embuscade légale en fin de tour', () => {
   const d = partie(), a = poser(d, 'joueur'); a.def = a.pvMax = a.pv = 3;
   rpgBlesserCreature(d, 'joueur', a.id, 1);
+  const autre = poser(d, 'joueur'); autre.pv--;
   d.sorcier.main.push('sanguinaire-des-dunes'); rpgOuvrirFinDeTour(d);
   assert.equal(rpgPeutRepondre(d, 'sorcier'), true);
   assert.equal(rpgSorcierMagieRapide(d, () => .5)?.carteId, 'sanguinaire-des-dunes');
@@ -227,6 +234,7 @@ test('Embuscade reste jouable dans les fenêtres de sort et d’effet de créatu
     const d = partie(); d.tour = 'sorcier';
     const ennemi = poser(d, 'sorcier'); ennemi.def = ennemi.pvMax = ennemi.pv = 4;
     rpgBlesserCreature(d, 'sorcier', ennemi.id, 1);
+    const autre = poser(d, 'sorcier'); autre.pv--;
     d.joueur.main.push('sanguinaire-des-dunes');
     d.fenetreReponse = true;
     d[fenetre] = { cote: 'sorcier', carteId: 'ashigaru-des-braises', cibleId: null };

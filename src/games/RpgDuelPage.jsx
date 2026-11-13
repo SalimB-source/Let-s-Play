@@ -1,3 +1,4 @@
+import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from './rpgCombatIndividuelClassique.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
 export { TourbillonEau } from './TourbillonEau.jsx';
@@ -10969,8 +10970,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!rpgConditionEmbuscadeRemplie(duel, 'joueur', carte)) return false;
     if (!invocationPossible(duel, 'joueur', carte)) return false;
     const reactionAttaque = (reponseActive && carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier')
-      || (carte.reactionTourAdverse && (fenetreEffetCreature || (duel.tour === 'sorcier'
-        && reponseActive)));
+      || ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour === 'sorcier' && reponseActive);
     if (reponseApresBlocage && !carte.instant && !reactionAttaque) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
     // Une arme sans créature alliée à équiper reste éteinte dans la main —
@@ -10993,7 +10993,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && peutJouerCarte(carte);
   const aReponseJouableEnMain = Boolean(apercuAnnonceOuvert && duel.joueur.main.some((carteId) => {
     const carte = cardById(carteId);
-    return Boolean((carte?.instant || carte?.reactionTourAdverse) && peutJouerCarte(carte));
+    return Boolean((carte?.instant || carte?.reactionTourAdverse || rpgCarteEmbuscade(carte)) && peutJouerCarte(carte));
   }));
 
   const commencerGlisserCarte = (event, carte) => {
@@ -11628,8 +11628,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const poserCarte = (carteId, emplacement = null) => {
     const carte = cardById(carteId);
-    const peutRepondre = (reponseActive && (carte.instant || (carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier'))) || (carte.reactionTourAdverse && duel.tour === 'sorcier' && reponseActive);
-    if (reponseApresBlocage && !carte.instant) return;
+    const peutRepondre = (reponseActive && (carte.instant || (carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier'))) || ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour === 'sorcier' && reponseActive);
+    if (reponseApresBlocage && !carte.instant && !peutRepondre) return;
     if (!monTour && !peutRepondre) return;
     if (carte.kind === 'arme') {
       signalerTutoriel('arme-choisie', { cardId: carteId });

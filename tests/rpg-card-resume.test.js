@@ -80,7 +80,7 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
     assert.ok(morceaux.join('').length < conditionEmbuscadePourApercu(carte).length + 12, `${carte.id} : condition concise`);
   }
   const tojiro = cardById('tojiro-le-pourfendeur');
-  assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['il y a un ', 'Djinn', ' en face']);
+  assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['', 'L’adversaire contrôle un Djinn et vous contrôlez une créature blessée.']);
   assert.equal(conditionEmbuscadeCourtePourApercu(cardById('chien-du-guet')), null);
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*border-left: 3px solid #f4a9eb;[^}]*background: linear-gradient\(110deg, rgba\(98, 33, 92/s,
@@ -89,14 +89,14 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
     'les repères de la condition ressortent en gras');
 });
 
-test('la condition d’Embuscade de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
+test('la condition d’Embuscade de chaque Vampire utilise la condition commune', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
   assert.equal(vampires.length, 10, "le nouveau Vampire rejoint les Embuscades conditionnelles");
   for (const carte of vampires) {
     const condition = conditionEmbuscadePourApercu(carte);
     assert.ok(condition, `condition de ${carte.id} absente`);
-    assert.ok(carte.text.includes(`seulement ${carte.contreAnnonceCreature ? 'en réponse à ' : 'si '}${condition}.`), carte.id);
+    assert.deepEqual(conditionEmbuscadeCourtePourApercu(carte).join(''), condition, carte.id);
   }
   assert.equal(conditionEmbuscadePourApercu(cardById('chien-du-guet')), null);
   assert.equal(conditionEmbuscadePourApercu(cardById('embuscade')), null,

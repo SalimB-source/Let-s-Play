@@ -1,3 +1,4 @@
+import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
 import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js';
 
@@ -18,7 +19,7 @@ export function petiteCreatureMoba(carte) {
 /** Les cartes jouées pendant leur propre tour sont des invocations normales.
  * Les marqueurs MOBA historiques sont conservés pour les parties sérialisées. */
 function embuscade(duel, cote, carte, specialeMoba = false) {
-  return Boolean(duel && cote && (specialeMoba || (cote !== duel.tour && carte?.reactionTourAdverse)));
+  return Boolean(duel && cote && (specialeMoba || (cote !== duel.tour && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse))));
 }
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;

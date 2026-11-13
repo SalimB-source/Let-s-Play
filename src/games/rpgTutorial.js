@@ -87,12 +87,15 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   const carte = cardById(cardId);
   if (!carte || !camp) return null;
   const mainAvant = camp.main;
+  const tourAvant = duel.tour;
+  duel.tour = cote; // Scène préparée, pas une invocation hors tour.
   const quotaAvant = camp.invocationNormaleJouee;
   camp.invocationNormaleJouee = false;
   camp.main = [cardId];
   const res = rpgJouerCreature(duel, cote, cardId, null, { cibleDifferee: true });
   camp.main = mainAvant;
   camp.invocationNormaleJouee = quotaAvant;
+  duel.tour = tourAvant;
   if (!res.ok) return null;
   if (res.entite) {
     res.entite.ready = ready;

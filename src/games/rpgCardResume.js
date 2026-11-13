@@ -1,3 +1,4 @@
+import { rpgTexteConditionEmbuscade } from './rpgEmbuscade.js';
 /**
  * Le Sablier — le texte court des aperçus de cartes.
  *
@@ -166,6 +167,8 @@ export function regleCarteLongue(carte, seuil = SEUIL_REGLE_LONGUE) {
  * d'encadré.
  */
 export function conditionEmbuscadePourApercu(carte) {
+  const conditionCommune = rpgTexteConditionEmbuscade(carte);
+  if (conditionCommune) return conditionCommune;
   if (!carte?.reactionTourAdverse || !carte?.conditionEmbuscade) return null;
   const phrase = carte.text?.match(
     /^Embuscade\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement (?:si |en réponse à )([^.]+)\./u,
@@ -196,6 +199,8 @@ const CONDITIONS_EMBUSCADE_COURTES = {
 
 /** Texte du cadre ; le texte imprimé reste un repli pour un futur cas inconnu. */
 export function conditionEmbuscadeCourtePourApercu(carte) {
+  const conditionCommune = rpgTexteConditionEmbuscade(carte);
+  if (conditionCommune) return ['', conditionCommune];
   const condition = conditionEmbuscadePourApercu(carte);
   return condition ? (CONDITIONS_EMBUSCADE_COURTES[carte.conditionEmbuscade] ?? [condition]) : null;
 }

@@ -7,8 +7,8 @@ const texteSansRapidite = (texte = '') => texte
   .replace(/\bRapidité\.\s*/gu, '')
   .replace(/\s+avec Rapidité/gu, '');
 
-/** Adaptations de présentation uniquement. Les définitions du catalogue et
- * les cartes du duel classique ne sont jamais modifiées. */
+/** Adaptations de présentation uniquement. Les définitions du catalogue restent inchangées ; les conditions
+ * d’Embuscade sont partagées avec les autres modes. */
 export function rpgMobaCartePourApercu(carte) {
   if (!carte) return carte;
   // Les fiches doivent conserver le timing propre au MOBA pour les renvois.
@@ -40,7 +40,7 @@ export function rpgMobaCartePourApercu(carte) {
 export function rpgMobaNotesCarte(carte) {
   if (!carte) return [];
   const notes = [];
-  if (carte.rapidite && !carte.jeton) notes.push('En MOBA, toutes les créatures peuvent attaquer dès leur arrivée ; Rapidité imprimée est remplacée par une Embuscade adaptée.');
+  if (carte.rapidite && !carte.jeton) notes.push('Toutes les créatures peuvent attaquer dès leur arrivée ; cette ancienne Rapidité est remplacée par une Embuscade conditionnelle.');
   if (carte.id === 'sandales-de-tislit') notes.push('En MOBA, les Sandales donnent +1/+1 au porteur et ne se jouent que pendant votre tour. Dans le duel classique, elles donnent +0/+1 et Rapidité.');
   if (['chien-de-sable', 'guepard'].includes(carte.id)) notes.push('Jeton : ne se joue pas depuis la main. En MOBA, son invocateur (Tarek ou Kusayla) peut arriver en Embuscade sous condition.');
   if (MOBA_RAPIDITE_EMBUSCADES[carte.id]) notes.push(`Embuscade MOBA pendant une fenêtre de réponse adverse — ${MOBA_RAPIDITE_EMBUSCADES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
