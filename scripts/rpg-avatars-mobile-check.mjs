@@ -12,7 +12,7 @@ const imagesVisages = Object.fromEntries(await Promise.all(['salem', 'ifrit-ergs
 const executablePath = process.env.RPG_TEST_CHROMIUM || undefined;
 const browser = await chromium.launch({ headless: true, executablePath, args: ['--no-sandbox'] });
 try {
-  for (const [largeur, hauteur, touch] of [[640, 280, true], [568, 320, true], [800, 355, true], [844, 390, true], [1024, 600, true], [1280, 720, false], [1920, 1080, false]]) {
+  for (const [largeur, hauteur, touch] of [[640, 280, true], [568, 320, true], [800, 355, true], [844, 390, true], [1024, 600, true], [1024, 500, false], [1024, 768, false], [1280, 720, false], [1568, 882, false], [1920, 1080, false]]) {
     const context = await browser.newContext({ viewport: { width: largeur, height: hauteur }, isMobile: touch, hasTouch: touch });
     const page = await context.newPage();
     for (const mode of ['essai', 'terrains']) {
@@ -35,7 +35,7 @@ try {
           return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, center: (rect.left + rect.right) / 2, grid: style.gridArea };
         };
         return {
-          ligne: mesurer('.rpg-plateau-lisere'), slots: [...document.querySelectorAll('.rpg-creature-slots--joueur .rpg-creature-slot')].map(el => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; }), table: mesurer('.card-table'), ennemi: mesurer('.rpg-wizard-plate--ennemi'), joueur: mesurer('.rpg-wizard-plate--joueur'),
+          ligne: mesurer('.rpg-plateau-lisere'), slotsEnnemis: [...document.querySelectorAll('.rpg-creature-slots--ennemi .rpg-creature-slot')].map(el => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; }), slots: [...document.querySelectorAll('.rpg-creature-slots--joueur .rpg-creature-slot')].map(el => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; }), table: mesurer('.card-table'), ennemi: mesurer('.rpg-wizard-plate--ennemi'), joueur: mesurer('.rpg-wizard-plate--joueur'),
           ennemiCreature: mesurer('.card-row--ennemi .rpg-card'), vieEnnemi: mesurer('.rpg-wizard-plate--ennemi .rpg-jauge-vie__rond'), champEnnemi: mesurer('.card-row--ennemi'), champJoueur: mesurer('.card-row--equipe'), creature: mesurer('.card-row--equipe .rpg-card'), mainAdverse: mesurer('.rpg-hidden-hand__cards'), vieJoueur: mesurer('.rpg-wizard-plate--joueur .rpg-jauge-vie__rond'), mainJoueur: mesurer('.rpg-hand__card'),
         };
       });
@@ -50,6 +50,27 @@ try {
       assert.ok(mesures.ennemi.top < mesures.champEnnemi.top, 'avatar adverse derrière ses créatures');
       assert.ok(mesures.ennemiCreature.top >= mesures.vieEnnemi.bottom - 1, 'les PV adverses ne sont pas cachés par la créature');
       assert.ok(mesures.ennemiCreature.bottom <= mesures.creature.top + 1, 'les créatures des deux camps ne se chevauchent pas');
+      if (!touch) {
+        assert.ok(Math.abs(mesures.ennemiCreature.bottom - mesures.ligne.top) <= 6, 'la créature adverse touche la ligne par le haut');
+        assert.ok(Math.abs(mesures.creature.top - mesures.ligne.bottom) <= 6, 'la créature alliée touche la ligne par le bas');
+        for (const slot of mesures.slotsEnnemis) assert.ok(Math.abs(slot.bottom - mesures.ligne.top) <= 6, 'les cases adverses sont au-dessus de la ligne');
+        for (const slot of mesures.slots) assert.ok(Math.abs(slot.top - mesures.ligne.bottom) <= 6, 'les cases alliées sont sous la ligne');
+        const decor = await page.evaluate(() => {
+          const avatar = document.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__avatar');
+          const cadre = getComputedStyle(avatar, '::before');
+          const image = getComputedStyle(avatar.querySelector('img'));
+          return { contenu: cadre.content, rayon: cadre.borderRadius, largeur: parseFloat(cadre.width), imageZ: Number(image.zIndex), cadreZ: Number(cadre.zIndex) };
+        });
+        assert.equal(decor.contenu, '""', 'le médaillon est présent');
+        assert.equal(decor.rayon, '50%', 'le médaillon est rond');
+        assert.ok(decor.largeur > 0 && decor.imageZ > decor.cadreZ, 'la tête sort devant le médaillon');
+        if (hauteur >= 700) assert.ok(mesures.table.bottom - mesures.vieJoueur.bottom >= 19, 'l’avatar joueur et ses PV sont remontés');
+        const creaturesCliquables = await page.evaluate(() => [...document.querySelectorAll('.card-row > .rpg-card')].every((carte) => {
+          const r = carte.getBoundingClientRect();
+          return carte.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+        }));
+        assert.ok(creaturesCliquables, 'chaque créature reste cliquable');
+      }
       assert.ok(mesures.joueur.top >= mesures.creature.bottom - 1, 'la créature centrale ne recouvre pas l’avatar');
       assert.ok(mesures.vieJoueur.top >= mesures.creature.bottom - 1, 'les PV du joueur ne sont pas cachés par la créature');
       assert.ok(mesures.vieJoueur.top >= mesures.joueur.bottom - 1 && Math.abs(mesures.vieJoueur.center - mesures.joueur.center) < 2, 'PV centrés sous le visage du joueur');

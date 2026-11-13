@@ -25,6 +25,14 @@ test('la petite fenêtre est limitée aux sorts et conserve un contenu lisible e
   assert.equal(declaration('.rpg-annonce-sort', 'pointer-events'), 'auto');
 });
 
+test('sur PC la fenêtre de magie est agrandie, sans toucher le format mobile', () => {
+  const pc = '.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie';
+  assert.match(declaration(`${pc} .rpg-hover-card-preview__layout`, 'width'), /680px/);
+  assert.match(declaration(`${pc} .rpg-hover-card-preview--annonce`, '--rpg-annonce-card-width'), /220px/);
+  assert.equal(declaration(`${pc} .rpg-hover-card-preview__rules`, 'font-size'), '16px');
+  assert.equal(declaration(`${pc} .rpg-hover-card-preview__details`, 'box-sizing'), 'border-box');
+});
+
 for (const partage of [true, false]) {
   test(`MOBA : le sort adverse est annoncé avant résolution (${partage ? 'rendu partagé' : 'rendu autonome'})`, async () => {
     const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
