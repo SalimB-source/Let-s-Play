@@ -6406,6 +6406,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-element-badge--souffle { background: radial-gradient(circle at 34% 24%, #d9dee6, #6d7480 72%); }
 .rpg-card-element-badge--encre { background: radial-gradient(circle at 34% 24%, #b39ae0, #432d73 72%); }
 
+.rpg-card__summoning-sick {
+  position: absolute; z-index: 8; right: 6%; bottom: 7%;
+  font-size: clamp(12px, 18cqw, 24px); line-height: 1;
+  padding: 2px; border-radius: 50%; background: rgba(20, 18, 28, .85);
+  pointer-events: none;
+}
+
 /* Le mal d'invocation grise la face sans désaturer les valeurs rouges d'une
    créature blessée ; elle reste utilisable comme bloqueuse selon les règles. */
 .rpg-card.is-summoning-sick .rpg-card__img {

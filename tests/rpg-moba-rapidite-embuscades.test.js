@@ -36,15 +36,15 @@ test('audit de toutes les Rapidités, jetons et Embuscades imprimées', () => {
   for (const carte of creatures) {
     const apercu = rpgMobaCartePourApercu(carte);
     assert.equal(apercu.reactionTourAdverse, false, carte.id);
-    assert.equal(apercu.rapidite, false, carte.id);
-    assert.match(apercu.text, /Embuscade MOBA.*phase principale/, carte.id);
-    assert.doesNotMatch(apercu.text, /Rapidité/, carte.id);
+    assert.equal(apercu.rapidite, true, carte.id);
+    assert.match(apercu.text, /Embuscade MOBA.*tour adverse/, carte.id);
+    assert.ok(apercu.text.includes('Rapidité') || !carte.text.includes('Rapidité'), carte.id);
     assert.equal(cardById(carte.id).reactionTourAdverse, undefined, 'catalogue classique inchangé');
   }
   for (const id of Object.keys(MOBA_EMBUSCADES_IMPRIMEES)) {
-    assert.match(rpgMobaCartePourApercu(cardById(id)).text, /phase principale/);
+    assert.match(rpgMobaCartePourApercu(cardById(id)).text, /tour adverse/);
     assert.doesNotMatch(rpgMobaCartePourApercu(cardById(id)).text, /jouer cette créature pendant le tour adverse/);
-    assert.match(rpgMobaNotesCarte(cardById(id)).join(' '), /phase principale/);
+    assert.match(rpgMobaNotesCarte(cardById(id)).join(' '), /réponse adverse/);
   }
   assert.match(rpgMobaCartePourApercu(cardById('sorcier-du-ressac-noir')).text, /renvoie/);
   assert.doesNotMatch(rpgMobaCartePourApercu(cardById('sorcier-du-ressac-noir')).text, /contrez/);
@@ -207,6 +207,7 @@ test('Sandales MOBA : Brise-lame retire aussi leur bonus de force', () => {
   const atk = porteur.atk;
   assert.ok(rpgMobaJouerArme(d, 'joueur', 'sandales-de-tislit', porteur.id).ok);
   assert.equal(porteur.atk, atk + 1);
+  rpgFinDeTour(d); rpgFinDeTour(d);
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', porteur.id, null, 'left').ok);
   d.sorcier.main = ['brise-lame'];
   assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'brise-lame', porteur.id).ok);
@@ -224,6 +225,7 @@ test('Sandales MOBA : aucune réponse à une attaque adverse, même sur la voie 
   rpgFinDeTour(d);
   d.joueur.main = ['ashigaru-des-braises'];
   const attaquant = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  rpgFinDeTour(d); rpgFinDeTour(d);
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', attaquant.id, porteur.id, 'left').ok);
   const avant = JSON.stringify(d);
   assert.equal(rpgMobaJouerArme(d, 'sorcier', 'sandales-de-tislit', porteur.id).ok, false);

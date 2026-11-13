@@ -18,7 +18,9 @@ function poser(duel, cote, id = 'ashigaru-des-braises') {
   const res = rpgJouerCreature(duel, cote, id);
   duel.tour = tourAvant;
   assert.ok(res.ok, res.raison);
+  // Plateau préexistant : ces tests portent sur les échanges, pas la pose.
   res.entite.ready = true;
+  res.entite.malInvocation = false;
   return res.entite;
 }
 

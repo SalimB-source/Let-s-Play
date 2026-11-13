@@ -2,11 +2,6 @@ import { MOBA_EMBUSCADES_CONDITIONS } from './rpgMobaEmbuscades.js';
 import { MOBA_RAPIDITE_EMBUSCADES } from './rpgMobaRapidite.js';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 
-const texteSansRapidite = (texte = '') => texte
-  .replace(/Rapidité\s*—\s*[^.]*\.\s*/gu, '')
-  .replace(/\bRapidité\.\s*/gu, '')
-  .replace(/\s+avec Rapidité/gu, '');
-
 /** Adaptations de présentation uniquement. Les définitions du catalogue restent inchangées ; les conditions
  * d’Embuscade sont partagées avec les autres modes. */
 export function rpgMobaCartePourApercu(carte) {
@@ -16,14 +11,14 @@ export function rpgMobaCartePourApercu(carte) {
   if (carte.id === 'sandales-de-tislit') return { ...carte, donne: { ...carte.donne, rapidite: false },
     bonus: { ...carte.bonus, atk: 1, def: 1 },
     text: 'Arme — Le porteur gagne +1/+1 en MOBA. Se joue uniquement pendant votre tour.' };
-  if (['chien-de-sable', 'guepard'].includes(carte.id)) return { ...carte, rapidite: false,
-    text: `${carte.name} est créé par son invocateur. En MOBA, son invocateur peut entrer en Embuscade sous condition.` };
+  if (['chien-de-sable', 'guepard'].includes(carte.id)) return { ...carte,
+    text: `${carte.name} est créé par son invocateur avec Rapidité. En MOBA, son invocateur peut entrer en Embuscade sous condition.` };
   const ambush = MOBA_RAPIDITE_EMBUSCADES[carte.id]?.texte
     ?? MOBA_EMBUSCADES_IMPRIMEES[carte.id]?.texte ?? MOBA_EMBUSCADES_CONDITIONS[carte.id];
   if (ambush) {
     const texte = carte.reactionTourAdverse
       ? carte.text.replace(/^Embuscade\s*[—-]\s*[^.]*\.\s*/u, '')
-      : texteSansRapidite(carte.text);
+      : carte.text;
     const arrivee = carte.id === 'sorcier-du-ressac-noir'
       ? texte.replace(/Si vous la jouez ainsi, contrez cette carte de créature\. Le Sorcier du ressac noir arrive ensuite en jeu\.\s*/u, '')
       : carte.id === 'sentinelle-des-sables'
@@ -31,7 +26,7 @@ export function rpgMobaCartePourApercu(carte) {
         : carte.id === 'porte-etendard-de-leclipse'
           ? texte.replace('jusqu’à la fin du tour', 'jusqu’à la fin du prochain tour adverse')
           : texte;
-    return { ...carte, rapidite: false, reactionTourAdverse: false,
+    return { ...carte, reactionTourAdverse: false,
       text: `Embuscade MOBA — Pendant le tour adverse, dans une fenêtre de réponse : ${ambush} Invocation spéciale sans sacrifice, sans consommer l’invocation normale. ${carte.id === 'sorcier-du-ressac-noir' ? 'À son arrivée, il renvoie la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire. ' : ''}${arrivee}` };
   }
   return carte;
@@ -40,7 +35,7 @@ export function rpgMobaCartePourApercu(carte) {
 export function rpgMobaNotesCarte(carte) {
   if (!carte) return [];
   const notes = [];
-  if (carte.rapidite && !carte.jeton) notes.push('Toutes les créatures peuvent attaquer dès leur arrivée ; cette ancienne Rapidité est remplacée par une Embuscade conditionnelle.');
+  if (carte.rapidite) notes.push('Rapidité : cette créature peut attaquer dès son arrivée, sous réserve des autres restrictions.');
   if (carte.id === 'sandales-de-tislit') notes.push('En MOBA, les Sandales donnent +1/+1 au porteur et ne se jouent que pendant votre tour. Dans le duel classique, elles donnent +0/+1 et Rapidité.');
   if (['chien-de-sable', 'guepard'].includes(carte.id)) notes.push('Jeton : ne se joue pas depuis la main. En MOBA, son invocateur (Tarek ou Kusayla) peut arriver en Embuscade sous condition.');
   if (MOBA_RAPIDITE_EMBUSCADES[carte.id]) notes.push(`Embuscade MOBA pendant une fenêtre de réponse adverse — ${MOBA_RAPIDITE_EMBUSCADES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);

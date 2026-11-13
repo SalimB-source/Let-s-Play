@@ -29,7 +29,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['sabre-maudit', 'samourai-du-torii'],
     title: 'Une arme reste attachée à son porteur',
-    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. Comme toutes les créatures, son porteur peut attaquer dès son arrivée. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. L’Attaque ciblée ne donne pas Rapidité : un porteur qui vient d’arriver doit attendre son prochain tour, sauf s’il possède Rapidité. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
   },
   {
     id: 'destruction-arme',
@@ -141,7 +141,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['fennec-des-decombres'],
     title: 'Rapidité et Esquive changent les échanges',
-    text: 'Toutes les créatures peuvent attaquer dès le tour où elles arrivent. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
+    text: 'Rapidité permet d’attaquer dès l’arrivée ; sans elle, une créature attend le début du prochain tour de son camp, mais peut défendre immédiatement. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
   },
   {
     id: 'contre-attaque',

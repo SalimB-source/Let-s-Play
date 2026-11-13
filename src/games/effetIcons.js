@@ -310,7 +310,7 @@ export function pastillesPourCarte(carte) {
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.volDeVie || carte.donne?.volDeVie || carte.effet?.volDeVie) ajouter('volDeVie', 'Vol de vie');
-  if (carte.rapidite && !rpgCarteEmbuscade(carte)) ajouter('rapidite', 'Rapidité');
+  if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
@@ -771,8 +771,7 @@ const cleDuLibelle = (libelle) => LIBELLES_IMPRIMES
 function texteCapacitesCombat(carte) {
   let texte = carte?.text && carte.text !== '—' ? String(carte.text) : '';
   if (rpgCarteEmbuscade(carte) && !carte.presentationCombatMoba) {
-    texte = texte.replace(/^Embuscade\s*[—-]\s*[^.]*\.\s*/u, '')
-      .replace(/Rapidité\s*—\s*[^.]*\.\s*/gu, '').replace(/\bRapidité\.\s*/gu, '');
+    texte = texte.replace(/^Embuscade\s*[—-]\s*[^.]*\.\s*/u, '');
     if (carte.id === 'sentinelle-des-sables') texte = texte.replace('créature attaquante ciblée', 'créature adverse ciblée');
     if (carte.id === 'traqueur-des-nuits-sans-lune') texte = texte.replace('créature attaquante ciblée', 'créature adverse ciblée');
     if (carte.id === 'sorcier-du-ressac-noir') texte = 'À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire.';

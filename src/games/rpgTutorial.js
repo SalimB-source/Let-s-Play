@@ -99,6 +99,7 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
   if (!res.ok) return null;
   if (res.entite) {
     res.entite.ready = ready;
+    if (ready) res.entite.malInvocation = false; // Scène déjà présente avant ce tour.
     res.entite.attaquee = false;
   }
   if (duel.arriveeEnAttente?.entiteId === res.entite?.id) {
@@ -181,8 +182,8 @@ export const RPG_TUTORIELS = Object.freeze([
         kind: 'info',
         target: '.card-row--equipe .rpg-card[data-card-id="tislit-des-aures"]',
         eyebrow: 'RÈGLE · ARRIVÉE EN JEU',
-        title: 'Attaquer dès l’arrivée',
-        text: 'Une créature peut attaquer dès son arrivée, sauf si un autre effet l’en empêche. Au début de votre prochain tour, vos créatures se dégagent et redeviennent prêtes.',
+        title: 'Le mal d’invocation',
+        text: 'Sans Rapidité, une créature ne peut pas attaquer avant le début de votre prochain tour, mais elle peut défendre dès son arrivée. Sa carte est grisée et porte un sablier. Rapidité permet d’attaquer tout de suite, sauf autre restriction.',
         nextLabel: 'Voir les emplacements',
         side: 'top',
       },
@@ -273,7 +274,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="tislit-des-aures"]',
         eyebrow: 'ÉTAPE 8 · PORTEUR',
         title: 'Choisissez le porteur',
-        text: 'Touchez maintenant Tislit : elle portera les Sandales. Une arme reste attachée à sa créature ; si le porteur meurt, l’arme rejoint le cimetière avec lui. Toutes les créatures peuvent attaquer dès leur arrivée, même sans Rapidité.',
+        text: 'Touchez maintenant Tislit : elle portera les Sandales. Une arme reste attachée à sa créature ; si le porteur meurt, l’arme rejoint le cimetière avec lui. Les Sandales donnent Rapidité à Tislit : elle peut attaquer dès son arrivée, sauf autre restriction.',
         on: 'arme-equipee',
         cardId: 'sandales-de-tislit',
         side: 'top',
@@ -579,7 +580,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="chacal-du-seuil"]',
         eyebrow: 'ÉTAPE 2 · RAPIDITÉ',
         title: 'Le Chacal entre en chasse',
-        text: 'Touchez le Chacal du seuil. Son coût imprimé ne demande aucun sacrifice. Comme toutes les créatures, il peut attaquer dès son arrivée.',
+        text: 'Touchez le Chacal du seuil. Son coût imprimé ne demande aucun sacrifice. Grâce à Rapidité, il peut attaquer dès son arrivée.',
         on: 'creature-jouee',
         cardId: 'chacal-du-seuil',
         side: 'top',
@@ -869,7 +870,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="end-turn"]',
         eyebrow: 'ÉTAPE 5 · SE DÉGAGER',
         title: 'Laissez-les se lever',
-        text: 'Les créatures peuvent attaquer dès leur arrivée. Pour cette démonstration, terminez le tour et revenez au vôtre : elles seront toutes prêtes.',
+        text: 'Sans Rapidité, les créatures attendent votre prochain tour pour attaquer. Terminez le tour et revenez au vôtre : elles seront prêtes.',
         on: 'fin-de-tour',
         side: 'top',
       },
@@ -1214,7 +1215,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="danseuse-des-ombres-de-dune"]',
         eyebrow: 'RÈGLE · VOTRE CRÉATURE EN JEU',
         title: 'Posée tôt, elle attend son heure',
-        text: 'Sur la table, la Danseuse est une 2/2 avec Rapidité, Infiltration et Vol de vie — comme toute créature, elle pourrait attaquer tout de suite ; nous la gardons pour la défense. Les pastilles Embuscade restent sur la Sentinelle et l’Éclipse en main. Une Embuscade ne consomme pas votre invocation normale et ne demande aucun sacrifice.',
+        text: 'Sur la table, la Danseuse est une 2/2 avec Rapidité, Infiltration et Vol de vie — grâce à Rapidité, elle pourrait attaquer tout de suite ; nous la gardons pour la défense. Les pastilles Embuscade restent sur la Sentinelle et l’Éclipse en main. Une Embuscade ne consomme pas votre invocation normale et ne demande aucun sacrifice.',
         nextLabel: 'Passer la main',
         side: 'top',
       },
@@ -1350,7 +1351,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'EMBUSCADE MAÎTRISÉE',
         title: 'Le tour adverse est à vous',
-        text: 'Vous savez lire une condition d’Embuscade, reconnaître les quatre fenêtres de réponse, jouer pendant le tour adverse et bloquer avec une créature qui vient d’arriver. Les créatures sont prêtes à attaquer dès leur arrivée, sous réserve des autres restrictions et du tour actif.',
+        text: 'Vous savez lire une condition d’Embuscade, reconnaître les quatre fenêtres de réponse, jouer pendant le tour adverse et bloquer avec une créature qui vient d’arriver. Sans Rapidité, elles attendent le début du prochain tour de leur camp pour attaquer ; elles peuvent défendre immédiatement.',
         nextLabel: 'Terminer le tutoriel',
         side: 'top',
       },
