@@ -553,7 +553,20 @@
   --rpg-plaque-taille: 26cqw;
   --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
 }
+/* Les créatures en main partagent les proportions de la main MOBA. */
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--img.rpg-hand__card--type-creature .rpg-hand__stat,
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
+/* Sur les créatures, reprendre aussi les deux plaques colorées de la main
+   MOBA ; les bonus d'armes conservent leur présentation propre. */
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat {
+  border-color: rgba(0, 0, 0, .85);
+  box-shadow: none;
+  color: #fff1c9;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat--atk { background: rgba(114, 47, 26, .9); }
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat--def { background: rgba(34, 73, 91, .92); }
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat .rpg-stat-icon { width: 1em; height: 1em; flex-basis: 1em; }
 /* Les pierres gardent leur forme et leur placement classiques, mais suivent
    proportionnellement la taille réduite de la main MOBA. */
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main {
@@ -577,7 +590,10 @@
 .moba .moba__real-slot .rpg-card:disabled,
 .moba .moba__hand-item .rpg-hand__card:disabled { pointer-events: none; }
 .moba__preview-layer .rpg-hover-card-preview__face { container-type: inline-size; }
+/* La face d'aperçu utilise les mêmes proportions dans les deux modes. */
+.rpg-battle[data-scene="duel"] .rpg-hover-card-preview__face > .rpg-card__foot,
 .moba__preview-layer .rpg-hover-card-preview__face > * { --rpg-card-marker-size: min(38px, 25cqw); }
+.rpg-battle[data-scene="duel"] .rpg-hover-card-preview__face .rpg-card__foot > span,
 .moba__preview-layer .rpg-hover-card-preview__face .rpg-card__foot > span { min-width: 0; padding: 2cqw 3cqw; gap: 1cqw; }
 
 /* The original colour chooser floats over the fixed board, without creating
@@ -1171,12 +1187,14 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   --rpg-plaque-taille: clamp(9px, 20cqw, 28px);
   --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
 }
+.rpg-battle[data-scene="duel"] .rpg-mulligan .rpg-mulligan__card .rpg-mulligan__stats,
 .moba__mulligan-overlay .rpg-mulligan__card .rpg-mulligan__stats {
   gap: 2px;
   left: 2px;
   right: 2px;
   bottom: 2px;
 }
+.rpg-battle[data-scene="duel"] .rpg-mulligan .rpg-mulligan__card :is(.rpg-card__stat--atk, .rpg-card__pt),
 .moba__mulligan-overlay .rpg-mulligan__card .rpg-card__stat--atk,
 .moba__mulligan-overlay .rpg-mulligan__card .rpg-card__pt {
   gap: 1px;
@@ -1568,9 +1586,10 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 }
 .moba__card-flight--recherche .moba__card-flight-face { border-color: #b6eced; box-shadow: 0 3px 15px #000d, 0 0 16px #93dce4bb; }
 
-/* Seules les cartes posées du MOBA mobile changent : la main, les aperçus et
-   les cartes du duel classique conservent leurs repères et leur taille. */
+/* Les créatures posées partagent la même lecture en colonne sur mobile,
+   en duel comme en MOBA. La main et les aperçus gardent leur propre grille. */
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot,
   .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot {
     left: 5%;
     right: auto;
@@ -1587,6 +1606,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   }
   /* Les chiffres et leurs pictogrammes suivent l'échelle de la carte, mais
      restent lisibles sur les flancs étroits du mode portrait. */
+  .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
   .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt) {
     font-size: clamp(9px, 16cqw, 14px);
   }
