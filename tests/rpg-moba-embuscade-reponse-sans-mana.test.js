@@ -94,3 +94,22 @@ for (const actif of ['joueur', 'sorcier']) {
     assert.ok(rpgMobaPasserSort(d, defenseur).ok);
   });
 }
+
+for (const actif of ['joueur', 'sorcier']) {
+  test(`La recherche du Pilote en Embuscade reprend le sort suspendu (${actif})`, async () => {
+    const { rpgMobaResoudreRecherche } = await import('../src/games/rpgMobaLocal.js');
+    const { d, defenseur } = preparer(actif);
+    d[defenseur].main = ['pilote-de-la-carreira'];
+    d[defenseur].deck.push('cotre-de-course');
+    d[actif].main = ['tempete-de-sable'];
+    assert.ok(rpgMobaLancerMagie(d, actif, 'tempete-de-sable', null, 'right', null, { ouvrirReponse: true }).sortEnAttente);
+    const original = d.mobaSortEnAttente;
+    assert.ok(rpgMobaJouerCreature(d, defenseur, 'pilote-de-la-carreira', 'left', 1, { ouvrirReponse: true, sacrificeIds: [] }).ok);
+    assert.ok(rpgMobaPasserCreature(d, actif).entite);
+    assert.equal(d.mobaRechercheEnAttente?.cote, defenseur);
+    assert.ok(rpgMobaResoudreRecherche(d, defenseur, 'cotre-de-course').ok);
+    assert.equal(d.mobaEmbuscadeArrivee, null);
+    assert.equal(d.mobaSortEnAttente, original);
+    assert.ok(rpgMobaPasserSort(d, defenseur).ok);
+  });
+}

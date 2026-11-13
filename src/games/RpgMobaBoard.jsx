@@ -882,6 +882,13 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier');
     setCarte(null); setEtape(duel.mobaCreatureEnAttente ? 'reponse-creature' : duel.mobaSortEnAttente ? 'reponse-sort' : duel.effetCreatureEnAttente ? 'reponse-arrivee' : duel.finDeTour ? 'fin' : embuscadeCombat && duel.combatDeclare ? 'blocage' : 'tour');
   };
+  const choisirRecherche = (side, id) => {
+    const result = rpgMobaResoudreRecherche(duel, side, id);
+    if (!afficherResultat(result)) return;
+    setEtape(duel.arriveeEnAttente ? 'arrivee' : duel.mobaCreatureEnAttente ? 'reponse-creature'
+      : duel.mobaSortEnAttente ? 'reponse-sort' : duel.effetCreatureEnAttente ? 'reponse-arrivee'
+        : duel.finDeTour ? 'fin' : duel.combatDeclare ? 'blocage' : 'tour');
+  };
   const passerCreature = () => {
     const attente = duel.mobaCreatureEnAttente;
     if (!attente) return;
@@ -1235,7 +1242,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         else { setErreur("L’IA ne trouve pas de cible pour le Site."); setIaBloquee(true); }
       } else if (recherche) {
         const choix = rpgMobaChoisirRechercheIA(duel, 'sorcier');
-        if (choix) afficherResultat(rpgMobaResoudreRecherche(duel, 'sorcier', choix));
+        if (choix) choisirRecherche('sorcier', choix);
         else { setErreur("L’IA ne trouve pas de carte dans son deck."); setIaBloquee(true); }
       } else if (defausse) {
         const finDeTour = duel.defausseEnAttente?.motif === 'fin-de-tour';
@@ -1699,7 +1706,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       </div>
     </div>}
     {confirmerSortie && !fini && <div className="moba__overlay" role="dialog" aria-modal="true" aria-labelledby="moba-quitter-title" aria-describedby="moba-quitter-description" onKeyDown={clavierConfirmation}><div className="moba__modal moba__quit-modal"><span>FIN DE PARTIE</span><h2 id="moba-quitter-title">Quitter le duel ?</h2><p id="moba-quitter-description">La partie en cours ne sera pas sauvegardée.</p><button type="button" autoFocus className="moba__primary" onClick={fermerConfirmation}>Continuer le duel</button><button type="button" onClick={onQuitter}>Quitter sans sauvegarder</button></div></div>}
-    {recherche?.cote === 'joueur' && !fini && !confirmerSortie && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Recherche dans votre deck"><div className="moba__modal moba__mulligan"><span>CAPACITÉ D’ARRIVÉE</span><h2>Choisissez une carte</h2><p>{cardById(recherche.sourceCarteId)?.name} cherche dans votre deck. Choisissez une carte admissible à ajouter à votre main.</p><div className="moba__mulligan-cards moba__search-cards">{rpgMobaCandidatsRecherche(duel, 'joueur').map((id, index) => <div className="moba__search-item" key={id} {...interactionsApercu(id)}><button type="button" autoFocus={index === 0} className="moba__mulligan-card" onClick={() => afficherResultat(rpgMobaResoudreRecherche(duel, 'joueur', id))}><img src={cardArt(id)} alt="" /><b>{cardById(id)?.name}</b><small>COÛT {cardById(id)?.cost}</small><small className="moba__search-text">{cardById(id)?.text}</small></button></div>)}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div></div>}
+    {recherche?.cote === 'joueur' && !fini && !confirmerSortie && <div className="moba__overlay" inert={Boolean(apercu)} role="dialog" aria-modal="true" aria-label="Recherche dans votre deck"><div className="moba__modal moba__mulligan"><span>CAPACITÉ D’ARRIVÉE</span><h2>Choisissez une carte</h2><p>{cardById(recherche.sourceCarteId)?.name} cherche dans votre deck. Choisissez une carte admissible à ajouter à votre main.</p><div className="moba__mulligan-cards moba__search-cards">{rpgMobaCandidatsRecherche(duel, 'joueur').map((id, index) => <div className="moba__search-item" key={id} {...interactionsApercu(id)}><button type="button" autoFocus={index === 0} className="moba__mulligan-card" onClick={() => choisirRecherche('joueur', id)}><img src={cardArt(id)} alt="" /><b>{cardById(id)?.name}</b><small>COÛT {cardById(id)?.cost}</small><small className="moba__search-text">{cardById(id)?.text}</small></button></div>)}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div></div>}
     {chapitreAnnonce && <section className={`moba__interlude moba__interlude--${chapitreAnnonce.ambiance}`} role="dialog" aria-modal="true" aria-labelledby="moba-interlude-titre" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); if (annoncePremier) revenirDeLAnnonce(); else setInterlude(false); } else if (event.key === 'Tab') { const boutons = [...event.currentTarget.querySelectorAll('button')]; if (event.shiftKey && document.activeElement === boutons[0]) { event.preventDefault(); boutons.at(-1)?.focus(); } else if (!event.shiftKey && document.activeElement === boutons.at(-1)) { event.preventDefault(); boutons[0]?.focus(); } } }} style={{ '--moba-interlude-decor': `url("${import.meta.env.BASE_URL}${chapitreAnnonce.decor}")` }}>
       <div className="moba__interlude-scene" aria-hidden="true" />
       <div className="moba__interlude-hero"><img src={cardArt(chapitreAnnonce.portrait)} alt={`Illustration de ${cardById(chapitreAnnonce.portrait)?.name ?? chapitreAnnonce.deck.name}`} draggable={false} /></div>

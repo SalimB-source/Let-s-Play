@@ -209,6 +209,12 @@ export function rpgMobaResoudreRecherche(duel, side, cardId) {
   duel.log.push(`${source} trouve une carte dans son deck et l’ajoute à sa main.`);
   duel.mobaRechercheEnAttente = null;
   synchroniserSorties(duel);
+  if (duel.mobaEmbuscadeArrivee && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente) {
+    duel.mobaEmbuscadeArrivee = null;
+    reconcilerCombatDeclare(duel);
+    if (duel.mobaReponseSuspendue) reprendreReponseSuspendue(duel);
+    else duel.fenetreReponse = Boolean(duel.combatDeclare);
+  }
   return { ok: true };
 }
 

@@ -15,6 +15,7 @@ function partie(actif, plein=false){
  d[actif].main=['djinn-du-dernier-brasier'];d[actif].mana.braise=20;
  // Le Djinn éphémère est conservé pour préparer une menace à un tour ultérieur.
  const djinn=rpgMobaJouerCreature(d,actif,'djinn-du-dernier-brasier','left',0).entite;assert.ok(djinn);djinn.detruireFinDuTour=false;rpgFinDeTour(d);rpgFinDeTour(d);djinn.ready=true;
+ victime.pv--; // La condition MOBA exige une créature alliée blessée.
  d[defenseur].main=[id];d[defenseur].mana.braise=20;d[actif].mana.braise=20;
  return {d,defenseur,victime,djinn};
 }
@@ -50,7 +51,9 @@ for(const actif of ['joueur','sorcier']){
   const {d,defenseur,victime,djinn}=partie(actif);assert.ok(rpgMobaTerminerTour(d,actif).ok);const carte=djinn.carteId;djinn.carteId='gardienne-des-portes-de-sable';
   const before=JSON.stringify(d);assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id),false);assert.equal(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok,false);assert.equal(JSON.stringify(d),before);djinn.carteId=carte;
   victime.carteId='source-de-bimini';
-  assert.ok(rpgMobaPeutEmbuscade(d,defenseur,id), 'sans sacrifice disponible, le Djinn reste suffisant');
+  assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id), false, 'un Site blessé ne remplit pas la condition');
+  victime.carteId='gardienne-des-portes-de-sable';
+  assert.ok(rpgMobaPeutEmbuscade(d,defenseur,id), 'une créature blessée et le Djinn suffisent sans sacrifice');
  });
 }
 
@@ -127,6 +130,7 @@ test('Tojiro exempté n’active pas les effets de mort et reprend l’annonce s
  d.sorcier.main=['djinn-du-dernier-brasier'];d.sorcier.mana.braise=20;const djinn=rpgMobaJouerCreature(d,'sorcier','djinn-du-dernier-brasier','center',0).entite;assert.ok(djinn);djinn.detruireFinDuTour=false;rpgFinDeTour(d);rpgFinDeTour(d);
  d.joueur.main=[id];d.joueur.mana.braise=20;mobaInfliger(d.moba,'joueur','right',20);mobaInfliger(d.moba,'joueur','left',19);
  d.sorcier.main=['ashigaru-des-braises'];assert.ok(rpgMobaJouerCreature(d,'sorcier','ashigaru-des-braises','left',0,{ouvrirReponse:true}).ok);
+ victime.pv--; // Condition MOBA de Tojiro.
  const choix=rpgMobaChoisirEmbuscadeIA(d,'joueur');assert.equal(choix?.id,id,JSON.stringify(choix));
  assert.ok(rpgMobaJouerCreature(d,'joueur',id,'center',0,{ouvrirReponse:true,sacrificeIds:[]}).ok);
  const result=rpgMobaPasserCreature(d,'sorcier');assert.ok(result.entite,JSON.stringify(result));assert.equal(d.moba.winner,null);assert.ok(d.mobaCreatureEnAttente);assert.ok(d.joueur.creatures.includes(victime));
@@ -136,6 +140,7 @@ for(const side of ['joueur','sorcier']) for(const [jet, esquive] of [[0, true], 
  const {d,actif,tojiro}=tojiroEnJeu(side);
  d[actif].main=['ashigaru-des-braises'];d[actif].mana.braise=20;
  const sacrifice=rpgMobaJouerCreature(d,actif,'ashigaru-des-braises','left',0).entite;assert.ok(sacrifice);
+ rpgFinDeTour(d);rpgFinDeTour(d); // Une invocation normale par tour.
  d[actif].main=['geant-des-banquises'];d[actif].mana.neige=20;
  rpgReglerHasard(d,()=>jet);
  const resultat=rpgMobaJouerCreature(d,actif,'geant-des-banquises','left',0,{sacrificeIds:[sacrifice.id]});
@@ -175,7 +180,7 @@ for(const side of ['joueur','sorcier']) test(`Réanimation de Tojiro sans Djinn 
 
 test('Tojiro en réponse : l’IA ne sacrifie pas une créature même supérieure', () => {
  const {d,defenseur,victime}=partie('joueur');
- Object.assign(victime, { atk: 18, pv: 18, def: 18, pvMax: 18 });
+ Object.assign(victime, { atk: 18, pv: 17, def: 18, pvMax: 18 });
  assert.ok(rpgMobaTerminerTour(d,'joueur').ok);
  const before=JSON.stringify(d);
  const choix=rpgMobaChoisirEmbuscadeIA(d,defenseur);assert.equal(choix?.id,id);assert.deepEqual(choix.sacrificeIds,[]);

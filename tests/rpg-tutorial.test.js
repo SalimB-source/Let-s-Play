@@ -88,7 +88,7 @@ test('chaque carte manipulée existe et chaque annonce scénarisée est en main 
   }
 });
 
-test('la préparation installe la main, le mana et la scène de chaque leçon', () => {
+test('la préparation installe les mains et les scènes sans créer de mana', () => {
   for (const tutoriel of RPG_TUTORIELS) {
     const duel = duelDeLecon(tutoriel);
     assert.equal(duel.joueur.main.length, 5, `${tutoriel.id} : cinq cartes en main`);
@@ -101,10 +101,8 @@ test('la préparation installe la main, le mana et la scène de chaque leçon', 
       sorcierDeck: deckDe(tutoriel.opponentDeckId), modeMana: RPG_MODE_MANA_ESSAI, rng: () => .91 });
     preparerDuelTutoriel(autreTirage, tutoriel);
     assert.deepEqual(autreTirage.joueur.main, duel.joueur.main, `${tutoriel.id} : compléments déterministes`);
-    const manaAttendu = tutoriel.playerMana ?? { [tutoriel.element]: 1 };
-    for (const [couleur, montant] of Object.entries(manaAttendu)) {
-      assert.equal(duel.joueur.mana[couleur], montant, `${tutoriel.id} : mana ${couleur}`);
-    }
+    assert.ok(Object.values(duel.joueur.mana).every((montant) => montant === 0));
+    assert.ok(Object.values(duel.sorcier.mana).every((montant) => montant === 0));
     for (const scene of tutoriel.stagedOpponent ?? []) {
       assert.ok(duel.sorcier.creatures.some((entite) => entite.carteId === scene.cardId),
         `${tutoriel.id} : ${scene.cardId} est en scène`);
@@ -120,20 +118,16 @@ test('la préparation installe la main, le mana et la scène de chaque leçon', 
   }
 });
 
-test('chaque nouveau tour guidé choisit sa couleur sans bloquer les actions', () => {
-  const fondations = tutorielParId('fondations-du-sablier');
-  const duel = duelDeLecon(fondations);
-  assert.equal(duel.joueur.manaChoixEnAttente, false);
-  rpgFinDeTour(duel);
-  rpgFinDeTour(duel);
-  assert.equal(duel.joueur.manaChoixEnAttente, true);
-  assert.equal(choisirManaTutoriel(duel, fondations), true);
-  assert.equal(duel.joueur.manaChoixEnAttente, false);
-  assert.equal(duel.joueur.manaSources.at(-1), 'sable');
-  const embuscade = duelDeLecon(tutorielParId('embuscade-de-la-lune-noire'));
-  assert.equal(embuscade.joueur.manaSources.length, 10, 'la réserve guidée contient cinq sources de chaque couleur');
-  assert.equal(embuscade.joueur.manaSources.filter((c) => c === 'sable').length, 5);
-  assert.equal(embuscade.joueur.manaSources.filter((c) => c === 'tenebres').length, 5);
+test('les tours guidés ne demandent ni ne produisent de mana', () => {
+  for (const tutoriel of RPG_TUTORIELS) {
+    const duel = duelDeLecon(tutoriel);
+    rpgFinDeTour(duel);
+    rpgFinDeTour(duel);
+    assert.equal(duel.joueur.manaChoixEnAttente, false);
+    assert.equal(choisirManaTutoriel(duel, tutoriel), false);
+    assert.deepEqual(duel.joueur.manaSources, []);
+    assert.ok(Object.values(duel.joueur.mana).every((montant) => montant === 0));
+  }
 });
 
 test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () => {
@@ -146,7 +140,7 @@ test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () =
   const vipere = duel.sorcier.creatures[0];
   assert.equal(rpgLancerMagie(duel, 'joueur', 'ressac', vipere.id).ok, true);
   assert.equal(duel.sorcier.creatures.length, 0, 'Ressac renvoie la Vipère en main');
-  assert.equal(duel.joueur.mana.eau, 4, 'les trois sorts ont coûté quatre manas');
+  assert.equal(duel.joueur.mana.eau, 0, 'les cartes ne consomment ni ne produisent de mana');
 
   rpgFinDeTour(duel);
   duel.annonce = { cote: 'sorcier', carteId: 'lame-de-mer', cibleId: duel.joueur.creatures[0].id, cibleAllieeId: null };
@@ -156,7 +150,7 @@ test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () =
   assert.equal(contre.contre, true, 'le Contresort défait l’annonce');
   assert.equal(duel.annonce, null);
   assert.ok(duel.sorcier.cimetiere.includes('lame-de-mer'), 'la carte contredite paie puis va au cimetière');
-  assert.equal(duel.sorcier.mana.eau, 0, 'le sorcier n’a plus de mana pour annoncer la Vipère renvoyée en main');
+  assert.equal(duel.sorcier.mana.eau, 0, 'aucun mana adverse n’a été dépensé');
   assert.equal(duel.joueur.creatures[0].pv, 3, 'la Lame de mer n’a pas résolu son effet');
 });
 
@@ -171,11 +165,13 @@ test('la leçon Ténèbres montre le Tribut, le Prix et les jetons de mort', () 
   assert.equal(duel.sorcier.pv, 22, '2 dégâts de combat + 1 de Tribut');
   assert.equal(duel.joueur.pv, 26, 'le Tribut rend 1 PV au joueur');
 
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'pretre-de-la-bouche').ok, true);
   assert.equal(duel.joueur.pv, 27);
   const pvAvantPapyrus = duel.joueur.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'papyrus').ok, true);
   assert.equal(duel.joueur.pv, pvAvantPapyrus - 2, 'le Prix du Papyrus se paie en PV');
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   const momie = rpgJouerCreature(duel, 'joueur', 'momie-de-lin');
   assert.equal(momie.ok, true);
 
@@ -191,16 +187,18 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   const tutoriel = tutorielParId('serment-du-soleil-rouge');
   const duel = duelDeLecon(tutoriel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'ashigaru-des-braises').ok, true);
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'samourai-du-torii').ok, true);
   const ashigaru = duel.joueur.creatures.find((entite) => entite.carteId === 'ashigaru-des-braises');
   assert.equal(ashigaru.atk, 2);
   assert.equal(ashigaru.pv, 2, 'la Résonance du torii renforce l’Ashigaru');
   const viking = duel.joueur.creatures.find((entite) => entite.carteId === 'viking-des-neiges');
   assert.ok(viking, 'la leçon prête un Viking à sacrifier, sans toucher au deck');
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge', null,
     { sacrificeIds: [viking.id] }).ok, true);
   assert.equal(duel.joueur.creatures.length, 5, 'le Daimyō remplace le Viking et crée deux jetons');
-  assert.equal(duel.joueur.mana.braise, 0, 'les trois poses coûtent exactement dix manas');
+  assert.equal(duel.joueur.mana.braise, 0, 'les poses ne dépensent aucun mana');
 
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
@@ -226,6 +224,7 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
   assert.equal(guerrier.arriveeEnAttente, true, 'le Guerrier attend qu’on désigne le porteur du bouclier');
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', guerrier.entite.id).ok, true);
   assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec une parade');
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
   const mainAvantValkyrie = duel.joueur.main.length;
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau');
   assert.equal(valkyrie.ok, true);
@@ -253,7 +252,7 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
     'le sort bloqué ne fait aucun dégât : la 2/2 reste intacte',
   );
   assert.ok(!ennemi.furieDeclenchee, 'le Guerrier n’a plus de Furie');
-  assert.equal(duel.joueur.mana.neige, 2, 'les trois cartes de la leçon consomment huit des dix manas');
+  assert.equal(duel.joueur.mana.neige, 0, 'les cartes ne demandent pas de mana');
 
   preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'furie'));
   const berserk = duel.joueur.creatures.find((entite) => entite.carteId === 'berserk-des-trois-hivers');
@@ -294,14 +293,14 @@ test('la leçon Embuscade joue deux créatures pendant le tour adverse, puis blo
   const tutoriel = tutorielParId('embuscade-de-la-lune-noire');
   const duel = duelDeLecon(tutoriel);
   const reserve = () => duel.joueur.mana.sable + duel.joueur.mana.tenebres;
-  assert.equal(reserve(), 10, 'la réserve préparée est au plafond du mode');
+  assert.equal(reserve(), 0, 'aucune réserve de mana');
   assert.equal(duel.joueur.manaChoixEnAttente, false, 'aucun choix de couleur ne coupe la leçon');
 
   // La Danseuse, désormais sans Embuscade, se joue seulement pendant votre tour.
   const danseuse = rpgJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune');
   assert.equal(danseuse.ok, true);
   assert.equal(danseuse.entite.ready, true, 'sa Rapidité la rend disponible tout de suite');
-  assert.equal(reserve(), 7, 'trois manas dépensés, sept gardés pour le tour adverse');
+  assert.equal(reserve(), 0, 'la pose ne demande aucun mana');
 
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'sorcier');
@@ -324,7 +323,7 @@ test('la leçon Embuscade joue deux créatures pendant le tour adverse, puis blo
     { cibleDifferee: true, attaquants: [chien.id, faussoyeur.id] });
   assert.equal(sentinelle.ok, true, 'l’attaque déclarée ouvre la fenêtre et remplit la condition');
   assert.equal(sentinelle.arriveeEnAttente, true, 'son arrivée attend l’attaquant désigné');
-  assert.equal(sentinelle.entite.ready, false, 'le mal d’invocation tient : elle n’attaquera pas ce tour');
+  assert.equal(sentinelle.entite.ready, true, 'la créature est prête dès son arrivée');
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok, true);
   assert.equal(duel.sorcier.creatures.includes(chien), false,
     'les 3 dégâts de l’arrivée tuent le Chien 2/2 avant les blessures de combat');
@@ -336,7 +335,7 @@ test('la leçon Embuscade joue deux créatures pendant le tour adverse, puis blo
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', faussoyeur.id).ok, true);
   assert.deepEqual([faussoyeur.atk, faussoyeur.def, faussoyeur.pv], [0, 2, 2],
     'le −2/+0 vide l’attaque sans toucher la défense');
-  assert.equal(reserve(), 1, 'neuf manas sur dix ont payé les deux Embuscades');
+  assert.equal(reserve(), 0, 'les Embuscades ne demandent aucun mana');
 
   // La créature arrivée en Embuscade bloque immédiatement.
   const combat = rpgLancerAttaque(duel, 'sorcier', [faussoyeur.id],
@@ -360,3 +359,22 @@ test('la récompense d’un tutoriel n’est versée qu’une fois', () => {
   const autre = reclamerRecompenseTutoriel(second.portefeuille, RPG_TUTORIELS[2].id, 150);
   assert.equal(autre.gain, 150, 'une autre leçon reste payable');
 });
+
+for (const [lecon, premiere, suivante] of [
+  ['balance-des-heures', 'chacal-du-seuil', 'pretre-de-la-bouche'],
+  ['serment-du-soleil-rouge', 'ashigaru-des-braises', 'samourai-du-torii'],
+  ['serment-des-neuf-hivers', 'guerrier-au-bouclier-rond', 'valkyrie-au-corbeau'],
+]) {
+  test(`${lecon} : la deuxième invocation attend réellement le tour suivant`, () => {
+    const tutoriel = tutorielParId(lecon);
+    const duel = duelDeLecon(tutoriel);
+    const entree = rpgJouerCreature(duel, 'joueur', premiere, null, { cibleDifferee: true });
+    assert.ok(entree.ok);
+    if (duel.arriveeEnAttente) assert.ok(rpgResoudreArriveeCiblee(duel, 'joueur', entree.entite.id).ok);
+    const tentative = rpgJouerCreature(duel, 'joueur', suivante, null, { cibleDifferee: true });
+    assert.equal(tentative.raison, 'creature-limite');
+    assert.ok(duel.joueur.main.includes(suivante));
+    rpgFinDeTour(duel); rpgFinDeTour(duel);
+    assert.ok(rpgJouerCreature(duel, 'joueur', suivante, null, { cibleDifferee: true }).ok);
+  });
+}

@@ -12836,7 +12836,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       later(commencerSorcier, Math.max(700, delaiReflexionSorcier()));
     };
 
-    if (!rpgPeutRepondre(duel, 'sorcier')) {
+    // L'adversaire des leçons ne joue que les actions scénarisées : les
+    // Magies Rapides ne doivent pas être gaspillées en réponse à la fin du tour.
+    if (tutorielActif || !rpgPeutRepondre(duel, 'sorcier')) {
       force();
       later(fermerTour, 600);
       return;
@@ -12898,7 +12900,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sorcierApresCombatRef.current = false;
     if (rpgVainqueur(duel)) { force(); return; }
     rpgOuvrirFinDeTour(duel);
-    if (!rpgPeutRepondre(duel, 'joueur')) {
+    const etape = tutorielActif && etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
+    if (etape?.skipOpponentTurn || !rpgPeutRepondre(duel, 'joueur')) {
       passerFinTourSorcier();
       return;
     }
@@ -13100,6 +13103,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = () => {
       if (pauseSiAttenteJoueur(declarerAttaqueSorcier)) return;
+      const etapeScript = tutorielActif && etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
+      if (etapeScript?.skipOpponentTurn) { finirTourSorcier(); return; }
       if (!combatCollectif) {
         const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier');
         if (!choix) { apresCombatSorcier(); return; }
