@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgResoudreArriveeCiblee } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique, rpgCibleIndividuelleClassiqueEncoreLegale, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from '../src/games/rpgCombatIndividuelClassique.js';
 
 function partie() {
@@ -241,4 +241,102 @@ test('Embuscade reste jouable dans les fenêtres de sort et d’effet de créatu
     assert.equal(rpgPeutRepondre(d, 'joueur'), true, fenetre);
     assert.ok(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').ok, fenetre);
   }
+});
+
+for (const attaquantCote of ['joueur', 'sorcier']) {
+  test(`Une Embuscade interrompt une attaque directe et rend l'attaque disponible (${attaquantCote})`, () => {
+    const d = partie(); d.tour = attaquantCote;
+    const defenseur = attaquantCote === 'joueur' ? 'sorcier' : 'joueur';
+    const a = poser(d, attaquantCote); a.def = a.pvMax = 5; a.pv = 4;
+    d[defenseur].main.push('fennec-des-decombres');
+    const pv = d[defenseur].pv;
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, attaquantCote, a.id).ok);
+    const arrivee = rpgJouerCreature(d, defenseur, 'fennec-des-decombres');
+    assert.ok(arrivee.ok, JSON.stringify(arrivee));
+    assert.equal(d.combatDeclare.cibleIndividuelle.interrompueParEmbuscade, true);
+    const resultat = rpgResoudreAttaqueIndividuelleClassique(d, attaquantCote);
+    assert.ok(resultat.annule && resultat.choisirNouvelleCible);
+    assert.equal(resultat.attaquantId, a.id);
+    assert.equal(d[defenseur].pv, pv);
+    assert.equal(a.attaquee, false);
+    assert.deepEqual(rpgCiblesIndividuellesClassique(d, attaquantCote, a.id).cibles, [arrivee.entite.id]);
+    assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, attaquantCote, a.id).raison, 'cible');
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, attaquantCote, a.id, arrivee.entite.id).ok);
+    assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, attaquantCote).ok);
+    assert.equal(a.attaquee, true);
+  });
+}
+
+test('Une Embuscade sur une créature déjà ciblée ne redirige pas son attaque', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier');
+  a.def = a.pvMax = 5; a.pv = 4; d.sorcier.main.push('fennec-des-decombres');
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  assert.ok(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').ok);
+  assert.equal(d.combatDeclare.cibleIndividuelle.interrompueParEmbuscade, undefined);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok && !r.annule); assert.equal(a.attaquee, true);
+});
+
+test('Une Embuscade refusée ne perturbe pas l’attaque directe', () => {
+  const d = partie(), a = poser(d, 'joueur');
+  d.sorcier.main.push('fennec-des-decombres'); // attaquant indemne : condition fausse
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').ok, false);
+  assert.equal(d.combatDeclare.cibleIndividuelle.interrompueParEmbuscade, undefined);
+  const pv = d.sorcier.pv;
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+  assert.equal(d.sorcier.pv, pv - a.atk);
+});
+
+test('la Bannière ne se déclenche pas deux fois pour la même attaque interrompue', () => {
+  const d = partie(), a = poser(d, 'joueur');
+  a.carteId = 'daimyo-du-soleil-rouge'; a.def = a.pvMax = 6; a.pv = 4;
+  d.sorcier.main.push('fennec-des-decombres');
+  const avant = a.atk;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  assert.equal(a.atk, avant + 1);
+  const fennec = rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').entite;
+  assert.ok(fennec);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').choisirNouvelleCible);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, fennec.id).ok);
+  assert.equal(a.atk, avant + 1);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+});
+
+test('une attaque interrompue abandonnée ne bloque pas la Bannière au prochain tour', () => {
+  const d = partie(), a = poser(d, 'joueur');
+  a.carteId = 'daimyo-du-soleil-rouge'; a.def = a.pvMax = 6; a.pv = 4;
+  d.sorcier.main.push('fennec-des-decombres');
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  const fennec = rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').entite;
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').choisirNouvelleCible);
+  const apresPremiereAnnonce = a.atk;
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, fennec.id).ok);
+  assert.equal(a.atk, apresPremiereAnnonce + 1);
+});
+
+test('on termine l’arrivée ciblée de l’Embuscade avant de choisir à nouveau', () => {
+  const d = partie(), a = poser(d, 'joueur');
+  a.def = a.pv = a.pvMax = 8;
+  d.sorcier.main.push('sentinelle-des-sables');
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  const arrivee = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables', null, { cibleDifferee: true });
+  assert.ok(arrivee.ok && arrivee.arriveeEnAttente);
+  assert.equal(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').raison, 'timing');
+  assert.ok(rpgResoudreArriveeCiblee(d, 'sorcier', a.id).ok);
+  const resolution = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(resolution.annule && resolution.choisirNouvelleCible);
+  assert.equal(a.attaquee, false);
+});
+
+test('la cible directe reste un choix possible si une capacité le permet après l’Embuscade', () => {
+  const d = partie(), a = poser(d, 'joueur');
+  a.def = a.pvMax = 5; a.pv = 4; a.infiltration = true;
+  d.sorcier.main.push('fennec-des-decombres');
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  assert.ok(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').choisirNouvelleCible);
+  assert.equal(rpgCiblesIndividuellesClassique(d, 'joueur', a.id).directe, true);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
 });

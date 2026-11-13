@@ -22,7 +22,8 @@ globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.win
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
-  const { checkCombatIndividuel } = await import('../node_modules/.cache/rpg-classique-individuel/rpg-classique-individuel-smoke.js');
+  const { checkCombatIndividuel, checkEmbuscadeContreAttaqueDirecte } = await import('../node_modules/.cache/rpg-classique-individuel/rpg-classique-individuel-smoke.js');
   await checkCombatIndividuel(assert);
+  await checkEmbuscadeContreAttaqueDirecte(assert);
 } finally { dom.window.close(); }
 console.log('Combat individuel classique : interface vérifiée.');

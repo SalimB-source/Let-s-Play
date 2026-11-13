@@ -62,8 +62,23 @@ export async function checkCombatIndividuel(assert) {
     assert.equal(duel.phase, 'principale');
     const pv = duel.sorcier.pv;
     await click(card(b.id));
-    await click(container.querySelector('.rpg-wizard-plate--ennemi'));
-    assert.equal(duel.sorcier.pv, pv - b.atk, 'une seconde créature attaque directement');
+    assert.equal(duel.sorcier.pv, pv - b.atk, 'un seul clic attaque directement quand le champ adverse est vide');
+    assert.equal(b.attaquee, true);
+
+    // Une réponse de l'IA interrompt la frappe directe et redemande une cible.
+    b.attaquee = false; b.pv = b.pvMax = 20; b.atk = 10; b.pv--;
+    duel.sorcier.main = ['fennec-des-decombres'];
+    const avantEmbuscade = duel.sorcier.pv;
+    await act(async () => window.__RPG_FORCE__());
+    await click(card(b.id));
+    const fennec = duel.sorcier.creatures.find((e) => e.carteId === 'fennec-des-decombres');
+    assert.ok(fennec, 'le sorcier a posé son Embuscade');
+    assert.equal(duel.sorcier.pv, avantEmbuscade, 'la frappe directe est annulée');
+    assert.equal(b.attaquee, false, 'la créature peut choisir une autre cible');
+    await click(card(fennec.id));
+    assert.equal(b.attaquee, true, 'le premier clic sur la nouvelle cible lance le combat');
+    assert.equal(duel.sorcier.creatures.includes(fennec), false);
+    b.pv = b.pvMax;
 
     // Avec une réponse légale, l'attaque doit attendre le joueur, même après
     // le délai de résolution automatique.
@@ -144,6 +159,50 @@ export async function checkCombatIndividuel(assert) {
     assert.equal(container.querySelector('.rpg-btn--resolve-combat'), null);
 
 
+  } finally {
+    await act(async () => root.unmount()); container.remove();
+  }
+}
+
+// Scène séparée : le joueur répond à une frappe directe de l'IA, puis celle-ci
+// doit viser l'Embuscade plutôt que d'infliger les anciens dégâts directs.
+export async function checkEmbuscadeContreAttaqueDirecte(assert) {
+  window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+  const deck = ['tercio-de-cuivre', 'pilote-de-la-carreira', 'le-renegat', 'negociant-des-ranscons', 'galion-de-la-flotte', 'le-routier', 'le-grand-debarquement', 'haut-fond', 'vipere-de-verre', 'lettre-de-marque', 'grappin-d-abordage', 'baton-des-citernes', 'cotre-de-course', 'tislit-des-aures', 'mousse-des-galiotes'].flatMap((id) => [id, id]);
+  installerDeckMaisonDeTest(deck);
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  const click = async (el) => { assert.ok(el, 'élément présent'); assert.equal(el.disabled, false); await act(async () => el.click()); };
+  const pause = async (ms = 150) => act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
+  try {
+    await act(async () => root.render(<RpgDuelPage joueurDeck={deck} sorcierDeck={deck} rng={() => .9} />));
+    const onglet = [...container.querySelectorAll('.rpg-mode-menu__switch button')].find(el => el.textContent.trim().endsWith('Deck'));
+    await click(onglet); await pause();
+    await click(container.querySelector('.rpg-deck-choice__button')); await pause();
+    await click(container.querySelector('.rpg-deck-detail__play')); await pause();
+    await passerMulligan(container, click); await pause();
+    const duel = window.__RPG_DUEL__;
+    duel.sorcier.main = ['ashigaru-des-braises'];
+    const tour = duel.tour; duel.tour = 'sorcier';
+    const result = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises');
+    duel.tour = tour; assert.ok(result.ok);
+    const a = result.entite; a.atk = 3; a.def = a.pvMax = 10; a.pv = 9; a.ready = true;
+    duel.sorcier.main = []; duel.sorcier.deck = [];
+    duel.joueur.main = ['fennec-des-decombres', 'trait-de-braise'];
+    const pv = duel.joueur.pv;
+    await act(async () => window.__RPG_FORCE__());
+    await click(container.querySelector('.rpg-btn--endturn'));
+    for (let i = 0; i < 40 && !duel.combatDeclare?.cibleIndividuelle; i++) await pause(250);
+    assert.equal(duel.combatDeclare?.cibleIndividuelle?.cibleId, null, 'attaque directe annoncée');
+    await click(container.querySelector('.rpg-hand__card[data-card-id="fennec-des-decombres"]'));
+    await click(container.querySelector('.rpg-creature-slot--choix'));
+    for (let i = 0; i < 40 && !duel.joueur.creatures.some((e) => e.carteId === 'fennec-des-decombres'); i++) await pause(250);
+    const fennec = duel.joueur.creatures.find((e) => e.carteId === 'fennec-des-decombres');
+    assert.ok(fennec, 'Embuscade effectivement posée');
+    for (let i = 0; i < 40 && duel.combatDeclare?.cibleIndividuelle?.cibleId !== fennec.id; i++) await pause(250);
+    assert.equal(duel.joueur.pv, pv, 'aucun dégât de la frappe directe interrompue');
+    assert.equal(duel.combatDeclare?.attaquants[0], a.id, 'le même attaquant repart');
+    assert.equal(duel.combatDeclare?.cibleIndividuelle?.cibleId, fennec.id, 'l’IA a choisi une nouvelle cible');
   } finally {
     await act(async () => root.unmount()); container.remove();
   }

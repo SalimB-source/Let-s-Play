@@ -51,7 +51,11 @@ export function rpgDeclarerAttaqueIndividuelleClassique(duel, cote, attaquantId,
   if (!creature(attaquant) || !rpgPeutAttaquer(attaquant)) return { ok: false, raison: 'pas-pret' };
   const choix = rpgCiblesIndividuellesClassique(duel, cote, attaquantId);
   if (cibleId === null ? !choix.directe : !choix.cibles.includes(cibleId)) return { ok: false, raison: 'cible' };
-  const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, cote, [attaquantId]);
+  // Une reprise après Embuscade est la même attaque : sa bannière a déjà
+  // déclenché à l'annonce initiale et ne doit pas grandir une seconde fois.
+  const bannieresAppliquees = attaquant.repriseAttaqueIndividuelle
+    ? true : rpgAppliquerBannieresAttaque(duel, cote, [attaquantId]);
+  delete attaquant.repriseAttaqueIndividuelle;
   const ciblee = Boolean(attaquant.coupRapide);
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
   if (cible?.provocation) {
@@ -80,7 +84,21 @@ export function rpgResoudreAttaqueIndividuelleClassique(duel, cote) {
     return { ok: false, raison: 'timing' };
   }
   const attaquantId = combat.attaquants[0];
-  const { cibleId, ciblee } = combat.cibleIndividuelle;
+  const { cibleId, ciblee, interrompueParEmbuscade } = combat.cibleIndividuelle;
+  if (interrompueParEmbuscade) {
+    const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
+    // Si l'arrivée a détruit l'attaquant il ne peut évidemment pas repartir.
+    if (attaquant) {
+      attaquant.attaquee = false;
+      attaquant.repriseAttaqueIndividuelle = true;
+    }
+    duel.combatDeclare = null;
+    duel.fenetreReponse = false;
+    duel.phase = 'principale';
+    duel.log.push('L’Embuscade interrompt l’attaque directe : l’attaquant doit choisir à nouveau sa cible.');
+    return { ok: true, annule: true, choisirNouvelleCible: Boolean(attaquant && rpgPeutAttaquer(attaquant)), attaquantId,
+      resume: { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], critiques: [], blessures: [] } };
+  }
   const valide = rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantId, cibleId, ciblee);
   const result = valide
     ? rpgResoudreEchangeIndividuelClassique(duel, cote, attaquantId, cibleId, ciblee)
@@ -95,11 +113,11 @@ export function rpgResoudreAttaqueIndividuelleClassique(duel, cote) {
 
 /** Choix déterministe de l'IA : privilégier une victoire directe puis les
  * échanges favorables. La légalité est recalculée avant chaque déclaration. */
-export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier') {
+export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier', attaquantImpose = null) {
   if (!soloClassique(duel, cote) || duel.tour !== cote || duel.phase !== 'principale' || duel.combatDeclare || rpgVainqueur(duel)) return null;
   const adversaire = autre(cote);
   const choix = [];
-  for (const attaquant of duel[cote].creatures.filter(rpgPeutAttaquer)) {
+  for (const attaquant of duel[cote].creatures.filter((e) => rpgPeutAttaquer(e) && (!attaquantImpose || e.id === attaquantImpose))) {
     const cibles = rpgCiblesIndividuellesClassique(duel, cote, attaquant.id);
     if (cibles.directe) {
       const degats = Math.max(0, Number(attaquant.atk) || 0);
@@ -116,5 +134,5 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier')
     }
   }
   choix.sort((a, b) => b.score - a.score);
-  return choix[0] && choix[0].score > 0 ? { attaquantId: choix[0].attaquantId, cibleId: choix[0].cibleId } : null;
+  return choix[0] && (attaquantImpose || choix[0].score > 0) ? { attaquantId: choix[0].attaquantId, cibleId: choix[0].cibleId } : null;
 }
