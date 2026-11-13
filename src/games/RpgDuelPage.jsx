@@ -3040,7 +3040,6 @@ export function TableCard({
         alt=""
         aria-hidden="true"
       />
-      {malInvocation && <span className="rpg-card__summoning-sick" title="Mal d’invocation : ne peut pas attaquer avant le prochain tour de son camp, mais peut défendre." aria-hidden="true">⌛</span>}
       {cartesArmes.length > 0 && (
         <span className={`rpg-card__arme-vignette${durabiliteArme > 0 || entite.arme?.compteurs > 0 ? ' has-compteurs' : ''}`} data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
           <img src={cardArt(cartesArmes[0])} alt="" />
@@ -14775,9 +14774,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 && (rpgInvocationSpecialeSurSonTour(duel, 'joueur', carte)
                   || (duel.tour === 'sorcier' && duel.fenetreReponse && reponseActive
                     && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)));
-              // Une invocation spéciale disponible partage le halo doré des mythiques.
+              // L’or de rareté ne concerne plus les créatures ou héros ; une
+              // invocation spéciale disponible garde son propre signal doré.
               const estMythique = cardRarityInfo(carte).key === 'mythique';
-              const mythiqueJouable = baseJouable && estMythique;
+              const mythiqueJouable = baseJouable && estMythique && !estCreature;
               // La carte liée dont l'ancre mythique est en jeu : elle s'allume
               // d'une lueur dorée, pour que le joueur voie qu'elle est renforcée
               // AVANT de la jouer. Seulement si elle est JOUABLE maintenant —
