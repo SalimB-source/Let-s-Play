@@ -39,6 +39,31 @@ try {
           ennemiCreature: mesurer('.card-row--ennemi .rpg-card'), vieEnnemi: mesurer('.rpg-wizard-plate--ennemi .rpg-jauge-vie__rond'), champEnnemi: mesurer('.card-row--ennemi'), champJoueur: mesurer('.card-row--equipe'), creature: mesurer('.card-row--equipe .rpg-card'), mainAdverse: mesurer('.rpg-hidden-hand__cards'), vieJoueur: mesurer('.rpg-wizard-plate--joueur .rpg-jauge-vie__rond'), mainJoueur: mesurer('.rpg-hand__card'),
         };
       });
+      for (const side of ['joueur', 'ennemi']) {
+        const decor = await page.evaluate((cote) => {
+          const avatar = document.querySelector(`.rpg-wizard-plate--${cote} .rpg-wizard-plate__avatar`);
+          const cadre = getComputedStyle(avatar, '::before');
+          const ornements = getComputedStyle(avatar, '::after');
+          const image = getComputedStyle(avatar.querySelector('img'));
+          const rect = avatar.getBoundingClientRect();
+          const diametre = parseFloat(cadre.width);
+          // Le cercle est en bas du visage : le haut de l'image le dépasse.
+          return { contenu: cadre.content, rayon: cadre.borderRadius, diametre,
+            depasse: rect.height - parseFloat(cadre.bottom) - diametre,
+            couleur: cadre.borderTopColor, fond: cadre.backgroundColor, overflow: getComputedStyle(avatar).overflow,
+            imageZ: Number(image.zIndex), imagePosition: image.objectPosition, cadreZ: Number(cadre.zIndex), touches: cadre.pointerEvents,
+            ornements: ornements.backgroundImage, touchesOrnements: ornements.pointerEvents };
+        }, side);
+        assert.equal(decor.contenu, '""', `${side} : médaillon présent`);
+        assert.equal(decor.rayon, '50%', `${side} : médaillon rond`);
+        assert.ok(decor.diametre > 0 && decor.imageZ > decor.cadreZ && decor.depasse > 0, `${side} : la tête dépasse devant le cercle`);
+        assert.equal(decor.couleur, 'rgb(215, 173, 97)', `${side} : cercle doré`);
+        assert.equal(decor.fond, 'rgba(0, 0, 0, 0)', `${side} : centre transparent`);
+        assert.equal(decor.overflow, 'visible', `${side} : visage non rogné`);
+        assert.equal(decor.imagePosition, '50% 0%', `${side} : le haut du portrait dépasse le cercle même sur un cadre rectangulaire`);
+        assert.match(decor.ornements, /radial-gradient/, `${side} : ornements visibles`);
+        assert.equal(decor.touches, 'none'); assert.equal(decor.touchesOrnements, 'none');
+      }
       if (touch) assert.equal(mesures.ennemi.grid, 'auto', 'avatar adverse : ne pas utiliser la cellule de gauche');
       if (touch) assert.equal(mesures.joueur.grid, 'auto', 'avatar joueur centré sur la table');
       assert.ok(mesures.creature.top >= mesures.ligne.top + 1, `${largeur}×${hauteur} : créature sous la ligne`);
@@ -55,15 +80,6 @@ try {
         assert.ok(Math.abs(mesures.creature.top - mesures.ligne.bottom) <= 6, 'la créature alliée touche la ligne par le bas');
         for (const slot of mesures.slotsEnnemis) assert.ok(Math.abs(slot.bottom - mesures.ligne.top) <= 6, 'les cases adverses sont au-dessus de la ligne');
         for (const slot of mesures.slots) assert.ok(Math.abs(slot.top - mesures.ligne.bottom) <= 6, 'les cases alliées sont sous la ligne');
-        const decor = await page.evaluate(() => {
-          const avatar = document.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__avatar');
-          const cadre = getComputedStyle(avatar, '::before');
-          const image = getComputedStyle(avatar.querySelector('img'));
-          return { contenu: cadre.content, rayon: cadre.borderRadius, largeur: parseFloat(cadre.width), imageZ: Number(image.zIndex), cadreZ: Number(cadre.zIndex) };
-        });
-        assert.equal(decor.contenu, '""', 'le médaillon est présent');
-        assert.equal(decor.rayon, '50%', 'le médaillon est rond');
-        assert.ok(decor.largeur > 0 && decor.imageZ > decor.cadreZ, 'la tête sort devant le médaillon');
         if (hauteur >= 700) assert.ok(mesures.table.bottom - mesures.vieJoueur.bottom >= 19, 'l’avatar joueur et ses PV sont remontés');
         const creaturesCliquables = await page.evaluate(() => [...document.querySelectorAll('.card-row > .rpg-card')].every((carte) => {
           const r = carte.getBoundingClientRect();
