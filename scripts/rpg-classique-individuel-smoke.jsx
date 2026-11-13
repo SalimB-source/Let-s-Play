@@ -126,7 +126,8 @@ export async function checkCombatIndividuel(assert) {
       assert.equal(enMain(id)?.dataset.embuscadeJouable, 'true', id);
       assert.ok(enMain(id).classList.contains('is-special-ambush'), id);
     }
-    assert.ok(enMain('tojiro-le-pourfendeur').classList.contains('is-mythique-jouable'), 'la mythique garde son identité');
+    assert.ok(!enMain('tojiro-le-pourfendeur').classList.contains('is-mythique-jouable'), 'la créature mythique ne reçoit pas le halo doré de rareté');
+    assert.ok(enMain('tojiro-le-pourfendeur').classList.contains('rpg-card--mythique'), 'son cadre conserve sa rareté');
     assert.match(enMain('garde-du-trone-givre').getAttribute('aria-label'), /Embuscade jouable/);
     duel.defausseEnAttente = { cote: 'joueur', restant: 1 };
     await act(async () => window.__RPG_FORCE__());

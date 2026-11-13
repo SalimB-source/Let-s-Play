@@ -3732,7 +3732,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    carte et s'éteint en une dizaine de pixels —, et c'est ce qui rend une carte
    jouable reconnaissable d'un coup d'œil sans qu'elle éclaire ses voisines.
 
-   La rareté, elle, garde sa lueur : une **mythique** jouable s'allume d'or et
+   Hors créatures et héros, une carte **mythique** jouable s'allume d'or et
    d'orange, plus chaude, tout aussi serrée (voir « Lueur d'or — carte mythique
    jouable » plus bas). Les deux triplets `--rpg-play-halo` /
    `--rpg-play-halo-clair` restent la seule source de teinte : l'azur sur la
@@ -3765,8 +3765,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 12px 22px rgba(0, 0, 0, .68);
 }
 /* ── Lueur d'or — carte MYTHIQUE jouable ────────────────────────────────────
-   La main s'allume en azur ; la rareté, elle, a sa lueur. Une mythique jouable
-   prend donc l'or — la seule couleur du halo qui ne soit pas l'azur commun —,
+   La main s'allume en azur ; hors créatures et héros, une mythique jouable
+   prend l'or — la seule couleur du halo qui ne soit pas l'azur commun —,
    plus chaude et plus lumineuse : liseré doré, puis or clair, puis orange
    profond. La lueur reste **concentrée** comme celle de la main, un cran plus
    large : c'est une respiration, pas un projecteur. Le cadre, lui, ne bouge
@@ -6402,13 +6402,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-element-badge--verre { background: radial-gradient(circle at 34% 24%, #9fd6e8, #2b6d84 72%); }
 .rpg-card-element-badge--souffle { background: radial-gradient(circle at 34% 24%, #d9dee6, #6d7480 72%); }
 .rpg-card-element-badge--encre { background: radial-gradient(circle at 34% 24%, #b39ae0, #432d73 72%); }
-
-.rpg-card__summoning-sick {
-  position: absolute; z-index: 8; right: 6%; bottom: 7%;
-  font-size: clamp(12px, 18cqw, 24px); line-height: 1;
-  padding: 2px; border-radius: 50%; background: rgba(20, 18, 28, .85);
-  pointer-events: none;
-}
 
 /* Le mal d'invocation grise la face sans désaturer les valeurs rouges d'une
    créature blessée ; elle reste utilisable comme bloqueuse selon les règles. */
@@ -10841,7 +10834,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    ouverte. Sa couleur ne dépend plus du TYPE ni de la FAMILLE de la carte :
    toute la main s'allume en **azur**, le cyan des cartes jouables de MTG
    Arena, créature, héros, terrain, arme, Magie Rapide, Sorcellerie. Seule la
-   rareté change la teinte — une mythique prend l'**or** (bloc « Lueur d'or »,
+   rareté change la teinte hors créatures et héros — une mythique prend l'**or** (bloc « Lueur d'or »,
    plus haut). Les Invocations spéciales disponibles partagent le halo doré.
 
    Il n'y a donc plus rien à déclarer ici : l'azur est posé une fois sur la
