@@ -2895,11 +2895,11 @@ test('Faussoyeur recovers the latest creature and keeps its lane-aware Butin', (
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-for (const [id, expected] of [['dune-marchante', 'verglas'], ['scribe-de-la-liste', 'ashigaru-des-braises']]) {
+for (const [id, expected] of [['dune-marchante', 'trait-de-braise'], ['scribe-de-la-liste', 'ashigaru-des-braises']]) {
   test(`${id} recycles eligible graveyard cards on death, not on conquest`, () => {
     for (const mode of ['death', 'conquest']) {
       const duel = partieCombat(); duel.joueur.mana.sable = 20;
-      duel.joueur.cimetiere = ['verglas', 'ashigaru-des-braises']; duel.joueur.main = [id];
+      duel.joueur.cimetiere = ['trait-de-braise', 'ashigaru-des-braises']; duel.joueur.main = [id];
       const creature = rpgMobaJouerCreature(duel, 'joueur', id, 'right', 0).entite;
       assert.ok(creature);
       rpgFinDeTour(duel); duel.sorcier.mana.neige = 20; duel.sorcier.main = ['eclair-du-marteau'];

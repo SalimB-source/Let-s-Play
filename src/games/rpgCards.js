@@ -636,7 +636,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 4,
     rarity: 'commune',
-    typeLine: 'Créature — Élémental', destruction: { type: 'recyclage', cible: 'carte-cimetiere', types: ['magie', 'arme'] }, text: 'Quand la Dune meurt : renvoyez un sort ou une arme de votre cimetière dans votre main.',
+    typeLine: 'Créature — Élémental', destruction: { type: 'recyclage', cible: 'magie-cimetiere', coutMax: 3, exclureArmes: true }, text: 'Quand la Dune meurt : renvoyez dans votre main le dernier sort de coût imprimé 3 ou moins de votre cimetière.',
     flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
   },
     {

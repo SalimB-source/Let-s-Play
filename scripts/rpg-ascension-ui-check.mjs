@@ -23,7 +23,8 @@ globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.win
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
-  const { checkAscensionDuel, checkAscensionMoba } = await import('../node_modules/.cache/rpg-ascension/rpg-ascension-smoke.js');
+  const { checkAscensionDuel, checkAscensionMoba, checkTextesApercuAscension } = await import('../node_modules/.cache/rpg-ascension/rpg-ascension-smoke.js');
+  await checkTextesApercuAscension(assert);
   await checkAscensionDuel(assert, false);
   await checkAscensionDuel(assert, true);
   await checkAscensionMoba(assert);
