@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 
 const CARTES = {
-  jarl: { id: 'jarl-du-dernier-rempart', couts: [3, 5], materiaux: ['gardien-viking-du-fjord', 'jarl-au-marteau-de-guerre'], effets: ['overkill', 'bouclier', 'furie'], stats: [4, 10], recette: /Viking 3.*Viking 5/ },
-  scorpion: { id: 'scorpion-de-l-eclipse', couts: [2, 3, 3], materiaux: ['scorpion-du-seuil', 'ureus-du-seuil', 'ureus-du-seuil'], effets: ['poison', 'volDeVie'], stats: [5, 9], recette: /Scorpion Sable 2.*Ténèbres 3.*Ténèbres 3/ },
-  colosse: { id: 'colosse-du-verre-ardent', couts: [1, 3, 4], materiaux: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'], effets: ['bouclier', 'contreAttaque'], stats: [7, 8], recette: /Djinn Braise 1.*Djinn Braise 3.*Élémental Sable 4/ },
+  jarl: { id: 'jarl-du-dernier-rempart', couts: [4, 4], materiaux: ['archere-viking-du-givre', 'valkyrie-au-corbeau'], effets: ['overkill', 'bouclier', 'furie'], stats: [4, 10], recette: /2 Vikings.*total 8/ },
+  scorpion: { id: 'scorpion-de-l-eclipse', couts: [2, 3, 3], materiaux: ['scorpion-du-seuil', 'ureus-du-seuil', 'ureus-du-seuil'], effets: ['poison', 'volDeVie'], stats: [5, 9], recette: /Scorpion Sable.*Ténèbres.*Ténèbres.*total 8/ },
+  colosse: { id: 'colosse-du-verre-ardent', couts: [1, 3, 4], materiaux: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'], effets: ['bouclier', 'contreAttaque'], stats: [7, 8], recette: /Djinn Braise.*Djinn Braise.*Élémental Sable.*total 8/ },
 };
 
 export async function verifierDuoBrowser(browser, port, dossier) {

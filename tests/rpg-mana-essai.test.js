@@ -521,14 +521,13 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
   };
   const jetons = () => duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable').length;
 
-  // Tarek arrive sur un champ vide : ses deux chiens de sable trouvent chacun
-  // une case (Tarek occupe la première, les chiens les deux suivantes).
+  // Tarek arrive avec un seul chien, même si plusieurs cases restent libres.
   poser('chien-du-guet');
   poser('tarek');
-  assert.equal(duel.joueur.creatures.length, 3);
-  assert.equal(jetons(), 2, 'les deux jetons entrent quand deux cases restent');
+  assert.equal(duel.joueur.creatures.length, 2);
+  assert.equal(jetons(), 1, 'un seul jeton entre même si plusieurs cases restent');
 
-  // Une seule case libre : un seul chien naît, l'autre n'a pas de place.
+  // Une seule case libre : le chien naît normalement.
   const duelPartiel = nouveau(mono);
   mulligans(duelPartiel);
   rpgDemarrerManaEssai(duelPartiel);

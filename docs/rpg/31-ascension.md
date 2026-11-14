@@ -1,4 +1,4 @@
-# Ascension — Réserve, recettes exactes et renforts
+# Ascension — Réserve, total exact et renforts
 
 ## Principe
 
@@ -18,7 +18,8 @@ existe sur les plateaux Duel et MOBA.
 - Les matériaux sont des présences alliées, vivantes et distinctes. Deux
   exemplaires d’une carte sont possibles, jamais deux fois la même présence.
   Armes, buffs, dégâts, coûts modifiés et réductions ne changent pas les
-  **coûts imprimés** de la recette.
+  **coûts imprimés** de la recette. Les créatures-jetons ont un coût imprimé
+  de **1**, même si leur création par effet ne coûte pas de mana.
 
 ## Les quatre créatures
 
@@ -29,14 +30,14 @@ foi. L’ordre de sélection des rôles est libre.
 | Ascension | Couleurs | Coût imprimé | ATQ / DEF | Recette exacte |
 | --- | --- | ---: | ---: | --- |
 | Samouraï du Dragon Rouge | Braise | 7 | **7 / 7** | **2 Samouraïs**, total imprimé **7** |
-| Jarl du Dernier Rempart | Neige | 8 | **4 / 10** | **Viking 3 + Viking 5**, pas 4 + 4 |
-| Scorpion de l’Éclipse | Sable / Ténèbres | 8 | **5 / 9** | **Scorpion Sable 2 + créature Ténèbres 3 + créature Ténèbres 3** |
-| Colosse du Verre Ardent | Braise / Sable | 8 | **7 / 8** | **Djinn Braise 1 + Djinn Braise 3 + Élémental Sable 4** |
+| Jarl du Dernier Rempart | Neige | 8 | **4 / 10** | **2 Vikings**, total imprimé **8** |
+| Scorpion de l’Éclipse | Sable / Ténèbres | 8 | **5 / 9** | **Scorpion Sable + 2 créatures Ténèbres**, total imprimé **8** |
+| Colosse du Verre Ardent | Braise / Sable | 8 | **7 / 8** | **2 Djinns Braise + Élémental Sable**, total imprimé **8** |
 
 Un hybride peut correspondre à plusieurs rôles, mais chaque présence ne peut
-payer **qu’un seul** de ces rôles. Les recettes du Jarl et du duo ne se
-réduisent jamais à « total 8 ». Les deux recettes à trois créatures ne changent
-pas celles à deux matériaux du Dragon et du Jarl.
+payer **qu’un seul** de ces rôles. Les coûts individuels ne sont pas imposés :
+seul leur total exact compte, en plus des nombres, types et couleurs demandés.
+Les recettes du Dragon et du Jarl exigent deux matériaux, les deux autres trois.
 
 ### Samouraï du Dragon Rouge
 
@@ -61,9 +62,9 @@ Deux coûts 3, deux coûts 4 ou un non-Samouraï ne conviennent pas.
 - La peinture Furie dédiée remplace réellement la face normale sur le plateau.
 
 Exemple : **Gardien viking du fjord (3) + Jarl au marteau de guerre (5)**.
-Le Berserk des trois hivers ou la Völva soigneuse peuvent remplir le rôle 3.
-L’Archère viking du givre (4) et la Valkyrie au corbeau (4) ne remplacent pas
-3 + 5 ; le Scalde des runes (3) n’est pas un Viking.
+Le Berserk des trois hivers ou la Völva soigneuse peuvent remplacer le Viking 3.
+L’Archère viking du givre (4) et la Valkyrie au corbeau (4) conviennent aussi
+ensemble ; le Scalde des runes (3) n’est pas un Viking.
 
 ### Scorpion de l’Éclipse
 
@@ -80,6 +81,7 @@ de voie, de réponse à l’arrivée, de Bouclier et de protection sont conserv�
 
 Exemple : **Scorpion du seuil (Sable 2) + Momie de lin (Ténèbres 3) + Uræus du
 seuil (Ténèbres 3)**. Une deuxième Momie ou un deuxième Uræus est possible.
+Un Shabti Ténèbres (1) et le Lecteur du dernier nom (5) conviennent aussi avec le Scorpion (2).
 
 ### Colosse du Verre Ardent
 
@@ -91,7 +93,8 @@ face à un sort adverse, elle frappe le sorcier ou la voie correspondante.
 
 Exemple : **Djinn de la première étincelle (Braise 1) + Djinn de la flamme
 mourante (Braise 3) + Dune marchante (Sable 4)**. Le Ghul des cendres et le
-Djinn de la flèche ardente sont d’autres matériaux possibles.
+Djinn de la flèche ardente sont d’autres matériaux possibles. Deux Djinns de coût 2
+avec la Dune (4) conviennent également.
 
 ## Quatre soutiens ordinaires
 
@@ -301,7 +304,7 @@ Exemples : `/?scene=scorpion`, `/?mode=moba&scene=colosse`,
 `/?mode=moba&scene=soutiens-colosse`.
 
 Le Dragon propose aussi le mauvais couple 3 + 2 pour vérifier le refus avant
-le bon 3 + 4. Le Jarl propose deux Vikings 4 en plus de son 3 + 5.
+le bon 3 + 4. Le Jarl accepte deux Vikings 4 aussi bien que 3 + 5.
 La scène des soutiens Colosse commence avec l’invocation normale **déjà
 consommée**, afin de vérifier le caractère spécial des trois renforts.
 

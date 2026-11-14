@@ -486,7 +486,7 @@ test('AI summons Tarek and can plan legal attacks with his rapid tokens', () => 
   assert.equal(choice?.id, 'tarek');
   ok(rpgMobaJouerCreature(duel, 'joueur', choice.id, choice.lane, choice.slot));
   const dogs = duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable');
-  assert.equal(dogs.length, 2);
+  assert.equal(dogs.length, 1);
   const attackers = rpgMobaChoisirAttaquantsIA(duel, 'joueur');
   assert.ok(attackers.some((id) => dogs.some((dog) => dog.id === id)));
   ok(rpgMobaDeclarerAttaque(duel, 'joueur', attackers, rpgMobaChoisirCiblesAttaqueIA(duel, 'joueur', attackers)));

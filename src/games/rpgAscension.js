@@ -38,7 +38,9 @@ export function carteCorrespondMateriau(carteOuId, role = {}) {
 
 const vivant = (entite) => entite && entite.pv > 0
   && carteCorrespondMateriau(entite.carteId) && coutImprimeAscension(entite) !== null;
-const rolesDe = (condition) => condition?.materiaux?.map((role) => ({ type: condition.type, ...role })) ?? null;
+// Les anciens champs de coût des rôles ne limitent plus les sacrifices.
+// Le même comparateur reste strict pour les renforts qui exigent un coût.
+const rolesDe = (condition) => condition?.materiaux?.map(({ cout, coutMax, ...role }) => ({ type: condition.type, ...role })) ?? null;
 
 export function materiauAscensionValide(carte, entite) {
   const condition = definition(carte)?.ascension;
@@ -61,7 +63,7 @@ function correspondanceExacte(victimes, roles, index = 0, utilises = new Set()) 
 
 /** Validation pure, complète AVANT tout paiement ou réservation de destination.
  * Deux copies de la même carte peuvent être sacrifiées, jamais deux fois le
- * même ID de présence. Le Dragon garde sa recette souple au total exact. */
+ * même ID de présence. Chaque recette exige uniquement un total exact, en plus des types et couleurs. */
 export function validerMateriauxAscension(camp, carte, ids) {
   const condition = definition(carte)?.ascension;
   if (!condition) return { ok: false, raison: 'pas-ascension' };
@@ -111,7 +113,7 @@ export function libelleRecetteAscension(carte) {
   const condition = definition(carte)?.ascension;
   if (!condition) return '';
   const roles = rolesDe(condition);
-  return roles ? roles.map((role) => [role.typeLabel ?? condition.typeLabel ?? 'Créature', COULEURS[role.element], role.cout].filter((s) => s !== undefined).join(' ')).join(' + ')
+  return roles ? roles.map((role) => [role.typeLabel ?? condition.typeLabel ?? 'Créature', COULEURS[role.element]].filter((s) => s !== undefined).join(' ')).join(' + ') + ` · total ${condition.coutTotal}`
     : `${condition.nombre} ${condition.typeLabel}s · total ${condition.coutTotal}`;
 }
 
@@ -143,5 +145,5 @@ export const ERREURS_ASCENSION = Object.freeze({
   'ascension-allies': 'Les sacrifices doivent être des créatures distinctes que vous contrôlez encore.',
   'ascension-type': 'Les sacrifices doivent être vivants et porter le type imprimé demandé.',
   'ascension-cout': 'La somme des coûts imprimés doit être exactement égale au seuil d’Ascension.',
-  'ascension-recette': 'Les types, couleurs et coûts individuels doivent respecter chaque place de la recette.',
+  'ascension-recette': 'Les types et couleurs doivent respecter chaque place de la recette.',
 });

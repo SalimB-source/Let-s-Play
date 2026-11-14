@@ -607,19 +607,19 @@ test('l’IA choisit une cible à exiler et l’exil retire les auras sans décl
 });
 
 
-test('le Daimyō du Soleil rouge est un 3/4 à 5 qui lève deux Samouraïs 1/1 en arrivant', () => {
+test('le Daimyō du Soleil rouge est un 3/4 à 5 qui lève un Samouraï 1/1 en arrivant', () => {
   const carte = cardById('daimyo-du-soleil-rouge');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity, carte.honneur], [5, 3, 4, 'mythique', 1]);
-  assert.deepEqual(carte.arrivee, { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 });
+  assert.deepEqual(carte.arrivee, { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 1 });
   assert.deepEqual(carte.banniere, { tribu: 'samourai', atk: 1, def: 1 });
-  assert.match(carte.text, /deux créatures-jetons « Samouraï » 1\/1/);
+  assert.match(carte.text, /une créature-jeton « Samouraï » 1\/1/);
   assert.match(carte.text, /chaque fois qu’un Samouraï de votre camp attaque, ce Samouraï gagne \+1\/\+1/);
 
   // Le jeton : une créature-jeton déclarée hors du catalogue du duel — jamais
   // dans un deck, jamais dans la dotation de départ, jamais collectionnable.
   const jeton = cardById('samourai-du-daimyo');
   assert.equal(jeton.jeton, true);
-  assert.deepEqual([jeton.cost, jeton.atk, jeton.def, jeton.element], [0, 1, 1, 'braise']);
+  assert.deepEqual([jeton.cost, jeton.atk, jeton.def, jeton.element], [1, 1, 1, 'braise']);
   assert.equal(jeton.honneur, undefined, 'un jeton ne porte pas de Harakiri');
   assert.match(jeton.typeLine, /Créature-jeton — Humain · Samouraï/);
   assert.equal(cardReceivesResonance(jeton, 'samourai'), true, 'le jeton est un Samouraï');
@@ -640,16 +640,16 @@ test('le Daimyō du Soleil rouge est un 3/4 à 5 qui lève deux Samouraïs 1/1 e
   assert.deepEqual(dimensions, [CARD_ART_LARGEUR, CARD_ART_HAUTEUR]);
 });
 
-test('le Daimyō paie 5 mana et pose ses deux jetons, sans pioche ni lancer en plus', () => {
+test('le Daimyō paie 5 mana et pose son jeton, sans pioche ni lancer en plus', () => {
   // Un jeton renvoyé cesse d’exister au lieu de rejoindre une main : le Ressac
   // du joueur ne vise que le camp d’en face, donc on renvoie celui du sorcier.
   const renvoi = duelTest();
   jouer(renvoi, 'sorcier', 'daimyo-du-soleil-rouge');
   const jetonsSorcier = renvoi.sorcier.creatures.filter((entite) => entite.carteId === 'samourai-du-daimyo');
-  assert.equal(jetonsSorcier.length, 2);
+  assert.equal(jetonsSorcier.length, 1);
   const mainSorcier = renvoi.sorcier.main.length;
   sort(renvoi, 'ressac', jetonsSorcier[0].id);
-  assert.equal(renvoi.sorcier.creatures.length, 2, 'le jeton quitte la table');
+  assert.equal(renvoi.sorcier.creatures.length, 1, 'le jeton quitte la table');
   assert.equal(renvoi.sorcier.main.length, mainSorcier, 'un jeton ne rejoint jamais une main');
   assert.equal(renvoi.sorcier.main.includes('samourai-du-daimyo'), false);
 
@@ -665,7 +665,7 @@ test('le Daimyō paie 5 mana et pose ses deux jetons, sans pioche ni lancer en p
     const daimyo = res.entite;
     assert.deepEqual([daimyo.atk, daimyo.def, daimyo.pv, daimyo.pvMax], [3, 4, 4, 4]);
     const jetons = duel[cote].creatures.filter((entite) => entite.carteId === 'samourai-du-daimyo');
-    assert.equal(jetons.length, 2);
+    assert.equal(jetons.length, 1);
     for (const jeton of jetons) {
       assert.equal(jeton.jeton, true);
       assert.deepEqual([jeton.atk, jeton.def, jeton.pvMax], [1, 1, 1]);
@@ -673,7 +673,7 @@ test('le Daimyō paie 5 mana et pose ses deux jetons, sans pioche ni lancer en p
       assert.notEqual(jeton.id, daimyo.id);
     }
     rpgActionsEtat(duel);
-    assert.equal(duel[cote].creatures.length, 3, 'aucune création en double');
+    assert.equal(duel[cote].creatures.length, 2, 'aucune création en double');
   }
 });
 
@@ -698,7 +698,7 @@ test('la bannière du Daimyō grandit chaque Samouraï qui attaque, et lui-même
   nouveauTour('joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', [allie.id], { [allie.id]: [] }).ok, true);
   assert.deepEqual([allie.atk, allie.def], [2, 2]);
-  // Les deux Samouraïs 1/1 levés par le Daimyō sont, eux, de la tribu.
+  // Le Samouraï 1/1 levé par le Daimyō est de la tribu.
   nouveauTour('joueur');
   const jeton = duel.joueur.creatures.find((entite) => entite.carteId === 'samourai-du-daimyo');
   assert.equal(rpgLancerAttaque(duel, 'joueur', [jeton.id], { [jeton.id]: [] }).ok, true);
@@ -709,7 +709,7 @@ test('la bannière du Daimyō grandit chaque Samouraï qui attaque, et lui-même
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [adverse.id], { [adverse.id]: [] }).ok, true);
   assert.deepEqual([adverse.atk, adverse.def], [1, 1]);
   assert.equal(duel.joueur.creatures.filter((entite) => entite.carteId === 'samourai-du-daimyo').length,
-    2, 'chaque camp ne lève que ses propres Samouraïs');
+    1, 'chaque camp ne lève que son propre Samouraï');
   // Le Daimyō est un Samouraï : sa propre attaque le grandit aussi.
   nouveauTour('joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', [daimyo.id], { [daimyo.id]: [] }).ok, true);
@@ -782,8 +782,8 @@ test('le jeton Samouraï reçoit la Résonance samouraï comme la bannière de s
   for (const jeton of jetons) jeton.ready = true;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [jetons[0].id]).ok, true);
   assert.deepEqual([jetons[0].atk, jetons[0].def], [3, 3]);
-  assert.deepEqual([jetons[1].atk, jetons[1].def], [2, 2], 'l’autre jeton n’a pas attaqué');
-  assert.equal(duel.joueur.creatures.length, 4);
+  assert.equal(jetons.length, 1);
+  assert.equal(duel.joueur.creatures.length, 3);
 });
 
 test('la bannière arme la frappe du tour dans l’échange, pas seulement sur le sorcier', () => {

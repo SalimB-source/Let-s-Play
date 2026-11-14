@@ -1702,7 +1702,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { ferielRoot.unmount(); });
   ferielContainer.remove();
 
-  // ── Tarek : son arrivée crée deux chiens de sable sur la table ──
+  // ── Tarek : son arrivée crée un chien de sable sur la table ──
   const tarekContainer = document.createElement('div');
   document.body.appendChild(tarekContainer);
   const tarekRoot = createRoot(tarekContainer);
@@ -1733,7 +1733,7 @@ export async function checkRpgBattle(assert) {
   assert.ok(tarekEnMain && estJouable(tarekEnMain), 'Tarek devient payable après cinq Déserts');
   await glisserSurTable(tarekContainer, tarekEnMain);
   const chiensDeSable = [...tarekContainer.querySelectorAll('.rpg-card--equipe[data-card-id="chien-de-sable"]')];
-  assert.equal(chiensDeSable.length, 2, 'Tarek arrive en jeu avec ses deux chiens de sable, sans les payer');
+  assert.equal(chiensDeSable.length, 1, 'Tarek arrive en jeu avec un chien de sable, sans le payer');
   assert.ok(chiensDeSable.every((chien) => chien.querySelector('.rpg-card__img')?.getAttribute('src')
     ?.includes('/cards/chien-de-sable.jpg')),
   'chaque chien de sable affiche la peinture du jeton');
@@ -1742,8 +1742,8 @@ export async function checkRpgBattle(assert) {
   assert.ok(!tarekHand().some((card) => card.dataset.cardId === 'chien-de-sable'),
     'des créatures-jetons ne rejoignent jamais la main');
   assert.match(tarekContainer.querySelector('.rpg-log')?.textContent ?? '',
-    /TAREK crée 2 chiens de sable 1\/1 sans coût/i,
-    'le journal du duel annonce la création des deux jetons');
+    /TAREK crée 1 chien de sable 1\/1 sans coût/i,
+    'le journal du duel annonce la création du jeton');
   await act(async () => { tarekRoot.unmount(); });
   tarekContainer.remove();
 

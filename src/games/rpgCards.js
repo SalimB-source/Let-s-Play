@@ -1428,10 +1428,9 @@ export const RPG_CREATURE_CARDS = [
 /**
  * Les créatures-jetons : des créatures **créées par l'effet d'une carte**,
  * jamais piochées, jamais payées, jamais dans un deck ni dans la collection.
- * Tarek dresse ainsi deux chiens de sable à son arrivée (`arrivee.type ===
+ * Tarek dresse ainsi un chien de sable à son arrivée (`arrivee.type ===
  * 'jetons'`, moteur). Une fois en jeu, un jeton se comporte comme n'importe
- * quelle créature — il attaque, bloque et meurt comme elle — mais il n'a pas
- * de coût : son illustration suit la direction artistique commune
+ * quelle créature — il attaque, bloque et meurt comme elle — et possède un coût imprimé de 1 sans payer de mana à sa création : son illustration suit la direction artistique commune
  * (`RPG-CARD-ART.md`) et il n'entre jamais dans une main (voir
  * `renvoyerEnMain`, qui le fait disparaître au lieu de le renvoyer).
  */
@@ -1442,10 +1441,10 @@ export const RPG_JETON_CARDS = [
   {
     id: 'chien-de-sable',
     name: 'Chien de sable',
-    // Le pluriel du journal (« TAREK crée 2 chiens de sable »).
+    // Le pluriel du journal quand plusieurs chiens sont créés par un effet.
     pluriel: 'chiens de sable',
     element: 'sable',
-    cost: 0,
+    cost: 1,
     atk: 1,
     def: 1,
     rarity: 'commune',
@@ -1453,7 +1452,7 @@ export const RPG_JETON_CARDS = [
     jeton: true,
     rapidite: true,
     typeLine: 'Créature-jeton — Chien de sable',
-    text: 'Un chien de sable créé par Tarek à son arrivée : 1/1 avec Rapidité, sans coût.',
+    text: 'Un chien de sable créé par Tarek à son arrivée : 1/1 avec Rapidité, de coût 1.',
     flavor: 'Il se lève du sable comme la dune se lève du vent.',
   },
   {
@@ -1462,7 +1461,7 @@ export const RPG_JETON_CARDS = [
     // Le pluriel du journal (« le roi Kusayla crée 1 guépard »).
     pluriel: 'guépards',
     element: 'sable',
-    cost: 0,
+    cost: 1,
     atk: 2,
     def: 1,
     rarity: 'commune',
@@ -1470,7 +1469,7 @@ export const RPG_JETON_CARDS = [
     jeton: true,
     rapidite: true,
     typeLine: 'Créature-jeton — Guépard',
-    text: 'Un guépard créé par le roi Kusayla à son arrivée : 2/1 avec Rapidité, sans coût.',
+    text: 'Un guépard créé par le roi Kusayla à son arrivée : 2/1 avec Rapidité, de coût 1.',
     flavor: 'Il ne suit pas le roi : il arrive avant lui.',
   },
   {
@@ -1478,7 +1477,7 @@ export const RPG_JETON_CARDS = [
     name: 'Serpent des citernes',
     pluriel: 'serpents des citernes',
     element: 'eau',
-    cost: 0,
+    cost: 1,
     atk: 1,
     def: 1,
     rarity: 'commune',
@@ -1707,8 +1706,8 @@ export const RPG_HERO_CARDS = [
     // Aura de voisinage : seules les créatures Sable des deux cases qui
     // entourent Tarek reçoivent le bonus ; Tarek ne se renforce plus lui-même.
     aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1, camps: 'camp' },
-    arrivee: { type: 'jetons', jeton: 'chien-de-sable', nombre: 2 },
-    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 avec Rapidité sans coût. Tant que Tarek est en jeu, vos créatures Sable adjacentes gagnent +1/+1.',
+    arrivee: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
+    text: 'Quand Tarek arrive en jeu, il crée un chien de sable 1/1 avec Rapidité, de coût 1, sans payer de mana. Tant que Tarek est en jeu, vos créatures Sable adjacentes gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
   },
   {
@@ -1750,7 +1749,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité de coût 1 entre en jeu sans payer de mana. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {

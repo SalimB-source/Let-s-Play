@@ -48,7 +48,7 @@ sait donc les peindre (`cardById`) sans les rendre collectionnables ni
 jouables dans un deck.
 
 - **Chien de sable** (`chien-de-sable.jpg`) — le jeton de Tarek : quand il
-  arrive en jeu, il crée deux chiens de sable 1/1 sans coût. La peinture est
+  arrive en jeu, il crée un chien de sable 1/1 sans paiement supplémentaire. La peinture est
   livrée en plein art 4:5 (1024×1280), dans la palette, la lumière de fin de
   jour et la matière de sable sculpté de l'illustration de Tarek
   (`public/cards/tarek.jpg`), sans texte ni interface : deux chiens de sable
@@ -526,8 +526,8 @@ n'est pas un rendu photoréaliste.
 
 Ils portent `soleil-rouge-kaiga-couleurs-v7`. Les trois ajouts sont des créatures `Samouraï` : ils reçoivent la Résonance samouraï et figurent dans la signature du deck préconstruit du Soleil rouge.
 
-Le Daimyō a depuis sa **bannière** et ses deux **Samouraïs** : la carte devient
-un 3/3 à 5 qui lève deux créatures-jetons 1/1 en arrivant (`samourai-du-daimyo`,
+Le Daimyō a depuis sa **bannière** et son **Samouraï** : la carte est
+un 3/4 à 5 qui lève une créature-jeton 1/1 en arrivant (`samourai-du-daimyo`,
 peinture dédiée ci-dessus) et grandit de +1/+1 chaque Samouraï de son camp qui
 attaque. Sa peinture ne change pas — le daimyō au cheval blanc reste son
 illustration, version `soleil-rouge-kaiga-couleurs-v7` —, et la refonte

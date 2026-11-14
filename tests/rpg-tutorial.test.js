@@ -197,18 +197,18 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge', null,
     { sacrificeIds: [viking.id] }).ok, true);
-  assert.equal(duel.joueur.creatures.length, 5, 'le Daimyō remplace le Viking et crée deux jetons');
+  assert.equal(duel.joueur.creatures.length, 4, 'le Daimyō remplace le Viking et crée un jeton');
   assert.equal(duel.joueur.mana.braise, 0, 'les poses ne dépensent aucun mana');
 
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
   const ids = duel.joueur.creatures.filter((entite) => entite.ready && !entite.attaquee).map((entite) => entite.id);
-  assert.equal(ids.length, 5);
+  assert.equal(ids.length, 4);
   const pvAvant = duel.sorcier.pv;
   rpgOuvrirFenetreReponse(duel, 'joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', ids, null, null, null, {}, { attaqueDeclaree: true }).ok, true);
   assert.ok(duel.sorcier.pv < pvAvant);
-  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk).sort((a, b) => a - b), [3, 3, 3, 4, 5],
+  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk).sort((a, b) => a - b), [3, 3, 4, 5],
     'la Bannière grandit chaque Samouraï qui attaque');
 });
 

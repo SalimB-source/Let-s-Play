@@ -443,21 +443,17 @@ test('les jetons sont prisables par l’abordage : on les met en cale', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
-  // Tarek dresse deux chiens de sable (jetons 1/1).
+  // Tarek dresse un chien de sable (jeton 1/1).
   donner(duel, 'joueur', 'tarek');
   jouer(duel, 'joueur', 'tarek');
   const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
-  assert.equal(chiens.length, 2, 'Tarek a bien dressé ses deux chiens');
+  assert.equal(chiens.length, 1, 'Tarek a bien dressé son chien');
   // Le Cotre du sorcier (Abordage 2) peut désigner un jeton : il est pris en cale.
   donner(duel, 'sorcier', 'cotre-de-course');
   assert.equal(jouer(duel, 'sorcier', 'cotre-de-course', chiens[0].id).ok, true, 'un jeton est une cible légale pour l’abordage');
   const cotre = duel.sorcier.creatures.find((entite) => entite.carteId === 'cotre-de-course');
   assert.equal(cotre.enCale?.carteId, 'chien-de-sable', 'le premier jeton est mis en cale');
   assert.equal(duel.joueur.creatures.includes(chiens[0]), false, 'le premier jeton a quitté la table');
-  // Le second jeton est aussi prisable : l'auto-pick le prend.
-  donner(duel, 'sorcier', 'cotre-de-course');
-  const cotre2 = jouer(duel, 'sorcier', 'cotre-de-course').entite;
-  assert.equal(cotre2.enCale?.carteId, 'chien-de-sable', 'le second jeton est pris en auto-pick');
   assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0, 'plus de jeton sur la table');
   // Une figure légendaire (SALEM, kind hero, coût 4) : même La Barbe-Rousse
   // (Abordage 5) refuse de la désigner.
