@@ -6,9 +6,11 @@ import { cardById } from '../src/games/rpgCards.js';
 
 function App() {
   const [longue, setLongue] = useState(false);
+  const [carteId, setCarteId] = useState('trait-de-braise');
   const [choix, setChoix] = useState('');
   window.annonceLongue = setLongue;
-  const carte = cardById('trait-de-braise');
+  window.annonceCarte = setCarteId;
+  const carte = cardById(carteId);
   const texteLong = Array(12).fill('Inflige 2 dégâts à une créature ciblée.').join(' ');
   return <div className={`rpg-battle${window.matchMedia('(pointer: coarse)').matches ? ' rpg-battle--touch' : ''}`} data-scene="duel">
     <section className="rpg-annonce-sort rpg-annonce-sort--magie" aria-label="Annonce de sort">

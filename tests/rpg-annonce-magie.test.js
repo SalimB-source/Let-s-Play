@@ -25,7 +25,20 @@ test('la petite fenêtre est limitée aux sorts et conserve un contenu lisible e
   assert.equal(declaration('.rpg-annonce-sort', 'pointer-events'), 'auto');
 });
 
-test('sur PC la fenêtre de magie est agrandie, sans toucher le format mobile', () => {
+test('le texte des annonces ne se comprime pas et la fiche entière défile', () => {
+  const fiche = '.rpg-annonce-sort--magie .rpg-hover-card-preview__details';
+  const texte = '.rpg-annonce-sort--magie .rpg-hover-card-preview__rules';
+  assert.equal(declaration(fiche, 'box-sizing'), 'border-box');
+  assert.equal(declaration(fiche, 'grid-auto-rows'), 'max-content');
+  assert.equal(declaration(fiche, 'align-content'), 'start');
+  assert.equal(declaration(texte, 'max-height'), 'none');
+  assert.equal(declaration(texte, 'overflow'), 'visible');
+  const tactile = '.rpg-battle--touch[data-scene="duel"] .rpg-annonce-sort--magie';
+  assert.match(declaration(`${tactile} .rpg-hover-card-preview__layout`, 'width'), /680px/);
+  assert.equal(declaration(`${tactile} .rpg-hover-card-preview__pastilles`, 'flex-wrap'), 'wrap');
+});
+
+test('sur PC la fenêtre de magie reste agrandie', () => {
   const pc = '.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie';
   assert.match(declaration(`${pc} .rpg-hover-card-preview__layout`, 'width'), /680px/);
   assert.match(declaration(`${pc} .rpg-hover-card-preview--annonce`, '--rpg-annonce-card-width'), /220px/);

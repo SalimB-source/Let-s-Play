@@ -183,7 +183,7 @@ const cascadeHalo = new JSDOM(
     <button class="rpg-hand__card is-playable rpg-hand__card--type-arme" data-test="arme"></button>
     <button class="rpg-hand__card is-playable rpg-hand__card--type-magie rpg-hand__card--famille-rapide is-mythique-jouable" data-test="mythique-magie"></button>
     <button class="rpg-hand__card is-playable rpg-hand__card--type-creature rpg-card--mythique" data-test="mythique-creature"></button>
-    <button class="rpg-hand__card is-playable rpg-hand__card--type-creature rpg-card--mythique is-special-ambush" data-test="mythique-speciale"></button>
+    <button class="rpg-hand__card is-playable rpg-hand__card--type-creature rpg-card--mythique is-mythique-creature is-special-ambush" data-test="mythique-speciale"></button>
     <button class="rpg-hand__card is-playable rpg-hand__card--type-creature rpg-card--mythique" data-test="mythique-non-jouable"></button>
   </body></html>`,
   { pretendToBeVisual: true },
@@ -199,11 +199,9 @@ for (const face of ['rapide', 'sorcellerie', 'creature', 'terrain', 'arme']) {
     .getPropertyValue('--rpg-play-halo-clair').replaceAll(' ', ''), azurClair.join(','),
   `${face} : le reflet au survol reste le cyan clair`);
 }
-// L’or de rareté reste réservé aux autres cartes ; l’invocation spéciale garde son signal.
-for (const face of ['mythique-magie', 'mythique-speciale']) {
-  assert.equal(teinteRecue(face), orMythique.join(','),
-    `${face} : une mythique jouable s’allume d’or`);
-}
+// L’or de rareté reste réservé aux autres cartes ; la spéciale mythique est violette.
+assert.equal(teinteRecue('mythique-magie'), orMythique.join(','), 'une magie mythique jouable s’allume d’or');
+assert.equal(teinteRecue('mythique-speciale'), '154,100,240', 'l’Invocation spéciale mythique garde un signal violet');
 assert.equal(teinteRecue('mythique-creature'), azur.join(','), 'une créature mythique jouable normalement reçoit le halo commun');
 assert.match(pageSource, /const mythiqueJouable = baseJouable && estMythique && !estCreature;/, 'ni les créatures ni les héros ne reçoivent le halo de rareté');
 assert.equal(teinteRecue('mythique-non-jouable'), azur.join(','),

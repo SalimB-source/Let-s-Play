@@ -1056,7 +1056,7 @@
 .rpg-battle--touch .rpg-annonce-sort__pass,
 .rpg-battle--touch .rpg-annonce-sort__respond,
 .rpg-battle--touch .rpg-annonce-sort__compact-preview,
-.rpg-battle--touch .rpg-annonce-sort__compact-pass { min-height: max(48px, calc(var(--rpg-touch-combat) + 4px)); }
+.rpg-battle--touch .rpg-annonce-sort__compact-pass { min-height: max(48px, calc(var(--rpg-touch-combat, 44px) + 4px)); }
 
 /* Un seul emplacement visuel par type de terrain. Une carte seule reste sans
    fausse épaisseur ni compteur ; les doublons forment une pile. Les terrains

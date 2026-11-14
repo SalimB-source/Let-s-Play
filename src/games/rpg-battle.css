@@ -901,6 +901,12 @@
 .rpg-card.is-pret {
   box-shadow: 0 0 0 2px rgba(255, 214, 25, .8), 0 6px 16px rgba(0, 0, 0, .5);
 }
+/* La disponibilité reste lisible sur les créatures mythiques, sans liseré
+   doré. :where garde la priorité des états de combat et de ciblage ultérieurs,
+   même quand la Furie remplace les classes du cadre. */
+.rpg-card.is-pret:where(.is-mythique-creature) {
+  box-shadow: 0 0 0 2px rgba(130, 220, 255, .9), 0 6px 16px rgba(0, 0, 0, .5);
+}
 
 /* ── Les terrains posés : mini-cartes 4:5, engagées = inclinées/grisées ── */
 .rpg-terrains {
@@ -3802,6 +3808,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img,
 .rpg-hand__card.is-special-ambush.is-playable .rpg-hand__img {
   border-radius: inherit;
+}
+/* Une Invocation spéciale mythique garde son signal distinct et animé, mais
+   en violet plutôt qu'en or. Les autres Invocations spéciales restent dorées. */
+.rpg-hand__card.is-special-ambush.is-playable:where(.is-mythique-creature) {
+  --rpg-play-halo: 154, 100, 240;
+  --rpg-play-halo-clair: 220, 196, 255;
 }
 /* L'or respire : halo concentré qui ondule, collé à la carte. L'écart entre les
    deux images est court (12 px → 17 px) : c'est une respiration, pas une
@@ -10549,11 +10561,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   gap: 8px;
 }
 .rpg-annonce-sort--magie .rpg-hover-card-preview__details {
+  box-sizing: border-box;
   flex: 0 1 auto;
   max-height: min(50dvh, 320px);
+  /* Les pistes ne doivent pas écraser le titre ou le texte pour faire tenir
+     le contenu : c'est la fiche entière qui défile, et non chaque paragraphe. */
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: 6px;
   padding: 8px;
   background: rgba(5, 8, 11, .72);
+}
+.rpg-annonce-sort--magie .rpg-hover-card-preview__rules {
+  max-height: none;
+  overflow: visible;
 }
 .rpg-annonce-sort--magie .rpg-hover-card-preview__name {
   display: block;
@@ -10562,6 +10583,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-annonce-sort--magie .rpg-hover-card-preview__type { font-size: 12px; }
 .rpg-annonce-sort--magie .rpg-card-element-badge { font-size: 14px; }
+
+/* En paysage tactile, employer la largeur disponible plutôt que serrer tous
+   les mots-clés et la description dans une petite colonne. Les commandes
+   restent hors de la fiche défilante et conservent leur taille tactile. */
+@media (orientation: landscape) {
+  .rpg-battle--touch[data-scene="duel"] .rpg-annonce-sort--magie .rpg-hover-card-preview--annonce {
+    --rpg-annonce-card-width: clamp(80px, min(22vw, 40dvh), 160px);
+    --rpg-annonce-column-gap: 12px;
+  }
+  .rpg-battle--touch[data-scene="duel"] .rpg-annonce-sort--magie .rpg-hover-card-preview__layout {
+    width: min(680px, calc(100% - 24px));
+    max-height: calc(100% - 16px);
+    padding: 10px;
+  }
+  .rpg-battle--touch[data-scene="duel"] .rpg-annonce-sort--magie .rpg-hover-card-preview__details-column {
+    max-height: calc(100dvh - 38px);
+  }
+  .rpg-battle--touch[data-scene="duel"] .rpg-annonce-sort--magie .rpg-hover-card-preview__details {
+    max-height: none;
+  }
+  .rpg-battle--touch[data-scene="duel"] .rpg-annonce-sort--magie .rpg-hover-card-preview__pastilles {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
 /* Sur ordinateur, l'annonce reste compacte mais assez grande pour lire
    l'illustration, le texte et la cible sans plisser les yeux. La hauteur
    disponible borne la carte et la fiche, les deux choix restent visibles. */

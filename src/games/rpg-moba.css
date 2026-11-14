@@ -125,6 +125,12 @@
   filter: brightness(1.14) saturate(1.18);
 }
 .moba .moba__hand-cards .moba__real-hand.is-special-ambush.is-selected { outline-color: #ffd678; }
+/* Même distinction qu'en duel, pour les deux rendus de la main MOBA. */
+.moba .moba__hand-cards .moba__card.is-special-ambush:not(:disabled):where(.is-mythique-creature) {
+  --rpg-play-halo: 154, 100, 240;
+  --rpg-play-halo-clair: 220, 196, 255;
+}
+.moba .moba__hand-cards .moba__real-hand.is-special-ambush.is-selected:where(.is-mythique-creature) { outline-color: #dcc4ff; }
 @media (prefers-reduced-motion: reduce) {
   .moba .moba__hand-cards .moba__card.is-special-ambush:not(:disabled) { animation: none; }
 }
