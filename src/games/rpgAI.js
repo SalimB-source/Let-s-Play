@@ -2021,11 +2021,10 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
     }
     if (arrivee.type === 'jetons') {
       // Chaque créature-jeton est un corps de plus sur la table, pour l'attaque
-      // suivante comme pour le blocage : deux chiens de sable valent deux tours
-      // de pression en plus du sorcier lui-même.
+      // suivante comme pour le blocage ; chaque jeton apporte sa propre pression.
       score += (Math.max(0, Math.floor(Number(arrivee.nombre) || 1))) * 2;
       // Une bannière derrière les jetons les grandit à chaque attaque : le
-      // Daimyō et ses deux Samouraïs se renforcent l'un l'autre.
+      // Daimyō et son Samouraï se renforcent l'un l'autre.
       if (carte.banniere) score += 2;
     }
     if (arrivee.type === 'bouclier') {

@@ -34,7 +34,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   }),
   Object.freeze({
     id: 'sahir', name: 'Meute des braises', elements: Object.freeze(['sable', 'braise']),
-    description: 'Djinns rapides et chiens de Tarek : attaquer tôt, piocher avec Sahir et finir avec des armes ou le feu.',
+    description: 'Djinns rapides et chien de Tarek : attaquer tôt, piocher avec Sahir et finir avec des armes ou le feu.',
     cardIds: Object.freeze([
       ...deux('ashigaru-des-braises'), ...deux('ghul-des-cendres'), ...deux('djinn-de-la-premiere-etincelle'),
       ...deux('djinn-de-foudre'), ...deux('djinn-des-braises-voilees'), ...deux('fennec-des-decombres'),

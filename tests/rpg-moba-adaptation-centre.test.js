@@ -32,7 +32,7 @@ test('Guetteuse : cible le centre conquis et y fait revenir son allié', () => {
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Tarek : ses jetons restent dans la voie de combat et peuvent occuper le centre conquis', () => {
+test('Tarek : son jeton reste dans sa voie de combat', () => {
   const duel = partie();
   duel.joueur.main = ['ashigaru-des-braises', 'tarek'];
   const victime = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
@@ -40,9 +40,9 @@ test('Tarek : ses jetons restent dans la voie de combat et peuvent occuper le ce
   const result = rpgMobaJouerCreature(duel, 'joueur', 'tarek', 'right', 0, { sacrificeIds: [victime.id] });
   assert.equal(result.ok, true, JSON.stringify(result));
   const chiens = duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable');
-  assert.equal(chiens.length, 2);
-  assert.deepEqual(chiens.map((e) => e.mobaLane).sort(), ['center', 'right']);
-  assert.ok(chiens.some((e) => mobaVoie(duel.moba, 'center').slots.joueur.includes(e.id)));
+  assert.equal(chiens.length, 1);
+  assert.equal(chiens[0].mobaLane, 'right');
+  assert.ok(mobaVoie(duel.moba, 'right').slots.joueur.includes(chiens[0].id));
   assert.equal(mobaVoie(duel.moba, 'left').slots.joueur.filter(Boolean).length, 0);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });

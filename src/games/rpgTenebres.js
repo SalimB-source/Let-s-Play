@@ -30,12 +30,12 @@ export const RPG_TENEBRES_JETONS = [{
   element: 'tenebres',
   set: RPG_TENEBRES_SET_ID,
   art: 'shabti',
-  cost: 0,
+  cost: 1,
   atk: 1,
   def: 1,
   rarity: 'commune',
   typeLine: 'Créature-jeton — Serviteur',
-  text: 'Créé par les Momies de lin : 1/1, sans coût.',
+  text: 'Créé par les Momies de lin : 1/1, de coût 1.',
   flavor: 'Il fait le travail que les morts n’ont plus les mains pour faire.',
 }];
 

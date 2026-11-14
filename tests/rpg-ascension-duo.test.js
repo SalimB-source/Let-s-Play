@@ -1,8 +1,9 @@
+import { RPG_TOUR_OUBLIEE_JETONS } from '../src/games/rpgTourOubliee.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { RPG_ASCENSION_CARDS, RPG_DUEL_CARDS, cardById, cardColors } from '../src/games/rpgCards.js';
+import { RPG_ASCENSION_CARDS, RPG_DUEL_CARDS, RPG_JETON_CARDS, cardById, cardColors, jetonById } from '../src/games/rpgCards.js';
 import { carteCorrespondMateriau, combinaisonsAscension, libelleRecetteAscension, validerMateriauxAscension } from '../src/games/rpgAscension.js';
 import { indexReanimation, planRenfortAscension } from '../src/games/rpgRenforts.js';
 import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
@@ -109,10 +110,8 @@ for (const id of [JARL, SCORPION, COLOSSE]) for (const ordre of permutations(REC
 }
 
 for (const [id, faux] of [
-  [JARL, ['archere-viking-du-givre', 'valkyrie-au-corbeau']],
   [SCORPION, ['fennec-des-decombres', 'ureus-du-seuil', 'ureus-du-seuil']],
   [SCORPION, ['scorpion-du-seuil', 'ronin-du-soleil-rouge', 'ureus-du-seuil']],
-  [SCORPION, ['scorpion-du-seuil', 'garde-du-voile', 'lecteur-du-dernier-nom']],
   [COLOSSE, ['ashigaru-des-braises', 'djinn-de-la-flamme-mourante', 'dune-marchante']],
   [COLOSSE, ['djinn-de-la-premiere-etincelle', 'djinn-de-foudre', 'jarl-au-marteau-de-guerre']],
 ]) test(`${id} : un même total ne remplace jamais les rôles (${faux.join(', ')})`, () => {
@@ -121,6 +120,109 @@ for (const [id, faux] of [
   assert.equal(validerMateriauxAscension(d.joueur, id, es.map(e => e.id)).ok, false);
   assert.equal(combinaisonsAscension(d.joueur, id).length, 0);
   sansMutation(d, () => invoquer(d, id, es));
+});
+
+test('tous les jetons de créature ont un coût imprimé de 1 dans les catalogues', () => {
+  const jetons = [...RPG_JETON_CARDS, ...RPG_TOUR_OUBLIEE_JETONS];
+  assert.ok(jetons.length > 0);
+  for (const jeton of jetons) {
+    assert.equal(jeton.cost, 1, jeton.id);
+    assert.equal(cardById(jeton.id).cost, 1, jeton.id);
+    assert.equal(jetonById(jeton.id).cost, 1, jeton.id);
+    assert.ok(!RPG_DUEL_CARDS.some(c => c.id === jeton.id));
+  }
+});
+
+for (const moba of [false, true]) for (const cote of ['joueur', 'sorcier']) {
+  test(`Daimyō (${moba ? 'MOBA' : 'Duel'}, ${cote}) crée un seul jeton de coût 1 sans changer sa Bannière`, () => {
+    const d = nouveau(moba);
+    const daimyo = poser(d, 'daimyo-du-soleil-rouge', cote);
+    const jetons = d[cote].creatures.filter(e => e.carteId === 'samourai-du-daimyo');
+    assert.equal(jetons.length, 1);
+    assert.equal(jetons[0].jeton, true);
+    assert.equal(cardById(jetons[0].carteId).cost, 1);
+    assert.equal(jetons[0].malInvocation, true);
+    assert.deepEqual(cardById(daimyo.carteId).banniere, { tribu: 'samourai', atk: 1, def: 1 });
+    assert.equal(d[cote === 'joueur' ? 'sorcier' : 'joueur'].creatures.length, 0);
+    rpgActionsEtat(d);
+    assert.equal(d[cote].creatures.filter(e => e.carteId === 'samourai-du-daimyo').length, 1);
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
+  });
+  test(`Daimyō (${moba ? 'MOBA' : 'Duel'}, ${cote}) ne crée pas de jeton sans place`, () => {
+    const d = nouveau(moba, { modeMana: 'essai' });
+    for (let i = 0; i < 4; i++) poser(d, 'viking-des-neiges', cote);
+    poser(d, 'daimyo-du-soleil-rouge', cote);
+    assert.equal(d[cote].creatures.length, 5);
+    assert.equal(d[cote].creatures.filter(e => e.carteId === 'samourai-du-daimyo').length, 0);
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
+  });
+}
+
+for (const moba of [false, true]) for (const cote of ['joueur', 'sorcier']) {
+  test(`Tarek (${moba ? 'MOBA' : 'Duel'}, ${cote}) crée un seul chien rapide de coût 1`, () => {
+    const d = nouveau(moba);
+    const tarek = poser(d, 'tarek', cote);
+    const chiens = d[cote].creatures.filter(e => e.carteId === 'chien-de-sable');
+    assert.equal(chiens.length, 1);
+    assert.ok(chiens[0].jeton && rpgPeutAttaquer(chiens[0]));
+    assert.equal(cardById(chiens[0].carteId).cost, 1);
+    assert.deepEqual(cardById(tarek.carteId).aura, { type: 'buff-element', element: 'sable', atk: 1, def: 1, camps: 'camp' });
+    assert.deepEqual([chiens[0].atk, chiens[0].pv], [2, 2]);
+    assert.equal(d[cote === 'joueur' ? 'sorcier' : 'joueur'].creatures.length, 0);
+    rpgActionsEtat(d);
+    assert.equal(d[cote].creatures.filter(e => e.carteId === 'chien-de-sable').length, 1);
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
+  });
+  test(`Tarek (${moba ? 'MOBA' : 'Duel'}, ${cote}) ne crée pas de chien sans place`, () => {
+    const d = nouveau(moba, { modeMana: 'essai' });
+    for (let i = 0; i < 4; i++) poser(d, 'viking-des-neiges', cote);
+    poser(d, 'tarek', cote);
+    assert.equal(d[cote].creatures.length, 5);
+    assert.equal(d[cote].creatures.filter(e => e.carteId === 'chien-de-sable').length, 0);
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
+  });
+}
+
+for (const moba of [false, true]) for (const [id, cartes] of [
+  [JARL, ['archere-viking-du-givre', 'valkyrie-au-corbeau']],
+  [SCORPION, ['lecteur-du-dernier-nom', 'scorpion-du-seuil', 'garde-du-voile']],
+  [COLOSSE, ['djinn-de-foudre', 'djinn-des-braises-voilees', 'dune-marchante']],
+]) test(`${moba ? 'MOBA' : 'Duel'} : ${id} accepte une autre répartition totalisant 8`, () => {
+  const d = nouveau(moba); const es = cartes.map(c => poser(d, c));
+  const ids = es.map(e => e.id);
+  assert.ok(validerMateriauxAscension(d.joueur, id, ids).ok);
+  assert.ok(combinaisonsAscension(d.joueur, id).some(g => ids.every(x => g.some(e => e.id === x))));
+  assert.ok(rpgCombinaisonsSacrificesIA(d, 'joueur', cardById(id)).some(g => ids.every(x => g.some(e => e.id === x))));
+  const result = invoquer(d, id, es);
+  assert.ok(result.ok, result.raison);
+  assert.ok(es.every(e => !d.joueur.creatures.some(v => v.id === e.id)));
+});
+
+for (const moba of [false, true]) for (const [id, cartes] of [
+  [JARL, ['gardien-viking-du-fjord', 'valkyrie-au-corbeau']],
+  [SCORPION, ['scorpion-du-seuil', 'ureus-du-seuil', 'rodeuse-des-tombes']],
+  [COLOSSE, ['djinn-de-la-premiere-etincelle', 'djinn-de-foudre', 'dune-marchante']],
+]) test(`${moba ? 'MOBA' : 'Duel'} : ${id} refuse un total incorrect malgré les bons types`, () => {
+  const d = nouveau(moba); const es = cartes.map(c => poser(d, c));
+  assert.equal(validerMateriauxAscension(d.joueur, id, es.map(e => e.id)).raison, 'ascension-cout');
+  assert.equal(combinaisonsAscension(d.joueur, id).length, 0);
+  sansMutation(d, () => invoquer(d, id, es));
+});
+
+for (const moba of [false, true]) test(`${moba ? 'MOBA' : 'Duel'} : un Shabti créé gratuitement compte 1 pour le Scorpion`, () => {
+  const d = nouveau(moba);
+  const grand = poser(d, 'lecteur-du-dernier-nom');
+  const scorpion = poser(d, 'scorpion-du-seuil');
+  const momie = poser(d, 'momie-de-lin');
+  momie.pv = 0; rpgActionsEtat(d);
+  const jeton = d.joueur.creatures.find(e => e.carteId === 'shabti');
+  assert.ok(jeton && jeton.jeton);
+  const es = [scorpion, jeton, grand];
+  assert.ok(validerMateriauxAscension(d.joueur, SCORPION, es.map(e => e.id)).ok);
+  const result = invoquer(d, SCORPION, es);
+  assert.ok(result.ok, result.raison);
+  assert.ok(!d.joueur.creatures.some(e => e.id === jeton.id));
+  if (moba) assert.ok(!d.joueur.cimetiere.includes('shabti')); // Règles existantes propres à chaque mode.
 });
 
 test('trois sacrifices : ni présence dupliquée, ni mort, ni ancienne sélection ; coûts imprimés invariants', () => {
@@ -141,15 +243,15 @@ test('les combinaisons et l’IA réutilisent les rôles exacts, y compris une s
   assert.equal(groupes.length, 1); assert.equal(groupes[0].length, 3);
   assert.deepEqual(rpgCombinaisonsSacrificesIA(d, 'joueur', cardById(SCORPION)).map(g => g.map(e => e.id)), groupes.map(g => g.map(e => e.id)));
   assert.equal(JSON.stringify(d), avant);
-  assert.match(libelleRecetteAscension(JARL), /Viking 3 \+ Viking 5/);
-  assert.match(libelleRecetteAscension(SCORPION), /Scorpion Sable 2.*Ténèbres 3.*Ténèbres 3/);
+  assert.match(libelleRecetteAscension(JARL), /2 Vikings.*total 8/);
+  assert.match(libelleRecetteAscension(SCORPION), /Scorpion Sable.*Ténèbres.*Ténèbres.*total 8/);
 });
 
 test('un hybride peut prendre un rôle, jamais deux : appariement sans dépendance à l’ordre', () => {
   const d = nouveau(); const a = poser(d, 'djinn-de-foudre'), b = poser(d, 'djinn-de-foudre');
-  const c = { ascension: { nombre: 2, coutTotal: 4, materiaux: [{ element: 'sable', cout: 2 }, { element: 'braise', cout: 2 }] } };
+  const c = { ascension: { nombre: 2, coutTotal: 4, materiaux: [{ element: 'sable', cout: 1 }, { element: 'braise', cout: 3 }] } };
   assert.ok(carteCorrespondMateriau(a.carteId, { element: 'braise', cout: 2 }));
-  assert.ok(validerMateriauxAscension(d.joueur, c, [b.id, a.id]).ok);
+  assert.ok(validerMateriauxAscension(d.joueur, c, [b.id, a.id]).ok); // Anciens coûts individuels ignorés.
   assert.equal(validerMateriauxAscension(d.joueur, c, [a.id, a.id]).ok, false);
   assert.equal(combinaisonsAscension(d.joueur, c).length, 1);
 });

@@ -375,29 +375,27 @@ agressif du Sable.
   étirée derrière eux, cailloux projetés, flou de mouvement sur le fond, visage,
   flèche et corde nets. Direction artistique `RPG-CARD-ART.md`.
 
-### Les créatures-jetons (les chiens de sable de Tarek, le guépard de Kusayla)
+### Les créatures-jetons (le chien de sable de Tarek, le guépard de Kusayla)
 
 Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :
 
-> Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 avec Rapidité
-> sans coût. Tant que Tarek est en jeu, vos créatures Sable **adjacentes**
+> Quand Tarek arrive en jeu, il crée un chien de sable 1/1 avec Rapidité
+> de coût 1, sans paiement supplémentaire. Tant que Tarek est en jeu, vos créatures Sable **adjacentes**
 > gagnent +1/+1.
 
 - **l'aura** ne touche plus que les créatures Sable **adjacentes** de **son**
-  camp (les chiens du Tarek du sorcier appartiennent au sorcier) : quand Tarek
-  arrive seul, ses deux jetons prennent les cases 1 et 2 — seul celui de la
-  case 1, voisin de Tarek, passe de 1/1 à 2/2 ;
-- **l'arrivée** est le nouvel effet `jetons` du moteur : elle fait naître deux
-  **créatures-jetons** (`RPG_JETON_CARDS`, fiche `chien-de-sable`, 1/1, coût 0,
+  camp (le chien du Tarek du sorcier appartient au sorcier) : quand Tarek
+  arrive seul, son jeton prend la case voisine et passe de 1/1 à 2/2 ;
+- **l'arrivée** utilise l'effet `jetons` du moteur : elle fait naître une
+  **créature-jeton** (`RPG_JETON_CARDS`, fiche `chien-de-sable`, 1/1, coût 1,
   `jeton: true`). Aucun sable n'est payé en plus : le coût de Tarek est le seul
   paiement.
 
-Un jeton **se comporte comme une créature posée depuis la main** — mal
-d'invocation compris, il attaque et bloque dès le tour suivant — et il occupe
-une vraie case : le chien voisin de Tarek arrive à 2/2 et retombe à 1/1 si
-Tarek quitte la table, tandis que le chien de la case suivante reste une 1/1.
+Le chien occupe une vraie case, peut bloquer et, grâce à **Rapidité**, attaquer
+dès son arrivée. Voisin de Tarek, il arrive à 2/2 et retombe à 1/1 si
+Tarek quitte la table.
 
-Le second jeton du set est le **Guépard** de Kusayla (`guepard`, 2/1, coût 0,
+Le second jeton du set est le **Guépard** de Kusayla (`guepard`, 2/1, coût 1,
 `jeton: true`, `rapidite: true`) : le roi l'appelle à son arrivée, un seul
 exemplaire. Il ne connaît pas le mal d'invocation — **Rapidité** le rend prêt le
 tour même, comme la bête qui court déjà devant le cheval — mais il ne survit
@@ -430,7 +428,7 @@ Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
 palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 
 Deuxième famille de jetons, côté Soleil rouge : le **Daimyō du Soleil rouge**
-lève **deux Samouraïs 1/1** (`samourai-du-daimyo`) en arrivant, par le même
+lève **un Samouraï 1/1** (`samourai-du-daimyo`) en arrivant, par le même
 effet `jetons`. Le jeton est un **Samouraï** au sens des règles — la Résonance
 samouraï le renforce donc comme la bannière de son seigneur — mais il ne porte
 ni Harakiri (un jeton n'est pas une carte du set) ni Rapidité : il garde le mal
@@ -472,7 +470,7 @@ et `rpgCardPower.js` en tient compte dans la valeur de la carte.
 
 Le Daimyō porte la seule capacité de ce genre au catalogue :
 
-> Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï »
+> Quand le Daimyō arrive en jeu, il crée une créature-jeton « Samouraï »
 > 1/1. Tant qu'il est en jeu, chaque fois qu'un Samouraï de votre camp attaque,
 > ce Samouraï gagne +1/+1.
 

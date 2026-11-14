@@ -41,12 +41,12 @@ export const RPG_TOUR_OUBLIEE_JETONS = [{
   // cousu, dont il est la pièce détachée. Aucun test de partage ne couvre les
   // jetons (ils ne sont pas des cartes du catalogue).
   art: 'portefaix-cousu',
-  cost: 0,
+  cost: 1,
   atk: 1,
   def: 1,
   rarity: 'commune',
   typeLine: 'Créature-jeton — Lambeau',
-  text: 'Créé par la Horde et par L’Oublié. 1/1, sans coût.',
+  text: 'Créé par la Horde et par L’Oublié. 1/1, de coût 1.',
   flavor: 'Un nom, un bras, un morceau de mâchoire : la horde ne perd jamais tout.',
 }];
 

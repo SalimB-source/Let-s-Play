@@ -87,7 +87,7 @@ export const RPG_LETTRES_DE_MARQUE_JETONS = [{
   colors: ['sable', 'eau'],
   set: RPG_LETTRES_DE_MARQUE_SET_ID,
   art: 'corsaire',
-  cost: 0,
+  cost: 1,
   atk: 2,
   def: 1,
   rarity: 'commune',

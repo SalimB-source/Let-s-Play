@@ -113,7 +113,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['tarek', 'chien-de-sable'],
     title: 'Une arrivée peut créer des créatures-jetons',
-    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Ces créatures-jetons n’existent que sur la table : elles attaquent, bloquent et meurent comme les autres créatures — seul le chien posé sur une case voisine de Tarek est renforcé par son aura, l’autre reste une 1/1 — mais elles ne viennent d’aucune main et ne peuvent pas y retourner : un renvoi en main les fait disparaître.',
+    text: 'Quand Tarek arrive en jeu, il crée un chien de sable 1/1 de coût 1 avec Rapidité, sans paiement de mana. Cette créature-jeton existe sur la table : elle attaque, bloque et meurt comme les autres créatures. Si elle est voisine de Tarek, son aura la renforce. Elle ne vient d’aucune main et ne peut pas y retourner : un renvoi en main la fait disparaître.',
   },
   {
     id: 'arrivee-ciblee',
@@ -225,7 +225,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['daimyo-du-soleil-rouge', 'samourai-du-torii'],
     title: 'La bannière grandit ceux qui attaquent',
-    text: 'Le Daimyō du Soleil rouge arrive avec deux créatures-jetons « Samouraï » 1/1, puis chaque Samouraï de son camp qui attaque gagne +1/+1 — pour de bon. Le renfort tombe à la déclaration de l’attaque, donc la frappe du tour en profite déjà ; il reste acquis, même si le Daimyō quitte la table ensuite. Seul le camp du Daimyō en profite, et le Daimyō lui-même est un Samouraï : sa propre attaque le grandit aussi.',
+    text: 'Le Daimyō du Soleil rouge arrive avec une créature-jeton « Samouraï » 1/1, puis chaque Samouraï de son camp qui attaque gagne +1/+1 — pour de bon. Le renfort tombe à la déclaration de l’attaque, donc la frappe du tour en profite déjà ; il reste acquis, même si le Daimyō quitte la table ensuite. Seul le camp du Daimyō en profite, et le Daimyō lui-même est un Samouraï : sa propre attaque le grandit aussi.',
   },
   {
     id: 'coup-rapide',

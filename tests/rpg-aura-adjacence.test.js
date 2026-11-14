@@ -137,14 +137,14 @@ test('quand une voisine meurt, la rangée se resserre et l’aura suit', () => {
 
 test('Tarek ne renforce pas sa propre case et garde son filtre Sable', () => {
   const duel = duelVide();
-  // Cases : 0 Porteuse (Eau) — 1 Tarek — 2 et 3 ses deux jetons Sable.
+  // Cases : 0 Porteuse (Eau) — 1 Tarek — 2 son jeton Sable.
   const eau = poser(duel, 'joueur', 'porteuse-de-cruches');
   const tarek = poser(duel, 'joueur', 'tarek');
   const jetons = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
   assert.deepEqual([tarek.atk, tarek.def], [4, 5], 'Tarek garde sa fiche 4/5');
   assert.deepEqual([eau.atk, eau.def], [0, 3], 'l’Eau voisine reste hors de l’aura Sable');
   assert.deepEqual([jetons[0].atk, jetons[0].def], [2, 2], 'le jeton voisin gagne +1/+1');
-  assert.deepEqual([jetons[1].atk, jetons[1].def], [1, 1], 'le second, à deux cases, reste 1/1');
+  assert.equal(jetons.length, 1);
 });
 
 test('la Résonance reste de table : deux sources éloignées se comptent quand même', () => {

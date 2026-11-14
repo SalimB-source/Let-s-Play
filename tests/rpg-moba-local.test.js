@@ -2711,20 +2711,20 @@ test('La Grande Pesée ends immediately on second conquest without an extra draw
   assert.equal(mobaVoie(duel.moba, 'center').hp.joueur, 9); assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Tarek creates rapid dogs in the source lane first, with lane-scoped aura', () => {
+test('Tarek creates one rapid dog in the source lane, with lane-scoped aura', () => {
   const duel = partieCombat();
   duel.joueur.main = ['tarek']; duel.joueur.mana.sable = 10;
   const result = rpgMobaJouerCreature(duel, 'joueur', 'tarek', 'right', 0);
   assert.equal(result.ok, true);
   const dogs = duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable');
-  assert.equal(dogs.length, 2);
-  assert.deepEqual(dogs.map((e) => [e.mobaLane, e.emplacement]), [['right', 4], ['left', 0]]);
-  assert.deepEqual(dogs.map((e) => [e.atk, e.pv]), [[2, 2], [1, 1]]);
+  assert.equal(dogs.length, 1);
+  assert.deepEqual(dogs.map((e) => [e.mobaLane, e.emplacement]), [['right', 4]]);
+  assert.deepEqual(dogs.map((e) => [e.atk, e.pv]), [[2, 2]]);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', dogs.map((d) => d.id)).ok, true);
   assert.equal(rpgMobaLancerAttaque(duel, 'joueur', dogs.map((d) => d.id), {}, { declaree: true }).ok, true);
   assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 8);
-  assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 9);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 10);
 });
 
 test('Daimyo samurai fill open active slots, gain banner and can fight', () => {
@@ -2733,13 +2733,13 @@ test('Daimyo samurai fill open active slots, gain banner and can fight', () => {
   const result = rpgMobaJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge', 'left', 0);
   assert.equal(result.ok, true);
   const samurai = duel.joueur.creatures.filter((e) => e.carteId === 'samourai-du-daimyo');
-  assert.deepEqual(samurai.map((e) => [e.mobaLane, e.emplacement]), [['left', 1], ['center', 2]]);
+  assert.deepEqual(samurai.map((e) => [e.mobaLane, e.emplacement]), [['left', 1]]);
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', samurai.map((s) => s.id)).ok, true);
-  assert.deepEqual(samurai.map((e) => [e.atk, e.pv]), [[2, 2], [2, 2]]);
+  assert.deepEqual(samurai.map((e) => [e.atk, e.pv]), [[2, 2]]);
   assert.equal(rpgMobaLancerAttaque(duel, 'joueur', samurai.map((s) => s.id), {}, { declaree: true }).ok, true);
   assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 8);
-  assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 8);
+  assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 10);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
@@ -2800,18 +2800,18 @@ test('simultaneous opposing death triggers keep each token in its owner source l
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('conquest exiles Tarek and his dog without spawning anything or moving surviving dogs', () => {
+test('conquest exiles Tarek and his dog without spawning anything', () => {
   const duel = partieCombat();
   duel.joueur.main = ['tarek']; duel.joueur.mana.sable = 10;
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'tarek', 'right', 0).ok, true);
-  const dog = duel.joueur.creatures.find((e) => e.carteId === 'chien-de-sable' && e.mobaLane === 'left');
-  assert.equal(dog.atk, 1);
+  const dog = duel.joueur.creatures.find((e) => e.carteId === 'chien-de-sable' && e.mobaLane === 'right');
+  assert.equal(dog.atk, 2);
   duel.joueur.main = ['eclair-du-marteau']; duel.joueur.mana.neige = 20;
   mobaInfliger(duel.moba, 'joueur', 'right', 9);
   assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier', 'right').ok, true);
   assert.equal(duel.joueur.creatures.length, 1);
   assert.equal(duel.joueur.creatures[0].id, dog.id);
-  assert.equal(dog.mobaLane, 'left'); assert.equal(dog.atk, 1);
+  assert.equal(dog.mobaLane, 'left'); assert.equal(dog.atk, 2);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
@@ -8120,7 +8120,7 @@ test('Lame des ergs MOBA : porteur existant, Lien Tarek et interdiction des Murs
   const gardienne=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;assert.ok(gardienne);
   const tour=rpgMobaJouerCreature(duel,'joueur','tour-de-sable','right',1).entite;assert.ok(tour);assert.ok(rpgMobaResoudreArrivee(duel,'joueur',tour.id).ok);
   assert.equal(rpgMobaJouerArme(duel,'joueur','lame-des-ergs',tour.id).raison,'cible');assert.equal(rpgMobaJouerArme(duel,'joueur','lame-des-ergs',gardienne.id).ok,true);
-  assert.equal(gardienne.arme.carteId,'lame-des-ergs');assert.equal(gardienne.atk,4);assert.ok(gardienne.bouclier);assert.equal(duel.joueur.creatures.filter(e=>e.carteId==='chien-de-sable').length,2,'seuls les deux jetons de Tarek existent');assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.equal(gardienne.arme.carteId,'lame-des-ergs');assert.equal(gardienne.atk,4);assert.ok(gardienne.bouclier);assert.equal(duel.joueur.creatures.filter(e=>e.carteId==='chien-de-sable').length,1,'seul le jeton de Tarek existe');assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Lame des ergs MOBA : contre ou fermeture de la voie réservée empêche la naissance sans nouveau paiement', () => {
