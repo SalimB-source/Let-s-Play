@@ -26,7 +26,7 @@
  * (`supabase/rpg-pvp.sql`) et le découpage en étapes.
  */
 
-import { cardById } from './rpgCards.js';
+import { cardById, cardColors, duelCardById } from './rpgCards.js';
 import { rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from './rpgCombatIndividuelClassique.js';
 import {
   rpgActiverArme,
@@ -37,6 +37,9 @@ import {
   rpgDissiperDestructionsSansCible,
   rpgConditionEmbuscadeRemplie,
   rpgFinDeTour,
+  rpgEstProtegee,
+  rpgLancerAttaque,
+  rpgPeutBloquerAttaquant,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
   rpgJouerArme,
@@ -47,6 +50,7 @@ import {
   rpgPeutMulligan,
   rpgPreparerDefausseFinDeTour,
   rpgReglerHasard,
+  rpgResoudreRenfortChoisi,
   rpgResoudreArriveeCiblee,
   rpgResoudreEffetCreatureEnAttente,
   rpgResoudreDestructionCiblee,
@@ -85,6 +89,7 @@ export const RPG_PVP_INTENTIONS = [
   'mulligan',
   'choix-mana',
   'jouer-carte',
+  'choisir-renfort',
   'resoudre-arrivee',
   'renoncer-arrivee',
   'passer-effet',
@@ -174,6 +179,7 @@ export function rpgPvpCodeDuLien(lien) {
 export function rpgPvpCoteActif(duel) {
   if (!duel) return null;
   if (duel.fin?.gagnant) return null;
+  if (duel.renfortChoixEnAttente?.cote) return duel.renfortChoixEnAttente.cote;
   if (duel.destructionsEnAttente?.length) return duel.destructionsEnAttente[0].cote;
   // Le contresort de Boualem donne la main à celui qui joue Boualem le temps
   // de désigner sa nouvelle cible.
@@ -211,6 +217,8 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
     if (intention.type !== 'mulligan') return { ok: false, raison: 'mulligan' };
     return { ok: true, raison: null };
   }
+  if (duel.renfortChoixEnAttente && intention.type !== 'choisir-renfort') return { ok: false, raison: 'renfort-en-attente' };
+  if (intention.type === 'choisir-renfort' && !duel.renfortChoixEnAttente) return { ok: false, raison: 'choix' };
   if (duel.arriveeEnAttente && !['resoudre-arrivee', 'renoncer-arrivee'].includes(intention.type)) {
     return { ok: false, raison: 'arrivee-en-attente' };
   }
@@ -282,6 +290,7 @@ function retournerPartie(vue) {
   if (vue.defausseEnAttente?.cote) {
     vue.defausseEnAttente = { ...vue.defausseEnAttente, cote: remplace(vue.defausseEnAttente.cote) };
   }
+  if (vue.renfortChoixEnAttente?.cote) vue.renfortChoixEnAttente.cote = remplace(vue.renfortChoixEnAttente.cote);
   if (vue.arriveeEnAttente?.cote) {
     vue.arriveeEnAttente = { ...vue.arriveeEnAttente, cote: remplace(vue.arriveeEnAttente.cote) };
   }
@@ -341,6 +350,8 @@ export function rpgPvpVue(duel, cote = 'joueur') {
     ? structuredClone(duel)
     : JSON.parse(JSON.stringify(duel));
   delete vue.hasard;
+  // Ancienne deuxième phase principale : les nouvelles attaques sont individuelles.
+  if (vue.phase === 'principale2' && !vue.combatDeclare) vue.phase = 'principale';
   if (cote === 'sorcier') retournerPartie(vue);
   // Après retournement, l'adversaire est TOUJOURS `vue.sorcier` : c'est le
   // seul camp dont la main et la pioche doivent disparaître.
@@ -384,7 +395,46 @@ function nettoyerCombatDeclareSiVide(duel) {
   }
   duel.attaqueJouee = combat.cote;
   duel.combatDeclare = null;
-  if (duel.phase === 'blocage') duel.phase = 'principale2';
+  if (duel.phase === 'blocage') { duel.phase = 'principale'; duel.fenetreReponse = false; }
+}
+
+/** Terminer selon les anciennes règles une attaque déjà annoncée avant la mise à jour. */
+function resoudreAncienCombat(duel, combat, blocages, repartitions) {
+  const survivants = combat.attaquants.filter((id) => duel[combat.cote]?.creatures?.some((e) => e.id === id));
+  if (!survivants.length) {
+    duel.combatDeclare = null; duel.fenetreReponse = false; duel.phase = 'principale';
+    return { ok: true };
+  }
+  const cibles = Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {}).filter(([id]) => survivants.includes(id)));
+  const propres = Object.fromEntries(Object.entries(blocages).filter(([id]) => survivants.includes(id)));
+  const resultat = rpgLancerAttaque(duel, combat.cote, survivants, propres, repartitions, null, cibles,
+    { attaqueDeclaree: true, bannieresAppliquees: Boolean(combat.bannieresAppliquees) });
+  if (!resultat?.ok) return resultat;
+  duel.combatDeclare = null; duel.fenetreReponse = false;
+  if (duel.phase === 'blocage' || duel.phase === 'principale2') duel.phase = 'principale';
+  return resultat;
+}
+
+function preparerAncienBlocage(duel, cote, blocages) {
+  const combat = duel.combatDeclare;
+  if (duel.phase !== 'blocage' || !combat || combat.cibleIndividuelle || combat.cote !== rpgPvpAutreCote(cote)) return { ok: false, raison: 'aucun-combat' };
+  if (!blocages || typeof blocages !== 'object' || Array.isArray(blocages)
+    || Object.keys(blocages).some((id) => !combat.attaquants.includes(id))) return { ok: false, raison: 'blocage' };
+  const utilises = new Set();
+  for (const [attaquantId, ids] of Object.entries(blocages)) {
+    if (!Array.isArray(ids)) return { ok: false, raison: 'blocage' };
+    const attaquant = duel[combat.cote].creatures.find((entite) => entite.id === attaquantId);
+    for (const id of ids) {
+      const bloqueur = duel[cote].creatures.find((entite) => entite.id === id);
+      if (!attaquant || !bloqueur || utilises.has(id) || bloqueur.attaquee || bloqueur.enCale
+        || bloqueur.gelToursRestants > 0 || bloqueur.empecheBlocageToursRestants > 0
+        || !rpgPeutBloquerAttaquant(bloqueur, attaquant, Boolean(combat.ciblesAttaque?.[attaquantId]))
+        || rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) return { ok: false, raison: 'blocage' };
+      utilises.add(id);
+    }
+  }
+  combat.blocages = structuredClone(blocages);
+  return { ok: true };
 }
 
 function executerIntention(duel, cote, intention) {
@@ -401,6 +451,8 @@ function executerIntention(duel, cote, intention) {
     }
     case 'choix-mana':
       return rpgChoisirCouleurMana(duel, cote, intention.couleur) ?? { ok: true };
+    case 'choisir-renfort':
+      return rpgResoudreRenfortChoisi(duel, cote, intention.index ?? null);
     case 'jouer-carte': {
       const carte = cardById(intention.carteId);
       if (!carte) return { ok: false, raison: 'carte-inconnue' };
@@ -439,7 +491,7 @@ function executerIntention(duel, cote, intention) {
     case 'passer-effet':
       return rpgResoudreEffetCreatureEnAttente(duel, cote);
     case 'preparer-blocage':
-      return { ok: false, raison: 'attaque-individuelle' };
+      return preparerAncienBlocage(duel, cote, intention.blocages ?? {});
     case 'resoudre-arrivee': {
       const res = rpgResoudreArriveeCiblee(duel, cote, intention.cibleId ?? null);
       if (res?.ok) nettoyerCombatDeclareSiVide(duel);
@@ -497,6 +549,13 @@ function executerIntention(duel, cote, intention) {
     }
     case 'bloquer': {
       const combat = duel.combatDeclare;
+      if (combat && !combat.cibleIndividuelle && combat.cote !== cote && duel.phase === 'blocage') {
+        const blocages = intention.blocages ?? {};
+        if (!blocages || typeof blocages !== 'object' || Array.isArray(blocages)
+          || Object.keys(blocages).some((id) => !combat.attaquants.includes(id))
+          || Object.values(blocages).some((ids) => !Array.isArray(ids))) return { ok: false, raison: 'blocage' };
+        return resoudreAncienCombat(duel, combat, blocages, intention.repartitions ?? null);
+      }
       if (!combat?.cibleIndividuelle || combat.cote === cote
         || (intention.blocages != null && (typeof intention.blocages !== 'object' || Array.isArray(intention.blocages)))
         || Object.values(intention.blocages ?? {}).some((ids) => !Array.isArray(ids) || ids.length))
@@ -545,6 +604,7 @@ export function rpgPvpAppliquer(duel, cote, intention) {
   const droit = rpgPvpPeutAgir(duel, cote, intention);
   if (!droit.ok) return { ok: false, raison: droit.raison, duel };
   const instantane = JSON.stringify(duel);
+  if (duel.phase === 'principale2' && !duel.combatDeclare) duel.phase = 'principale';
   if (duel.pvp) rpgSyncCompteurEntites(duel);
   let resultat;
   try {

@@ -44,7 +44,7 @@ export function rpgDeclarerAttaqueIndividuelleClassique(duel, cote, attaquantId,
   if (rpgVainqueur(duel)) return { ok: false, raison: 'partie-terminee' };
   if (duel.tour !== cote) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.phase !== 'principale' || duel.fenetreReponse || duel.combatDeclare || duel.finDeTour
-    || duel.annonce || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || duel.annonce || duel.renfortChoixEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente || duel.boualemEnAttente
     || duel[cote].manaChoixEnAttente) return { ok: false, raison: 'timing' };
   const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
@@ -79,7 +79,7 @@ export function rpgResoudreAttaqueIndividuelleClassique(duel, cote) {
   const combat = duel?.combatDeclare;
   if (!soloClassique(duel, cote) || !combat?.cibleIndividuelle || combat.cote !== cote
     || duel.tour !== cote || duel.phase !== 'blocage' || !duel.fenetreReponse
-    || duel.annonce || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || duel.annonce || duel.renfortChoixEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente || duel.boualemEnAttente) {
     return { ok: false, raison: 'timing' };
   }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mobaNouveau } from '../src/games/rpgMoba.js';
 import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation, rpgMobaExcedentOverkill } from '../src/games/rpgMobaAttaqueIndividuelle.js';
 import { rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgLancerMagie, rpgNouveauDuel } from '../src/games/rpgDuel.js';
-import { rpgMobaJouerCreature, rpgMobaNouveauDuel, rpgMobaDeclarerAttaque, rpgMobaPeutEmbuscade, rpgMobaLancerMagie, rpgMobaResoudreArrivee } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaJouerCreature, rpgMobaNouveauDuel, rpgMobaDeclarerAttaque, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaPeutEmbuscade, rpgMobaLancerMagie, rpgMobaResoudreArrivee } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
 
 const entite = (id, lane, attrs = {}) => ({ id, carteId: 'ashigaru-des-braises', mobaLane: lane, atk: 3, def: 2, pv: 2, pvMax: 2, ...attrs });
@@ -103,28 +103,16 @@ function partie() {
   return d;
 }
 
-test('les deux sorts forçant le blocage sont refusés sans mutation et ignorés par l’IA', () => {
-  const d = partie();
-  for (const id of ['embuscade', 'appat-de-la-meute']) {
-    d.joueur.main = [id];
-    const avant = JSON.stringify(d);
-    assert.equal(rpgMobaLancerMagie(d, 'joueur', id).raison, 'blocage-indisponible-moba');
-    assert.equal(JSON.stringify(d), avant);
-    d.sorcier.main = [id];
-    assert.equal(rpgMobaChoisirMagieIA(d, 'sorcier'), null);
-  }
-});
-
 test('Traqueur garde son arrivée normale mais pas son Embuscade à deux attaquants', () => {
   const d = partie(); d.joueur.main = ['ashigaru-des-braises'];
-  const a = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite; a.ready = true;
+  const a = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite; a.ready = true; a.malInvocation = false;
   d.joueur.main = ['ashigaru-des-braises'];
   // Un second attaquant est placé sur un tour séparé des quotas de pose.
   d.moba.creaturesJouees.joueur = false;
   const b = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 1).entite; b.ready = true;
   d.sorcier.main = ['traqueur-des-nuits-sans-lune'];
   assert.equal(rpgMobaDeclarerAttaque(d, 'joueur', [a.id, b.id]).ok, false);
-  assert.ok(rpgMobaDeclarerAttaque(d, 'joueur', [a.id]).ok);
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null, 'left').ok);
   assert.equal(rpgMobaPeutEmbuscade(d, 'sorcier', 'traqueur-des-nuits-sans-lune'), false);
 });
 

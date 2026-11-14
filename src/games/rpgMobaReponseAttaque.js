@@ -5,7 +5,7 @@ import {
   MOBA_CONTRESORTS, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_NEUTRES,
   MOBA_MAGIES_PRIX, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_SOINS, MOBA_MAGIES_SPATIALES,
   MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaLancerMagie, rpgMobaPeutPayer, rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade,
+  rpgMobaLancerMagie, rpgMobaPeutPayer, rpgMobaPeutEmbuscade,
 } from './rpgMobaLocal.js';
 
 /** Candidats de ciblage pour les magies auditées ; le moteur reste seul juge
@@ -51,7 +51,7 @@ export function rpgMobaPeutRepondreAttaque(duel, side) {
     if (!carte) continue;
     if (rpgMobaPeutEmbuscade(duel, side, id)) return true;
     if (carte.kind !== 'magie' || !carte.instant || MOBA_CONTRESORTS.includes(id)
-      || rpgMobaSortBlocageInterdit(id) || !rpgMobaPeutPayer(duel, side, carte)) continue;
+      || !rpgMobaPeutPayer(duel, side, carte)) continue;
     for (const [cible, voie, prix, secondaire, slot] of candidatsMagie(duel, side, id)) {
       try {
         const copie = JSON.parse(JSON.stringify(duel));

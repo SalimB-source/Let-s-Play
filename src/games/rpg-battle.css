@@ -16108,3 +16108,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-catalogue-achat__action { flex-wrap: wrap; justify-content: center; }
   .rpg-catalogue-achat__bouton { min-height: 44px; }
 }
+
+/* Choix privé d'un renfort : les cartes regardées restent visibles même si
+   elles ne sont pas admissibles. La liste défile sur les petits écrans. */
+.rpg-renfort-choix { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 12px; background: rgba(4, 7, 12, .9); }
+.rpg-renfort-choix__panel { width: min(100%, 1050px); max-height: 94dvh; overflow: auto; padding: 20px; text-align: center; border: 1px solid #c7aa69; border-radius: 14px; background: #171a22; color: #f8ecd4; }
+.rpg-renfort-choix__panel h2 { margin: 0 0 8px; font: 700 clamp(17px, 3vh, 26px) Georgia, serif; }
+.rpg-renfort-choix__panel p { margin: 0 0 14px; }
+.rpg-renfort-choix__cartes { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.rpg-renfort-choix__carte { width: clamp(100px, 17vw, 150px); padding: 5px; color: #fff3d5; background: #272630; border: 1px solid #bba363; border-radius: 7px; cursor: pointer; }
+.rpg-renfort-choix__carte:disabled { opacity: .48; cursor: not-allowed; }
+.rpg-renfort-choix__carte img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 4px; }
+.rpg-renfort-choix__carte strong, .rpg-renfort-choix__carte small { display: block; margin-top: 4px; }
+.rpg-renfort-choix__carte:focus-visible { outline: 3px solid #72e6d0; outline-offset: 2px; }

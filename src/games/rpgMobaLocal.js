@@ -8,7 +8,7 @@ import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMo
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import { indexReanimation } from './rpgRenforts.js';
 import {
-  rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
+  rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgResoudreEchangeIndividuelMoba, rpgRessacMobaArrivee, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgPresenterRechercheMoba,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
@@ -45,8 +45,6 @@ const caleAuditee = (duel, cote, entite) => {
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
-// Ces sorts exigent une déclaration de blocage, absente des nouvelles règles MOBA.
-export const rpgMobaSortBlocageInterdit = (id) => ['appat-de-la-meute', 'embuscade'].includes(id);
 export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['gardienne-du-croissant', 'guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
 export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['scorpion-de-l-eclipse', 'lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
@@ -67,13 +65,13 @@ export const MOBA_MAGIES_ESSAI = Object.freeze([
 // Non-targeted effects; spatial ones choose a lane before casting, while
 // hand and deck effects still resolve directly.
 export const MOBA_MAGIES_IMMEDIATES = Object.freeze([
-  'confluence-des-etincelles', 'eveil-des-dunes',
+  'confluence-des-etincelles', 'eveil-des-dunes', 'appel-des-marees', 'ralliement-des-neiges', 'veille-des-braises',
   'tempete-de-sable', 'brisure-de-verre', 'vent-rouge', 'rapport-du-greffier',
   'les-feuillets', 'la-derniere-pesee', 'ressac-de-la-lune-noire', 'nuage-de-cendres', 'serment-de-la-forge', 'nom-efface', 'le-routier', 'embuscade', 'lettre-de-marque', 'le-grand-debarquement',
 ]);
 // Sorts audités, uniquement en phase principale et sans réponse imbriquée.
 const MOBA_MAGIES_MAIN_REPONSE = Object.freeze(['nom-efface']);
-const MOBA_MAGIES_PIOCHE_REPONSE = Object.freeze(['confluence-des-etincelles', 'eveil-des-dunes', 'rapport-du-greffier', 'les-feuillets', 'le-routier', 'papyrus', 'lettre-de-marque']);
+const MOBA_MAGIES_PIOCHE_REPONSE = Object.freeze(['confluence-des-etincelles', 'eveil-des-dunes', 'appel-des-marees', 'ralliement-des-neiges', 'veille-des-braises', 'rapport-du-greffier', 'les-feuillets', 'le-routier', 'papyrus', 'lettre-de-marque']);
 export const MOBA_MAGIES_RENFORT_REPONSE = Object.freeze(['mur-de-boucliers', 'serment-de-la-forge', 'rempart-de-dunes', 'offrande-de-lin', 'le-grand-debarquement']);
 export const MOBA_MAGIES_ZONE_TOTALE_REPONSE = Object.freeze([
   'grand-hiver', 'tempete-de-foudre-et-de-givre', 'la-derniere-pesee', 'ressac-de-la-lune-noire', 'neige-noire',
@@ -195,6 +193,7 @@ export function rpgMobaNouveauDuel(options = {}) {
 export function rpgMobaCandidatsRecherche(duel, side) {
   const recherche = duel?.mobaRechercheEnAttente;
   if (!recherche || recherche.cote !== side || !MOBA_SIDES.includes(side)) return [];
+  if (recherche.renfort) return [...new Set(rpgCartesRenfortChoisi(duel, side).filter(c => c.admissible).map(c => c.id))];
   return [...new Set(duel[side].deck.filter((id) => {
     if (recherche.sourceCarteId === 'pilote-de-la-carreira') return cardHasPrintedType(id, 'Navire');
     if (recherche.sourceCarteId !== 'tiziri-du-djurdjura') return false;
@@ -203,9 +202,16 @@ export function rpgMobaCandidatsRecherche(duel, side) {
   }))];
 }
 
-export function rpgMobaResoudreRecherche(duel, side, cardId) {
+export function rpgMobaResoudreRecherche(duel, side, cardId, index = undefined) {
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!rpgMobaPlacementCoherent(duel) || duel.destructionsEnAttente?.length || duel.mobaRechercheEnAttente?.cote !== side) return fail('timing');
+  if (duel.mobaRechercheEnAttente.renfort) {
+    const choix = rpgCartesRenfortChoisi(duel, side).find(c => c.admissible && c.id === cardId && (index === undefined || c.index === index));
+    if (cardId !== null && !choix) return fail('cible');
+    const result = rpgResoudreRenfortChoisi(duel, side, choix?.index ?? null);
+    if (result.ok) { synchroniserSorties(duel); normaliserArriveeMoba(duel); }
+    return result;
+  }
   if (!rpgMobaCandidatsRecherche(duel, side).includes(cardId)) return fail('cible');
   const [id] = duel[side].deck.splice(duel[side].deck.indexOf(cardId), 1);
   duel[side].main.push(id);
@@ -942,7 +948,6 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
  * validates protection, payment and resolves the printed text. The local UI
  * opts in to the limited main-phase spell window; probes resolve immediately. */
 export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = null, prixLaneId = null, { ouvrirReponse = false, cibleSecondaireId = null, emplacementReanimation = null } = {}) {
-  if (rpgMobaSortBlocageInterdit(cardId)) return fail('blocage-indisponible-moba');
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');

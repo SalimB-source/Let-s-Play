@@ -5,7 +5,7 @@ import { createServer } from 'vite';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
-test('le plateau signale les deux sorts de blocage indisponibles en MOBA', async () => {
+test('les sorts révisés restent jouables sur les deux rendus MOBA', async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -28,9 +28,8 @@ test('le plateau signale les deux sorts de blocage indisponibles en MOBA', async
       const buttons = [...document.querySelectorAll('.moba__hand button.moba__card')];
       assert.equal(buttons.length, 2);
       for (const button of buttons) {
-        assert.equal(button.disabled, true);
-        assert.match(button.getAttribute('aria-label'), /Injouable en MOBA : impose un blocage/);
-        assert.match(button.title, /Injouable en MOBA/);
+        assert.equal(button.disabled, false);
+        assert.doesNotMatch(button.getAttribute('aria-label') ?? button.title, /Injouable en MOBA/);
       }
     }
   } finally {

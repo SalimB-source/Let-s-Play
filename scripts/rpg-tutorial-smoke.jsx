@@ -35,17 +35,10 @@ async function passerTourGuide(harnais, container, prochaineEtape, assert) {
   assert.equal(harnais.step(), prochaineEtape, `le tour revient à ${prochaineEtape}`);
 }
 
-/**
- * L'assaut adverse se referme en **deux clics** sur le même bouton : d'abord
- * « Déclarer les bloqueurs » (les assignations sont figées, la fenêtre de
- * réponse reste ouverte pour une dernière Magie Rapide ou une dernière
- * Embuscade), puis « Résoudre le combat ».
- */
+/** Le combat individuel attend une seule résolution après la réponse. */
 async function resoudreCombatAdverse(harnais, container) {
-  const bouton = () => container.querySelector('[data-tutorial-target="resolve-combat"]');
-  await harnais.click(bouton(), '« Déclarer les bloqueurs »');
-  await act(async () => { await wait(220); });
-  await harnais.click(bouton(), '« Résoudre le combat »');
+  const bouton = container.querySelector('[data-tutorial-target="resolve-combat"]');
+  await harnais.click(bouton, '« Résoudre l’attaque »');
   await act(async () => { await wait(320); });
 }
 
@@ -126,9 +119,9 @@ export async function checkRpgTutorialCombat(assert) {
 
     await harnais.click(harnais.next(), 'la pioche de début de tour');
     assert.equal(harnais.step(), 'attaque');
-    await harnais.click(container.querySelector('[data-tutorial-target="attack-all"]'), 'Attaquer avec tous');
+    await harnais.click(harnais.carteChamp('equipe', 'tislit-des-aures'), 'Tislit attaque');
     assert.equal(harnais.step(), 'confirmer-attaque');
-    await harnais.click(container.querySelector('[data-tutorial-target="confirm-attack"]'), 'la confirmation');
+    await harnais.click(harnais.next(), 'les cibles possibles');
     assert.equal(harnais.step(), 'combat');
     assert.ok(container.querySelector('[data-tutorial-target="opponent-health"]'));
 
@@ -150,9 +143,9 @@ export async function checkRpgTutorialCombat(assert) {
       await act(async () => { await wait(300); });
     }
     assert.equal(harnais.step(), 'blocage', 'le blocage du Chien du guet est demandé après l’assaut');
-    await harnais.click(harnais.carteChamp('equipe', 'chien-du-guet'), 'le Chien du guet bloqueur');
+    await harnais.click(harnais.next(), 'le Chien du guet est visé');
     assert.equal(harnais.step(), 'blocage-cible');
-    await harnais.click(harnais.carteChamp('ennemi', 'chien-de-sable'), 'le Chien de sable attaquant');
+    await harnais.click(harnais.next(), 'le Chien de sable attaquant');
     assert.equal(harnais.step(), 'blocage-confirmer');
     await resoudreCombatAdverse(harnais, container);
     assert.equal(harnais.step(), 'blocage-explique');
@@ -339,9 +332,9 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await harnais.click(harnais.card('chacal-du-seuil'), 'le Chacal du seuil');
     await act(async () => { await wait(850); });
     assert.equal(harnais.step(), 'attaque-chacal');
-    await harnais.click(container.querySelector('[data-tutorial-target="attack-all"]'), 'Attaquer avec tous (Chacal)');
+    await harnais.click(harnais.carteChamp('equipe', 'chacal-du-seuil'), 'Le Chacal attaque');
     assert.equal(harnais.step(), 'confirmer-chacal');
-    await harnais.click(container.querySelector('[data-tutorial-target="confirm-attack"]'), 'Valider l’attaque (Chacal)');
+    await harnais.click(harnais.next(), 'la morsure du Chacal');
     assert.equal(harnais.step(), 'tribut');
     await harnais.click(harnais.next(), 'la règle du Tribut');
     assert.equal(harnais.step(), 'fin-tour-pretre');
@@ -408,9 +401,9 @@ export async function checkRpgTutorialAutresLecons(assert) {
       await act(async () => { await wait(300); });
     }
     assert.equal(harnais.step(), 'charge');
-    await harnais.click(container.querySelector('[data-tutorial-target="attack-all"]'), 'Attaquer avec tous (Samouraïs)');
+    await harnais.click(harnais.carteChamp('equipe', 'ashigaru-des-braises'), 'L’Ashigaru attaque');
     assert.equal(harnais.step(), 'confirmer-charge');
-    await harnais.click(container.querySelector('[data-tutorial-target="confirm-attack"]'), 'Valider l’attaque (Samouraïs)');
+    await harnais.click(harnais.next(), 'la Bannière');
     assert.equal(harnais.step(), 'impact');
     await harnais.click(harnais.next(), 'le bilan de l’impact');
     assert.equal(harnais.step(), 'termine');
@@ -449,9 +442,9 @@ export async function checkRpgTutorialAutresLecons(assert) {
       await act(async () => { await wait(300); });
     }
     assert.equal(harnais.step(), 'blocage-neige');
-    await harnais.click(harnais.carteChamp('equipe', 'berserk-des-trois-hivers'), 'le Berserk allié bloqueur');
+    await harnais.click(harnais.next(), 'le Berserk visé');
     assert.equal(harnais.step(), 'blocage-neige-cible');
-    await harnais.click(harnais.carteChamp('ennemi', 'guerrier-au-bouclier-rond'), 'le Guerrier adverse attaquant');
+    await harnais.click(harnais.next(), 'le Guerrier adverse attaquant');
     assert.equal(harnais.step(), 'blocage-neige-confirmer');
     await resoudreCombatAdverse(harnais, container);
     assert.equal(harnais.step(), 'furie');

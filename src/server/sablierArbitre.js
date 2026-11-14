@@ -32,7 +32,7 @@
  */
 
 import { rpgValiderDeck, RPG_DECKS_ARCHETYPES } from '../games/rpgCards.js';
-import { rpgNouveauDuel, rpgDemarrerManaEssai } from '../games/rpgDuel.js';
+import { rpgNouveauDuel, rpgDemarrerManaEssai, rpgCartesRenfortChoisi, rpgChoisirBloqueurs } from '../games/rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from '../games/rpgManaEssai.js';
 import { rngSeme } from '../games/rpgHasard.js';
 import {
@@ -46,6 +46,7 @@ import {
   rpgPvpCoteActif,
   rpgPvpNommerLog,
   rpgPvpResultat,
+  rpgPvpRng,
   rpgPvpVue,
 } from '../games/rpgPvp.js';
 
@@ -359,6 +360,18 @@ export function creerArbitre({
         gagnant_id: actif === 'joueur' ? duel.invite_id : duel.hote_id,
         fin_raison: 'temps',
       };
+    } else if (etat.renfortChoixEnAttente) {
+      // Un choix obligatoire ne doit pas immobiliser un duel en cas d'absence.
+      const debut = etat.log.length;
+      const choix = rpgCartesRenfortChoisi(etat, actif).find((carte) => carte.admissible);
+      const resolu = rpgPvpAppliquer(etat, actif, { type: 'choisir-renfort', index: choix?.index ?? null }).ok;
+      if (resolu) nommerNouvellesEntrees(etat, debut, actif, noms);
+      patch = {
+        etat,
+        seq: duel.seq + (resolu ? 1 : 0),
+        tour: etat.tour,
+        ...(await issue(duel, etat)),
+      };
     } else if (etat.arriveeEnAttente?.retour) {
       // Le contrôleur absent avait un choix obligatoire. À l'expiration, on
       // essaie les cibles publiques dans l'ordre, puis la cible sorcier. Chaque
@@ -391,7 +404,12 @@ export function creerArbitre({
       };
     } else if (etat.phase === 'blocage') {
       const debut = etat.log.length;
-      const resolu = rpgPvpAppliquer(etat, actif, { type: 'bloquer', blocages: {} }).ok;
+      const combat = etat.combatDeclare;
+      // Une ancienne attaque collective peut encore exiger des blocages. Les
+      // conserver ou choisir légalement plutôt que d'immobiliser la partie.
+      const blocages = combat && !combat.cibleIndividuelle
+        ? rpgChoisirBloqueurs(etat, combat.cote, combat.attaquants, combat.ciblesAttaque ?? {}, { rng: rpgPvpRng(etat) }) : {};
+      const resolu = rpgPvpAppliquer(etat, actif, { type: 'bloquer', blocages }).ok;
       if (resolu) nommerNouvellesEntrees(etat, debut, etat.tour, noms);
       patch = {
         etat,

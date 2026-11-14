@@ -491,3 +491,33 @@ for (const cote of ['joueur', 'sorcier']) {
     assert.equal(duel.phase, 'principale'); assert.equal(duel.combatDeclare, null);
   });
 }
+
+for (const attaquantCote of ['joueur', 'sorcier']) test(`PvP : un combat collectif déjà annoncé se termine puis reprend en individuel (${attaquantCote})`, async () => {
+  const { rpgJouerCreature } = await import('../src/games/rpgDuel.js');
+  const d=partieNeuve(312); d.pvp=true; const defenseur=rpgPvpAutreCote(attaquantCote);
+  for (const cote of ['joueur','sorcier']) {
+    d.tour=cote; d[cote].manaChoixEnAttente=null; d[cote].main=['chien-du-guet'];
+    const r=rpgJouerCreature(d,cote,'chien-du-guet'); assert.ok(r.ok,JSON.stringify(r));
+    r.entite.ready=true; r.entite.malInvocation=false;
+  }
+  d.tour=attaquantCote; d.phase='blocage'; d.fenetreReponse=true;
+  const a=d[attaquantCote].creatures[0], b=d[defenseur].creatures[0];
+  d.combatDeclare={cote:attaquantCote,attaquants:[a.id],ciblesAttaque:{},bannieresAppliquees:true};
+  const saved=JSON.stringify(d);
+  assert.equal(rpgPvpAppliquer(d,defenseur,{type:'preparer-blocage',blocages:{[a.id]:['fausse-id']}}).ok,false);
+  assert.equal(JSON.stringify(d),saved);
+  assert.ok(rpgPvpAppliquer(d,defenseur,{type:'preparer-blocage',blocages:{[a.id]:[b.id]}}).ok);
+  assert.ok(rpgPvpAppliquer(d,defenseur,{type:'bloquer',blocages:{[a.id]:[b.id]}}).ok);
+  assert.equal(d.combatDeclare,null); assert.equal(d.phase,'principale');assert.equal(d.fenetreReponse,false);
+  assert.equal(d[attaquantCote].creatures.length,0); assert.equal(d[defenseur].creatures.length,0);
+});
+
+test('PvP : une ancienne phase principale 2 est visible et jouable sans muter une action refusée', async () => {
+  const {rpgJouerCreature}=await import('../src/games/rpgDuel.js');
+  const d=partieNeuve(313); d.pvp=true; d.joueur.manaChoixEnAttente=null;d.joueur.main=['djinn-des-braises-voilees'];
+  const r=rpgJouerCreature(d,'joueur','djinn-des-braises-voilees');assert.ok(r.ok);d.phase='principale2';
+  assert.equal(rpgPvpVue(d,'joueur').phase,'principale');assert.equal(d.phase,'principale2');
+  const avant=JSON.stringify(d);assert.equal(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:['absent']}).ok,false);assert.equal(JSON.stringify(d),avant);
+  assert.ok(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:[r.entite.id]}).ok);
+  assert.ok(d.combatDeclare.cibleIndividuelle);
+});

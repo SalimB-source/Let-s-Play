@@ -12,6 +12,8 @@
  */
 
 import { RPG_ASCENSION_CARDS } from './rpgAscensionCards.js';
+import { RPG_SORTS_INVOCATION } from './rpgSortsInvocation.js';
+import { RPG_RENFORTS_FUNEBRES } from './rpgRenfortsFunebres.js';
 import { RPG_ASCENSION_SUPPORT_CREATURES, RPG_ASCENSION_SUPPORT_SPELLS } from './rpgAscensionSupports.js';
 export { RPG_ASCENSION_CARDS } from './rpgAscensionCards.js';
 
@@ -424,6 +426,7 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   ...RPG_ASCENSION_SUPPORT_CREATURES,
+  ...RPG_RENFORTS_FUNEBRES,
   {
     id: 'gardien-de-la-porte-ardente', name: 'Gardien de la porte ardente',
     element: 'braise', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
@@ -1984,6 +1987,7 @@ export function terrainById(id) {
  */
 export const RPG_MAGIE_CARDS = [
   ...RPG_ASCENSION_SUPPORT_SPELLS,
+  ...RPG_SORTS_INVOCATION,
   {
     id: 'memoire-de-l-armurerie', name: 'Mémoire de l’armurerie', element: 'sable', kind: 'magie',
     typeLine: 'Sorcellerie — Sable', cost: 5, rarity: 'rare', cibles: ['creature-amie'],
@@ -2335,8 +2339,8 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'inhabituelle',
     instant: true,
     cibles: ['creature'],
-    effet: { type: 'blocage-force', cible: 'creature', portee: 'attaque' },
-    text: 'Magie Rapide — La créature adverse ciblée doit bloquer si elle le peut lors de votre prochaine attaque.',
+    effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1 },
+    text: 'Magie Rapide — La créature adverse ciblée gagne -2/+0 jusqu’à la fin du tour (son attaque ne descend pas sous 0).',
     flavor: 'La meute choisit sa proie ; la proie n’a pas son mot à dire.',
   },
   {
@@ -2379,10 +2383,10 @@ export const RPG_MAGIE_CARDS = [
     cibles: ['toutes'],
     effet: {
       type: 'buff', atk: -2, def: -2, minimum: 1,
-      cible: 'creatures-adverses', blocageForce: 'tour', tours: 1,
+      cible: 'creatures-adverses', tours: 1,
     },
-    text: 'Sorcellerie — Les créatures adverses gagnent -2/-2 (jamais sous 1/1) et doivent bloquer si elles le peuvent ce tour.',
-    flavor: 'Le cercle se referme ; plus aucun bouclier ne reste à l’écart.',
+    text: 'Sorcellerie — Les créatures adverses gagnent -2/-2 jusqu’à la fin du tour, sans descendre sous 1/1.',
+    flavor: 'Le cercle se referme ; le froid et la peur affaiblissent la garde.',
   },
   // ── Le Grand Hiver : le froid qui ne choisit pas son camp ───────────────
   // `cible: 'toutes-autres'` frappe la table ENTIÈRE — les deux camps, sans
