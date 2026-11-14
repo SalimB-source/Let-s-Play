@@ -40,7 +40,7 @@ if (scene === 'dragon') {
   poser('joueur', 'hatamoto-des-cendres', 'right', 0);
   poser('sorcier', 'ashigaru-des-braises', 'left', 0);
 } else if (scene.startsWith('jarl')) {
-  const a = poser('joueur', 'gardien-viking-du-fjord', 'left', 0);
+  const a = poser('joueur', 'berserk-des-trois-hivers', 'left', 0);
   const b = poser('joueur', 'jarl-au-marteau-de-guerre', 'right', 1);
   if (scene === 'jarl-furie') {
     partie.tour = 'joueur';
@@ -52,7 +52,7 @@ if (scene === 'dragon') {
     poser('joueur', 'archere-viking-du-givre', 'left', 1); poser('joueur', 'valkyrie-au-corbeau', 'right', 0);
   }
 } else if (scene === 'scorpion') {
-  poser('joueur', 'scorpion-du-seuil', 'left', 0); poser('joueur', 'ureus-du-seuil', 'left', 1); poser('joueur', 'ureus-du-seuil', 'right', 1);
+  poser('joueur', 'scorpion-du-seuil', 'left', 0); poser('joueur', 'ureus-du-seuil', 'left', 1); poser('joueur', 'momie-de-lin', 'right', 1);
   poser('joueur', 'fennec-des-decombres', 'right', 0);
   const cible = poser('sorcier', 'gardien-viking-du-fjord', 'left', 0);
   rpgBlesserCreature(partie, 'sorcier', cible.id, 1);

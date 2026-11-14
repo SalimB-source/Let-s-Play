@@ -7,9 +7,9 @@
   left: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2);
   right: auto;
   display: block;
-  width: clamp(64px, 8vw, 106px);
+  width: clamp(70px, 8.8vw, 116px);
   max-width: none;
-  height: clamp(74px, 12vh, 120px);
+  height: clamp(70px, 8.8vw, 116px);
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -42,10 +42,23 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  /* Aligner le haut du visage, même dans une plaque plus haute que large :
-     les cheveux et les cornes dépassent ainsi le haut du cercle. */
+  /* Aligner le haut du visage : les cheveux et les cornes peuvent ainsi
+     dépasser le haut du cercle. */
   object-position: center top;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .7));
+  /* Un cercle pour le buste, raccordé à une petite fenêtre en haut pour les
+     cheveux et les coiffes. Les deux masques sont additionnés : les épaules
+     et le bas du portrait restent à l'intérieur du médaillon. Les dimensions
+     correspondent exactement au cercle décoratif (82 %, bas à 2 %). */
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 99%, transparent 100%), linear-gradient(#000, #000);
+  mask-image: radial-gradient(circle closest-side, #000 99%, transparent 100%), linear-gradient(#000, #000);
+  -webkit-mask-size: 100% 82%, 58% 24%;
+  mask-size: 100% 82%, 58% 24%;
+  /* 88,89 % de l’espace restant place le cercle à 2 % du bas. */
+  -webkit-mask-position: center 88.8889%, center top;
+  mask-position: center 88.8889%, center top;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__zones, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name),
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__zones, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name) { display: none; }
@@ -71,6 +84,8 @@
   box-shadow: none;
   overflow: visible;
 }
+/* Le chiffre et sa jauge restent visibles ; seul le cœur décoratif disparaît. */
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__hp-icon--heart { display: none; }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__shield-value {
   display: inline-block;
   color: #fff2ce;
@@ -149,7 +164,7 @@
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
   --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .82));
   --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.38 + env(safe-area-inset-bottom, 0px));
-  --rpg-avatar-height: clamp(44px, calc(var(--duel-card) * .95), 75px);
+  --rpg-avatar-height: clamp(48px, calc(var(--duel-card) * 1.03), 82px);
   --rpg-avatar-vie: clamp(28px, calc(var(--duel-card) * .55), 40px);
   --rpg-avatar-nav: calc(var(--rpg-avatar-height) + var(--rpg-avatar-vie) + 4px);
   --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(34px, calc((50dvh - var(--rpg-avatar-height) - var(--rpg-avatar-vie) - 18px - env(safe-area-inset-bottom, 0px)) * .8)));
@@ -245,7 +260,7 @@
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: flex-start; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
   padding-left: calc(clamp(8px, 1.5vw, 24px) + 12px);
-  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - clamp(64px, 8vw, 106px) / 2 - 28px);
+  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - clamp(70px, 8.8vw, 116px) / 2 - 28px);
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }
 

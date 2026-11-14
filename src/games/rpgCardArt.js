@@ -60,11 +60,15 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'gardienne-des-sables-ensevelis': 'ascension-souls-v2',
+  'valkyrie-de-la-derniere-aurore': 'ascension-pegase-dore-v3',
+  'amiral-des-abysses': 'ascension-souls-v2',
+  'serpent-des-deux-rivages': 'ascension-souls-v2',
   'samourai-du-dragon-rouge': 'ascension-dragon-humanoide-v2',
   'jarl-du-dernier-rempart': 'ascension-jarl-casque-loup-v2',
   'jarl-du-dernier-rempart-furie': 'ascension-jarl-furie-v1',
   'scorpion-de-l-eclipse': 'ascension-duo-v1',
-  'colosse-du-verre-ardent': 'ascension-duo-v1',
+  'colosse-du-verre-ardent': 'ascension-colosse-necrodjinn-v2',
   'convoi-des-dunes': 'ascension-soutiens-v1',
   'retour-des-ensevelis': 'ascension-soutiens-v1',
   'confluence-des-etincelles': 'ascension-soutiens-v1',

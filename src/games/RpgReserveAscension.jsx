@@ -3,7 +3,7 @@ import { cardById } from './rpgCards.js';
 import { cardArt } from './rpgCardArt.js';
 import {
   ascensionDisponible, coutImprimeAscension, ERREURS_ASCENSION, libelleRecetteAscension,
-  materiauAscensionValide, timingAscensionValide, validerMateriauxAscension,
+  sacrificesAutomatiquesAscension, timingAscensionValide, validerMateriauxAscension,
 } from './rpgAscension.js';
 import './rpg-ascension.css';
 
@@ -50,33 +50,7 @@ export function useReserveAscension() {
     window.addEventListener('pointerdown', ailleurs, true);
     return () => { window.removeEventListener('keydown', echapper, true); window.removeEventListener('pointerdown', ailleurs, true); };
   }, [ouverte, rituel, apercuOuvert, retour, fermer]);
-  const choisir = (duel, id, disponible = true) => {
-    setVue((actuelle) => {
-      if (!actuelle?.rituel || actuelle.cote !== 'joueur' || !disponible
-        || !duel?.joueur?.reserveAscension?.includes(actuelle.carteId)
-        || !timingAscensionValide(duel, 'joueur')) return actuelle;
-      const carte = cardById(actuelle.carteId);
-      const entite = duel.joueur.creatures.find((e) => e.id === id);
-      if (!materiauAscensionValide(carte, entite)) return actuelle;
-      const ids = actuelle.ids.includes(id) ? actuelle.ids.filter((ancien) => ancien !== id)
-        : actuelle.ids.length < carte.ascension.nombre ? [...actuelle.ids, id] : actuelle.ids;
-      return ids === actuelle.ids ? actuelle : { ...actuelle, ids };
-    });
-  };
-  const pourCreature = (duel, cote, entite, disponible = true) => {
-    if (!rituel) return null;
-    const numero = vue.ids.indexOf(entite?.id) + 1;
-    const carte = cardById(vue.carteId);
-    const eligible = Boolean(vue.cote === 'joueur' && cote === 'joueur' && disponible
-      && duel?.joueur?.reserveAscension?.includes(vue.carteId)
-      && timingAscensionValide(duel, 'joueur') && materiauAscensionValide(carte, entite));
-    const cliquable = eligible && (numero > 0 || vue.ids.length < carte.ascension.nombre);
-    return {
-      eligible, numero, cliquable, cout: coutImprimeAscension(entite),
-      label: `${entite?.name ?? 'Créature'}, coût imprimé ${coutImprimeAscension(entite) ?? 'inconnu'}, ${numero ? `sacrifice ${numero} sélectionné, retirer de l’Ascension` : cliquable ? 'sélectionner pour l’Ascension' : eligible ? 'sélection complète, retirez un sacrifice pour choisir cette créature' : 'indisponible pour cette Ascension'}`,
-      onChoisir: () => choisir(duel, entite.id, disponible),
-    };
-  };
+  const pourCreature = () => null;
   return {
     cote: vue?.cote ?? null, carteId: vue?.carteId ?? null, ids: vue?.ids ?? AUCUN_MATERIAU,
     apercuId: vue?.apercuId ?? null, rituel, retourFocus: retourFocus.current,
@@ -144,7 +118,7 @@ function useAncrageReserve(ref, ancre, actif, cote, nombre) {
       const marge = 8, espace = 7, hauteurNaturelle = popup.scrollHeight + 2;
       const haut = r.top - marge - espace, bas = window.innerHeight - r.bottom - marge - espace;
       const dessus = haut >= Math.min(hauteurNaturelle, 160) || haut >= bas;
-      const maxHeight = Math.min(270, Math.max(64, dessus ? haut : bas));
+      const maxHeight = Math.min(320, Math.max(64, dessus ? haut : bas));
       const hauteur = Math.min(mesure.height, maxHeight);
       const left = Math.max(marge, Math.min(window.innerWidth - largeur - marge, r.left + (r.width - largeur) / 2));
       const top = Math.max(marge, dessus ? r.top - espace - hauteur : r.bottom + espace);
@@ -182,7 +156,7 @@ function ApercuAscension({ carte, selection, consultation, disponible, duel, Hov
       {(notesPourApercu?.(carte) ?? []).map((note) => <p key={note} className="rpg-ascension-note">{note}</p>)}
     </div>
     <div className="rpg-card-peek__bar">
-      {!consultation && <button type="button" className="rpg-btn rpg-btn--primary rpg-ascension-prepare" disabled={!preparable} onClick={() => selection.preparer(carte.id)}>Choisir les sacrifices</button>}
+      {!consultation && <button type="button" className="rpg-btn rpg-btn--primary rpg-ascension-prepare" disabled={!preparable} onClick={() => selection.preparer(carte.id)}>Préparer l’Ascension</button>}
       <button type="button" ref={fermerRef} className="rpg-btn rpg-btn--ghost rpg-ascension-preview-close" onClick={selection.fermerApercu}>Fermer l’aperçu</button>
       {!consultation && !preparable && <p className="rpg-ascension-preview-unavailable">{disponible && timingAscensionValide(duel, 'joueur') ? 'Les sacrifices requis ne sont pas encore réunis.' : 'Invocation disponible pendant votre phase principale, sans action en attente.'}</p>}
     </div>
@@ -190,25 +164,27 @@ function ApercuAscension({ carte, selection, consultation, disponible, duel, Hov
 }
 
 function RituelAscension({ carte, duel, selection, disponible, onInvoquer, choixEmplacement }) {
-  const ref = useRef(null);
   const titreId = useId();
-  const condition = carte.ascension;
-  const recette = validerMateriauxAscension(duel.joueur, carte, selection.ids);
-  const total = selection.ids.reduce((n, id) => n + (coutImprimeAscension(duel.joueur.creatures.find((e) => e.id === id)) ?? 0), 0);
+  // Recalculer sur l'état courant : une modification distante ne peut jamais
+  // valider une ancienne combinaison dont une présence aurait disparu.
+  const ids = sacrificesAutomatiquesAscension(duel.joueur, carte);
+  const recette = validerMateriauxAscension(duel.joueur, carte, ids);
+  const victimes = ids.map((id) => duel.joueur.creatures.find((e) => e.id === id)).filter(Boolean);
   const prete = disponible && ascensionDisponible(duel, 'joueur', carte) && recette.ok;
-  const focaliserPlateau = () => ref.current?.closest('.moba, .rpg-battle')?.querySelector('button[data-ascension-material]:not(:disabled)')?.focus({ preventScroll: true });
-  useEffect(() => { focaliserPlateau(); }, [carte.id]); // La sélection commence sur une vraie carte, pas dans une fenêtre.
-  return <section ref={ref} className="rpg-ascension-ritual" role="region" aria-labelledby={titreId} inert={selection.apercuId ? true : undefined} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+  return <section className="rpg-ascension-ritual" role="region" aria-labelledby={titreId} inert={selection.apercuId ? true : undefined} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
     <button type="button" className="rpg-ascension-ritual-art" aria-label={`Voir l’aperçu de ${carte.name}`} onClick={(e) => selection.voir(carte.id, e.currentTarget)}><img src={cardArt(carte.id)} alt="" /></button>
-    <button type="button" className="rpg-ascension-board-link" onClick={focaliserPlateau}>
+    <div className="rpg-ascension-board-link">
       <small>ASCENSION · {libelleRecetteAscension(carte)}</small>
-      <strong id={titreId}>{carte.name}</strong><span>Choisir sur le plateau</span>
-    </button>
-    <div className={`rpg-ascension-total${recette.ok ? ' is-exact' : selection.ids.length === condition.nombre ? ' is-invalid' : ''}`} role="status" aria-live="polite" aria-atomic="true">
-      <strong>{selection.ids.map((id) => coutImprimeAscension(duel.joueur.creatures.find((e) => e.id === id)) ?? '?').join(' + ') || '0'} = {total}<small> / {condition.coutTotal}</small></strong>
-      <span>{recette.ok ? 'Sacrifices prêts' : selection.ids.length === condition.nombre ? (ERREURS_ASCENSION[recette.raison] ?? 'Recette invalide') : `${selection.ids.length} / ${condition.nombre} sélectionnés`}</span>
+      <strong id={titreId}>{carte.name}</strong><span>Sacrifices automatiques : les créatures les plus faibles</span>
     </div>
-    <button type="button" className="rpg-ascension-invoke" disabled={!prete} onClick={() => { if (prete) onInvoquer(carte.id, [...selection.ids]); }}>{choixEmplacement ? 'Préparer l’Ascension' : 'Sacrifier et invoquer'}</button>
+    <div className={`rpg-ascension-total${recette.ok ? ' is-exact' : ' is-invalid'}`} role="status" aria-live="polite" aria-atomic="true">
+      <strong>{victimes.map((entite) => coutImprimeAscension(entite)).join(' + ') || '0'}<small> / {carte.cost}</small></strong>
+      <span>{recette.ok ? victimes.map((entite) => entite.name).join(' + ') : (ERREURS_ASCENSION[recette.raison] ?? 'Aucune combinaison valide')}</span>
+    </div>
+    <button type="button" autoFocus className="rpg-ascension-invoke" disabled={!prete} onClick={() => {
+      const actuels = sacrificesAutomatiquesAscension(duel.joueur, carte);
+      if (ascensionDisponible(duel, 'joueur', carte) && validerMateriauxAscension(duel.joueur, carte, actuels).ok) onInvoquer(carte.id, actuels);
+    }}>{choixEmplacement ? 'Choisir l’emplacement' : 'Sacrifier et invoquer'}</button>
     <button type="button" className="rpg-ascension-cancel" aria-label="Annuler l’Ascension sans sacrifier" onClick={() => selection.fermer()}>×</button>
   </section>;
 }

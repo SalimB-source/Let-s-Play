@@ -6,8 +6,8 @@ import { RPG_DECKS_PRECONSTRUITS, cardById, cardHasPrintedType, rpgValiderDeck }
 import { RPG_MANA_ESSAI_DECKS, validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
 import { carteCorrespondMateriau, combinaisonsAscension, materiauAscensionValide, validerMateriauxAscension } from '../src/games/rpgAscension.js';
 import { planRenfortAscension } from '../src/games/rpgRenforts.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgFinDeTour } from '../src/games/rpgDuel.js';
-import { MOBA_DECKS, rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaPlacementCoherent, rpgMobaValiderDeck } from '../src/games/rpgMobaLocal.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgFinDeTour, rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi } from '../src/games/rpgDuel.js';
+import { MOBA_DECKS, rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaValiderDeck } from '../src/games/rpgMobaLocal.js';
 
 const THEMES = ['ascension-dragon', 'ascension-rempart', 'ascension-eclipse', 'ascension-verre'];
 const deck = id => RPG_DECKS_THEMATIQUES.find(d => d.id === id);
@@ -29,7 +29,7 @@ for (const id of THEMES) for (const moba of [false, true]) test(`${id} : 30 cart
   assert.ok([...partie.joueur.main, ...partie.joueur.deck].every(c => !cardById(c).ascension));
 });
 
-for (const [id, minimum] of [['ascension-dragon', 20], ['ascension-rempart', 28], ['ascension-eclipse', 30], ['ascension-verre', 32]]) test(`${id} : tous les rôles sont représentés en plusieurs exemplaires, combinaisons pures`, () => {
+for (const [id, minimum] of [['ascension-dragon', 4], ['ascension-rempart', 4], ['ascension-eclipse', 8], ['ascension-verre', 8]]) test(`${id} : tous les rôles sont représentés en plusieurs exemplaires, combinaisons pures`, () => {
   const d = deck(id), camp = { creatures: presences(d) }, avant = JSON.stringify(camp);
   // Potentiel de la liste, pas un champ illégal : on énumère les couples ou
   // triplets distincts qui pourront être réunis au fil de la partie.
@@ -39,20 +39,18 @@ for (const [id, minimum] of [['ascension-dragon', 20], ['ascension-rempart', 28]
   assert.equal(JSON.stringify(camp), avant);
 });
 
-test('Dragon : 14 Samouraïs ; 3+4 principal, 2+5 et 1+6 sont de vraies alternatives', () => {
-  const d = deck('ascension-dragon'); assert.equal(d.cardIds.filter(id => cardHasPrintedType(id, 'Samouraï')).length, 14);
-  for (const cout of [3, 4]) assert.equal(d.cardIds.filter(id => cardHasPrintedType(id, 'Samouraï') && cardById(id).cost === cout).length, 4);
+test('Dragon : seules les deux cartes nommées constituent la recette', () => {
+  const d = deck('ascension-dragon');
+  for (const id of ['ronin-du-soleil-rouge','onna-musha-des-cendres']) assert.equal(compte(d,id),2);
   const groupes = combinaisonsAscension({ creatures: presences(d) }, d.boxArt);
-  assert.deepEqual([...new Set(groupes.map(g => g.map(e => cardById(e.carteId).cost).sort((a,b) => a-b).join('+')))].sort(), ['1+6','2+5','3+4']);
+  assert.equal(groupes.length,4);
+  assert.ok(groupes.every(g => g.map(e=>e.carteId).sort().join(',') === ['ronin-du-soleil-rouge','onna-musha-des-cendres'].sort().join(',')));
   assert.equal(compte(d, 'reanimation'), 2); assert.equal(compte(d, 'rapport-du-greffier'), 2);
 });
-test('Jarl : sept Vikings 3, quatre Vikings 5 et Retour adapté aux quatre hybrides 3', () => {
-  const d = deck('ascension-rempart'), role = c => ({ type: 'viking', cout: c });
-  assert.equal(d.cardIds.filter(id => carteCorrespondMateriau(id, role(3))).length, 7);
-  assert.equal(d.cardIds.filter(id => carteCorrespondMateriau(id, role(5))).length, 4);
-  assert.equal(carteCorrespondMateriau('scalde-des-runes', role(3)), false);
-  assert.equal(d.cardIds.filter(id => carteCorrespondMateriau(id, { ...role(3), element: 'tenebres' })).length, 4);
-  assert.equal(compte(d, 'retour-des-ensevelis'), 2); assert.equal(compte(d, 'valkyrie-au-corbeau'), 2);
+test('Jarl : Berserk et Jarl nommés en deux exemplaires, soutenus par Ralliement', () => {
+  const d = deck('ascension-rempart');
+  for (const id of ['berserk-des-trois-hivers','jarl-au-marteau-de-guerre']) assert.equal(compte(d,id),2);
+  assert.equal(compte(d, 'ralliement-des-neiges'), 1); assert.equal(compte(d, 'valkyrie-au-corbeau'), 2);
 });
 test('Scorpion : pas de petit Sable parasite pour le Convoi ; pioche et attaques ciblées pour la proie', () => {
   const d = deck('ascension-eclipse'), effet = cardById('convoi-des-dunes').arrivee;
@@ -107,11 +105,15 @@ for (const moba of [false, true]) {
     poser(p, 'ronin-du-soleil-rouge'); sort(p, 'reanimation');
     ascension(p, 'samourai-du-dragon-rouge', ['ronin-du-soleil-rouge','onna-musha-des-cendres']);
   });
-  test(`Jarl (${mode}) : petite créature sacrifiée pour le Viking 5, Retour du Viking 3, puis Ascension`, () => {
-    const p = partie('ascension-rempart', moba, ['viking-des-neiges','jarl-au-marteau-de-guerre','retour-des-ensevelis'], ['garde-du-trone-givre']);
+  test(`Jarl (${mode}) : le Ralliement invoque le Berserk nommé après la pose du Jarl`, () => {
+    const p = partie('ascension-rempart', moba, ['viking-des-neiges','jarl-au-marteau-de-guerre','ralliement-des-neiges']);
     const petit = poser(p, 'viking-des-neiges'); tourSuivant(p);
-    poser(p, 'jarl-au-marteau-de-guerre', 'left', 0, [petit.id]); sort(p, 'retour-des-ensevelis');
-    ascension(p, 'jarl-du-dernier-rempart', ['jarl-au-marteau-de-guerre','garde-du-trone-givre']);
+    poser(p, 'jarl-au-marteau-de-guerre', 'left', 0, [petit.id]); sort(p, 'ralliement-des-neiges');
+    const choix = rpgCartesRenfortChoisi(p, 'joueur').find(c => c.id === 'berserk-des-trois-hivers');
+    assert.ok(choix);
+    const r = moba ? rpgMobaResoudreRecherche(p, 'joueur', choix.id, choix.index) : rpgResoudreRenfortChoisi(p, 'joueur', choix.index);
+    assert.ok(r.ok, JSON.stringify(r));
+    ascension(p, 'jarl-du-dernier-rempart', ['jarl-au-marteau-de-guerre','berserk-des-trois-hivers']);
   });
   test(`Scorpion (${mode}) : le Convoi trouve le Scorpion, Retour relève la Momie, puis trois sacrifices`, () => {
     const p = partie('ascension-eclipse', moba, ['ureus-du-seuil','convoi-des-dunes','scorpion-du-seuil','retour-des-ensevelis'], ['momie-de-lin']);
@@ -127,7 +129,7 @@ for (const moba of [false, true]) {
 }
 
 
-test('le guide reproduit les quantités, coûts et vrais types de matériaux de chaque liste, pas le Scalde', () => {
+test('le guide reproduit les quantités, coûts et matériaux nommés de chaque liste', () => {
   const guide = readFileSync(new URL('../docs/rpg/32-decks-ascension.md', import.meta.url), 'utf8');
   for (const id of THEMES) {
     const d = deck(id), section = guide.split(`. ${d.name}\n`)[1]?.split('\n## ')[0]; assert.ok(section, id);
@@ -140,5 +142,52 @@ test('le guide reproduit les quantités, coûts et vrais types de matériaux de 
       assert.equal(l[4].includes('Oui'), materiauAscensionValide(cardById(d.boxArt), { carteId, pv: c.def }), `${id} : ${c.name}`);
     }
   }
-  assert.match(guide, /\| 2× \| Scalde des runes \| 3 \| — \|/);
+  assert.match(guide, /\| 2× \| Berserk des trois hivers \| 3 \| \*\*Oui/);
+});
+
+for (const [theme, ascensionId] of [
+  ['ascension-dragon', 'samourai-du-dragon-rouge'], ['lionne', 'samourai-du-dragon-rouge'],
+  ['ascension-eclipse', 'scorpion-de-l-eclipse'],
+  ['ascension-verre', 'colosse-du-verre-ardent'], ['sahir', 'colosse-du-verre-ardent'],
+  ['vikings', 'valkyrie-de-la-derniere-aurore'], ['ascension-rempart', 'valkyrie-de-la-derniere-aurore'],
+  ['corsaires', 'amiral-des-abysses'], ['corsaires', 'serpent-des-deux-rivages'],
+  ['vikings', 'jarl-du-dernier-rempart'], ['ascension-rempart', 'jarl-du-dernier-rempart'],
+]) test(`${theme} : matériaux nommés et Ascension ${ascensionId} dans la réserve`, () => {
+  const d = deck(theme), carte = cardById(ascensionId);
+  assert.equal(d.cardIds.length, 30); assert.ok(rpgValiderDeck(d.cardIds).ok);
+  assert.deepEqual(rpgMobaValiderDeck(d), { ok: true });
+  for (const role of carte.ascension.materiaux) {
+    const attendu = theme === 'vikings' && role.carteId === 'jarl-au-marteau-de-guerre' ? 1 : 2;
+    assert.equal(compte(d, role.carteId), attendu, `${theme} : ${role.carteId}`);
+  }
+  assert.ok(combinaisonsAscension({ creatures: presences(d) }, ascensionId).length > 0);
+  assert.ok(!d.cardIds.includes(ascensionId));
+  for (const creer of [rpgNouveauDuel, rpgMobaNouveauDuel]) {
+    const p = creer({ joueurDeck: d.cardIds, sorcierDeck: d.cardIds, rng: () => .5 });
+    assert.ok(p.joueur.reserveAscension.includes(ascensionId));
+    assert.ok([...p.joueur.main, ...p.joueur.deck].every(id => !cardById(id).ascension));
+  }
+});
+
+for (const moba of [false, true]) for (const theme of ['vikings', 'ascension-rempart']) test(`${theme} : invocation réelle de la Valkyrie (${moba ? 'MOBA' : 'Duel'})`, () => {
+  const p = partie(theme, moba, ['guerrier-au-bouclier-rond', 'gardien-viking-du-fjord']);
+  poser(p, 'guerrier-au-bouclier-rond'); tourSuivant(p); poser(p, 'gardien-viking-du-fjord', 'left', 1);
+  ascension(p, 'valkyrie-de-la-derniere-aurore', ['guerrier-au-bouclier-rond', 'gardien-viking-du-fjord']);
+});
+for (const moba of [false, true]) test(`corsaires : invocation réelle de l’Amiral (${moba ? 'MOBA' : 'Duel'})`, () => {
+  const p = partie('corsaires', moba, ['rais-de-la-galiote', 'la-vengeance-de-la-reine-anne']);
+  poser(p, 'rais-de-la-galiote'); tourSuivant(p); poser(p, 'la-vengeance-de-la-reine-anne', 'left', 1);
+  ascension(p, 'amiral-des-abysses', ['rais-de-la-galiote', 'la-vengeance-de-la-reine-anne']);
+});
+
+for (const moba of [false, true]) test(`Forge des samouraïs : invocation réelle du Dragon (${moba ? 'MOBA' : 'Duel'})`, () => {
+  const p = partie('lionne', moba, ['ronin-du-soleil-rouge', 'onna-musha-des-cendres']);
+  poser(p, 'ronin-du-soleil-rouge'); tourSuivant(p); poser(p, 'onna-musha-des-cendres', 'left', 1);
+  ascension(p, 'samourai-du-dragon-rouge', ['ronin-du-soleil-rouge', 'onna-musha-des-cendres']);
+});
+for (const moba of [false, true]) test(`Meute des braises : invocation réelle du Colosse (${moba ? 'MOBA' : 'Duel'})`, () => {
+  const p = partie('sahir', moba, ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante', 'confluence-des-etincelles']);
+  poser(p, 'dune-marchante', 'left', 0); sort(p, 'confluence-des-etincelles');
+  ascension(p, 'colosse-du-verre-ardent', ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante']);
+  assert.ok(p.moba ? p.mobaRechercheEnAttente : p.renfortChoixEnAttente);
 });

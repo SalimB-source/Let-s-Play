@@ -4,6 +4,14 @@
  * dernière carte admissible du cimetière, première depuis le dessus du deck. */
 export const RPG_ASCENSION_SUPPORT_CREATURES = Object.freeze([
   Object.freeze({
+    id: 'gardienne-des-sables-ensevelis', name: 'Gardienne des sables ensevelis', kind: 'creature',
+    element: 'sable', set: 'ascension-soutiens', art: 'gardienne-des-sables-ensevelis',
+    cost: 4, atk: 2, def: 4, rarity: 'rare', typeLine: 'Créature — Humaine · Gardienne',
+    arrivee: { type: 'renfort-choisi', zone: 'cimetiere', coutMax: 3, ascensionAutorisee: true, bouclierRenfort: true },
+    text: 'Quand la Gardienne arrive : choisissez une créature de coût imprimé 3 ou moins dans votre cimetière et invoquez-la spécialement, si possible. Elle reçoit un bouclier avant que son effet d’arrivée se déclenche. Ce renfort ne consomme pas votre invocation normale ; sans Rapidité, il ne peut pas attaquer ce tour. Une fois par tour, toutes vos copies de la Gardienne confondues.',
+    flavor: 'Le désert garde les noms que les vivants ont oubliés.',
+  }),
+  Object.freeze({
     id: 'convoi-des-dunes', name: 'Convoi des dunes', kind: 'creature',
     element: 'sable', set: 'ascension-soutiens', art: 'convoi-des-dunes',
     cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',

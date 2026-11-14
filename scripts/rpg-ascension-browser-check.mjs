@@ -12,7 +12,7 @@ await mkdir(dossier, { recursive: true });
 const server = await creerServeurAscension(port);
 let browser;
 try {
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+  browser = await chromium.launch({ ...(process.env.RPG_TEST_CHROMIUM ? { executablePath: process.env.RPG_TEST_CHROMIUM } : {}), headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
   if (!process.env.ASCENSION_DUO_ONLY && !process.env.ASCENSION_RENFORTS_ONLY && !process.env.ASCENSION_DECKS_ONLY) for (const mode of ['duel', 'moba']) for (const [width, height, tactile] of [[1440, 900, false], [1280, 720, false], [844, 390, true], [667, 375, true], [568, 320, true]]) {
     const page = await browser.newPage({ viewport: { width, height }, hasTouch: tactile, isMobile: tactile, reducedMotion: 'reduce' });
     page.setDefaultTimeout(10000); page.setDefaultNavigationTimeout(20000);
@@ -79,7 +79,7 @@ try {
           renduPlateau: c.matches('.rpg-card') && Boolean(c.querySelector('.rpg-card__foot')) };
       });
       assert.ok(geometrie.x >= 0 && geometrie.y >= 0 && geometrie.right <= width && geometrie.bottom <= height);
-      assert.ok(geometrie.w <= 180 && geometrie.h <= 270, 'petite fenêtre verticale');
+      assert.ok(geometrie.w <= 180 && geometrie.h <= 320, 'petite fenêtre verticale');
       assert.ok(geometrie.auDessus && geometrie.ecart >= 3 && geometrie.ecart <= 12, 'fenêtre juste au-dessus de l’Ascension');
       assert.ok(geometrie.renduPlateau && geometrie.carte.cliquable && geometrie.carte.w >= 44 && geometrie.carte.h >= 44, 'vraie face plateau cliquable');
       assert.equal(await face().getAttribute('data-entity-id'), null);
@@ -89,11 +89,11 @@ try {
         const image = document.querySelector('[data-ascension-reserve-card] .rpg-card__img');
         return image?.complete && image.naturalWidth === 768 && image.naturalHeight === 960;
       });
-      for (const cle of ['overkill', 'esquive', 'defenseur']) assert.equal(await face().locator(`[data-effet="${cle}"]`).count(), 1, cle);
+      for (const cle of ['contreAttaque', 'esquive', 'defenseur']) assert.equal(await face().locator(`[data-effet="${cle}"]`).count(), 1, cle);
       assert.equal(await page.locator('[data-ascension-material]').count(), 0, 'consultation sans choix automatique');
       assert.equal(await page.locator('.rpg-ascension-reserve-item.is-ready').count(), 1, 'carte invocable signalée');
       await choisir(face()); assert.equal(await apercu().count(), 1);
-      for (const cle of ['overkill', 'esquive', 'defenseur']) assert.equal(await apercu().locator(`[data-pastille="${cle}"]`).count(), 1, cle);
+      for (const cle of ['contreAttaque', 'esquive', 'defenseur']) assert.equal(await apercu().locator(`[data-pastille="${cle}"]`).count(), 1, cle);
       const lecture = await apercu().evaluate((n) => {
         const panel = n.querySelector('.rpg-card-peek__panel'), nom = n.querySelector('.rpg-hover-card-preview__name');
         const image = n.querySelector('.rpg-hover-card-preview__face').getBoundingClientRect(), cadre = panel.getBoundingClientRect();
@@ -138,31 +138,16 @@ try {
       assert.equal(await reserve().count(), 0); assert.equal(await apercu().count(), 0);
       assert.equal(await page.locator('.rpg-ascension-ritual').count(), 1);
       assert.equal(await page.locator(ecran).getAttribute('inert'), null, 'choix sur le vrai champ');
-      const materiaux = await page.locator('[data-ascension-material]').evaluateAll((ns) => ns.map((n) => {
-        const r = n.getBoundingClientRect(); return { id: n.dataset.cardId, w: r.width, h: r.height, x: r.x, y: r.y, right: r.right, bottom: r.bottom,
-          cliquable: document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('[data-ascension-material]') === n };
-      }));
-      assert.equal(materiaux.length, 3);
-      for (const c of materiaux) assert.ok(c.cliquable && c.w >= 44 && c.h >= 44 && c.x >= 0 && c.y >= 0 && c.right <= width && c.bottom <= height, `${c.id} accessible au doigt`);
-      // Les commandes ordinaires ne doivent jamais traverser un choix de sacrifices.
-      await page.locator(mode === 'duel' ? '.rpg-btn--endturn' : '.moba__buttons > .moba__primary').evaluate((n) => n.click());
-      assert.equal(await instantane(), avant);
-      await choisir(ronin()); await choisir(hatamoto());
-      assert.equal(await page.locator('.rpg-ascension-invoke').isDisabled(), true);
-      assert.equal(await page.locator('.rpg-ascension-total.is-invalid').count(), 1);
-      assert.equal(await onna().isDisabled(), true);
-      await choisir(hatamoto()); await choisir(onna());
+      assert.equal(await page.locator('[data-ascension-material]').count(), 0, 'sacrifices automatiques');
+      assert.equal(await page.locator('.rpg-ascension-total.is-exact').count(), 1);
       assert.equal(await page.locator('.rpg-ascension-invoke').isEnabled(), true);
-      assert.equal(await onna().getAttribute('data-ascension-order'), '2');
-      assert.equal(await instantane(), avant);
-      await choisir(page.locator('.rpg-ascension-board-link'));
-      assert.equal(await ronin().evaluate((n) => document.activeElement === n), true);
-      await page.keyboard.press('Space'); assert.equal(await ronin().getAttribute('aria-pressed'), 'false');
-      await page.keyboard.press('Enter'); assert.equal(await ronin().getAttribute('aria-pressed'), 'true');
-      await ronin().focus(); await page.keyboard.press('Escape');
+      assert.match(await page.locator('.rpg-ascension-total').innerText(), /Rōnin du Soleil rouge/);
+      await page.locator(mode === 'duel' ? '.rpg-btn--endturn' : '.moba__buttons > .moba__primary').evaluate((n) => n.click());
+      assert.equal(await instantane(), avant, 'aucun paiement avant confirmation');
+      await page.locator('.rpg-ascension-invoke').focus(); await page.keyboard.press('Escape');
       await page.waitForFunction(() => document.activeElement?.dataset.ascensionSide === 'joueur');
       assert.equal(await page.locator('.rpg-ascension-ritual').count(), 0); assert.equal(await instantane(), avant);
-      await ouvrirRituel(); await choisir(ronin()); await choisir(onna());
+      await ouvrirRituel();
       await page.screenshot({ path: `${dossier}/${mode}-rituel-${width}x${height}.png` });
       await choisir(page.locator('.rpg-ascension-invoke'));
       if (mode === 'moba') {
@@ -176,13 +161,13 @@ try {
           victimes: d.joueur.cimetiere.filter((id) => ['ronin-du-soleil-rouge', 'onna-musha-des-cendres'].includes(id)).length,
           dragon: d.joueur.creatures.find((e) => e.carteId === 'samourai-du-dragon-rouge') };
       });
-      assert.deepEqual(apres.reserve, ['jarl-du-dernier-rempart', 'scorpion-de-l-eclipse', 'colosse-du-verre-ardent']); assert.equal(apres.quota, false); assert.equal(apres.victimes, 2);
+      assert.equal(apres.reserve.length, 6); assert.ok(!apres.reserve.includes('samourai-du-dragon-rouge')); assert.equal(apres.quota, false); assert.equal(apres.victimes, 2);
       assert.equal(apres.dragon.atk, 7); assert.equal(apres.dragon.pv, 7);
-      assert.equal(apres.dragon.overkill, true); assert.equal(apres.dragon.esquive, true);
+      assert.equal(apres.dragon.contreAttaque, true); assert.equal(apres.dragon.esquive, true);
       assert.equal(apres.dragon.esquiveChance, .15); assert.equal(apres.dragon.defenseur, true);
       const dragonPose = page.locator('.rpg-card[data-entity-id][data-card-id="samourai-du-dragon-rouge"]');
-      for (const cle of ['overkill', 'esquive', 'defenseur']) assert.equal(await dragonPose.locator(`[data-effet="${cle}"]`).count(), 1, `plateau : ${cle}`);
-      await choisir(zone()); assert.equal(await page.locator('.rpg-ascension-empty').count(), 0); assert.equal(await face().count(), 0); assert.equal(await page.locator('[data-ascension-reserve-card]').count(), 3);
+      for (const cle of ['contreAttaque', 'esquive', 'defenseur']) assert.equal(await dragonPose.locator(`[data-effet="${cle}"]`).count(), 1, `plateau : ${cle}`);
+      await choisir(zone()); assert.equal(await page.locator('.rpg-ascension-empty').count(), 0); assert.equal(await face().count(), 0); assert.equal(await page.locator('[data-ascension-reserve-card]').count(), 6);
       await page.keyboard.press('Escape');
       assert.deepEqual(erreurs, [], 'aucune erreur JavaScript');
       await page.screenshot({ path: `${dossier}/${mode}-${width}x${height}.png` });

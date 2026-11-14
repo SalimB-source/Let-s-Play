@@ -291,6 +291,7 @@ function retournerPartie(vue) {
     vue.defausseEnAttente = { ...vue.defausseEnAttente, cote: remplace(vue.defausseEnAttente.cote) };
   }
   if (vue.renfortChoixEnAttente?.cote) vue.renfortChoixEnAttente.cote = remplace(vue.renfortChoixEnAttente.cote);
+  if (Array.isArray(vue.renfortsChoixFiles)) vue.renfortsChoixFiles = vue.renfortsChoixFiles.map((item) => ({ ...item, cote: remplace(item.cote) }));
   if (vue.arriveeEnAttente?.cote) {
     vue.arriveeEnAttente = { ...vue.arriveeEnAttente, cote: remplace(vue.arriveeEnAttente.cote) };
   }

@@ -13610,11 +13610,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return <div className="rpg-renfort-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-renfort-choix-titre">
           <section className="rpg-renfort-choix__panel">
             <h2 id="rpg-renfort-choix-titre">{source?.name} · Choisissez une créature</h2>
-            <p>{source?.id === 'appel-des-marees' ? 'Voici les trois cartes du dessus, de la première à la troisième. Les autres vont sous le deck.' : source?.id === 'ralliement-des-neiges' ? 'Choisissez une créature Neige de coût 4 ou moins. Le deck sera mélangé.' : 'Choisissez un Samouraï de coût 3 ou moins dans votre main.'}</p>
+            <p>{source?.id === 'appel-des-marees' ? 'Voici les trois cartes du dessus, de la première à la troisième. Les autres vont sous le deck.' : source?.id === 'ralliement-des-neiges' ? 'Choisissez une créature Neige de coût 4 ou moins. Le deck sera mélangé.' : source?.id === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : source?.id === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : source?.id === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez un Samouraï de coût 3 ou moins dans votre main.'}</p>
             <div className="rpg-renfort-choix__cartes">{cartes.map((c) => <button key={c.index} type="button" className="rpg-renfort-choix__carte" disabled={!c.admissible} onClick={() => choisir(c.index)}>
               <img src={cardArt(c.id)} alt="" /><strong>{cardById(c.id)?.name}</strong><small>Coût {cardById(c.id)?.cost}{c.admissible ? '' : ' · non admissible'}</small>
             </button>)}</div>
             {!disponibles.length && <button type="button" autoFocus className="rpg-btn rpg-btn--primary" onClick={() => choisir(null)}>Aucune invocation possible · Continuer</button>}
+            {disponibles.length > 0 && source?.id === 'colosse-du-verre-ardent' && <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => choisir(null)}>Terminer sans invoquer davantage</button>}
           </section>
         </div>;
       })()}

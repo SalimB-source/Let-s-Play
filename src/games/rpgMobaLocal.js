@@ -45,13 +45,13 @@ const caleAuditee = (duel, cote, entite) => {
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
-export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['gardienne-du-croissant', 'guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
-export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['scorpion-de-l-eclipse', 'lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
+export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['serpent-des-deux-rivages', 'gardienne-du-croissant', 'guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
+export const MOBA_ARRIVEES_HOSTILES = Object.freeze([ 'lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
 // Chercheuse keeps the classic random search for kind === 'arme'.
 // Sabre maudit is a magic, not a candidate; only audited printed weapons are.
 // Re-audit the search and its UX before enabling further printed weapons.
-const MOBA_ARRIVEES_GLOBALES = Object.freeze(['colosse-du-verre-ardent', 'convoi-des-dunes', 'passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres', 'porte-etendard-de-leclipse', 'sanguinaire-des-dunes']);
+const MOBA_ARRIVEES_GLOBALES = Object.freeze(['scorpion-de-l-eclipse', 'gardienne-des-sables-ensevelis', 'colosse-du-verre-ardent', 'convoi-des-dunes', 'passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres', 'porte-etendard-de-leclipse', 'sanguinaire-des-dunes']);
 // Keep the original starter list independent of additions to the editor pool.
 export const MOBA_CARTES_ESSAI = Object.freeze([
   'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges',
@@ -472,7 +472,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
         synchroniserSorties(duel); // Release sacrificed physical slots before placement.
         if (!mobaPlacer(duel.moba, side, laneId, slot, entite.id).ok) throw new Error('Placement MOBA incohérent');
       },
-      ...((arriveeCiblee || ((duel[side].prochaineArriveeAbordage || Number.isFinite(carte.abordage)) && (ouvrirReponse || resoudreEnAttente))) ? { cibleDifferee: true } : {}),
+      ...((arriveeCiblee || (Number.isFinite(carte.abordage) || (duel[side].prochaineArriveeAbordage && (ouvrirReponse || resoudreEnAttente)))) ? { cibleDifferee: true } : {}),
       ...(soinArrivee ? { resoudreSoinSorcier: ({ amount }) => {
         const resultats = mobaVoiesCombat(duel.moba, laneId).map((voie) => {
           const result = mobaSoigner(duel.moba, side, voie, amount);
