@@ -37,16 +37,16 @@ test('audit de toutes les Rapidités, jetons et Embuscades imprimées', () => {
     const apercu = rpgMobaCartePourApercu(carte);
     assert.equal(apercu.reactionTourAdverse, false, carte.id);
     assert.equal(apercu.rapidite, true, carte.id);
-    assert.match(apercu.text, /Invocation spéciale.*tour adverse/, carte.id);
+    assert.match(apercu.text, /Invocation spéciale.*phase principale/, carte.id);
     assert.ok(apercu.text.includes('Rapidité') || !carte.text.includes('Rapidité'), carte.id);
     assert.equal(cardById(carte.id).reactionTourAdverse, undefined, 'catalogue classique inchangé');
   }
   for (const id of Object.keys(MOBA_EMBUSCADES_IMPRIMEES)) {
-    assert.match(rpgMobaCartePourApercu(cardById(id)).text, /tour adverse/);
+    assert.match(rpgMobaCartePourApercu(cardById(id)).text, /phase principale/);
     assert.doesNotMatch(rpgMobaCartePourApercu(cardById(id)).text, /jouer cette créature pendant le tour adverse/);
-    assert.match(rpgMobaNotesCarte(cardById(id)).join(' '), /réponse adverse/);
+    assert.match(rpgMobaNotesCarte(cardById(id)).join(' '), /phase principale/);
   }
-  assert.match(rpgMobaCartePourApercu(cardById('sorcier-du-ressac-noir')).text, /renvoie/);
+  assert.match(rpgMobaCartePourApercu(cardById('sorcier-du-ressac-noir')).text, /renvoyez/);
   assert.doesNotMatch(rpgMobaCartePourApercu(cardById('sorcier-du-ressac-noir')).text, /contrez/);
   assert.deepEqual(rpgMobaCartePourApercu(cardById('sandales-de-tislit')).bonus, { atk: 1, def: 1 });
   assert.deepEqual(cardById('sandales-de-tislit').bonus, { atk: 0, def: 1 });

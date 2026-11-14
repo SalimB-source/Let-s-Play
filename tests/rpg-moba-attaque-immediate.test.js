@@ -87,13 +87,15 @@ test('Sandales MOBA : elles ne donnent pas Rapidité', () => {
   assert.equal(e.rapidite, false); assert.equal(rpgPeutAttaquer(e), false);
 });
 
-test('Embuscade sans Rapidité pendant le tour adverse : défense puis prochain tour', () => {
+test('Invocation spéciale sans Rapidité : mal pendant son tour, défense et prochain tour', () => {
   const d = commencer(); const ennemi = poser(d, 'joueur', 'chien-du-guet');
   d.sorcier.main = ['pilote-de-la-carreira']; assert.ok(rpgOuvrirFinDeTour(d));
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'pilote-de-la-carreira').raison, 'pas-votre-tour');
+  passer(d);
   const r = rpgJouerCreature(d, 'sorcier', 'pilote-de-la-carreira'); assert.ok(r.ok, JSON.stringify(r));
   const e = r.entite; assert.equal(rpgPeutAttaquer(e), false);
   assert.deepEqual(rpgChoisirBloqueurs(d, 'joueur', [ennemi.id]), { [ennemi.id]: [e.id] });
-  passer(d); assert.equal(e.malInvocation, false); assert.equal(rpgPeutAttaquer(e), true);
+  passer(d); passer(d); assert.equal(e.malInvocation, false); assert.equal(rpgPeutAttaquer(e), true);
 });
 
 test('les fiches conservent Rapidité et Embuscade, ainsi que Rapidité des jetons', () => {
@@ -150,15 +152,17 @@ test('Retirer Rapidité en réponse ne rend pas illégale une attaque PvP déjà
   assert.ok(r.ok, JSON.stringify(r));
 });
 
-for (const side of ['joueur', 'sorcier']) test(`MOBA : Embuscade de ${side} avec Rapidité conserve les deux capacités`, () => {
+for (const side of ['joueur', 'sorcier']) test(`MOBA : Invocation spéciale de ${side} avec Rapidité à son tour`, () => {
   const d = commencer(true); const actif = side === 'joueur' ? 'sorcier' : 'joueur';
   if (actif === 'sorcier') passer(d);
   const adversaire = poser(d, actif, 'chien-du-guet'); adversaire.pv--;
   d[side].main = ['fennec-des-decombres'];
-  assert.ok(rpgMobaTerminerTour(d, actif).ok); assert.ok(rpgMobaPeutEmbuscade(d, side, 'fennec-des-decombres'));
+  assert.ok(rpgMobaTerminerTour(d, actif).ok);
+  assert.equal(rpgMobaPeutEmbuscade(d, side, 'fennec-des-decombres'), false);
+  assert.equal(rpgMobaJouerCreature(d, side, 'fennec-des-decombres', 'left', 0).raison, 'pas-votre-tour');
+  assert.ok(rpgMobaPasserFinDeTour(d, side).ok); assert.equal(d.tour, side);
   const r = rpgMobaJouerCreature(d, side, 'fennec-des-decombres', 'left', 0); assert.ok(r.ok, JSON.stringify(r));
   assert.equal(r.entite.rapidite, true); assert.equal(rpgPeutAttaquer(r.entite), true);
-  assert.ok(rpgMobaPasserFinDeTour(d, side).ok); assert.equal(d.tour, side); assert.equal(r.entite.malInvocation, false);
 });
 
 test('MOBA : une créature malade défend contre une attaque individuelle', () => {

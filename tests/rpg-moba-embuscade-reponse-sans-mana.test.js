@@ -23,7 +23,7 @@ function preparer(actif) {
   return { d, defenseur, victime, djinn };
 }
 for (const actif of ['joueur', 'sorcier']) for (const fenetre of ['combat', 'sort', 'creature', 'fin']) {
-  test(`Embuscade adverse sans sacrifice reprend ${fenetre} (${actif})`, () => {
+  test(`Invocation spéciale refusée sans mutation pendant ${fenetre}, puis reprise (${actif})`, () => {
     const { d, defenseur, victime, djinn } = preparer(actif);
     const id = 'tojiro-le-pourfendeur';
     assert.equal(rpgMobaPeutEmbuscade(d, defenseur, id), false);
@@ -31,84 +31,66 @@ for (const actif of ['joueur', 'sorcier']) for (const fenetre of ['combat', 'sor
     if (fenetre === 'sort') { d[actif].main = ['tempete-de-sable']; assert.ok(rpgMobaLancerMagie(d, actif, 'tempete-de-sable', null, 'right', null, { ouvrirReponse: true }).sortEnAttente); }
     if (fenetre === 'creature') { d[actif].main = ['ashigaru-des-braises']; assert.ok(rpgMobaJouerCreature(d, actif, 'ashigaru-des-braises', 'right', 0, { ouvrirReponse: true }).creatureEnAttente); }
     if (fenetre === 'fin') { d[actif].main = []; assert.ok(rpgMobaTerminerTour(d, actif).reponse); }
-    assert.ok(rpgMobaPeutEmbuscade(d, defenseur, id));
-    if (fenetre === 'combat') assert.ok(rpgMobaPeutRepondreAttaque(d, defenseur));
     const avant = JSON.stringify(d);
-    assert.equal(rpgMobaChoisirEmbuscadeIA(d, defenseur)?.id, id);
+    assert.equal(rpgMobaPeutEmbuscade(d, defenseur, id), false);
+    if (fenetre === 'combat') assert.equal(rpgMobaPeutRepondreAttaque(d, defenseur), false);
+    assert.equal(rpgMobaChoisirEmbuscadeIA(d, defenseur), null);
+    assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { ouvrirReponse: true, sacrificeIds: [] }).raison, 'pas-votre-tour');
     assert.equal(JSON.stringify(d), avant);
-    assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { ouvrirReponse: true, sacrificeIds: [victime.id] }).ok, false);
-    assert.equal(JSON.stringify(d), avant);
-    const original = d.mobaSortEnAttente ?? d.mobaCreatureEnAttente ?? d.finDeTour;
-    assert.ok(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { ouvrirReponse: true, sacrificeIds: [] }).creatureEnAttente);
-    assert.ok(rpgMobaPasserCreature(d, actif).entite);
     assert.ok(d[defenseur].creatures.includes(victime));
     assert.equal(d.moba.creaturesJouees[defenseur], false);
-    if (fenetre === 'sort') { assert.equal(d.mobaSortEnAttente, original); assert.ok(rpgMobaPasserSort(d, defenseur).ok); }
-    if (fenetre === 'creature') { assert.equal(d.mobaCreatureEnAttente, original); assert.ok(rpgMobaPasserCreature(d, defenseur).ok); }
-    if (fenetre === 'fin') { assert.equal(d.finDeTour, original); assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok); }
+    if (fenetre === 'sort') assert.ok(rpgMobaPasserSort(d, defenseur).ok);
+    if (fenetre === 'creature') assert.ok(rpgMobaPasserCreature(d, defenseur).ok);
+    if (fenetre === 'fin') assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
     if (fenetre === 'combat') assert.ok(rpgMobaLancerAttaque(d, actif, [djinn.id], {}, { declaree: true }).ok);
   });
 }
 
 for (const actif of ['joueur', 'sorcier']) {
-  test(`Embuscade contrée reprend l’annonce initiale (${actif})`, () => {
+  test(`un contresort reste possible sur une annonce de créature (${actif})`, () => {
     const { d, defenseur, victime } = preparer(actif);
-    d[actif].main = ['ashigaru-des-braises', 'ecueil'];
+    d[actif].main = ['ashigaru-des-braises'];
+    d[defenseur].main = ['tojiro-le-pourfendeur', 'ecueil'];
     assert.ok(rpgMobaJouerCreature(d, actif, 'ashigaru-des-braises', 'right', 0, { ouvrirReponse: true }).creatureEnAttente);
-    const original = d.mobaCreatureEnAttente;
-    assert.ok(rpgMobaJouerCreature(d, defenseur, 'tojiro-le-pourfendeur', 'left', 1, { ouvrirReponse: true, sacrificeIds: [] }).ok);
-    assert.ok(rpgMobaLancerMagie(d, actif, 'ecueil').contre);
-    assert.equal(d.mobaCreatureEnAttente, original);
+    assert.equal(rpgMobaJouerCreature(d, defenseur, 'tojiro-le-pourfendeur', 'left', 1).raison, 'pas-votre-tour');
+    assert.ok(rpgMobaLancerMagie(d, defenseur, 'ecueil').contre);
     assert.ok(d[defenseur].creatures.includes(victime));
-    assert.ok(rpgMobaPasserCreature(d, defenseur).entite);
+    assert.equal(d.mobaCreatureEnAttente, null);
   });
-}
-
-for (const actif of ['joueur', 'sorcier']) {
-  test(`Une capacité suspendue reprend après l'Embuscade (${actif})`, () => {
+  test(`une capacité suspendue reprend après le refus d’une Invocation spéciale (${actif})`, () => {
     const { d, defenseur, victime } = preparer(actif);
     d[actif].main = ['eclipse-silencieuse'];
+    d[defenseur].main.push('trait-de-braise'); // maintient une vraie fenêtre de réponse
     assert.ok(rpgMobaJouerCreature(d, actif, 'eclipse-silencieuse', 'left', 1, { ouvrirReponse: true }).ok);
     assert.ok(rpgMobaPasserCreature(d, defenseur).arriveeEnAttente);
     assert.ok(rpgMobaResoudreArrivee(d, actif, victime.id).effetEnAttente);
-    const original = d.effetCreatureEnAttente;
-    assert.ok(rpgMobaJouerCreature(d, defenseur, 'tojiro-le-pourfendeur', 'right', 0, { ouvrirReponse: true, sacrificeIds: [] }).ok);
-    assert.ok(rpgMobaPasserCreature(d, actif).entite);
+    const original = d.effetCreatureEnAttente, avant = JSON.stringify(d);
+    assert.equal(rpgMobaJouerCreature(d, defenseur, 'tojiro-le-pourfendeur', 'right', 0).raison, 'pas-votre-tour');
+    assert.equal(JSON.stringify(d), avant);
     assert.equal(d.effetCreatureEnAttente, original);
     assert.ok(rpgMobaPasserEffetCreature(d, defenseur).ok);
   });
-  test(`Une arrivée ciblée en Embuscade reprend le sort suspendu (${actif})`, () => {
+  test(`une Magie Rapide ne perturbe pas le sort suspendu (${actif})`, () => {
     const { d, defenseur, djinn } = preparer(actif);
-    d[defenseur].main = ['sentinelle-des-sables'];
+    d[defenseur].main = ['sentinelle-des-sables', 'trait-de-braise'];
     d[actif].main = ['tempete-de-sable'];
     assert.ok(rpgMobaLancerMagie(d, actif, 'tempete-de-sable', null, 'right', null, { ouvrirReponse: true }).sortEnAttente);
     const original = d.mobaSortEnAttente;
-    const annonce = rpgMobaJouerCreature(d, defenseur, 'sentinelle-des-sables', 'left', 1, { ouvrirReponse: true, sacrificeIds: [] });
-    assert.ok(annonce.ok, JSON.stringify(annonce));
-    const entree = rpgMobaPasserCreature(d, actif);
-    assert.ok(entree.arriveeEnAttente, JSON.stringify(entree));
-    const cible = rpgMobaResoudreArrivee(d, defenseur, djinn.id);
-    assert.ok(cible.ok, JSON.stringify(cible));
-    if (cible.effetEnAttente) assert.ok(rpgMobaPasserEffetCreature(d, actif).ok);
+    assert.equal(rpgMobaJouerCreature(d, defenseur, 'sentinelle-des-sables', 'left', 1).raison, 'pas-votre-tour');
+    assert.ok(rpgMobaLancerMagie(d, defenseur, 'trait-de-braise', djinn.id).ok);
     assert.equal(d.mobaSortEnAttente, original);
     assert.ok(rpgMobaPasserSort(d, defenseur).ok);
   });
-}
-
-for (const actif of ['joueur', 'sorcier']) {
-  test(`La recherche du Pilote en Embuscade reprend le sort suspendu (${actif})`, async () => {
-    const { rpgMobaResoudreRecherche } = await import('../src/games/rpgMobaLocal.js');
+  test(`la recherche ne démarre pas lorsque le Pilote est refusé (${actif})`, () => {
     const { d, defenseur } = preparer(actif);
     d[defenseur].main = ['pilote-de-la-carreira'];
     d[defenseur].deck.push('cotre-de-course');
     d[actif].main = ['tempete-de-sable'];
     assert.ok(rpgMobaLancerMagie(d, actif, 'tempete-de-sable', null, 'right', null, { ouvrirReponse: true }).sortEnAttente);
-    const original = d.mobaSortEnAttente;
-    assert.ok(rpgMobaJouerCreature(d, defenseur, 'pilote-de-la-carreira', 'left', 1, { ouvrirReponse: true, sacrificeIds: [] }).ok);
-    assert.ok(rpgMobaPasserCreature(d, actif).entite);
-    assert.equal(d.mobaRechercheEnAttente?.cote, defenseur);
-    assert.ok(rpgMobaResoudreRecherche(d, defenseur, 'cotre-de-course').ok);
-    assert.equal(d.mobaEmbuscadeArrivee, null);
+    const original = d.mobaSortEnAttente, avant = JSON.stringify(d);
+    assert.equal(rpgMobaJouerCreature(d, defenseur, 'pilote-de-la-carreira', 'left', 1).raison, 'pas-votre-tour');
+    assert.equal(JSON.stringify(d), avant);
+    assert.ok(!d.mobaRechercheEnAttente);
     assert.equal(d.mobaSortEnAttente, original);
     assert.ok(rpgMobaPasserSort(d, defenseur).ok);
   });
