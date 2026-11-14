@@ -642,7 +642,7 @@ test('end-of-turn response belongs to the other seat and uses the engine instant
 });
 
 test('all selectable starter decks satisfy the existing mana and copy rules', () => {
-  assert.equal(MOBA_DECKS.length, 8);
+  assert.equal(MOBA_DECKS.length, 12);
   for (const deck of MOBA_DECKS) {
     assert.equal(validerDeckManaEssai(deck).ok, true, deck.name);
   }

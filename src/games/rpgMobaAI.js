@@ -271,7 +271,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     const score = (l) => (mobaVieMaxPourCamp(duel.moba, enemy, l.id) - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
     return score(b) - score(a);
   });
-  const cards = [...new Set(duel[side].main)].map(cardById)
+  const cards = [...new Set([...duel[side].main, ...(duel[side].reserveAscension ?? [])])].map(cardById)
     .filter((c) => c && ['creature', 'hero', 'site'].includes(c.kind)
       && !(duel.attaqueJouee === side && (c.ephemere || c.furtif)))
     .sort((a, b) => b.cost - a.cost);
@@ -325,9 +325,11 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     // en plus de ses statistiques. Ne pas abandonner sans raison une voie
     // défendue par cette seule créature face à une menace.
     const cout = victimes.reduce((total, victime) => {
+      // Le remplacement et son arrivée ont déjà résolu sur la copie : une
+      // voie nettoyée ou défendue par l’Ascension n’est pas abandonnée.
       const seule = mobaVoiesCombat(duel.moba, victime.mobaLane).some((voie) =>
-        duel[enemy].creatures.some((e) => mobaVoiesCombat(duel.moba, e.mobaLane).includes(voie))
-        && !duel[side].creatures.some((e) => !sacrificeIds.includes(e.id) && mobaVoiesCombat(duel.moba, e.mobaLane).includes(voie)));
+        simulation[enemy].creatures.some((e) => mobaVoiesCombat(simulation.moba, e.mobaLane).includes(voie))
+        && !simulation[side].creatures.some((e) => mobaVoiesCombat(simulation.moba, e.mobaLane).includes(voie)));
       return total + 4 + (rpgPeutAttaquer(victime) ? 4 : 0) + (seule ? 4 : 0)
         + (victime.arme ? 3 : 0) + (victime.armes?.length ?? 0) * 2;
     }, 0);

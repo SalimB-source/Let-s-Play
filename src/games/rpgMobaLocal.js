@@ -6,8 +6,9 @@
 import { armeById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
 import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation } from './rpgMobaAttaqueIndividuelle.js';
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
+import { indexReanimation } from './rpgRenforts.js';
 import {
-  rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme,
+  rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgResoudreEchangeIndividuelMoba, rpgRessacMobaArrivee, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgPresenterRechercheMoba,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
@@ -47,12 +48,12 @@ const fail = (raison) => ({ ok: false, raison });
 // Ces sorts exigent une déclaration de blocage, absente des nouvelles règles MOBA.
 export const rpgMobaSortBlocageInterdit = (id) => ['appat-de-la-meute', 'embuscade'].includes(id);
 export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['gardienne-du-croissant', 'guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
-export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
+export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['scorpion-de-l-eclipse', 'lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
 // Chercheuse keeps the classic random search for kind === 'arme'.
 // Sabre maudit is a magic, not a candidate; only audited printed weapons are.
 // Re-audit the search and its UX before enabling further printed weapons.
-const MOBA_ARRIVEES_GLOBALES = Object.freeze(['passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres', 'porte-etendard-de-leclipse', 'sanguinaire-des-dunes']);
+const MOBA_ARRIVEES_GLOBALES = Object.freeze(['colosse-du-verre-ardent', 'convoi-des-dunes', 'passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres', 'porte-etendard-de-leclipse', 'sanguinaire-des-dunes']);
 // Keep the original starter list independent of additions to the editor pool.
 export const MOBA_CARTES_ESSAI = Object.freeze([
   'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges',
@@ -66,12 +67,13 @@ export const MOBA_MAGIES_ESSAI = Object.freeze([
 // Non-targeted effects; spatial ones choose a lane before casting, while
 // hand and deck effects still resolve directly.
 export const MOBA_MAGIES_IMMEDIATES = Object.freeze([
+  'confluence-des-etincelles', 'eveil-des-dunes',
   'tempete-de-sable', 'brisure-de-verre', 'vent-rouge', 'rapport-du-greffier',
   'les-feuillets', 'la-derniere-pesee', 'ressac-de-la-lune-noire', 'nuage-de-cendres', 'serment-de-la-forge', 'nom-efface', 'le-routier', 'embuscade', 'lettre-de-marque', 'le-grand-debarquement',
 ]);
 // Sorts audités, uniquement en phase principale et sans réponse imbriquée.
 const MOBA_MAGIES_MAIN_REPONSE = Object.freeze(['nom-efface']);
-const MOBA_MAGIES_PIOCHE_REPONSE = Object.freeze(['rapport-du-greffier', 'les-feuillets', 'le-routier', 'papyrus', 'lettre-de-marque']);
+const MOBA_MAGIES_PIOCHE_REPONSE = Object.freeze(['confluence-des-etincelles', 'eveil-des-dunes', 'rapport-du-greffier', 'les-feuillets', 'le-routier', 'papyrus', 'lettre-de-marque']);
 export const MOBA_MAGIES_RENFORT_REPONSE = Object.freeze(['mur-de-boucliers', 'serment-de-la-forge', 'rempart-de-dunes', 'offrande-de-lin', 'le-grand-debarquement']);
 export const MOBA_MAGIES_ZONE_TOTALE_REPONSE = Object.freeze([
   'grand-hiver', 'tempete-de-foudre-et-de-givre', 'la-derniere-pesee', 'ressac-de-la-lune-noire', 'neige-noire',
@@ -86,6 +88,7 @@ export const MOBA_MAGIES_SPATIALES = Object.freeze([
   ...MOBA_MAGIES_ZONE_REPONSE, ...MOBA_MAGIES_RENFORT_REPONSE, 'grand-voile-blanc',
 ]);
 export const MOBA_SORTS_REPONSE = Object.freeze([
+  'retour-des-ensevelis', 'confluence-des-etincelles', 'eveil-des-dunes',
   'poigne-de-givre', 'ressac', 'eclair-du-marteau', 'trait-de-braise',
   'appat-de-la-meute', 'frappe-iaijutsu', 'courant-de-retour', 'haut-fond', 'lame-de-mer',
   'effacement-des-faibles', 'le-jugement-des-colosses', 'parade-du-verre', 'voile-de-la-lune-noire', 'feux-de-kitsune', 'defi-du-jarl', 'reanimation', 'sabre-maudit', 'memoire-de-l-armurerie', 'brise-lame',
@@ -99,7 +102,7 @@ export const MOBA_MAGIES_VOIES = Object.freeze(['eclair-du-marteau', 'trait-de-b
 export const MOBA_MAGIES_TRANSFERT = Object.freeze(['le-poids', 'la-grande-pesee']);
 export const MOBA_MAGIES_SOINS = Object.freeze(['festin-des-vaillants', 'eau-de-la-source']);
 export const MOBA_MAGIES_PRIX = Object.freeze(['papyrus', 'neige-noire', 'offrande-de-lin', 'la-grande-pesee']);
-export const MOBA_MAGIES_REANIMATION = Object.freeze(['reanimation']);
+export const MOBA_MAGIES_REANIMATION = Object.freeze(['reanimation', 'retour-des-ensevelis']);
 export const MOBA_MAGIES_NEUTRES = Object.freeze(['effacement-des-faibles', 'le-jugement-des-colosses']);
 export const MOBA_MAGIES_ALLIEES = Object.freeze(['parade-du-verre', 'voile-de-la-lune-noire', 'sabre-maudit', 'memoire-de-l-armurerie']);
 export const MOBA_MAGIES_CIBLEES = Object.freeze([
@@ -126,7 +129,7 @@ export { RPG_DECKS_THEMATIQUES as MOBA_DECKS } from './rpgDecksThematiques.js';
 /** Only this audited pool may be used by a player-built MOBA deck. */
 export const MOBA_CARTES_AUTORISEES = Object.freeze([...new Set([
   ...CARTES_COMBAT_AUDITEES, ...MOBA_ARMES, ...MOBA_MAGIES_ESSAI, ...MOBA_MAGIES_IMMEDIATES, ...MOBA_MAGIES_CIBLEES, ...MOBA_MAGIES_SOINS, ...MOBA_MAGIES_PRIX, ...MOBA_MAGIES_TRANSFERT, ...MOBA_MAGIES_REANIMATION, ...MOBA_CONTRESORTS,
-])]);
+])].filter((id) => !duelCardById(id)?.ascension));
 const CARTES_AUTORISEES = new Set(MOBA_CARTES_AUTORISEES);
 
 /** The normal mana-essai deck rules plus the MOBA effect audit gate. */
@@ -159,6 +162,9 @@ export function rpgMobaLimiteCarte(duel, side, carte) {
 /** Whether a displayed card can be paid, including a legal lane for life prices. */
 export function rpgMobaPeutPayer(duel, side, carte) {
   if (!duel?.moba || !MOBA_SIDES.includes(side) || !carte) return false;
+  // Les soutiens restent éteints sans matériau, sans place ou après leur
+  // activation du tour. Cette lecture partagée ne modifie aucune case.
+  if (carte.renfortUneFois && !rpgSortACibleValide(duel, side, carte)) return false;
   const speciale = ['creature', 'hero'].includes(carte.kind) && rpgMobaInvocationSpecialeDisponible(duel, side, carte.id);
   if ((!speciale && rpgMobaLimiteCarte(duel, side, carte)) || !invocationPossible(duel, side, carte, speciale)) return false;
   if (!MOBA_MAGIES_PRIX.includes(carte.id)) return rpgPeutPayer(duel[side], carte);
@@ -734,7 +740,7 @@ export function rpgMobaPasserSort(duel, side) {
   const retour = attente.reanimationMoba;
   const placementArmeInvalide = attente.placementArmeVivante && !emplacementReanimationValide(duel, attente.cote, attente.placementArmeVivante.laneId, attente.placementArmeVivante.slot);
   const equipementInvalide = attente.carteId === 'memoire-de-l-armurerie' && (attente.cibleSecondaireId !== 'sabre-maudit' || !duel[attente.cote].cimetiere.includes('sabre-maudit') || rpgEstProtegee(duel[attente.cote].creatures.find((e) => e.id === attente.cibleId), cardColors(magieById('sabre-maudit'))));
-  const retourInvalide = attente.carteId === 'reanimation' && (!retour || !emplacementReanimationValide(duel, attente.cote, retour.laneId, retour.slot) || !derniereCreatureReanimable(duel, attente.cote));
+  const retourInvalide = MOBA_MAGIES_REANIMATION.includes(attente.carteId) && (!retour || !emplacementReanimationValide(duel, attente.cote, retour.laneId, retour.slot) || !derniereCreatureReanimable(duel, attente.cote, attente.carteId));
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
   const result = placementArmeInvalide || equipementInvalide || retourInvalide || (voiePerdue && attente.carteId !== 'festin-des-vaillants') ? fail('cible') : attente.armeMoba
@@ -894,11 +900,9 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
 
 // Match the classic engine's latest eligible creature, without skipping an
 // unsupported card to revive an older one. Returns never bypass the audit gate.
-function derniereCreatureReanimable(duel, side) {
-  const id = [...duel[side].cimetiere].reverse().find((candidate) => {
-    const carte = duelCardById(candidate);
-    return carte && !magieById(candidate) && !armeById(candidate) && !['terrain', 'site'].includes(carte.kind);
-  });
+function derniereCreatureReanimable(duel, side, carteId = 'reanimation') {
+  const index = indexReanimation(duel[side], magieById(carteId)?.effet);
+  const id = index >= 0 ? duel[side].cimetiere[index] : null;
   return id && CARTES_COMBAT_AUDITEES.has(id) ? id : null;
 }
 function emplacementReanimationValide(duel, side, laneId, slot) {
@@ -1001,7 +1005,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   const contreCreature = Boolean(duel.mobaCreatureEnAttente && ['ecueil', 'contresort-des-abimes'].includes(cardId));
   if (contre && (!reaction || (!contreSort && !contreCreature) || cibleId !== null || laneId !== null || prixLaneId !== null)) return fail('timing');
   if (reanimation) {
-    if (cibleId !== null || prixLaneId !== null || !emplacementReanimationValide(duel, side, laneId, emplacementReanimation) || !derniereCreatureReanimable(duel, side)) return fail('cible');
+    if (cibleId !== null || prixLaneId !== null || !emplacementReanimationValide(duel, side, laneId, emplacementReanimation) || !derniereCreatureReanimable(duel, side, cardId)) return fail('cible');
   } else if (prix) {
     // A transfer with a price has two independent choices: one lane pays,
     // and a possibly different active lane receives the transfer.

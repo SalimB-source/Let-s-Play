@@ -144,6 +144,7 @@ export const EFFET_ICONE = {
   'retour-main': 'i-rebond',
   recyclage: 'i-recyclage',
   reanimation: 'i-reanimation',
+  'renfort-ascension': 'i-reanimation',
   // Le Lien : la seule icône qui ne décrit PAS un effet de la carte, mais le
   // fait que sa phrase nomme une ancre. Deux maillons.
   lien: 'i-lien',

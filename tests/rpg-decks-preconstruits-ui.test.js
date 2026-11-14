@@ -8,8 +8,8 @@ import { RPG_DECKS_PRECONSTRUITS } from '../src/games/rpgCards.js';
 import { RPG_DECK_STORAGE_KEY } from '../src/games/rpgDeckChoice.js';
 
 // Smoke test du rendu réel, pas seulement de la source des listes : les anciens
-// IDs de campagne ne doivent pas occuper l'étagère à la place des huit thèmes.
-test('le Sablier affiche les huit nouveaux decks et garde le choix après rechargement', async () => {
+// IDs de campagne ne doivent pas occuper l'étagère à la place des douze thèmes.
+test('le Sablier affiche les douze decks, dont les préparations d’Ascension, et garde le choix après rechargement', async () => {
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
     url: 'http://localhost/jeu/sablier-de-bab-el', pretendToBeVisual: true,
   });
@@ -48,13 +48,17 @@ test('le Sablier affiche les huit nouveaux decks et garde le choix après rechar
       return choix;
     };
     const choix = await afficher();
-    await act(async () => choix[2].querySelector('.rpg-deck-choice__select').click());
-    assert.equal(JSON.parse(dom.window.localStorage.getItem(RPG_DECK_STORAGE_KEY)).deckId, RPG_DECKS_PRECONSTRUITS[2].id);
+    for (const theme of RPG_DECKS_PRECONSTRUITS.filter(d => d.id.startsWith('preconstruit-ascension-'))) {
+      const boite = choix.find(n => n.querySelector('strong').textContent === theme.name);
+      assert.ok(boite.querySelector('.rpg-deckbox__art').style.backgroundImage.includes(theme.boxArt));
+      await act(async () => boite.querySelector('.rpg-deck-choice__select').click());
+      assert.equal(JSON.parse(dom.window.localStorage.getItem(RPG_DECK_STORAGE_KEY)).deckId, theme.id);
+    }
     await act(async () => root.unmount());
     root = createRoot(document.getElementById('root'));
     await afficher();
     assert.match(document.querySelector('.rpg-deck-choice.is-active')?.textContent ?? '',
-      new RegExp(RPG_DECKS_PRECONSTRUITS[2].name));
+      new RegExp(RPG_DECKS_PRECONSTRUITS.at(-1).name));
 
   } finally {
     if (root) await act(async () => root.unmount());

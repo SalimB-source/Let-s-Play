@@ -29,6 +29,8 @@ réactif de *Clair Obscur*.
 | [`26-le-cavalier-sans-nom.md`](26-le-cavalier-sans-nom.md) | **Le cavalier sans nom** : créature mythique hybride **Eau + Ténèbres** — Envol, Tribut 2 et un Rebond borné à coût 4 qui pioche une carte, le noyé du registre effacé |
 | [`27-les-cavaliers.md`](27-les-cavaliers.md) | **Les cinq Cavaliers** : cycle hybride des cinq couleurs, effets, révélations et intégration |
 | [`28-pierres-d-effets.md`](28-pierres-d-effets.md) | Les **pierres d'effets** : chaque mot-clé sur un emblème taillé — une forme par famille d'action, une pierre par registre, le pictogramme en blanc |
+| [`31-ascension.md`](31-ascension.md) | **Ascension** : réserve hors-pioche, invocation spéciale par sacrifices exacts, Samouraï du Dragon Rouge et intégration Duel/MOBA |
+| [`32-decks-ascension.md`](32-decks-ascension.md) | Les quatre decks de 30 cartes dédiés aux Ascensions, matériaux, préparation et mulligan |
 
 ## La décision de conception
 

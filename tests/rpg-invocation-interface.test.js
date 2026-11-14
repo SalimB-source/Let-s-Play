@@ -11,9 +11,11 @@ test('sélection multiple avant sacrifice, désélection et annulation sans paie
   assert.match(selection, /sacrificesChoisis\.filter\(id => id !== entite.id\)/);
   const attente = selection.indexOf('if (choisis.length < sacrificesInvocation');
   assert.ok(attente > 0);
-  assert.ok(selection.indexOf('return;', attente) < selection.indexOf('setSacrificeFx'));
-  assert.match(selection, /sacrificeEnCoursRef.current = \{ carteId, sacrificeIds: choisis, token,/);
-  assert.match(selection, /terminerPoseSacrifice\(token\)/);
+  assert.ok(selection.indexOf('return;', attente) < selection.indexOf('commencerRituelSacrifice(carteId, choisis)'));
+  const rituel = page.slice(page.indexOf('  const commencerRituelSacrifice ='), page.indexOf('  const dechirerEtPoser ='));
+  assert.match(rituel, /sacrificeEnCoursRef.current = \{ carteId, sacrificeIds: choisis, token,/);
+  assert.match(rituel, /setSacrificeFx\(\{ victimes, token \}\)/);
+  assert.match(rituel, /terminerPoseSacrifice\(token\)/);
   const annuler = page.slice(page.indexOf('  const annulerSacrifice ='), page.indexOf('  const confirmerSacrifice ='));
   assert.match(annuler, /setSacrificesChoisis\(\[\]\)/);
   assert.doesNotMatch(annuler, /rpgJouerCreature|rpgSacrifierCreature|payer/);

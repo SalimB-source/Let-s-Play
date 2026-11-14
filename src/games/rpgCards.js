@@ -6,10 +6,14 @@
  * résolvent leurs effets avant de rejoindre le cimetière. Les fiches portent coût,
  * élément, rareté, ligne de type, texte de règle et illustration locale.
  *
- * Les huit decks préconstruits sont partagés avec le MOBA et l’essai mana :
+ * Les douze decks préconstruits sont partagés avec le MOBA et l’essai mana :
  * mêmes listes bicolores, mêmes synergies. Les decks personnels du joueur
  * et ses cartes de collection sont indépendants de ces préconstruits.
  */
+
+import { RPG_ASCENSION_CARDS } from './rpgAscensionCards.js';
+import { RPG_ASCENSION_SUPPORT_CREATURES, RPG_ASCENSION_SUPPORT_SPELLS } from './rpgAscensionSupports.js';
+export { RPG_ASCENSION_CARDS } from './rpgAscensionCards.js';
 
 import { RPG_CORBEAU_CREATURES, RPG_CORBEAU_FIGURES, RPG_CORBEAU_MAGIES } from './rpgCorbeau.js';
 import { RPG_SOLEIL_ROUGE_ARMES, RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES } from './rpgSoleilRouge.js';
@@ -419,6 +423,7 @@ export const CARD_KIND_LABELS = {
  * MEURENT. Set jouable : créatures, héros, terrains et sorts composent les decks.
  */
 export const RPG_CREATURE_CARDS = [
+  ...RPG_ASCENSION_SUPPORT_CREATURES,
   {
     id: 'gardien-de-la-porte-ardente', name: 'Gardien de la porte ardente',
     element: 'braise', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
@@ -1597,6 +1602,7 @@ export function jetonById(id) {
 
 export function creatureById(id) {
   return RPG_CREATURE_CARDS.find((card) => card.id === id)
+    ?? RPG_ASCENSION_CARDS.find((card) => card.id === id)
     ?? RPG_TOUR_CARDS.find((card) => card.id === id)
     ?? RPG_JETON_CARDS.find((card) => card.id === id)
     // Les créatures de la Tour Oubliée : jouées par la seule IA, jamais
@@ -1909,7 +1915,7 @@ export const carteVendueALUnite = (carte) => carteJouableSansTerrain(carte)
   && RARETES_A_LETAL.includes(carte.rarity);
 
 export const RPG_CARTES_HORS_FORMAT = Object.freeze([]);
-export const carteJouableSansTerrain = (carte) => Boolean(carte && carte.kind !== 'terrain'
+export const carteJouableSansTerrain = (carte) => Boolean(carte && carte.kind !== 'terrain' && !carte.ascension
   && !RPG_CARTES_HORS_FORMAT.includes(carte.id));
 
 /**
@@ -1978,6 +1984,7 @@ export function terrainById(id) {
  * d'autres (parfois) les sorciers.
  */
 export const RPG_MAGIE_CARDS = [
+  ...RPG_ASCENSION_SUPPORT_SPELLS,
   {
     id: 'memoire-de-l-armurerie', name: 'Mémoire de l’armurerie', element: 'sable', kind: 'magie',
     typeLine: 'Sorcellerie — Sable', cost: 5, rarity: 'rare', cibles: ['creature-amie'],
@@ -2828,6 +2835,7 @@ export function magieById(id) {
 const CATALOG = new Map(
   [
     ...RPG_DUEL_CARDS,
+    ...RPG_ASCENSION_CARDS,
     ...RPG_JETON_CARDS,
     // Le set de la Tour Oubliée est **connu du moteur mais hors catalogue** :
     // `cardById` doit pouvoir le peindre et lire ses textes, tandis que
@@ -3056,19 +3064,19 @@ export const RPG_DECKS_ARCHETYPES = ARCHETYPES_HISTORIQUES.map((ancien) => {
     description: theme.description, cardIds: theme.cardIds };
 });
 
-/** Les huit boîtiers visibles et sélectionnables par le joueur. Le préfixe
+/** Les douze boîtiers visibles et sélectionnables par le joueur. Le préfixe
  * évite toute collision avec les identifiants de campagne historiques et les
  * decks « maison-* » déjà enregistrés ; aucune sauvegarde n'est réécrite. */
 export const RPG_DECKS_PRECONSTRUITS = Object.freeze(RPG_DECKS_THEMATIQUES.map((theme) => Object.freeze({
   id: `preconstruit-${theme.id}`,
   name: theme.name, role: 'joueur', element: 'hybride', elements: theme.elements,
-  boxArt: theme.cardIds.find((id) => cardById(id)?.rarity === 'mythique') ?? theme.cardIds[0],
+  boxArt: theme.boxArt ?? theme.cardIds.find((id) => cardById(id)?.rarity === 'mythique') ?? theme.cardIds[0],
   archetype: theme.elements.join(' + '), description: theme.description, cardIds: theme.cardIds,
 })));
 
 /**
  * Les anciens decks de base gratuits : aucun depuis les coffrets de bienvenue.
- * Les huit préconstruits thématiques visibles vivent séparément dans
+ * Les douze préconstruits thématiques visibles vivent séparément dans
  * `RPG_DECKS_PRECONSTRUITS`. Les decks du coffret et de l'atelier restent dans
  * le casier personnel et ne sont ni migrés ni supprimés.
  */

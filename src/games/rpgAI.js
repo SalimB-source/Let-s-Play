@@ -1,3 +1,4 @@
+import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
 import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
@@ -44,6 +45,7 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
+import { indexReanimation, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
 import { armesPortees } from './rpgCardStacks.js';
 // Accès différé au moteur (cycle d'import maîtrisé : aucune de ces fonctions
 // n'est appelée pendant l'évaluation des modules) — il s'agit ici de tester la
@@ -502,7 +504,7 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       .sort((a, b) => (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2));
     return navires[0]?.id ?? null;
   }
-  if (carte?.effet?.type === 'destruction-cible') {
+  if (carte?.effet?.type === 'destruction-cible' || carte?.arrivee?.type === 'destruction-cible') {
     return ciblesLegales(duel, cote, carte, 'creature')
       .filter((entite) => duelCardById(entite.carteId)?.kind !== 'site' && moteur.cibleRespecteCoutMax(carte, entite))
       .sort((a, b) => Number(paradeContreSort(a, carte)) - Number(paradeContreSort(b, carte)) || menace(b) - menace(a))[0]?.id ?? null;
@@ -1612,13 +1614,18 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       ) : meilleure.score * 0.8) - cout * 0.2;
       return { score: score > 0 ? score : 0, cibleId: meilleure.cibleId };
     }
+    if (carte.renfortUneFois && renfortDejaJoue(camp, carte.id)) return null;
+    if (effet.type === 'renfort-ascension') {
+      const plan = planRenfortAscension(camp, effet);
+      if (!plan.length || (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= 5)) return null;
+      const score = plan.reduce((s, choix) => s + valeurEntite(entiteDeSecours(duelCardById(choix.id), duel)), 0) - cout * 0.2;
+      return { score: Math.max(0, score), cibleId: null };
+    }
     if (effet.type === 'reanimation') {
       // La Réanimation ramène la DERNIÈRE créature du cimetière (le moteur) :
       // elle ne se paie que si ce corps-là vaut son mana.
-      const derniere = [...camp.cimetiere].reverse().find((id) => {
-        const defunte = duelCardById(id);
-        return Boolean(defunte) && !magieById(id) && !armeById(id) && defunte.kind !== 'terrain';
-      });
+      const index = indexReanimation(camp, effet);
+      const derniere = index >= 0 ? camp.cimetiere[index] : null;
       if (!derniere) return null;
       const valeur = valeurEntite(entiteDeSecours(duelCardById(derniere), duel));
       const score = 1.5 + valeur - cout * 0.2;
@@ -1825,6 +1832,13 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
     if (arrivee.type === 'pioche-defausse') {
       const net = Math.max(0, (arrivee.pioche ?? 0) - (arrivee.defausse ?? 0));
       score += 1 + net * 1.5 + (camp.main.length <= 3 ? 2 : 0);
+    }
+    if (arrivee.type === 'destruction-cible') {
+      // Le Scorpion doit emporter une vraie proie blessée dans la simulation,
+      // pas perdre ses matériaux sur un refus faute de désignation.
+      cibleId = choisirCibleAutoIA(duel, cote, carte, { profil, rng });
+      const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (cible) score += paradeContreSort(cible, carte) ? 0.5 : 4 + valeurEntite(cible);
     }
     if (arrivee.type === 'renvoi-ou-destruction') {
       cibleId = choisirCibleAutoIA(duel, cote, carte);
@@ -2150,15 +2164,15 @@ export function rpgSacrificeEstDeclasseIA(carte, victimes) {
   return rpgValeurInvocationIA(carte) < perte || statsNouvelles < statsPerdues;
 }
 
-/** All legal one- or two-body combinations, cheapest first. The field is
- * bounded in MOBA; sorting also ensures deterministic choices on ties. */
+/** Legal ordinary sacrifices and exact two-/three-material Ascension recipes,
+ * cheapest first. The field is bounded in MOBA; ties stay deterministic. */
 export function rpgCombinaisonsSacrificesIA(duel, cote, carte) {
   const n = sacrificesInvocation(carte, duel, cote);
   if (!n) return [[]];
   const victimes = victimesInvocation(duel[cote]);
-  const groupes = [];
-  if (n === 1) for (const a of victimes) groupes.push([a]);
-  else if (n === 2) for (let i = 0; i < victimes.length; i++) for (let j = i + 1; j < victimes.length; j++) groupes.push([victimes[i], victimes[j]]);
+  const groupes = carte?.ascension ? combinaisonsAscension(duel[cote], carte) : [];
+  if (!carte?.ascension && n === 1) for (const a of victimes) groupes.push([a]);
+  else if (!carte?.ascension && n === 2) for (let i = 0; i < victimes.length; i++) for (let j = i + 1; j < victimes.length; j++) groupes.push([victimes[i], victimes[j]]);
   return groupes.sort((a, b) => a.reduce((s, e) => s + rpgValeurSacrificeIA(e), 0) - b.reduce((s, e) => s + rpgValeurSacrificeIA(e), 0)).slice(0, 40);
 }
 
@@ -2245,10 +2259,11 @@ function candidatsCartesIA(duel, cote, options = {}) {
   const exclus = options.exclus ?? new Set();
   const candidats = [];
   const ciblesCondamnees = options.seulementInstants ? ciblesCondamneesAuCombat(duel, cote, options.combat) : null;
-  for (const carteId of camp.main) {
+  for (const carteId of [...camp.main, ...(camp.reserveAscension ?? [])]) {
     const carte = duelCardById(carteId) ?? magieById(carteId) ?? armeById(carteId);
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
     if (exclus.has(carteId)) continue;
+    if (carte.ascension && !ascensionDisponible(duel, cote, carte)) continue;
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;

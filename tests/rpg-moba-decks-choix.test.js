@@ -22,7 +22,7 @@ async function setup() {
 }
 const deck = (id, name, source = MOBA_DECKS[0]) => ({ ...source, id, name });
 
-test('les huit thèmes précèdent les decks personnels et restent sélectionnables', async () => {
+test('les douze thèmes précèdent les decks personnels et restent sélectionnables', async () => {
   const ui = await setup();
   const valide = deck('maison-valide', 'Mon deck créé');
   const autre = deck('maison-autre', 'Mon autre deck', MOBA_DECKS[1]);
@@ -31,7 +31,7 @@ test('les huit thèmes précèdent les decks personnels et restent sélectionnab
     await ui.render([invalide, valide, autre]);
     const maison = ui.button('Mon deck créé'), second = ui.button('Mon autre deck'), interdit = ui.button('Deck incomplet');
     assert.equal(document.querySelectorAll('.moba__booster').length, MOBA_DECKS.length + 3);
-    assert.deepEqual([...document.querySelectorAll('.moba__booster')].slice(0, 8)
+    assert.deepEqual([...document.querySelectorAll('.moba__booster')].slice(0, MOBA_DECKS.length)
       .map((button) => button.querySelector('.moba__booster-name').textContent), MOBA_DECKS.map((theme) => theme.name));
     assert.equal(document.querySelector('.moba__setup-details'), null);
     assert.equal(document.querySelector('.moba__opponent-deck'), null);
@@ -41,6 +41,13 @@ test('les huit thèmes précèdent les decks personnels et restent sélectionnab
     assert.match(maison.textContent, /Personnel/);
     assert.match(interdit.closest('.moba__booster-item').textContent, /30 cartes exigées/);
     assert.ok(maison.querySelector('.moba__booster-face img')); assert.ok(maison.querySelector('.moba__booster-edge'));
+    for (const theme of MOBA_DECKS.filter(d => d.id.startsWith('ascension-'))) {
+      const bouton = ui.button(theme.name);
+      assert.ok(bouton.querySelector('img').getAttribute('src').includes(theme.boxArt));
+      await act(async () => bouton.click());
+      assert.equal(bouton.getAttribute('aria-pressed'), 'true');
+      assert.equal(ui.button('Commencer le duel').disabled, false);
+    }
     await act(async () => ui.button(MOBA_DECKS[0].name).click());
     assert.equal(ui.button(MOBA_DECKS[0].name).getAttribute('aria-pressed'), 'true', 'le thème est sélectionnable');
     await act(async () => second.click());
@@ -55,11 +62,11 @@ test('les huit thèmes précèdent les decks personnels et restent sélectionnab
   } finally { await ui.cleanup(); }
 });
 
-test('sans deck personnel les huit thèmes permettent de jouer et de créer un deck maison', async () => {
+test('sans deck personnel les douze thèmes permettent de jouer et de créer un deck maison', async () => {
   const ui = await setup();
   try {
     await ui.render();
-    assert.equal(document.querySelectorAll('.moba__booster').length, 8);
+    assert.equal(document.querySelectorAll('.moba__booster').length, 12);
     assert.equal(ui.button('Commencer le duel').disabled, false);
     assert.equal(document.querySelector('.moba__setup-empty'), null);
     await act(async () => ui.button('Personnaliser le deck').click());

@@ -71,8 +71,8 @@ test('l’étagère n’a plus de deck de base : le défaut est le deck de la ma
   // préconstruit : l'étagère du catalogue est vide, et ses decks sont les siens.
   assert.deepEqual(RPG_DECKS, [], 'aucun deck de base sur l’étagère');
   assert.equal(RPG_DECKS_ARCHETYPES.length, 8, 'les archétypes restent écrits pour l’IA, les leçons et le PvP');
-  assert.equal(RPG_DECKS_PRECONSTRUITS.length, 8, 'les huit nouveaux boîtiers du joueur sont distincts du casier personnel');
-  assert.equal(new Set(RPG_DECKS_PRECONSTRUITS.map((deck) => deck.id)).size, 8);
+  assert.equal(RPG_DECKS_PRECONSTRUITS.length, 12, 'les douze boîtiers, dont les quatre moteurs d’Ascension, restent distincts du casier personnel');
+  assert.equal(new Set(RPG_DECKS_PRECONSTRUITS.map((deck) => deck.id)).size, 12);
   for (const deck of RPG_DECKS_PRECONSTRUITS) {
     assert.ok(deck.id.startsWith('preconstruit-'));
     assert.equal(deckSeJoue(deck, {}, {}), true, `${deck.name} se joue sans détenir toutes ses cartes`);
@@ -139,7 +139,7 @@ test('le choix du deck survit à un aller-retour de sauvegarde', () => {
   assert.equal(RPG_DECK_STORAGE_KEY, 'letsplay_sablier_deck_v1', 'la clé suit la convention letsplay_sablier_*_v1');
 });
 
-test('les huit préconstruits et les decks personnels sont mémorisables sans toucher au casier', () => {
+test('les douze préconstruits et les decks personnels sont mémorisables sans toucher au casier', () => {
   const { donnees, stockage } = stockageEnMemoire();
   const { deck, collection, comptes } = coffretOuvert('neige');
   const casierEnregistre = JSON.stringify({ decks: [deck], supprimes: [] });
@@ -237,7 +237,7 @@ test('les filtres trouvent chaque couleur des decks et aucun deck hors de la cou
   assert.deepEqual(filtrerDecksParCouleur(RPG_DECKS_ARCHETYPES, 'violet'), []);
 });
 
-test('les puces comptent correctement toutes les couleurs des huit préconstruits', () => {
+test('les puces comptent correctement toutes les couleurs des douze préconstruits', () => {
   const puces = filtresCouleurDecks(RPG_DECKS_ARCHETYPES);
   assert.deepEqual(puces.map((puce) => puce.id), ['toutes', 'sable', 'braise', 'eau', 'neige', 'tenebres', 'hybride']);
   assert.deepEqual(puces.map((puce) => puce.nombre), [8, 4, 2, 3, 5, 2, 8]);

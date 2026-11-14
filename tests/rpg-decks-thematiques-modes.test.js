@@ -7,10 +7,10 @@ import { MOBA_DECKS, rpgMobaValiderDeck } from '../src/games/rpgMobaLocal.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS, deckHistoire } from '../src/games/rpgStoryTours.js';
 import { RPG_TUTORIELS, paquetDeLaLecon } from '../src/games/rpgTutorial.js';
 
-const ids = ['sable', 'sources', 'sahir', 'lionne', 'papyrus', 'vikings', 'vampires', 'corsaires'];
+const ids = ['sable', 'sources', 'sahir', 'lionne', 'papyrus', 'vikings', 'vampires', 'corsaires', 'ascension-eclipse', 'ascension-verre', 'ascension-dragon', 'ascension-rempart'];
 const signature = (cartes) => cartes.join('|');
 
-test('un catalogue commun : huit listes bicolores complètes et jouables dans les trois moteurs', () => {
+test('un catalogue commun : douze listes bicolores complètes et jouables dans les trois moteurs', () => {
   assert.deepEqual(RPG_DECKS_THEMATIQUES.map(({ id }) => id), ids);
   assert.equal(MOBA_DECKS, RPG_DECKS_THEMATIQUES);
   const listes = new Set();
@@ -35,14 +35,14 @@ test('un catalogue commun : huit listes bicolores complètes et jouables dans le
 test('les decks préconstruits classiques, essais, campagne et leçons utilisent le catalogue', () => {
   const listes = new Set(RPG_DECKS_THEMATIQUES.map((deck) => signature(deck.cardIds)));
   assert.equal(RPG_DECKS_ARCHETYPES.length, 8);
-  assert.equal(RPG_MANA_ESSAI_DECKS.length, 8);
+  assert.equal(RPG_MANA_ESSAI_DECKS.length, 12);
   assert.deepEqual(RPG_DECKS, [], 'les decks maison du joueur ne sont ni migrés ni écrasés');
   for (const deck of [...RPG_DECKS_ARCHETYPES, ...RPG_MANA_ESSAI_DECKS]) {
     assert.ok(listes.has(signature(deck.cardIds)), deck.id);
     assert.deepEqual(cardColors({ colors: deck.elements }), deck.elements, deck.id);
   }
   assert.equal(new Set(RPG_DECKS_ARCHETYPES.map((deck) => signature(deck.cardIds))).size, 8);
-  assert.equal(new Set(RPG_MANA_ESSAI_DECKS.map((deck) => signature(deck.cardIds))).size, 8);
+  assert.equal(new Set(RPG_MANA_ESSAI_DECKS.map((deck) => signature(deck.cardIds))).size, 12);
   for (const deck of RPG_DECKS_ARCHETYPES) {
     assert.equal(deckHistoire(deck.id), deck.cardIds, `${deck.id} garde la même identité en duel et en campagne`);
   }

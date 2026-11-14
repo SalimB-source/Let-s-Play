@@ -1,9 +1,11 @@
+import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
+import { indexReanimation, planRenfortAscension, renfortDejaJoue, marquerRenfort } from './rpgRenforts.js';
 import { MOBA_RAPIDITE_EMBUSCADES, rpgMobaConditionRapidite } from './rpgMobaRapidite.js';
 import { rpgMobaConditionSpeciale } from './rpgMobaEmbuscades.js';
 import { rpgMobaConditionImprimee } from './rpgMobaEmbuscadesImprimees.js';
@@ -523,7 +525,7 @@ export function rpgReglerHasard(duel, rng = Math.random) {
  * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
  * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false, sorcierAtouts = null } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], joueurReserveAscension = undefined, sorcierReserveAscension = undefined, sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false, sorcierAtouts = null } = {}) {
   const essaiMana = modeMana === RPG_MODE_MANA_ESSAI;
   const identiteJoueur = essaiMana ? couleursManaEssai(joueurDeck, joueurCouleurs) : null;
   const identiteSorcier = essaiMana ? couleursManaEssai(sorcierDeck, sorcierCouleurs) : null;
@@ -532,7 +534,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
     ...(pvp ? { pvp: true } : {}),
     tour: 'joueur',
-    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, degatsRecus: 0, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
+    joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, degatsRecus: 0, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck.filter((id) => !estCarteAscension(id)), rng), reserveAscension: reserveAscensionInitiale(joueurReserveAscension), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
       pv: rpgSorcierPv(sorcierPuissance) + atouts.pv,
       pvMax: rpgSorcierPv(sorcierPuissance) + atouts.pv,
@@ -546,7 +548,8 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
       ...(essaiMana ? etatManaEssai(identiteSorcier) : {}),
       bouclier: atouts.bouclier,
       terrainPose: false,
-      deck: melangerDeck(sorcierDeck, rng),
+      deck: melangerDeck(sorcierDeck.filter((id) => !estCarteAscension(id)), rng),
+      reserveAscension: reserveAscensionInitiale(sorcierReserveAscension),
       main: [],
       creatures: [],
       terrains: [],
@@ -3531,8 +3534,8 @@ function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
     duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} cesse d’exister.`);
     return true;
   }
-  camp.main.push(cale.carteId);
-  duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} retourne dans la main de son propriétaire.`);
+  ajouterCarteEnMainOuReserve(camp, cale.carteId);
+  duel.log.push(`La cale de ${entite.name} s’ouvre : ${cale.name} retourne ${estCarteAscension(cale.carteId) ? 'dans sa réserve d’Ascension' : 'dans la main de son propriétaire'}.`);
   return true;
 }
 
@@ -3617,6 +3620,62 @@ function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement, source
 
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut
  *  l’entité source quand l’effet ne doit pas se viser elle-même. */
+/** Une entrée spéciale conserve les vrais coûts/types de sa carte. Les cases
+ * sont revérifiées avant chaque retrait de zone ; un champ plein ne mange
+ * ni la carte de main/pioche, ni la suivante d'un renfort multiple. */
+function emplacementRenfort(duel, cote, voiePreferee = null) {
+  if (!placesLibresChamp(duel, cote)) return null;
+  if (!duel.moba) return {};
+  const reservee = reservationsInvocation.get(duel[cote]);
+  const voies = [...duel.moba.lanes].sort((a, b) => Number(b.id === voiePreferee) - Number(a.id === voiePreferee));
+  for (const voie of voies) {
+    if (!mobaVoieJouable(duel.moba, cote, voie.id)) continue;
+    const offset = { left: 0, center: 2, right: 3 }[voie.id];
+    const slot = voie.slots[cote].findIndex((id, i) => id === null && offset + i !== reservee);
+    if (slot >= 0) return { voie, slot, emplacement: offset + slot };
+  }
+  return null;
+}
+
+function appliquerRenfortAscension(duel, cote, effet, sourceCarteId, sauf, options) {
+  const camp = duel[cote];
+  const source = cardById(sourceCarteId);
+  if (source?.kind === 'creature' && renfortDejaJoue(camp, sourceCarteId)) return;
+  if (source?.kind === 'creature') marquerRenfort(camp, sourceCarteId);
+  const voiePreferee = options?.mobaLane ?? camp.creatures.find((e) => e.id === sauf)?.mobaLane;
+  for (const role of effet.roles ?? []) {
+    if (duel.fin?.gagnant || duel.fin?.nul || duel.moba?.winner) break;
+    const choix = planRenfortAscension(camp, { ...effet, roles: [role] })[0];
+    if (!choix) continue;
+    if (duel.moba && !CARTES_COMBAT_AUDITEES.has(choix.id)) {
+      duel.log.push('Renfort : la première carte admissible n’est pas adaptée au MOBA.');
+      continue;
+    }
+    const place = emplacementRenfort(duel, cote, voiePreferee);
+    if (!place) break;
+    const zone = camp[effet.zone];
+    const [id] = zone.splice(choix.index, 1);
+    const carte = duelCardById(id);
+    const entite = creerEntiteCreature(carte, duel);
+    entite.rapidite = Boolean(carte.rapidite);
+    entite.ready = Boolean(carte.rapidite);
+    entite.malInvocation = !entite.ready;
+    camp.creatures.push(entite);
+    placerDansEmplacement(duel, cote, entite, place.emplacement ?? null);
+    if (duel.moba) {
+      entite.mobaLane = mobaVoieCombat(duel.moba, cote, place.voie.id);
+      if (!mobaPlacer(duel.moba, cote, place.voie.id, place.slot, entite.id).ok) throw new Error('Placement de renfort MOBA incohérent');
+    }
+    journaliserArriveeCreature(duel, cote, entite, 'renfort-ascension');
+    duel.log.push(`${source?.name ?? 'Renfort'} invoque spécialement ${carte.name} depuis ${effet.zone === 'deck' ? 'la pioche' : 'la main'}.`);
+    appliquerArriveeDeRetour(duel, cote, carte, entite, options);
+    rafraichirAuras(duel); rpgActionsEtat(duel);
+    // Le dernier renfort peut ouvrir une désignation d'arrivée. Aucun autre
+    // effet n'est autorisé à écraser cette attente.
+    if (duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length) break;
+  }
+}
+
 function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null, cibleCamp = null, options = null) {
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
@@ -4788,8 +4847,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         return;
       }
       const [carteRenvoyee] = camp.cimetiere.splice(index, 1);
-      camp.main.push(carteRenvoyee);
-      duel.log.push(`${nomSource} renvoie ${cardById(carteRenvoyee)?.name ?? carteRenvoyee} du cimetière en main.`);
+      ajouterCarteEnMainOuReserve(camp, carteRenvoyee);
+      duel.log.push(`${nomSource} renvoie ${cardById(carteRenvoyee)?.name ?? carteRenvoyee} du cimetière ${estCarteAscension(carteRenvoyee) ? 'à la réserve d’Ascension' : 'en main'}.`);
+      return;
+    }
+    case 'renfort-ascension': {
+      appliquerRenfortAscension(duel, cote, effet, sourceCarteId, sauf, options);
       return;
     }
     case 'reanimation': {
@@ -4797,15 +4860,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // cimetière revient en jeu — avec son mal d'invocation ordinaire (elle
       // n'attaquera qu'à votre prochain tour, sauf Rapidité) et ses arrivées.
       const camp = duel[cote];
-      const convient = (id) => {
-        const carteAuCimetiere = duelCardById(id);
-        return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
-          && !['terrain', 'site'].includes(carteAuCimetiere.kind);
-      };
-      let index = -1;
-      for (let i = camp.cimetiere.length - 1; i >= 0; i -= 1) {
-        if (convient(camp.cimetiere[i])) { index = i; break; }
-      }
+      const index = indexReanimation(camp, effet);
       if (index < 0) {
         duel.log.push('Réanimation : aucune créature au cimetière.');
         return;
@@ -4844,6 +4899,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const [carteRevivee] = camp.cimetiere.splice(index, 1);
       const carte = duelCardById(carteRevivee);
       const entite = creerEntiteCreature(carte, duel);
+      if (effet.renfortAscension) {
+        entite.rapidite = Boolean(carte.rapidite);
+        entite.ready = Boolean(carte.rapidite);
+        entite.malInvocation = !entite.ready;
+      }
       camp.creatures.push(entite);
       if (duel.moba) {
         if (typeof options?.placerReanimationMoba === 'function') options.placerReanimationMoba(entite);
@@ -5195,9 +5255,9 @@ function renvoyerEnMain(duel, cote, entite, sourceElement = null, sourceType = n
     rafraichirAuras(duel);
     return true;
   }
-  camp.main.push(presente.carteId);
+  ajouterCarteEnMainOuReserve(camp, presente.carteId);
   journaliserRenvoiEnMain(duel, cote, presente);
-  duel.log.push(`${presente.name} retourne dans la main de son propriétaire.`);
+  duel.log.push(`${presente.name} retourne ${estCarteAscension(presente.carteId) ? 'dans sa réserve d’Ascension' : 'dans la main de son propriétaire'}.`);
   rafraichirAuras(duel);
   return true;
 }
@@ -5410,9 +5470,9 @@ function resoudreExilsFinTour(duel, retours) {
  * déclenche sa capacité de « quand elle meurt ». Une créature tenace profite
  * donc, elle aussi, du retour promis au prochain tour de son camp.
  */
-function sacrifierCreature(duel, cote, entite) {
+function sacrifierCreature(duel, cote, entite, declenchements = null) {
   if (estSite(entite)) return false;
-  rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.');
+  rejoindreCimetiere(duel, cote, entite, [], 'est sacrifiée et rejoint le cimetière.', declenchements);
   return true;
 }
 
@@ -5758,7 +5818,7 @@ export function arriveeCiblePortee(carte) {
   if (arrivee.type === 'degats') return arrivee.cible === 'creature' ? 'ennemi' : null;
   // Le Kraken ne désigne qu'un navire adverse : la table n'allume que les
   // créatures portant le type imprimé « Navire » (voir `arriveeACibleLegale`).
-  if (arrivee.type === 'destruction-navire') return 'ennemi';
+  if (arrivee.type === 'destruction-navire' || arrivee.type === 'destruction-cible') return 'ennemi';
   if (arrivee.type === 'retour-main') {
     if (arrivee.cible === 'toutes-autres') return null; // la vague du Léviathan ne désigne rien
     return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -5884,12 +5944,14 @@ export function rpgCibleEmbuscadeLegale(duel, cote, carte, cible) {
 
 /** `coutMax` et `coutMin` bornent le coût de la cible d'une arrivée. */
 export function cibleRespecteCoutMax(carte, entite) {
-  const cout = rpgCoutEntite(entite);
-  // Un Grappin porté alourdit sa cible face aux seuils de coût, comme
-  // face aux seuils de prise.
   const seuil = carte?.arrivee ?? carte?.effet;
+  // Les seuils historiques comptent le Grappin porté ; « coût imprimé »
+  // (Scorpion) ne lit jamais l’équipement ni un champ cost forgé sur l’entité.
+  const cout = seuil?.coutImprime ? cardById(entite?.carteId)?.cost : rpgCoutEntite(entite);
+  if (seuil?.type === 'destruction-cible' && estSite(entite)) return false;
   if (Number.isFinite(seuil?.coutMax) && cout > seuil.coutMax) return false;
   if (Number.isFinite(seuil?.coutMin) && cout < seuil.coutMin) return false;
+  if (seuil?.blessee && !(entite.pv < plafondSoinCreature(entite))) return false;
   return true;
 }
 
@@ -6104,6 +6166,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
 
 export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null } = {}) {
   const camp = duel[cote];
+  if (!camp) return { ok: false, raison: 'camp' };
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
   const carte = duelCardById(carteId);
@@ -6114,12 +6177,16 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const attenteMoba = duel.moba && resoudreCreatureMoba && duel.mobaCreatureEnAttente;
   const dejaPayee = Boolean(attenteMoba && attenteMoba.cote === cote && attenteMoba.carteId === carteId
     && emplacement === attenteMoba.emplacement);
-  if (!dejaPayee && !camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  const ascension = estCarteAscension(carte);
+  const zoneSource = ascension ? (camp.reserveAscension ?? []) : camp.main;
+  if (!dejaPayee && !zoneSource.includes(carteId)) return { ok: false, raison: ascension ? 'pas-en-reserve' : 'pas-en-main' };
+  if (ascension && !timingAscensionValide(duel, cote, { resolutionMoba: dejaPayee })) return { ok: false, raison: 'ascension-timing' };
   // L'IA répond directement à la pose du joueur (sans annonce stockée). Cette
   // voie interne est réservée à sa réponse PvE, et ne crée pas de fenêtre PvP.
   const reponseIA = carte.contreAnnonceCreature && annonceContree && !duel.pvp && !duel.moba
     && cote === 'sorcier' && duel.tour === 'joueur' && !duel.annonce
-    && annonceContree.cote === 'joueur' && duel.joueur.main.includes(annonceContree.carteId);
+    && annonceContree.cote === 'joueur'
+    && (estCarteAscension(annonceContree.carteId) ? duel.joueur.reserveAscension : duel.joueur.main)?.includes(annonceContree.carteId);
   if (annonceContree && !reponseIA) return { ok: false, raison: 'timing' };
   const annonceReponse = reponseIA ? annonceContree : duel.annonce;
   // Le MOBA réserve la créature annoncée et la retire de la main après
@@ -6152,10 +6219,14 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (sacrifices.some(e => !e || estSite(e))) return { ok: false, raison: 'sacrifice', nombreSacrifices };
   } else if (nombreSacrifices) {
     if (cote !== 'sorcier' || duel.pvp) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
-    const disponibles = victimesInvocation(camp).sort((a, b) =>
+    const disponibles = (ascension ? (combinaisonsAscension(camp, carte)[0] ?? []) : victimesInvocation(camp)).sort((a, b) =>
       ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0)) || (a.pv ?? 0) - (b.pv ?? 0));
     sacrifices = disponibles.slice(0, nombreSacrifices);
     if (sacrifices.length !== nombreSacrifices) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
+  }
+  if (ascension) {
+    const recette = validerMateriauxAscension(camp, carte, sacrifices.map((e) => e.id));
+    if (!recette.ok) return recette;
   }
   if (duel.modeMana === RPG_MODE_MANA_ESSAI
     && camp.creatures.length - sacrifices.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
@@ -6215,6 +6286,12 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
       return { ok: false, raison: 'cible' };
     }
+  }
+  if (carte.arrivee?.type === 'destruction-cible') {
+    const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
+    if (cibleId && (!cible || !cibleRespecteCoutMax(carte, cible))) return { ok: false, raison: 'cible' };
+    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) return { ok: false, raison: 'cible' };
   }
   if (carte.arrivee?.type === 'destruction-navire') {
     // Le Kraken ne désigne qu'un navire adverse : une créature d'un autre
@@ -6295,7 +6372,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!dejaPayee && duel.moba && annoncerCreatureMoba) {
     payer(duel, cote, carte);
     marquerInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
-    camp.main.splice(camp.main.indexOf(carteId), 1);
+    zoneSource.splice(zoneSource.indexOf(carteId), 1);
     duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), invocationSpecialeMoba, ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
     duel.log.push(`${carte.name} est annoncée en ${annoncerCreatureMoba.nomVoie}, emplacement ${annoncerCreatureMoba.slot + 1} : réponse ou passage avant son arrivée.`);
@@ -6323,7 +6400,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (!rpgPeutPayer(duel[annonceReponse.cote], cible)) return { ok: false, raison: 'mana' };
     payer(duel, annonceReponse.cote, cible);
     marquerInvocationMoba(duel, annonceReponse.cote, cible, Boolean(annonceReponse.invocationSpeciale));
-    const mainAdverse = duel[annonceReponse.cote].main;
+    const mainAdverse = estCarteAscension(cible) ? duel[annonceReponse.cote].reserveAscension : duel[annonceReponse.cote].main;
     mainAdverse.splice(mainAdverse.indexOf(cible.id), 1);
     duel[annonceReponse.cote].cimetiere.push(cible.id);
     carteContree = cible.id;
@@ -6345,10 +6422,14 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     caseSacrifice = rpgEmplacementsChamp(camp).findIndex((occupant) => occupant?.id === sacrifice.id);
     if (duel.modeMana === RPG_MODE_MANA_ESSAI) reservationsInvocation.set(camp, emplacementChoisi ?? caseSacrifice);
     try {
+      // Une recette d’Ascension paie tous ses corps simultanément : les
+      // effets de mort ne peuvent pas tuer/réutiliser le second sacrifice.
+      const declenchementsAscension = ascension ? [] : null;
       for (const victime of sacrifices) {
         duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${victime.name} pour invoquer ${carte.name}.`);
-        sacrifierCreature(duel, cote, victime);
+        sacrifierCreature(duel, cote, victime, declenchementsAscension);
       }
+      for (const declencher of declenchementsAscension ?? []) declencher();
     } finally {
       reservationsInvocation.delete(camp);
     }
@@ -6356,13 +6437,14 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!dejaPayee) {
     payer(duel, cote, carte);
     marquerInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
-    camp.main.splice(camp.main.indexOf(carteId), 1);
+    zoneSource.splice(zoneSource.indexOf(carteId), 1);
   }
   // Un effet de mort payé comme sacrifice peut fermer la case ou terminer
   // la partie avant l'arrivée. L'annonce et son prix restent consommés.
-  if (typeof peutPlacerApresSacrifices === 'function' && !peutPlacerApresSacrifices()) {
+  if ((ascension && rpgVainqueur(duel))
+    || (typeof peutPlacerApresSacrifices === 'function' && !peutPlacerApresSacrifices())) {
     camp.cimetiere.push(carteId);
-    duel.log.push(`${carte.name} ne peut plus entrer : sa case n'est plus disponible.`);
+    duel.log.push(`${carte.name} ne peut plus entrer : ${rpgVainqueur(duel) ? 'la partie est terminée' : "sa case n'est plus disponible"}.`);
     return { ok: true, dissipe: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id) };
   }
   // La pose est engagée : le sceau du Pilote est dépensé par cette créature
@@ -7285,12 +7367,15 @@ export function rpgSortACibleValide(duel, cote, carte) {
   if (carte.effet?.type === 'contresort') return rpgContreJouable(duel, cote, carte);
   if (carte.effet?.type === 'equiper-cimetiere') return duel[cote].cimetiere.some((id) => carteEstArme(cardById(id)))
     && duel[cote].creatures.some((entite) => !entite.mur && entiteCiblableParSort(entite, carte));
+  if (carte.renfortUneFois && renfortDejaJoue(duel[cote], carte.id)) return false;
+  if (carte.effet?.type === 'renfort-ascension') {
+    const plan = planRenfortAscension(duel[cote], carte.effet);
+    return Boolean(emplacementRenfort(duel, cote) && plan.length
+      && (!duel.moba || plan.some((choix) => CARTES_COMBAT_AUDITEES.has(choix.id))));
+  }
   if (carte.effet?.type === 'reanimation') {
-    return duel[cote].cimetiere.some((id) => {
-      const carteAuCimetiere = duelCardById(id);
-      return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
-        && !['terrain', 'site'].includes(carteAuCimetiere.kind);
-    });
+    return indexReanimation(duel[cote], carte.effet) >= 0
+      && (!carte.effet.renfortAscension || Boolean(emplacementRenfort(duel, cote)));
   }
   const adv = autre(cote);
   const aCibleAlliee = duel[cote].creatures.some((entite) => entiteCiblableParSort(entite, carte));
@@ -7345,7 +7430,7 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
     marquerInvocationMoba(duel, annonce.cote, cible, Boolean(annonce.invocationSpeciale));
   }
   payer(duel, cote, carte);
-  const main = campAnnonce.main;
+  const main = estCarteAscension(cible) ? (campAnnonce.reserveAscension ?? []) : campAnnonce.main;
   if (!reserveMoba && main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
   duel[annonce.cote].cimetiere.push(annonce.carteId);
   camp.main.splice(camp.main.indexOf(carte.id), 1);
@@ -7425,6 +7510,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   const dejaPayee = Boolean(attenteMoba && attenteMoba.cote === cote && attenteMoba.carteId === carteId
     && attenteMoba.cibleId === cibleId && (attenteMoba.cibleSecondaireId ?? null) === (cibleAllieeId ?? null));
   if (!dejaPayee && !camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  // Ces nouveaux soutiens sont des sorcelleries : aucune invocation gratuite
+  // pendant une réponse, un choix obligatoire, le mulligan ou une partie finie.
+  if (carte.renfortUneFois && !timingAscensionValide(duel, cote, { resolutionMoba: dejaPayee })) return { ok: false, raison: 'timing' };
+  if (!dejaPayee && carte.renfortUneFois && renfortDejaJoue(camp, carteId)) return { ok: false, raison: 'renfort-limite' };
+  if (carte.effet.type === 'renfort-ascension' && (!planRenfortAscension(camp, carte.effet).length || !emplacementRenfort(duel, cote))) return { ok: false, raison: 'cible' };
   // Magie rapide : le camp qui n'a pas la main peut la jouer pendant une
   // fenêtre de réponse (blocage, fin de tour), joueur comme sorcier.
   const fenetreEphémère = cote !== duel.tour
@@ -7525,12 +7615,8 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   if (carte.effet.type === 'reanimation') {
     // La Réanimation ne se lance qu'avec une créature au cimetière — le mana
     // reste entier, comme pour un renvoi sans cible.
-    const convient = (id) => {
-      const carteAuCimetiere = duelCardById(id);
-      return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
-        && !['terrain', 'site'].includes(carteAuCimetiere.kind);
-    };
-    if (!camp.cimetiere.some(convient)) return { ok: false, raison: 'cible' };
+    if (indexReanimation(camp, carte.effet) < 0
+      || (carte.effet.renfortAscension && !emplacementRenfort(duel, cote))) return { ok: false, raison: 'cible' };
   }
   const creatureRetourneeEnMain = carte.effet.type === 'retour-main'
     ? (carte.effet.cible === 'creature-amie'
@@ -7561,6 +7647,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
       // Même contrecarré, le sort gratuit a été lancé : la faveur du Kraken
       // est consommée.
       if (lancementGratuit) duel.magieGratuite = null;
+      if (carte.renfortUneFois) marquerRenfort(camp, carteId);
       return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
     }
   }
@@ -7579,7 +7666,10 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   } else {
     payer(duel, cote, carte, options);
   }
-  if (!dejaPayee) camp.main.splice(camp.main.indexOf(carteId), 1);
+  if (!dejaPayee) {
+    camp.main.splice(camp.main.indexOf(carteId), 1);
+    if (carte.renfortUneFois) marquerRenfort(camp, carteId);
+  }
   if (!dejaPayee && options?.annoncerSortMoba && duel.moba) {
     const cibleVoie = cibleId === 'sorcier' || options.cibleVoieMoba;
     const cibleCote = (options.reanimationMoba ? cote : null) ?? options.ciblePiocheMoba ?? options.cibleMainMoba ?? options.cibleZoneMoba ?? (options.cibleCombatMoba ? 'tous' : null) ?? (options.cibleVoieAllieeMoba || camp.creatures.some((entite) => entite.id === cibleId) ? cote : adv);
@@ -7803,8 +7893,8 @@ function declencherArmesAttaquants(duel, cote, bilans, { seulementAttaque = fals
           const carteIndex = duel[adv].cimetiere.indexOf(cible.carteId);
           if (carteIndex >= 0) {
             duel[adv].cimetiere.splice(carteIndex, 1);
-            duel[adv].main.push(cible.carteId);
-            duel.log.push(`${cible.name} revient dans la main de son propriétaire (sphère de rotation).`);
+            ajouterCarteEnMainOuReserve(duel[adv], cible.carteId);
+            duel.log.push(`${cible.name} revient ${estCarteAscension(cible.carteId) ? 'dans sa réserve d’Ascension' : 'dans la main de son propriétaire'} (sphère de rotation).`);
             declencheUn = true;
           }
         }
@@ -9448,6 +9538,7 @@ function reprendreTransitionRetours(duel) {
 
 function commencerNouveauTour(duel) {
   duel.tour = autre(duel.tour);
+  for (const cote of ['joueur', 'sorcier']) if (duel[cote].renfortsAscensionJoues) duel[cote].renfortsAscensionJoues = {};
   duel[duel.tour].invocationNormaleJouee = false;
   if (duel.moba) {
     duel.moba.creaturesJouees = { joueur: false, sorcier: false };

@@ -1,4 +1,4 @@
-/** Les huit listes bicolores du Sablier, communes aux modes classiques et MOBA.
+/** Les douze listes bicolores du Sablier, communes aux modes classiques et MOBA.
  * Ce module ne dépend pas du catalogue pour éviter un cycle avec rpgCards. */
 const deux = (id) => [id, id];
 
@@ -103,6 +103,60 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('la-vengeance-de-la-reine-anne'), 'la-barbe-rousse', 'le-chasseur-d-ocracoke',
       ...deux('grappin-d-abordage'), 'sphere-de-rotation',
       ...deux('lettre-de-marque'), ...deux('le-grand-debarquement'), ...deux('le-routier'), 'ressac',
+    ]),
+  }),
+  Object.freeze({
+    id: 'ascension-eclipse', name: 'Rite de l’Éclipse', elements: Object.freeze(['sable', 'tenebres']),
+    boxArt: 'scorpion-de-l-eclipse',
+    description: 'Ascension du Scorpion : un Scorpion Sable 2 et deux créatures Ténèbres 3. Convoi et Retour des ensevelis préparent les trois sacrifices ; Uræus et Javelot blessent la proie.',
+    cardIds: Object.freeze([
+      ...deux('scorpion-du-seuil'), ...deux('convoi-des-dunes'),
+      ...deux('garde-du-voile'), ...deux('porteur-de-la-plume'),
+      ...deux('ureus-du-seuil'), ...deux('momie-de-lin'), ...deux('veuve-des-urnes'),
+      ...deux('retour-des-ensevelis'), 'scribe-des-feuillets',
+      ...deux('rapport-du-greffier'), 'javelot-du-beffroi', ...deux('gardien-des-sept-sceaux'),
+      'lecteur-du-dernier-nom', 'celle-qui-pese',
+      ...deux('offrande-de-lin'), ...deux('effacement-des-faibles'), ...deux('papyrus'),
+    ]),
+  }),
+  Object.freeze({
+    id: 'ascension-verre', name: 'Forge du Verre Ardent', elements: Object.freeze(['braise', 'sable']),
+    boxArt: 'colosse-du-verre-ardent',
+    description: 'Ascension du Colosse : Djinns Braise 1 et 3, Élémental Sable 4. La Confluence et l’Éveil des dunes réunissent les trois sacrifices.',
+    cardIds: Object.freeze([
+      ...deux('djinn-de-la-premiere-etincelle'), ...deux('ghul-des-cendres'),
+      ...deux('djinn-de-la-flamme-mourante'), ...deux('djinn-de-la-fleche-ardente'),
+      ...deux('dune-marchante'), ...deux('confluence-des-etincelles'), ...deux('eveil-des-dunes'),
+      ...deux('fennec-des-decombres'), ...deux('djinn-de-foudre'),
+      'sahir-des-braises', 'djinn-des-cendres-vengeresses', 'tarek', 'ifrit-des-ergs',
+      ...deux('trait-de-braise'), ...deux('vent-rouge'), ...deux('frappe-iaijutsu'), 'armure-de-cendres', 'braise-et-sable',
+    ]),
+  }),
+  Object.freeze({
+    id: 'ascension-dragon', name: 'Éveil du Dragon Rouge', elements: Object.freeze(['braise', 'sable']),
+    boxArt: 'samourai-du-dragon-rouge',
+    description: 'Ascension du Dragon : Samouraïs 3 + 4, avec alternatives 2 + 5 et 1 + 6. Pioche, Réanimation et Convois pour préparer les matériaux.',
+    cardIds: Object.freeze([
+      ...deux('ashigaru-des-braises'), ...deux('hatamoto-des-cendres'),
+      ...deux('ronin-du-soleil-rouge'), ...deux('kenshi-de-la-forge'),
+      ...deux('onna-musha-des-cendres'), ...deux('samourai-du-torii'),
+      ...deux('convoi-des-dunes'), ...deux('scarabee-des-sceaux'), ...deux('tiziri-du-djurdjura'),
+      'daimyo-du-soleil-rouge', 'tojiro-le-pourfendeur',
+      ...deux('reanimation'), ...deux('rapport-du-greffier'), ...deux('frappe-iaijutsu'),
+      ...deux('rempart-de-dunes'), 'vent-rouge', 'armure-de-cendres',
+    ]),
+  }),
+  Object.freeze({
+    id: 'ascension-rempart', name: 'Serment du Dernier Rempart', elements: Object.freeze(['neige', 'tenebres']),
+    boxArt: 'jarl-du-dernier-rempart',
+    description: 'Ascension du Jarl : sept Vikings 3 et quatre Vikings 5. Les Valkyries trouvent les matériaux ; le Retour des ensevelis relève les Vikings Ténèbres 3.',
+    cardIds: Object.freeze([
+      ...deux('viking-des-neiges'), ...deux('guerrier-au-bouclier-rond'),
+      ...deux('gardien-viking-du-fjord'), ...deux('garde-du-trone-givre'), ...deux('veilleuse-de-la-lune-givree'),
+      ...deux('scalde-des-runes'), 'volva-soigneuse', ...deux('valkyrie-au-corbeau'),
+      ...deux('jarl-au-marteau-de-guerre'), ...deux('valkyrie-des-neuf-nuits'),
+      ...deux('retour-des-ensevelis'), ...deux('papyrus'), ...deux('poigne-de-givre'),
+      ...deux('festin-des-vaillants'), 'lance-de-la-lune-givree', 'hache-de-la-banquise', 'mur-de-boucliers',
     ]),
   }),
 ]);
