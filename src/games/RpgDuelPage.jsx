@@ -2944,6 +2944,7 @@ export function TableCard({
         entite.furieDeclenchee ? '' : cardFrameClass(carte),
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
+        !estSite && cardRarityInfo(carte).key === 'mythique' ? 'is-mythique-creature' : '',
         estSite ? 'rpg-card--site' : '',
         lienActif ? 'is-lien-actif' : '',
         entite.envol ? 'is-envol' : '',
@@ -3614,7 +3615,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         <div className="rpg-hover-card-preview__layout">
           {face}
           <div className="rpg-hover-card-preview__details-column">
-            <div className="rpg-hover-card-preview__details">{details}</div>
+            <div className="rpg-hover-card-preview__details" role="region" aria-label="Détails de la carte annoncée" tabIndex={0}>{details}</div>
             {controls}
           </div>
         </div>
@@ -14863,6 +14864,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     familleSort ? `rpg-hand__card--famille-${familleSort}` : '',
                     cardFrameClass(carte),
                     cardMotifClass(carte),
+                    estCreature && estMythique ? 'is-mythique-creature' : '',
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
                     defausseSelectionnee ? 'is-discard-selected' : '',
                     carte.instant ? 'is-instant' : '',

@@ -184,6 +184,7 @@
     "check:rpg-combat-controls": "node scripts/rpg-combat-controls-check.mjs",
     "check:rpg-annonce-taille": "node scripts/rpg-annonce-taille-check.mjs",
     "check:rpg-annonce-magie": "node --test tests/rpg-annonce-magie.test.js && node scripts/rpg-annonce-magie-check.mjs",
+    "check:rpg-mythique-lueur": "node --test tests/rpg-mythique-lueur-creature.test.js tests/rpg-embuscade-lueur.test.js && node scripts/rpg-mythique-lueur-check.mjs",
     "check:rpg-avatars-mobile": "node scripts/rpg-avatars-mobile-check.mjs",
     "check:rpg-avatars-visages": "node --test tests/rpg-avatars-visages.test.js",
     "check:rpg-classique-individuel": "node --test tests/rpg-classique-combat-individuel.test.js tests/rpg-combat-indications.test.js tests/rpg-descriptions-combat-individuel.test.js tests/rpg-embuscade-lueur.test.js tests/rpg-lien-lueur.test.js && node scripts/rpg-classique-individuel-ui-check.mjs",
