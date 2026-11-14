@@ -370,24 +370,8 @@ export function rpgMobaChoisirVoieCentrale(duel, side, laneId) {
 // Cartes imprimées auditées : seules les conditions MOBA remplacent leur fenêtre de réaction.
 export const MOBA_EMBUSCADES_COMBAT = Object.freeze(['tojiro-le-pourfendeur', 'sanguinaire-des-dunes', 'gardienne-du-croissant', 'porte-etendard-de-leclipse', 'garde-du-trone-givre', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune']);
 export function rpgMobaPeutEmbuscade(duel, side, cardId) {
-  const carte = duelCardById(cardId);
-  const condition = rpgMobaConditionSpeciale(duel, side, cardId)
-    || rpgMobaConditionRapidite(duel, side, cardId)
-    || rpgMobaConditionImprimee(duel, side, cardId);
-  const fenetre = duel?.fenetreReponse && (
-    duel.combatDeclare?.cote === duel.tour || duel.finDeTour?.cote === duel.tour
-    || duel.mobaSortEnAttente?.cote === duel.tour || duel.mobaCreatureEnAttente?.cote === duel.tour
-    || duel.effetCreatureEnAttente?.cote === duel.tour);
-  return Boolean(duel?.moba && side !== duel.tour && MOBA_SIDES.includes(side) && carte && condition && fenetre
-    && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length && !duel.defausseEnAttente
-    && !duel.siteEnAttente && !duel.mobaRechercheEnAttente && !duel.mobaReponseSuspendue
-    && !duel.mobaEmbuscadeArrivee && !duel.moba.winner && !duel.fin?.gagnant && !duel.fin?.nul && !duel.moba.centerChoice
-    && duel.manaEssaiDemarre
-    && !duel[side].prochaineArriveeAbordage && !duel[side].abordageDesArrivees
-    && duel[side].main.includes(cardId) && rpgPeutPayer(duel[side], carte)
-    && invocationPossible(duel, side, carte, true) && rpgMobaPlacementCoherent(duel)
-    && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, side, lane.id)
-      && lane.slots[side].some((id) => id === null)));
+  // Une Invocation spéciale ne peut pas être jouée en réponse au tour adverse.
+  return false;
 }
 
 /** En phase principale, la condition ouvre aussi l'invocation spéciale sur
@@ -415,7 +399,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId
     || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
-  if (side !== duel.tour && !speciale) return fail('pas-votre-tour');
+  if (side !== duel.tour) return fail('pas-votre-tour');
   if (!duel.manaEssaiDemarre || duel.arriveeEnAttente || duel.destructionsEnAttente?.length
     || duel.defausseEnAttente || duel.siteEnAttente
     || (!attente && !speciale && (!['principale', 'principale2'].includes(duel.phase)

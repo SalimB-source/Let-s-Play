@@ -6187,6 +6187,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     && cote === 'sorcier' && duel.tour === 'joueur' && !duel.annonce
     && annonceContree.cote === 'joueur'
     && (estCarteAscension(annonceContree.carteId) ? duel.joueur.reserveAscension : duel.joueur.main)?.includes(annonceContree.carteId);
+  if (duel.tour !== cote) return { ok: false, raison: 'pas-votre-tour' };
   if (annonceContree && !reponseIA) return { ok: false, raison: 'timing' };
   const annonceReponse = reponseIA ? annonceContree : duel.annonce;
   // Le MOBA réserve la créature annoncée et la retire de la main après
@@ -6195,14 +6196,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     && annonceCreatureMobaOrigine && annonceCreatureMobaOrigine.cote === autre(cote)
     && (annonceCreatureMobaOrigine === duel.mobaCreatureEnAttente || annonceCreatureMobaOrigine === attenteMoba?.origineCreature));
   if (duel.moba && annonceCreatureMobaOrigine) return { ok: false, raison: 'pas-votre-tour' };
-  if (duel.moba && duel.tour !== cote && !invocationSpecialeMoba) return { ok: false, raison: 'pas-votre-tour' };
-  if (!duel.moba && duel.tour !== cote && !(rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.moba && invocationSpecialeMoba && !dejaPayee
-    && !(duel.tour === cote ? rpgInvocationSpecialeSurSonTour(duel, cote, carte)
-      : duel.fenetreReponse && (rpgMobaConditionSpeciale(duel, cote, carteId)
-        || rpgMobaConditionRapidite(duel, cote, carteId)
-        || rpgMobaConditionImprimee(duel, cote, carteId)))) return { ok: false, raison: 'condition-embuscade' };
-  if ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour !== cote && !(duel.fenetreReponse || reponseIA)) return { ok: false, raison: 'timing' };
+    && !rpgInvocationSpecialeSurSonTour(duel, cote, carte)) return { ok: false, raison: 'condition-embuscade' };
   if (!contreCreatureMoba && !(duel.moba && invocationSpecialeMoba)
     && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
@@ -9312,19 +9307,8 @@ export function rpgOuvrirFinDeTour(duel) {
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id) ?? duelCardById(id);
-    if (duel.moba && duel.tour !== cote && (
-      rpgMobaConditionSpeciale(duel, cote, id) || rpgMobaConditionRapidite(duel, cote, id)
-      || rpgMobaConditionImprimee(duel, cote, id))) {
-      return invocationPossible(duel, cote, carte, true) && rpgPeutPayer(duel[cote], carte)
-        && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, cote, lane.id) && lane.slots[cote].some((slot) => slot === null));
-    }
-    if (duel.moba && (carte?.reactionTourAdverse || Object.hasOwn(MOBA_RAPIDITE_EMBUSCADES, id))) return false;
-    if (!duel.moba && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse) && duel.tour !== cote) {
-      return rpgPeutPayer(duel[cote], carte)
-        && invocationPossible(duel, cote, carte)
-        && rpgContreJouable(duel, cote, carte)
-        && rpgConditionEmbuscadeRemplie(duel, cote, carte);
-    }
+    // Les créatures avec Invocation spéciale ne sont jamais des réponses.
+    if (carte?.kind === 'creature' || carte?.kind === 'hero') return false;
     const prixMoba = Boolean(duel.moba && (carte?.prixPv ?? 0) > 0);
     const prixPayable = !prixMoba || duel.moba.lanes.some((lane) => lane.active && lane.hp[cote] > carte.prixPv);
     return Boolean(carte?.instant
@@ -9339,27 +9323,7 @@ export function rpgPeutRepondre(duel, cote) {
  *  joueur) : au plus une carte, la plus utile selon son profil. */
 export function rpgSorcierMagieRapide(duel, rng = Math.random, combat = null) {
   const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true, combat });
-  if (!coup) {
-    // En classique solo, les Embuscades sont elles aussi des réponses : tester
-    // leur pose sur une copie évite de payer ou de sacrifier pour un coup illégal.
-    if (duel.pvp || duel.moba || duel.tour !== 'joueur' || !duel.fenetreReponse) return null;
-    for (const id of new Set(duel.sorcier.main)) {
-      const carte = duelCardById(id);
-      if (!(rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse) || !rpgConditionEmbuscadeRemplie(duel, 'sorcier', carte)
-        || !invocationPossible(duel, 'sorcier', carte) || !rpgPeutPayer(duel.sorcier, carte)
-        || !rpgContreJouable(duel, 'sorcier', carte)) continue;
-      const cibles = [...new Set([rpgCibleAuto(duel, 'sorcier', carte), null,
-        ...duel.joueur.creatures.map((e) => e.id), ...duel.sorcier.creatures.map((e) => e.id), 'sorcier'])];
-      for (const cibleId of cibles) {
-        const copie = structuredClone(duel);
-        rpgReglerHasard(copie, () => 0.5);
-        if (!rpgJouerCreature(copie, 'sorcier', id, cibleId).ok) continue;
-        const res = rpgJouerCreature(duel, 'sorcier', id, cibleId);
-        if (res.ok) return { ...res, carteId: id, cibleId };
-      }
-    }
-    return null;
-  }
+  if (!coup) return null;
   const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
   // La cible repart avec le résultat : la page en a besoin pour dire, au-dessus
   // des piles du sorcier, ce que le sort vient de frapper.

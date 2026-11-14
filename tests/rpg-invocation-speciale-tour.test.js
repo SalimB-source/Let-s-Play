@@ -83,10 +83,10 @@ test('la spéciale personnelle exige la phase principale et aucune réponse en c
   d.phase = 'combat'; assert.equal(rpgInvocationSpecialeSurSonTour(d, 'joueur', c), false);
   d.phase = 'principale'; d.fenetreReponse = true; assert.equal(rpgInvocationSpecialeSurSonTour(d, 'joueur', c), false);
 });
-test('les fiches expliquent la pose spéciale sur les deux tours et le repli normal', () => {
+test('les fiches expliquent la pose spéciale à son tour et le repli normal', () => {
   const c = cardById(cible);
   for (const text of [effetsDetailles(c).pastilles.find((p) => p.cle === 'reactionTourAdverse').description, texteCombatIndividuel(c), rpgMobaCartePourApercu(c).text]) {
-    assert.match(text, /phase principale/); assert.match(text, /tour adverse/); assert.match(text, /invocation normale/);
+    assert.match(text, /phase principale/); assert.doesNotMatch(text, /(?:ou pendant le tour adverse|ou une fenêtre de réponse adverse)/); assert.match(text, /invocation normale/);
   }
 });
 
@@ -162,3 +162,85 @@ test('une spéciale adverse contrée ne consomme pas son invocation normale', ()
   assert.equal(d.sorcier.invocationNormaleJouee, false);
   assert.ok(d.sorcier.creatures.includes(ami));
 });
+
+for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
+  for (const fenetre of ['annonce', 'combat', 'effet', 'fin', 'aucune']) {
+    test(`${moba ? 'MOBA' : 'duel'} ${side} : aucune spéciale pendant ${fenetre} adverse, même avec drapeau interne`, () => {
+      const { d, ami, djinn } = preparer(moba, true, side);
+      d.tour = autre(side);
+      d[side].main = [cible];
+      d.fenetreReponse = fenetre !== 'aucune';
+      if (fenetre === 'annonce') {
+        if (moba) d.mobaSortEnAttente = { cote: d.tour, carteId: 'trait-de-braise' };
+        else d.annonce = { cote: d.tour, carteId: 'trait-de-braise' };
+      }
+      if (fenetre === 'combat') d.combatDeclare = { cote: d.tour, attaquants: [djinn.id], ciblesAttaque: {} };
+      if (fenetre === 'effet') d.effetCreatureEnAttente = { cote: d.tour };
+      if (fenetre === 'fin') d.finDeTour = { cote: d.tour };
+      const avant = JSON.stringify(d);
+      assert.equal(rpgInvocationSpecialeSurSonTour(d, side, cardById(cible)), false);
+      if (moba) {
+        assert.equal(rpgMobaInvocationSpecialeDisponible(d, side, cible), false);
+        assert.equal(rpgMobaJouerCreature(d, side, cible, 'left', 1, { sacrificeIds: [] }).ok, false);
+      } else {
+        assert.equal(rpgPvpAppliquer(d, side, { type: 'jouer-carte', carteId: cible }).ok, false);
+      }
+      assert.equal(rpgJouerCreature(d, side, cible, null, { invocationSpecialeMoba: true, sacrificeIds: [] }).ok, false);
+      assert.equal(JSON.stringify(d), avant);
+      assert.ok(d[side].creatures.includes(ami));
+    });
+  }
+}
+
+for (const moba of [false, true]) {
+  test(`${moba ? 'MOBA' : 'duel'} : un effet de mort crée toujours un jeton pendant le tour adverse`, async () => {
+    const { rpgMobaLancerMagie } = await import('../src/games/rpgMobaLocal.js');
+    const d = partie(moba, true);
+    d.joueur.main = ['momie-de-lin'];
+    const pose = moba ? rpgMobaJouerCreature(d, 'joueur', 'momie-de-lin', 'left', 0)
+      : rpgJouerCreature(d, 'joueur', 'momie-de-lin');
+    assert.ok(pose.ok, JSON.stringify(pose));
+    pose.entite.pv = 3;
+    rpgFinDeTour(d);
+    d.sorcier.main = ['trait-de-braise'];
+    const sort = moba ? rpgMobaLancerMagie(d, 'sorcier', 'trait-de-braise', pose.entite.id)
+      : rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'trait-de-braise', cibleId: pose.entite.id });
+    assert.ok(sort.ok, JSON.stringify(sort));
+    assert.ok(d.joueur.creatures.some((e) => e.carteId === 'shabti' && e.jeton));
+    assert.equal(d.tour, 'sorcier');
+  });
+}
+
+test('PvP : un contresort reste jouable pendant l’annonce adverse', () => {
+  const d = partie(false, true);
+  d.joueur.main = ['anqa-des-braises'];
+  d.sorcier.main = ['ecueil'];
+  d.annonce = { cote: 'joueur', carteId: 'anqa-des-braises' };
+  d.fenetreReponse = true;
+  const r = rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'ecueil' });
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.ok(d.sorcier.cimetiere.includes('ecueil'));
+  assert.ok(d.joueur.cimetiere.includes('anqa-des-braises'));
+});
+
+for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
+  test(`${moba ? 'MOBA' : 'PvP'} ${side} : une Magie Rapide reste utilisable en réponse`, async () => {
+    const { rpgOuvrirFinDeTour, rpgPeutRepondre } = await import('../src/games/rpgDuel.js');
+    const { rpgMobaTerminerTour, rpgMobaLancerMagie } = await import('../src/games/rpgMobaLocal.js');
+    const d = partie(moba, true), actif = autre(side);
+    if (d.tour !== actif) rpgFinDeTour(d);
+    d[actif].main = ['chien-du-guet'];
+    const cibleSort = moba ? rpgMobaJouerCreature(d, actif, 'chien-du-guet', 'left', 0)
+      : rpgJouerCreature(d, actif, 'chien-du-guet');
+    assert.ok(cibleSort.ok);
+    d[side].main = ['trait-de-braise', 'sentinelle-des-sables'];
+    assert.equal(rpgPeutRepondre(d, side), true);
+    if (moba) assert.ok(rpgMobaTerminerTour(d, actif).reponse);
+    else assert.ok(rpgOuvrirFinDeTour(d));
+    const r = moba ? rpgMobaLancerMagie(d, side, 'trait-de-braise', cibleSort.entite.id)
+      : rpgPvpAppliquer(d, side, { type: 'jouer-carte', carteId: 'trait-de-braise', cibleId: cibleSort.entite.id });
+    assert.ok(r.ok, JSON.stringify(r));
+    assert.ok(d[side].cimetiere.includes('trait-de-braise'));
+    assert.ok(d[side].main.includes('sentinelle-des-sables'));
+  });
+}

@@ -19,15 +19,13 @@ export function rpgMobaCartePourApercu(carte) {
     const texte = carte.reactionTourAdverse
       ? carte.text.replace(/^(?:Embuscade|Invocation spéciale)\s*[—-]\s*[^.]*\.\s*/u, '')
       : carte.text;
-    const arrivee = carte.id === 'sorcier-du-ressac-noir'
-      ? texte.replace(/Si vous la jouez ainsi, contrez cette carte de créature\. Le Sorcier du ressac noir arrive ensuite en jeu\.\s*/u, '')
-      : carte.id === 'sentinelle-des-sables'
-        ? texte.replace('créature attaquante ciblée', 'créature adverse ciblée de sa voie')
-        : carte.id === 'porte-etendard-de-leclipse'
-          ? texte.replace('jusqu’à la fin du tour', 'jusqu’à la fin du prochain tour adverse')
-          : texte;
+    const arrivee = carte.id === 'sentinelle-des-sables'
+      ? texte.replace('créature adverse ciblée', 'créature adverse ciblée de sa voie')
+      : carte.id === 'porte-etendard-de-leclipse'
+        ? texte.replace('jusqu’à la fin du tour', 'jusqu’à la fin du prochain tour adverse')
+        : texte;
     return { ...carte, reactionTourAdverse: false,
-      text: `Invocation spéciale — Pendant votre phase principale ou pendant le tour adverse dans une fenêtre de réponse, si la condition est remplie : ${ambush} Sans sacrifice et sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour. ${carte.id === 'sorcier-du-ressac-noir' ? 'À son arrivée, il renvoie la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire. ' : ''}${arrivee}` };
+      text: `Invocation spéciale — Pendant votre phase principale, si la condition est remplie : ${ambush} Sans sacrifice et sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour. ${arrivee}` };
   }
   return carte;
 }
@@ -38,10 +36,10 @@ export function rpgMobaNotesCarte(carte) {
   if (carte.rapidite) notes.push('Rapidité : cette créature peut attaquer dès son arrivée, sous réserve des autres restrictions.');
   if (carte.id === 'sandales-de-tislit') notes.push('En MOBA, les Sandales donnent +1/+1 au porteur et ne se jouent que pendant votre tour. Dans le duel classique, elles donnent +0/+1 et Rapidité.');
   if (['chien-de-sable', 'guepard'].includes(carte.id)) notes.push('Jeton : ne se joue pas depuis la main. En MOBA, son invocateur (Tarek ou Kusayla) peut être invoqué spécialement sous condition.');
-  if (MOBA_RAPIDITE_EMBUSCADES[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale ou une fenêtre de réponse adverse — ${MOBA_RAPIDITE_EMBUSCADES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
+  if (MOBA_RAPIDITE_EMBUSCADES[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_RAPIDITE_EMBUSCADES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
 
-  if (MOBA_EMBUSCADES_IMPRIMEES[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale ou une fenêtre de réponse adverse — ${MOBA_EMBUSCADES_IMPRIMEES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
-  if (MOBA_EMBUSCADES_CONDITIONS[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale ou une fenêtre de réponse adverse — ${MOBA_EMBUSCADES_CONDITIONS[carte.id]} Invocation spéciale sans sacrifice et sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour.`);
+  if (MOBA_EMBUSCADES_IMPRIMEES[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_EMBUSCADES_IMPRIMEES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
+  if (MOBA_EMBUSCADES_CONDITIONS[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_EMBUSCADES_CONDITIONS[carte.id]} Invocation spéciale sans sacrifice et sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour.`);
   if (['appat-de-la-meute', 'embuscade'].includes(carte.id)) notes.push('Injouable en MOBA : ce sort impose un blocage.');
   if (carte.provocation) notes.push('Provocation : priorité sur Défenseur si accessible ; +0/+1 par attaque qui la cible, jusqu’à la fin du tour.');
   if (carte.defenseur || carte.prioriteAttaqueRapide) notes.push('Défenseur : les attaques venant de sa voie doivent la viser en priorité si elle est accessible et qu’aucune Provocation accessible ne prime.');

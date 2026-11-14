@@ -4,7 +4,7 @@ import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js';
 
 /** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
- * Une Embuscade en réponse est spéciale, sans sacrifice ni quota. */
+ * Une Invocation spéciale à son tour est sans sacrifice ni quota. */
 export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false) {
   if (carte?.ascension) return carte.ascension.nombre;
   if (embuscade(duel, cote, carte, specialeMoba)) return 0;
@@ -36,8 +36,7 @@ export function rpgInvocationSpecialeSurSonTour(duel, cote, carte) {
   return rpgConditionEmbuscadeCommune(duel, cote, carte);
 }
 function embuscade(duel, cote, carte, specialeMoba = false) {
-  return Boolean(duel && cote && (specialeMoba
-    || (cote !== duel.tour && (rpgCarteEmbuscade(carte) || carte?.reactionTourAdverse))
+  return Boolean(duel && cote && cote === duel.tour && (specialeMoba
     || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {

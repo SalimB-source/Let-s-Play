@@ -1,4 +1,3 @@
-import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 /**
  * Le Sablier en ligne — protocole du mode PvP.
@@ -224,20 +223,15 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
     const carte = cardById(intention.carteId);
     if (cote !== rpgPvpAutreCote(duel.effetCreatureEnAttente.cote)
       || (intention.type !== 'passer-effet'
-        && !(intention.type === 'jouer-carte' && (carte?.instant || carte?.reactionTourAdverse || rpgCarteEmbuscade(carte))))) {
+        && !(intention.type === 'jouer-carte' && carte?.instant))) {
       return { ok: false, raison: 'effet-en-attente' };
     }
   }
   const actif = rpgPvpCoteActif(duel);
   if (intention.type === 'jouer-carte' && duel.tour !== cote
-    && (cardById(intention.carteId)?.reactionTourAdverse || rpgCarteEmbuscade(intention.carteId)) && !duel.fenetreReponse)
-    return { ok: false, raison: 'timing' };
-  const reaction = intention.type === 'jouer-carte' && duel.fenetreReponse && duel.tour !== cote
-    && (cardById(intention.carteId)?.reactionTourAdverse || rpgCarteEmbuscade(intention.carteId)) && duel[cote].main.includes(intention.carteId)
-    && rpgConditionEmbuscadeRemplie(duel, cote, cardById(intention.carteId))
-    && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
-    && !duel.defausseEnAttente?.restant && !duel.boualemEnAttente && !duel.siteEnAttente;
-  if (actif !== cote && !reaction) return { ok: false, raison: 'pas-votre-tour' };
+    && ['creature', 'hero'].includes(cardById(intention.carteId)?.kind))
+    return { ok: false, raison: 'pas-votre-tour' };
+  if (actif !== cote) return { ok: false, raison: 'pas-votre-tour' };
   return { ok: true, raison: null };
 }
 
@@ -512,7 +506,7 @@ function executerIntention(duel, cote, intention) {
       const source = carte.ascension ? (duel[cote].reserveAscension ?? []) : duel[cote].main;
       if (!source.includes(intention.carteId)) return { ok: false, raison: carte.ascension ? 'pas-en-reserve' : 'pas-en-main' };
       // Pendant le blocage, seules les magies rapides sont jouables.
-      if (duel.phase === 'blocage' && !((carte.kind === 'magie' && (carte.instant || carte.vitesse === 'rapide')) || ((carte.reactionAttaque || carte.reactionTourAdverse || rpgCarteEmbuscade(carte)) && duel.combatDeclare?.cote !== cote))) {
+      if (duel.phase === 'blocage' && !(carte.kind === 'magie' && (carte.instant || carte.vitesse === 'rapide'))) {
         return { ok: false, raison: 'phase-blocage' };
       }
       if (carte.kind === 'creature' || carte.kind === 'hero') {
