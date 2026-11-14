@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 
 const CARTES = {
-  jarl: { id: 'jarl-du-dernier-rempart', couts: [4, 4], materiaux: ['archere-viking-du-givre', 'valkyrie-au-corbeau'], effets: ['overkill', 'bouclier', 'furie'], stats: [4, 10], recette: /2 Vikings.*total 8/ },
-  scorpion: { id: 'scorpion-de-l-eclipse', couts: [2, 3, 3], materiaux: ['scorpion-du-seuil', 'ureus-du-seuil', 'ureus-du-seuil'], effets: ['poison', 'volDeVie'], stats: [5, 9], recette: /Scorpion Sable.*Ténèbres.*Ténèbres.*total 8/ },
-  colosse: { id: 'colosse-du-verre-ardent', couts: [1, 3, 4], materiaux: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'], effets: ['bouclier', 'contreAttaque'], stats: [7, 8], recette: /Djinn Braise.*Djinn Braise.*Élémental Sable.*total 8/ },
+  jarl: { id: 'jarl-du-dernier-rempart', couts: [3, 5], materiaux: ['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'], effets: ['overkill', 'bouclier', 'furie'], stats: [4, 10], recette: /Berserk des trois hivers.*Jarl au marteau de guerre.*total 8/ },
+  scorpion: { id: 'scorpion-de-l-eclipse', couts: [2, 3, 3], materiaux: ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin'], effets: ['poison', 'defenseur'], stats: [5, 9], recette: /Scorpion du seuil.*Uræus du seuil.*Momie de lin.*total 8/ },
+  colosse: { id: 'colosse-du-verre-ardent', couts: [1, 3, 4], materiaux: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'], effets: ['bouclier', 'provocation'], stats: [7, 8], recette: /Djinn de la première étincelle.*Djinn de la flamme mourante.*Dune marchante.*total 8/ },
 };
 
 export async function verifierDuoBrowser(browser, port, dossier) {
@@ -22,7 +22,7 @@ export async function verifierDuoBrowser(browser, port, dossier) {
       const avant = await lire(); const ids = [];
       for (const id of carte.materiaux) ids.push(avant.joueur.creatures.find(e => e.carteId === id && !ids.includes(e.id)).id);
       const destination = mode === 'moba' ? avant.moba.lanes.flatMap(l => l.slots.joueur.map((id, slot) => ({ id, lane: l.id, slot }))).find(p => p.id === ids[0]) : null;
-      await choisir(zone); assert.equal(await page.locator('[data-ascension-reserve-card]').count(), 4);
+      await choisir(zone); assert.equal(await page.locator('[data-ascension-reserve-card]').count(), 7);
       await face.scrollIntoViewIfNeeded(); await choisir(face);
       const apercu = page.locator('.rpg-ascension-card-preview');
       for (const effet of carte.effets) assert.equal(await apercu.locator(`[data-pastille="${effet}"]`).count(), 1, `${scene} : ${effet}`);
@@ -38,10 +38,8 @@ export async function verifierDuoBrowser(browser, port, dossier) {
       assert.deepEqual(await lire(), avant, 'consultation sans mutation');
       await choisir(page.locator('.rpg-ascension-prepare'));
       assert.match(await page.locator('.rpg-ascension-board-link small').innerText(), carte.recette);
-      for (let i = 0; i < ids.length; i++) {
-        assert.equal(await page.locator('.rpg-ascension-invoke').isDisabled(), true, 'pas de paiement avec une recette incomplète');
-        await choisir(materiau(ids[i])); assert.equal(await materiau(ids[i]).getAttribute('data-ascension-order'), String(i + 1));
-      }
+      assert.equal(await page.locator('[data-ascension-material]').count(), 0, 'sélection automatique');
+      assert.equal(await page.locator('.rpg-ascension-total.is-exact').count(), 1);
       assert.equal(await page.locator('.rpg-ascension-invoke').isEnabled(), true);
       const commandes = await page.locator('.rpg-ascension-invoke, .rpg-ascension-cancel').evaluateAll(ns => ns.every(n => {
         const r = n.getBoundingClientRect(); return r.x >= 0 && r.y >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && r.height >= 44 && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('button') === n;
@@ -54,18 +52,24 @@ export async function verifierDuoBrowser(browser, port, dossier) {
       await page.waitForFunction(id => window.__ASCENSION_TEST_DUEL__.joueur.creatures.some(e => e.carteId === id), carte.id);
       if (scene === 'scorpion') {
         const cible = avant.sorcier.creatures[0].id;
-        await choisir(corps(cible));
         await page.waitForFunction(id => !window.__ASCENSION_TEST_DUEL__.sorcier.creatures.some(e => e.id === id), cible);
+      }
+      if (scene === 'colosse') {
+        const panneau = mode === 'moba' ? page.locator('.moba__modal.moba__mulligan') : page.locator('.rpg-renfort-choix__panel');
+        await panneau.waitFor();
+        assert.match(await panneau.textContent(), /Djinn/);
+        assert.ok((await panneau.getByRole('button', { name: /Djinn de la première étincelle/ }).count()) > 0);
+        await choisir(panneau.getByRole('button', { name: /Terminer sans invoquer davantage/ }));
       }
       const apres = await lire(); const e = apres.joueur.creatures.find(e => e.carteId === carte.id);
       assert.equal(e.atk, carte.stats[0]); assert.equal(e.pv, carte.stats[1]);
-      assert.equal(apres.joueur.reserveAscension.length, 3); assert.ok(!apres.joueur.reserveAscension.includes(carte.id));
+      assert.equal(apres.joueur.reserveAscension.length, 6); assert.ok(!apres.joueur.reserveAscension.includes(carte.id));
       assert.ok(ids.every(id => !apres.joueur.creatures.some(e => e.id === id)));
       assert.equal(mode === 'moba' ? apres.moba.creaturesJouees.joueur : apres.joueur.invocationNormaleJouee, false);
       for (const effet of carte.effets) assert.equal(await corps(e.id).locator(`[data-effet="${effet}"]`).count(), 1, `plateau : ${effet}`);
       if (scene === 'colosse') for (const ennemi of avant.sorcier.creatures) {
         const maintenant = apres.sorcier.creatures.find(e => e.id === ennemi.id);
-        assert.equal(maintenant.pv, ennemi.pv - (mode === 'duel' || ennemi.mobaLane === e.mobaLane ? 2 : 0));
+        assert.equal(maintenant.pv, ennemi.pv, 'le Colosse ne provoque plus de dégâts de zone');
       }
       assert.deepEqual(erreurs, []);
       await page.screenshot({ path: `${dossier}/duo-${mode}-${scene}-${width}.png` });

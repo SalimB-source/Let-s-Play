@@ -34,25 +34,25 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   }),
   Object.freeze({
     id: 'sahir', name: 'Meute des braises', elements: Object.freeze(['sable', 'braise']),
-    description: 'Djinns rapides et chien de Tarek : attaquer tôt, piocher avec Sahir et finir avec des armes ou le feu.',
+    description: 'Djinns rapides et chien de Tarek : Confluence réunit les deux Djinns avec Dune marchante pour le Colosse du Verre Ardent dans la réserve.',
     cardIds: Object.freeze([
       ...deux('ashigaru-des-braises'), ...deux('ghul-des-cendres'), ...deux('djinn-de-la-premiere-etincelle'),
       ...deux('djinn-de-foudre'), ...deux('djinn-des-braises-voilees'), ...deux('fennec-des-decombres'),
       'sahir-des-braises', 'djinn-du-dernier-brasier', ...deux('djinn-de-la-flamme-mourante'), 'tarek', 'ifrit-des-ergs',
-      ...deux('javelot-du-beffroi'), ...deux('braise-et-sable'), 'lame-des-ergs',
-      ...deux('frappe-iaijutsu'), ...deux('vent-rouge'), ...deux('trait-de-braise'), 'rempart-de-dunes',
+      ...deux('javelot-du-beffroi'), ...deux('dune-marchante'), 'lame-des-ergs',
+      ...deux('frappe-iaijutsu'), ...deux('confluence-des-etincelles'), ...deux('trait-de-braise'), 'rempart-de-dunes',
     ]),
   }),
   Object.freeze({
     id: 'lionne', name: 'Forge des samouraïs', elements: Object.freeze(['neige', 'braise']),
-    description: 'Samouraïs, Harakiri et équipement : tenir avec les boucliers, déclencher le Serment et le Cavalier armé.',
+    description: 'Samouraïs, Harakiri et équipement : Rōnin et Onna-musha permettent aussi l’Ascension du Dragon Rouge depuis la réserve.',
     cardIds: Object.freeze([
       ...deux('ashigaru-des-braises'), ...deux('viking-des-neiges'), ...deux('hatamoto-des-cendres'),
       ...deux('guerrier-au-bouclier-rond'), ...deux('ronin-du-soleil-rouge'), ...deux('kenshi-de-la-forge'),
       ...deux('samourai-du-torii'), 'tengu-du-mont-ardent', 'daimyo-du-soleil-rouge',
       'lionne-du-midi-ardent', 'cavalier-des-deux-sabres', 'tojiro-le-pourfendeur',
       ...deux('hache-de-la-banquise'), 'armure-de-cendres', 'lance-de-givre',
-      'serment-de-la-forge', 'mur-de-boucliers', ...deux('frappe-iaijutsu'), 'defi-du-jarl', ...deux('trait-de-braise'),
+      'serment-de-la-forge', 'mur-de-boucliers', ...deux('frappe-iaijutsu'), 'defi-du-jarl', ...deux('onna-musha-des-cendres'),
     ]),
   }),
   Object.freeze({
@@ -69,15 +69,15 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   }),
   Object.freeze({
     id: 'vikings', name: 'Drakkars des fjords', elements: Object.freeze(['neige', 'eau']),
-    description: 'Compagnie viking et Furie : Eirik rassemble les guerriers, la Valkyrie cherche les renforts et les marées dégagent leurs voies.',
+    description: 'Compagnie viking et Furie : Guerrier et Gardien ouvrent l’Ascension de la Valkyrie ; Berserk et Jarl préparent celle du Dernier Rempart.',
     cardIds: Object.freeze([
       ...deux('viking-des-neiges'), 'eirik-du-premier-serment', ...deux('gardien-viking-du-fjord'),
-      ...deux('berserk-des-trois-hivers'), ...deux('scalde-des-runes'), ...deux('guetteuse-des-marees'),
+      ...deux('berserk-des-trois-hivers'), ...deux('scalde-des-runes'), ...deux('guerrier-au-bouclier-rond'),
       ...deux('valkyrie-au-corbeau'), ...deux('archere-viking-du-givre'),
       ...deux('pilote-de-la-carreira'), 'jarl-au-marteau-de-guerre', 'drakkar-a-tete-de-dragon',
       'le-cavalier-du-ressac-gele',
       ...deux('hache-de-la-banquise'), 'lance-de-givre',
-      ...deux('brume-du-fjord'), ...deux('hurlement-du-blizzard'), ...deux('ressac'), 'courant-de-retour',
+      ...deux('ralliement-des-neiges'), ...deux('hurlement-du-blizzard'), ...deux('ressac'), 'courant-de-retour',
     ]),
   }),
   Object.freeze({
@@ -95,25 +95,25 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   }),
   Object.freeze({
     id: 'corsaires', name: 'Flotte de l’abordage', elements: Object.freeze(['sable', 'eau']),
-    description: 'Abordage et Butin : remplir les cales, piocher avec la Lettre de marque et lancer le Grand Débarquement.',
+    description: 'Abordage et Butin : Raïs et le Hollandais volant invoquent l’Amiral des abysses depuis la réserve ; le Cotre permet aussi l’Ascension du Serpent.',
     cardIds: Object.freeze([
       ...deux('mousse-des-galiotes'), ...deux('pilote-de-la-carreira'), ...deux('negociant-des-ranscons'),
       ...deux('rais-de-la-galiote'), ...deux('cotre-de-course'), ...deux('le-renegat'),
       ...deux('guetteuse-des-marees'), ...deux('galion-de-la-flotte'),
       ...deux('la-vengeance-de-la-reine-anne'), 'la-barbe-rousse', 'le-chasseur-d-ocracoke',
       ...deux('grappin-d-abordage'), 'sphere-de-rotation',
-      ...deux('lettre-de-marque'), ...deux('le-grand-debarquement'), ...deux('le-routier'), 'ressac',
+      ...deux('lettre-de-marque'), ...deux('le-grand-debarquement'), 'le-routier', 'appel-des-marees', 'ressac',
     ]),
   }),
   Object.freeze({
     id: 'ascension-eclipse', name: 'Rite de l’Éclipse', elements: Object.freeze(['sable', 'tenebres']),
     boxArt: 'scorpion-de-l-eclipse',
-    description: 'Ascension du Scorpion : un Scorpion Sable 2 et deux créatures Ténèbres 3. Convoi et Retour des ensevelis préparent les trois sacrifices ; Uræus et Javelot blessent la proie.',
+    description: 'Ascension du Scorpion : Scorpion du seuil, Uræus du seuil et Momie de lin. Le Convoi et le Retour préparent les sacrifices.',
     cardIds: Object.freeze([
       ...deux('scorpion-du-seuil'), ...deux('convoi-des-dunes'),
       ...deux('garde-du-voile'), ...deux('porteur-de-la-plume'),
       ...deux('ureus-du-seuil'), ...deux('momie-de-lin'), ...deux('veuve-des-urnes'),
-      ...deux('retour-des-ensevelis'), 'scribe-des-feuillets',
+      ...deux('retour-des-ensevelis'), 'gardienne-des-sables-ensevelis',
       ...deux('rapport-du-greffier'), 'javelot-du-beffroi', ...deux('gardien-des-sept-sceaux'),
       'lecteur-du-dernier-nom', 'celle-qui-pese',
       ...deux('offrande-de-lin'), ...deux('effacement-des-faibles'), ...deux('papyrus'),
@@ -122,7 +122,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   Object.freeze({
     id: 'ascension-verre', name: 'Forge du Verre Ardent', elements: Object.freeze(['braise', 'sable']),
     boxArt: 'colosse-du-verre-ardent',
-    description: 'Ascension du Colosse : Djinns Braise 1 et 3, Élémental Sable 4. La Confluence et l’Éveil des dunes réunissent les trois sacrifices.',
+    description: 'Ascension du Colosse : Djinn de la première étincelle, Djinn de la flamme mourante et Dune marchante. Confluence et Éveil les réunissent.',
     cardIds: Object.freeze([
       ...deux('djinn-de-la-premiere-etincelle'), ...deux('ghul-des-cendres'),
       ...deux('djinn-de-la-flamme-mourante'), ...deux('djinn-de-la-fleche-ardente'),
@@ -135,12 +135,12 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   Object.freeze({
     id: 'ascension-dragon', name: 'Éveil du Dragon Rouge', elements: Object.freeze(['braise', 'sable']),
     boxArt: 'samourai-du-dragon-rouge',
-    description: 'Ascension du Dragon : Samouraïs 3 + 4, avec alternatives 2 + 5 et 1 + 6. Pioche, Réanimation et Convois pour préparer les matériaux.',
+    description: 'Ascension du Dragon : Rōnin du Soleil rouge et Onna-musha des cendres. Pioche, Réanimation et Gardienne préparent les matériaux.',
     cardIds: Object.freeze([
       ...deux('ashigaru-des-braises'), ...deux('hatamoto-des-cendres'),
       ...deux('ronin-du-soleil-rouge'), ...deux('kenshi-de-la-forge'),
       ...deux('onna-musha-des-cendres'), ...deux('samourai-du-torii'),
-      ...deux('convoi-des-dunes'), ...deux('scarabee-des-sceaux'), ...deux('tiziri-du-djurdjura'),
+      ...deux('convoi-des-dunes'), 'scarabee-des-sceaux', 'gardienne-des-sables-ensevelis', ...deux('tiziri-du-djurdjura'),
       'daimyo-du-soleil-rouge', 'tojiro-le-pourfendeur',
       ...deux('reanimation'), ...deux('rapport-du-greffier'), ...deux('frappe-iaijutsu'),
       ...deux('rempart-de-dunes'), 'vent-rouge', 'armure-de-cendres',
@@ -149,14 +149,14 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
   Object.freeze({
     id: 'ascension-rempart', name: 'Serment du Dernier Rempart', elements: Object.freeze(['neige', 'tenebres']),
     boxArt: 'jarl-du-dernier-rempart',
-    description: 'Ascension du Jarl : sept Vikings 3 et quatre Vikings 5. Les Valkyries trouvent les matériaux ; le Retour des ensevelis relève les Vikings Ténèbres 3.',
+    description: 'Ascensions du Jarl et de la Valkyrie : leurs quatre matériaux nommés sont présents. Ralliement et Valkyrie au corbeau aident à les réunir.',
     cardIds: Object.freeze([
       ...deux('viking-des-neiges'), ...deux('guerrier-au-bouclier-rond'),
       ...deux('gardien-viking-du-fjord'), ...deux('garde-du-trone-givre'), ...deux('veilleuse-de-la-lune-givree'),
-      ...deux('scalde-des-runes'), 'volva-soigneuse', ...deux('valkyrie-au-corbeau'),
+      ...deux('berserk-des-trois-hivers'), 'volva-soigneuse', ...deux('valkyrie-au-corbeau'),
       ...deux('jarl-au-marteau-de-guerre'), ...deux('valkyrie-des-neuf-nuits'),
       ...deux('retour-des-ensevelis'), ...deux('papyrus'), ...deux('poigne-de-givre'),
-      ...deux('festin-des-vaillants'), 'lance-de-la-lune-givree', 'hache-de-la-banquise', 'mur-de-boucliers',
+      ...deux('festin-des-vaillants'), 'lance-de-la-lune-givree', 'ralliement-des-neiges', 'mur-de-boucliers',
     ]),
   }),
 ]);

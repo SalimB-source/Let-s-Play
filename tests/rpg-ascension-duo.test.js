@@ -30,8 +30,8 @@ import { rpgReglerHasard, rpgSorcierAnnonceSuivante, rpgSorcierResoudreAnnonce }
 const JARL = 'jarl-du-dernier-rempart', SCORPION = 'scorpion-de-l-eclipse', COLOSSE = 'colosse-du-verre-ardent';
 const CONVOI = 'convoi-des-dunes', RETOUR = 'retour-des-ensevelis', CONFLUENCE = 'confluence-des-etincelles', EVEIL = 'eveil-des-dunes';
 const RECETTES = {
-  [JARL]: ['gardien-viking-du-fjord', 'jarl-au-marteau-de-guerre'],
-  [SCORPION]: ['scorpion-du-seuil', 'ureus-du-seuil', 'ureus-du-seuil'],
+  [JARL]: ['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'],
+  [SCORPION]: ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin'],
   [COLOSSE]: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'],
 };
 function nouveau(moba = false, options = {}) {
@@ -187,15 +187,13 @@ for (const moba of [false, true]) for (const [id, cartes] of [
   [JARL, ['archere-viking-du-givre', 'valkyrie-au-corbeau']],
   [SCORPION, ['lecteur-du-dernier-nom', 'scorpion-du-seuil', 'garde-du-voile']],
   [COLOSSE, ['djinn-de-foudre', 'djinn-des-braises-voilees', 'dune-marchante']],
-]) test(`${moba ? 'MOBA' : 'Duel'} : ${id} accepte une autre répartition totalisant 8`, () => {
+]) test(`${moba ? 'MOBA' : 'Duel'} : ${id} refuse d’autres cartes malgré un total de 8`, () => {
   const d = nouveau(moba); const es = cartes.map(c => poser(d, c));
   const ids = es.map(e => e.id);
-  assert.ok(validerMateriauxAscension(d.joueur, id, ids).ok);
-  assert.ok(combinaisonsAscension(d.joueur, id).some(g => ids.every(x => g.some(e => e.id === x))));
-  assert.ok(rpgCombinaisonsSacrificesIA(d, 'joueur', cardById(id)).some(g => ids.every(x => g.some(e => e.id === x))));
-  const result = invoquer(d, id, es);
-  assert.ok(result.ok, result.raison);
-  assert.ok(es.every(e => !d.joueur.creatures.some(v => v.id === e.id)));
+  assert.equal(validerMateriauxAscension(d.joueur, id, ids).raison, 'ascension-recette');
+  assert.equal(combinaisonsAscension(d.joueur, id).length, 0);
+  assert.equal(rpgCombinaisonsSacrificesIA(d, 'joueur', cardById(id)).length, 0);
+  sansMutation(d, () => invoquer(d, id, es));
 });
 
 for (const moba of [false, true]) for (const [id, cartes] of [
@@ -209,7 +207,7 @@ for (const moba of [false, true]) for (const [id, cartes] of [
   sansMutation(d, () => invoquer(d, id, es));
 });
 
-for (const moba of [false, true]) test(`${moba ? 'MOBA' : 'Duel'} : un Shabti créé gratuitement compte 1 pour le Scorpion`, () => {
+for (const moba of [false, true]) test(`${moba ? 'MOBA' : 'Duel'} : un Shabti ne remplace pas les cartes nommées du Scorpion`, () => {
   const d = nouveau(moba);
   const grand = poser(d, 'lecteur-du-dernier-nom');
   const scorpion = poser(d, 'scorpion-du-seuil');
@@ -218,11 +216,8 @@ for (const moba of [false, true]) test(`${moba ? 'MOBA' : 'Duel'} : un Shabti cr
   const jeton = d.joueur.creatures.find(e => e.carteId === 'shabti');
   assert.ok(jeton && jeton.jeton);
   const es = [scorpion, jeton, grand];
-  assert.ok(validerMateriauxAscension(d.joueur, SCORPION, es.map(e => e.id)).ok);
-  const result = invoquer(d, SCORPION, es);
-  assert.ok(result.ok, result.raison);
-  assert.ok(!d.joueur.creatures.some(e => e.id === jeton.id));
-  if (moba) assert.ok(!d.joueur.cimetiere.includes('shabti')); // Règles existantes propres à chaque mode.
+  assert.equal(validerMateriauxAscension(d.joueur, SCORPION, es.map(e => e.id)).raison, 'ascension-recette');
+  sansMutation(d, () => invoquer(d, SCORPION, es));
 });
 
 test('trois sacrifices : ni présence dupliquée, ni mort, ni ancienne sélection ; coûts imprimés invariants', () => {
@@ -243,8 +238,8 @@ test('les combinaisons et l’IA réutilisent les rôles exacts, y compris une s
   assert.equal(groupes.length, 1); assert.equal(groupes[0].length, 3);
   assert.deepEqual(rpgCombinaisonsSacrificesIA(d, 'joueur', cardById(SCORPION)).map(g => g.map(e => e.id)), groupes.map(g => g.map(e => e.id)));
   assert.equal(JSON.stringify(d), avant);
-  assert.match(libelleRecetteAscension(JARL), /2 Vikings.*total 8/);
-  assert.match(libelleRecetteAscension(SCORPION), /Scorpion Sable.*Ténèbres.*Ténèbres.*total 8/);
+  assert.match(libelleRecetteAscension(JARL), /Berserk des trois hivers.*Jarl au marteau de guerre.*total 8/);
+  assert.match(libelleRecetteAscension(SCORPION), /Scorpion du seuil.*Uræus du seuil.*Momie de lin.*total 8/);
 });
 
 test('un hybride peut prendre un rôle, jamais deux : appariement sans dépendance à l’ordre', () => {
@@ -270,45 +265,31 @@ test('Jarl : 4/10, Bouclier puis Furie 4 réversible ; la face change réellemen
   assert.match(cardArt(JARL), /casque-loup-v2/); assert.match(cardArtFurie(JARL), /furie.*\?v=/);
 });
 
-test('Scorpion : l’arrivée exige une proie blessée sous le seuil, refus atomique sinon', () => {
-  const d = nouveau(); const es = materiaux(d, SCORPION); const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier');
-  assert.equal(cibleRespecteCoutMax(cardById(SCORPION), cible), false);
-  sansMutation(d, () => invoquer(d, SCORPION, es, cible.id));
-  rpgBlesserCreature(d, 'sorcier', cible.id, 1);
-  const r = invoquer(d, SCORPION, es, cible.id); assert.ok(r.ok, r.raison);
-  assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id));
-  assert.ok(d.sorcier.cimetiere.includes(cible.carteId));
+test('Scorpion : détruit les créatures blessées des deux camps sans toucher aux autres', () => {
+  const d = nouveau(); const es = materiaux(d, SCORPION);
+  const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier'); const intacte = poser(d, 'viking-des-neiges', 'sorcier');
+  const allie = poser(d, 'gardien-viking-du-fjord');
+  rpgBlesserCreature(d, 'sorcier', cible.id, 1); rpgBlesserCreature(d, 'joueur', allie.id, 1);
+  const r = invoquer(d, SCORPION, es); assert.ok(r.ok, r.raison);
+  assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id)); assert.ok(!d.joueur.creatures.some(e => e.id === allie.id));
+  assert.ok(d.sorcier.creatures.some(e => e.id === intacte.id)); assert.equal(r.entite.defenseur, true);
 });
 
-test('Scorpion : des dégâts seulement absorbés par une armure ne créent pas une proie blessée', () => {
-  const cible = { carteId: 'gardien-viking-du-fjord', pv: 6, pvMax: 6, def: 6,
-    arme: { carteId: 'cuirasse-de-sel', armure: { max: 2, restant: 2 } } };
-  assert.equal(cibleRespecteCoutMax(cardById(SCORPION), cible), false);
-  cible.pv = 5; cible.arme.armure.restant = 1;
-  assert.equal(cibleRespecteCoutMax(cardById(SCORPION), cible), false);
-  cible.pv = 3; cible.arme.armure.restant = 0;
-  assert.equal(cibleRespecteCoutMax(cardById(SCORPION), cible), true);
-});
-
-test('Scorpion : Poison et Vol de vie fonctionnent en combat réel', () => {
+test('Scorpion : Poison fonctionne en combat réel sans Vol de vie', () => {
   const d = nouveau(); const r = invoquer(d, SCORPION, materiaux(d, SCORPION)); assert.ok(r.ok, r.raison);
   rpgFinDeTour(d); rpgFinDeTour(d);
   const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier'); cible.pv = 12; cible.pvMax = 12; cible.def = 12;
   const pv = d.joueur.pv; assert.ok(rpgAttaquerCreature(d, 'joueur', r.entite.id, cible.id).ok);
   assert.equal(cible.pv, 7); assert.equal(cible.poison.degats, 1); assert.equal(cible.poison.toursRestants, 2);
-  assert.equal(d.joueur.pv, pv + 3);
+  assert.equal(d.joueur.pv, pv);
   rpgFinDeTour(d); assert.equal(d.tour, 'sorcier'); assert.equal(cible.pv, 6); assert.equal(cible.poison.toursRestants, 1);
 });
 
-test('Colosse : arrivée de zone, Bouclier et Contre-attaque ne sont pas seulement du texte', () => {
-  const d = nouveau(); const es = materiaux(d, COLOSSE); const allie = poser(d, 'viking-des-neiges');
-  const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier'); const pv = cible.pv;
+test('Colosse : Bouclier et Provocation, sans Contre-attaque', () => {
+  const d = nouveau(); const es = materiaux(d, COLOSSE);
   const r = invoquer(d, COLOSSE, es); assert.ok(r.ok, r.raison);
-  assert.equal(cible.pv, pv - 2); assert.equal(allie.pv, 1); assert.equal(r.entite.bouclier, 1); assert.equal(r.entite.contreAttaque, true);
-  const attaquant = poser(d, 'feriel', 'sorcier'); d.tour = 'sorcier';
-  assert.ok(rpgLancerAttaque(d, 'sorcier', [attaquant.id], null, null, null, { [attaquant.id]: r.entite.id }).ok);
-  assert.equal(r.entite.pv, 5); assert.ok(!d.sorcier.creatures.some(e => e.id === attaquant.id));
-  assert.equal(r.entite.bouclier, 1, 'une attaque ne consomme pas la parade anti-effet');
+  assert.equal(r.entite.bouclier, 1); assert.equal(r.entite.provocation, true); assert.equal(r.entite.contreAttaque, false);
+  assert.equal(d.renfortChoixEnAttente?.sourceCarteId, COLOSSE);
 });
 
 for (const moba of [false, true]) test(`Convoi : vrai renfort, sans seconde invocation normale et sans boucle (${moba ? 'MOBA' : 'Duel'})`, () => {
@@ -415,12 +396,14 @@ test('MOBA : une annonce de renfort réussie ne se résout pas deux fois', () =>
   sansMutation(d, () => rpgMobaPasserSort(d, 'sorcier')); assert.ok(rpgMobaPlacementCoherent(d));
 });
 
-test('MOBA : le Colosse ne souffle que dans sa voie et ne touche pas les alliés', () => {
-  const d = nouveau(true); const es = materiaux(d, COLOSSE);
+test('MOBA : le Scorpion détruit les créatures blessées dans sa voie', () => {
+  const d = nouveau(true); const es = materiaux(d, SCORPION);
   const gauche = poser(d, 'gardien-viking-du-fjord', 'sorcier', 'left');
   const droite = poser(d, 'gardien-viking-du-fjord', 'sorcier', 'right');
-  const avant = [gauche.pv, droite.pv]; const r = invoquer(d, COLOSSE, es); assert.ok(r.ok, r.raison);
-  assert.equal(gauche.pv, avant[0] - 2); assert.equal(droite.pv, avant[1]); assert.ok(rpgMobaPlacementCoherent(d));
+  rpgBlesserCreature(d, 'sorcier', gauche.id, 1); rpgBlesserCreature(d, 'sorcier', droite.id, 1);
+  const r = invoquer(d, SCORPION, es); assert.ok(r.ok, r.raison);
+  assert.ok(!d.sorcier.creatures.some(e => e.id === gauche.id)); assert.ok(d.sorcier.creatures.some(e => e.id === droite.id));
+  assert.ok(rpgMobaPlacementCoherent(d));
 });
 
 test('PvP : recette à trois contrôlée par l’arbitre, réserve publique et quota normal préservé', () => {
@@ -540,21 +523,13 @@ test('MOBA : renfort annoncé privé de sa source se dissipe une fois, sans perd
   sansMutation(d, () => rpgMobaPasserSort(d, 'sorcier'));
 });
 
-test('MOBA Scorpion : désignation hostile dans sa voie, réponse de Bouclier et résolution unique', () => {
+test('MOBA Scorpion : un bouclier bloque sa vague de destruction', () => {
   const d = nouveau(true); const es = materiaux(d, SCORPION);
-  const proche = poser(d, 'gardien-viking-du-fjord', 'sorcier', 'left');
-  const loin = poser(d, 'gardien-viking-du-fjord', 'sorcier', 'right');
-  rpgBlesserCreature(d, 'sorcier', proche.id, 1); rpgBlesserCreature(d, 'sorcier', loin.id, 1);
-  d.sorcier.main = ['parade-du-verre'];
-  assert.ok(invoquer(d, SCORPION, es).ok); assert.ok(d.arriveeEnAttente);
-  sansMutation(d, () => rpgMobaResoudreArrivee(d, 'joueur', loin.id));
-  const avant = JSON.stringify(d); assert.equal(rpgMobaChoisirArriveeIA(d, 'joueur'), proche.id); assert.equal(JSON.stringify(d), avant);
-  assert.ok(rpgMobaResoudreArrivee(d, 'joueur', proche.id).ok); assert.ok(d.effetCreatureEnAttente); assert.equal(proche.bouclier, 0);
-  assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'parade-du-verre', proche.id).ok); assert.equal(proche.bouclier, 1);
-  assert.ok(rpgMobaPasserEffetCreature(d, 'sorcier').ok);
-  assert.ok(d.sorcier.creatures.some(e => e.id === proche.id)); assert.equal(proche.bouclier, 0);
-  assert.equal(d.effetCreatureEnAttente, null); assert.equal(d.fenetreReponse, false);
-  sansMutation(d, () => rpgMobaPasserEffetCreature(d, 'sorcier')); assert.ok(rpgMobaPlacementCoherent(d));
+  const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier', 'left');
+  rpgBlesserCreature(d, 'sorcier', cible.id, 1); cible.bouclier = 1;
+  assert.ok(invoquer(d, SCORPION, es).ok);
+  assert.ok(d.sorcier.creatures.some(e => e.id === cible.id)); assert.equal(cible.bouclier, 0);
+  assert.ok(rpgMobaPlacementCoherent(d));
 });
 
 test('deux préconstruits Ascension de 30 cartes, légaux en Duel et MOBA, avec tous les rôles et soutiens', () => {
@@ -578,12 +553,10 @@ for (const moba of [false, true]) test(`IA ${moba ? 'MOBA' : 'Duel'} : le Convoi
   assert.ok(r.ok, r.raison); assert.ok(d[side].creatures.some(e => e.carteId === 'scorpion-du-seuil'));
 });
 
-test('Scorpion : le seuil d’arrivée lit le coût imprimé, pas l’équipement ni un coût forgé', () => {
+test('Scorpion : sa vague ne dépend pas du coût de la créature blessée', () => {
   const d = nouveau(); const es = materiaux(d, SCORPION); const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier');
   rpgBlesserCreature(d, 'sorcier', cible.id, 1); Object.assign(cible, { coutBonusArme: 10, cost: 99 });
-  assert.equal(cibleRespecteCoutMax(cardById(SCORPION), cible), true);
-  assert.equal(cibleRespecteCoutMax({ arrivee: { coutMax: 4 } }, cible), false, 'seuils historiques inchangés');
-  assert.ok(invoquer(d, SCORPION, es, cible.id).ok); assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id));
+  assert.ok(invoquer(d, SCORPION, es).ok); assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id));
 });
 
 for (const moba of [false, true]) test(`renfort sans Rapidité : ne peut attaquer avant son prochain tour, puis se dégage (${moba ? 'MOBA' : 'Duel'})`, () => {
@@ -594,13 +567,13 @@ for (const moba of [false, true]) test(`renfort sans Rapidité : ne peut attaque
   rpgFinDeTour(d); assert.equal(d.tour, 'joueur'); assert.equal(rpgPeutAttaquer(e), true);
 });
 
-for (const moba of [false, true]) test(`trois sacrifices simultanés et deux morts de Momie ne volent pas la destination (${moba ? 'MOBA' : 'Duel'})`, () => {
+for (const moba of [false, true]) test(`trois sacrifices simultanés et la mort de Momie ne volent pas la destination (${moba ? 'MOBA' : 'Duel'})`, () => {
   const d = nouveau(moba, { modeMana: 'essai' });
-  const es = ['scorpion-du-seuil', 'momie-de-lin', 'momie-de-lin'].map(c => poser(d, c));
+  const es = ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin'].map(c => poser(d, c));
   poser(d, 'viking-des-neiges'); poser(d, 'viking-des-neiges');
   const r = invoquer(d, SCORPION, es); assert.ok(r.ok, r.raison);
-  assert.equal(d.joueur.creatures.filter(e => e.jeton).length, 2); assert.equal(d.joueur.creatures.length, 5);
-  assert.equal(d.joueur.cimetiere.filter(id => id === 'momie-de-lin').length, 2);
+  assert.equal(d.joueur.creatures.filter(e => e.jeton).length, 1); assert.equal(d.joueur.creatures.length, 4);
+  assert.equal(d.joueur.cimetiere.filter(id => id === 'momie-de-lin').length, 1);
   assert.equal(d.joueur.creatures.filter(e => e.carteId === SCORPION).length, 1);
   assert.ok(es.every(e => !d.joueur.creatures.some(v => v.id === e.id)));
   if (moba) assert.ok(rpgMobaPlacementCoherent(d));

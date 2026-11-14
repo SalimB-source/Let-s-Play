@@ -304,11 +304,16 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot, { sacrificeIds });
     if (!pose.ok) continue;
     resoudreDestructionsSurCopie(simulation);
-    // Évaluer les arrivées réelles, pas seulement le texte imprimé : la cible,
-    // ses protections et les effets de mort peuvent changer le bilan.
-    for (let i = 0; i < 3 && simulation.arriveeEnAttente && !simulation.moba.winner; i++) {
-      const cible = rpgMobaChoisirArriveeIA(simulation, side);
-      if (!cible || !rpgMobaResoudreArrivee(simulation, side, cible).ok) break;
+    // Les renforts et leurs arrivées peuvent s'enchaîner : simuler leurs vrais
+    // choix avant d'évaluer le plateau, sans toucher à la partie réelle.
+    for (let i = 0; i < 8 && !simulation.moba.winner; i++) {
+      if (simulation.mobaRechercheEnAttente?.renfort && simulation.mobaRechercheEnAttente.cote === side) {
+        const choix = rpgMobaChoisirRechercheIA(simulation, side);
+        if (!rpgMobaResoudreRecherche(simulation, side, choix ?? null).ok) break;
+      } else if (simulation.arriveeEnAttente) {
+        const cible = rpgMobaChoisirArriveeIA(simulation, side);
+        if (!cible || !rpgMobaResoudreArrivee(simulation, side, cible).ok) break;
+      } else break;
       resoudreDestructionsSurCopie(simulation);
       if (simulation.effetCreatureEnAttente) rpgMobaPasserEffetCreature(simulation, enemy);
     }

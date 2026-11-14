@@ -1,11 +1,12 @@
 // Shared catalogue gate for the adapter and automatic MOBA returns.
 // Keep this dependency-free so the duel engine can enforce the same audit.
-export const MOBA_ABORDAGE_IMPRIME = Object.freeze(['rais-de-la-galiote', 'cotre-de-course', 'galion-de-la-flotte', 'la-vengeance-de-la-reine-anne', 'la-barbe-noire', 'la-barbe-rousse']);
+export const MOBA_ABORDAGE_IMPRIME = Object.freeze(['amiral-des-abysses', 'rais-de-la-galiote', 'cotre-de-course', 'galion-de-la-flotte', 'la-vengeance-de-la-reine-anne', 'la-barbe-noire', 'la-barbe-rousse']);
 export const MOBA_SITES_AUDITES = Object.freeze(['le-tresor-de-lima', 'source-de-bimini']);
 export const MOBA_TOURS_AUDITEES = Object.freeze(['tour-de-braise', 'tour-des-flots', 'tour-de-sable', 'tour-de-neige', 'tour-des-tenebres']);
 export const CARTES_COMBAT_AUDITEES = new Set([
   ...MOBA_TOURS_AUDITEES, ...MOBA_SITES_AUDITES,
-  'gardienne-des-derniers-noms', 'veilleur-des-cendres', 'samourai-du-dragon-rouge', 'jarl-du-dernier-rempart', 'scorpion-de-l-eclipse', 'colosse-du-verre-ardent', 'convoi-des-dunes',
+  'valkyrie-de-la-derniere-aurore', 'amiral-des-abysses', 'serpent-des-deux-rivages',
+  'gardienne-des-sables-ensevelis', 'gardienne-des-derniers-noms', 'veilleur-des-cendres', 'samourai-du-dragon-rouge', 'jarl-du-dernier-rempart', 'scorpion-de-l-eclipse', 'colosse-du-verre-ardent', 'convoi-des-dunes',
   'tojiro-le-pourfendeur', 'sanguinaire-des-dunes', 'gardienne-du-croissant', 'porte-etendard-de-leclipse', 'sorcier-du-ressac-noir', 'garde-du-trone-givre', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune',
   'passeur-au-masque-de-chacal', 'guetteuse-des-marees', 'djinn-des-cendres-vengeresses', 'scarabee-du-natron', 'lecteur-du-dernier-nom', 'general-du-croissant-noir', 'fleau-de-la-lune-noire', 'souverain-de-la-lune-noire',
   'messagere-des-cendres', 'garde-du-voile', 'rodeuse-des-tombes', 'gerboise-des-ruines', 'gardien-des-sept-sceaux',

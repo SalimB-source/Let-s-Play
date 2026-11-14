@@ -20,10 +20,10 @@ try {
         <div class="rpg-battle ${touch ? 'rpg-battle--touch' : ''}" data-scene="duel" ${mode === 'essai' ? 'data-mode-mana="essai"' : ''}>
           <div class="card-table card-table--decoupee"><div class="rpg-plateau-lisere"></div>
             <div class="rpg-hidden-hand"><div class="rpg-hidden-hand__cards"><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span><span class="rpg-hidden-hand__card"></span></div><span class="rpg-hidden-hand__count">Main adverse · 7</span></div>
-            <button class="rpg-wizard-plate rpg-wizard-plate--ennemi"><span class="rpg-wizard-plate__avatar" data-scene-avatar="ennemi"><img src="${imagesVisages['ifrit-ergs']}" alt=""></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span></span></button>
+            <button class="rpg-wizard-plate rpg-wizard-plate--ennemi"><span class="rpg-wizard-plate__avatar" data-scene-avatar="ennemi"><img src="${imagesVisages['ifrit-ergs']}" alt=""></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span><span class="rpg-wizard-plate__hp-icon--heart">♥</span></span></button>
             <div class="card-row card-row--ennemi">${mode === 'essai' ? `<div class="rpg-creature-slots rpg-creature-slots--ennemi">${Array.from({length: 5}, (_, i) => `<span class="rpg-creature-slot" data-creature-slot="${i+1}"></span>`).join('')}</div>` : ''}<button class="rpg-card" style="--case-essai:3" data-entity-id="enemy">Adversaire</button></div>
             <div class="card-row card-row--equipe">${mode === 'essai' ? `<div class="rpg-creature-slots rpg-creature-slots--joueur">${Array.from({length: 5}, (_, i) => `<button class="rpg-creature-slot is-empty rpg-creature-slot--choix" data-creature-slot="${i+1}"></button>`).join('')}</div>` : ''}<button class="rpg-card" style="--case-essai:3" data-entity-id="test">Créature</button></div>
-            <div class="rpg-wizard-plate rpg-wizard-plate--joueur"><span class="rpg-wizard-plate__avatar" data-scene-avatar="joueur"><img src="${imagesVisages.salem}" alt=""></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span></span></div>
+            <div class="rpg-wizard-plate rpg-wizard-plate--joueur"><span class="rpg-wizard-plate__avatar" data-scene-avatar="joueur"><img src="${imagesVisages.salem}" alt=""></span><span class="rpg-wizard-plate__pv rpg-jauge-vie"><span class="rpg-jauge-vie__rond">25</span><span class="rpg-wizard-plate__hp-icon--heart">♥</span></span></div>
             <div class="rpg-hand-dock"><div class="rpg-hand"><button class="rpg-hand__card">Carte</button></div></div>
           </div>
         </div>`);
@@ -51,7 +51,10 @@ try {
           return { contenu: cadre.content, rayon: cadre.borderRadius, diametre,
             depasse: rect.height - parseFloat(cadre.bottom) - diametre,
             couleur: cadre.borderTopColor, fond: cadre.backgroundColor, overflow: getComputedStyle(avatar).overflow,
-            imageZ: Number(image.zIndex), imagePosition: image.objectPosition, cadreZ: Number(cadre.zIndex), touches: cadre.pointerEvents,
+            imageZ: Number(image.zIndex), imagePosition: image.objectPosition, masque: image.maskImage, tailleMasque: image.maskSize,
+            coeur: getComputedStyle(avatar.parentElement.querySelector('.rpg-wizard-plate__hp-icon--heart')).display,
+            vie: getComputedStyle(avatar.parentElement.querySelector('.rpg-jauge-vie__rond')).display, largeur: rect.width,
+            cadreZ: Number(cadre.zIndex), touches: cadre.pointerEvents,
             ornements: ornements.backgroundImage, touchesOrnements: ornements.pointerEvents };
         }, side);
         assert.equal(decor.contenu, '""', `${side} : médaillon présent`);
@@ -59,8 +62,13 @@ try {
         assert.ok(decor.diametre > 0 && decor.imageZ > decor.cadreZ && decor.depasse > 0, `${side} : la tête dépasse devant le cercle`);
         assert.equal(decor.couleur, 'rgb(215, 173, 97)', `${side} : cercle doré`);
         assert.equal(decor.fond, 'rgba(0, 0, 0, 0)', `${side} : centre transparent`);
-        assert.equal(decor.overflow, 'visible', `${side} : visage non rogné`);
-        assert.equal(decor.imagePosition, '50% 0%', `${side} : le haut du portrait dépasse le cercle même sur un cadre rectangulaire`);
+        assert.equal(decor.overflow, 'visible', `${side} : la coiffure peut dépasser`);
+        assert.match(decor.masque, /radial-gradient.*linear-gradient/, `${side} : masque circulaire et fenêtre pour la tête`);
+        assert.equal(decor.tailleMasque, '100% 82%, 58% 24%', `${side} : masque ajusté au médaillon`);
+        assert.ok(decor.largeur >= (touch ? 48 : 70), `${side} : avatar agrandi`);
+        assert.equal(decor.coeur, 'none', `${side} : cœur décoratif retiré`);
+        assert.notEqual(decor.vie, 'none', `${side} : compteur de vie conservé`);
+        assert.equal(decor.imagePosition, '50% 0%', `${side} : le haut du portrait dépasse le cercle`);
         assert.match(decor.ornements, /radial-gradient/, `${side} : ornements visibles`);
         assert.equal(decor.touches, 'none'); assert.equal(decor.touchesOrnements, 'none');
       }
@@ -168,6 +176,34 @@ try {
       assert.equal(mouvement.avant, mouvement.apres, 'la frontière mobile ne déplace pas les cartes');
       assert.ok(Math.abs(mouvement.ligne - (mouvement.hauteur * .7 - 1)) < 1, 'la ligne suit le territoire');
       console.log(`${largeur}×${hauteur}, ${mode} : cases, avatars et cible vérifiés`);
+    }
+    // Un portrait plein permet de vérifier le masque réellement peint : les
+    // coins bas sont coupés, le centre et la fenêtre des cheveux restent visibles.
+    if (largeur === 640 && hauteur === 280) {
+      await page.evaluate(() => {
+        const style = document.createElement('style');
+        style.textContent = `.avatar-mask-probe { position: fixed !important; z-index: 9999 !important; left: 5px !important; top: 5px !important; width: 100px !important; height: 100px !important; transform: none !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-sizing: border-box !important; background: #000 !important; }
+          .avatar-mask-probe .rpg-wizard-plate__avatar::before, .avatar-mask-probe .rpg-wizard-plate__avatar::after { display: none !important; }`;
+        document.head.append(style);
+        const probe = document.createElement('div');
+        probe.className = 'rpg-wizard-plate avatar-mask-probe';
+        probe.innerHTML = `<span class="rpg-wizard-plate__avatar"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23ff00ff'/%3E%3C/svg%3E"></span>`;
+        document.querySelector('.rpg-battle').append(probe);
+      });
+      const png = await page.locator('.avatar-mask-probe').screenshot();
+      const pixels = await page.evaluate(async (data) => {
+        const image = new Image(); image.src = `data:image/png;base64,${data}`;
+        await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
+        const ctx = canvas.getContext('2d'); ctx.drawImage(image, 0, 0);
+        return [[5, 5], [50, 5], [50, 70], [5, 80], [95, 80]].map(([x, y]) => [...ctx.getImageData(x, y, 1, 1).data]);
+      }, png.toString('base64'));
+      const rose = ([r, , b]) => r > 180 && b > 180;
+      assert.equal(rose(pixels[0]), false, 'coin supérieur extérieur coupé');
+      assert.equal(rose(pixels[1]), true, 'cheveux visibles au-dessus du cercle');
+      assert.equal(rose(pixels[2]), true, 'portrait visible dans le cercle');
+      assert.equal(rose(pixels[3]), false, 'épaule gauche coupée hors du cercle');
+      assert.equal(rose(pixels[4]), false, 'épaule droite coupée hors du cercle');
     }
     await context.close();
   }

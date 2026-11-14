@@ -84,12 +84,12 @@
 .moba > .moba__surface { position: absolute; inset: 0; }
 .rpg-ascension-zone.is-open { border-color: #f1cf8e; box-shadow: 0 0 14px #c79c4f42; transform: none; transition: none; }
 .rpg-ascension-popover {
-  --reserve-card-width: 108px;
+  --reserve-card-width: 126px;
   position: fixed;
   z-index: 11000;
   display: flex;
   flex-direction: column;
-  width: 154px;
+  width: 176px;
   max-width: calc(100vw - 16px);
   padding: 0;
   border: 1px solid #a48a57;

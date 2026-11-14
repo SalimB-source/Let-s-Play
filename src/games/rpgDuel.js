@@ -3642,7 +3642,9 @@ function emplacementRenfort(duel, cote, voiePreferee = null) {
 export function rpgCartesRenfortChoisi(duel, cote) {
   const attente = duel?.renfortChoixEnAttente ?? (duel?.mobaRechercheEnAttente?.renfort ? duel.mobaRechercheEnAttente : null);
   if (!attente || attente.cote !== cote) return [];
-  const effet = cardById(attente.sourceCarteId)?.effet;
+  const source = cardById(attente.sourceCarteId);
+  const effet = attente.origine === 'destruction' ? source?.destruction
+    : source?.effet?.type === 'renfort-choisi' ? source.effet : source?.arrivee;
   const camp = duel[cote];
   if (!effet || !camp) return [];
   const candidats = new Set((emplacementRenfort(duel, cote) ? candidatsRenfortChoisi(camp, effet) : [])
@@ -3658,13 +3660,14 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
   const attente = duel?.renfortChoixEnAttente ?? (duel?.mobaRechercheEnAttente?.renfort ? duel.mobaRechercheEnAttente : null);
   if (!attente || attente.cote !== cote) return { ok: false, raison: 'choix' };
   const carteSource = cardById(attente.sourceCarteId);
-  const effet = carteSource?.effet;
+  const effet = attente.origine === 'destruction' ? carteSource?.destruction
+    : carteSource?.effet?.type === 'renfort-choisi' ? carteSource.effet : carteSource?.arrivee;
   const camp = duel[cote];
   if (effet?.type !== 'renfort-choisi' || !camp) return { ok: false, raison: 'choix' };
   const place = emplacementRenfort(duel, cote);
   const candidats = place ? candidatsRenfortChoisi(camp, effet).filter(c => !duel.moba || CARTES_COMBAT_AUDITEES.has(c.id)) : [];
   const choix = candidats.find(c => c.index === index);
-  if ((candidats.length && !choix) || (!candidats.length && index !== null)) return { ok: false, raison: 'cible' };
+  if ((candidats.length && !choix && !(effet.facultatif && index === null)) || (!candidats.length && index !== null)) return { ok: false, raison: 'cible' };
   const zone = camp[effet.zone];
   const [id] = choix ? zone.splice(choix.index, 1) : [null];
   if (effet.dessus && effet.reste === 'dessous') {
@@ -3675,7 +3678,9 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
   if (duel.moba) duel.mobaRechercheEnAttente = null;
   else duel.renfortChoixEnAttente = null;
   if (!id) {
-    duel.log.push(`${carteSource.name} : aucune invocation possible.`);
+    duel.log.push(`${carteSource.name} : aucune invocation supplémentaire.`);
+    activerProchainRenfortChoisi(duel);
+    if (duel.moba || cote !== 'sorcier' || duel.pvp) reprendreTransitionRetours(duel);
     return { ok: true, sansCreature: true };
   }
   const carte = duelCardById(id);
@@ -3692,20 +3697,40 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
   }
   journaliserArriveeCreature(duel, cote, entite, 'renfort-choisi');
   duel.log.push(`${carteSource.name} invoque spécialement ${carte.name}.`);
+  if (effet.bouclierRenfort) {
+    appliquer(duel, cote, { type: 'bouclier', cible: 'creature-amie' }, entite.id, null, cardColors(carteSource), 'capacite', carteSource.id);
+  }
+  // Placer la suite avant l'arrivée : un effet déclenché par le renfort peut
+  // ouvrir son propre choix ; les deux files restent sérialisables.
+  if ((attente.restant ?? 1) > 1) (duel.renfortsChoixFiles ??= []).unshift({ ...attente, restant: attente.restant - 1 });
   if (!preparerArriveeDeRetour(duel, cote, carte, entite)) appliquerArriveeDeRetour(duel, cote, carte, entite);
   rafraichirAuras(duel); rpgActionsEtat(duel);
+  activerProchainRenfortChoisi(duel);
+  if (duel.moba || cote !== 'sorcier' || duel.pvp) reprendreTransitionRetours(duel);
   return { ok: true, entite };
 }
 
-function preparerRenfortChoisi(duel, cote, sourceCarteId) {
-  const attente = { cote, sourceCarteId, renfort: true };
+function activerProchainRenfortChoisi(duel) {
+  if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente
+    || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+  const attente = duel.renfortsChoixFiles?.shift();
+  if (!attente) return;
   if (duel.moba) duel.mobaRechercheEnAttente = attente;
   else duel.renfortChoixEnAttente = attente;
+  const { cote } = attente;
   if (!duel.moba && cote === 'sorcier' && !duel.pvp) {
     const meilleur = rpgCartesRenfortChoisi(duel, cote).filter(c => c.admissible)
       .sort((a, b) => (cardById(b.id)?.cost ?? 0) - (cardById(a.id)?.cost ?? 0))[0];
     rpgResoudreRenfortChoisi(duel, cote, meilleur?.index ?? null);
   }
+}
+
+function preparerRenfortChoisi(duel, cote, sourceCarteId, origine = 'arrivee') {
+  const source = cardById(sourceCarteId);
+  const effet = origine === 'destruction' ? source?.destruction : source?.effet?.type === 'renfort-choisi' ? source.effet : source?.arrivee;
+  const attente = { cote, sourceCarteId, renfort: true, ...(origine === 'destruction' ? { origine } : {}), restant: Math.max(1, Number(effet?.nombre) || 1) };
+  (duel.renfortsChoixFiles ??= []).push(attente);
+  activerProchainRenfortChoisi(duel);
 }
 
 function appliquerRenfortAscension(duel, cote, effet, sourceCarteId, sauf, options) {
@@ -3877,7 +3902,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const touchees = [];
       for (const camp of [cote, adv]) {
         for (const entite of duel[camp].creatures) {
-          if (!dansVoie(entite)) continue;
+          if (!dansVoie(entite) || (effet.blessee && (estSite(entite) || !(entite.pv < plafondSoinCreature(entite))))) continue;
           if (rpgEstProtegee(entite, sourceElement)
             || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
           // La parade encaisse la vague : la créature n'est pas atteinte et
@@ -4313,7 +4338,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) {
           entite.bouclier = 1;
           // Certains boucliers renforcent aussi durablement la même cible.
-          const bonusDef = Math.max(0, Number(effet.bonusDef) || 0);
+          const couleurs = cardColors(duelCardById(entite.carteId));
+          const bonusCouleur = couleurs.reduce((somme, couleur) => ({
+            atk: somme.atk + Math.max(0, Number(effet.bonusSelonCouleur?.[couleur]?.atk) || 0),
+            def: somme.def + Math.max(0, Number(effet.bonusSelonCouleur?.[couleur]?.def) || 0),
+          }), { atk: 0, def: 0 });
+          if (bonusCouleur.atk) entite.atk += bonusCouleur.atk;
+          const bonusDef = Math.max(0, Number(effet.bonusDef) || 0) + bonusCouleur.def;
           if (bonusDef) {
             entite.pvMax = (entite.pvMax ?? entite.def) + bonusDef;
             entite.def += bonusDef;
@@ -4923,6 +4954,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'renfort-choisi': {
+      const source = cardById(sourceCarteId);
+      if (source?.kind === 'creature' && sourceCarteId === 'gardienne-des-sables-ensevelis') {
+        if (renfortDejaJoue(duel[cote], sourceCarteId)) return;
+        marquerRenfort(duel[cote], sourceCarteId);
+      }
       preparerRenfortChoisi(duel, cote, sourceCarteId);
       return;
     }
@@ -5532,7 +5568,7 @@ function resoudreExilsFinTour(duel, retours) {
       }
     }
     rpgDissiperDestructionsSansCible(duel);
-    if (duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -5602,6 +5638,11 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
         }
       }
     }
+    return;
+  }
+  if (effet?.type === 'renfort-choisi') {
+    if (duel.moba && entite?.id) mobaRetirer(duel.moba, cote, entite.id);
+    preparerRenfortChoisi(duel, cote, carteId, 'destruction');
     return;
   }
   if (duel.moba && effet?.type === 'renfort-ascension' && effet.zone === 'cimetiere' && entite?.id) {
@@ -6145,6 +6186,16 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
     ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cible);
   appliquer(duel, cote, effetRetour, cible,
     entite.id, cardColors(carte), 'capacite', carte.id, null, optionsMoba);
+  // L'Amiral réanimé rejoue aussi son Abordage, après sa pioche. Comme les
+  // autres arrivées automatiques de Réanimation, la prise est choisie par le
+  // moteur ; en MOBA elle reste dans la voie de l'Amiral.
+  if (carte.id === 'amiral-des-abysses' && duel[cote].creatures.some((e) => e.id === entite.id)) {
+    const victimes = duel[autre(cote)].creatures.filter((candidate) =>
+      (!duel.moba || mobaPartageVoie(duel.moba, candidate.mobaLane, entite.mobaLane))
+      && rpgPriseEnCaleLegale(candidate, cardColors(carte), carte.abordage));
+    victimes.sort((a, b) => (rpgCoutEntite(b) * 10 + b.atk + b.pv) - (rpgCoutEntite(a) * 10 + a.atk + a.pv));
+    if (victimes[0]) prendreEnCale(duel, entite, victimes[0], null, autre(cote));
+  }
   journaliserArriveeAuSorcier(duel, carte, cible);
   return true;
 }
@@ -9330,7 +9381,7 @@ function resoudreRetoursProgrammes(duel, retours) {
     // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
     const attente = preparerArriveeDeRetour(duel, cote, carte, entite);
     if (!attente) appliquerArriveeDeRetour(duel, cote, carte, entite);
-    if (attente) {
+    if (attente || duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente) {
       duel.transitionRetours.declenche = carte.retourDeclenche ? { cote, carteId: carte.id } : null;
       return;
     }
@@ -9561,15 +9612,16 @@ export function rpgFinDeTour(duel) {
 // L'état est sérialisable : sauvegardes et arbitre PvP reprennent la même
 // file sans redécompter les tours ni rejouer les étapes déjà exécutées.
 function reprendreTransitionRetours(duel) {
+  activerProchainRenfortChoisi(duel);
   const transition = duel.transitionRetours;
-  if (!transition || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+  if (!transition || duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.boualemEnAttente || duel.siteEnAttente) return;
   rpgDissiperDestructionsSansCible(duel);
   if (duel.destructionsEnAttente?.length) return;
   if (rpgVainqueur(duel)) { duel.transitionRetours = null; return; }
   if (transition.etape === 'exil') {
     resoudreExilsFinTour(duel, transition.file);
-    if (duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
     if (rpgVainqueur(duel)) { duel.transitionRetours = null; return; }
     commencerNouveauTour(duel);
   } else if (transition.etape === 'programmes') {
@@ -9581,7 +9633,7 @@ function reprendreTransitionRetours(duel) {
       if (duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
     }
     resoudreRetoursProgrammes(duel, transition.file);
-    if (duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
     duel.transitionRetours = null;
     if (!rpgVainqueur(duel)) terminerTransitionRetours(duel);
   }

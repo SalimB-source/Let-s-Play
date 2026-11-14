@@ -61,7 +61,8 @@ export async function verifierRenfortsBrowser(browser, port, dossier) {
       await face.scrollIntoViewIfNeeded(); await choisir(face); await choisir(page.locator('.rpg-ascension-prepare'));
       const recettes = ascension === 'scorpion' ? ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin'] : ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'];
       const victimes = recettes.map(c => preparee.joueur.creatures.find(e => e.carteId === c));
-      for (const e of victimes) await choisir(page.locator(`[data-ascension-material="${e.id}"]`));
+      assert.equal(await page.locator('[data-ascension-material]').count(), 0);
+      assert.equal(await page.locator('.rpg-ascension-total.is-exact').count(), 1);
       assert.equal(await page.locator('.rpg-ascension-invoke').isEnabled(), true);
       await page.screenshot({ path: `${dossier}/preparation-${mode}-${ascension}-${width}.png` });
       await choisir(page.locator('.rpg-ascension-invoke'));
@@ -71,8 +72,14 @@ export async function verifierRenfortsBrowser(browser, port, dossier) {
         await choisir(page.locator(`[data-moba-lane="${voie.id}"][data-moba-side="joueur"][data-moba-slot="${slot}"] button`));
       }
       await attendre(id);
+      if (ascension === 'colosse') {
+        const panneau = mode === 'moba' ? page.locator('.moba__modal.moba__mulligan') : page.locator('.rpg-renfort-choix__panel');
+        await panneau.waitFor();
+        assert.match(await panneau.textContent(), /Djinn/);
+        await choisir(panneau.getByRole('button', { name: /Terminer sans invoquer davantage/ }));
+      }
       const apres = await lire();
-      assert.equal(apres.joueur.reserveAscension.length, 3);
+      assert.equal(apres.joueur.reserveAscension.length, 6);
       assert.equal(mode === 'moba' ? apres.moba.creaturesJouees.joueur : apres.joueur.invocationNormaleJouee, true);
       assert.ok(victimes.every(e => !apres.joueur.creatures.some(v => v.id === e.id)));
       assert.deepEqual(erreurs, []);

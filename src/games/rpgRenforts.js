@@ -40,7 +40,7 @@ export function candidatsRenfortChoisi(camp, effet) {
   const debut = effet.dessus ? Math.max(0, zone.length - effet.dessus) : 0;
   return zone.flatMap((id, index) => {
     const c = cardById(id);
-    return index >= debut && c && ['creature', 'hero'].includes(c.kind) && !c.ascension && !c.jeton
+    return index >= debut && c && ['creature', 'hero'].includes(c.kind) && (!c.ascension || effet.ascensionAutorisee) && !c.jeton
       && (!effet.element || cardColors(c).includes(effet.element))
       && (!effet.typeImprime || cardHasPrintedType(c, effet.typeImprime))
       && (!Number.isFinite(effet.coutMax) || c.cost <= effet.coutMax) ? [{ id, index }] : [];

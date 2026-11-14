@@ -74,24 +74,28 @@ const poserMoba = (duel, id, voie, slot, side = 'joueur') => {
 };
 const paireMoba = (duel) => [poserMoba(duel, 'ronin-du-soleil-rouge', 'left', 0), poserMoba(duel, 'onna-musha-des-cendres', 'right', 1)];
 
-test('Ascension : un Dragon Samouraï 7/7 avec Overkill, Esquive et Défenseur, hors pioche', () => {
-  assert.equal(RPG_ASCENSION_CARDS.length, 4);
+test('Ascension : un Dragon Samouraï 7/7 avec Contre-attaque, Esquive et Défenseur, hors pioche', () => {
+  assert.equal(RPG_ASCENSION_CARDS.length, 7);
   assert.equal(duelCardById(DRAGON), fiche);
-  assert.equal(fiche.atk, 7); assert.equal(fiche.def, 7); assert.equal(fiche.overkill, true);
+  assert.equal(fiche.atk, 7); assert.equal(fiche.def, 7); assert.equal(fiche.contreAttaque, true); assert.ok(!fiche.overkill);
   assert.equal(fiche.esquive, true); assert.equal(fiche.defenseur, true);
   assert.equal(fiche.typeLine, 'Créature d’Ascension — Dragon · Samouraï');
-  assert.deepEqual(fiche.ascension, { nombre: 2, type: 'samourai', typeLabel: 'Samouraï', coutTotal: 7 });
+  assert.deepEqual(fiche.ascension.materiaux.map(r => r.carteId), ['ronin-du-soleil-rouge', 'onna-musha-des-cendres']);
+  assert.equal(fiche.ascension.coutTotal, fiche.cost);
   assert.equal(RPG_DUEL_CARDS.some((c) => c.id === DRAGON), false);
   assert.equal(carteJouableSansTerrain(fiche), false);
   assert.equal(MOBA_CARTES_AUTORISEES.includes(DRAGON), false);
 });
 
-test('les quatre Ascensions présentent une recette concise dans tous les aperçus', () => {
+test('les Ascensions présentent une recette concise dans tous les aperçus', () => {
   const recettes = {
-    'samourai-du-dragon-rouge': 'Ascension — 2 créatures Samouraï. Coût total : 7.',
-    'jarl-du-dernier-rempart': 'Ascension — 2 créatures Viking. Coût total : 8.',
-    'scorpion-de-l-eclipse': 'Ascension — 1 Scorpion Sable + 2 créatures Ténèbres. Coût total : 8.',
-    'colosse-du-verre-ardent': 'Ascension — 2 Djinns Braise + 1 Élémental Sable. Coût total : 8.',
+    'samourai-du-dragon-rouge': 'Ascension — Rōnin du Soleil rouge + Onna-musha des cendres. Coût total : 7.',
+    'jarl-du-dernier-rempart': 'Ascension — Berserk des trois hivers + Jarl au marteau de guerre. Coût total : 8.',
+    'scorpion-de-l-eclipse': 'Ascension — Scorpion du seuil + Uræus du seuil + Momie de lin. Coût total : 8.',
+    'colosse-du-verre-ardent': 'Ascension — Djinn de la première étincelle + Djinn de la flamme mourante + Dune marchante. Coût total : 8.',
+    'valkyrie-de-la-derniere-aurore': 'Ascension — Guerrier au bouclier rond + Gardien viking du fjord. Coût total : 5.',
+    'amiral-des-abysses': 'Ascension — Raïs de la galiote + La légende du Hollandais volant. Coût total : 6.',
+    'serpent-des-deux-rivages': 'Ascension — Cotre de course + La légende du Hollandais volant. Coût total : 7.',
   };
   for (const carte of RPG_ASCENSION_CARDS) {
     const attendu = recettes[carte.id];
@@ -107,7 +111,7 @@ test('les quatre Ascensions présentent une recette concise dans tous les aperç
 
 test('Dragon : la fiche expose les trois capacités et la nouvelle illustration casse le cache', () => {
   const { pastilles } = effetsDetailles(fiche);
-  for (const cle of ['overkill', 'esquive', 'defenseur']) {
+  for (const cle of ['contreAttaque', 'esquive', 'defenseur']) {
     assert.ok(pastilles.some((p) => p.cle === cle), cle);
   }
   assert.match(pastilles.find((p) => p.cle === 'esquive').description, /15 %/);
@@ -159,7 +163,7 @@ for (const voie of ['right', 'left']) test(`Dragon MOBA : Défenseur respecte le
   assert.ok(res.ok, res.raison);
   const dragon = res.entite;
   assert.equal(dragon.defenseur, true); assert.equal(dragon.esquiveChance, .15);
-  assert.equal(dragon.overkill, true); assert.equal(dragon.atk, 7); assert.equal(dragon.pv, 7);
+  assert.equal(dragon.overkill, false); assert.equal(dragon.contreAttaque, true); assert.equal(dragon.atk, 7); assert.equal(dragon.pv, 7);
   const attaquant = poserMoba(duel, 'feriel', voie, 0, 'sorcier'); duel.tour = 'sorcier';
   const choix = rpgMobaCiblesIndividuelles(duel, 'sorcier', attaquant.id);
   if (voie === 'right') {
@@ -202,7 +206,7 @@ test('3 + 4 Samouraïs : sacrifices, entrée depuis la réserve, effets de mort 
   const res = invoquer(duel, victimes);
   assert.ok(res.ok, res.raison); assert.equal(res.entite.carteId, DRAGON);
   assert.equal(res.entite.atk, 7); assert.equal(res.entite.pv, 7);
-  assert.equal(res.entite.overkill, true); assert.equal(res.entite.esquive, true);
+  assert.equal(res.entite.overkill, false); assert.equal(res.entite.contreAttaque, true); assert.equal(res.entite.esquive, true);
   assert.equal(res.entite.esquiveChance, .15); assert.equal(res.entite.defenseur, true);
   assert.equal(res.entite.mur, false); assert.equal(res.entite.nePeutPasAttaquer, false);
   assert.equal(rpgPeutAttaquer({ ...res.entite, malInvocation: false }), true, 'Défenseur n’est pas un Mur et n’interdit pas d’attaquer');
@@ -254,11 +258,11 @@ for (const [ids, raison] of [
   assert.equal(sansMutation(duel, () => invoquer(duel, victimes)).raison, raison);
 });
 
-test('deux copies distinctes sont légales ; une sélection partielle garde seulement les recettes exactes', () => {
+test('deux copies ne remplacent pas deux cartes nommées ; la sélection partielle garde les recettes exactes', () => {
   const duel = nouveau(); const a = poser(duel, 'ronin-du-soleil-rouge'); const b = poser(duel, 'ronin-du-soleil-rouge');
   const c = poser(duel, 'onna-musha-des-cendres');
-  const variante = { ...fiche, ascension: { ...fiche.ascension, coutTotal: 6 } };
-  assert.ok(validerMateriauxAscension(duel.joueur, variante, [a.id, b.id]).ok);
+  const variante = { ...fiche, cost: 6, ascension: { ...fiche.ascension, coutTotal: 6 } };
+  assert.equal(validerMateriauxAscension(duel.joueur, variante, [a.id, b.id]).raison, 'ascension-recette');
   assert.deepEqual(combinaisonsAscension(duel.joueur, fiche, [a.id]).map((g) => g.map((e) => e.id)), [[a.id, c.id]]);
   for (const groupe of rpgCombinaisonsSacrificesIA(duel, 'joueur', fiche)) assert.ok(validerMateriauxAscension(duel.joueur, fiche, groupe.map((e) => e.id)).ok);
   assert.equal(sacrificesInvocation(fiche, duel, 'joueur', true), 2, 'une Embuscade ne supprime jamais la recette');

@@ -6,11 +6,11 @@
 paquet, de la main, de la pioche, du cimetière et de l’exil. Sa zone dédiée
 existe sur les plateaux Duel et MOBA.
 
-- Chaque nouvelle partie reçoit **une copie de chacune des quatre Ascensions**
+- Chaque nouvelle partie reçoit **une copie de chacune des sept Ascensions**
   du catalogue. Un constructeur peut passer `joueurReserveAscension: []` pour
   désactiver la réserve ; une liste explicite est copiée et dédoublonnée.
 - Les anciennes parties sans `reserveAscension` gardent une réserve **vide**.
-- Ces quatre cartes ne sont jamais proposées dans les decks ordinaires,
+- Ces cartes ne sont jamais proposées dans les decks ordinaires,
   l’atelier, les boosters, les achats du Souk ou la pioche.
 - Les sacrifices sont **le seul prix** : aucun mana supplémentaire, aucune
   invocation normale ni Embuscade consommée. Le nombre imprimé de la carte
@@ -21,80 +21,39 @@ existe sur les plateaux Duel et MOBA.
   **coûts imprimés** de la recette. Les créatures-jetons ont un coût imprimé
   de **1**, même si leur création par effet ne coûte pas de mana.
 
-## Les quatre créatures
+## Les sept créatures
 
-Toutes sont mythiques. Les exemples de matériaux ci-dessous ne sont **pas**
-des noms de cartes obligatoires : les types, couleurs et coûts imprimés font
-foi. L’ordre de sélection des rôles est libre.
+Toutes sont mythiques. Les recettes exigent les **cartes nommées** ci-dessous,
+vivantes et distinctes ; l’ordre de sélection ne compte pas. La somme de leurs
+coûts imprimés est exactement égale au coût imprimé de l’Ascension. Une autre
+créature du même type ou de même coût ne la remplace pas.
 
-| Ascension | Couleurs | Coût imprimé | ATQ / DEF | Recette exacte |
+| Ascension | Couleurs | Coût | ATQ / DEF | Sacrifices obligatoires |
 | --- | --- | ---: | ---: | --- |
-| Samouraï du Dragon Rouge | Braise | 7 | **7 / 7** | **2 Samouraïs**, total imprimé **7** |
-| Jarl du Dernier Rempart | Neige | 8 | **4 / 10** | **2 Vikings**, total imprimé **8** |
-| Scorpion de l’Éclipse | Sable / Ténèbres | 8 | **5 / 9** | **Scorpion Sable + 2 créatures Ténèbres**, total imprimé **8** |
-| Colosse du Verre Ardent | Braise / Sable | 8 | **7 / 8** | **2 Djinns Braise + Élémental Sable**, total imprimé **8** |
+| Samouraï du Dragon Rouge | Braise | 7 | **7 / 7** | Rōnin du Soleil rouge (3) + Onna-musha des cendres (4) |
+| Jarl du Dernier Rempart | Neige | 8 | **4 / 10** | Berserk des trois hivers (3) + Jarl au marteau de guerre (5) |
+| Scorpion de l’Éclipse | Sable / Ténèbres | 8 | **5 / 9** | Scorpion du seuil (2) + Uræus du seuil (3) + Momie de lin (3) |
+| Colosse du Verre Ardent | Braise / Sable | 8 | **7 / 8** | Djinn de la première étincelle (1) + Djinn de la flamme mourante (3) + Dune marchante (4) |
+| Valkyrie de la dernière aurore | Neige | 5 | **4 / 5** | Guerrier au bouclier rond (2) + Gardien viking du fjord (3) |
+| Amiral des abysses | Eau | 6 | **4 / 4** | Raïs de la galiote (2) + La légende du Hollandais volant (4) |
+| Serpent des deux rivages | Sable / Eau | 7 | **6 / 6** | Cotre de course (3) + La légende du Hollandais volant (4) |
 
-Un hybride peut correspondre à plusieurs rôles, mais chaque présence ne peut
-payer **qu’un seul** de ces rôles. Les coûts individuels ne sont pas imposés :
-seul leur total exact compte, en plus des nombres, types et couleurs demandés.
-Les recettes du Dragon et du Jarl exigent deux matériaux, les deux autres trois.
+Le Dragon possède Contre-attaque, Esquive 15 % et Défenseur. Le Jarl possède
+Overkill, Bouclier et Furie 4. Le Scorpion possède Défenseur et Poison : à son
+arrivée, il détruit toutes les créatures blessées des deux camps ; en MOBA,
+cette vague reste limitée à sa voie. Il n’a plus Vol de vie.
 
-### Samouraï du Dragon Rouge
+Le Colosse possède Bouclier et Provocation. À son arrivée, son contrôleur
+choisit dans une fenêtre jusqu’à deux Djinns de coût imprimé 3 ou moins à
+invoquer spécialement depuis son cimetière. Chaque arrivée déclenche ses effets ;
+il peut arrêter après zéro ou une invocation.
 
-**Dragon · Samouraï**, **Overkill**, **Esquive 15 %**, **Défenseur**.
-L’excédent de combat perce jusqu’à l’adversaire. L’Esquive utilise les règles
-ordinaires contre attaques, sorts et effets hostiles. Défenseur attire les
-Attaques ciblées légales ; en MOBA il ne détourne pas les attaques des autres
-voies et ne prime pas sur une Provocation accessible. Ce n’est pas un Mur.
-
-Exemple : **Rōnin du Soleil rouge (3) + Onna-musha des cendres (4)**.
-Deux coûts 3, deux coûts 4 ou un non-Samouraï ne conviennent pas.
-
-### Jarl du Dernier Rempart
-
-**Jarl · Viking**, **Overkill**, **Bouclier**, **Furie 4**.
-
-- Bouclier bloque le premier sort ou effet de créature **adverse** qui
-  l’atteint, y compris en zone ; il ne prévient pas une attaque ordinaire.
-- Furie ajoute **4 ATQ**, sans cumul, quand sa défense vivante est inférieure
-  à sa défense de base de 10. L’armure seule perdue ne suffit pas. Le bonus
-  disparaît après soin complet et revient s’il est blessé de nouveau.
-- La peinture Furie dédiée remplace réellement la face normale sur le plateau.
-
-Exemple : **Gardien viking du fjord (3) + Jarl au marteau de guerre (5)**.
-Le Berserk des trois hivers ou la Völva soigneuse peuvent remplacer le Viking 3.
-L’Archère viking du givre (4) et la Valkyrie au corbeau (4) conviennent aussi
-ensemble ; le Scalde des runes (3) n’est pas un Viking.
-
-### Scorpion de l’Éclipse
-
-**Scorpion · Spectre**, **Poison**, **Vol de vie**.
-À l’arrivée, détruit une créature adverse ciblée **déjà blessée**, de
-**coût imprimé 4 ou moins**. Les Sites sont exclus. Une perte absorbée
-uniquement par l’armure ne rend pas la cible blessée. Le coût d’une arme
-portée ne modifie pas ce seuil imprimé.
-
-Poison inflige 1 PV au début de chacun des deux prochains tours de la créature
-blessée ; il ne se cumule pas. Vol de vie rend la moitié des dégâts,
-arrondie au supérieur (5 dégâts donnent 3 PV). En MOBA, les règles ordinaires
-de voie, de réponse à l’arrivée, de Bouclier et de protection sont conservées.
-
-Exemple : **Scorpion du seuil (Sable 2) + Momie de lin (Ténèbres 3) + Uræus du
-seuil (Ténèbres 3)**. Une deuxième Momie ou un deuxième Uræus est possible.
-Un Shabti Ténèbres (1) et le Lecteur du dernier nom (5) conviennent aussi avec le Scorpion (2).
-
-### Colosse du Verre Ardent
-
-**Golem · Élémental**, **Bouclier**, **Contre-attaque**.
-À l’arrivée, inflige **2 dégâts à chaque créature adverse**, jamais aux
-alliés ; en MOBA, uniquement dans **sa propre voie**. La Contre-attaque suit
-les règles existantes : riposte aux Attaques ciblées et aux capacités ciblantes ;
-face à un sort adverse, elle frappe le sorcier ou la voie correspondante.
-
-Exemple : **Djinn de la première étincelle (Braise 1) + Djinn de la flamme
-mourante (Braise 3) + Dune marchante (Sable 4)**. Le Ghul des cendres et le
-Djinn de la flèche ardente sont d’autres matériaux possibles. Deux Djinns de coût 2
-avec la Dune (4) conviennent également.
+La Valkyrie possède Envol et Vol de vie, mais pas Rapidité. À sa mort, son
+contrôleur choisit une créature Viking de son cimetière à invoquer spécialement,
+y compris une carte d’Ascension. L’Amiral conserve Butin et possède Bouclier et Abordage 5 ; à son
+arrivée il fait piocher une carte et ne renvoie plus de créature en main. Le
+Serpent donne à une créature alliée choisie un bouclier, +2 ATQ si elle est Sable
+et +2 DEF si elle est Eau ; les deux bonus se cumulent si elle est Sable et Eau.
 
 ## Quatre soutiens ordinaires
 
@@ -140,10 +99,10 @@ L’étagère du joueur, l’essai et le MOBA proposent **quatre decks dédiés*
 chacun de **30 cartes**, bicolore et validé par les règles de copies :
 
 - **Éveil du Dragon Rouge** — Braise / Sable : 14 Samouraïs, couples 3 + 4,
-  alternatives 2 + 5 et 1 + 6, Réanimation, Tiziri et pioche.
-- **Serment du Dernier Rempart** — Neige / Ténèbres : sept Vikings 3 et quatre
-  Vikings 5, recherche viking, boucliers, soins et Retour des ensevelis pour
-  les quatre Vikings Ténèbres de coût 3.
+  Rōnin et Onna-musha nommés, Réanimation, Tiziri et pioche.
+- **Serment du Dernier Rempart** — Neige / Ténèbres : deux Berserks des trois
+  hivers et deux Jarls au marteau de guerre, avec recherche viking, Ralliement
+  des neiges, boucliers et soins.
 - **Rite de l’Éclipse** — Sable / Ténèbres : Convois, Retours des ensevelis,
   Scorpions du seuil et six créatures Ténèbres de coût 3. Les petits Sable qui
   détournaient le Convoi sont remplacés par de la pioche ; Uræus et Javelot
@@ -165,27 +124,20 @@ pas une garantie d’équilibrage compétitif.
 2. Un clic déplie une **petite fenêtre verticale juste au-dessus du bouton**,
    sans voile, déplacement ou réduction du plateau. Elle utilise les vraies
    faces `TableCard` : peinture, coût, statistiques et capacités. La liste
-   des quatre cartes défile verticalement ; la fenêtre est bornée à 270 px
+   des sept cartes défile verticalement ; la fenêtre est bornée à 320 px
    et à l’espace réellement disponible.
 3. **Cliquer une face ouvre l’aperçu standard** ; consulter ne sélectionne et
    ne paie rien. La réserve adverse est uniquement consultable.
-4. **« Choisir les sacrifices »** ferme la fenêtre et ouvre le petit bandeau
-   du bas. La main est temporairement masquée ; le joueur choisit les vraies
-   créatures du champ, numérotées, avec leur coût imprimé. Le bandeau affiche
-   **les rôles exacts**, pas seulement la somme. Aucun choix automatique.
-5. **« Sacrifier et invoquer »** confirme en Duel. En MOBA,
-   **« Préparer l’Ascension »** permet de choisir la case d’un des sacrifices,
-   puis l’annonce ouvre la fenêtre de réponse existante.
+4. **« Préparer l’Ascension »** ferme la fenêtre et ouvre le bandeau du bas. La recette est vérifiée puis les présences les plus faibles parmi les combinaisons légales sont proposées automatiquement.
+5. **« Sacrifier et invoquer »** confirme en Duel. En MOBA, **« Choisir l’emplacement »** permet de choisir la case, puis l’annonce ouvre la fenêtre de réponse existante.
 
 **Échap** et le **Retour Android** ferment d’abord la fiche puis la réserve
 ou le rituel, sans quitter la partie. Le focus revient à la face puis à la
 zone. Un clic extérieur replie la consultation sans voler le focus d’une
 saisie. La petite fenêtre n’a pas de piège de tabulation ; la fiche garde sa
-navigation modale habituelle. Le rituel accepte Entrée/Espace et la
-sélection/désélection des matériaux ; attaques, main et fin de tour y sont
-neutralisées, pas le champ entier.
+navigation modale habituelle. Le rituel accepte Entrée/Espace ; attaques, main et fin de tour y sont neutralisées jusqu’à confirmation ou annulation.
 
-Sur téléphone paysage, la fenêtre reste étroite (132 px, 154 px sur PC).
+Sur téléphone paysage, la fenêtre reste étroite (132 px, 176 px sur PC).
 Si le bouton adverse est trop près du haut, sa fenêtre se déplie exceptionnellement
 sous lui. La réserve du joueur reste au-dessus dans tous les formats vérifiés.
 La fiche, son titre, ses statistiques et ses bulles restent accessibles sur
@@ -211,7 +163,7 @@ et réanimations conservent les autres règles existantes.
 
 ## Intégration technique
 
-- `rpgAscensionCards.js` : quatre définitions hors-deck immuables.
+- `rpgAscensionCards.js` : sept définitions hors-deck.
 - `rpgAscension.js` : recettes pures, appariement exact des rôles,
   combinaisons, timing, initialisation et routage des retours.
 - `rpgAscensionSupports.js`, `rpgRenforts.js` : soutiens ordinaires,
@@ -219,10 +171,9 @@ et réanimations conservent les autres règles existantes.
 - `rpgDuel.js`, `rpgInvocation.js`, `rpgMobaLocal.js` : prix, source autoritaire,
   réservations, renforts, fenêtres de réponse, arrivées et placement cohérent.
 - `RpgReserveAscension.jsx`, `rpg-ascension.css` : hook et interface communs,
-  fenêtre ancrée, sélection du vrai champ, focus et aperçus standard.
+  fenêtre ancrée, sacrifices proposés automatiquement, focus et aperçus standard.
 - Les IA Duel et MOBA évaluent les recettes et les soutiens **sur des copies**,
-  sans consommer le hasard réel. Le Scorpion emporte sa cible blessée dans la
-  simulation. Une voie nettoyée ou défendue par le nouveau corps n’est pas
+  sans consommer le hasard réel. La vague du Scorpion et les renforts du Colosse sont évalués dans la simulation. Une voie nettoyée ou défendue par le nouveau corps n’est pas
   considérée à tort comme abandonnée par ses sacrifices.
 - L’intention PvP existante `jouer-carte` transmet `carteId` et `sacrificeIds`.
   L’arbitre choisit la source depuis la définition imprimée, jamais depuis
@@ -243,8 +194,8 @@ Les neuf faces de production sont des JPEG progressifs optimisés,
   l’image, bouclier à gauche) ; `ascension-jarl-casque-loup-v2`.
 - **Jarl Furie** : face dédiée choisie, distincte de la normale ;
   `ascension-jarl-furie-v1`.
-- **Scorpion et Colosse** : deux nouvelles peintures dark fantasy ;
-  `ascension-duo-v1`.
+- **Scorpion** : peinture dark fantasy `ascension-duo-v1`.
+- **Colosse** : nouvelle peinture dark fantasy `ascension-colosse-necrodjinn-v2`.
 - **Quatre soutiens** : peintures individuelles ; `ascension-soutiens-v1`.
 
 Aucun texte ni cadre n’est incorporé aux peintures. Les anciens arts du jeu
@@ -317,3 +268,11 @@ de données n’est effectué par cette intégration.
 Le lien **Decks** de la démo ouvre `/decks` : le menu réel permet de choisir
 les préconstruits puis de démarrer une partie normale, avec mulligan et réserve
 par défaut, sans main ou champ préparés. `?mode=moba` ouvre le sélecteur MOBA.
+
+## Renforts du cimetière et sélection automatique
+
+La Gardienne des sables ensevelis (Sable, coût 4) choisit une créature de coût imprimé 3 ou moins dans son cimetière et l’invoque spécialement et lui donne un bouclier avant son arrivée. Cette capacité est limitée à une fois par tour, toutes ses copies confondues. Les arrivées ciblées des créatures réanimées se résolvent sur une cible légale ; le renfort choisi peut demander cette cible.
+
+La préparation de l’Ascension recherche les combinaisons respectant intégralement la recette, puis sélectionne celle dont la somme des ATQ et PV actuels est la plus faible. Les sacrifices proposés sont affichés avant confirmation ; le serveur revérifie la recette. En MOBA, la destination est choisie après cette confirmation.
+
+La Valkyrie et le Colosse ouvrent une fenêtre réservée à leur contrôleur pour choisir leurs renforts dans le cimetière. Les choix successifs sont sérialisés et les arrivées des créatures invoquées sont résolues.
