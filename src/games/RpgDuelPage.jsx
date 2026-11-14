@@ -1,6 +1,5 @@
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
 import { ascensionDisponible, validerMateriauxAscension } from './rpgAscension.js';
-import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from './rpgCombatIndividuelClassique.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
 export { TourbillonEau } from './TourbillonEau.jsx';
@@ -11033,9 +11032,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (carte.kind === 'magie' && !rpgSortACibleValide(duel, 'joueur', carte)) return false;
     if (!rpgConditionEmbuscadeRemplie(duel, 'joueur', carte)) return false;
     if (!invocationPossible(duel, 'joueur', carte)) return false;
-    const reactionAttaque = (reponseActive && carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier')
-      || ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour === 'sorcier' && reponseActive);
-    if (reponseApresBlocage && !carte.instant && !reactionAttaque) return false;
+    if (reponseApresBlocage && !carte.instant) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
     // Une arme sans créature alliée à équiper reste éteinte dans la main —
     // sauf arme vivante (la Lame des ergs), qui fait naître son porteur.
@@ -11045,7 +11042,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `duel.magieGratuite` est ouverte.
     const lancementGratuit = carte.kind === 'magie' && carte.effet?.type !== 'contresort'
       && duel.magieGratuite?.cote === 'joueur';
-    return (reponseApresBlocage ? (carte.instant || reactionAttaque) : monTour || reactionAttaque || (reponseActive && carte.instant))
+    return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
       && (lancementGratuit || rpgPeutPayer(duel.joueur, carte));
   };
   /* L'or de la ligne de Lien dans l'aperçu : le renfort doit être RÉEL
@@ -11057,7 +11054,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && peutJouerCarte(carte);
   const aReponseJouableEnMain = Boolean(apercuAnnonceOuvert && duel.joueur.main.some((carteId) => {
     const carte = cardById(carteId);
-    return Boolean((carte?.instant || carte?.reactionTourAdverse || rpgCarteEmbuscade(carte)) && peutJouerCarte(carte));
+    return Boolean(carte?.instant && peutJouerCarte(carte));
   }));
 
   const commencerGlisserCarte = (event, carte) => {
@@ -11696,7 +11693,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const poserCarte = (carteId, emplacement = null) => {
     const carte = cardById(carteId);
-    const peutRepondre = (reponseActive && (carte.instant || (carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier'))) || ((rpgCarteEmbuscade(carte) || carte.reactionTourAdverse) && duel.tour === 'sorcier' && reponseActive);
+    const peutRepondre = reponseActive && carte.instant;
     if (reponseApresBlocage && !carte.instant && !peutRepondre) return;
     if (!monTour && !peutRepondre) return;
     if (carte.kind === 'arme') {
@@ -13540,7 +13537,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       : combatEntrant.coteAttaquant === 'joueur'
                       ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
                       : combatEntrant.blocagesDeclares
-                        ? 'Blocages déclarés — jouez une magie rapide ou une créature avec Invocation spéciale, puis résolvez le combat'
+                        ? 'Blocages déclarés — jouez une magie rapide, puis résolvez le combat'
                       : !blocageForceValide
                         ? 'Blocage forcé — assignez chaque créature marquée à un attaquant qu’elle peut bloquer'
                         : !provocationValide
@@ -14660,15 +14657,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 au-dessus de la main — et non en tête de table, où le bloc tombait. */}
             {fenetreFinTour && (
               <div className="rpg-annonce-sort__compact rpg-fin-tour" role="group"
-                aria-label="Fin du tour du sorcier : jouez une magie rapide ou une Invocation spéciale, ou passez">
+                aria-label="Fin du tour du sorcier : jouez une magie rapide, ou passez">
                 <span className="rpg-annonce-sort__compact-label">
                   <span>Fin du tour du sorcier</span>
-                  <b>Magie rapide ou Invocation spéciale ?</b>
+                  <b>Magie rapide ?</b>
                 </span>
                 <button
                   type="button"
                   className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
-                  aria-label="Passer : ne pas jouer de magie rapide ni d’Invocation spéciale"
+                  aria-label="Passer : ne pas jouer de magie rapide"
                   onClick={() => { jouerSfx('pass'); passerFinTourSorcier(); }}
                 >
                   <span aria-hidden="true">➜</span>
@@ -14805,11 +14802,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
               // Or uniquement pour une invocation spéciale réellement disponible,
-              // pendant son tour ou en réponse, jamais pour une pose normale ou défausse.
+              // pendant son tour, jamais pour une pose normale ou défausse.
               const embuscadeJouable = baseJouable && !groupe.enRenvoi && estCreature
-                && (rpgInvocationSpecialeSurSonTour(duel, 'joueur', carte)
-                  || (duel.tour === 'sorcier' && duel.fenetreReponse && reponseActive
-                    && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)));
+                && rpgInvocationSpecialeSurSonTour(duel, 'joueur', carte);
               // L’or de rareté ne concerne plus les créatures ou héros ; une
               // invocation spéciale disponible garde son propre signal doré.
               const estMythique = cardRarityInfo(carte).key === 'mythique';

@@ -38,5 +38,5 @@ test('les deux rendus MOBA utilisent le halo dor√© et respectent le mouvement r√
   assert.match(board, /const specialementJouable = !disabled && !defausse && !iaAgit && \['creature', 'hero'\]\.includes\(card.kind\) && rpgMobaInvocationSpecialeDisponible/);
   assert.equal((board.match(/specialementJouable \? ' is-special-ambush'/g) || []).length, 2);
   const duel = read('RpgDuelPage.jsx');
-  assert.match(duel, /const embuscadeJouable = baseJouable && !groupe\.enRenvoi && estCreature\s+&& \(rpgInvocationSpecialeSurSonTour\(duel, 'joueur', carte\)/);
+  assert.match(duel, /const embuscadeJouable = baseJouable && !groupe\.enRenvoi && estCreature\s+&& rpgInvocationSpecialeSurSonTour\(duel, 'joueur', carte\)/);
 });

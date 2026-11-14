@@ -41,21 +41,19 @@ test('tous les registres MOBA sont reconnus avec leur condition dans les deux ca
 });
 
 for (const defenseur of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
-  test(`les trois catégories répondent uniquement sous condition et fenêtre (${defenseur}, ${pvp ? 'PvP' : 'solo'})`, () => {
+  test(`les trois catégories ne répondent pas pendant le tour adverse (${defenseur}, ${pvp ? 'PvP' : 'solo'})`, () => {
     const d = partie(pvp); const actif = defenseur === 'joueur' ? 'sorcier' : 'joueur';
     const allie = poser(d, defenseur, 'gardienne-des-portes-de-sable'); allie.pv--;
     const ennemi = poser(d, actif, 'chien-du-guet'); ennemi.pv--;
-    d[defenseur].invocationNormaleJouee = true;
     d[defenseur].main = ['pilote-de-la-carreira', 'fennec-des-decombres', 'sentinelle-des-sables'];
-    const jouer = id => pvp ? rpgPvpAppliquer(d, defenseur, { type: 'jouer-carte', carteId: id, cibleId: id === 'sentinelle-des-sables' ? ennemi.id : null }) : rpgJouerCreature(d, defenseur, id, id === 'sentinelle-des-sables' ? ennemi.id : null);
-    for (const id of d[defenseur].main) assert.equal(jouer(id).ok, false, id);
-    assert.ok(rpgPeutRepondre(d, defenseur));
+    assert.equal(rpgPeutRepondre(d, defenseur), false);
     assert.ok(rpgOuvrirFinDeTour(d));
-    const premiere = jouer('pilote-de-la-carreira'); assert.ok(premiere.ok, premiere.raison);
-    assert.ok(jouer('fennec-des-decombres').ok);
-    assert.ok(jouer('sentinelle-des-sables').ok);
-    assert.equal(d[defenseur].invocationNormaleJouee, true);
-    assert.ok(d[defenseur].creatures.includes(allie));
+    for (const id of d[defenseur].main) {
+      const avant = JSON.stringify(d);
+      const res = pvp ? rpgPvpAppliquer(d, defenseur, { type: 'jouer-carte', carteId: id }) : rpgJouerCreature(d, defenseur, id);
+      assert.equal(res.ok, false, id);
+      assert.equal(JSON.stringify(d), avant);
+    }
   });
   test(`condition non remplie refuse sans mutation (${defenseur}, ${pvp ? 'PvP' : 'solo'})`, () => {
     const d = partie(pvp); d.tour = defenseur === 'joueur' ? 'sorcier' : 'joueur';
@@ -67,22 +65,21 @@ for (const defenseur of ['joueur', 'sorcier']) for (const pvp of [false, true]) 
   });
 }
 
-test('le Sorcier du ressac répond sans annonce de créature et applique son arrivée MOBA', () => {
+test('le Sorcier du ressac ne peut plus répondre pendant le tour adverse', () => {
   const d = partie(true);
   poser(d, 'sorcier', 'sentinelle-des-sables');
-  const victime = poser(d, 'joueur', 'chien-du-guet');
+  poser(d, 'joueur', 'chien-du-guet');
   d.sorcier.cimetiere = ['trait-de-braise']; d.sorcier.main = ['sorcier-du-ressac-noir'];
-  d.fenetreReponse = true; d.annonce = null;
-  const res = rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'sorcier-du-ressac-noir' });
-  assert.ok(res.ok, JSON.stringify(res)); assert.ok(!d.joueur.creatures.includes(victime));
-  assert.ok(d.joueur.main.includes('chien-du-guet'));
+  d.fenetreReponse = true;
+  const avant = JSON.stringify(d);
+  assert.equal(rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'sorcier-du-ressac-noir' }).ok, false);
+  assert.equal(JSON.stringify(d), avant);
 });
 
-test('IA solo peut répondre avec une ancienne Rapidité', () => {
+test('IA solo ne répond plus avec une créature Invocation spéciale', () => {
   const d = partie(); const ennemi = poser(d, 'joueur', 'chien-du-guet'); ennemi.pv--;
   d.sorcier.main = ['fennec-des-decombres']; d.fenetreReponse = true;
-  const res = rpgSorcierMagieRapide(d, () => .5);
-  assert.equal(res?.carteId, 'fennec-des-decombres');
+  assert.equal(rpgSorcierMagieRapide(d, () => .5), null);
 });
 
 test('les aperçus indiquent la condition commune et la pastille Embuscade', () => {

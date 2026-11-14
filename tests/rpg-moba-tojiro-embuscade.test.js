@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {rpgMulligan,rpgDemarrerManaEssai,rpgFinDeTour,rpgReglerHasard} from '../src/games/rpgDuel.js';
-import {rpgMobaNouveauDuel,rpgMobaJouerCreature,rpgMobaPeutEmbuscade,rpgMobaDeclarerAttaque,rpgMobaLancerAttaque,rpgMobaPasserCreature,rpgMobaLancerMagie,rpgMobaPasserSort,rpgMobaTerminerTour,rpgMobaPasserFinDeTour,rpgMobaResoudreArrivee,rpgMobaPasserEffetCreature,rpgMobaPlacementCoherent,MOBA_CARTES_AUTORISEES} from '../src/games/rpgMobaLocal.js';
+import {rpgMobaNouveauDuel,rpgMobaJouerCreature,rpgMobaPeutEmbuscade,rpgMobaInvocationSpecialeDisponible,rpgMobaDeclarerAttaque,rpgMobaLancerAttaque,rpgMobaPasserCreature,rpgMobaLancerMagie,rpgMobaPasserSort,rpgMobaTerminerTour,rpgMobaPasserFinDeTour,rpgMobaResoudreArrivee,rpgMobaPasserEffetCreature,rpgMobaPlacementCoherent,MOBA_CARTES_AUTORISEES} from '../src/games/rpgMobaLocal.js';
 import {rpgMobaChoisirEmbuscadeIA} from '../src/games/rpgMobaAI.js';
 const id='tojiro-le-pourfendeur';
 function partie(actif, plein=false){
@@ -19,41 +19,39 @@ function partie(actif, plein=false){
  d[defenseur].main=[id];d[defenseur].mana.braise=20;d[actif].mana.braise=20;
  return {d,defenseur,victime,djinn};
 }
-for(const actif of ['joueur','sorcier']){
- test(`Tojiro répond au combat sans sacrifice et ne redirige pas la frappe (${actif})`,()=>{
-  const {d,defenseur,victime,djinn}=partie(actif);assert.ok(MOBA_CARTES_AUTORISEES.includes(id));
-  assert.ok(rpgMobaDeclarerAttaque(d,actif,[djinn.id],{[djinn.id]:victime.id}).ok);assert.ok(rpgMobaPeutEmbuscade(d,defenseur,id));
-  const before=JSON.stringify(d);assert.equal(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[victime.id]}).ok,false);assert.equal(JSON.stringify(d),before);
-  assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).creatureEnAttente);
-  assert.ok(d[defenseur].creatures.includes(victime));assert.ok(rpgMobaPasserCreature(d,actif).entite);
-  const tojiro=d[defenseur].creatures.find(e=>e.carteId===id);assert.ok(tojiro);assert.equal(tojiro.mobaLane,'left');assert.ok(d[defenseur].creatures.includes(victime));
-  assert.ok(rpgMobaLancerAttaque(d,actif,[djinn.id],{}, {declaree:true}).ok);assert.ok(rpgMobaPlacementCoherent(d));
+for (const actif of ['joueur', 'sorcier']) for (const fenetre of ['combat', 'sort', 'creature', 'fin']) {
+ test(`Tojiro refusé pendant ${fenetre} adverse, sans paiement ni sacrifice (${actif})`, () => {
+  const {d, defenseur, victime, djinn} = partie(actif);
+  if (fenetre === 'combat') assert.ok(rpgMobaDeclarerAttaque(d, actif, [djinn.id], {[djinn.id]: victime.id}).ok);
+  if (fenetre === 'sort') { d[actif].main = ['tempete-de-sable']; assert.ok(rpgMobaLancerMagie(d, actif, 'tempete-de-sable', null, 'right', null, {ouvrirReponse:true}).sortEnAttente); }
+  if (fenetre === 'creature') { d[actif].main = ['ashigaru-des-braises']; assert.ok(rpgMobaJouerCreature(d, actif, 'ashigaru-des-braises', 'right', 0, {ouvrirReponse:true}).creatureEnAttente); }
+  if (fenetre === 'fin') { d[actif].main = []; assert.ok(rpgMobaTerminerTour(d, actif).ok); }
+  const before = JSON.stringify(d);
+  assert.equal(rpgMobaPeutEmbuscade(d, defenseur, id), false);
+  assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {ouvrirReponse:true, sacrificeIds:[]}).raison, 'pas-votre-tour');
+  assert.equal(JSON.stringify(d), before);
+  assert.ok(d[defenseur].creatures.includes(victime));
+  if (fenetre === 'combat') assert.ok(rpgMobaLancerAttaque(d, actif, [djinn.id], {}, {declaree:true}).ok);
+  if (fenetre === 'sort') assert.ok(rpgMobaPasserSort(d, defenseur).ok);
+  if (fenetre === 'creature') assert.ok(rpgMobaPasserCreature(d, defenseur).ok);
+  if (fenetre === 'fin') assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
+  assert.ok(rpgMobaPlacementCoherent(d));
  });
- test(`Tojiro suspend un sort déjà payé (${actif})`,()=>{
-  const {d,defenseur,victime}=partie(actif);d[actif].main=['tempete-de-sable'];d[actif].mana.sable=20;
-  assert.ok(rpgMobaLancerMagie(d,actif,'tempete-de-sable',null,'right',null,{ouvrirReponse:true}).sortEnAttente);const originale=d.mobaSortEnAttente,mana=structuredClone(d[actif].mana);
-  assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok);assert.ok(rpgMobaPasserCreature(d,actif).entite);
-  assert.equal(d.mobaSortEnAttente,originale);assert.ok(rpgMobaPasserSort(d,defenseur).ok);assert.deepEqual(d[actif].mana,mana);
- });
- test(`Tojiro contré ne sacrifie pas et l’annonce de créature reprend (${actif})`,()=>{
-  const {d,defenseur,victime}=partie(actif);d[actif].main=['ashigaru-des-braises','ecueil'];Object.assign(d[actif].mana,{braise:20,eau:20});
-  assert.ok(rpgMobaJouerCreature(d,actif,'ashigaru-des-braises','right',0,{ouvrirReponse:true}).creatureEnAttente);const originale=d.mobaCreatureEnAttente;
-  assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok);
-  assert.ok(rpgMobaLancerMagie(d,actif,'ecueil').contre);assert.ok(d[defenseur].creatures.includes(victime));assert.equal(d.mobaCreatureEnAttente,originale);
-  assert.ok(rpgMobaPasserCreature(d,defenseur).entite);
- });
- test(`Tojiro suspend et reprend la fin du tour (${actif})`,()=>{
-  const {d,defenseur,victime}=partie(actif);d[actif].main=[];assert.ok(rpgMobaTerminerTour(d,actif).ok);
-  assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok);
-  assert.ok(rpgMobaPasserCreature(d,actif).entite);assert.equal(d.finDeTour.cote,actif);assert.ok(rpgMobaPasserFinDeTour(d,defenseur).ok);
- });
- test(`sans Djinn Tojiro est refusé sans dépense (${actif})`,()=>{
-  const {d,defenseur,victime,djinn}=partie(actif);assert.ok(rpgMobaTerminerTour(d,actif).ok);const carte=djinn.carteId;djinn.carteId='gardienne-des-portes-de-sable';
-  const before=JSON.stringify(d);assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id),false);assert.equal(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok,false);assert.equal(JSON.stringify(d),before);djinn.carteId=carte;
-  victime.carteId='source-de-bimini';
-  assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id), false, 'un Site blessé ne remplit pas la condition');
-  victime.carteId='gardienne-des-portes-de-sable';
-  assert.ok(rpgMobaPeutEmbuscade(d,defenseur,id), 'une créature blessée et le Djinn suffisent sans sacrifice');
+}
+for (const actif of ['joueur', 'sorcier']) {
+ test(`Tojiro vérifie Djinn et créature blessée à son tour (${actif})`, () => {
+  const {d, defenseur, victime, djinn} = partie(actif);
+  assert.ok(rpgMobaTerminerTour(d, actif).ok);
+  assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
+  const carte = djinn.carteId; djinn.carteId = 'gardienne-des-portes-de-sable';
+  assert.equal(rpgMobaInvocationSpecialeDisponible(d, defenseur, id), false);
+  djinn.carteId = carte; victime.carteId = 'source-de-bimini';
+  assert.equal(rpgMobaInvocationSpecialeDisponible(d, defenseur, id), false);
+  victime.carteId = 'gardienne-des-portes-de-sable';
+  assert.equal(rpgMobaInvocationSpecialeDisponible(d, defenseur, id), true);
+  const result = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds: []});
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.ok(d[defenseur].creatures.includes(victime));
  });
 }
 
@@ -67,13 +65,18 @@ for(const actif of ['joueur','sorcier']) test(`l’IA ne remplace pas de victime
  const {d,defenseur}=partie(actif,true);assert.ok(rpgMobaTerminerTour(d,actif).ok);const avant=JSON.stringify(d);
  assert.equal(rpgMobaChoisirEmbuscadeIA(d,defenseur),null);assert.equal(JSON.stringify(d),avant);
 });
-for(const actif of ['joueur','sorcier']) test(`Tojiro suspend une capacité ciblée (${actif})`,()=>{
- const {d,defenseur,victime}=partie(actif);d[actif].main=['eclipse-silencieuse'];Object.assign(d[actif].mana,{sable:20,tenebres:20});
- assert.ok(rpgMobaJouerCreature(d,actif,'eclipse-silencieuse','left',1,{ouvrirReponse:true}).ok);assert.ok(rpgMobaPasserCreature(d,defenseur).arriveeEnAttente);
- assert.ok(rpgMobaResoudreArrivee(d,actif,victime.id).effetEnAttente);const initial=d.effetCreatureEnAttente;
- assert.ok(rpgMobaJouerCreature(d,defenseur,id,'right',0,{ouvrirReponse:true,sacrificeIds:[]}).ok);assert.ok(rpgMobaPasserCreature(d,actif).entite);
- assert.equal(d.effetCreatureEnAttente,initial);const result=rpgMobaPasserEffetCreature(d,defenseur);assert.ok(result.ok,JSON.stringify(result));assert.equal(d.effetCreatureEnAttente,null);
+for (const actif of ['joueur', 'sorcier']) test(`Tojiro refusé ne suspend pas une capacité ciblée (${actif})`, () => {
+ const {d, defenseur, victime} = partie(actif); d[actif].main = ['eclipse-silencieuse'];
+ d[defenseur].main.push('trait-de-braise');
+ assert.ok(rpgMobaJouerCreature(d, actif, 'eclipse-silencieuse', 'left', 1, {ouvrirReponse:true}).ok);
+ assert.ok(rpgMobaPasserCreature(d, defenseur).arriveeEnAttente);
+ assert.ok(rpgMobaResoudreArrivee(d, actif, victime.id).effetEnAttente);
+ const initial = d.effetCreatureEnAttente, before = JSON.stringify(d);
+ assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'right', 0, {sacrificeIds:[]}).raison, 'pas-votre-tour');
+ assert.equal(JSON.stringify(d), before); assert.equal(d.effetCreatureEnAttente, initial);
+ assert.ok(rpgMobaPasserEffetCreature(d, defenseur).ok);
 });
+
 function tojiroEnJeu(side){
  const deck=Array(30).fill('ashigaru-des-braises');const d=rpgMobaNouveauDuel({joueurDeck:deck,sorcierDeck:deck,rng:()=>.5});
  assert.ok(rpgMulligan(d,'joueur',[]).ok&&rpgMulligan(d,'sorcier',[]).ok&&rpgDemarrerManaEssai(d).ok);if(d.tour!==side)rpgFinDeTour(d);
@@ -112,30 +115,27 @@ for(const side of ['joueur','sorcier']) test(`un sort de zone esquivé reçoit l
  const hp=d.moba.lanes.find(l=>l.id==='left').hp[actif];assert.ok(rpgMobaLancerMagie(d,actif,'tempete-de-sable',null,'left').ok);
  assert.equal(tojiro.pv,5);assert.equal(autre.pv,4);assert.equal(d.moba.lanes.find(l=>l.id==='left').hp[actif],hp-5);
 });
-for(const actif of ['joueur','sorcier']) test(`la perte d’une autre créature ne dissipe pas Tojiro et restaure l’annonce (${actif})`,()=>{
- const {d,defenseur,victime}=partie(actif);d[actif].main=['ashigaru-des-braises','frappe-iaijutsu'];d[actif].mana.braise=20;victime.pv=1;victime.def=1;
- assert.ok(rpgMobaJouerCreature(d,actif,'ashigaru-des-braises','right',0,{ouvrirReponse:true}).ok);const initiale=d.mobaCreatureEnAttente;
- assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok);
- assert.ok(rpgMobaLancerMagie(d,actif,'frappe-iaijutsu',victime.id).ok);assert.ok(!d[defenseur].creatures.includes(victime));
- const result=rpgMobaPasserCreature(d,actif);assert.ok(result.entite,JSON.stringify(result));assert.equal(d.mobaCreatureEnAttente,initiale);assert.ok(rpgMobaPasserCreature(d,defenseur).entite);
+for (const actif of ['joueur', 'sorcier']) test(`une annonce reste intacte après le refus de Tojiro (${actif})`, () => {
+ const {d, defenseur, victime} = partie(actif); d[actif].main = ['ashigaru-des-braises'];
+ assert.ok(rpgMobaJouerCreature(d, actif, 'ashigaru-des-braises', 'right', 0, {ouvrirReponse:true}).creatureEnAttente);
+ const initial = d.mobaCreatureEnAttente, before = JSON.stringify(d);
+ assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds:[]}).raison, 'pas-votre-tour');
+ assert.equal(JSON.stringify(d), before); assert.equal(d.mobaCreatureEnAttente, initial);
+ assert.ok(d[defenseur].creatures.includes(victime));
+ assert.ok(rpgMobaPasserCreature(d, defenseur).entite);
 });
 
-test('Tojiro exempté n’active pas les effets de mort et reprend l’annonce suspendue',async()=>{
- const {mobaInfliger}=await import('../src/games/rpgMoba.js');const deck=Array(30).fill('ashigaru-des-braises');
- const d=rpgMobaNouveauDuel({joueurDeck:deck,sorcierDeck:deck,rng:()=>.5});assert.ok(rpgMulligan(d,'joueur',[]).ok&&rpgMulligan(d,'sorcier',[]).ok&&rpgDemarrerManaEssai(d).ok);
- d.joueur.main=['gardienne-des-portes-de-sable','djinn-des-cendres-vengeresses'];Object.assign(d.joueur.mana,{sable:20,braise:20});
- const victime=rpgMobaJouerCreature(d,'joueur','gardienne-des-portes-de-sable','left',0).entite;
- rpgFinDeTour(d);rpgFinDeTour(d);
- assert.ok(rpgMobaJouerCreature(d,'joueur','djinn-des-cendres-vengeresses','left',1).entite);rpgFinDeTour(d);
- d.sorcier.main=['djinn-du-dernier-brasier'];d.sorcier.mana.braise=20;const djinn=rpgMobaJouerCreature(d,'sorcier','djinn-du-dernier-brasier','center',0).entite;assert.ok(djinn);djinn.detruireFinDuTour=false;rpgFinDeTour(d);rpgFinDeTour(d);
- d.joueur.main=[id];d.joueur.mana.braise=20;mobaInfliger(d.moba,'joueur','right',20);mobaInfliger(d.moba,'joueur','left',19);
- d.sorcier.main=['ashigaru-des-braises'];assert.ok(rpgMobaJouerCreature(d,'sorcier','ashigaru-des-braises','left',0,{ouvrirReponse:true}).ok);
- victime.pv--; // Condition MOBA de Tojiro.
- const choix=rpgMobaChoisirEmbuscadeIA(d,'joueur');assert.equal(choix?.id,id,JSON.stringify(choix));
- assert.ok(rpgMobaJouerCreature(d,'joueur',id,'center',0,{ouvrirReponse:true,sacrificeIds:[]}).ok);
- const result=rpgMobaPasserCreature(d,'sorcier');assert.ok(result.entite,JSON.stringify(result));assert.equal(d.moba.winner,null);assert.ok(d.mobaCreatureEnAttente);assert.ok(d.joueur.creatures.includes(victime));
- assert.ok(rpgMobaPasserCreature(d,'joueur').entite);
+test('Tojiro spécial à son tour ne déclenche pas les effets de mort', () => {
+ const {d, defenseur, victime} = partie('sorcier');
+ assert.ok(rpgMobaTerminerTour(d, 'sorcier').ok);
+ assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
+ const cimetiere = [...d[defenseur].cimetiere];
+ const result = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds:[]});
+ assert.ok(result.ok, JSON.stringify(result));
+ assert.ok(d[defenseur].creatures.includes(victime));
+ assert.deepEqual(d[defenseur].cimetiere, cimetiere);
 });
+
 for(const side of ['joueur','sorcier']) for(const [jet, esquive] of [[0, true], [0.9, false]]) test(`un souffle de créature ${esquive ? 'esquivé' : 'encaissé'} réveille la riposte sur la même voie MOBA (${side})`,()=>{
  const {d,actif,tojiro}=tojiroEnJeu(side);
  d[actif].main=['ashigaru-des-braises'];d[actif].mana.braise=20;
@@ -178,27 +178,24 @@ for(const side of ['joueur','sorcier']) test(`Réanimation de Tojiro sans Djinn 
  const tojiro=d[side].creatures.find(e=>e.carteId===id);assert.ok(tojiro);assert.ok(tojiro.esquive&&tojiro.contreAttaque);assert.ok(rpgMobaPlacementCoherent(d));
 });
 
-test('Tojiro en réponse : l’IA ne sacrifie pas une créature même supérieure', () => {
- const {d,defenseur,victime}=partie('joueur');
- Object.assign(victime, { atk: 18, pv: 17, def: 18, pvMax: 18 });
- assert.ok(rpgMobaTerminerTour(d,'joueur').ok);
- const before=JSON.stringify(d);
- const choix=rpgMobaChoisirEmbuscadeIA(d,defenseur);assert.equal(choix?.id,id);assert.deepEqual(choix.sacrificeIds,[]);
- assert.equal(JSON.stringify(d),before);
+test('l’IA ne propose pas Tojiro pendant le tour adverse', () => {
+ const {d, defenseur, victime} = partie('joueur');
+ Object.assign(victime, {atk:18, pv:17, def:18, pvMax:18});
+ assert.ok(rpgMobaTerminerTour(d, 'joueur').ok);
+ const before = JSON.stringify(d);
+ assert.equal(rpgMobaChoisirEmbuscadeIA(d, defenseur), null);
+ assert.equal(JSON.stringify(d), before);
 });
 
-test('une Embuscade laisse une invocation normale au tour suivant, sans quota spécial', () => {
+test('une Invocation spéciale à son tour laisse l’invocation normale disponible', () => {
  const {d, defenseur, victime} = partie('sorcier');
- d.sorcier.main=[]; assert.ok(rpgMobaTerminerTour(d,'sorcier').ok);
- assert.ok(rpgMobaJouerCreature(d,defenseur,id,'left',1,{ouvrirReponse:true,sacrificeIds:[]}).ok);
- assert.ok(rpgMobaPasserCreature(d,'sorcier').entite);
- assert.equal(d.moba.embuscadesJouees[defenseur],true);
- d[defenseur].main=[id];
- assert.equal(rpgMobaPeutEmbuscade(d,defenseur,id),true);
- assert.ok(rpgMobaPasserFinDeTour(d,defenseur).ok);
- assert.equal(d.tour,defenseur); assert.equal(d.moba.embuscadesJouees[defenseur],false);
- const tojiro=d[defenseur].creatures.find(e=>e.carteId===id);
- d[defenseur].main=['anqa-des-braises'];
- assert.ok(rpgMobaJouerCreature(d,defenseur,'anqa-des-braises','left',1,{sacrificeIds:[tojiro.id]}).ok);
- assert.equal(d.moba.creaturesJouees[defenseur],true);
+ assert.ok(rpgMobaTerminerTour(d, 'sorcier').ok);
+ assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
+ const special = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds:[]});
+ assert.ok(special.ok, JSON.stringify(special));
+ assert.equal(d.moba.creaturesJouees[defenseur], false);
+ assert.ok(d[defenseur].creatures.includes(victime));
+ d[defenseur].main = ['anqa-des-braises'];
+ assert.ok(rpgMobaJouerCreature(d, defenseur, 'anqa-des-braises', 'left', 1, {sacrificeIds:[special.entite.id]}).ok);
+ assert.equal(d.moba.creaturesJouees[defenseur], true);
 });

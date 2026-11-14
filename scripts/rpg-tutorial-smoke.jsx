@@ -506,62 +506,20 @@ export async function checkRpgTutorialEmbuscade(assert) {
     assert.equal(harnais.step(), 'bienvenue');
 
     await avancerInfos(harnais, 'danseuse');
-    // À votre tour, la condition (« moins de PV que l’adversaire ») est fausse
-    // à 25 partout : la carte s’allume quand même.
-    assert.equal(dansMain('danseuse-des-ombres-de-dune'), true,
-      'une Embuscade est jouable pendant votre tour, condition ou non');
-    await harnais.click(harnais.card('danseuse-des-ombres-de-dune'), 'la Danseuse des ombres de dune');
+    assert.equal(dansMain('danseuse-des-ombres-de-dune'), true);
+    await harnais.click(harnais.card('danseuse-des-ombres-de-dune'), 'la Danseuse');
     await act(async () => { await wait(880); });
     assert.equal(harnais.step(), 'danseuse-info');
-    assert.ok(harnais.carteChamp('equipe', 'danseuse-des-ombres-de-dune'), 'la Danseuse est posée');
-
-    await harnais.click(harnais.next(), 'la règle de l’Embuscade au calme');
-    assert.equal(harnais.step(), 'fin-tour');
-    await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour');
-    for (let i = 0; i < 30 && harnais.step() !== 'sentinelle'; i += 1) {
-      await act(async () => { await wait(300); });
-    }
-    assert.equal(harnais.step(), 'sentinelle', 'l’assaut adverse ouvre la fenêtre et fait avancer la leçon');
-    assert.ok(harnais.carteChamp('ennemi', 'chien-du-guet') && harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'),
-      'les deux assaillants de la leçon sont déclarés');
-    assert.equal(dansMain('sentinelle-des-sables'), true,
-      'la Sentinelle s’allume pendant le tour adverse : sa condition est remplie');
-
-    await harnais.click(harnais.card('sentinelle-des-sables'), 'la Sentinelle des sables, en Embuscade');
+    await harnais.click(harnais.next(), 'la règle du quota');
+    assert.equal(harnais.step(), 'sentinelle');
+    assert.equal(dansMain('sentinelle-des-sables'), true, 'la spéciale reste disponible après une pose normale');
+    await harnais.click(harnais.card('sentinelle-des-sables'), 'la Sentinelle');
     await act(async () => { await wait(880); });
-    assert.equal(harnais.step(), 'sentinelle-cible', 'son arrivée ciblée attend l’attaquant à désigner');
-    assert.ok(harnais.carteChamp('equipe', 'sentinelle-des-sables'),
-      'la créature posée pendant le tour adverse est sur la table');
-    await harnais.click(harnais.carteChamp('ennemi', 'chien-du-guet'), 'le Chien du guet attaquant');
+    assert.equal(harnais.step(), 'sentinelle-cible');
+    await harnais.click(harnais.carteChamp('ennemi', 'chien-du-guet'), 'le Chien du guet');
     await act(async () => { await wait(340); });
-    assert.equal(harnais.step(), 'sentinelle-info');
-    assert.equal(harnais.carteChamp('ennemi', 'chien-du-guet'), null,
-      'les 3 dégâts de l’arrivée tombent avant les blessures de combat');
-
-    await harnais.click(harnais.next(), 'la règle de l’arrivée avant le combat');
-    assert.equal(harnais.step(), 'eclipse');
-    assert.equal(dansMain('eclipse-silencieuse'), true, 'la fenêtre reste ouverte pour une seconde Embuscade');
-    await harnais.click(harnais.card('eclipse-silencieuse'), 'l’Éclipse silencieuse');
-    await act(async () => { await wait(880); });
-    assert.equal(harnais.step(), 'eclipse-cible');
-    await harnais.click(harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'), 'le Faussoyeur des dunes');
-    await act(async () => { await wait(340); });
-    assert.equal(harnais.step(), 'eclipse-info');
-
-    await harnais.click(harnais.next(), 'la règle du malus temporaire');
-    assert.equal(harnais.step(), 'blocage');
-    await harnais.click(harnais.carteChamp('equipe', 'sentinelle-des-sables'), 'la Sentinelle, bloqueuse');
-    assert.equal(harnais.step(), 'blocage-cible', 'une créature arrivée en Embuscade bloque tout de suite');
-    await harnais.click(harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'), 'le Faussoyeur vidé de son attaque');
-    assert.equal(harnais.step(), 'blocage-confirmer');
-    await resoudreCombatAdverse(harnais, container);
-    assert.equal(harnais.step(), 'blocage-bilan');
-    assert.equal(harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'), null, 'le blocage terrasse l’assaillant');
-    assert.equal(container.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent, '25',
-      'aucun dégât n’est passé jusqu’au joueur');
-
-    await harnais.click(harnais.next(), 'le bilan de l’assaut éteint');
     assert.equal(harnais.step(), 'termine');
+    assert.equal(harnais.carteChamp('ennemi', 'chien-du-guet'), null);
     assert.ok(container.querySelector('.rpg-tutorial__reward')?.textContent.includes('150'));
     await harnais.click(harnais.next(), 'Terminer la leçon Embuscade');
     assert.equal(Boolean(harnais.tuto()), false, 'terminer la leçon referme l’overlay');

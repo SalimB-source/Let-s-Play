@@ -63,7 +63,7 @@ test('le menu propose six leçons — cinq decks et le mot-clé Embuscade — ch
   ]);
   for (const tutoriel of RPG_TUTORIELS) {
     assert.ok(tutoriel.reward > 0, `${tutoriel.id} paie ses crédits`);
-    assert.ok(tutoriel.steps.length >= 13, `${tutoriel.id} est une vraie leçon`);
+    assert.ok(tutoriel.steps.length >= (tutoriel.id === 'embuscade-de-la-lune-noire' ? 7 : 13), `${tutoriel.id} est une vraie leçon`);
     assert.equal(new Set(tutoriel.steps.map((etape) => etape.id)).size, tutoriel.steps.length,
       `${tutoriel.id} n'utilise pas deux fois le même identifiant d'étape`);
     assert.ok(tutoriel.steps.every((etape) => etape.title && etape.text),
@@ -289,61 +289,18 @@ test('la leçon Embuscade prête son propre paquet, jouable en mana sans terrain
   }
 });
 
-test('la leçon Embuscade joue deux créatures pendant le tour adverse, puis bloque', () => {
+test('la leçon invoque normalement puis spécialement pendant son tour', () => {
   const tutoriel = tutorielParId('embuscade-de-la-lune-noire');
   const duel = duelDeLecon(tutoriel);
-  const reserve = () => duel.joueur.mana.sable + duel.joueur.mana.tenebres;
-  assert.equal(reserve(), 0, 'aucune réserve de mana');
-  assert.equal(duel.joueur.manaChoixEnAttente, false, 'aucun choix de couleur ne coupe la leçon');
-
-  // La Danseuse, désormais sans Embuscade, se joue seulement pendant votre tour.
-  const danseuse = rpgJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune');
-  assert.equal(danseuse.ok, true);
-  assert.equal(danseuse.entite.ready, true, 'sa Rapidité la rend disponible tout de suite');
-  assert.equal(reserve(), 0, 'la pose ne demande aucun mana');
-
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'sorcier');
-  assert.equal(cardById('danseuse-des-ombres-de-dune').reactionTourAdverse, undefined);
-
-  // La scène de l’assaut s’installe pendant le tour du sorcier.
-  preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'attaque-adverse'));
   const chien = duel.sorcier.creatures.find((entite) => entite.carteId === 'chien-du-guet');
-  const faussoyeur = duel.sorcier.creatures.find((entite) => entite.carteId === 'faussoyeur-des-dunes');
-  assert.ok(chien && faussoyeur, 'les deux assaillants de la leçon sont en scène');
-
-  // Sans fenêtre ouverte, le mot-clé ne donne rien : la carte reste en main.
-  const tropTot = rpgJouerCreature(duel, 'joueur', 'sentinelle-des-sables');
-  assert.equal(tropTot.ok, false);
-  assert.equal(tropTot.raison, 'timing');
-
-  rpgOuvrirFenetreReponse(duel);
-  duel.combatDeclare = { cote: 'sorcier', attaquants: [chien.id, faussoyeur.id], ciblesAttaque: {} };
-  const sentinelle = rpgJouerCreature(duel, 'joueur', 'sentinelle-des-sables', null,
-    { cibleDifferee: true, attaquants: [chien.id, faussoyeur.id] });
-  assert.equal(sentinelle.ok, true, 'l’attaque déclarée ouvre la fenêtre et remplit la condition');
-  assert.equal(sentinelle.arriveeEnAttente, true, 'son arrivée attend l’attaquant désigné');
-  assert.equal(sentinelle.entite.ready, true, 'la créature est prête dès son arrivée');
-  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok, true);
-  assert.equal(duel.sorcier.creatures.includes(chien), false,
-    'les 3 dégâts de l’arrivée tuent le Chien 2/2 avant les blessures de combat');
-
-  // La fenêtre reste ouverte : une seconde Embuscade enchaîne.
-  const eclipse = rpgJouerCreature(duel, 'joueur', 'eclipse-silencieuse', null,
-    { cibleDifferee: true, attaquants: [faussoyeur.id] });
-  assert.equal(eclipse.ok, true, 'un attaquant de force 2+ est encore déclaré');
-  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', faussoyeur.id).ok, true);
-  assert.deepEqual([faussoyeur.atk, faussoyeur.def, faussoyeur.pv], [0, 2, 2],
-    'le −2/+0 vide l’attaque sans toucher la défense');
-  assert.equal(reserve(), 0, 'les Embuscades ne demandent aucun mana');
-
-  // La créature arrivée en Embuscade bloque immédiatement.
-  const combat = rpgLancerAttaque(duel, 'sorcier', [faussoyeur.id],
-    { [faussoyeur.id]: [sentinelle.entite.id] }, null, [faussoyeur.id], {}, { attaqueDeclaree: true });
-  assert.equal(combat.ok, true);
-  assert.equal(duel.joueur.pv, 25, 'aucun dégât ne passe jusqu’au joueur');
-  assert.equal(duel.sorcier.creatures.includes(faussoyeur), false, 'la Sentinelle 3/2 terrasse le Faussoyeur vidé');
-  assert.equal(sentinelle.entite.pv, 2, 'elle n’encaisse rien : il frappait à 0');
+  assert.ok(chien);
+  const danseuse = rpgJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune');
+  assert.ok(danseuse.ok);
+  assert.equal(duel.joueur.invocationNormaleJouee, true);
+  const sentinelle = rpgJouerCreature(duel, 'joueur', 'sentinelle-des-sables', null, { cibleDifferee: true });
+  assert.ok(sentinelle.ok);
+  assert.ok(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok);
+  assert.equal(duel.sorcier.creatures.includes(chien), false);
 });
 
 test('la récompense d’un tutoriel n’est versée qu’une fois', () => {

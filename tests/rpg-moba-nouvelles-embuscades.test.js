@@ -96,19 +96,16 @@ test('Navire en main et voie à PV égaux éteignent leurs conditions', () => {
   assert.equal(rpgMobaConditionSpeciale(d, 'joueur', 'pilote-de-la-carreira'), true);
 });
 
-test('hors tour, le Pilote répond à une annonce et son invocation suspend puis reprend celle-ci', () => {
+test('hors tour, le Pilote ne répond pas à une annonce, qui reprend normalement', () => {
   const d = partie();
   d.joueur.main = ['ashigaru-des-braises'];
   d.sorcier.main = ['pilote-de-la-carreira'];
   assert.ok(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0, { ouvrirReponse: true }).creatureEnAttente);
-  assert.equal(rpgMobaPeutEmbuscade(d, 'sorcier', 'pilote-de-la-carreira'), true);
+  assert.equal(rpgMobaPeutEmbuscade(d, 'sorcier', 'pilote-de-la-carreira'), false);
   const avant = JSON.stringify(d);
-  const choix = rpgMobaChoisirEmbuscadeIA(d, 'sorcier');
-  assert.equal(choix?.id, 'pilote-de-la-carreira');
-  assert.equal(JSON.stringify(d), avant, 'l’IA ne change pas la partie lors de sa simulation');
-  assert.ok(rpgMobaJouerCreature(d, 'sorcier', choix.id, choix.lane, choix.slot, { ouvrirReponse: true, sacrificeIds: [] }).creatureEnAttente);
-  assert.equal(d.mobaCreatureEnAttente.invocationSpecialeMoba, true);
-  assert.ok(rpgMobaPasserCreature(d, 'joueur').entite);
+  assert.equal(rpgMobaChoisirEmbuscadeIA(d, 'sorcier'), null);
+  assert.equal(rpgMobaJouerCreature(d, 'sorcier', 'pilote-de-la-carreira', 'left', 1).raison, 'pas-votre-tour');
+  assert.equal(JSON.stringify(d), avant);
   assert.equal(d.mobaCreatureEnAttente?.carteId, 'ashigaru-des-braises');
   assert.ok(rpgMobaPasserCreature(d, 'sorcier').entite);
   assert.ok(rpgMobaPlacementCoherent(d));

@@ -266,7 +266,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'embuscade',
     section: 'Capacités des créatures',
     cardIds: ['sentinelle-des-sables', 'eclipse-silencieuse', 'embuscade'],
-    title: 'Invocation spéciale : jouer à son tour ou en réponse',
-    text: 'Si sa condition est remplie, Invocation spéciale permet de poser la créature pendant votre phase principale ou dans une fenêtre de réponse adverse : une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, ou la fin du tour adverse. Cette invocation ne demande aucun sacrifice et ne consomme pas l’invocation normale. Pendant votre tour, si la condition manque, vous pouvez toujours invoquer la créature normalement avec les sacrifices et le quota habituels. La fiche affiche la condition dans un cadre doré. La créature arrivée pendant le tour adverse peut défendre immédiatement. La Sorcellerie Neige « Embuscade » reste un sort distinct.',
+    title: 'Invocation spéciale : jouer pendant son tour',
+    text: 'Si sa condition est remplie, Invocation spéciale permet de poser la créature pendant votre phase principale, sans sacrifice ni consommation de l’invocation normale. Elle ne peut pas être jouée pendant le tour adverse. Si la condition manque, vous pouvez toujours invoquer la créature normalement avec les sacrifices et le quota habituels. La fiche affiche la condition dans un cadre doré. La Sorcellerie Neige « Embuscade » reste un sort distinct.',
   },
 ]);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgResoudreArriveeCiblee } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgLancerMagie, rpgResoudreArriveeCiblee } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique, rpgCibleIndividuelleClassiqueEncoreLegale, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from '../src/games/rpgCombatIndividuelClassique.js';
 
 function partie() {
@@ -125,14 +125,13 @@ test('Provocation donne son bonus temporaire et bloque l’attaque directe', () 
   }
 });
 
-test('Embuscade en réponse à l’attaque : son arrivée peut éliminer l’attaquant', () => {
+test('une Magie Rapide en réponse peut éliminer l’attaquant', () => {
   const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier');
-  d.sorcier.main.push('sentinelle-des-sables');
+  d.sorcier.main.push('trait-de-braise');
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
   const attaque = d.combatDeclare;
-  const r = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables', a.id);
-  assert.ok(r.ok, JSON.stringify(r));
-  assert.equal(d.joueur.creatures.some(e => e.id === a.id), false);
+  assert.ok(rpgLancerMagie(d, 'sorcier', 'trait-de-braise', a.id).ok);
+  assert.equal(d.joueur.creatures.includes(a), false);
   assert.equal(d.combatDeclare, attaque);
   const resolution = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
   assert.ok(resolution.ok); assert.equal(resolution.annule, true);
@@ -158,17 +157,17 @@ test('la Tour des Flots renvoie son adversaire avant les blessures ordinaires', 
 });
 
 
-test('une Embuscade remplissant sa condition est permise en fin de tour adverse', () => {
+test('une Invocation spéciale est interdite en fin de tour adverse même si sa condition est remplie', () => {
   const d = partie(); d.tour = 'sorcier';
-  const ennemi = poser(d, 'sorcier');
-  ennemi.def = ennemi.pvMax = ennemi.pv = 3;
-  rpgBlesserCreature(d, 'sorcier', ennemi.id, 1);
+  const ennemi = poser(d, 'sorcier'); ennemi.pv--;
   const autre = poser(d, 'sorcier'); autre.pv--;
-  d.joueur.main.push('sanguinaire-des-dunes');
-  assert.equal(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').raison, 'timing');
+  d.joueur.main = ['sanguinaire-des-dunes'];
+  assert.equal(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').raison, 'pas-votre-tour');
   rpgOuvrirFinDeTour(d);
-  assert.equal(rpgPeutRepondre(d, 'joueur'), true);
-  assert.ok(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').ok);
+  assert.equal(rpgPeutRepondre(d, 'joueur'), false);
+  const avant = JSON.stringify(d);
+  assert.equal(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').raison, 'pas-votre-tour');
+  assert.equal(JSON.stringify(d), avant);
 });
 
 test('la production de mana du harnais est sans effet, même si le porteur meurt avant les blessures', () => {
@@ -197,84 +196,75 @@ test('l’IA choisit et résout chaque attaque séparément avec une fenêtre de
   assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(d), null);
 });
 
-test('une Embuscade du joueur peut supprimer un attaquant IA avant son échange', () => {
+test('une Magie Rapide du joueur peut supprimer un attaquant IA avant son échange', () => {
   const d = partie(); d.tour = 'sorcier';
   const a = poser(d, 'sorcier'); a.atk = 5; a.pv = 1;
   const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(d);
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'sorcier', choix.attaquantId, choix.cibleId).ok);
-  d.joueur.main.push('sentinelle-des-sables');
-  assert.ok(rpgJouerCreature(d, 'joueur', 'sentinelle-des-sables', a.id).ok);
+  d.joueur.main = ['trait-de-braise'];
+  assert.ok(rpgLancerMagie(d, 'joueur', 'trait-de-braise', a.id).ok);
   assert.equal(d.sorcier.creatures.includes(a), false);
   const pv = d.joueur.pv;
   assert.equal(rpgResoudreAttaqueIndividuelleClassique(d, 'sorcier').annule, true);
   assert.equal(d.joueur.pv, pv);
 });
 
-test('l’IA utilise une Embuscade légale pendant la réponse à une attaque', () => {
+test('l’IA ne joue pas d’Invocation spéciale pendant la réponse à une attaque', () => {
   const d = partie(), a = poser(d, 'joueur'); a.pv = 1;
-  d.sorcier.main.push('sentinelle-des-sables');
+  d.sorcier.main = ['sentinelle-des-sables'];
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
-  assert.equal(rpgPeutRepondre(d, 'sorcier'), true);
-  const reponse = rpgSorcierMagieRapide(d, () => .5);
-  assert.equal(reponse?.carteId, 'sentinelle-des-sables');
-  assert.equal(d.joueur.creatures.includes(a), false);
-  assert.equal(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').annule, true);
+  assert.equal(rpgPeutRepondre(d, 'sorcier'), false);
+  assert.equal(rpgSorcierMagieRapide(d, () => .5), null);
+  assert.ok(d.joueur.creatures.includes(a));
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
 });
 
-test('l’IA peut aussi utiliser une Embuscade légale en fin de tour', () => {
-  const d = partie(), a = poser(d, 'joueur'); a.def = a.pvMax = a.pv = 3;
-  rpgBlesserCreature(d, 'joueur', a.id, 1);
+test('l’IA ne joue pas d’Invocation spéciale en fin de tour adverse', () => {
+  const d = partie(), a = poser(d, 'joueur'); a.pv--;
   const autre = poser(d, 'joueur'); autre.pv--;
-  d.sorcier.main.push('sanguinaire-des-dunes'); rpgOuvrirFinDeTour(d);
-  assert.equal(rpgPeutRepondre(d, 'sorcier'), true);
-  assert.equal(rpgSorcierMagieRapide(d, () => .5)?.carteId, 'sanguinaire-des-dunes');
+  d.sorcier.main = ['sanguinaire-des-dunes']; rpgOuvrirFinDeTour(d);
+  assert.equal(rpgPeutRepondre(d, 'sorcier'), false);
+  assert.equal(rpgSorcierMagieRapide(d, () => .5), null);
   assert.ok(d.finDeTour); assert.equal(d.fenetreReponse, true);
 });
 
-test('Embuscade reste jouable dans les fenêtres de sort et d’effet de créature', () => {
+test('Invocation spéciale reste interdite dans les fenêtres de sort et d’effet de créature', () => {
   for (const fenetre of ['annonce', 'effetCreatureEnAttente']) {
     const d = partie(); d.tour = 'sorcier';
-    const ennemi = poser(d, 'sorcier'); ennemi.def = ennemi.pvMax = ennemi.pv = 4;
-    rpgBlesserCreature(d, 'sorcier', ennemi.id, 1);
+    const ennemi = poser(d, 'sorcier'); ennemi.pv--;
     const autre = poser(d, 'sorcier'); autre.pv--;
-    d.joueur.main.push('sanguinaire-des-dunes');
-    d.fenetreReponse = true;
+    d.joueur.main = ['sanguinaire-des-dunes']; d.fenetreReponse = true;
     d[fenetre] = { cote: 'sorcier', carteId: 'ashigaru-des-braises', cibleId: null };
-    assert.equal(rpgPeutRepondre(d, 'joueur'), true, fenetre);
-    assert.ok(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').ok, fenetre);
+    assert.equal(rpgPeutRepondre(d, 'joueur'), false, fenetre);
+    const avant = JSON.stringify(d);
+    assert.equal(rpgJouerCreature(d, 'joueur', 'sanguinaire-des-dunes').raison, 'pas-votre-tour');
+    assert.equal(JSON.stringify(d), avant);
   }
 });
 
 for (const attaquantCote of ['joueur', 'sorcier']) {
-  test(`Une Embuscade interrompt une attaque directe et rend l'attaque disponible (${attaquantCote})`, () => {
+  test(`Une Invocation spéciale refusée ne perturbe pas l’attaque directe (${attaquantCote})`, () => {
     const d = partie(); d.tour = attaquantCote;
     const defenseur = attaquantCote === 'joueur' ? 'sorcier' : 'joueur';
     const a = poser(d, attaquantCote); a.def = a.pvMax = 5; a.pv = 4;
-    d[defenseur].main.push('fennec-des-decombres');
+    d[defenseur].main = ['fennec-des-decombres'];
     const pv = d[defenseur].pv;
     assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, attaquantCote, a.id).ok);
-    const arrivee = rpgJouerCreature(d, defenseur, 'fennec-des-decombres');
-    assert.ok(arrivee.ok, JSON.stringify(arrivee));
-    assert.equal(d.combatDeclare.cibleIndividuelle.interrompueParEmbuscade, true);
+    const avant = JSON.stringify(d);
+    assert.equal(rpgJouerCreature(d, defenseur, 'fennec-des-decombres').raison, 'pas-votre-tour');
+    assert.equal(JSON.stringify(d), avant);
     const resultat = rpgResoudreAttaqueIndividuelleClassique(d, attaquantCote);
-    assert.ok(resultat.annule && resultat.choisirNouvelleCible);
-    assert.equal(resultat.attaquantId, a.id);
-    assert.equal(d[defenseur].pv, pv);
-    assert.equal(a.attaquee, false);
-    assert.deepEqual(rpgCiblesIndividuellesClassique(d, attaquantCote, a.id).cibles, [arrivee.entite.id]);
-    assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, attaquantCote, a.id).raison, 'cible');
-    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, attaquantCote, a.id, arrivee.entite.id).ok);
-    assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, attaquantCote).ok);
+    assert.ok(resultat.ok && !resultat.annule);
+    assert.equal(d[defenseur].pv, pv - a.atk);
     assert.equal(a.attaquee, true);
   });
 }
 
-test('Une Embuscade sur une créature déjà ciblée ne redirige pas son attaque', () => {
+test('une Invocation spéciale refusée ne redirige pas une attaque ciblée', () => {
   const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier');
-  a.def = a.pvMax = 5; a.pv = 4; d.sorcier.main.push('fennec-des-decombres');
+  a.def = a.pvMax = 5; a.pv = 4; d.sorcier.main = ['fennec-des-decombres'];
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
-  assert.ok(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').ok);
-  assert.equal(d.combatDeclare.cibleIndividuelle.interrompueParEmbuscade, undefined);
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').raison, 'pas-votre-tour');
   const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
   assert.ok(r.ok && !r.annule); assert.equal(a.attaquee, true);
 });
@@ -290,55 +280,44 @@ test('Une Embuscade refusée ne perturbe pas l’attaque directe', () => {
   assert.equal(d.sorcier.pv, pv - a.atk);
 });
 
-test('la Bannière ne se déclenche pas deux fois pour la même attaque interrompue', () => {
+test('la Bannière se déclenche une seule fois si l’invocation adverse est refusée', () => {
   const d = partie(), a = poser(d, 'joueur');
   a.carteId = 'daimyo-du-soleil-rouge'; a.def = a.pvMax = 6; a.pv = 4;
-  d.sorcier.main.push('fennec-des-decombres');
-  const avant = a.atk;
+  d.sorcier.main = ['fennec-des-decombres']; const avant = a.atk;
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
   assert.equal(a.atk, avant + 1);
-  const fennec = rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').entite;
-  assert.ok(fennec);
-  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').choisirNouvelleCible);
-  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, fennec.id).ok);
-  assert.equal(a.atk, avant + 1);
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').raison, 'pas-votre-tour');
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+  assert.equal(a.atk, avant + 1);
 });
 
-test('une attaque interrompue abandonnée ne bloque pas la Bannière au prochain tour', () => {
+test('une Invocation spéciale refusée ne bloque pas la Bannière au prochain tour', () => {
   const d = partie(), a = poser(d, 'joueur');
   a.carteId = 'daimyo-du-soleil-rouge'; a.def = a.pvMax = 6; a.pv = 4;
-  d.sorcier.main.push('fennec-des-decombres');
+  d.sorcier.main = ['fennec-des-decombres'];
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
-  const fennec = rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').entite;
-  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').choisirNouvelleCible);
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').raison, 'pas-votre-tour');
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
   const apresPremiereAnnonce = a.atk;
   rpgFinDeTour(d); rpgFinDeTour(d);
-  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, fennec.id).ok);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
   assert.equal(a.atk, apresPremiereAnnonce + 1);
 });
 
-test('on termine l’arrivée ciblée de l’Embuscade avant de choisir à nouveau', () => {
-  const d = partie(), a = poser(d, 'joueur');
-  a.def = a.pv = a.pvMax = 8;
-  d.sorcier.main.push('sentinelle-des-sables');
+test('une arrivée ciblée interdite ne suspend pas une attaque', () => {
+  const d = partie(), a = poser(d, 'joueur'); a.def = a.pv = a.pvMax = 8;
+  d.sorcier.main = ['sentinelle-des-sables'];
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
-  const arrivee = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables', null, { cibleDifferee: true });
-  assert.ok(arrivee.ok && arrivee.arriveeEnAttente);
-  assert.equal(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').raison, 'timing');
-  assert.ok(rpgResoudreArriveeCiblee(d, 'sorcier', a.id).ok);
-  const resolution = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
-  assert.ok(resolution.annule && resolution.choisirNouvelleCible);
-  assert.equal(a.attaquee, false);
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables', null, { cibleDifferee: true }).raison, 'pas-votre-tour');
+  assert.ok(!d.arriveeEnAttente);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
 });
 
-test('la cible directe reste un choix possible si une capacité le permet après l’Embuscade', () => {
+test('Infiltration conserve la frappe directe après une Invocation spéciale refusée', () => {
   const d = partie(), a = poser(d, 'joueur');
   a.def = a.pvMax = 5; a.pv = 4; a.infiltration = true;
-  d.sorcier.main.push('fennec-des-decombres');
+  d.sorcier.main = ['fennec-des-decombres'];
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
-  assert.ok(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').ok);
-  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').choisirNouvelleCible);
-  assert.equal(rpgCiblesIndividuellesClassique(d, 'joueur', a.id).directe, true);
-  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').raison, 'pas-votre-tour');
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
 });
