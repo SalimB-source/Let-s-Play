@@ -1756,7 +1756,7 @@ test('le Drakkar Défenseur attire les attaques dans sa voie sans pouvoir attaqu
   drakkar.ready = true;
   assert.equal(rpgPeutAttaquer(drakkar), false);
   assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', attaquant.id, 'left'), { cibles: [drakkar.id], directe: false });
-  assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', lateral.id, 'right'), { cibles: [autreVoie.id], directe: false });
+  assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', lateral.id, 'right'), { cibles: [autreVoie.id], directe: true });
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: autre.id }).raison, 'cible');
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: drakkar.id }).ok, true);
 });

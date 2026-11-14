@@ -62,6 +62,7 @@ test('RpgPvpBoard monte la vraie table visuelle RpgDuelPage et pilote un duel co
     const { decksPourDefi, resultatSalon } = await vite.ssrLoadModule('/src/games/rpgPvpSalon.js');
     const { creerArbitre } = await vite.ssrLoadModule('/src/server/sablierArbitre.js');
     const { rngSeme } = await vite.ssrLoadModule('/src/games/rpgHasard.js');
+    const { rpgJouerCreature } = await vite.ssrLoadModule('/src/games/rpgDuel.js');
     const { default: RpgPvpBoard } = await vite.ssrLoadModule('/src/games/RpgPvpBoard.jsx');
 
     const duels = new Map();
@@ -216,6 +217,47 @@ test('RpgPvpBoard monte la vraie table visuelle RpgDuelPage et pilote un duel co
 
       assert.equal(vueHote.etat.manaEssaiDemarre, true, 'le duel démarre visuellement dès les deux mulligans validés');
 
+      // Le serveur conserve l'autorité : deux vrais plateaux visualisent la
+      // déclaration, puis seul le défenseur résout après sa réponse.
+      const ligne = duels.get(ouverture.code);
+      const d = ligne.etat;
+      d.tour = 'joueur'; d.phase = 'principale'; d.joueur.manaChoixEnAttente = false;
+      for (const camp of ['joueur', 'sorcier']) {
+        d[camp].creatures = []; d[camp].main = ['ashigaru-des-braises'];
+        d[camp].invocationNormaleJouee = false;
+        d[camp].mana = { braise: 20, eau: 20, sable: 20, neige: 20, tenebres: 20 };
+        d.tour = camp;
+        const pose = rpgJouerCreature(d, camp, 'ashigaru-des-braises');
+        assert.ok(pose.ok, pose.raison);
+        pose.entite.ready = true; pose.entite.malInvocation = false;
+        d[camp].main = ['trait-de-braise', 'eau-de-la-source', 'ashigaru-des-braises'];
+      }
+      d.tour = 'joueur'; ligne.seq += 1; duels.set(ouverture.code, ligne);
+      vueHote = await appeler(HOTE, { action: 'etat', code: ouverture.code });
+      vueInvite = await appeler(INVITE, { action: 'etat', code: ouverture.code });
+      await rendreDeuxTables();
+      for (const racine of [hoteDom, inviteDom]) {
+        assert.ok(racine.querySelector('.rpg-hand__card[data-card-id="trait-de-braise"] .rpg-sort-sceau--rapide'));
+        assert.ok(racine.querySelector('.rpg-hand__card[data-card-id="eau-de-la-source"] .rpg-sort-sceau--sorcellerie'));
+        assert.equal(racine.querySelector('.rpg-hand__card[data-card-id="ashigaru-des-braises"] .rpg-sort-sceau'), null);
+        assert.equal(racine.querySelectorAll('.rpg-hand__card[data-card-id="ashigaru-des-braises"] .rpg-hand__stat').length, 2);
+      }
+      const attaquant = hoteDom.querySelector('.card-row--equipe .rpg-card[data-card-id="ashigaru-des-braises"]');
+      assert.ok(attaquant, 'attaquant visible');
+      await act(async () => attaquant.click());
+      const plaque = hoteDom.querySelector('.rpg-wizard-plate--ennemi');
+      assert.ok(plaque.classList.contains('is-ciblable'), 'sorcier ciblable malgré une créature adverse');
+      await act(async () => plaque.click());
+      await rendreDeuxTables();
+      assert.equal(duels.get(ouverture.code).etat.combatDeclare.cibleIndividuelle.cibleId, null);
+      assert.ok(inviteDom.querySelector('.rpg-btn--resolve-combat'), 'le défenseur peut résoudre');
+      assert.equal(inviteDom.querySelector('.rpg-btn--confirmer-attaque'), null);
+      const pvAvant = duels.get(ouverture.code).etat.sorcier.pv;
+      await act(async () => inviteDom.querySelector('.rpg-btn--resolve-combat').click());
+      await rendreDeuxTables();
+      assert.equal(duels.get(ouverture.code).etat.sorcier.pv, pvAvant - 1);
+      assert.equal(duels.get(ouverture.code).etat.phase, 'principale');
+
       // 3. Abandon en deux clics dans la barre du duel -> écran de Victoire / Défaite sur la vraie table.
       await act(async () => {
         const btnAbandon = [...inviteDom.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Abandonner');
@@ -247,5 +289,38 @@ test('RpgPvpBoard monte la vraie table visuelle RpgDuelPage et pilote un duel co
   } finally {
     await vite.close();
     dom.window.close();
+  }
+});
+
+test('main MOBA : sceaux des deux familles et statistiques de créature', async () => {
+  const dom = installerDom();
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
+    appType: 'custom', logLevel: 'silent',
+  });
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    const { RPG_RENDU_MOBA } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const { default: Board } = await vite.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel } = await vite.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel;
+    const props = { initialiser: () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 })), onQuitter() {}, rendu: RPG_RENDU_MOBA, sonActif: false };
+    await act(async () => root.render(React.createElement(Board, props)));
+    await act(async () => container.querySelector('.moba__mulligan .moba__primary').click());
+    duel.joueur.main = ['trait-de-braise', 'eau-de-la-source', 'ashigaru-des-braises', 'javelot-du-beffroi'];
+    await act(async () => root.render(React.createElement(Board, props)));
+    const card = (id) => container.querySelector(`.moba__real-hand[data-card-id="${id}"]`);
+    assert.ok(card('trait-de-braise').querySelector('.rpg-sort-sceau--rapide .rpg-sort-sigil'));
+    assert.ok(card('eau-de-la-source').querySelector('.rpg-sort-sceau--sorcellerie .rpg-sort-sigil'));
+    assert.match(card('trait-de-braise').getAttribute('aria-label'), /Magie Rapide/);
+    assert.match(card('eau-de-la-source').getAttribute('aria-label'), /Sorcellerie/);
+    assert.equal(card('javelot-du-beffroi').querySelector('.rpg-sort-sceau'), null);
+    assert.ok(card('ashigaru-des-braises').classList.contains('rpg-hand__card--type-creature'));
+    assert.equal(card('ashigaru-des-braises').querySelectorAll('.rpg-hand__stat').length, 2);
+  } finally {
+    await act(async () => root.unmount()); container.remove();
+    await vite.close(); dom.window.close();
   }
 });

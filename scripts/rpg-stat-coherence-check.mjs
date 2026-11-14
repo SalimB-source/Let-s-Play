@@ -20,7 +20,7 @@ try {
         .test-rangee { position:relative!important; display:block!important; width:300px!important; height:${taille * 1.25 + 5}px!important; top:auto!important; left:auto!important; right:auto!important; }
       </style>
       <div class="rpg-battle ${touch ? 'rpg-battle--touch' : ''}" data-scene="duel"><div class="card-table"><div class="card-row test-rangee"><button id="duel" style="border:0!important;max-width:none!important" class="rpg-card rpg-card--img test-face ${etat === 'blessee' ? 'is-wounded' : ''}">${pied(etat)}</button></div><div class="rpg-hand-dock"><div class="rpg-hand"><button id="duel-main" style="border:0!important;max-width:none!important" class="rpg-hand__card rpg-hand__card--img rpg-hand__card--type-creature test-face">${statsMain}</button></div></div><div class="rpg-card-peek"><div id="duel-apercu" style="border:0!important;max-width:none!important" class="rpg-hover-card-preview__face test-face">${pied(etat)}</div></div><div class="rpg-mulligan"><button id="duel-mulligan" style="border:0!important;max-width:none!important" class="rpg-mulligan__card test-face">${pied(etat).replace('rpg-card__foot', 'rpg-card__foot rpg-mulligan__stats')}</button></div></div></div>
-      <div class="rpg-battle rpg-battle--moba"><div class="moba"><div class="moba__slots"><div class="moba__real-slot"><button id="moba" style="border:0!important;max-width:none!important" class="rpg-card rpg-card--img test-face ${etat === 'blessee' ? 'is-wounded' : ''}">${pied(etat)}</button></div></div><div class="moba__hand"><button id="moba-main" style="border:0!important;max-width:none!important" class="rpg-hand__card rpg-hand__card--img moba__real-hand test-face">${statsMain}</button></div><div class="moba__preview-layer"><div id="moba-apercu" style="border:0!important;max-width:none!important" class="rpg-hover-card-preview__face test-face">${pied(etat)}</div></div><div class="moba__mulligan-overlay"><button id="moba-mulligan" style="border:0!important;max-width:none!important" class="rpg-mulligan__card test-face">${pied(etat).replace('rpg-card__foot', 'rpg-card__foot rpg-mulligan__stats')}</button></div></div></div>`);
+      <div class="rpg-battle rpg-battle--moba"><div class="moba"><div class="moba__slots"><div class="moba__real-slot"><button id="moba" style="border:0!important;max-width:none!important" class="rpg-card rpg-card--img test-face ${etat === 'blessee' ? 'is-wounded' : ''}">${pied(etat)}</button></div></div><div class="moba__hand"><button id="moba-main" style="border:0!important;max-width:none!important" class="rpg-hand__card rpg-hand__card--img rpg-hand__card--type-creature moba__real-hand test-face">${statsMain}</button></div><div class="moba__preview-layer"><div id="moba-apercu" style="border:0!important;max-width:none!important" class="rpg-hover-card-preview__face test-face">${pied(etat)}</div></div><div class="moba__mulligan-overlay"><button id="moba-mulligan" style="border:0!important;max-width:none!important" class="rpg-mulligan__card test-face">${pied(etat).replace('rpg-card__foot', 'rpg-card__foot rpg-mulligan__stats')}</button></div></div></div>`);
       const mesures = await page.evaluate(() => Object.fromEntries(['duel', 'moba', 'duel-main', 'moba-main', 'duel-apercu', 'moba-apercu', 'duel-mulligan', 'moba-mulligan'].map((id) => {
         const face = document.getElementById(id), faceRect = face.getBoundingClientRect();
         const groupe = face.querySelector('.rpg-card__foot, .rpg-hand__stats');
@@ -42,15 +42,20 @@ try {
       // En duel, la main reprend désormais les plaques neutres du champ ;
       // les états modifiés restent propres aux créatures posées.
       if (etat === 'normal') {
-        for (const [i, stat] of mesures['duel-main'].stats.entries()) {
-          const champ = mesures.duel.stats[i];
-          for (const prop of ['x', 'y', 'width', 'height', 'icon']) assert.ok(Math.abs(stat[prop] - champ[prop]) < .2, `${largeur}×${hauteur} ${taille}px main/champ stat ${i} ${prop} : ${stat[prop]} ≠ ${champ[prop]}`);
-          for (const prop of ['font', 'color', 'background', 'image', 'border', 'gap', 'padding']) assert.equal(stat[prop], champ[prop], `${largeur}×${hauteur} ${taille}px main/champ stat ${i} ${prop}`);
+        for (const [main, champId] of [['duel-main', 'duel'], ['moba-main', 'moba']]) {
+          for (const [i, stat] of mesures[main].stats.entries()) {
+            const champ = mesures[champId].stats[i];
+            for (const prop of ['x', 'y', 'width', 'height', 'icon']) assert.ok(Math.abs(stat[prop] - champ[prop]) < .2, `${largeur}×${hauteur} ${taille}px ${main}/${champId} stat ${i} ${prop} : ${stat[prop]} ≠ ${champ[prop]}`);
+            for (const prop of ['font', 'color', 'background', 'image', 'border', 'gap', 'padding']) assert.equal(stat[prop], champ[prop], `${largeur}×${hauteur} ${taille}px ${main}/${champId} stat ${i} ${prop}`);
+          }
         }
       }
       const [attaque, defense] = mesures.duel.stats;
-      if (touch) assert.ok(attaque.y + attaque.height <= defense.y + .2, 'en mobile, attaque au-dessus de défense');
-      else assert.ok(attaque.x + attaque.width <= defense.x + .2, 'sur PC, les deux valeurs restent côte à côte');
+      assert.ok(attaque.y + attaque.height <= defense.y + .2, 'sur PC comme sur mobile, attaque au-dessus de défense');
+      for (const id of ['duel-main', 'moba-main']) {
+        const [atk, def] = mesures[id].stats;
+        assert.ok(atk.y + atk.height <= def.y + .2, `${id} : attaque au-dessus de défense`);
+      }
     }
     await page.close();
     console.log(`${largeur}×${hauteur} : statistiques du champ et de la main cohérentes`);

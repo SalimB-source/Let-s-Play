@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
+import { SortSceau } from './rpgSortSignature.jsx';
 import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
-import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme, libelleModificationStats, modificationStats } from './rpgCards.js';
+import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme, magieFamille, libelleModificationStats, modificationStats } from './rpgCards.js';
 import './rpg-card-guide.css';
 
 const ELEMENT_LABELS = {
@@ -38,6 +39,7 @@ function GuideCard({ carte, cardArt }) {
     >
       <div className="rpg-card-guide__art">
         <img src={cardArt(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" />
+        {magieFamille(carte) && <SortSceau carte={carte} className="rpg-card-guide__sort" />}
         {carte.kind !== 'terrain' && <span
           className={`rpg-card-guide__cost${degradeCout ? ' rpg-card-guide__cost--hybride' : ''}`}
           style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}

@@ -1,11 +1,11 @@
-/** Combat individuel du classique solo, indépendant des voies du MOBA. */
+/** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { rpgAppliquerBannieresAttaque, rpgEstProtegee, rpgPeutAttaquer, rpgResoudreEchangeIndividuelClassique, rpgVainqueur } from './rpgDuel.js';
 
 const camps = ['joueur', 'sorcier'];
 const autre = (cote) => cote === 'joueur' ? 'sorcier' : 'joueur';
 const creature = (entite) => Boolean(entite && duelCardById(entite.carteId) && duelCardById(entite.carteId).kind !== 'site');
-const soloClassique = (duel, cote) => Boolean(duel && !duel.moba && !duel.pvp && camps.includes(cote));
+const soloClassique = (duel, cote) => Boolean(duel && !duel.moba && camps.includes(cote));
 
 function accessible(attaquant, cible, ciblee) {
   if (!creature(cible) || rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) return false;
@@ -25,7 +25,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
-    directe: ciblee || Boolean(attaquant.infiltration) || (!attaquant.envol ? possibles.length === 0 : !possibles.some((e) => e.envol)),
+    directe: true,
   };
 }
 

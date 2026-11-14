@@ -33,16 +33,16 @@ test('beaucoup d’effets : deux colonnes sans débord vertical ni horizontal', 
   assert.ok(ajustement.colonnes * ajustement.taille <= 70 - 4);
 });
 
-test('mise en page commune : statistiques en colonne à gauche sur les créatures mobiles', () => {
+test('mise en page commune : statistiques en colonne à gauche sur ordinateur et mobile', () => {
   const css = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
-  const mobile = css.slice(css.lastIndexOf('/* Sur mobile, les créatures posées du duel'));
+  const mobile = css.slice(css.lastIndexOf('/* Même disposition sur PC et mobile'));
   assert.match(mobile, /@media \(max-width: 700px\), \(hover: none\) and \(pointer: coarse\)/);
   const duelMobile = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
   assert.match(duelMobile, /\.rpg-card--img \.rpg-card__foot,\s*\.rpg-hand__card--img \.rpg-hand__stats\s*\{\s*display: grid !important;\s*grid-template-columns: repeat\(2,/);
   // Le footer est déjà une grille !important : flex-direction n'a aucun effet.
   // Il faut remplacer explicitement les deux colonnes par une seule.
-  assert.match(mobile, /\.moba__real-slot \.rpg-card--img \.rpg-card__foot\s*\{[^}]*left: 5%;[^}]*right: auto;[^}]*grid-template-columns: max-content;[^}]*grid-template-rows: auto auto;/s);
-  assert.match(mobile, /\.moba__real-slot \.rpg-card--img \.rpg-card__foot > :is\(\.rpg-card__stat--atk, \.rpg-card__pt\)\s*\{\s*font-size: clamp\(9px, 16cqw, 14px\);/);
+  assert.match(mobile, /\.moba__real-hand\.rpg-hand__card--type-creature \.rpg-hand__stats\s*\{[^}]*left: 5%;[^}]*right: auto;[^}]*grid-template-columns: max-content;[^}]*grid-template-rows: auto auto;/s);
+  assert.match(mobile, /\.moba__real-hand\.rpg-hand__card--type-creature \.rpg-hand__stat\s*\{\s*font-size: clamp\(9px, 16cqw, 14px\);/);
   assert.match(mobile, /\.moba__slot-label small\s*\{[^}]*font-size: 11px;/s);
   assert.match(mobile, /\.rpg-card-icones--colonne:has\(\.rpg-card-icone:nth-child\(4\)\)/);
   assert.match(mobile, /\.moba__slots \.rpg-card \.rpg-card-icones--colonne\.is-moba-compact-overflow/);

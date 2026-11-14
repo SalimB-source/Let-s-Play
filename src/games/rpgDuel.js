@@ -5893,8 +5893,7 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.a
     .filter(([attaquantId]) => attaquantsActifs.has(attaquantId)).map(([, id]) => id);
   // La cible d'une attaque individuelle normale déclenche les effets de
   // blocage, mais n'est pas la cible d'une capacité « Attaque ciblée ».
-  // Le PvP conserve ses conditions historiques.
-  const cibleDuel = !duel.moba && !duel.pvp && attaquants.length
+  const cibleDuel = !duel.moba && attaquants.length
     ? combat?.cibleIndividuelle?.cibleId : null;
   const vampiresBloqueurs = allies.some((entite) => (bloqueurs.includes(entite.id)
     || (cibleDuel === entite.id && !combat.cibleIndividuelle.ciblee))
@@ -6473,7 +6472,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // classique individuel. On attend la fin de ses effets d'arrivée avant de
   // rendre la main à l'attaquant pour qu'il choisisse à nouveau sa cible.
   const attaqueIndividuelle = duel.combatDeclare?.cibleIndividuelle;
-  if (!duel.moba && !duel.pvp && duel.tour !== cote && duel.fenetreReponse
+  if (!duel.moba && duel.tour !== cote && duel.fenetreReponse
     && duel.combatDeclare?.cote === autre(cote) && attaqueIndividuelle?.cibleId === null
     && (rpgCarteEmbuscade(carte) || carte.reactionTourAdverse)) {
     attaqueIndividuelle.interrompueParEmbuscade = true;
@@ -8966,7 +8965,7 @@ export function rpgResoudreEchangeIndividuelMoba(duel, cote, attaquantId, cibleI
 /** Adaptateur classique solo ; l'appelant valide la déclaration et la cible. */
 export function rpgResoudreEchangeIndividuelClassique(duel, cote, attaquantId, cibleId, ciblee) {
   const combat = duel?.combatDeclare;
-  if (!duel || duel.moba || duel.pvp || !combat?.cibleIndividuelle || combat.cote !== cote
+  if (!duel || duel.moba || !combat?.cibleIndividuelle || combat.cote !== cote
     || duel.tour !== cote || duel.phase !== 'blocage' || !duel.fenetreReponse
     || combat.attaquants?.length !== 1 || combat.attaquants[0] !== attaquantId
     || combat.cibleIndividuelle.cibleId !== cibleId || combat.cibleIndividuelle.ciblee !== ciblee) {

@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const lire = (chemin) => readFileSync(new URL(`../${chemin}`, import.meta.url), 'utf8');
 
-test('icône des Ténèbres : tête de mort pour les contrôles de couleur et jauges, sans icône sur les cartes du guide', () => {
+test('icône des Ténèbres : tête de mort pour les contrôles de couleur et jauges', () => {
   const box = lire('src/games/RpgDeckBox.jsx');
   // Les emblèmes ont leur module depuis que le coffret de bienvenue les montre
   // aussi : c'est là que se dessine la tête de mort, et les boîtiers de deck la
@@ -27,7 +27,8 @@ test('icône des Ténèbres : tête de mort pour les contrôles de couleur et ja
     assert.match(source, /tenebres:\s*(?:\{\s*glyph:\s*)?'💀'/, `${nom} utilise la tête de mort 💀 pour les Ténèbres`);
   }
 
-  assert.doesNotMatch(guide, /ELEMENT_MARKS|<SortSceau/, 'le guide ne montre plus ces icônes sur ses cartes');
+  assert.doesNotMatch(guide, /ELEMENT_MARKS/, 'le guide ne montre pas de repère de couleur sur ses cartes');
+  assert.match(guide, /magieFamille\(carte\) && <SortSceau/, 'le guide montre les sceaux des sorts seulement');
   assert.match(guide, /ELEMENT_LABELS\[color\]/, 'la couleur reste lisible en texte');
 
   assert.match(box, /from '\.\/rpgEmblemes\.jsx'/, 'RpgDeckBox.jsx importe ses emblèmes du module partagé');

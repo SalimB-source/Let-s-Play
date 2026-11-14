@@ -1607,32 +1607,43 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 }
 .moba__card-flight--recherche .moba__card-flight-face { border-color: #b6eced; box-shadow: 0 3px 15px #000d, 0 0 16px #93dce4bb; }
 
-/* Sur mobile, les créatures posées du duel et du MOBA et les créatures
-   en main du duel se lisent en colonne. Les aperçus gardent leur grille. */
+/* Même disposition sur PC et mobile : attaque au-dessus de défense, pour
+   le champ et les cartes de créature en main. Les aperçus restent en grille. */
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stats,
+.rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot,
+.rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot,
+.rpg-battle.rpg-battle--moba .moba .moba__real-hand.rpg-hand__card--type-creature .rpg-hand__stats {
+  left: 5%;
+  right: auto;
+  bottom: 4%;
+  width: max-content;
+  grid-template-columns: max-content;
+  grid-template-rows: auto auto;
+  grid-auto-flow: row;
+  justify-items: start;
+  align-content: end;
+  gap: 1px;
+}
+.rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat,
+.rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
+.rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
+.rpg-battle.rpg-battle--moba .moba .moba__real-hand.rpg-hand__card--type-creature .rpg-hand__stat {
+  font-size: clamp(9px, 16cqw, 14px);
+}
+/* La main MOBA utilise aussi les plaques neutres du champ. */
+.rpg-battle.rpg-battle--moba .moba .moba__real-hand.rpg-hand__card--type-creature .rpg-hand__stat {
+  border-color: rgba(255, 255, 255, .34);
+  background: rgba(0, 0, 0, .68);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
+  color: #fff8e8;
+  font-weight: 900;
+  text-shadow: 0 1px 2px #000;
+}
+.rpg-battle.rpg-battle--moba .moba .moba__real-hand.rpg-hand__card--type-creature .rpg-stat-icon {
+  width: .85em; height: .85em; flex-basis: .85em;
+}
+
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
-  .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stats,
-  .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot,
-  .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot {
-    left: 5%;
-    right: auto;
-    bottom: 4%;
-    width: max-content;
-    /* rpg-mobile.css impose display: grid !important en deux colonnes :
-       modifier flex-direction ne pouvait donc pas empiler ces deux valeurs. */
-    grid-template-columns: max-content;
-    grid-template-rows: auto auto;
-    grid-auto-flow: row;
-    justify-items: start;
-    align-content: end;
-    gap: 1px;
-  }
-  /* Les chiffres et leurs pictogrammes suivent l'échelle de la carte, mais
-     restent lisibles sur les flancs étroits du mode portrait. */
-  .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat,
-  .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
-  .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt) {
-    font-size: clamp(9px, 16cqw, 14px);
-  }
   .moba :is(.moba__plain-slot, .moba__ghost-slot) .moba__slot-label small {
     flex-direction: column;
     align-items: flex-start;

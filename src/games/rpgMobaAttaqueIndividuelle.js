@@ -36,7 +36,7 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId, voieAttaque =
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
-    directe: ciblee || Boolean(attaquant.infiltration) || (!attaquant.envol ? possibles.length === 0 : !possibles.some((e) => e.envol)),
+    directe: true,
   };
 }
 

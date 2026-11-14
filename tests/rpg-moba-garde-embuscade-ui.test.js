@@ -138,7 +138,9 @@ test('la main distingue les cartes impossibles sans transparence et ne montre au
     await act(async () => root.render(React.createElement(Board, props)));
     assert.equal(document.querySelector('[data-card-id="trait-de-braise"].moba__card').disabled, false);
     assert.equal(document.querySelector('[data-card-id="javelot-du-beffroi"].moba__card').disabled, false);
-    assert.equal(document.querySelector('.moba__real-hand .rpg-card-element-badge, .moba__real-hand .rpg-sort-sceau'), null);
+    assert.equal(document.querySelector('.moba__real-hand .rpg-card-element-badge'), null);
+    assert.ok(document.querySelector('[data-card-id="trait-de-braise"].moba__real-hand .rpg-sort-sceau--rapide'));
+    assert.equal(document.querySelector('[data-card-id="javelot-du-beffroi"].moba__real-hand .rpg-sort-sceau'), null);
     assert.ok(rpgMobaLancerMagie(duel, 'joueur', 'trait-de-braise', 'sorcier', 'right').ok);
     assert.ok(rpgMobaJouerArme(duel, 'joueur', 'javelot-du-beffroi', porteur.id).ok);
     await act(async () => root.render(React.createElement(Board, props)));

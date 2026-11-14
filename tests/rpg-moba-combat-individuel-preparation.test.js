@@ -14,16 +14,16 @@ const choix = (d) => rpgMobaCiblesIndividuelles(d, 'joueur', 'a');
 
 test('attaque normale : même voie, sans Infiltration et sans cible volante pour un attaquant terrestre', () => {
   const d = position({}, [entite('sol', 'left'), entite('vol', 'left', { envol: true }), entite('furtif', 'left', { infiltration: true }), entite('ailleurs', 'right')]);
-  assert.deepEqual(choix(d), { cibles: ['sol'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['sol'], directe: true });
   d.sorcier.creatures.shift();
   assert.deepEqual(choix(d), { cibles: [], directe: true });
 });
 
-test('Envol : choix de la frappe directe si aucun ennemi volant accessible', () => {
+test('Envol : choix de la frappe directe même face à un ennemi volant', () => {
   const d = position({ envol: true }, [entite('sol', 'left'), entite('vol-infiltre', 'left', { envol: true, infiltration: true })]);
   assert.deepEqual(choix(d), { cibles: ['sol'], directe: true });
   d.sorcier.creatures.push(entite('vol', 'left', { envol: true }));
-  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: true });
 });
 
 test('Attaque ciblée : Défenseur ne force que les attaques de sa propre voie', () => {

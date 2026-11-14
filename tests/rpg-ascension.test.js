@@ -15,7 +15,8 @@ import {
   rpgNouveauDuel, rpgSorcierAnnonceSuivante, rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
 import { cardArt } from '../src/games/rpgCardArt.js';
-import { effetsDetailles } from '../src/games/effetIcons.js';
+import { effetsDetailles, texteCombatIndividuel } from '../src/games/effetIcons.js';
+import { rpgMobaCartePourApercu } from '../src/games/rpgMobaPresentation.js';
 import { rpgMobaCiblesIndividuelles } from '../src/games/rpgMobaAttaqueIndividuelle.js';
 import { invocationPossible, sacrificesInvocation } from '../src/games/rpgInvocation.js';
 import { choisirCarteIA, rpgCombinaisonsSacrificesIA } from '../src/games/rpgAI.js';
@@ -83,6 +84,25 @@ test('Ascension : un Dragon Samouraï 7/7 avec Overkill, Esquive et Défenseur, 
   assert.equal(RPG_DUEL_CARDS.some((c) => c.id === DRAGON), false);
   assert.equal(carteJouableSansTerrain(fiche), false);
   assert.equal(MOBA_CARTES_AUTORISEES.includes(DRAGON), false);
+});
+
+test('les quatre Ascensions présentent une recette concise dans tous les aperçus', () => {
+  const recettes = {
+    'samourai-du-dragon-rouge': 'Ascension — 2 créatures Samouraï. Coût total : 7.',
+    'jarl-du-dernier-rempart': 'Ascension — 2 créatures Viking. Coût total : 8.',
+    'scorpion-de-l-eclipse': 'Ascension — 1 Scorpion Sable + 2 créatures Ténèbres. Coût total : 8.',
+    'colosse-du-verre-ardent': 'Ascension — 2 Djinns Braise + 1 Élémental Sable. Coût total : 8.',
+  };
+  for (const carte of RPG_ASCENSION_CARDS) {
+    const attendu = recettes[carte.id];
+    assert.ok(attendu, carte.id);
+    for (const rendu of [carte, rpgMobaCartePourApercu(carte)]) {
+      for (const texte of [rendu.text, texteCombatIndividuel(rendu), effetsDetailles(rendu).texte]) {
+        assert.ok(texte.startsWith(attendu), `${carte.id} : ${texte}`);
+        assert.doesNotMatch(texte, /mana|invocation normale/i, carte.id);
+      }
+    }
+  }
 });
 
 test('Dragon : la fiche expose les trois capacités et la nouvelle illustration casse le cache', () => {

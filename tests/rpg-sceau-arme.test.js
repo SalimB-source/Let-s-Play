@@ -25,8 +25,8 @@ test('sceau d’arme pour les deux représentations, sans changer les sceaux de 
     assert.match(face({ kind: 'magie', instant: false }), /rpg-sort-sceau--sorcellerie/);
     for (const kind of ['creature', 'hero', 'site', 'terrain']) assert.equal(face({ kind }), '');
     const duel = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-    assert.doesNotMatch(duel, /<SortSceau/);
-    assert.doesNotMatch(duel, /familleSort && <SortSceau/);
+    assert.match(duel, /familleSort && <SortSceau carte=\{carte\} className="rpg-hand__sceau"/);
+    assert.match(duel, /magieFamille\(carte\) && <SortSceau carte=\{carte\}/);
     const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
     assert.match(css, /\.rpg-hand__sceau\.rpg-sort-sceau--arme\s*\{\s*bottom: 24%/);
   } finally {
