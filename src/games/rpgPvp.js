@@ -509,7 +509,8 @@ function executerIntention(duel, cote, intention) {
     case 'jouer-carte': {
       const carte = cardById(intention.carteId);
       if (!carte) return { ok: false, raison: 'carte-inconnue' };
-      if (!duel[cote].main.includes(intention.carteId)) return { ok: false, raison: 'pas-en-main' };
+      const source = carte.ascension ? (duel[cote].reserveAscension ?? []) : duel[cote].main;
+      if (!source.includes(intention.carteId)) return { ok: false, raison: carte.ascension ? 'pas-en-reserve' : 'pas-en-main' };
       // Pendant le blocage, seules les magies rapides sont jouables.
       if (duel.phase === 'blocage' && !((carte.kind === 'magie' && (carte.instant || carte.vitesse === 'rapide')) || ((carte.reactionAttaque || carte.reactionTourAdverse || rpgCarteEmbuscade(carte)) && duel.combatDeclare?.cote !== cote))) {
         return { ok: false, raison: 'phase-blocage' };

@@ -1,5 +1,5 @@
 /**
- * Règles du mana sans terrains et huit archétypes bicolores partagés.
+ * Règles du mana sans terrains et douze archétypes bicolores partagés.
  * Le nom historique « essai » reste stable pour les états du moteur.
  */
 import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
@@ -35,7 +35,7 @@ const ID_ESSAI = Object.freeze({
 export const RPG_MANA_ESSAI_DECKS = Object.freeze(RPG_DECKS_THEMATIQUES.map((theme) => Object.freeze({
   id: ID_ESSAI[theme.id] ?? `essai-mana-${theme.id}`,
   name: theme.name, element: 'hybride', elements: theme.elements,
-  boxArt: theme.cardIds[0], description: theme.description, cardIds: theme.cardIds,
+  boxArt: theme.boxArt ?? theme.cardIds[0], description: theme.description, cardIds: theme.cardIds,
 })));
 
 /** Validation propre au prototype, sans changer la règle des decks classiques. */
@@ -50,7 +50,7 @@ export function validerDeckManaEssai(deck) {
   const quantites = new Map();
   for (const id of ids) {
     const carte = cardById(id);
-    if (!carte || carte.kind === 'terrain') return { ok: false, raison: `carte interdite : ${id}` };
+    if (!carte || carte.kind === 'terrain' || carte.ascension) return { ok: false, raison: `carte interdite : ${id}` };
     if (!cardColors(carte).every((couleur) => couleurs.includes(couleur))) {
       return { ok: false, raison: `hors identité : ${id}` };
     }

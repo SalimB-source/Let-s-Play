@@ -23,7 +23,7 @@ test('la déchirure et les derniers glyphes finissent avant la pose, à chaque v
 
 test('la pose attend tous les cercles et les minuteries périmées ne peuvent poser une autre carte', () => {
   const page = lire('RpgDuelPage.jsx');
-  const action = page.slice(page.indexOf('  const dechirerEtPoser ='), page.indexOf('  const equiperArme ='));
+  const action = page.slice(page.indexOf('  const commencerRituelSacrifice ='), page.indexOf('  const equiperArme ='));
   assert.match(action, /choisis\.map\(id => champ\.find/);
   assert.match(action, /setSacrificeFx\(\{ victimes, token \}\)/);
   assert.match(action, /enCours\.termines\.size !== enCours\.attendus\.length/);

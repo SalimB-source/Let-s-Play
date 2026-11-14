@@ -5,6 +5,10 @@ import { MOBA_DECKS, MOBA_CARTES_AUTORISEES, rpgMobaCreerPartie, rpgMobaValiderD
 import { MOBA_DECKS_TOURS, rpgMobaDeckLibreAleatoire, rpgMobaDeckTourAleatoire } from '../src/games/rpgMobaDecks.js';
 
 const signatures = {
+  'ascension-dragon': ['ronin-du-soleil-rouge', 'onna-musha-des-cendres', 'convoi-des-dunes', 'reanimation', 'rapport-du-greffier'],
+  'ascension-rempart': ['garde-du-trone-givre', 'veilleuse-de-la-lune-givree', 'jarl-au-marteau-de-guerre', 'valkyrie-des-neuf-nuits', 'retour-des-ensevelis'],
+  'ascension-eclipse': ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin', 'convoi-des-dunes', 'retour-des-ensevelis'],
+  'ascension-verre': ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante', 'confluence-des-etincelles', 'eveil-des-dunes'],
   sable: ['tislit-des-aures', 'javelot-du-beffroi', 'salem', 'poigne-de-givre'],
   sources: ['guerrier-au-bouclier-rond', 'volva-soigneuse', 'porteuse-de-cruches', 'festin-des-vaillants'],
   sahir: ['djinn-de-foudre', 'ghul-des-cendres', 'sahir-des-braises', 'tarek', 'lame-des-ergs'],
@@ -15,8 +19,8 @@ const signatures = {
   corsaires: ['rais-de-la-galiote', 'cotre-de-course', 'galion-de-la-flotte', 'lettre-de-marque', 'le-grand-debarquement', 'la-barbe-rousse'],
 };
 
-test('huit decks MOBA distincts, légaux, audités et réellement jouables', () => {
-  assert.deepEqual(MOBA_DECKS.map((deck) => deck.id), Object.keys(signatures));
+test('douze decks MOBA distincts, légaux, audités et réellement jouables', () => {
+  assert.deepEqual(MOBA_DECKS.map((deck) => deck.id), [...Object.keys(signatures).filter(id => !id.startsWith('ascension-')), 'ascension-eclipse', 'ascension-verre', 'ascension-dragon', 'ascension-rempart']);
   const auditees = new Set(MOBA_CARTES_AUTORISEES);
   for (const deck of MOBA_DECKS) {
     assert.equal(deck.cardIds.length, 30, deck.id);
@@ -43,10 +47,14 @@ test('huit decks MOBA distincts, légaux, audités et réellement jouables', () 
     assert.ok(deck.cardIds.some((id) => cardById(id).kind === 'arme'));
     assert.ok(rpgMobaCreerPartie(deck, deck, { rng: () => .5 }).ok, `${deck.id} ne démarre pas`);
   }
-  for (let i = 0; i < MOBA_DECKS.length; i++) for (let j = i + 1; j < MOBA_DECKS.length; j++) {
-    const communs = new Set(MOBA_DECKS[i].cardIds.filter((id) => MOBA_DECKS[j].cardIds.includes(id)));
-    assert.ok(communs.size <= 5, `${MOBA_DECKS[i].id} et ${MOBA_DECKS[j].id} sont trop semblables`);
+  // La distance entre les huit listes historiques reste inchangée. Les quatre
+  // nouvelles recettes réutilisent volontairement leurs matériaux imprimés.
+  const historiques = MOBA_DECKS.filter(d => !d.id.startsWith('ascension-'));
+  for (let i = 0; i < historiques.length; i++) for (let j = i + 1; j < historiques.length; j++) {
+    const communs = new Set(historiques[i].cardIds.filter((id) => historiques[j].cardIds.includes(id)));
+    assert.ok(communs.size <= 5, `${historiques[i].id} et ${historiques[j].id} sont trop semblables`);
   }
+  assert.equal(new Set(MOBA_DECKS.map(d => d.cardIds.join('|'))).size, 12);
 });
 
 test('les nouvelles synergies reposent sur leurs tribus et leurs cartes de soutien', () => {
@@ -60,7 +68,7 @@ test('les nouvelles synergies reposent sur leurs tribus et leurs cartes de souti
   }
 });
 
-test('duel libre : huit adversaires thématiques ; campagne et decks personnels inchangés', () => {
+test('duel libre : douze adversaires thématiques ; campagne et decks personnels inchangés', () => {
   for (let i = 0; i < MOBA_DECKS.length; i++) {
     assert.equal(rpgMobaDeckLibreAleatoire(() => i / MOBA_DECKS.length), MOBA_DECKS[i]);
   }

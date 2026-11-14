@@ -1,3 +1,4 @@
+import { combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js';
@@ -5,6 +6,7 @@ import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js
 /** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
  * Une Embuscade en réponse est spéciale, sans sacrifice ni quota. */
 export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false) {
+  if (carte?.ascension) return carte.ascension.nombre;
   if (embuscade(duel, cote, carte, specialeMoba)) return 0;
   if (!['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return 0;
   const cout = Number(carte.cost) || 0;
@@ -39,11 +41,13 @@ function embuscade(duel, cote, carte, specialeMoba = false) {
     || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {
+  if (carte?.ascension) return null;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
   if (embuscade(duel, cote, carte, specialeMoba)) return null;
   return (duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee) ? 'creature-limite' : null;
 }
 export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false) {
+  if (carte?.ascension) return;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return;
   if (duel.moba) {
     const quota = embuscade(duel, cote, carte, specialeMoba) ? 'embuscadesJouees' : 'creaturesJouees';
@@ -57,6 +61,8 @@ export function invocationPossible(duel, cote, carte, specialeMoba = false) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;
   const nombre = sacrificesInvocation(carte, duel, cote, specialeMoba);
   const camp = duel[cote];
+  if (carte?.ascension && (!camp?.reserveAscension?.includes(carte.id)
+    || !combinaisonsAscension(camp, carte).length)) return false;
   return !limiteInvocationMoba(duel, cote, carte, specialeMoba)
     && victimesInvocation(camp).length >= nombre
     && (duel.modeMana !== RPG_MODE_MANA_ESSAI

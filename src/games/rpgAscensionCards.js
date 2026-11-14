@@ -1,0 +1,73 @@
+/**
+ * Les créatures d’Ascension vivent dans une réserve séparée du paquet.
+ * Ce catalogue est volontairement distinct de RPG_DUEL_CARDS : ni pioche,
+ * ni composeur de decks, ni tirage de booster ne doivent les proposer.
+ */
+export const RPG_ASCENSION_CARDS = Object.freeze([
+  Object.freeze({
+    id: 'samourai-du-dragon-rouge',
+    name: 'Samouraï du Dragon Rouge',
+    kind: 'creature',
+    element: 'braise',
+    set: 'ascension',
+    art: 'samourai-du-dragon-rouge',
+    rarity: 'mythique',
+    // Le coût imprimé est un seuil d’Ascension, jamais un paiement en mana.
+    cost: 7,
+    atk: 7,
+    def: 7,
+    overkill: true,
+    esquive: true,
+    defenseur: true,
+    ascension: Object.freeze({ nombre: 2, type: 'samourai', typeLabel: 'Samouraï', coutTotal: 7 }),
+    typeLine: 'Créature d’Ascension — Dragon · Samouraï',
+    text: 'Ascension — Depuis votre réserve, sacrifiez exactement 2 créatures Samouraï que vous contrôlez, dont les coûts imprimés totalisent exactement 7. Cette invocation spéciale ne coûte aucun mana et ne consomme pas votre invocation normale. Overkill — Les dégâts de combat excédentaires percent jusqu’à l’adversaire. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Défenseur — Les créatures adverses avec Attaque ciblée doivent le viser en priorité si elles le peuvent.',
+    flavor: 'L’armure a cédé. Le serment brûle encore.',
+  }),
+  Object.freeze({
+    id: 'jarl-du-dernier-rempart', name: 'Jarl du Dernier Rempart',
+    kind: 'creature', element: 'neige', set: 'ascension',
+    art: 'jarl-du-dernier-rempart', rarity: 'mythique',
+    cost: 8, atk: 4, def: 10,
+    overkill: true, bouclierInitial: true, furie: 4,
+    ascension: Object.freeze({ nombre: 2, type: 'viking', typeLabel: 'Viking', coutTotal: 8,
+      materiaux: Object.freeze([Object.freeze({ cout: 3 }), Object.freeze({ cout: 5 })]) }),
+    typeLine: 'Créature d’Ascension — Jarl · Viking',
+    text: 'Ascension — Sacrifiez un Viking de coût imprimé 3 et un Viking de coût imprimé 5 que vous contrôlez. Aucun mana supplémentaire ; ne consomme pas votre invocation normale. Overkill. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis le bouclier tombe. Furie 4 — Tant que sa défense vivante est inférieure à sa défense de base, il gagne +4 ATQ.',
+    flavor: 'Le dernier mur n’est pas fait de pierre.',
+  }),
+  Object.freeze({
+    id: 'scorpion-de-l-eclipse', name: 'Scorpion de l’Éclipse',
+    kind: 'creature', element: 'sable', colors: Object.freeze(['sable', 'tenebres']),
+    set: 'ascension', art: 'scorpion-de-l-eclipse', rarity: 'mythique',
+    cost: 8, atk: 5, def: 9,
+    poison: Object.freeze({ degats: 1, tours: 2 }), volDeVie: true,
+    arrivee: Object.freeze({ type: 'destruction-cible', cible: 'creature', coutMax: 4, coutImprime: true, blessee: true }),
+    ascension: Object.freeze({ nombre: 3, coutTotal: 8,
+      materiaux: Object.freeze([
+        Object.freeze({ type: 'scorpion', typeLabel: 'Scorpion', element: 'sable', cout: 2 }),
+        Object.freeze({ element: 'tenebres', cout: 3 }),
+        Object.freeze({ element: 'tenebres', cout: 3 }),
+      ]) }),
+    typeLine: 'Créature d’Ascension — Scorpion · Spectre',
+    text: 'Ascension — Sacrifiez un Scorpion Sable de coût imprimé 2 et deux créatures Ténèbres de coût imprimé 3 chacune que vous contrôlez. Aucun mana supplémentaire ; ne consomme pas votre invocation normale. Poison — Une créature blessée au combat perd 1 PV au début de chacun de ses deux prochains tours. Vol de vie — Vous gagnez la moitié des dégâts qu’il inflige, arrondie au supérieur. Quand il arrive : détruisez une créature adverse ciblée déjà blessée de coût imprimé 4 ou moins.',
+    flavor: 'Deux âmes sous sa carapace. Une troisième au bout du dard.',
+  }),
+  Object.freeze({
+    id: 'colosse-du-verre-ardent', name: 'Colosse du Verre Ardent',
+    kind: 'creature', element: 'braise', colors: Object.freeze(['braise', 'sable']),
+    set: 'ascension', art: 'colosse-du-verre-ardent', rarity: 'mythique',
+    cost: 8, atk: 7, def: 8,
+    bouclierInitial: true, contreAttaque: true,
+    arrivee: Object.freeze({ type: 'degats', cible: 'toutes-creatures', amount: 2 }),
+    ascension: Object.freeze({ nombre: 3, coutTotal: 8,
+      materiaux: Object.freeze([
+        Object.freeze({ type: 'djinn', typeLabel: 'Djinn', element: 'braise', cout: 1 }),
+        Object.freeze({ type: 'djinn', typeLabel: 'Djinn', element: 'braise', cout: 3 }),
+        Object.freeze({ type: 'elemental', typeLabel: 'Élémental', element: 'sable', cout: 4 }),
+      ]) }),
+    typeLine: 'Créature d’Ascension — Golem · Élémental',
+    text: 'Ascension — Sacrifiez un Djinn Braise de coût imprimé 1, un Djinn Braise de coût imprimé 3 et un Élémental Sable de coût imprimé 4 que vous contrôlez. Aucun mana supplémentaire ; ne consomme pas votre invocation normale. Bouclier. Contre-attaque — Il riposte aux attaques ciblées, aux capacités qui le ciblent et aux sorts adverses qui l’atteignent. Quand il arrive : infligez 2 dégâts à chaque créature adverse ; en MOBA, seulement dans sa voie.',
+    flavor: 'Le sable a oublié comment se disperser.',
+  }),
+]);

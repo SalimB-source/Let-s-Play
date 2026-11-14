@@ -5,6 +5,7 @@ export const MOBA_SITES_AUDITES = Object.freeze(['le-tresor-de-lima', 'source-de
 export const MOBA_TOURS_AUDITEES = Object.freeze(['tour-de-braise', 'tour-des-flots', 'tour-de-sable', 'tour-de-neige', 'tour-des-tenebres']);
 export const CARTES_COMBAT_AUDITEES = new Set([
   ...MOBA_TOURS_AUDITEES, ...MOBA_SITES_AUDITES,
+  'samourai-du-dragon-rouge', 'jarl-du-dernier-rempart', 'scorpion-de-l-eclipse', 'colosse-du-verre-ardent', 'convoi-des-dunes',
   'tojiro-le-pourfendeur', 'sanguinaire-des-dunes', 'gardienne-du-croissant', 'porte-etendard-de-leclipse', 'sorcier-du-ressac-noir', 'garde-du-trone-givre', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune',
   'passeur-au-masque-de-chacal', 'guetteuse-des-marees', 'djinn-des-cendres-vengeresses', 'scarabee-du-natron', 'lecteur-du-dernier-nom', 'general-du-croissant-noir', 'fleau-de-la-lune-noire', 'souverain-de-la-lune-noire',
   'messagere-des-cendres', 'garde-du-voile', 'rodeuse-des-tombes', 'gerboise-des-ruines', 'gardien-des-sept-sceaux',
