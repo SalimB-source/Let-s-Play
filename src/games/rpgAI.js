@@ -45,7 +45,7 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
-import { indexReanimation, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
+import { candidatsRenfortChoisi, indexReanimation, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
 import { armesPortees } from './rpgCardStacks.js';
 // Accès différé au moteur (cycle d'import maîtrisé : aucune de ces fonctions
 // n'est appelée pendant l'évaluation des modules) — il s'agit ici de tester la
@@ -1615,6 +1615,12 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       return { score: score > 0 ? score : 0, cibleId: meilleure.cibleId };
     }
     if (carte.renfortUneFois && renfortDejaJoue(camp, carte.id)) return null;
+    if (effet.type === 'renfort-choisi') {
+      const candidats = candidatsRenfortChoisi(camp, effet);
+      if (!candidats.length || (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= 5)) return null;
+      const score = Math.max(...candidats.map(c => valeurEntite(entiteDeSecours(duelCardById(c.id), duel)))) - cout * .2;
+      return { score: Math.max(0, score), cibleId: null };
+    }
     if (effet.type === 'renfort-ascension') {
       const plan = planRenfortAscension(camp, effet);
       if (!plan.length || (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= 5)) return null;
@@ -1651,8 +1657,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       return { score: score > 0 ? score : 0, cibleId, cibleAllieeId };
     }
     if (effet.type === 'blocage-force') {
-      // L'Appât de la meute : on marque la plus grosse menace, utile surtout
-      // quand on s'apprête à charger.
+      // Compatibilité des anciens effets de blocage forcé encore en cours.
       const cibleId = ciblesLegales(duel, cote, carte, 'creature')
         .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
       if (!cibleId) return { score: 0, cibleId: null };
@@ -1672,10 +1677,8 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       };
     }
     if (effet.type === 'buff' && effet.cible === 'creatures-adverses') {
-      // L'Embuscade : le débuff ne tue jamais (plancher 1/1) mais ampute
-      // toute la table adverse avant de la jeter sur nos attaquants. Une
-      // parade épargne sa porteuse (et tombe) : elle n'entre pas dans le
-      // compte des créatures réellement marquées.
+      // L'Embuscade affaiblit la table adverse sans descendre sous 1/1.
+      // Une parade épargne sa porteuse (et tombe).
       const adversaires = duel[adv].creatures
         .filter((entite) => !paradeContreSort(entite, carte));
       if (!duel[adv].creatures.length) return { score: 0, cibleId: null };

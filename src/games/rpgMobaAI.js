@@ -8,7 +8,7 @@ import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasa
 import {
   MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaSortBlocageInterdit, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
+  rpgMobaResoudreRecherche, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
 } from './rpgMobaLocal.js';
 
@@ -148,7 +148,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
   const creatures = duel[enemy].creatures;
   const allies = duel[side].creatures;
   const cards = [...new Set(duel[side].main)].map(cardById)
-    .filter((c) => !rpgMobaSortBlocageInterdit(c?.id) && (c?.kind === 'magie' || (!reaction && MOBA_ARMES.includes(c?.id))) && (!reaction || c.instant));
+    .filter((c) => (c?.kind === 'magie' || (!reaction && MOBA_ARMES.includes(c?.id))) && (!reaction || c.instant));
   let initial = valeurPosition(duel, side);
   if (reaction && (duel.mobaSortEnAttente || duel.mobaCreatureEnAttente || duel.effetCreatureEnAttente)) {
     const baseline = copie(duel);
@@ -195,6 +195,10 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
         ? rpgMobaJouerArme(simulation, side, id, cible, { laneId: lane, slot: emplacementReanimation })
         : rpgMobaLancerMagie(simulation, side, id, cible, lane, prixLane, { cibleSecondaireId: cibleSecondaire, emplacementReanimation });
       if (!result.ok) continue;
+      if (simulation.mobaRechercheEnAttente?.renfort) {
+        const selection = rpgMobaChoisirRechercheIA(simulation, side);
+        if (!rpgMobaResoudreRecherche(simulation, side, selection).ok) continue;
+      }
       if (id === 'grappin-d-abordage') resoudrePriseGrappinSurCopie(simulation);
       resoudreDestructionsSurCopie(simulation);
       if (reaction && simulation.mobaSortEnAttente && !simulation.defausseEnAttente) rpgMobaPasserSort(simulation, autre(simulation.mobaSortEnAttente.cote));
@@ -212,8 +216,6 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
       score += discardedEnemy * 2;
       // Licou's delayed draw is only insurance while its bearer survives.
       if (id === 'licou-du-chien-de-sable' && simulation[side].deck.length && simulation[side].creatures.some((e) => e.id === cible && e.arme?.carteId === id)) score += 1.25;
-      if (id === 'appat-de-la-meute' && !reaction && duel.attaqueJouee !== side
-        && allies.some((e) => mobaPartageVoie(duel.moba, e.mobaLane, creatures.find((c) => c.id === cible)?.mobaLane) && rpgPeutAttaquer(e) && !e.infiltration && !e.coupRapide)) score += 3;
       // Fog helps only when it can prevent the opponent's declared combat.
       if (id === 'grand-voile-blanc' && reaction && duel.combatDeclare?.cote === enemy) {
         score += duel[enemy].creatures.filter((e) => duel.combatDeclare.attaquants.includes(e.id))

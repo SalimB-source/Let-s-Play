@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 const lire = f => readFileSync(new URL(`../src/games/${f}`, import.meta.url), 'utf8');
 test('le coût reste dessiné dans un losange sans badge de couleur sur les cartes', () => {
   const page = lire('RpgDuelPage.jsx');
-  assert.doesNotMatch(page, /CardElementBadge|<SortSceau/);
+  assert.doesNotMatch(page, /CardElementBadge/);
+  assert.match(page, /familleSort && <SortSceau/);
   const cout = page.slice(page.indexOf('function ManaCost'), page.indexOf('function WizardManaCounters'));
   assert.match(cout, /<PlaqueForme forme="diamant"/);
 });

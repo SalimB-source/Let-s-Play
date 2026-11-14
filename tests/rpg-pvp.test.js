@@ -300,7 +300,7 @@ test('les deux sièges remplacent réellement leurs cartes au mulligan avant le 
   assert.ok(duel.hasard.compteur > 0, 'le mélange semé a bien été consommé par les deux mulligans');
 });
 
-test('combat PvP en deux temps : déclaration publique, blocage adverse et identifiants monotones', async () => {
+test('combat PvP en deux temps : déclaration publique, réponse adverse et identifiants monotones', async () => {
   const { cardById } = await import('../src/games/rpgCards.js');
   const deckA = DECK_A;
   const deckB = DECK_B;
@@ -360,22 +360,22 @@ test('combat PvP en deux temps : déclaration publique, blocage adverse et ident
     type: 'attaquer',
     declarer: true,
     attaquants: [idPremiere],
-    ciblesAttaque: {},
+    cibleId: recharge.sorcier.creatures[0].id,
   });
   assert.equal(decl.ok, true);
-  assert.equal(recharge.phase, 'blocage', 'le combat attend le choix de blocage du défenseur humain');
-  assert.equal(rpgPvpCoteActif(recharge), 'sorcier', 'le défenseur humain a la main pour bloquer');
+  assert.equal(recharge.phase, 'blocage', 'le combat attend la réponse du défenseur humain');
+  assert.equal(rpgPvpCoteActif(recharge), 'sorcier', 'le défenseur humain a la main pour répondre');
 
   const vueDefenseur = rpgPvpVue(recharge, 'sorcier');
   assert.equal(vueDefenseur.combatDeclare.cote, 'sorcier', 'l’attaque entrante est retournée côté défenseur');
 
   const resol = rpgPvpAppliquer(recharge, 'sorcier', {
     type: 'bloquer',
-    blocages: { [idPremiere]: [recharge.sorcier.creatures[0].id] },
+    blocages: {},
     repartitions: null,
   });
   assert.equal(resol.ok, true);
-  assert.equal(recharge.phase, 'principale2');
+  assert.equal(recharge.phase, 'principale');
   assert.equal(rpgPvpCoteActif(recharge), 'joueur');
 });
 
@@ -410,20 +410,19 @@ test('pose PvP : la case choisie voyage dans l’intention, une case occupée es
 });
 
 
-test('PvP : une attaque ciblée ne peut viser le sorcier si une créature adverse est présente', () => {
+test('PvP : une attaque ciblée peut viser le sorcier même en présence d’une créature', () => {
   const duel = partieNeuve(123);
-  duel.phase = 'principale';
-  duel.tour = 'joueur';
+  duel.phase = 'principale'; duel.tour = 'joueur';
   duel.joueur.creatures.push({ id: 'rapide-test', carteId: 'feriel', name: 'Fériel', coupRapide: true, ready: true, attaquee: false, atk: 3, pv: 2 });
   duel.sorcier.creatures.push({ id: 'cible-test', carteId: 'chien-du-guet', name: 'Chien', ready: false, atk: 2, pv: 2 });
-  const refus = rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['rapide-test'], ciblesAttaque: {} });
-  assert.equal(refus.raison, 'cible-obligatoire');
-  assert.ok(!duel.combatDeclare);
-  const declaration = rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['rapide-test'], ciblesAttaque: { 'rapide-test': 'cible-test' } });
-  assert.equal(declaration.ok, true);
+  assert.ok(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['rapide-test'], cibleId: null }).ok);
+  assert.equal(duel.combatDeclare.cibleIndividuelle.cibleId, null);
+  const pv = duel.sorcier.pv;
+  assert.ok(rpgPvpAppliquer(duel, 'sorcier', { type: 'bloquer', blocages: {} }).ok);
+  assert.equal(duel.sorcier.pv, pv - 3);
 });
 
-test('PvP : chaque attaquant ciblé doit choisir une proie, et il reste libre de ne pas attaquer', () => {
+test('PvP : une seule créature attaque à la fois, les autres restent libres', () => {
   const duel = partieNeuve(123);
   duel.phase = 'principale'; duel.tour = 'joueur';
   duel.joueur.creatures.push(
@@ -432,9 +431,93 @@ test('PvP : chaque attaquant ciblé doit choisir une proie, et il reste libre de
   );
   duel.sorcier.creatures.push({ id: 'c1', carteId: 'chien-du-guet', name: 'Chien', ready: false, atk: 2, pv: 2 });
   const avant = JSON.stringify(duel);
-  assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['a1', 'a2'], ciblesAttaque: { a1: 'c1' } }).raison, 'cible-obligatoire');
+  assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['a1', 'a2'], ciblesAttaque: { a1: 'c1' } }).raison, 'attaque-individuelle');
   assert.equal(JSON.stringify(duel), avant, 'le refus ne consomme pas l’attaque');
   assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['a1'], ciblesAttaque: { a1: 'c1' } }).ok, true);
   assert.deepEqual(duel.combatDeclare.attaquants, ['a1']);
   assert.equal(duel.joueur.creatures.find(e => e.id === 'a2').attaquee, false);
+});
+
+for (const cote of ['joueur', 'sorcier']) {
+  test(`PvP ${cote} : ciblage, priorités, réponse et attaques successives`, () => {
+    const duel = partieNeuve(42);
+    duel.pvp = true; duel.tour = cote; duel.phase = 'principale';
+    const adv = rpgPvpAutreCote(cote);
+    const entite = (id) => ({ id, carteId: 'ashigaru-des-braises', name: id, ready: true, attaquee: false, atk: 2, def: 2, pv: 2, pvMax: 2 });
+    duel[cote].creatures = [entite('a'), entite('b')];
+    duel[adv].creatures = [entite('c')];
+    const attaquer = (id, cible = null) => rpgPvpAppliquer(duel, cote, { type: 'attaquer', declarer: true, attaquants: [id], cibleId: cible });
+    duel[adv].creatures[0].defenseur = true;
+    const garde = JSON.stringify(duel);
+    assert.equal(attaquer('a').raison, 'cible');
+    assert.equal(JSON.stringify(duel), garde);
+    duel[adv].creatures[0].defenseur = false;
+    duel[adv].creatures[0].provocation = true;
+    assert.equal(attaquer('a').raison, 'cible');
+    duel[adv].creatures[0].provocation = false;
+    const pv = duel[adv].pv;
+    assert.ok(attaquer('a').ok);
+    assert.equal(rpgPvpCoteActif(duel), adv);
+    assert.equal(rpgPvpVue(duel, adv).combatDeclare.cibleIndividuelle.cibleId, null);
+    const combat = JSON.stringify(duel);
+    assert.equal(rpgPvpAppliquer(duel, adv, { type: 'preparer-blocage', blocages: { a: ['c'] } }).ok, false);
+    assert.equal(rpgPvpAppliquer(duel, adv, { type: 'bloquer', blocages: { a: ['c'] } }).ok, false);
+    assert.equal(rpgPvpAppliquer(duel, cote, { type: 'bloquer' }).ok, false);
+    assert.equal(JSON.stringify(duel), combat);
+    assert.ok(rpgPvpAppliquer(duel, adv, { type: 'bloquer', blocages: {} }).ok);
+    assert.equal(duel[adv].pv, pv - 2);
+    assert.equal(attaquer('a').ok, false);
+    if (duel[cote].manaChoixEnAttente) assert.ok(rpgPvpAppliquer(duel, cote, { type: 'choix-mana', couleur: duel[cote].couleurs[0] }).ok);
+    assert.ok(attaquer('b', 'c').ok);
+    duel[adv].creatures = [];
+    assert.ok(rpgPvpAppliquer(duel, adv, { type: 'bloquer' }).ok);
+    assert.equal(duel[adv].pv, pv - 2, 'une cible disparue ne redirige pas vers le sorcier');
+  });
+}
+
+for (const cote of ['joueur', 'sorcier']) {
+  test(`PvP ${cote} : une magie rapide détruit l’attaquant sans bloquer la table`, () => {
+    const duel = partieNeuve(15); const adv = rpgPvpAutreCote(cote);
+    duel.pvp = true; duel.tour = cote; duel.phase = 'principale';
+    duel[cote].manaChoixEnAttente = false;
+    duel[cote].creatures = [{ id: 'a', carteId: 'ashigaru-des-braises', name: 'Ashigaru', ready: true, attaquee: false, atk: 1, def: 1, pv: 1, pvMax: 1 }];
+    duel[adv].creatures = []; duel[adv].main = ['trait-de-braise'];
+    duel[adv].mana = { braise: 20, eau: 20, sable: 20, neige: 20, tenebres: 20 };
+    assert.ok(rpgPvpAppliquer(duel, cote, { type: 'attaquer', declarer: true, attaquants: ['a'] }).ok);
+    assert.ok(rpgPvpAppliquer(duel, adv, { type: 'jouer-carte', carteId: 'trait-de-braise', cibleId: 'a' }).ok);
+    assert.equal(duel[cote].creatures.length, 0);
+    assert.equal(duel.combatDeclare.cibleIndividuelle.cibleId, null);
+    assert.ok(rpgPvpAppliquer(duel, adv, { type: 'bloquer' }).ok);
+    assert.equal(duel.phase, 'principale'); assert.equal(duel.combatDeclare, null);
+  });
+}
+
+for (const attaquantCote of ['joueur', 'sorcier']) test(`PvP : un combat collectif déjà annoncé se termine puis reprend en individuel (${attaquantCote})`, async () => {
+  const { rpgJouerCreature } = await import('../src/games/rpgDuel.js');
+  const d=partieNeuve(312); d.pvp=true; const defenseur=rpgPvpAutreCote(attaquantCote);
+  for (const cote of ['joueur','sorcier']) {
+    d.tour=cote; d[cote].manaChoixEnAttente=null; d[cote].main=['chien-du-guet'];
+    const r=rpgJouerCreature(d,cote,'chien-du-guet'); assert.ok(r.ok,JSON.stringify(r));
+    r.entite.ready=true; r.entite.malInvocation=false;
+  }
+  d.tour=attaquantCote; d.phase='blocage'; d.fenetreReponse=true;
+  const a=d[attaquantCote].creatures[0], b=d[defenseur].creatures[0];
+  d.combatDeclare={cote:attaquantCote,attaquants:[a.id],ciblesAttaque:{},bannieresAppliquees:true};
+  const saved=JSON.stringify(d);
+  assert.equal(rpgPvpAppliquer(d,defenseur,{type:'preparer-blocage',blocages:{[a.id]:['fausse-id']}}).ok,false);
+  assert.equal(JSON.stringify(d),saved);
+  assert.ok(rpgPvpAppliquer(d,defenseur,{type:'preparer-blocage',blocages:{[a.id]:[b.id]}}).ok);
+  assert.ok(rpgPvpAppliquer(d,defenseur,{type:'bloquer',blocages:{[a.id]:[b.id]}}).ok);
+  assert.equal(d.combatDeclare,null); assert.equal(d.phase,'principale');assert.equal(d.fenetreReponse,false);
+  assert.equal(d[attaquantCote].creatures.length,0); assert.equal(d[defenseur].creatures.length,0);
+});
+
+test('PvP : une ancienne phase principale 2 est visible et jouable sans muter une action refusée', async () => {
+  const {rpgJouerCreature}=await import('../src/games/rpgDuel.js');
+  const d=partieNeuve(313); d.pvp=true; d.joueur.manaChoixEnAttente=null;d.joueur.main=['djinn-des-braises-voilees'];
+  const r=rpgJouerCreature(d,'joueur','djinn-des-braises-voilees');assert.ok(r.ok);d.phase='principale2';
+  assert.equal(rpgPvpVue(d,'joueur').phase,'principale');assert.equal(d.phase,'principale2');
+  const avant=JSON.stringify(d);assert.equal(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:['absent']}).ok,false);assert.equal(JSON.stringify(d),avant);
+  assert.ok(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:[r.entite.id]}).ok);
+  assert.ok(d.combatDeclare.cibleIndividuelle);
 });

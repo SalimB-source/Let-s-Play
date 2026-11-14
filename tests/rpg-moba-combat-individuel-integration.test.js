@@ -392,3 +392,12 @@ test('Tojiro en réponse ne sacrifie pas la cible en présence du Djinn attaquan
   assert.ok(c.pv < 10);
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp); assert.ok(rpgMobaPlacementCoherent(d));
 });
+
+test('une créature normale frappe la voie occupée sans devoir viser sa créature', () => {
+  const { d, a, c } = partie();
+  assert.ok(c); const hp = mobaVoie(d.moba, 'left').hp.sorcier;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).ok);
+  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
+  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp - a.atk);
+  assert.ok(d.sorcier.creatures.some(e => e.id === c.id));
+});

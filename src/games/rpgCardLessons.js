@@ -232,7 +232,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['feriel', 'djinn-de-foudre'],
     title: 'Attaque ciblée vise avant les blessures de combat',
-    text: 'Quand vous sélectionnez une créature avec Attaque ciblée comme attaquant, vous devez désigner une créature adverse si elle en contrôle une : l’attaque ciblée lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 15 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Si aucune créature adverse n’est en jeu, elle attaque l’adversaire normalement avec 100 % de chances de toucher. La cible est choisie avant de confirmer l’attaque.',
+    text: 'Une créature avec Attaque ciblée peut viser une créature adverse ou le sorcier, sous réserve des priorités. Contre une créature, elle inflige sa valeur d’attaque sans riposte ordinaire, avec 15 % de chances de rater, sauf effet contraire. La cible est choisie à l’annonce.',
   },
   {
     id: 'capacite-de-combat',

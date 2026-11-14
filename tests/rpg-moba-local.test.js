@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rpgChoisirCouleurMana, rpgConditionEmbuscadeRemplie, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgNouveauDuel, rpgPeutRepondre, rpgJouerCreature, rpgJouerArme, rpgLancerAttaque, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgReglerHasard, rpgVainqueur } from '../src/games/rpgDuel.js';
 import { cardById, magieById, RPG_MAGIE_CARDS } from '../src/games/rpgCards.js';
-import { rpgMobaNouveauDuel, rpgMobaChoisirVoieCentrale, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaNouveauDuel, rpgMobaChoisirVoieCentrale, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
 import { CARTES_COMBAT_AUDITEES } from '../src/games/rpgMobaAudit.js';
 import { validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
@@ -1756,7 +1756,7 @@ test('le Drakkar Défenseur attire les attaques dans sa voie sans pouvoir attaqu
   drakkar.ready = true;
   assert.equal(rpgPeutAttaquer(drakkar), false);
   assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', attaquant.id, 'left'), { cibles: [drakkar.id], directe: false });
-  assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', lateral.id, 'right'), { cibles: [autreVoie.id], directe: false });
+  assert.deepEqual(rpgMobaCiblesIndividuelles(duel, 'joueur', lateral.id, 'right'), { cibles: [autreVoie.id], directe: true });
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: autre.id }).raison, 'cible');
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: drakkar.id }).ok, true);
 });
@@ -2022,91 +2022,76 @@ test('Père des corbeaux returns to its original lane, exiling an eligible enemy
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Appât requires a marked blocker only when a legal attacker is in its lane', () => {
-  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 10;
-  duel.sorcier.main.push('ashigaru-des-braises');
-  const left = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-  const right = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'right', 0).entite;
-  rpgFinDeTour(duel); duel.joueur.mana.braise = 10; duel.joueur.mana.neige = 10;
-  duel.joueur.main.push('feriel', 'appat-de-la-meute');
-  const attacker = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0).entite; attacker.ready = true;
-  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'appat-de-la-meute', right.id).ok, true);
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attacker.id]).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {}, { declaree: true }).ok, true);
-  assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 9);
-  assert.equal(right.blocageForce, null); assert.ok(duel.sorcier.creatures.includes(left));
+// Ces scénarios utilisent les règles d'invocation actuelles pour isoler le
+// comportement des sorts et le combat individuel, indépendamment des quotas.
+function poserPourSortRevise(duel, side, cardId, lane, slot = 0) {
+  duel.tour = side; duel[side].main = [cardId];
+  duel[side].invocationNormaleJouee = false; duel.moba.creaturesJouees[side] = false;
+  for (const color of ['braise', 'neige', 'sable', 'eau', 'tenebres']) duel[side].mana[color] = 20;
+  const result = rpgMobaJouerCreature(duel, side, cardId, lane, slot);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  result.entite.ready = true; result.entite.malInvocation = false;
+  return result.entite;
+}
+
+test('Appât affaiblit une cible même sur une autre voie sans imposer de blocage', () => {
+  const duel = partieCombat();
+  const cible = poserPourSortRevise(duel, 'sorcier', 'ashigaru-des-braises', 'right');
+  const attaquant = poserPourSortRevise(duel, 'joueur', 'ashigaru-des-braises', 'left');
+  duel.joueur.main = ['appat-de-la-meute']; const avant = cible.atk;
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'appat-de-la-meute', cible.id).ok, true);
+  assert.equal(cible.atk, Math.max(0, avant - 2)); assert.equal(cible.blocageForce, null);
+  assert.equal(rpgMobaDeclarerAttaqueIndividuelle(duel, 'joueur', attaquant.id, null, 'left').ok, true);
+  assert.equal(rpgMobaResoudreAttaqueIndividuelle(duel, 'joueur').ok, true);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Appât forces a same-lane blocker, but targeted attacks against a creature cannot be blocked', () => {
-  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 10;
-  const blocker = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-  rpgFinDeTour(duel); duel.joueur.mana.braise = 10; duel.joueur.mana.neige = 10;
-  duel.joueur.main.push('ashigaru-des-braises', 'appat-de-la-meute');
-  const attacker = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite; attacker.ready = true;
-  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'appat-de-la-meute', blocker.id).ok, true);
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attacker.id]).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {}, { declaree: true }).raison, 'blocage-force');
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], { [attacker.id]: [blocker.id] }, { declaree: true }).ok, true);
-  assert.equal(rpgMobaPlacementCoherent(duel), true);
-  const next = partieCombat(); rpgFinDeTour(next); next.sorcier.mana.braise = 10;
-  const target = rpgMobaJouerCreature(next, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-  rpgFinDeTour(next); next.joueur.mana.braise = 10; next.joueur.mana.neige = 10;
-  next.joueur.main.push('feriel', 'appat-de-la-meute');
-  const rapid = rpgMobaJouerCreature(next, 'joueur', 'feriel', 'left', 0).entite;
-  assert.equal(rpgMobaLancerMagie(next, 'joueur', 'appat-de-la-meute', target.id).ok, true);
-  assert.equal(rpgMobaDeclarerAttaque(next, 'joueur', [rapid.id], { [rapid.id]: target.id }).ok, true);
-  assert.equal(rpgMobaLancerAttaque(next, 'joueur', [rapid.id], {}, { declaree: true }).ok, true);
-});
-
-test('Embuscade marks enemies across lanes but forces only possible same-lane blocks', () => {
-  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.neige = 10; duel.sorcier.main.push('loup-des-neiges', 'jarl-au-marteau-de-guerre');
-  const left = rpgMobaJouerCreature(duel, 'sorcier', 'loup-des-neiges', 'left', 0).entite;
-  const right = rpgMobaJouerCreature(duel, 'sorcier', 'jarl-au-marteau-de-guerre', 'right', 0).entite;
-  rpgFinDeTour(duel); duel.joueur.mana.braise = 10; duel.joueur.mana.neige = 10;
-  duel.joueur.main.push('ashigaru-des-braises', 'embuscade');
-  const attacker = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite; attacker.ready = true;
-  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'embuscade').ok, true);
-  assert.equal(left.atk, 2); assert.equal(left.pv, 1); assert.equal(right.blocageForce.par, 'joueur');
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [attacker.id]).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {}, { declaree: true }).raison, 'blocage-force');
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], { [attacker.id]: [left.id] }, { declaree: true }).ok, true);
-  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
-  assert.equal(right.blocageForce, null); assert.equal(right.atk, 3); assert.equal(right.pv, 5);
+test('Appât affaiblit une cible dans la même voie sans empêcher de la viser', () => {
+  const duel = partieCombat();
+  const cible = poserPourSortRevise(duel, 'sorcier', 'ashigaru-des-braises', 'left');
+  const attaquant = poserPourSortRevise(duel, 'joueur', 'ashigaru-des-braises', 'left');
+  duel.joueur.main = ['appat-de-la-meute'];
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'appat-de-la-meute', cible.id).ok, true);
+  assert.equal(cible.atk, 0); assert.equal(cible.blocageForce, null);
+  assert.equal(rpgMobaDeclarerAttaqueIndividuelle(duel, 'joueur', attaquant.id, cible.id, 'left').ok, true);
+  assert.equal(rpgMobaResoudreAttaqueIndividuelle(duel, 'joueur').ok, true);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Embuscade expires without inflating low or wounded creatures clipped at the 1/1 floor', () => {
-  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 10; duel.sorcier.mana.neige = 10;
-  duel.sorcier.main.push('ashigaru-des-braises', 'loup-des-neiges');
-  const small = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-  const wounded = rpgMobaJouerCreature(duel, 'sorcier', 'loup-des-neiges', 'right', 0).entite;
-  wounded.pv = 1; wounded.def = 1;
-  rpgFinDeTour(duel); duel.joueur.mana.neige = 10; duel.joueur.main.push('embuscade');
-  const before = { atk: small.atk, pv: small.pv, max: small.pvMax, woundedPv: wounded.pv, woundedMax: wounded.pvMax };
-  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'embuscade').ok, true);
-  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
-  assert.equal(small.atk, before.atk); assert.equal(small.pv, before.pv); assert.equal(small.pvMax, before.max);
-  assert.equal(wounded.pv, before.woundedPv); assert.equal(wounded.pvMax, before.woundedMax);
+test('Embuscade affaiblit uniquement la voie choisie sans bloquer', () => {
+  const duel = partieCombat();
+  const left = poserPourSortRevise(duel, 'sorcier', 'viking-des-neiges', 'left');
+  const right = poserPourSortRevise(duel, 'sorcier', 'viking-des-neiges', 'right');
+  const before = [left.atk, left.pv, right.atk, right.pv];
+  duel.tour = 'joueur'; duel.joueur.main = ['embuscade']; duel.joueur.mana.neige = 20;
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'embuscade', null, 'left').ok, true);
+  assert.equal(left.atk, Math.max(1, before[0] - 2)); assert.equal(left.pv, Math.max(1, before[1] - 2));
+  assert.deepEqual([right.atk, right.pv], before.slice(2)); assert.equal(left.blocageForce, null);
+  rpgFinDeTour(duel);
+  assert.deepEqual([left.atk, left.pv, right.atk, right.pv], before);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Appât in a response window persists for its caster’s next attack, not the current enemy attack', () => {
-  const duel = partieCombat(); duel.joueur.mana.braise = 10; duel.joueur.mana.neige = 10;
-  const futureAttacker = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
-  duel.joueur.main.push('appat-de-la-meute');
-  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
-  duel.sorcier.mana.braise = 10; duel.sorcier.main.push('feriel', 'ashigaru-des-braises');
-  const attacker = rpgMobaJouerCreature(duel, 'sorcier', 'feriel', 'right', 0).entite;
-  const futureBlocker = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'sorcier', [attacker.id]).ok, true);
-  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'appat-de-la-meute', futureBlocker.id).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'sorcier', [attacker.id], {}, { declaree: true }).ok, true);
-  assert.equal(futureBlocker.blocageForce.par, 'joueur');
-  assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [futureAttacker.id]).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [futureAttacker.id], {}, { declaree: true }).raison, 'blocage-force');
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [futureAttacker.id], { [futureAttacker.id]: [futureBlocker.id] }, { declaree: true }).ok, true);
+test('Embuscade expire sans gonfler une petite créature blessée au plancher 1/1', () => {
+  const duel = partieCombat(); const target = poserPourSortRevise(duel, 'sorcier', 'ashigaru-des-braises', 'left');
+  target.pv = 1; target.def = 1;
+  const before = [target.atk, target.pv, target.pvMax];
+  duel.tour = 'joueur'; duel.joueur.main = ['embuscade']; duel.joueur.mana.neige = 20;
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'embuscade', null, 'left').ok, true);
+  rpgFinDeTour(duel); assert.deepEqual([target.atk, target.pv, target.pvMax], before);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Appât en réponse réduit immédiatement les dégâts et expire à la fin du tour adverse', () => {
+  const duel = partieCombat(); const attacker = poserPourSortRevise(duel, 'joueur', 'ashigaru-des-braises', 'left');
+  duel.sorcier.main = ['appat-de-la-meute']; duel.sorcier.mana.neige = 20;
+  const atk = attacker.atk, hp = mobaVoie(duel.moba, 'left').hp.sorcier;
+  assert.equal(rpgMobaDeclarerAttaqueIndividuelle(duel, 'joueur', attacker.id, null, 'left').ok, true);
+  assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'appat-de-la-meute', attacker.id).ok, true);
+  assert.equal(attacker.atk, Math.max(0, atk - 2)); assert.equal(attacker.blocageForce, null);
+  assert.equal(rpgMobaResoudreAttaqueIndividuelle(duel, 'joueur').ok, true);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, hp - Math.max(0, atk - 2));
+  rpgFinDeTour(duel); assert.equal(attacker.atk, atk);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
@@ -4926,30 +4911,27 @@ test('AI can use Rempart against an announced lethal wave without consuming live
   assert.ok(duel.sorcier.creatures.includes(target)); assert.equal(target.pv, 2);
 });
 
-for (const caster of ['joueur', 'sorcier']) test(`Embuscade: ${caster} announces a hostile group debuff, with per-creature response shields`, () => {
-  const duel = partie(), defender = caster === 'joueur' ? 'sorcier' : 'joueur';
-  duel.joueur.mana.neige = 20; duel.joueur.mana.sable = 10; duel.joueur.main = ['jarl-au-marteau-de-guerre', 'gardienne-des-portes-de-sable'];
-  const p1 = rpgMobaJouerCreature(duel, 'joueur', 'jarl-au-marteau-de-guerre', 'left', 0).entite;
-  const p2 = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).entite;
-  rpgFinDeTour(duel); duel.sorcier.mana.neige = 20; duel.sorcier.mana.sable = 10; duel.sorcier.main = ['jarl-au-marteau-de-guerre', 'gardienne-des-portes-de-sable'];
-  const s1 = rpgMobaJouerCreature(duel, 'sorcier', 'jarl-au-marteau-de-guerre', 'left', 0).entite;
-  const s2 = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'right', 0).entite;
-  if (caster === 'joueur') rpgFinDeTour(duel);
-  const [shielded, exposed, ally] = caster === 'joueur' ? [s1, s2, p1] : [p1, p2, s1];
-  const before = [shielded.atk, shielded.pv, exposed.atk, exposed.pv, ally.atk, ally.pv];
-  duel[caster].main = ['embuscade']; duel[caster].mana.neige = 10;
-  duel[defender].main = ['parade-du-verre']; duel[defender].mana.eau = 10;
-  const announcement = rpgMobaLancerMagie(duel, caster, 'embuscade', null, null, null, { ouvrirReponse: true });
+for (const caster of ['joueur', 'sorcier']) test(`Embuscade: ${caster} annonce un malus de voie et une parade protège sa cible`, () => {
+  const duel = partieCombat(), defender = caster === 'joueur' ? 'sorcier' : 'joueur';
+  const shielded = poserPourSortRevise(duel, defender, 'viking-des-neiges', 'left', 0);
+  const exposed = poserPourSortRevise(duel, defender, 'viking-des-neiges', 'left', 1);
+  const ailleurs = poserPourSortRevise(duel, defender, 'viking-des-neiges', 'right', 0);
+  const ally = poserPourSortRevise(duel, caster, 'viking-des-neiges', 'left', 0);
+  const before = [shielded.atk, shielded.pv, exposed.atk, exposed.pv, ailleurs.atk, ailleurs.pv, ally.atk, ally.pv];
+  duel.tour = caster; duel[caster].main = ['embuscade']; duel[caster].mana.neige = 20;
+  duel[defender].main = ['parade-du-verre']; duel[defender].mana.eau = 20;
+  const announcement = rpgMobaLancerMagie(duel, caster, 'embuscade', null, 'left', null, { ouvrirReponse: true });
   assert.equal(announcement.sortEnAttente, true);
-  assert.deepEqual(duel.mobaSortEnAttente, { cote: caster, carteId: 'embuscade', cibleId: null, cibleNom: 'Créatures', cibleCote: defender });
-  assert.deepEqual([shielded.atk, shielded.pv, exposed.atk, exposed.pv, ally.atk, ally.pv], before);
+  assert.equal(duel.mobaSortEnAttente.laneId, 'left');
+  assert.deepEqual([shielded.atk, shielded.pv, exposed.atk, exposed.pv, ailleurs.atk, ailleurs.pv, ally.atk, ally.pv], before);
   assert.equal(rpgMobaLancerMagie(duel, defender, 'parade-du-verre', shielded.id).ok, true);
   assert.equal(rpgMobaPasserSort(duel, defender).ok, true);
-  assert.deepEqual([shielded.atk, shielded.pv], before.slice(0,2)); assert.equal(shielded.bouclier, 0); assert.ok(!shielded.blocageForce);
-  assert.equal(exposed.atk, Math.max(1, before[2] - 2)); assert.equal(exposed.pv, Math.max(1, before[3] - 2));
-  assert.equal(exposed.blocageForce.par, caster); assert.deepEqual([ally.atk, ally.pv], before.slice(4));
-  assert.equal(terminerEtPasser(duel, caster).ok, true);
-  assert.equal(exposed.atk, before[2]); assert.equal(exposed.pv, before[3]); assert.equal(exposed.blocageForce, null);
+  assert.deepEqual([shielded.atk, shielded.pv], before.slice(0, 2)); assert.equal(shielded.bouclier, 0);
+  assert.deepEqual([exposed.atk, exposed.pv], [Math.max(1, before[2]-2), Math.max(1, before[3]-2)]);
+  assert.deepEqual([ailleurs.atk, ailleurs.pv, ally.atk, ally.pv], before.slice(4));
+  assert.equal(exposed.blocageForce, null);
+  rpgFinDeTour(duel);
+  assert.deepEqual([exposed.atk, exposed.pv], before.slice(2, 4));
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
@@ -4982,18 +4964,18 @@ test('winning responses cancel a pending reinforcement or Embuscade without refu
 });
 
 test('AI protects a valuable creature from Embuscade using an isolated response probe', () => {
-  const duel = partie(); rpgFinDeTour(duel); duel.sorcier.mana.neige = 10;
-  duel.sorcier.main = ['jarl-au-marteau-de-guerre'];
-  const target = rpgMobaJouerCreature(duel, 'sorcier', 'jarl-au-marteau-de-guerre', 'left', 0).entite;
-  rpgFinDeTour(duel); duel.joueur.main = ['embuscade']; duel.joueur.mana.neige = 10;
-  duel.sorcier.main = ['parade-du-verre']; duel.sorcier.mana.eau = 10;
-  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'embuscade', null, null, null, { ouvrirReponse: true }).sortEnAttente, true);
+  const duel = partieCombat();
+  const target = poserPourSortRevise(duel, 'sorcier', 'viking-des-neiges', 'left');
+  duel.tour = 'joueur'; duel.joueur.main = ['embuscade']; duel.joueur.mana.neige = 20;
+  duel.sorcier.main = ['parade-du-verre']; duel.sorcier.mana.eau = 20;
+  const beforeStats = [target.atk, target.pv];
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'embuscade', null, 'left', null, { ouvrirReponse: true }).sortEnAttente, true);
   let calls = 0; rpgReglerHasard(duel, () => { calls++; return .5; });
   const before = JSON.stringify(duel), move = rpgMobaChoisirMagieIA(duel, 'sorcier', true);
   assert.equal(move?.id, 'parade-du-verre'); assert.equal(move.cible, target.id); assert.equal(JSON.stringify(duel), before); assert.equal(calls, 0);
   assert.equal(rpgMobaLancerMagie(duel, 'sorcier', move.id, move.cible).ok, true);
   assert.equal(rpgMobaPasserSort(duel, 'sorcier').ok, true);
-  assert.equal(target.atk, 3); assert.equal(target.pv, 5); assert.ok(!target.blocageForce); assert.equal(target.bouclier, 0);
+  assert.deepEqual([target.atk, target.pv], beforeStats); assert.ok(!target.blocageForce); assert.equal(target.bouclier, 0);
 });
 
 test('Offrande accepts a separate price-lane argument when announced, without repaying it', () => {

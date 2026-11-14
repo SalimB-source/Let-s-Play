@@ -21,7 +21,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
     defenseur: true,
     ascension: Object.freeze({ nombre: 2, type: 'samourai', typeLabel: 'Samouraï', coutTotal: 7 }),
     typeLine: 'Créature d’Ascension — Dragon · Samouraï',
-    text: 'Ascension — Depuis votre réserve, sacrifiez exactement 2 créatures Samouraï que vous contrôlez, dont les coûts imprimés totalisent exactement 7. Cette invocation spéciale ne coûte aucun mana et ne consomme pas votre invocation normale. Overkill — Les dégâts de combat excédentaires percent jusqu’à l’adversaire. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Défenseur — Les créatures adverses avec Attaque ciblée doivent le viser en priorité si elles le peuvent.',
+    text: 'Ascension — 2 créatures Samouraï. Coût total : 7. Overkill — Les dégâts de combat excédentaires percent jusqu’à l’adversaire. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Défenseur — Les créatures adverses avec Attaque ciblée doivent le viser en priorité si elles le peuvent.',
     flavor: 'L’armure a cédé. Le serment brûle encore.',
   }),
   Object.freeze({
@@ -32,7 +32,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
     overkill: true, bouclierInitial: true, furie: 4,
     ascension: Object.freeze({ nombre: 2, type: 'viking', typeLabel: 'Viking', coutTotal: 8 }),
     typeLine: 'Créature d’Ascension — Jarl · Viking',
-    text: 'Ascension — Sacrifiez exactement 2 Vikings que vous contrôlez, dont les coûts imprimés totalisent exactement 8. Aucun mana supplémentaire ; ne consomme pas votre invocation normale. Overkill. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis le bouclier tombe. Furie 4 — Tant que sa défense vivante est inférieure à sa défense de base, il gagne +4 ATQ.',
+    text: 'Ascension — 2 créatures Viking. Coût total : 8. Overkill. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis le bouclier tombe. Furie 4 — Tant que sa défense vivante est inférieure à sa défense de base, il gagne +4 ATQ.',
     flavor: 'Le dernier mur n’est pas fait de pierre.',
   }),
   Object.freeze({
@@ -49,7 +49,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
         Object.freeze({ element: 'tenebres' }),
       ]) }),
     typeLine: 'Créature d’Ascension — Scorpion · Spectre',
-    text: 'Ascension — Sacrifiez un Scorpion Sable et deux créatures Ténèbres que vous contrôlez, dont les coûts imprimés totalisent exactement 8. Aucun mana supplémentaire ; ne consomme pas votre invocation normale. Poison — Une créature blessée au combat perd 1 PV au début de chacun de ses deux prochains tours. Vol de vie — Vous gagnez la moitié des dégâts qu’il inflige, arrondie au supérieur. Quand il arrive : détruisez une créature adverse ciblée déjà blessée de coût imprimé 4 ou moins.',
+    text: 'Ascension — 1 Scorpion Sable + 2 créatures Ténèbres. Coût total : 8. Poison — Une créature blessée au combat perd 1 PV au début de chacun de ses deux prochains tours. Vol de vie — Vous gagnez la moitié des dégâts qu’il inflige, arrondie au supérieur. Quand il arrive : détruisez une créature adverse ciblée déjà blessée de coût imprimé 4 ou moins.',
     flavor: 'Deux âmes sous sa carapace. Une troisième au bout du dard.',
   }),
   Object.freeze({
@@ -66,7 +66,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
         Object.freeze({ type: 'elemental', typeLabel: 'Élémental', element: 'sable' }),
       ]) }),
     typeLine: 'Créature d’Ascension — Golem · Élémental',
-    text: 'Ascension — Sacrifiez deux Djinns Braise et un Élémental Sable que vous contrôlez, dont les coûts imprimés totalisent exactement 8. Aucun mana supplémentaire ; ne consomme pas votre invocation normale. Bouclier. Contre-attaque — Il riposte aux attaques ciblées, aux capacités qui le ciblent et aux sorts adverses qui l’atteignent. Quand il arrive : infligez 2 dégâts à chaque créature adverse ; en MOBA, seulement dans sa voie.',
+    text: 'Ascension — 2 Djinns Braise + 1 Élémental Sable. Coût total : 8. Bouclier. Contre-attaque — Il riposte aux attaques ciblées, aux capacités qui le ciblent et aux sorts adverses qui l’atteignent. Quand il arrive : infligez 2 dégâts à chaque créature adverse ; en MOBA, seulement dans sa voie.',
     flavor: 'Le sable a oublié comment se disperser.',
   }),
 ]);

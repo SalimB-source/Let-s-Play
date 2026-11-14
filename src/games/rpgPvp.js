@@ -1,4 +1,3 @@
-import { ciblesDefenseur } from './rpgDefenseur.js';
 /**
  * Le Sablier en ligne — protocole du mode PvP.
  * --------------------------------------------
@@ -8,8 +7,8 @@ import { ciblesDefenseur } from './rpgDefenseur.js';
  *
  *  1. **Qui a la main** (`rpgPvpCoteActif`, `rpgPvpPeutAgir`). Le moteur de
  *     `rpgDuel.js` ne connaît que `duel.tour` ; en PvP il faut en plus la
- *     fenêtre de blocage et la fenêtre de réponse, où c'est le camp qui ne
- *     joue pas qui doit répondre.
+ *     fenêtre de réponse à chaque attaque individuelle, où c'est le camp
+ *     qui ne joue pas qui doit répondre.
  *  2. **Ce que chacun a le droit de voir** (`rpgPvpVue`). L'état complet porte
  *     les deux mains et les deux pioches : le serveur n'en envoie qu'une vue
  *     filtrée, remise du point de vue du destinataire (le camp `sorcier` est
@@ -28,30 +27,30 @@ import { ciblesDefenseur } from './rpgDefenseur.js';
  */
 
 import { cardById, cardColors, duelCardById } from './rpgCards.js';
+import { rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from './rpgCombatIndividuelClassique.js';
 import {
   rpgActiverArme,
   rpgActiverCapacite,
-  rpgAppliquerBannieresAttaque,
   rpgChoisirCouleurMana,
   rpgDefausserCarte,
   rpgDemarrerManaEssai,
   rpgDissiperDestructionsSansCible,
   rpgConditionEmbuscadeRemplie,
-  rpgEstProtegee,
   rpgFinDeTour,
+  rpgEstProtegee,
+  rpgLancerAttaque,
+  rpgPeutBloquerAttaquant,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
   rpgJouerArme,
   rpgJouerCreature,
-  rpgLancerAttaque,
   rpgLancerMagie,
   rpgMulligan,
   rpgNoterCompteurEntites,
-  rpgPeutBloquerAttaquant,
-  rpgPeutAttaquer,
   rpgPeutMulligan,
   rpgPreparerDefausseFinDeTour,
   rpgReglerHasard,
+  rpgResoudreRenfortChoisi,
   rpgResoudreArriveeCiblee,
   rpgResoudreEffetCreatureEnAttente,
   rpgResoudreDestructionCiblee,
@@ -90,6 +89,7 @@ export const RPG_PVP_INTENTIONS = [
   'mulligan',
   'choix-mana',
   'jouer-carte',
+  'choisir-renfort',
   'resoudre-arrivee',
   'renoncer-arrivee',
   'passer-effet',
@@ -179,6 +179,7 @@ export function rpgPvpCodeDuLien(lien) {
 export function rpgPvpCoteActif(duel) {
   if (!duel) return null;
   if (duel.fin?.gagnant) return null;
+  if (duel.renfortChoixEnAttente?.cote) return duel.renfortChoixEnAttente.cote;
   if (duel.destructionsEnAttente?.length) return duel.destructionsEnAttente[0].cote;
   // Le contresort de Boualem donne la main à celui qui joue Boualem le temps
   // de désigner sa nouvelle cible.
@@ -216,6 +217,8 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
     if (intention.type !== 'mulligan') return { ok: false, raison: 'mulligan' };
     return { ok: true, raison: null };
   }
+  if (duel.renfortChoixEnAttente && intention.type !== 'choisir-renfort') return { ok: false, raison: 'renfort-en-attente' };
+  if (intention.type === 'choisir-renfort' && !duel.renfortChoixEnAttente) return { ok: false, raison: 'choix' };
   if (duel.arriveeEnAttente && !['resoudre-arrivee', 'renoncer-arrivee'].includes(intention.type)) {
     return { ok: false, raison: 'arrivee-en-attente' };
   }
@@ -287,6 +290,7 @@ function retournerPartie(vue) {
   if (vue.defausseEnAttente?.cote) {
     vue.defausseEnAttente = { ...vue.defausseEnAttente, cote: remplace(vue.defausseEnAttente.cote) };
   }
+  if (vue.renfortChoixEnAttente?.cote) vue.renfortChoixEnAttente.cote = remplace(vue.renfortChoixEnAttente.cote);
   if (vue.arriveeEnAttente?.cote) {
     vue.arriveeEnAttente = { ...vue.arriveeEnAttente, cote: remplace(vue.arriveeEnAttente.cote) };
   }
@@ -346,6 +350,8 @@ export function rpgPvpVue(duel, cote = 'joueur') {
     ? structuredClone(duel)
     : JSON.parse(JSON.stringify(duel));
   delete vue.hasard;
+  // Ancienne deuxième phase principale : les nouvelles attaques sont individuelles.
+  if (vue.phase === 'principale2' && !vue.combatDeclare) vue.phase = 'principale';
   if (cote === 'sorcier') retournerPartie(vue);
   // Après retournement, l'adversaire est TOUJOURS `vue.sorcier` : c'est le
   // seul camp dont la main et la pioche doivent disparaître.
@@ -379,22 +385,9 @@ function refus(resultat) {
   return null;
 }
 
-function creaturePreteAttaque(entite) {
-  return Boolean(rpgPeutAttaquer(entite));
-}
-
-function creaturePeutBloquer(entite) {
-  return Boolean(
-    entite
-    && !entite.enCale
-    && !(entite.gelToursRestants > 0)
-    && !(entite.empecheBlocageToursRestants > 0),
-  );
-}
-
 function nettoyerCombatDeclareSiVide(duel) {
   const combat = duel.combatDeclare;
-  if (!combat) return;
+  if (!combat || combat.cibleIndividuelle) return;
   const survivants = combat.attaquants.filter((id) => duel[combat.cote]?.creatures?.some((e) => e.id === id));
   if (survivants.length) {
     duel.combatDeclare = { ...combat, attaquants: survivants };
@@ -402,88 +395,46 @@ function nettoyerCombatDeclareSiVide(duel) {
   }
   duel.attaqueJouee = combat.cote;
   duel.combatDeclare = null;
-  if (duel.phase === 'blocage') duel.phase = 'principale2';
+  if (duel.phase === 'blocage') { duel.phase = 'principale'; duel.fenetreReponse = false; }
 }
 
-function declarerCombatPvp(duel, cote, attaquantIds, ciblesAttaque) {
-  const adv = rpgPvpAutreCote(cote);
-  if (duel.attaqueJouee === cote || duel.phase === 'blocage') {
-    return { ok: false, raison: 'attaque-jouee' };
-  }
-  const ids = [...new Set(attaquantIds ?? [])];
-  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
-  if (!attaquants.length) return { ok: false, raison: 'personne' };
-  if (attaquants.length !== ids.length) return { ok: false, raison: 'absent' };
-  if (attaquants.some((entite) => !creaturePreteAttaque(entite))) {
-    return { ok: false, raison: 'pas-pret' };
-  }
-  const ciblesRapides = ciblesAttaque ?? {};
-  if (!ciblesRapides || typeof ciblesRapides !== 'object' || Array.isArray(ciblesRapides)
-    || Object.keys(ciblesRapides).some((id) => !ids.includes(id))) {
-    return { ok: false, raison: 'cible' };
-  }
-  for (const attaquant of attaquants) {
-    const cibleId = ciblesRapides[attaquant.id];
-    if (!cibleId) {
-      if (attaquant.coupRapide && duel[adv].creatures.length) return { ok: false, raison: 'cible-obligatoire' };
-      continue;
-    }
-    if (!attaquant.coupRapide) return { ok: false, raison: 'cible' };
-    const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
-    if (!cible) return { ok: false, raison: 'cible' };
-    if (rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) {
-      return { ok: false, raison: 'protection' };
-    }
-    const ciblesLegales = duel[adv].creatures.filter((entite) =>
-      !rpgEstProtegee(entite, cardColors(duelCardById(attaquant.carteId))));
-    if (!ciblesDefenseur(ciblesLegales).some((entite) => entite.id === cible.id)) {
-      return { ok: false, raison: 'defenseur' };
-    }
-  }
-  // Toujours ouvrir la fenêtre : sa présence ne doit jamais révéler la main
-  // du défenseur, et une créature de réaction peut intervenir sans bloqueur.
-  const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, cote, ids);
-  duel.phase = 'blocage';
-  duel.combatDeclare = {
-    cote,
-    attaquants: ids,
-    ciblesAttaque: ciblesRapides,
-    bannieresAppliquees,
-  };
-  duel.log.push(`${cote === 'joueur' ? 'Vous déclarez' : 'Le sorcier déclare'} l’attaque (${ids.length} créature${ids.length > 1 ? 's' : ''}).`);
-  return { ok: true, attenteBlocage: true };
-}
-
-function resoudreBlocagePvp(duel, blocages = {}, repartitions = null) {
-  const combat = duel.combatDeclare;
-  if (!combat || duel.phase !== 'blocage') return { ok: false, raison: 'aucun-combat' };
+/** Terminer selon les anciennes règles une attaque déjà annoncée avant la mise à jour. */
+function resoudreAncienCombat(duel, combat, blocages, repartitions) {
   const survivants = combat.attaquants.filter((id) => duel[combat.cote]?.creatures?.some((e) => e.id === id));
   if (!survivants.length) {
-    duel.attaqueJouee = combat.cote;
-    duel.combatDeclare = null;
-    duel.phase = 'principale2';
+    duel.combatDeclare = null; duel.fenetreReponse = false; duel.phase = 'principale';
     return { ok: true };
   }
-  const ciblesSurvie = Object.fromEntries(
-    Object.entries(combat.ciblesAttaque ?? {}).filter(([id]) => survivants.includes(id)),
-  );
-  const blocagesPropres = Object.fromEntries(
-    Object.entries(blocages ?? {}).filter(([id]) => survivants.includes(id)),
-  );
-  const res = rpgLancerAttaque(
-    duel,
-    combat.cote,
-    survivants,
-    blocagesPropres,
-    repartitions ?? null,
-    null,
-    ciblesSurvie,
-    { attaqueDeclaree: true, bannieresAppliquees: Boolean(combat.bannieresAppliquees) },
-  );
-  if (!res?.ok) return res;
-  duel.combatDeclare = null;
-  if (duel.phase === 'blocage') duel.phase = 'principale2';
-  return res;
+  const cibles = Object.fromEntries(Object.entries(combat.ciblesAttaque ?? {}).filter(([id]) => survivants.includes(id)));
+  const propres = Object.fromEntries(Object.entries(blocages).filter(([id]) => survivants.includes(id)));
+  const resultat = rpgLancerAttaque(duel, combat.cote, survivants, propres, repartitions, null, cibles,
+    { attaqueDeclaree: true, bannieresAppliquees: Boolean(combat.bannieresAppliquees) });
+  if (!resultat?.ok) return resultat;
+  duel.combatDeclare = null; duel.fenetreReponse = false;
+  if (duel.phase === 'blocage' || duel.phase === 'principale2') duel.phase = 'principale';
+  return resultat;
+}
+
+function preparerAncienBlocage(duel, cote, blocages) {
+  const combat = duel.combatDeclare;
+  if (duel.phase !== 'blocage' || !combat || combat.cibleIndividuelle || combat.cote !== rpgPvpAutreCote(cote)) return { ok: false, raison: 'aucun-combat' };
+  if (!blocages || typeof blocages !== 'object' || Array.isArray(blocages)
+    || Object.keys(blocages).some((id) => !combat.attaquants.includes(id))) return { ok: false, raison: 'blocage' };
+  const utilises = new Set();
+  for (const [attaquantId, ids] of Object.entries(blocages)) {
+    if (!Array.isArray(ids)) return { ok: false, raison: 'blocage' };
+    const attaquant = duel[combat.cote].creatures.find((entite) => entite.id === attaquantId);
+    for (const id of ids) {
+      const bloqueur = duel[cote].creatures.find((entite) => entite.id === id);
+      if (!attaquant || !bloqueur || utilises.has(id) || bloqueur.attaquee || bloqueur.enCale
+        || bloqueur.gelToursRestants > 0 || bloqueur.empecheBlocageToursRestants > 0
+        || !rpgPeutBloquerAttaquant(bloqueur, attaquant, Boolean(combat.ciblesAttaque?.[attaquantId]))
+        || rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) return { ok: false, raison: 'blocage' };
+      utilises.add(id);
+    }
+  }
+  combat.blocages = structuredClone(blocages);
+  return { ok: true };
 }
 
 function executerIntention(duel, cote, intention) {
@@ -500,6 +451,8 @@ function executerIntention(duel, cote, intention) {
     }
     case 'choix-mana':
       return rpgChoisirCouleurMana(duel, cote, intention.couleur) ?? { ok: true };
+    case 'choisir-renfort':
+      return rpgResoudreRenfortChoisi(duel, cote, intention.index ?? null);
     case 'jouer-carte': {
       const carte = cardById(intention.carteId);
       if (!carte) return { ok: false, raison: 'carte-inconnue' };
@@ -537,35 +490,8 @@ function executerIntention(duel, cote, intention) {
     }
     case 'passer-effet':
       return rpgResoudreEffetCreatureEnAttente(duel, cote);
-    case 'preparer-blocage': {
-      // Les choix de bloqueurs restent réversibles avant la résolution. Le
-      // serveur doit les connaître pour l'Embuscade de l'Archonte, sans
-      // accepter un faux blocage fabriqué pour contourner sa condition.
-      const combat = duel.combatDeclare;
-      if (duel.phase !== 'blocage' || combat?.cote !== rpgPvpAutreCote(cote)) {
-        return { ok: false, raison: 'aucun-combat' };
-      }
-      const blocages = intention.blocages ?? {};
-      if (!blocages || typeof blocages !== 'object' || Array.isArray(blocages)
-        || Object.keys(blocages).some((id) => !combat.attaquants.includes(id))) return { ok: false, raison: 'blocage' };
-      const utilises = new Set();
-      for (const [attaquantId, ids] of Object.entries(blocages)) {
-        if (!Array.isArray(ids)) return { ok: false, raison: 'blocage' };
-        const attaquant = duel[combat.cote].creatures.find((entite) => entite.id === attaquantId);
-        for (const bloqueurId of ids) {
-          const bloqueur = duel[cote].creatures.find((entite) => entite.id === bloqueurId);
-          if (!attaquant || !bloqueur || utilises.has(bloqueurId) || bloqueur.attaquee
-            || !creaturePeutBloquer(bloqueur)
-            || !rpgPeutBloquerAttaquant(bloqueur, attaquant, Boolean(combat.ciblesAttaque?.[attaquantId]))
-            || rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) {
-            return { ok: false, raison: 'blocage' };
-          }
-          utilises.add(bloqueurId);
-        }
-      }
-      combat.blocages = structuredClone(blocages);
-      return { ok: true };
-    }
+    case 'preparer-blocage':
+      return preparerAncienBlocage(duel, cote, intention.blocages ?? {});
     case 'resoudre-arrivee': {
       const res = rpgResoudreArriveeCiblee(duel, cote, intention.cibleId ?? null);
       if (res?.ok) nettoyerCombatDeclareSiVide(duel);
@@ -609,26 +535,33 @@ function executerIntention(duel, cote, intention) {
       }
       return rpgActiverCapacite(duel, cote, intention.entiteId, intention.cibleId ?? null) ?? { ok: true };
     }
-    case 'attaquer':
-      if (intention.declarer) {
-        return declarerCombatPvp(
-          duel,
-          cote,
-          Array.isArray(intention.attaquants) ? intention.attaquants : [],
-          intention.ciblesAttaque ?? {},
-        );
+    case 'attaquer': {
+      // Une intention ne peut déclarer qu'une seule attaque, jamais la
+      // résoudre directement ni contourner la fenêtre adverse.
+      if (!intention.declarer || !Array.isArray(intention.attaquants) || intention.attaquants.length !== 1)
+        return { ok: false, raison: 'attaque-individuelle' };
+      const id = intention.attaquants[0];
+      if (typeof id !== 'string' || (intention.cibleId != null && typeof intention.cibleId !== 'string')) return { ok: false, raison: 'cible' };
+      const cible = intention.cibleId ?? intention.ciblesAttaque?.[id] ?? null;
+      if (intention.ciblesAttaque && (typeof intention.ciblesAttaque !== 'object' || Array.isArray(intention.ciblesAttaque)
+        || Object.keys(intention.ciblesAttaque).some((key) => key !== id))) return { ok: false, raison: 'cible' };
+      return rpgDeclarerAttaqueIndividuelleClassique(duel, cote, id, cible === 'sorcier' ? null : cible);
+    }
+    case 'bloquer': {
+      const combat = duel.combatDeclare;
+      if (combat && !combat.cibleIndividuelle && combat.cote !== cote && duel.phase === 'blocage') {
+        const blocages = intention.blocages ?? {};
+        if (!blocages || typeof blocages !== 'object' || Array.isArray(blocages)
+          || Object.keys(blocages).some((id) => !combat.attaquants.includes(id))
+          || Object.values(blocages).some((ids) => !Array.isArray(ids))) return { ok: false, raison: 'blocage' };
+        return resoudreAncienCombat(duel, combat, blocages, intention.repartitions ?? null);
       }
-      return rpgLancerAttaque(
-        duel,
-        cote,
-        Array.isArray(intention.attaquants) ? intention.attaquants : [],
-        intention.blocages ?? null,
-        intention.repartitions ?? null,
-        intention.attaquantsBloques ?? null,
-        intention.ciblesAttaque ?? null,
-      );
-    case 'bloquer':
-      return resoudreBlocagePvp(duel, intention.blocages ?? {}, intention.repartitions ?? null);
+      if (!combat?.cibleIndividuelle || combat.cote === cote
+        || (intention.blocages != null && (typeof intention.blocages !== 'object' || Array.isArray(intention.blocages)))
+        || Object.values(intention.blocages ?? {}).some((ids) => !Array.isArray(ids) || ids.length))
+        return { ok: false, raison: 'aucun-combat' };
+      return rpgResoudreAttaqueIndividuelleClassique(duel, combat.cote);
+    }
     case 'fin-de-tour': {
       if (duel.tour !== cote || duel.finDeTour) return { ok: false, raison: 'pas-votre-tour' };
       if (rpgPeutRepondre(duel, rpgPvpAutreCote(cote))) {
@@ -671,6 +604,7 @@ export function rpgPvpAppliquer(duel, cote, intention) {
   const droit = rpgPvpPeutAgir(duel, cote, intention);
   if (!droit.ok) return { ok: false, raison: droit.raison, duel };
   const instantane = JSON.stringify(duel);
+  if (duel.phase === 'principale2' && !duel.combatDeclare) duel.phase = 'principale';
   if (duel.pvp) rpgSyncCompteurEntites(duel);
   let resultat;
   try {

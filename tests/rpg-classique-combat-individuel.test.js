@@ -27,9 +27,9 @@ function poser(duel, cote, id = 'ashigaru-des-braises') {
 test('les cibles sont celles du MOBA sans les voies : Envol, Infiltration et priorités', () => {
   const d = partie(), a = poser(d, 'joueur'), sol = poser(d, 'sorcier'), vol = poser(d, 'sorcier'), cache = poser(d, 'sorcier');
   vol.envol = true; cache.infiltration = true;
-  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id], directe: false });
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id], directe: true });
   a.envol = true;
-  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: false });
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: true });
   vol.provocation = true; sol.defenseur = true;
   assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [vol.id], directe: false });
   vol.provocation = false;
@@ -62,13 +62,13 @@ test('deux créatures attaquent séparément ; la même ne peut attaquer deux fo
   assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).raison, 'pas-pret');
 });
 
-test('un refus ne consomme rien et le PvP ne peut utiliser ce chemin', () => {
+test('un refus ne consomme rien et le PvP utilise le même ciblage', () => {
   const d = partie(), a = poser(d, 'joueur'); poser(d, 'sorcier');
   const avant = JSON.stringify(d);
-  assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).raison, 'cible');
+  assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, 'inconnue').raison, 'cible');
   assert.equal(JSON.stringify(d), avant);
   d.pvp = true;
-  assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).raison, 'mode');
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
 });
 
 test('une cible disparue ou rendue inaccessible pendant la réponse annule sans rediriger', () => {
@@ -320,4 +320,13 @@ test('Infiltration conserve la frappe directe après une Invocation spéciale re
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
   assert.equal(rpgJouerCreature(d, 'sorcier', 'fennec-des-decombres').raison, 'pas-votre-tour');
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+});
+
+test('une créature ordinaire frappe le sorcier même si une créature adverse est présente', () => {
+  const d = partie(), a = poser(d, 'joueur'), cible = poser(d, 'sorcier');
+  const pv = d.sorcier.pv;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, null).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+  assert.equal(d.sorcier.pv, pv - a.atk);
+  assert.ok(d.sorcier.creatures.includes(cible));
 });

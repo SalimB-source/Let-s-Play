@@ -1,11 +1,11 @@
-/** Combat individuel du classique solo, indépendant des voies du MOBA. */
+/** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { rpgAppliquerBannieresAttaque, rpgEstProtegee, rpgPeutAttaquer, rpgResoudreEchangeIndividuelClassique, rpgVainqueur } from './rpgDuel.js';
 
 const camps = ['joueur', 'sorcier'];
 const autre = (cote) => cote === 'joueur' ? 'sorcier' : 'joueur';
 const creature = (entite) => Boolean(entite && duelCardById(entite.carteId) && duelCardById(entite.carteId).kind !== 'site');
-const soloClassique = (duel, cote) => Boolean(duel && !duel.moba && !duel.pvp && camps.includes(cote));
+const soloClassique = (duel, cote) => Boolean(duel && !duel.moba && camps.includes(cote));
 
 function accessible(attaquant, cible, ciblee) {
   if (!creature(cible) || rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) return false;
@@ -25,7 +25,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
-    directe: ciblee || Boolean(attaquant.infiltration) || (!attaquant.envol ? possibles.length === 0 : !possibles.some((e) => e.envol)),
+    directe: true,
   };
 }
 
@@ -44,7 +44,7 @@ export function rpgDeclarerAttaqueIndividuelleClassique(duel, cote, attaquantId,
   if (rpgVainqueur(duel)) return { ok: false, raison: 'partie-terminee' };
   if (duel.tour !== cote) return { ok: false, raison: 'pas-votre-tour' };
   if (duel.phase !== 'principale' || duel.fenetreReponse || duel.combatDeclare || duel.finDeTour
-    || duel.annonce || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || duel.annonce || duel.renfortChoixEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente || duel.boualemEnAttente
     || duel[cote].manaChoixEnAttente) return { ok: false, raison: 'timing' };
   const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
@@ -79,7 +79,7 @@ export function rpgResoudreAttaqueIndividuelleClassique(duel, cote) {
   const combat = duel?.combatDeclare;
   if (!soloClassique(duel, cote) || !combat?.cibleIndividuelle || combat.cote !== cote
     || duel.tour !== cote || duel.phase !== 'blocage' || !duel.fenetreReponse
-    || duel.annonce || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || duel.annonce || duel.renfortChoixEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente
     || duel.destructionsEnAttente?.length || duel.defausseEnAttente || duel.siteEnAttente || duel.boualemEnAttente) {
     return { ok: false, raison: 'timing' };
   }

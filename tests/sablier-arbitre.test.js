@@ -625,3 +625,39 @@ test('le serveur refuse les decks tricolores à l’ouverture et à la jonction'
   const ancienRefuse = await api(monde, INVITE, { action: 'rejoindre', code: ouvert.code, deck: DECK_B });
   assert.equal(ancienRefuse.raison, 'deck-invalide');
 });
+
+for (const camp of ['joueur', 'sorcier']) test(`expiration PvP : choix de renfort obligatoire résolu pour ${camp}`, async () => {
+  const monde = creerMonde();
+  const { code } = await duelEnCours(monde);
+  await jouerTour(monde, HOTE, code);
+  await jouerTour(monde, INVITE, code);
+  const ligne = monde.magasin.duels.get(code), d = ligne.etat;
+  d.tour = camp; d[camp].main = ['appel-des-marees']; d[camp].deck = ['chien-du-guet','loup-des-neiges'];
+  d[camp].manaChoixEnAttente = false;
+  const { rpgPvpAppliquer } = await import('../src/games/rpgPvp.js');
+  assert.ok(rpgPvpAppliquer(d, camp, { type: 'jouer-carte', carteId: 'appel-des-marees' }).ok);
+  const seq = ligne.seq;
+  monde.horloge.t += RPG_PVP_HORLOGES.live + 1000;
+  const resultat = await api(monde, camp === 'joueur' ? HOTE : INVITE, { action: 'etat', code });
+  assert.equal(resultat.seq, seq + 1);
+  assert.equal(monde.magasin.duels.get(code).etat.renfortChoixEnAttente, null);
+  assert.equal(monde.magasin.duels.get(code).etat[camp].creatures[0].carteId, 'loup-des-neiges');
+  assert.equal(monde.magasin.duels.get(code).etat.retards[camp], 1);
+});
+
+test('expiration PvP : un ancien combat collectif avec blocage obligatoire ne bloque pas la partie', async () => {
+  const { rpgJouerCreature } = await import('../src/games/rpgDuel.js');
+  const monde=creerMonde(); const {code}=await duelEnCours(monde);
+  await jouerTour(monde,HOTE,code); await jouerTour(monde,INVITE,code);
+  const ligne=monde.magasin.duels.get(code), d=ligne.etat;
+  for (const cote of ['joueur','sorcier']) {
+    d.tour=cote;d[cote].manaChoixEnAttente=null;d[cote].main=['chien-du-guet'];d[cote].invocationNormaleJouee=false;
+    const r=rpgJouerCreature(d,cote,'chien-du-guet');assert.ok(r.ok,JSON.stringify(r));r.entite.ready=true;r.entite.malInvocation=false;
+  }
+  d.tour='joueur';d.phase='blocage';d.fenetreReponse=true;
+  const a=d.joueur.creatures[0], b=d.sorcier.creatures[0];b.blocageForce={par:'joueur',portee:'attaque'};
+  d.combatDeclare={cote:'joueur',attaquants:[a.id],ciblesAttaque:{},bannieresAppliquees:true};
+  const seq=ligne.seq; monde.horloge.t+=RPG_PVP_HORLOGES.live+1000;
+  const r=await api(monde,HOTE,{action:'etat',code});assert.equal(r.seq,seq+1);
+  const etat=monde.magasin.duels.get(code).etat;assert.equal(etat.combatDeclare,null);assert.equal(etat.phase,'principale');
+});

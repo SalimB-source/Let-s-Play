@@ -67,6 +67,8 @@ export async function checkAscensionDuel(assert, tactile = false) {
     assert.equal(t.invoquer(), null, 'un clic sur une carte ne peut pas invoquer directement');
     await t.click(t.face());
     assert.ok(t.apercu()); assert.equal(t.preparer().disabled, false);
+    assert.match(t.apercu().textContent, /2 créatures Samouraï\.\s*Coût total\s*:\s*7/);
+    assert.doesNotMatch(t.apercu().textContent, /aucun mana|mana supplémentaire|invocation normale/i);
     for (const cle of ['overkill', 'esquive', 'defenseur']) assert.ok(t.apercu().querySelector(`[data-pastille="${cle}"]`), cle);
     assert.equal(container.querySelector('.card-table').hasAttribute('inert'), true, 'seul l’aperçu modal neutralise le plateau');
     assert.equal(JSON.stringify(duel), avant, 'consultation sans mutation');
@@ -126,6 +128,8 @@ export async function checkAscensionMoba(assert) {
     const sansMateriaux = JSON.stringify(duel);
     await t.click(t.zone()); await t.click(t.face());
     assert.ok(t.apercu()); assert.equal(t.preparer().disabled, true, 'une carte reste consultable sans sacrifices disponibles');
+    assert.match(t.apercu().textContent, /2 créatures Samouraï\.\s*Coût total\s*:\s*7/);
+    assert.doesNotMatch(t.apercu().textContent, /aucun mana|mana supplémentaire|invocation normale/i);
     assert.equal(JSON.stringify(duel), sansMateriaux);
     await t.echapper(); await t.echapper();
     const corps = [['ronin-du-soleil-rouge', 'left', 0], ['onna-musha-des-cendres', 'right', 1]].map(([id, lane, slot]) => {

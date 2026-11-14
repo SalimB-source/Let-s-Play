@@ -145,6 +145,7 @@ export const EFFET_ICONE = {
   recyclage: 'i-recyclage',
   reanimation: 'i-reanimation',
   'renfort-ascension': 'i-reanimation',
+  'renfort-choisi': 'i-reanimation',
   // Le Lien : la seule icône qui ne décrit PAS un effet de la carte, mais le
   // fait que sa phrase nomme une ancre. Deux maillons.
   lien: 'i-lien',
@@ -649,7 +650,7 @@ export function iconePourLigne(carte, ligne = '') {
 export const EFFET_DEFINITIONS = {
   reactionTourAdverse: 'Si sa condition est remplie, vous pouvez jouer cette carte pendant votre phase principale, sans sacrifice ni invocation normale. Sinon, vous pouvez l’invoquer normalement pendant votre tour.',
   envol: 'Peut attaquer une créature accessible au sol ou en vol. Une attaque normale au sol ne peut pas la viser. Sans créature volante adverse accessible, elle peut aussi attaquer directement, sauf priorité applicable.',
-  infiltration: 'Peut attaquer directement même si des créatures adverses sont présentes, sauf priorité applicable. Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
+  infiltration: 'Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   furtif: 'Cette créature est détruite à la fin du tour où elle arrive en jeu.',

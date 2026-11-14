@@ -99,7 +99,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // les premières cartes d'Eau.
   'souk-1': ['pourfendeur-des-djinns', 'vent-rouge', 'samourai-du-torii', 'djinn-des-braises-voilees', 'djinn-de-la-premiere-etincelle'],
   'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge', 'djinn-de-la-flamme-mourante', 'djinn-de-la-fleche-ardente'],
-  'souk-3': ['djinn-des-cendres-vengeresses', 'parade-du-verre', 'frappe-iaijutsu',
+  'souk-3': ['veilleur-des-cendres', 'djinn-des-cendres-vengeresses', 'parade-du-verre', 'frappe-iaijutsu',
     'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
@@ -116,7 +116,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'baton-des-citernes'],
-  'abysses-2': ['leviathan', 'scalde-des-runes'],
+  'abysses-2': ['leviathan', 'scalde-des-runes', 'appel-des-marees'],
   'abysses-3': ['bakunawa', 'valkyrie-au-corbeau', 'lance-de-givre'],
   'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc', 'le-cavalier-du-ressac-gele'],
   // Tour du Fjord — le Serment au complet.
@@ -131,7 +131,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Les quatre figures cross-éléments (Faucon, Lionne, Dame, Seigneur) montent
   // avec leurs mythiques tenebres — elles sont du même set.
   'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'porteur-de-la-plume', 'scarabee-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
-  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'veuve-des-urnes', 'gardien-des-sept-sceaux', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
+  'necropole-2': ['gardienne-des-derniers-noms', 'pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'veuve-des-urnes', 'gardien-des-sept-sceaux', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
   'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'lecteur-du-dernier-nom', 'les-feuillets', 'le-jugement-des-colosses', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher'],
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.

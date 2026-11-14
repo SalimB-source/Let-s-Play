@@ -1150,8 +1150,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.equal(embuscade.cost, 5);
   assert.deepEqual(embuscade.effet, {
     type: 'buff', atk: -2, def: -2, minimum: 1,
-    cible: 'creatures-adverses', blocageForce: 'tour', tours: 1,
-  }, 'seul son coût change');
+    cible: 'creatures-adverses', tours: 1,
+  }, 'le malus ne force plus de blocage');
 
   const eclair = cardById('eclair-du-marteau');
   assert.deepEqual(
@@ -4475,36 +4475,23 @@ test('Grand Voile blanc : les dégâts de combat du tour s’égarent dans le bl
   assert.equal(duel.brouillardCombat, false);
 });
 
-test('Appât de la meute : le défenseur doit déclarer le bloqueur forcé à la prochaine attaque du lanceur', () => {
-  const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 5);
-  donnerMana(duel, 'sorcier', 5);
-  donner(duel, 'sorcier', 'seigneur-des-machoires'); // 5/5
-  const seigneur = jouerGros(duel, 'sorcier').entite;
-  donner(duel, 'joueur', 'appat-de-la-meute');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'appat-de-la-meute', seigneur.id).ok, true);
-  donner(duel, 'joueur', 'chien-du-guet'); // 2/2
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-  chien.ready = true;
-  // Le marqueur n'assigne personne tout seul : sans déclaration du défenseur,
-  // le combat est refusé et ni l'attaque ni le marqueur ne sont consommés.
-  assert.equal(rpgBlocageForceValide(duel, 'joueur', [chien.id], { [chien.id]: [] }), false);
-  const sansDeclaration = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [] });
-  assert.equal(sansDeclaration.ok, false);
-  assert.equal(sansDeclaration.raison, 'blocage-force');
-  assert.equal(chien.attaquee, false, 'le refus ne consomme pas l’attaque');
-  assert.deepEqual(seigneur.blocageForce, { par: 'joueur', portee: 'attaque' },
-    'le refus ne dépense pas le marqueur');
-  // Côté IA, la déclaration est explicite : le Seigneur marqué est assigné
-  // avant la résolution, comme n'importe quel bloqueur choisi.
-  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]), { [chien.id]: [seigneur.id] },
-    'l’IA déclare le bloqueur forcé');
-  assert.equal(rpgBlocageForceValide(duel, 'joueur', [chien.id], { [chien.id]: [seigneur.id] }), true);
-  const res = rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [seigneur.id] });
+test('Ancien marqueur de blocage forcé : le défenseur doit encore déclarer son bloqueur', () => {
+  const duel = duelDeBase(); donnerMana(duel, 'joueur', 9); donnerMana(duel, 'sorcier', 9);
+  duel.tour = 'sorcier'; donner(duel, 'sorcier', 'chien-du-guet');
+  const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  bloqueur.blocageForce = { par: 'joueur', portee: 'attaque' };
+  duel.tour = 'joueur'; donner(duel, 'joueur', 'chien-du-guet');
+  const assaillant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  assaillant.ready = true; assaillant.malInvocation = false;
+  assert.equal(rpgBlocageForceValide(duel, 'joueur', [assaillant.id], {}), false);
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [assaillant.id], {}).raison, 'blocage-force');
+  assert.deepEqual(bloqueur.blocageForce, { par: 'joueur', portee: 'attaque' });
+  const declaration = rpgChoisirBloqueurs(duel, 'joueur', [assaillant.id]);
+  assert.deepEqual(declaration[assaillant.id], [bloqueur.id]);
+  const res = rpgLancerAttaque(duel, 'joueur', [assaillant.id], declaration);
   assert.equal(res.ok, true);
-  assert.deepEqual(res.resume.blocages[chien.id], [seigneur.id], 'le Seigneur marqué se jette devant le Chien');
-  assert.equal(res.resume.frappeSorcier, 0, 'l’attaque est bloquée de force');
-  assert.equal(seigneur.pv, 4, 'le Chien laisse 2 dégâts au Seigneur avant de tomber');
+  assert.deepEqual(res.resume.blocages[assaillant.id], [bloqueur.id]);
+  assert.equal(res.resume.frappeSorcier, 0);
 });
 
 test('Verglas : 1 dégât et gel de masse sur la table adverse', () => {
@@ -4592,42 +4579,26 @@ test('Défi du Jarl : le champion allié se bat avec la créature adverse ciblé
   assert.equal(seigneur.pv, 6, 'la Porteuse 0/3 ne rend aucun coup : le Seigneur reste intact');
 });
 
-test('Embuscade : -2/-2 jamais sous 1/1, et toute la table adverse doit bloquer ce tour', () => {
-  const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 8);
-  donnerMana(duel, 'sorcier', 8);
-  donner(duel, 'sorcier', 'seigneur-des-machoires'); // 5/5
-  donner(duel, 'sorcier', 'chien-du-guet'); // 2/2
-  const seigneur = jouerGros(duel, 'sorcier').entite;
+test('Embuscade : -2/-2 jamais sous 1/1, sans blocage forcé', () => {
+  const duel = duelDeBase(); donnerMana(duel, 'joueur', 9); donnerMana(duel, 'sorcier', 9);
+  duel.tour = 'sorcier'; donner(duel, 'sorcier', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  donner(duel, 'joueur', 'embuscade');
+  duel.tour = 'joueur'; donner(duel, 'joueur', 'embuscade');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
-  assert.deepEqual([chien.atk, chien.def, chien.pv], [1, 1, 1],
-    'le Chien 2/2 tombe à 1/1 : jamais sous le plancher');
-  assert.deepEqual([seigneur.atk, seigneur.def, seigneur.pv], [4, 4, 4], 'le Seigneur 6/6 devient 4/4');
+  assert.deepEqual([chien.atk, chien.def, chien.pv], [1, 1, 1]);
+  assert.equal(chien.blocageForce, null);
   donner(duel, 'joueur', 'chien-du-guet');
   const assaillant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-  assaillant.ready = true;
-  // Comme pour l’Appât, le défenseur déclare ses bloqueurs forcés : le moteur
-  // refuse une affectation vide, et l’IA assigne les deux créatures marquées.
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [assaillant.id], { [assaillant.id]: [] }).raison,
-    'blocage-force');
-  const declaration = rpgChoisirBloqueurs(duel, 'joueur', [assaillant.id]);
-  assert.deepEqual(new Set(declaration[assaillant.id]), new Set([seigneur.id, chien.id]),
-    'l’IA déclare les deux bloqueurs forcés');
-  const res = rpgLancerAttaque(duel, 'joueur', [assaillant.id], declaration);
-  assert.equal(res.ok, true);
-  assert.equal(res.resume.blocages[assaillant.id].length, 2,
-    'les deux créatures adverses doivent se jeter devant l’assaillant');
-  rpgFinDeTour(duel); // fin du tour : le marqueur « ce tour » s’efface
-  for (const entite of duel.sorcier.creatures) {
-    assert.equal(entite.blocageForce, null, `${entite.name} n’est plus forcée de bloquer`);
-  }
+  assaillant.ready = true; assaillant.malInvocation = false;
+  assert.equal(rpgBlocageForceValide(duel, 'joueur', [assaillant.id], {}), true);
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [assaillant.id], {}).ok, true);
+  rpgFinDeTour(duel);
+  assert.deepEqual([chien.atk, chien.pv, chien.pvMax], [2, 2, 2]);
 });
 
-test('Embuscade force un multi-blocage : la page précalcule la répartition, « Accepter les blocages » reste cliquable', () => {
-  // Le scénario du blocage (rapporté en partie) : Embuscade force TOUTE la
-  // table adverse à bloquer ; l’IA interpose donc quatre créatures sur un seul
+test('Ancien multi-blocage : la page précalcule la répartition, « Accepter les blocages » reste cliquable', () => {
+  // Un combat sauvegardé peut encore forcer toute la table à bloquer ;
+  // l’IA interpose donc quatre créatures sur un seul
   // attaquant. La page créait son combat avec `repartitions: {}` — la porte
   // `repartitionValide` (somme des parts === force de l’attaquant dès
   // 2 bloqueurs) ne pouvait alors jamais s’ouvrir : le bouton
@@ -4636,15 +4607,17 @@ test('Embuscade force un multi-blocage : la page précalcule la répartition, «
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 9);
   donnerMana(duel, 'sorcier', 9);
-  donner(duel, 'joueur', 'geant-des-banquises'); // 5 ATK
-  const geant = rpgJouerCreature(duel, 'joueur', 'geant-des-banquises').entite;
-  geant.ready = true;
+  donner(duel, 'joueur', 'chien-du-guet');
+  const geant = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  geant.atk = 5; geant.ready = true; geant.malInvocation = false;
+  duel.tour = 'sorcier';
   for (let i = 0; i < 4; i += 1) {
+    duel.sorcier.invocationNormaleJouee = false;
     donner(duel, 'sorcier', 'chien-du-guet');
     rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
   }
-  donner(duel, 'joueur', 'embuscade');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
+  duel.tour = 'joueur';
+  for (const entite of duel.sorcier.creatures) entite.blocageForce = { par: 'joueur', portee: 'tour' };
   assert.equal(rpgOuvrirFenetreReponse(duel, 'joueur'), true);
 
   const ids = [geant.id];
@@ -4664,7 +4637,7 @@ test('Embuscade force un multi-blocage : la page précalcule la répartition, «
   // La page doit donc précalculer le partage (quotient + reste, comme le
   // moteur) dès la déclaration de l’attaque — au camp attaquant « joueur ».
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-  const debutLancer = page.indexOf('const lancerAttaque = () => {');
+  const debutLancer = page.indexOf('const lancerAttaque = (');
   const finLancer = page.indexOf('const declarerAttaqueAvecTous =', debutLancer);
   const lancer = page.slice(debutLancer, finLancer);
   assert.match(lancer, /repartitions: recalculerRepartitions\(ids, blocages, 'joueur'\)/,
@@ -4700,7 +4673,7 @@ test('le plein art du Serment est livré : trente cartes Neige dédiées, aucune
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 37, 'les cartes Neige comprennent la tempête bicolore');
+  assert.equal(cartesNeige.length, 38, 'les cartes Neige comprennent la tempête bicolore');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -4776,7 +4749,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 37, 'les peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 38, 'les peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers joue les Vikings neige/eau ; sa recette Neige reste testable', () => {

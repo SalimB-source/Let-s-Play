@@ -510,7 +510,7 @@ for (const [id, name] of [['valkyrie-des-neuf-nuits', 'Valkyrie des neuf nuits']
   }
 });
 
-test('Appât displays its forced blocker and the AI obeys during combat', async () => {
+test('Appât affaiblit la cible sans afficher de blocage forcé', async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -519,7 +519,6 @@ test('Appât displays its forced blocker and the AI obeys during combat', async 
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
-    const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => { duel = voiesLateralesBlessees(engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige', 'braise'], sorcierCouleurs: ['braise'], rng: () => .5 })); return duel; };
     const props = { onQuitter: () => {}, initialiser };
@@ -528,28 +527,17 @@ test('Appât displays its forced blocker and the AI obeys during combat', async 
     const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
     const ok = (result) => assert.equal(result.ok, true, JSON.stringify(result));
     await click(document.querySelector('.moba__mulligan .moba__primary'));
-    ok(rpgChoisirCouleurMana(duel, 'joueur', 'braise'));
-    duel.joueur.mana.braise = 10;
-    const attacker = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
-    ok(engine.rpgMobaTerminerTour(duel, 'joueur')); ok(engine.rpgMobaPasserFinDeTour(duel, 'sorcier'));
-    duel.sorcier.mana.braise = 10; duel.sorcier.main = ['ashigaru-des-braises'];
-    const blocker = engine.rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-    ok(engine.rpgMobaTerminerTour(duel, 'sorcier')); ok(engine.rpgMobaPasserFinDeTour(duel, 'joueur'));
-    ok(rpgChoisirCouleurMana(duel, 'joueur', 'neige'));
-    duel.joueur.mana.neige = 10; duel.joueur.main = ['appat-de-la-meute']; duel.sorcier.main = [];
+    duel.tour = 'sorcier'; duel.sorcier.mana.braise = 10; duel.sorcier.main = ['ashigaru-des-braises'];
+    const cible = engine.rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+    duel.tour = 'joueur'; duel.joueur.mana.neige = 10; duel.joueur.main = ['appat-de-la-meute']; duel.sorcier.main = [];
     await act(async () => root.render(React.createElement(Board, props)));
     await click(document.querySelector('.moba__hand .moba__card'));
     await click([...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').includes('cible de magie')));
     assert.equal(duel.mobaSortEnAttente?.carteId, 'appat-de-la-meute');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.mobaSortEnAttente, null);
-    assert.ok(document.querySelector('[aria-label*="Doit bloquer si possible"]'));
-    await click([...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.closest('.moba__side')?.textContent.includes('Vous') && b.getAttribute('aria-label').startsWith('Ashigaru')));
-    await click([...document.querySelectorAll('.moba__controls button')].find((b) => b.textContent.includes('Déclarer')));
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
-    assert.equal(duel.combatDeclare, null); assert.equal(duel.sorcier.creatures.includes(blocker), false);
-    assert.equal(duel.joueur.creatures.includes(attacker), false);
-    assert.equal(duel.moba.lanes[0].hp.sorcier, 10);
+    assert.equal(cible.atk, 0); assert.equal(cible.blocageForce, null);
+    assert.equal(document.querySelector('[aria-label*="Doit bloquer si possible"]'), null);
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;

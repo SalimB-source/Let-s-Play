@@ -8,6 +8,7 @@ export function rpgMobaCartePourApercu(carte) {
   if (!carte) return carte;
   // Les fiches doivent conserver le timing propre au MOBA pour les renvois.
   carte = { ...carte, presentationCombatMoba: true };
+  if (carte.id === 'embuscade') return { ...carte, text: 'Sorcellerie — Dans la voie choisie, les créatures adverses gagnent -2/-2 jusqu’à la fin du tour, sans descendre sous 1/1. Les voies partagées du centre conquis comptent aussi.' };
   if (carte.id === 'sandales-de-tislit') return { ...carte, donne: { ...carte.donne, rapidite: false },
     bonus: { ...carte.bonus, atk: 1, def: 1 },
     text: 'Arme — Le porteur gagne +1/+1 en MOBA. Se joue uniquement pendant votre tour.' };
@@ -40,7 +41,6 @@ export function rpgMobaNotesCarte(carte) {
 
   if (MOBA_EMBUSCADES_IMPRIMEES[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_EMBUSCADES_IMPRIMEES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
   if (MOBA_EMBUSCADES_CONDITIONS[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_EMBUSCADES_CONDITIONS[carte.id]} Invocation spéciale sans sacrifice et sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour.`);
-  if (['appat-de-la-meute', 'embuscade'].includes(carte.id)) notes.push('Injouable en MOBA : ce sort impose un blocage.');
   if (carte.provocation) notes.push('Provocation : priorité sur Défenseur si accessible ; +0/+1 par attaque qui la cible, jusqu’à la fin du tour.');
   if (carte.defenseur || carte.prioriteAttaqueRapide) notes.push('Défenseur : les attaques venant de sa voie doivent la viser en priorité si elle est accessible et qu’aucune Provocation accessible ne prime.');
   if (carte.envol || carte.furieGains?.envol) notes.push('Envol : peut viser les créatures accessibles au sol ou en vol ; sans ennemi volant accessible, peut aussi attaquer directement.');
