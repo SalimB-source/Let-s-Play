@@ -1,8 +1,9 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import RpgDuelPage, { RPG_RENDU_MOBA } from '../src/games/RpgDuelPage.jsx';
+import RpgDuelPage, { RPG_RENDU_MOBA, HoverCardPreview } from '../src/games/RpgDuelPage.jsx';
 import RpgMobaBoard from '../src/games/RpgMobaBoard.jsx';
-import { RPG_DECK_SOLEIL_ROUGE_BASE } from '../src/games/rpgCards.js';
+import { RPG_DECK_SOLEIL_ROUGE_BASE, cardById } from '../src/games/rpgCards.js';
+import { rpgMobaCartePourApercu } from '../src/games/rpgMobaPresentation.js';
 import { rpgJouerCreature } from '../src/games/rpgDuel.js';
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature } from '../src/games/rpgMobaLocal.js';
 import { installerDeckMaisonDeTest, lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
@@ -32,6 +33,29 @@ const outils = (assert, container) => {
   t.ouvrirRituel = async () => { await t.click(t.zone()); await t.click(t.face()); await t.click(t.preparer()); };
   return t;
 };
+
+export async function checkTextesApercuAscension(assert) {
+  const { container, root } = monter();
+  try {
+    for (const mode of ['duel', 'moba']) for (const id of ['retour-des-ensevelis', 'samourai-du-dragon-rouge', 'amiral-des-abysses']) {
+      const carte = mode === 'moba' ? rpgMobaCartePourApercu(cardById(id)) : cardById(id);
+      await act(async () => root.render(<HoverCardPreview carte={carte} />));
+      const regles = container.querySelector('.rpg-hover-card-preview__rules');
+      assert.ok(regles, `${mode} ${id} : effet visible`);
+      assert.doesNotMatch(regles.textContent, /sans Rapidité|invocation normale|ne peut pas attaquer ce tour|riposte aux attaques ciblées/i);
+      if (id === 'retour-des-ensevelis') assert.match(regles.textContent, /dernière créature Ténèbres non-Ascension.*coût imprimé 3 ou moins.*cimetière.*Une fois par tour, toutes copies confondues/);
+      if (id === 'samourai-du-dragon-rouge') {
+        assert.match(regles.textContent, /Rōnin du Soleil rouge.*Onna-musha des cendres/);
+        for (const cle of ['contreAttaque', 'esquive', 'defenseur']) assert.ok(container.querySelector(`[data-pastille="${cle}"]`), cle);
+      }
+      if (id === 'amiral-des-abysses') {
+        assert.match(regles.textContent, /piochez une carte/);
+        for (const cle of ['butin', 'abordage', 'bouclier']) assert.ok(container.querySelector(`[data-pastille="${cle}"]`), cle);
+      }
+    }
+    console.log('Textes Ascension : effets concis et mots-clés consultables en Duel et MOBA.');
+  } finally { await act(async () => root.unmount()); container.remove(); }
+}
 
 export async function checkAscensionDuel(assert, tactile = false) {
   Object.defineProperties(window, { innerWidth: { value: tactile ? 844 : 1440, configurable: true }, innerHeight: { value: tactile ? 390 : 900, configurable: true } });

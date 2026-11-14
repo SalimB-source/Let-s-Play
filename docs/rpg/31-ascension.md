@@ -61,6 +61,8 @@ Ce sont des cartes **de deck et de collection**, pas des Ascensions. Leurs
 effets produisent des **invocations spéciales**, sans accorder universellement
 une deuxième invocation normale. Chaque effet est limité à **une fois par
 nom et par tour**, toutes les copies de ce nom confondues.
+Les cartes indiquent leurs conditions propres sans répéter ces règles générales ;
+les mots-clés des Ascensions sont expliqués par leurs pastilles dans l’aperçu.
 
 | Soutien | Carte | Invocation spéciale |
 | --- | --- | --- |

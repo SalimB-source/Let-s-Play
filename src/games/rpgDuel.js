@@ -4922,7 +4922,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // pas à eux-mêmes.
       const camp = duel[cote];
       const convient = {
-        'magie-cimetiere': (id) => Boolean(magieById(id)),
+        'magie-cimetiere': (id) => {
+          const carte = magieById(id);
+          return Boolean(carte) && (!effet.exclureArmes || !carteEstArme(carte))
+            && (!Number.isFinite(effet.coutMax) || (Number.isFinite(carte.cost) && carte.cost <= effet.coutMax));
+        },
         'creature-cimetiere': (id) => {
           const carteAuCimetiere = duelCardById(id);
           return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)

@@ -8,7 +8,7 @@ export const RPG_ASCENSION_SUPPORT_CREATURES = Object.freeze([
     element: 'sable', set: 'ascension-soutiens', art: 'gardienne-des-sables-ensevelis',
     cost: 4, atk: 2, def: 4, rarity: 'rare', typeLine: 'Créature — Humaine · Gardienne',
     arrivee: { type: 'renfort-choisi', zone: 'cimetiere', coutMax: 3, ascensionAutorisee: true, bouclierRenfort: true },
-    text: 'Quand la Gardienne arrive : choisissez une créature de coût imprimé 3 ou moins dans votre cimetière et invoquez-la spécialement, si possible. Elle reçoit un bouclier avant que son effet d’arrivée se déclenche. Ce renfort ne consomme pas votre invocation normale ; sans Rapidité, il ne peut pas attaquer ce tour. Une fois par tour, toutes vos copies de la Gardienne confondues.',
+    text: 'À son arrivée : choisissez dans votre cimetière une créature de coût imprimé 3 ou moins et invoquez-la spécialement avec un bouclier avant son effet d’arrivée. Une fois par tour, toutes copies confondues.',
     flavor: 'Le désert garde les noms que les vivants ont oubliés.',
   }),
   Object.freeze({
@@ -17,7 +17,7 @@ export const RPG_ASCENSION_SUPPORT_CREATURES = Object.freeze([
     cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain · Éclaireur',
     arrivee: { type: 'renfort-ascension', zone: 'main', roles: [{ element: 'sable', cout: 2 }] },
-    text: 'Quand le Convoi arrive : invoquez spécialement la première créature Sable de coût imprimé 2 de votre main. Ce renfort ne consomme pas votre invocation normale. Sans Rapidité, il ne peut pas attaquer ce tour. Cet effet est limité à une fois par tour, toutes vos copies du Convoi confondues.',
+    text: 'À son arrivée : invoquez spécialement la première créature Sable de coût imprimé 2 de votre main. Une fois par tour, toutes copies confondues.',
     flavor: 'Il connaît les chemins que les scorpions empruntent sous le sable.',
   }),
 ]);
@@ -29,7 +29,7 @@ export const RPG_ASCENSION_SUPPORT_SPELLS = Object.freeze([
     cost: 3, rarity: 'inhabituelle', typeLine: 'Sorcellerie — Ténèbres',
     cibles: ['soi'], renfortUneFois: true,
     effet: { type: 'reanimation', element: 'tenebres', coutMax: 3, sansAscension: true, renfortAscension: true },
-    text: 'Réanimez la dernière créature Ténèbres de coût imprimé 3 ou moins de votre cimetière. Elle ne consomme pas votre invocation normale et, sans Rapidité, ne peut pas attaquer ce tour. Une fois par tour, toutes vos copies de ce sort confondues.',
+    text: 'Réanimez la dernière créature Ténèbres non-Ascension de coût imprimé 3 ou moins de votre cimetière. Une fois par tour, toutes copies confondues.',
     flavor: 'La procession n’attend pas que les tombeaux soient refermés.',
   }),
   Object.freeze({
@@ -41,7 +41,7 @@ export const RPG_ASCENSION_SUPPORT_SPELLS = Object.freeze([
       { type: 'djinn', element: 'braise', cout: 1 },
       { type: 'djinn', element: 'braise', cout: 3 },
     ] },
-    text: 'Invoquez spécialement depuis votre main votre premier Djinn Braise de coût imprimé 1, puis votre premier Djinn Braise de coût imprimé 3, s’ils sont présents et s’il reste de la place. Ces renforts ne consomment pas votre invocation normale. Sans Rapidité, ils ne peuvent pas attaquer ce tour. Une fois par tour, toutes vos copies de ce sort confondues.',
+    text: 'Invoquez spécialement depuis votre main jusqu’à deux Djinns Braise : le premier de coût imprimé 1, puis le premier de coût 3. Une fois par tour, toutes copies confondues.',
     flavor: 'Une étincelle appelle la flamme ; la flamme réclame un corps.',
   }),
   Object.freeze({
@@ -50,7 +50,7 @@ export const RPG_ASCENSION_SUPPORT_SPELLS = Object.freeze([
     cost: 4, rarity: 'rare', typeLine: 'Sorcellerie — Sable',
     cibles: ['soi'], renfortUneFois: true,
     effet: { type: 'renfort-ascension', zone: 'deck', roles: [{ type: 'elemental', element: 'sable', cout: 4 }] },
-    text: 'Invoquez spécialement le premier Élémental Sable de coût imprimé 4 rencontré depuis le dessus de votre pioche. Le reste de la pioche conserve son ordre. Ce renfort ne consomme pas votre invocation normale et, sans Rapidité, ne peut pas attaquer ce tour. Une fois par tour, toutes vos copies de ce sort confondues.',
+    text: 'Invoquez spécialement le premier Élémental Sable de coût imprimé 4 depuis le dessus de votre pioche. Une fois par tour, toutes copies confondues.',
     flavor: 'Le désert n’a jamais été immobile. Il attendait son heure.',
   }),
 ]);
