@@ -340,6 +340,7 @@
 .rpg-auto-preview .rpg-hover-card-preview .rpg-pastille--explicable { pointer-events: auto; }
 
 .rpg-pastille-bulle {
+  box-sizing: border-box;
   position: fixed;
   z-index: 5000;
   display: block;

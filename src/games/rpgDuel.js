@@ -1632,6 +1632,13 @@ function rpgInfligerSorcier(duel, cote, amount) {
 let uid = 0;
 const nextId = () => { uid += 1; return `entite-${uid}`; };
 
+/** Une simulation synchrone ne doit pas consommer d'identifiants de la vraie
+ * partie. Restaurer aussi en cas d'exception, sans toucher à l'état du duel. */
+export function rpgAvecCompteurEntitesIsole(simuler) {
+  const avant = uid;
+  try { return simuler(); } finally { uid = avant; }
+}
+
 export function rpgSyncCompteurEntites(duel) {
   if (!duel) return 0;
   let plusHaut = Number(duel.prochainUid) || 0;
@@ -5652,7 +5659,9 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
     return;
   }
   const adv = autre(cote);
-  const legales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+  const legales = duel[adv].creatures.filter((cible) => !rpgEstProtegee(cible, cardColors(carte))
+    && (!duel.moba || !entite?.mobaLane || mobaPartageVoie(duel.moba, cible.mobaLane, entite.mobaLane))
+    && (!duel.moba || duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, adv, voie.id) && voie.slots[adv].includes(cible.id))));
   if (!legales.length) {
     duel.log.push(`${carte.name} se dissipe : aucune créature adverse à frapper.`);
     return;
@@ -5660,8 +5669,11 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
   const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'capacite', carteId, null,
     { projectileSource: { cote, id: entite?.id } });
   if (cote === 'sorcier') {
-    const choix = choisirCibleAutoIA(duel, cote, { ...carte, arrivee: effet });
-    resoudre(legales.some((entite) => entite.id === choix) ? choix : legales[0].id);
+    // La politique classique évalue toute la table : ne lui présenter en
+    // MOBA que les créatures effectivement légales dans la voie du mort.
+    const vue = duel.moba ? { ...duel, [adv]: { ...duel[adv], creatures: legales } } : duel;
+    const choix = choisirCibleAutoIA(vue, cote, { ...carte, arrivee: effet });
+    resoudre(legales.some((candidate) => candidate.id === choix) ? choix : legales[0].id);
     return;
   }
   duel.destructionsEnAttente = duel.destructionsEnAttente ?? [];
@@ -9246,11 +9258,13 @@ function resoudreSite(duel, cote, entite, carte) {
     return;
   }
   duel.siteEnAttente = { cote, entiteId: entite.id, carteId: carte.id, recompense: 'bimini' };
-  if (cote === 'sorcier') {
+  if (cote === 'sorcier' && !duel.moba) {
     const cible = [...cibles].sort((a, b) =>
       ((b.atk ?? 0) + (b.pv ?? 0)) - ((a.atk ?? 0) + (a.pv ?? 0)))[0];
     rpgResoudreSiteCible(duel, cote, cible.id);
   } else {
+    // En MOBA les deux camps passent par l'adaptateur : le plateau peut
+    // déléguer le choix du sorcier à sa politique d'IA, comme pour le joueur.
     duel.log.push('La Source de Bimini est atteinte : choisissez une créature alliée à restaurer et consacrer.');
   }
 }

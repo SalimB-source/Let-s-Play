@@ -1247,11 +1247,13 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const clavierAnnonce = (event) => {
     if (event.key === 'Escape') { event.stopPropagation(); repondreAnnonce(); return; }
     if (event.key !== 'Tab') return;
-    const boutons = [...event.currentTarget.querySelectorAll('button:not(:disabled), a[href]')];
-    if (!boutons.length) return;
+    // La fiche défilante et ses pastilles sont focalisables avant les boutons.
+    // Les inclure dans la boucle pour qu'elles restent accessibles au clavier.
+    const elements = [...event.currentTarget.querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])')];
+    if (!elements.length) return;
     const actif = event.currentTarget.ownerDocument.activeElement;
-    if (event.shiftKey && actif === boutons[0]) { event.preventDefault(); boutons.at(-1).focus(); }
-    else if (!event.shiftKey && actif === boutons.at(-1)) { event.preventDefault(); boutons[0].focus(); }
+    if (event.shiftKey && actif === elements[0]) { event.preventDefault(); elements.at(-1).focus(); }
+    else if (!event.shiftKey && actif === elements.at(-1)) { event.preventDefault(); elements[0].focus(); }
   };
   useEffect(() => {
     if (!iaAgit || iaBloquee || duel.moba.centerChoice) return undefined;
@@ -1586,8 +1588,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
                 {tourbillons}
               </div>;
             }
+            const voieJouable = mobaVoieJouable(duel.moba, side, lane.id);
+            const libelleCase = !voieJouable ? ['VOIE FERMÉE', 'FERMÉE']
+              : !mayPlace ? ['EMPLACEMENT', 'LIBRE']
+                : carteReanimation ? ['RÉANIMER', 'RANIMER']
+                  : carteArmeVivante ? ['CRÉER LE CHIEN', 'CHIEN']
+                    : carteSite ? ['INSTALLER', 'SITE'] : ['INVOQUER', 'POSER'];
             const slot = <button type="button" data-ascension-material={ascensionSelection?.eligible ? entity.id : undefined} data-ascension-order={ascensionSelection?.numero || undefined} aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : undefined} aria-label={ascensionSelection?.label ?? label} title={entity ? cardById(entity.carteId)?.text || entity.name : undefined} className={`moba__slot${entity ? ' has-creature' : ' is-empty'}${rpgSouffreMalInvocation(entity) ? ' is-summoning-sick' : ''}${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${(cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id)) && id ? ' is-target' : ''}`} disabled={selectionAscension.rituel ? !ascensionSelection?.cliquable : destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur)} draggable={Boolean(!destruction && peutGlisserBloqueur)} onPointerDown={!destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined} onDragStart={!destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined} onDragEnd={finGlissement} onClick={action}>
-              {entity ? <><img src={cardArtEntite(entity)} alt="" /><span className="moba__slot-label"><b>{entity.name}</b><small><em>⚔ {entity.atk}</em><em>◆ {entity.pv}/{entity.pvMax}</em></small>{etats.length > 0 && <span className="moba__slot-states">{etats.join(' · ')}</span>}</span>{isAttacker && <span className="moba__slot-tag">ATTAQUE</span>}{isBlocked && <span className="moba__slot-tag">BLOQUE</span>}{isRapidTarget && <span className="moba__slot-tag">CIBLÉE</span>}</> : <span className="moba__empty-label"><i aria-hidden="true">{mayPlace ? '+' : '◇'}</i>{mobaVoieJouable(duel.moba, side, lane.id) ? (mayPlace ? (carteReanimation ? 'RÉANIMER' : carteArmeVivante ? 'CRÉER LE CHIEN' : carteSite ? 'INSTALLER' : 'INVOQUER') : 'EMPLACEMENT') : 'VOIE FERMÉE'}</span>}
+              {entity ? <><img src={cardArtEntite(entity)} alt="" /><span className="moba__slot-label"><b>{entity.name}</b><small><em>⚔ {entity.atk}</em><em>◆ {entity.pv}/{entity.pvMax}</em></small>{etats.length > 0 && <span className="moba__slot-states">{etats.join(' · ')}</span>}</span>{isAttacker && <span className="moba__slot-tag">ATTAQUE</span>}{isBlocked && <span className="moba__slot-tag">BLOQUE</span>}{isRapidTarget && <span className="moba__slot-tag">CIBLÉE</span>}</> : <span className="moba__empty-label" aria-hidden="true"><i>{mayPlace ? '+' : '◇'}</i><span className="moba__empty-label-long">{libelleCase[0]}</span><span className="moba__empty-label-short">{libelleCase[1]}</span></span>}
             </button>;
             return adieux.length ? <div className={`moba__ghost-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}<div className="moba__ghost-zone moba__ghost-zone--empty" aria-hidden="true">{adieux}</div>{sacrifice}{soutien}{tourbillons}</div> : <div className={`moba__plain-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}{sacrifice}{soutien}{tourbillons}</div>;
           })}</div>
@@ -1742,7 +1750,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
           </div>;
           return rendu?.HoverCardPreview
             ? <rendu.HoverCardPreview carte={carteAnnonce} cible={{ nom: cibleAnnonce }} variante="annonce" controls={commandes} />
-            : <div className="moba__announcement-fallback"><img src={cardArt(carteAnnonce)} alt="" /><div><small>CARTE ANNONCÉE</small><strong>{carteAnnonce.name}</strong><p>{carteAnnonce.text || 'Aucune capacité.'}</p><p>⌖ {cibleAnnonce}</p>{commandes}</div></div>;
+            : <div className="moba__announcement-fallback"><img src={cardArt(carteAnnonce)} alt="" /><div role="region" aria-label="Détails de la carte annoncée" tabIndex={0}><small>CARTE ANNONCÉE</small><strong>{carteAnnonce.name}</strong><p>{carteAnnonce.text || 'Aucune capacité.'}</p><p>⌖ {cibleAnnonce}</p>{commandes}</div></div>;
         })()}
       </div>
     </section>}

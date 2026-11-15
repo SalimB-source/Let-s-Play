@@ -237,6 +237,7 @@ export async function checkRpgTutorialEau(assert) {
     const panelLeft = Number.parseFloat(panel?.style.left ?? '0');
     assert.ok(panelLeft + 390 <= 534, `le panneau du tutoriel (${panelLeft}px) se place à gauche sans recouvrir l’annonce`);
     assert.equal(container.querySelector('.rpg-annonce-sort__pass')?.disabled, true, 'Laisser passer est désactivé quand la leçon demande de Répondre');
+    assert.equal(document.activeElement, container.querySelector('.rpg-annonce-sort__respond'), 'le focus va à la décision autorisée');
     await harnais.click(container.querySelector('.rpg-annonce-sort__respond'), 'Répondre');
     assert.equal(harnais.step(), 'contre-jouer', 'Répondre ouvre l’étape du contre');
     assert.equal(container.querySelector('.rpg-annonce-sort__compact-pass')?.disabled, true, 'Laisser passer compact reste désactivé à l’étape du contre');
@@ -362,6 +363,7 @@ export async function checkRpgTutorialAutresLecons(assert) {
     assert.equal(harnais.step(), 'annonce-tenebres');
     assert.equal(Boolean(container.querySelector('.rpg-tutorial__shade--full')), false, 'pas de voile plein écran sur l’annonce Ténèbres');
     assert.equal(container.querySelector('.rpg-annonce-sort__respond')?.disabled, true, 'Répondre est désactivé quand la leçon demande de Laisser passer');
+    assert.equal(document.activeElement, container.querySelector('.rpg-annonce-sort__pass'), 'le focus va à Laisser passer quand Répondre est désactivé');
     await harnais.click(container.querySelector('.rpg-annonce-sort__pass'), 'Laisser passer');
     for (let i = 0; i < 16 && harnais.step() !== 'shabtis'; i += 1) {
       await act(async () => { await wait(250); });

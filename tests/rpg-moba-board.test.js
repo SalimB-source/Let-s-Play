@@ -4415,3 +4415,51 @@ test('Sphère : le plateau annonce et sonorise le renvoi de l’attaquant ciblé
     globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('Source de Bimini : le plateau laisse l’IA choisir sa créature puis reprend son tour', async () => {
+  const server = await createServer({server: {middlewareMode: true, hmr: false}, appType: 'custom'});
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', {url: 'http://localhost/'});
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const {default: Board} = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const e = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const c = await server.ssrLoadModule('/src/games/rpgDuel.js');
+    let duel;
+    const initialiser = () => duel = e.rpgMobaNouveauDuel({joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5});
+    const props = {onQuitter: () => {}, initialiser};
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async (b) => { assert.ok(b); assert.equal(b.disabled, false); await act(async () => b.dispatchEvent(new dom.window.MouseEvent('click', {bubbles: true}))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    c.rpgFinDeTour(duel);
+    duel.sorcier.main = ['gardienne-des-portes-de-sable'];
+    const intacte = e.rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'right', 0).entite;
+    assert.ok(intacte);
+    c.rpgFinDeTour(duel); c.rpgFinDeTour(duel);
+    duel.sorcier.main = ['gardienne-des-portes-de-sable', 'source-de-bimini'];
+    const blessee = e.rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'right', 1).entite;
+    const source = e.rpgMobaJouerCreature(duel, 'sorcier', 'source-de-bimini', 'left', 0).entite;
+    assert.ok(blessee && source);
+    blessee.pv = blessee.def = 1; source.heures.restants = 1;
+    c.rpgFinDeTour(duel);
+    duel.joueur.main = []; duel.sorcier.main = []; duel.sorcier.deck = [];
+    await act(async () => root.render(React.createElement(Board, props)));
+    await click([...document.querySelectorAll('.moba__controls button')].find((b) => b.textContent.includes('Fin du tour')));
+    // L'IA passe d'abord la fenêtre de fin de tour, puis choisit la Source.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
+    assert.equal(duel.siteEnAttente?.entiteId, source.id);
+    assert.equal(duel.phase, 'debut');
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
+    assert.equal(duel.siteEnAttente, null);
+    assert.equal(duel.phase, 'principale');
+    assert.equal(blessee.atk, 4); assert.equal(blessee.pv, 7);
+    assert.equal(intacte.atk, 1); assert.equal(intacte.pv, 4);
+    assert.ok(e.rpgMobaPlacementCoherent(duel));
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

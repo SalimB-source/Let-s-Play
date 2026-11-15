@@ -48,7 +48,17 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
   assert.equal(texte('sentinelle-du-brasier'), '', 'Défenseur et Vol de vie sont déjà expliqués dans les pastilles');
   assert.equal(texte('faucon-du-zenith'), '', 'le Bouclier imprimé rejoint aussi sa pastille');
   assert.equal(texte('ifrit-al-ahmar'), '', 'le Bouclier élémentaire ne se répète pas');
-  assert.equal(texte('reanimation'), '', 'la même Réanimation, écrite dans un autre ordre, ne se répète pas');
+  for (const id of ['reanimation', 'reveil-de-la-horde']) {
+    assert.equal(texte(id), '', `${id} : le sort ne répète pas la règle de sa pastille`);
+    assert.match(effetsDetailles(cardById(id)).pastilles.find((p) => p.cle === 'reanimation').description,
+      /Choisissez une créature de votre cimetière et invoquez-la spécialement/, `${id} : le choix reste lisible dans la bulle`);
+  }
+  assert.match(texte('passeur-au-masque-de-chacal'), /À son arrivée : choisissez/, 'le déclencheur distinct reste visible');
+  assert.match(texte('retour-des-ensevelis'), /Ténèbres non-Ascension de coût imprimé 3 ou moins/, 'les restrictions restent visibles');
+  assert.match(texte('lettre-de-marque'), /prochaine créature.*seuil de son coût moins un.*Piochez une carte.*coût plein/,
+    'la durée, la pioche et le Lien de la Lettre restent sur la fiche');
+  assert.match(texte('grappin-d-abordage'), /À l’attachement.*coût inférieur ou égal à son coût imprimé/,
+    'le déclenchement et le seuil du Grappin restent sur la fiche');
   assert.equal(texte('nom-efface'), '', 'une phrase incluse dans la bulle Défausse disparaît');
   assert.equal(texte('maitre-du-marteau'), 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix.',
     'la Furie prêtant Envol et Overkill est déjà signalée par leurs pastilles');
@@ -137,7 +147,7 @@ test('toutes les variantes de preview ne redisent pas les effets de leurs pastil
       const condition = conditionEmbuscadeCourtePourApercu(carte);
       const pastille = dom.window.document.querySelector('.rpg-pastille[data-pastille="reactionTourAdverse"]');
       const cadre = dom.window.document.querySelector('.rpg-hover-card-preview__embuscade');
-      assert.ok(pastille?.getAttribute('aria-label')?.includes('pendant le tour adverse'), `${carte.id} : pastille de mécanique`);
+      assert.ok(pastille?.getAttribute('aria-label')?.includes('pendant votre phase principale'), `${carte.id} : pastille de mécanique actuelle`);
       assert.ok(!pastille?.getAttribute('aria-label')?.includes(conditionEmbuscadePourApercu(carte)),
         `${carte.id} : la pastille ne répète pas la condition`);
       assert.equal(cadre?.dataset.conditionEmbuscade, carte.conditionEmbuscade, `${carte.id} : ${variante || 'survol'}`);
@@ -153,9 +163,23 @@ test('toutes les variantes de preview ne redisent pas les effets de leurs pastil
     const rendre = (id) => new JSDOM(renderToStaticMarkup(React.createElement(HoverCardPreview, {
       carte: cardById(id), variante,
     }))).window.document;
-    const renaissance = rendre('reanimation');
-    assert.ok(renaissance.querySelector('[data-pastille="reanimation"]'));
-    assert.equal(renaissance.querySelector('.rpg-hover-card-preview__rules'), null, 'la Réanimation ne se réécrit pas sous sa pastille');
+    for (const id of ['reanimation', 'reveil-de-la-horde']) {
+      const renaissance = rendre(id);
+      const pastille = renaissance.querySelector('[data-pastille="reanimation"]');
+      assert.match(pastille?.getAttribute('aria-label') ?? '', /Choisissez une créature de votre cimetière et invoquez-la spécialement/,
+        `${id} : la bulle et son libellé accessible conservent la règle entière`);
+      assert.equal(renaissance.querySelector('.rpg-hover-card-preview__rules'), null, `${id} : pas de répétition sous la pastille`);
+    }
+    const passeur = rendre('passeur-au-masque-de-chacal');
+    assert.match(passeur.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /À son arrivée : choisissez/, 'la condition d’arrivée reste sur la fiche');
+    const retour = rendre('retour-des-ensevelis');
+    assert.match(retour.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Ténèbres non-Ascension de coût imprimé 3 ou moins/, 'les restrictions restent sur la fiche');
+    for (const [id, precision] of [['lettre-de-marque', /prochaine créature.*coût moins un/], ['grappin-d-abordage', /À l’attachement.*coût imprimé/]]) {
+      const fiche = rendre(id);
+      assert.match(fiche.querySelector('[data-pastille="abordage"]')?.getAttribute('aria-label') ?? '', /seuil et le moment indiqués sur la carte/,
+        `${id} : la description accessible n’invente pas de seuil`);
+      assert.match(fiche.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', precision, `${id} : sa règle propre reste lisible`);
+    }
     const salem = rendre('salem');
     assert.match(salem.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand Salem arrive/u);
     assert.doesNotMatch(salem.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /le prochain sort/u);

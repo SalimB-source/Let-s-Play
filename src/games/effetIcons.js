@@ -674,7 +674,9 @@ export const EFFET_DEFINITIONS = {
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
   poison: 'Quand cette créature blesse une créature, la victime perd 1 PV au début de chacun de ses deux prochains tours. Une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
-  abordage: (n) => `À son arrivée, cette créature prend en cale une créature adverse éligible de coût ${n ?? 'N'} ou moins. La prise ne déclenche pas de mort et ne peut pas être rachetée. Si le capteur meurt, elle revient en jeu avec ses statistiques de prise, sans effet d’arrivée ; s’il est renvoyé ou exilé, elle revient en main.`,
+  abordage: (n) => `${n == null
+    ? 'L’Abordage met une créature adverse éligible en cale, selon le seuil et le moment indiqués sur la carte.'
+    : `À son arrivée, cette créature prend en cale une créature adverse éligible de coût ${n} ou moins.`} La prise ne déclenche pas de mort et ne peut pas être rachetée. Si le capteur meurt, elle revient en jeu avec ses statistiques de prise, sans effet d’arrivée ; s’il est renvoyé ou exilé, elle revient en main.`,
   malediction: () => 'Tant qu’elle est en jeu, TOUTES les créatures du camp adverse perdent 2 points d’attaque (et aucun de défense). Aucune adjacence : une créature qui arrive après elle est maudite aussi. Le malus se lève si la dernière source quitte la table, et deux sources cumulent leurs malédictions.',
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
   prise: (n) => `Chaque fois qu’une créature est prise en cale, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
@@ -912,6 +914,15 @@ export function effetsDetailles(carte) {
 
   for (const pastille of pastilles) {
     if (MOTS_COMBAT_INDIVIDUEL.has(pastille.cle) || !pastille.description) pastille.description = definitionPastille(pastille);
+    // Pour les sorts de réanimation sans restriction, la phrase imprimée dit
+    // aussi que le joueur choisit la créature. La conserver dans la bulle évite
+    // de la répéter sur la fiche sans perdre ce choix. Les autres variantes
+    // gardent leur texte : déclencheur d'arrivée, coût ou type particuliers.
+    if (pastille.cle === 'reanimation' && carte?.kind === 'magie'
+      && carte.effet?.type === 'reanimation'
+      && brut === 'Choisissez une créature de votre cimetière et invoquez-la spécialement.') {
+      pastille.description = brut;
+    }
     if (pastille.cle === 'reactionTourAdverse' && rpgTexteConditionEmbuscade(carte)) {
       pastille.description = `Vous pouvez jouer cette carte pendant votre phase principale si sa condition est remplie : ${rpgTexteConditionEmbuscade(carte)} Sans sacrifice ni invocation normale ; sinon, invocation normale pendant votre tour.`;
     }

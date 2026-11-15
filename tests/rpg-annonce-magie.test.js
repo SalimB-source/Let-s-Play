@@ -76,6 +76,20 @@ for (const partage of [true, false]) {
       const modal = document.querySelector('.moba__card-announcement');
       assert.ok(modal?.classList.contains('rpg-annonce-sort--magie'));
       assert.match(modal.textContent, /Trait de braise/);
+      const fiche = modal.querySelector('[role="region"][aria-label="Détails de la carte annoncée"]');
+      assert.equal(fiche?.tabIndex, 0, 'la fiche peut être parcourue au clavier dans les deux rendus');
+      const repondre = modal.querySelector('.rpg-annonce-sort__respond');
+      const passer = modal.querySelector('.rpg-annonce-sort__pass');
+      const toucheTab = async (element, shiftKey = false) => {
+        const evenement = new dom.window.KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true });
+        await act(async () => { element.focus(); element.dispatchEvent(evenement); });
+        return evenement.defaultPrevented;
+      };
+      assert.equal(await toucheTab(repondre, true), false, 'Maj+Tab depuis Répondre peut atteindre la fiche et ses pastilles');
+      assert.equal(await toucheTab(passer), true, 'Tab depuis le dernier bouton boucle dans la fenêtre');
+      assert.equal(document.activeElement, fiche, 'la boucle revient à la fiche, premier élément focalisable');
+      assert.equal(await toucheTab(fiche, true), true, 'Maj+Tab depuis la fiche boucle vers la fin');
+      assert.equal(document.activeElement, passer);
       assert.ok(duel.mobaSortEnAttente, 'le sort attend une décision');
       await click(text('.moba__card-announcement button', 'Répondre'));
       assert.ok(duel.mobaSortEnAttente, 'répondre ne résout pas le sort');

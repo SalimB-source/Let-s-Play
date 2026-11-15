@@ -1,4 +1,5 @@
 import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
+import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
 import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
@@ -47,6 +48,7 @@ import {
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 import { candidatsRenfortChoisi, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
 import { armesPortees } from './rpgCardStacks.js';
+import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from './rpgCombatIndividuelClassique.js';
 // Accès différé au moteur (cycle d'import maîtrisé : aucune de ces fonctions
 // n'est appelée pendant l'évaluation des modules) — il s'agit ici de tester la
 // solvabilité réelle avec exactement les mêmes règles de paiement que le jeu.
@@ -546,8 +548,7 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     return meilleureCibleAmie(duel, cote, carte);
   }
   if (carte?.arrivee?.type === 'soin-creatures' && carte.arrivee.cible === 'creature-amie' && carte.arrivee.choisirCible) {
-    // Le soin d'arrivée de la Völva : la créature la plus ENTAMÉE, pas la plus
-    // chère — rendre 2 PV à une créature intacte ne rend rien.
+    // Le soin ciblé tient compte du contexte en duel classique.
     return meilleureCibleSoinIA(duel, cote, carte);
   }
   if (carte?.effet?.cible === 'creature-amie') {
@@ -660,24 +661,47 @@ function meilleureCibleAmie(duel, cote, carte) {
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
 
-/**
- * La créature alliée qu'un soin doit désigner : celle à qui il manque le plus
- * de points de vie. À égalité, la plus précieuse (`valeurEntite`) — mieux vaut
- * refermer la plaie d'une créature qui tient la ligne. Sans blessure à
- * refermer, la cible la plus précieuse reste un choix honnête : le soin se
- * perd, mais l'arrivée reste résolue.
- */
+/** Cible d'un soin d'arrivée : contexte tactique pour la Völva classique,
+ * PV manquants puis valeur pour les autres cas. */
 function meilleureCibleSoinIA(duel, cote, carte) {
   const couleurs = cardColors(carte);
-  return duel[cote].creatures
-    .filter((entite) => !estProtegee(entite, couleurs))
-    .map((entite) => {
-      const plafond = Number.isFinite(Number(entite.pvMax))
-        ? Number(entite.pvMax)
-        : Math.max(Number(entite.pv) || 0, Number(entite.def) || 0);
-      return { entite, manque: Math.max(0, plafond - (Number(entite.pv) || 0)), valeur: valeurEntite(entite) };
-    })
-    .sort((a, b) => (b.manque - a.manque) || (b.valeur - a.valeur))[0]?.entite.id ?? null;
+  const candidats = duel[cote].creatures.filter((entite) => !estProtegee(entite, couleurs));
+  if (carte.id === 'volva-soigneuse' && !duel.moba) {
+    // Comme pour le choix demandé par le joueur, comparer le soin réellement
+    // possible, l'attaque et une menace visible plutôt que les seuls PV perdus.
+    // Les cibles d'attaque sont celles du duel individuel classique ; les
+    // créatures adverses sont considérées au prochain tour, une fois prêtes.
+    const enemy = autre(cote);
+    return candidats.map((entite) => {
+      const pv = Number(entite.pv) || 0;
+      const soin = Math.min(Math.max(0, Number(carte.arrivee?.amount) || 0),
+        Math.max(0, plafondSoinCreature(entite) - pv));
+      const attaque = Math.min(10, Math.max(0, Number(entite.atk) || 0));
+      const prete = moteur.rpgPeutAttaquer(entite);
+      const defenseBase = Number(duelCardById(entite.carteId)?.def) || 0;
+      const furiePerdue = soin > 0 && defenseSansArmure(entite) + soin >= defenseBase
+        ? Math.max(0, Number(entite.furieBonusAtk) || 0) : 0;
+      const menace = soin > 0 && !entite.bouclierLumiere && duel[enemy].creatures.some((adversaire) => {
+        const force = Number(adversaire.atk) || 0;
+        return !adversaire.mur && !adversaire.nePeutPasAttaquer && !(adversaire.gelToursRestants > 0)
+          && !(adversaire.empecheAttaqueToursRestants > 0) && force >= pv && force < pv + soin
+          && rpgCiblesIndividuellesClassique(duel, enemy, adversaire.id).cibles.includes(entite.id);
+      });
+      const valeur = valeurEntite(entite);
+      // Une créature précieuse mérite aussi d'être consolidée, même si elle
+      // récupère moins de PV et perd temporairement son bonus de Furie.
+      const consolidation = soin > 0 ? Math.min(12, Math.max(0, valeur)) * (prete ? 0.45 : 0.1) : 0;
+      return { entite, valeur, score: soin * (1 + attaque * (prete ? 0.2 : 0.08))
+        + consolidation + (menace ? valeur * 2.5 : 0) + (soin > 0 && prete ? 0.5 : 0)
+        - furiePerdue * (prete ? 0.5 : 0.2) };
+    }).sort((a, b) => b.score - a.score || b.valeur - a.valeur)[0]?.entite.id ?? null;
+  }
+  return candidats.map((entite) => {
+    const plafond = Number.isFinite(Number(entite.pvMax))
+      ? Number(entite.pvMax)
+      : Math.max(Number(entite.pv) || 0, Number(entite.def) || 0);
+    return { entite, manque: Math.max(0, plafond - (Number(entite.pv) || 0)), valeur: valeurEntite(entite) };
+  }).sort((a, b) => (b.manque - a.manque) || (b.valeur - a.valeur))[0]?.entite.id ?? null;
 }
 
 /**
@@ -2042,8 +2066,13 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       score += 2.5;
     }
     if (arrivee.type === 'soin-creatures') {
-      // Yamina : chaque alliée récupère ses PV manquants, le sorcier aussi.
-      const soins = camp.creatures.reduce((total, entite) => total
+      // La Völva désigne une seule alliée : annoncer sa vraie cible et ne pas
+      // évaluer son soin comme une vague sur tout le plateau. Sans alliée,
+      // le moteur lui permet toujours de se viser elle-même à son arrivée.
+      if (carte.id === 'volva-soigneuse' && !duel.moba) cibleId = meilleureCibleSoinIA(duel, cote, carte);
+      const beneficiaires = carte.id === 'volva-soigneuse' && !duel.moba
+        ? camp.creatures.filter((entite) => entite.id === cibleId) : camp.creatures;
+      const soins = beneficiaires.reduce((total, entite) => total
         + Math.min(arrivee.amount ?? 0,
           Math.max(0, plafondSoinCreature(entite) - (entite.pv ?? 0))), 0);
       score += soins * 0.6 + Math.min(arrivee.etJoueur ?? 0, manquePv) * 0.8;
@@ -2251,6 +2280,60 @@ export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null)
   return null;
 }
 
+/** Dans un cas simple et sans allié, conserver un Djinn furtif en main si
+ * chacune de ses attaques résolues est sans effet matériel. Toute incertitude,
+ * carte pouvant préparer le combat, déclenchement ou changement de plateau
+ * laisse le choix habituel : on ne prédit ni les pioches ni les réponses. */
+function djinnSansEffetCeTour(duel, cote, carte) {
+  const camp = duel[cote];
+  if (duel.moba || duel.tour !== cote || duel.phase !== 'principale' || camp.creatures.length
+    || !carte.furtif || !carte.ephemere || !carte.rapidite || carte.arrivee || carte.destruction
+    || carte.honneur || carte.tenacite || carte.mortAlliee || sacrificesInvocation(carte, duel, cote)
+    // Une magie, une arme ou une invocation spéciale pourrait changer le plan.
+    || camp.main.some((id) => !duelCardById(id) || duelCardById(id)?.kind === 'site'
+      || (id !== carte.id && rpgCarteEmbuscade(id)))) return false;
+  try {
+    return moteur.rpgAvecCompteurEntitesIsole(() => {
+      const posee = copierDuelPourRecherche(duel);
+      let jetsPose = 0;
+      moteur.rpgReglerHasard(posee, () => { jetsPose += 1; return 0.5; });
+      const pose = moteur.rpgJouerCreature(posee, cote, carte.id);
+      if (!pose.ok || !pose.entite || !pose.entite.detruireFinDuTour || jetsPose
+        || !moteur.rpgPeutAttaquer(pose.entite)) return false;
+      const main = [...camp.main];
+      main.splice(main.indexOf(carte.id), 1);
+      const attendu = { ...camp, main, creatures: [pose.entite], invocationNormaleJouee: true };
+      const vueDuel = (etat) => {
+        const { joueur, sorcier, log, combatDeclare, combatFeed, combatAnimations, combatAnimationSeq, prochainUid, ...visible } = etat;
+        return visible;
+      };
+      if (JSON.stringify(attendu) !== JSON.stringify(posee[cote])
+        || JSON.stringify(duel[autre(cote)]) !== JSON.stringify(posee[autre(cote)])
+        || JSON.stringify(vueDuel(duel)) !== JSON.stringify(vueDuel(posee))) return false;
+      const choix = rpgCiblesIndividuellesClassique(posee, cote, pose.entite.id);
+      const cibles = [...(choix.directe ? [null] : []), ...choix.cibles];
+      if (!cibles.length) return false;
+      return cibles.every((cibleId) => {
+        const probe = copierDuelPourRecherche(posee);
+        let jets = 0;
+        moteur.rpgReglerHasard(probe, () => { jets += 1; return 0.5; });
+        if (!rpgDeclarerAttaqueIndividuelleClassique(probe, cote, pose.entite.id, cibleId).ok
+          || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets || moteur.rpgVainqueur(probe)) return false;
+        const survivant = probe[cote].creatures.find((e) => e.id === pose.entite.id);
+        const avant = survivant ? posee[cote] : { ...posee[cote], creatures: [],
+          cimetiere: [...posee[cote].cimetiere, carte.id] };
+        const apres = survivant ? { ...probe[cote], creatures: probe[cote].creatures.map((e) =>
+          e.id === pose.entite.id ? { ...e, attaquee: pose.entite.attaquee } : e) } : probe[cote];
+        return JSON.stringify(avant) === JSON.stringify(apres)
+          && JSON.stringify(posee[autre(cote)]) === JSON.stringify(probe[autre(cote)])
+          && JSON.stringify(vueDuel(posee)) === JSON.stringify(vueDuel(probe));
+      });
+    });
+  } catch {
+    return false;
+  }
+}
+
 /** Coups actuellement jouables, ordonnés par l'heuristique historique. */
 function candidatsCartesIA(duel, cote, options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
@@ -2263,10 +2346,17 @@ function candidatsCartesIA(duel, cote, options = {}) {
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
     if (exclus.has(carteId)) continue;
     if (carte.ascension && !ascensionDisponible(duel, cote, carte)) continue;
+    // En classique individuel la seconde phase principale vient après toutes
+    // les attaques : un furtif sans effet d'arrivée ne pourra pas frapper avant
+    // de disparaître. Ne pas écarter les arrivées ou les synergies de mort.
+    if (!duel.moba && duel.phase === 'principale2' && carte.furtif && carte.ephemere
+      && !carte.arrivee && !carte.destruction && sacrificesInvocation(carte, duel, cote) === 0
+      && !camp.creatures.some((e) => duelCardById(e.carteId)?.mortAlliee)) continue;
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
     if (!moteur.rpgPeutPayer(camp, carte) || !invocationPossible(duel, cote, carte)) continue;
+    if (!options.seulementInstants && djinnSansEffetCeTour(duel, cote, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees);
     if (!evaluation || !(evaluation.score > 0)) continue;
     const effet = effetLie(carte, lienSatisfait(carte, camp.creatures)) ?? {};
@@ -2389,6 +2479,61 @@ function rechercherMeilleureSuite(duel, cote, profil, profondeur, rng) {
   return meilleur;
 }
 
+/** Victoire en une attaque certaine, avec les règles classiques et si la
+ * réponse adverse est passée. Aucune carte piochée ou issue aléatoire n'est
+ * utilisée pour construire ce plan. */
+function victoireImmediateClassique(duel, cote, attaquants) {
+  for (const attaquant of attaquants.filter(moteur.rpgPeutAttaquer)) {
+    const choix = rpgCiblesIndividuellesClassique(duel, cote, attaquant.id);
+    for (const cibleId of [...(choix.directe ? [null] : []), ...choix.cibles]) {
+      const probe = copierDuelPourRecherche(duel);
+      let jets = 0;
+      moteur.rpgReglerHasard(probe, () => { jets += 1; return 0.5; });
+      if (!rpgDeclarerAttaqueIndividuelleClassique(probe, cote, attaquant.id, cibleId).ok
+        || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets
+        || probe.renfortChoixEnAttente || probe.arriveeEnAttente || probe.effetCreatureEnAttente
+        || probe.destructionsEnAttente?.length || probe.defausseEnAttente || probe.siteEnAttente
+        || probe.boualemEnAttente || probe.annonce || probe.combatDeclare) continue;
+      if (['joueur', 'sorcier'].some((camp) => JSON.stringify(probe[camp].main) !== JSON.stringify(duel[camp].main)
+        || JSON.stringify(probe[camp].deck) !== JSON.stringify(duel[camp].deck))) continue;
+      if (moteur.rpgVainqueur(probe) === cote) return true;
+    }
+  }
+  return false;
+}
+
+/** Donner la priorité à un Djinn prêt à gagner tout de suite plutôt que
+ * dépenser l'unique invocation sur une présence durable. Les effets d'arrivée,
+ * sacrifices et choix en attente restent soumis à la politique habituelle. */
+function djinnGagnantImmediat(duel, cote, candidats) {
+  if (duel.moba || duel.tour !== cote || duel.phase !== 'principale' || duel.brouillardCombat) return null;
+  const furtifs = candidats.filter((coup) => {
+    const carte = duelCardById(coup.carteId);
+    return carte?.furtif && carte.ephemere && carte.rapidite && !carte.arrivee
+      && !(coup.sacrificeIds?.length) && !sacrificesInvocation(carte, duel, cote);
+  });
+  if (!furtifs.length) return null;
+  try {
+    return moteur.rpgAvecCompteurEntitesIsole(() => {
+      // Ne pas dépenser une carte si une créature déjà présente peut conclure.
+      if (victoireImmediateClassique(duel, cote, duel[cote].creatures)) return null;
+      for (const coup of furtifs) {
+        const probe = copierDuelPourRecherche(duel);
+        let jets = 0;
+        moteur.rpgReglerHasard(probe, () => { jets += 1; return 0.5; });
+        const pose = moteur.rpgJouerCreature(probe, cote, coup.carteId, coup.cibleId);
+        if (!pose.ok || !pose.entite || jets || probe.renfortChoixEnAttente || probe.arriveeEnAttente
+          || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length || probe.defausseEnAttente
+          || probe.siteEnAttente || probe.boualemEnAttente || probe.annonce || probe.combatDeclare) continue;
+        if (victoireImmediateClassique(probe, cote, [pose.entite])) return coup;
+      }
+      return null;
+    });
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Le prochain coup du sorcier : la carte la plus utile avec sa cible, ou
  * null quand il n’a rien d’intéressant à faire. Les niveaux Normale et
@@ -2402,6 +2547,8 @@ export function choisirCarteIA(duel, cote, options = {}) {
   if (profil.tauxErreur > 0 && candidats.length > 1 && rng() < profil.tauxErreur) {
     return candidats[Math.floor(rng() * candidats.length)];
   }
+  const djinnGagnant = options.seulementInstants ? null : djinnGagnantImmediat(duel, cote, candidats);
+  if (djinnGagnant) return djinnGagnant;
   // Une magie rapide se choisit en réponse immédiate : pas de planification de
   // phase principale, le joueur attend déjà la réponse du sorcier.
   if (!profil.profondeur || options.seulementInstants) return candidats[0];
