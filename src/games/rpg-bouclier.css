@@ -1,47 +1,101 @@
 /*
  * L'écusson des créatures Défenseur — src/games/rpg-bouclier.css
  * ---------------------------------------------------------------
- * Un Défenseur porte un ÉCUSSON HÉRALDIQUE dessiné PAR-DESSUS sa carte, et
- * non plus une carte découpée. La face reste donc rigoureusement identique
- * aux autres : même rectangle, même rayon, MÊMES pastilles ATQ/DÉF, même
- * ligne de type, mêmes pierres d'effets. C'était la demande : la pointe doit
- * se voir, mais les statistiques ne doivent pas bouger.
+ * La carte Défenseur n'est PLUS un rectangle avec un dessin par-dessus : elle
+ * EST la silhouette de l'écusson. Il n'y a donc aucun coin rectangulaire qui
+ * dépasse, et AUCUN contour — ni `outline`, ni filet, ni `stroke`, ni bordure,
+ * ni ombre portée. C'est un aplat marine plein, comme la référence envoyée,
+ * avec l'illustration rognée à la même forme : arche haute, flancs droits,
+ * vraie pointe en V en bas.
  *
- * Le tracé est un SVG en `background-image` sur `::before` : arche haute,
- * flancs droits, puis deux courbes qui se rejoignent en une VRAIE POINTE au
- * centre du bas. La pointe est visible dans l'espace laissé libre entre les
- * deux pastilles ATQ et DÉF. Un filet or sur liseré marine le rend lisible
- * sur les illustrations claires comme sur les illustrations sombres.
+ * Le découpage passe par `mask-image` (SVG blanc sur fond transparent), pas
+ * par `clip-path` sur toute la carte : le masque est posé sur le fond et sur
+ * l'illustration, PAS sur les pastilles ATQ/DÉF, les pierres d'effets, le
+ * sonar rouge `has-garde` ni la pastille d'arme. Tous ces repères gardent
+ * exactement la place et la taille des autres cartes et peuvent déborder
+ * librement (`overflow: visible`).
  *
- * Aucun `border-radius` de découpe, aucun `clip-path`, aucune règle sur les
- * repères : le sonar rouge (`overflow-clip-margin: 58px`), les pierres qui
- * débordent du bord droit et la pastille d'arme restent intacts. `::before`
- * est au-dessus de l'illustration mais sous le titre et les statistiques
- * (`z-index: 1` contre 1 puis 2 pour eux, l'ordre du DOM faisant le reste).
+ * Les APERÇUS (survol et fiche catalogue ouverte) ne reçoivent pas la classe :
+ * ce sont des cartes rectangulaires normales, avec ATQ à gauche et DÉF à
+ * droite. Voir `rpgBouclier.js` et les composants qui posent la classe.
  */
 
 .rpg-carte-bouclier {
-  /* viewBox 100 × 125 = le 4:5 de la carte. Le tracé reste dans la face :
-     la pointe tombe à y = 124, entre les deux pastilles du bas. */
-  --rpg-ecusson-trait: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20125'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%2833,29,59%29'%20fill-opacity='0.10'%20stroke='rgb%2831,28,56%29'%20stroke-width='5'%20stroke-linejoin='round'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28224,205,138%29'%20stroke-width='2.2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* Masque 100 × 125 = le 4:5 de la carte. Blanc = visible, transparent =
+     coupé. Aucun trait : seule la silhouette compte. */
+  --rpg-ecusson-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20125'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3C/svg%3E");
+  --rpg-ecusson-fond: #211d3b;
+  position: relative;
+  /* Plus aucun rectangle : fond, cadre, bordure, rayon, ombre et outline. */
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  overflow: visible !important;
+  isolation: isolate;
 }
 
-/* Le même écusson sur toutes les présentations de la carte. */
-.rpg-card.rpg-carte-bouclier::before,
-.rpg-hand__card.rpg-carte-bouclier::before,
-.rpg-mulligan__card.rpg-carte-bouclier::before,
-.rpg-hover-card-preview__face.rpg-carte-bouclier::before,
-.rpg-card-catalogue__art.rpg-carte-bouclier::before,
-.rpg-atelier__carte-art.rpg-carte-bouclier::before,
-.rpg-card-guide__example.rpg-carte-bouclier::before,
-.rpg-souk__carte.rpg-carte-bouclier::before {
+/* L'aplat marine, découpé à la forme de l'écusson. Aucun stroke, aucun
+   `outline`, aucun `box-shadow` : c'est une silhouette pleine. */
+.rpg-carte-bouclier::before {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background-image: var(--rpg-ecusson-trait);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
+  z-index: 0;
+  background-color: var(--rpg-ecusson-fond);
+  -webkit-mask-image: var(--rpg-ecusson-masque);
+  mask-image: var(--rpg-ecusson-masque);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   pointer-events: none;
+}
+
+/* Tout ce qui peignait un fond rectangulaire sur la face suit le même masque :
+   illustration, calques de sang/givre, bandeaux de titre/type/texte, sonar,
+   reflets et voiles `::after`. Les pastilles et les pierres, elles, ne sont
+   PAS dans cette liste : elles restent à leur place habituelle. */
+.rpg-carte-bouclier > img,
+.rpg-card.rpg-carte-bouclier > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance),
+.rpg-carte-bouclier > :is(.rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set),
+.rpg-hand__card.rpg-carte-bouclier > :is(.rpg-hand__title, .rpg-hand__type, .rpg-hand__text, .rpg-hand__rarity),
+.rpg-card-catalogue__art.rpg-carte-bouclier > img,
+.rpg-atelier__carte-art.rpg-carte-bouclier > img,
+.rpg-card-guide__example.rpg-carte-bouclier .rpg-card-guide__art img,
+.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-art img,
+.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-reflet,
+.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-tampon,
+.moba__card.rpg-carte-bouclier .moba__card-art img,
+.rpg-carte-bouclier::after {
+  -webkit-mask-image: var(--rpg-ecusson-masque);
+  mask-image: var(--rpg-ecusson-masque);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  border-radius: 0 !important;
+}
+
+/* Le fond reste derrière l'illustration ; les voiles `::after` passent devant
+   elle mais restent SOUS les pastilles (z-index 2/4). */
+.rpg-carte-bouclier > img,
+.rpg-card.rpg-carte-bouclier > .rpg-card__img {
+  z-index: 0;
+}
+.rpg-carte-bouclier::before { z-index: 0; }
+.rpg-carte-bouclier::after { z-index: 1; }
+
+/* Le booster ouvre une scène 3D : son volume peignait un rectangle. On lui
+   retire fond, bordure et ombre ; l'art et le reflet sont déjà masqués. */
+.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-volume {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }

@@ -2,12 +2,17 @@
  * La face en bouclier des créatures Défenseur — src/games/rpgBouclier.js
  * ----------------------------------------------------------------------
  * Un Défenseur se repère déjà à son sonar rouge (`rpg-card__resonance--garde`)
- * et à sa pierre d'emblème (`i-defenseur`). Un ÉCUSSON héraldique est dessiné
- * par-dessus sa face (voir `rpg-bouclier.css`) : arche haute, flancs droits,
- * vraie pointe en bas. La carte ELLE-MÊME reste rectangulaire : ATQ/DÉF, type
- * et pierres gardent exactement la place et la taille des autres cartes.
- * La forme est portée par une seule classe, posée sur chaque présentation de
- * la carte par les composants qui la dessinent.
+ * et à sa pierre d'emblème (`i-defenseur`). Sa FACE devient l'ÉCUSSON lui-même
+ * (voir `rpg-bouclier.css`) : aplat marine plein, arche haute, flancs droits,
+ * vraie pointe en V, AUCUN contour et aucun rectangle qui dépasse. Le masque
+ * ne touche qu'au fond et à l'illustration : ATQ/DÉF, type, pierres et sonar
+ * gardent exactement la place et la taille des autres cartes.
+ *
+ * Exception demandée : les APERÇUS (survol et fiche catalogue ouverte) ne
+ * reçoivent PAS la classe et restent des cartes rectangulaires normales, avec
+ * ATQ à gauche et DÉF à droite. La classe est posée sur la table, la main, le
+ * mulligan, les vignettes du catalogue / atelier / guide / boosters et la main
+ * du MOBA.
  *
  * Deux sources pour le mot-clé :
  *   - la carte imprimée (`defenseur: true`, ou les anciens marqueurs

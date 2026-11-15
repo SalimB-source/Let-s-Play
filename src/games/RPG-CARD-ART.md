@@ -1954,18 +1954,20 @@ L’armure séparée retrouve une silhouette ouvragée et des veines de métal i
 ## L'écu des créatures Défenseur (novembre 2026)
 
 Les créatures et les héros qui portent **Défenseur** — imprimé sur la carte ou
-reçu en cours de partie — reçoivent un **écusson héraldique dessiné par-dessus
-leur face**, d'après la silhouette de référence : haut légèrement bombé, flancs
-droits, puis deux courbes qui se rejoignent en une vraie pointe au centre du
-bas. La pointe se lit dans l'espace libre entre les pastilles ATQ et DÉF.
+reçu en cours de partie — **deviennent l'écusson** : un aplat marine plein,
+arche haute, flancs droits, vraie pointe en V en bas. Il n'y a **ni rectangle
+qui dépasse, ni contour** : pas d'`outline`, pas de filet, pas de `stroke`, pas
+de bordure ni d'ombre portée. C'est la silhouette de référence, sans trait.
 
-La carte elle-même **reste rectangulaire** : contrairement à la première
-version, aucun `border-radius` de découpe, aucun `clip-path`, et surtout
-**aucune règle sur les repères**. Les pastilles ATQ/DÉF, la ligne de type et
-les pierres d'effets gardent exactement la taille et la position des autres
-cartes. Le tracé vit dans `rpg-bouclier.css` comme SVG en `background-image`
-sur `::before` (filet or sur liseré marine, `z-index: 1`) : le sonar rouge
-`has-garde`, les pierres qui débordent et la pastille d'arme restent donc
-visibles. `rpgBouclier.js` pose la classe sur la table, la main, le mulligan,
-l'aperçu, le catalogue, l'atelier, le guide, les boosters et la main du MOBA.
-Les sites, terrains, armes et sorts restent sans écusson.
+Le découpage vit dans `rpg-bouclier.css` comme `mask-image` SVG (blanc sur
+fond transparent), posé sur le fond `::before` et sur l'illustration — **pas**
+sur les repères. Les pastilles ATQ/DÉF, la ligne de type, les pierres d'effets,
+le sonar rouge `has-garde` et la pastille d'arme gardent donc exactement la
+taille et la position des autres cartes et peuvent déborder librement
+(`overflow: visible`).
+
+Exception demandée : les **aperçus** (survol et fiche catalogue ouverte) ne
+reçoivent pas la classe et restent des cartes rectangulaires normales, avec
+ATQ à gauche et DÉF à droite. `rpgBouclier.js` pose la classe sur la table, la
+main, le mulligan, les vignettes du catalogue / atelier / guide / boosters et
+la main du MOBA. Les sites, terrains, armes et sorts restent sans écusson.
