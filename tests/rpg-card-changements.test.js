@@ -195,8 +195,10 @@ test('Tour des Flots renvoie son attaquant après les blessures', () => {
   const d = duel();
   const attaquant = poser(d, 'joueur', 'chien-du-guet');
   d.sorcier.main.push('tour-des-flots');
+  d.tour = 'sorcier';
   const tour = rpgJouerCreature(d, 'sorcier', 'tour-des-flots').entite;
-  attaquant.ready = true; tour.ready = true;
+  d.tour = 'joueur';
+  attaquant.ready = true; attaquant.malInvocation = false; tour.ready = true; tour.malInvocation = false;
   rpgReglerHasard(d, () => 0.99);
   const result = rpgLancerAttaque(d, 'joueur', [attaquant.id], { [attaquant.id]: [tour.id] });
   assert.equal(result.ok, true);

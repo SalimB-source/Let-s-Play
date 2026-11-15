@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgLancerMagie, rpgResoudreArriveeCiblee } from '../src/games/rpgDuel.js';
+import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgLancerMagie, rpgResoudreArriveeCiblee, rpgReglerHasard, rpgRenvoisEnMain, rpgEmplacementsChamp } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique, rpgCibleIndividuelleClassiqueEncoreLegale, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from '../src/games/rpgCombatIndividuelClassique.js';
 
 function partie() {
@@ -146,16 +147,130 @@ test('la frappe directe est absorbée par le bouclier du sorcier', () => {
   assert.equal(r.resume.frappeSorcier, 3);
 });
 
-test('la Tour des Flots renvoie son adversaire avant les blessures ordinaires', () => {
-  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
-  a.atk = 8; const pv = c.pv;
-  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
-  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
-  assert.ok(r.ok); assert.equal(d.joueur.creatures.some(e => e.id === a.id), false);
-  assert.ok(d.joueur.main.includes(a.carteId)); assert.equal(c.pv, pv);
-  assert.deepEqual(r.resume.blessures, []);
+test('la Tour des Flots subit les blessures avant de renvoyer l’attaquant, des deux côtés et en PvP', () => {
+  for (const pvp of [false, true]) for (const cote of ['joueur', 'sorcier']) {
+    const d = partie(); d.pvp = pvp; d.tour = cote;
+    const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+    const a = poser(d, cote), c = poser(d, adv, 'tour-des-flots');
+    a.atk = 2; const pv = c.pv;
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, cote, a.id, c.id).ok);
+    const r = rpgResoudreAttaqueIndividuelleClassique(d, cote);
+    assert.ok(r.ok); assert.equal(c.pv, pv - 2);
+    assert.deepEqual(r.resume.blessures, [{ entiteId: c.id, sourceId: a.id, montant: 2 }]);
+    assert.ok(d.combatFeed.some(e => e.type === 'hit' && e.victim.id === c.id && e.amount === 2));
+    assert.ok(!d[cote].creatures.some(e => e.id === a.id));
+    assert.ok(d[cote].main.includes(a.carteId));
+    assert.ok(rpgRenvoisEnMain(d).some(e => e.entityId === a.id));
+    assert.ok(!rpgEmplacementsChamp(d[cote]).some(e => e?.id === a.id));
+    assert.ok(d.log.some(l => l.includes('renvoie') && l.includes('après les blessures')));
+  }
 });
 
+test('le renvoi libère sa case sans déplacer les autres créatures du plateau', () => {
+  const d = partie(); d.modeMana = RPG_MODE_MANA_ESSAI;
+  const a = poser(d, 'joueur'), voisine = poser(d, 'joueur'), tour = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 2; const caseAttaquant = a.emplacement, caseVoisine = voisine.emplacement;
+  assert.notEqual(caseAttaquant, caseVoisine);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, tour.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+  const cases = rpgEmplacementsChamp(d.joueur);
+  assert.equal(cases[caseAttaquant], null); assert.equal(cases[caseVoisine], voisine);
+  assert.equal(voisine.emplacement, caseVoisine); assert.equal(tour.pv, 2);
+});
+
+test('la Tour des Flots détruite renvoie quand même l’attaquant après le coup létal', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 8;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(r.resume.blessures[0].montant, 8);
+  assert.ok(d.sorcier.cimetiere.includes('tour-des-flots'));
+  assert.ok(d.joueur.main.includes(a.carteId));
+  const destruction = d.log.findIndex(l => l.includes('Tour des Flots est détruite'));
+  const renvoi = d.log.findIndex(l => l.includes('Tour des Flots renvoie'));
+  assert.ok(destruction >= 0 && renvoi > destruction);
+});
+
+test('la Tour des Flots ne renvoie pas un attaquant tué par les blessures de combat', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 2; a.pv = 1; c.atk = 2;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(c.pv, 2); assert.equal(r.resume.blessures.length, 2);
+  assert.ok(d.joueur.cimetiere.includes(a.carteId));
+  assert.ok(!d.joueur.main.includes(a.carteId));
+  assert.ok(!d.log.some(l => l.includes('Tour des Flots renvoie')));
+});
+
+test('une Tour et un attaquant détruits ensemble vont au cimetière, sans renvoi', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 8; a.pv = 1; c.atk = 2;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(r.resume.blessures.length, 2);
+  assert.ok(d.joueur.cimetiere.includes(a.carteId)); assert.ok(d.sorcier.cimetiere.includes(c.carteId));
+  assert.ok(!d.joueur.main.includes(a.carteId)); assert.deepEqual(rpgRenvoisEnMain(d), []);
+});
+
+test('le bouclier général conserve son comportement classique face au renvoi de la Tour', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 2; a.bouclier = 1;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(c.pv, 2); assert.equal(r.resume.blessures[0].montant, 2);
+  assert.ok(!d.joueur.creatures.includes(a)); assert.equal(a.bouclier, 1);
+  assert.ok(d.joueur.main.includes(a.carteId)); assert.ok(rpgRenvoisEnMain(d).some(e => e.entityId === a.id));
+});
+
+test('une Tour détruite par une capacité avant combat ne renvoie pas l’attaquant', () => {
+  const d = partie(), a = poser(d, 'joueur', 'vampire-des-braises'), c = poser(d, 'sorcier', 'tour-des-flots');
+  c.pv = 1;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(r.resume.effetsAvantCombat[0].entiteId, c.id);
+  assert.deepEqual(r.resume.blessures, []); assert.ok(d.joueur.creatures.includes(a));
+  assert.ok(d.sorcier.cimetiere.includes(c.carteId)); assert.deepEqual(rpgRenvoisEnMain(d), []);
+});
+
+test('le bouclier coloré anti-Eau ne bloque pas la capacité de la Tour des Flots', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 2; a.protection = { contre: 'eau', toursRestants: 2 };
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(c.pv, 2); assert.equal(r.resume.blessures[0].montant, 2);
+  assert.ok(!d.joueur.creatures.includes(a)); assert.ok(d.joueur.main.includes(a.carteId));
+  assert.ok(a.protection, 'le bouclier coloré ne bloque que les sorts');
+});
+
+test('une Attaque ciblée ne déclenche pas le renvoi au blocage de la Tour des Flots', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 2; a.coupRapide = true; rpgReglerHasard(d, () => .99);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(c.pv, 2); assert.ok(d.joueur.creatures.includes(a));
+  assert.ok(!d.joueur.main.includes(a.carteId));
+});
+
+test('la Sphère de rotation conserve son renvoi avant les blessures face à la Tour des Flots', () => {
+  const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier', 'tour-des-flots');
+  a.atk = 2; a.arme = { carteId: 'sphere-de-rotation', durabilite: 2 }; rpgReglerHasard(d, () => 0);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(c.pv, 4); assert.deepEqual(r.resume.blessures, []);
+  assert.ok(d.sorcier.main.includes('tour-des-flots')); assert.ok(d.joueur.creatures.includes(a));
+});
+
+test('le Cavalier de vapeur respecte aussi son renvoi après les blessures en duel individuel', () => {
+  const d = partie(), a = poser(d, 'joueur');
+  a.atk = 1; a.pv = 20; d.tour = 'sorcier'; d.sorcier.main.push('le-cavalier-de-vapeur');
+  const pose = rpgJouerCreature(d, 'sorcier', 'le-cavalier-de-vapeur', a.id);
+  assert.ok(pose.ok); const c = pose.entite; d.tour = 'joueur';
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
+  const pv = c.pv;
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok); assert.equal(c.pv, pv - 1); assert.equal(r.resume.blessures[0].montant, 1);
+  assert.ok(d.joueur.main.includes(a.carteId));
+});
 
 test('une Invocation spéciale est interdite en fin de tour adverse même si sa condition est remplie', () => {
   const d = partie(); d.tour = 'sorcier';
