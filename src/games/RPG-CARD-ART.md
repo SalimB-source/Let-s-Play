@@ -1959,25 +1959,31 @@ arche haute, flancs droits, vraie pointe en V en bas. Il n'y a **aucun
 rectangle qui dépasse**.
 
 Le look reprend la **Provocation / Taunt de Hearthstone** (capture envoyée par
-le joueur) : un **cadre acier biseauté** — dégradé métal clair en haut à
-gauche, gorge sombre au milieu, filet de lumière — et deux **ailettes
-métalliques** qui dépassent à gauche et à droite vers le milieu de la carte.
-Une fine **bordure de `--rpg-frame-color`** (la couleur de l'élément, comme le
-cadre des autres cartes) reste visible en liseré autour de l'acier, et une
-**ombre portée** `filter: drop-shadow()` suit l'alpha de l'écu et des ailettes.
-Aucun `outline`, aucun `box-shadow` de boîte, aucun cadre rectangulaire.
+le joueur), dans une version **affinée** : un **cadre acier biseauté** plus fin
+— dégradé métal clair en haut à gauche, gorge sombre, filet de lumière et
+reflet sur le dôme. Les deux **ailettes / rectangles d'acier** qui dépassaient
+sur les côtés ont été **retirés** à la demande du joueur. Une fine **bordure de
+`--rpg-frame-color`** (la couleur de l'élément, comme le cadre des autres
+cartes) reste visible en liseré autour de l'acier, et une **ombre portée**
+`filter: drop-shadow()` suit l'alpha de l'écu. Aucun `outline`, aucun
+`box-shadow` de boîte, aucun cadre rectangulaire.
 
-Les quatre SVG de `rpg-bouclier.css` partagent le viewBox `-10 -2 120 129` :
-les 10 unités de marge latérale sont la place des ailettes, tandis que le tracé
-de l'écu ne bouge pas (pointe `50 124`) — aplat, masque, cadre et illustration
-restent donc alignés. Le masque (blanc sur fond transparent) est posé sur
-l'aplat et sur l'illustration, **pas** sur les repères : les pastilles ATQ/DÉF,
-la ligne de type, les pierres d'effets, le sonar rouge `has-garde` et la
-pastille d'arme gardent exactement la taille et la position des autres cartes
-et peuvent déborder librement (`overflow: visible`).
+Les quatre SVG de `rpg-bouclier.css` partagent le viewBox **`-5 -5 110 137`**.
+Ce n'est plus la place des ailettes, mais une marge de respiration : le tracé
+s'arrête à la pointe `50 124` et le trait du cadre descend jusqu'à 128, alors
+que le viewBox va jusqu'à 132 — la **pointe du bas n'est donc pas coupée**, et
+le haut / la gauche / la droite ont la même marge de 5 unités. Le tracé de
+l'écu ne bouge pas : aplat, masque, cadre et illustration restent alignés. Le
+masque (blanc sur fond transparent) est posé sur l'aplat et sur l'illustration,
+**pas** sur les repères : les pastilles ATQ/DÉF, la ligne de type, les pierres
+d'effets, le sonar rouge `has-garde` et la pastille d'arme gardent exactement
+la taille et la position des autres cartes et peuvent déborder librement
+(`overflow: visible`).
 
-Exception demandée : les **aperçus** (survol et fiche catalogue ouverte) ne
-reçoivent pas la classe et restent des cartes rectangulaires normales, avec
-ATQ à gauche et DÉF à droite. `rpgBouclier.js` pose la classe sur la table, la
-main, le mulligan, les vignettes du catalogue / atelier / guide / boosters et
-la main du MOBA. Les sites, terrains, armes et sorts restent sans écusson.
+Exception demandée : la **main**, le **mulligan**, la **main du MOBA** et les
+**aperçus** (survol + fiche catalogue ouverte) ne reçoivent pas la classe et
+restent des cartes rectangulaires normales, avec ATQ à gauche et DÉF à droite
+— comme dans Hearthstone, où la Provocation ne se voit que sur le plateau.
+`rpgBouclier.js` pose donc la classe sur la table et les vignettes du catalogue
+/ atelier / guide / boosters. Les sites, terrains, armes et sorts restent sans
+écusson.

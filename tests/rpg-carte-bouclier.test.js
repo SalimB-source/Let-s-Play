@@ -1,12 +1,13 @@
 /**
  * L'écusson des créatures Défenseur — tests/rpg-carte-bouclier.test.js
  * ----------------------------------------------------------------------
- * Vérifie, sans navigateur : qui reçoit l'écusson, que le cadre acier biseauté
- * et les deux ailettes « Provocation » de Hearthstone suivent la silhouette,
- * avec un liseré de la couleur de l'élément et une ombre portée (aucun
- * rectangle, aucun `outline`, aucun `box-shadow` de boîte), que les repères
- * (ATQ/DÉF, type, pierres, sonar) ne sont pas touchés, et que les APERÇUS
- * restent des cartes rectangulaires normales avec ATQ à gauche / DÉF à droite.
+ * Vérifie, sans navigateur : qui reçoit l'écusson, que le cadre acier AFFINÉ
+ * suit la silhouette SANS ailettes et SANS couper la pointe du bas, avec un
+ * liseré de la couleur de l'élément et une ombre portée (aucun rectangle,
+ * aucun `outline`, aucun `box-shadow` de boîte), que les repères (ATQ/DÉF,
+ * type, pierres, sonar) ne sont pas touchés, et que MAIN, MULLIGAN, MAIN MOBA
+ * et APERÇUS restent des cartes rectangulaires normales avec ATQ à gauche /
+ * DÉF à droite.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,6 +25,14 @@ const css = lire('rpg-bouclier.css');
 const battleCss = lire('rpg-battle.css');
 const mobileCss = lire('rpg-mobile.css');
 const duel = lire('RpgDuelPage.jsx');
+
+/** Les quelques lignes qui suivent un marqueur, pour tester un bloc JSX. */
+const blocApres = (source, marqueur, taille = 18) => {
+  const lignes = source.split('\n');
+  const i = lignes.findIndex((l) => l.includes(marqueur));
+  assert.ok(i >= 0, `${marqueur} existe`);
+  return lignes.slice(i, i + taille).join('\n');
+};
 
 test('seules les créatures et les héros Défenseur deviennent des écus', () => {
   const gardien = cardById('gardien-de-la-porte-ardente');
@@ -53,17 +62,22 @@ test('seules les créatures et les héros Défenseur deviennent des écus', () =
   for (const carte of imprimees) assert.equal(classeBouclier(carte), CLASSE_BOUCLIER, carte.id);
 });
 
-test('la classe est posée sur les faces en jeu, mais PAS sur les aperçus', () => {
+test('la classe est posée sur le plateau et les vignettes, PAS sur la main ni les aperçus', () => {
   assert.match(duel, /import '\.\/rpg-bouclier\.css';/, 'la feuille est chargée par le duel');
   assert.match(duel, /classeBouclier\(carte, entite\)/, 'la table lit l’état courant de l’entité');
-  // Main, mulligan et vignette du catalogue : l'aperçu au survol est retiré.
-  assert.equal((duel.match(/classeBouclier\(carte\)/g) ?? []).length, 3,
-    'main, mulligan et catalogue portent la classe ; plus l’aperçu');
+  // Une seule classe « carte seule » : la vignette du catalogue. La main, le
+  // mulligan et l'aperçu au survol ne la posent plus.
+  assert.equal((duel.match(/classeBouclier\(carte\)/g) ?? []).length, 1,
+    'seule la vignette du catalogue porte la classe');
+  assert.doesNotMatch(blocApres(duel, "'rpg-mulligan__card'"), /classeBouclier/,
+    'le mulligan reste une carte rectangulaire normale');
+  assert.doesNotMatch(blocApres(duel, "'rpg-hand__card rpg-hand__card--img'"), /classeBouclier/,
+    'la main reste une carte rectangulaire normale');
   const ligneApercu = duel.split('\n').find((l) => l.includes('className={`rpg-hover-card-preview__face'));
   assert.ok(ligneApercu, 'la face d’aperçu existe');
   assert.doesNotMatch(ligneApercu, /classeBouclier/, 'l’aperçu reste une carte rectangulaire normale');
+  assert.doesNotMatch(lire('RpgMobaBoard.jsx'), /classeBouclier/, 'la main du MOBA reste normale');
   assert.match(lire('RpgDeckAtelier.jsx'), /classeBouclier\(carte\)/, 'vignette de l’atelier');
-  assert.match(lire('RpgMobaBoard.jsx'), /classeBouclier\(card\)/, 'main du MOBA');
   assert.match(lire('RpgBoosterOuverture.jsx'), /classeBouclier\(carte\)/, 'carte révélée au Souk');
   assert.match(lire('RpgCardGuide.jsx'), /classeBouclier\(carte\)/, 'fiche du guide');
   // La feuille est chargée par chaque écran qui peut s'ouvrir seul.
@@ -98,9 +112,7 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
   } finally { await vite.close(); }
 });
 
-test('la carte EST l’écusson : cadre acier, ailettes, liseré d’élément, ombre, aucun rectangle', () => {
-  // Quatre SVG, un seul tracé et un seul viewBox élargi : les marges latérales
-  // sont la place des ailettes « Provocation » de Hearthstone.
+test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe non coupée', () => {
   const svgDe = (nom) => {
     const ligne = css.split('\n').find((l) => l.includes(`${nom}:`));
     assert.ok(ligne, `${nom} existe`);
@@ -115,27 +127,34 @@ test('la carte EST l’écusson : cadre acier, ailettes, liseré d’élément, 
     ['aplat', aplat], ['masque', masque], ['cadre', cadreMasque], ['acier', acier],
   ]) {
     assert.match(svg, /^<svg /, `${nom} est un SVG`);
-    assert.match(svg, /viewBox='-10 -2 120 129'/, `marges des ailettes dans ${nom}`);
+    assert.match(svg, /viewBox='-5 -5 110 137'/, `marges de respiration dans ${nom}`);
     assert.match(svg, /50 124/, `pointe en V dans ${nom}`);
+    // Le viewBox doit contenir TOUT le trait autour de la pointe (8 / 2 = 4).
+    const [minX, minY, largeur, hauteur] = svg.match(/viewBox='([^']+)'/)[1].split(' ').map(Number);
+    const demiTrait = 4;
+    assert.ok(minY + hauteur > 124 + demiTrait, `${nom} : marge sous la pointe (bas ${minY + hauteur} > 128)`);
+    assert.ok(minY < 1 - demiTrait, `${nom} : marge au-dessus du dôme`);
+    assert.ok(minX < 1 - demiTrait, `${nom} : marge à gauche`);
+    assert.ok(minX + largeur > 99 + demiTrait, `${nom} : marge à droite`);
   }
   assert.match(aplat, /fill='rgb\(33,29,59\)'/, 'aplat marine plein');
   assert.doesNotMatch(aplat, /stroke/, 'l’aplat n’a pas de trait');
   assert.match(masque, /fill='rgb\(255,255,255\)'/, 'masque blanc de l’illustration');
   assert.doesNotMatch(masque, /stroke/, 'le masque de l’illustration n’a pas de trait');
 
-  // Hearthstone : métal biseauté, gorge sombre, deux ailettes qui dépassent.
+  // Cadre AFFINÉ : dégradé, traits fins, reflet sur le dôme. Plus d'ailettes.
   assert.match(acier, /<linearGradient id='a'/, 'dégradé acier');
-  assert.match(acier, /stop-color='#f4f7fc'/, 'reflet clair en haut à gauche');
-  assert.match(acier, /stroke='#242831'/, 'gorge sombre');
-  assert.match(acier, /stroke-width='7'/, 'anneau d’acier');
-  assert.match(acier, /stroke-width='2'/, 'gorge sombre de 2 unités');
-  assert.match(acier, /M-9 52 L5 50/, 'ailette gauche');
-  assert.match(acier, /M109 52 L95 50/, 'ailette droite');
-  // Le masque est plus large que l'acier : la couleur de l'élément reste
-  // visible en fin liseré de chaque côté du métal.
-  assert.match(cadreMasque, /stroke-width='10'/, 'masque de 10 contre acier de 7');
-  assert.match(cadreMasque, /M-10 51 L6 49/, 'ailette gauche dans le masque');
-  assert.match(cadreMasque, /M110 51 L94 49/, 'ailette droite dans le masque');
+  assert.match(acier, /stroke-width='6\.4'/, 'contour sombre affiné');
+  assert.match(acier, /stroke-width='4\.8'/, 'acier affiné (contre 7 avant)');
+  assert.match(acier, /stroke-width='1\.3'/, 'gorge sombre affinée');
+  assert.match(acier, /stroke-width='0\.55'/, 'filet de lumière');
+  assert.match(acier, /stroke-opacity='\.55'/, 'reflet sur le dôme');
+  assert.doesNotMatch(acier, /stroke-width='(?:7|10)'/, 'plus de trait épais');
+  assert.match(cadreMasque, /stroke-width='8'/, 'masque de 8 (au lieu de 10)');
+  for (const [nom, svg] of [['cadre', cadreMasque], ['acier', acier]]) {
+    assert.doesNotMatch(svg, /M-9 52|M109 52|M-10 51|M110 51/, `${nom} : aucune ailette latérale`);
+  }
+  assert.doesNotMatch(css, /M-9%2052|M109%2052|M-10%2051|M110%2051/, 'aucun tracé d’ailette encodé');
 
   assert.match(css, /--rpg-ecusson-fond:\s*#211d3b;/, 'marine de la référence');
   assert.match(css, /background-image:\s*var\(--rpg-ecusson-aplat\) !important;/, 'l’aplat remplace le fond des cadres');
@@ -151,8 +170,8 @@ test('la carte EST l’écusson : cadre acier, ailettes, liseré d’élément, 
   assert.match(css, /pointer-events:\s*none;/);
   assert.doesNotMatch(css, /--rpg-ecusson-liseret/, 'l’ancien liseré seul est remplacé par le cadre');
 
-  // Ombre portée : `drop-shadow` lit l'alpha de l'écusson ET des ailettes.
-  // Aucune ombre de boîte rectangulaire, aucun outline visible.
+  // Ombre portée : `drop-shadow` lit l'alpha de l'écusson. Aucune ombre de
+  // boîte rectangulaire, aucun outline visible.
   assert.match(css, /filter:\s*drop-shadow\(0 3px 6px rgba\(0, 0, 0, \.42\)\);/);
   for (const [propriete, neutre] of [
     ['box-shadow', /box-shadow\s*:\s*none\s*!important;/g],
@@ -195,11 +214,17 @@ test('ATQ/DÉF et les autres repères restent exactement comme sur les autres ca
   assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
 });
 
-test('les aperçus restent rectangulaires avec ATQ à gauche et DÉF à droite', () => {
+test('main, mulligan, main MOBA et aperçus restent des cartes rectangulaires', () => {
+  // Aucun de ces composants ne pose la classe : ce sont les gabarits normaux.
+  assert.doesNotMatch(blocApres(duel, "'rpg-mulligan__card'"), /classeBouclier/);
+  assert.doesNotMatch(blocApres(duel, "'rpg-hand__card rpg-hand__card--img'"), /classeBouclier/);
+  assert.doesNotMatch(lire('RpgMobaBoard.jsx'), /classeBouclier/);
   const ligneApercu = duel.split('\n').find((l) => l.includes('className={`rpg-hover-card-preview__face'));
   assert.ok(ligneApercu);
   assert.doesNotMatch(ligneApercu, /classeBouclier/, 'pas d’écusson sur l’aperçu');
-  assert.match(ligneApercu, /rpg-hover-card-preview__face/, 'la face d’aperçu existe bien');
+  // La main garde son cadre rectangulaire et ses rayons habituels.
+  assert.match(battleCss, /\.rpg-hand__card\s*\{[^}]*border-radius:\s*8px;/s, 'la main garde ses coins de carte');
+  assert.match(battleCss, /\.rpg-hand__stats/, 'le gabarit des stats de la main est intact');
   // Le pied de l'aperçu garde sa grille deux colonnes : ATQ à gauche, DÉF à droite.
   assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__foot,[\s\S]{0,400}?grid-template-columns:\s*repeat\(2,/, 'ATQ à gauche, DÉF à droite');
   assert.match(duel, /rpg-hover-card-preview__face[\s\S]{0,1200}?rpg-card__foot/, 'les statistiques restent sur la face d’aperçu');

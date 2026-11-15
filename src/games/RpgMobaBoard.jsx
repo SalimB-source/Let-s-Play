@@ -2,7 +2,6 @@ import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import { rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { estDefenseur } from './rpgDefenseur.js';
-import { classeBouclier } from './rpgBouclier.js';
 import './rpg-bouclier.css';
 import { rpgCartesRenfortChoisi } from './rpgDuel.js';
 import { rpgMobaPeutRepondreAttaque } from './rpgMobaReponseAttaque.js';
@@ -1650,7 +1649,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         const { ManaCost, CardStatIcon } = rendu;
         const creature = ['creature', 'hero'].includes(card.kind);
         return <div className={`moba__hand-item${reception ? ' is-new-card' : ''}`} key={`${id}-${index}`} data-moba-received={reception?.type} {...interactionsApercu(id)}>
-          <button type="button" className={`moba__card moba__real-hand rpg-hand__card rpg-hand__card--img${creature ? ' rpg-hand__card--type-creature' : ''} rpg-hand__card--elem-${card.element} ${cardFrameClass(card)} ${cardMotifClass(card)} ${classeBouclier(card)}${mythiqueCreature ? ' is-mythique-creature' : ''}${selected ? ' is-selected is-targeting' : ''}${disabled ? ' is-unplayable' : ' is-playable'}${specialementJouable ? ' is-special-ambush' : ''}`} style={{ '--rpg-frame-color': cardFrameColor(card) }} data-card-id={id} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} aria-label={`${card.name}${magieFamille(card) ? `, ${magieFamille(card) === 'rapide' ? 'Magie Rapide' : 'Sorcellerie'}` : ''}${card.cost != null ? `, coût imprimé ${card.cost}` : ''}, ${card.text || 'aucune capacité'}`}  aria-pressed={selected} onClick={() => jouerCarte(id, index)}>
+          <button type="button" className={`moba__card moba__real-hand rpg-hand__card rpg-hand__card--img${creature ? ' rpg-hand__card--type-creature' : ''} rpg-hand__card--elem-${card.element} ${cardFrameClass(card)} ${cardMotifClass(card)}${mythiqueCreature ? ' is-mythique-creature' : ''}${selected ? ' is-selected is-targeting' : ''}${disabled ? ' is-unplayable' : ' is-playable'}${specialementJouable ? ' is-special-ambush' : ''}`} style={{ '--rpg-frame-color': cardFrameColor(card) }} data-card-id={id} disabled={disabled} draggable={Boolean(peutGlisserCarte)} onPointerDown={peutGlisserCarte ? (event) => glisserTactile(event, { type: 'creature', id }) : undefined} onDragStart={peutGlisserCarte ? (event) => glisserSouris(event, { type: 'creature', id }) : undefined} onDragEnd={finGlissement} aria-label={`${card.name}${magieFamille(card) ? `, ${magieFamille(card) === 'rapide' ? 'Magie Rapide' : 'Sorcellerie'}` : ''}${card.cost != null ? `, coût imprimé ${card.cost}` : ''}, ${card.text || 'aucune capacité'}`}  aria-pressed={selected} onClick={() => jouerCarte(id, index)}>
             <img draggable="false" className="rpg-hand__img" src={cardArt(id)} alt="" aria-hidden="true" />
             <span className="rpg-hand__title"><ManaCost carte={card} showElement={false} /></span>
             {magieFamille(card) && <SortSceau carte={card} className="rpg-hand__sceau" />}
