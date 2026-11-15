@@ -406,7 +406,7 @@ export function rpgMobaInvocationSpecialeDisponible(duel, side, cardId) {
 /** Place a creature from the active player's hand using the engine's payment,
  * restrictions, entity creation and aura recalculation. Effects requiring lane
  * semantics are temporarily rejected rather than executed incorrectly. */
-export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, sacrificeIds = null } = {}) {
+export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, sacrificeIds = null, choixCoutInvocation = null, choixCoutAuto = false } = {}) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
@@ -474,6 +474,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
     const result = rpgJouerCreature(duel, side, cardId, null, {
       emplacement: OFFSETS[laneId] + slot,
       invocationSpecialeMoba: speciale,
+      choixCoutInvocation, choixCoutAuto,
       ...(sacrificesDemandes !== null ? { sacrificeIds: sacrificesDemandes } : {}),
       ...(ouvrirReponse && !resoudreEnAttente ? { annoncerCreatureMoba: { laneId, slot, nomVoie: NOMS_VOIES[laneId], ...(speciale ? { embuscadeSuspendue: Boolean(suspendue), embuscadeCombat: Boolean(duel.combatDeclare) } : {}) } } : {}),
       ...(resoudreEnAttente ? { resoudreCreatureMoba: true } : {}),

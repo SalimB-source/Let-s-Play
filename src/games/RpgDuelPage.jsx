@@ -1,4 +1,7 @@
+import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
+import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
+import { CimetiereVols, useCimetiereVols } from './RpgCimetiereVols.jsx';
 import { ascensionDisponible, validerMateriauxAscension } from './rpgAscension.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from './rpgCombatIndividuelClassique.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
@@ -7965,6 +7968,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Invocation : la carte attend le choix d’une ou deux victimes — Échap ou « Renoncer » rend la carte à la main.
   const [sacrificeEnCours, setSacrificeEnCours] = useState(null);
   const [sacrificesChoisis, setSacrificesChoisis] = useState([]);
+  const [choixCoutDemande, setChoixCoutDemande] = useState(null);
+  const choixCoutRef = useRef(null);
   // La créature cliquée attend sa CASE : `{ carteId, handIndex }` tant que le
   // joueur n'a pas cliqué une des cases libres de sa rangée (les boutons de
   // `CreatureSlots`). Rien n'est encore payé — recliquer la carte ou Échap
@@ -7982,20 +7987,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // La foudre activée se désigne avec Échap, comme les autres ciblages ; la
   // proie d'un mode d'arme aussi ; le sacrifice en attente, enfin, se renonce.
   useEffect(() => {
-    if (!activationEnCours && !sacrificeEnCours && !poseEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
+    if (!choixCoutDemande && !activationEnCours && !sacrificeEnCours && !poseEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       setActivationEnCours(null);
       setSacrificeEnCours(null);
       setSacrificesChoisis([]);
       setPoseEnCours(null);
+      setChoixCoutDemande(null);
+      choixCoutRef.current = null;
       setNavMenuOuvert(false);
       setNavParametresOuvert(false);
       setMessagerieVoletOuvert(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activationEnCours, sacrificeEnCours, poseEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
+  }, [choixCoutDemande, activationEnCours, sacrificeEnCours, poseEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
   // Le menu hamburger et son onglet Paramètres se referment au premier geste hors de la barre du duel.
   useEffect(() => {
     if (!navMenuOuvert && !navParametresOuvert) return undefined;
@@ -8440,6 +8447,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     clicApresGlisserBloqueurRef.current = null;
     setCibleEnCours(null);
     setPoseEnCours(null);
+    setChoixCoutDemande(null);
+    choixCoutRef.current = null;
     setEmplacementSurvole(null);
     setSacrificeDemande(null);
     setSacrificeFx(null);
@@ -8618,6 +8627,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  const volsCimetiere = useCimetiereVols({ duel, session: modePvp ? `pvp:${pvp?.code ?? ''}` : duel,
+    rootRef: tableRef, actif: ecran === 'partie', pvp: modePvp });
   const vainqueurPvp = modePvp && (pvp?.statut === 'terminee' || duel?.fin?.gagnant)
     ? ((pvp?.resultat === 'gagne' || pvp?.resultat === 'victoire' || (!pvp?.resultat && duel?.fin?.gagnant === 'joueur'))
       ? 'joueur'
@@ -11429,6 +11440,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    */
   const finaliserPoseCreature = (carteId, sacrificeIds = null, emplacement = null) => {
     const carte = cardById(carteId);
+    const choixCoutInvocation = choixCoutRef.current?.carteId === carteId ? choixCoutRef.current.choix : null;
+    choixCoutRef.current = null;
     carteCibleeHandIndexRef.current = null;
     setSacrificeEnCours(null);
     setSacrificesChoisis([]);
@@ -11441,6 +11454,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       cibleDifferee: true,
       attaquants: combatEntrant?.coteAttaquant === 'sorcier' ? combatEntrant.attaquants : [],
       sacrificeIds,
+      choixCoutInvocation,
       emplacement: Number.isInteger(emplacement) ? emplacement : null,
     });
     if (modePvp && res.ok) {
@@ -11449,6 +11463,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         carteId,
         cibleDifferee: true,
         sacrificeIds: sacrificeIds ?? null,
+        choixCoutInvocation,
         emplacement: Number.isInteger(emplacement) ? emplacement : null,
       });
     }
@@ -11787,6 +11802,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (carte.kind !== 'terrain') { unlockSfx(); }
+    if (choixCoutRef.current?.carteId !== carteId) choixCoutRef.current = null;
+    if (MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout && rpgInvocationSpecialeSurSonTour(duel, 'joueur', carte)
+      && !choixCoutRef.current) {
+      setChoixCoutDemande({ carteId, handIndex, emplacement });
+      return;
+    }
     const index = Number.isInteger(handIndex) && duel.joueur.main[handIndex] === carteId
       ? handIndex : duel.joueur.main.indexOf(carteId);
     // Une pose attendait sa case : recliquer la même carte y renonce (rien
@@ -11795,6 +11816,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const memeCarte = poseEnCours.carteId === carteId && poseEnCours.handIndex === index;
       setPoseEnCours(null);
       if (memeCarte && emplacement === undefined) {
+        choixCoutRef.current = null;
         jouerSfx('annuler');
         force();
         return;
@@ -13609,6 +13631,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>;
       })()}
       <EffetsSprite />
+      <CimetiereVols vols={volsCimetiere} />
       <SfxReactifsDuel
         vainqueur={vainqueur}
         phaseDuelActive={phaseDuelActive}
@@ -15151,6 +15174,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         )}
       </div>
+      {choixCoutDemande && <RpgChoixCoutInvocation key={choixCoutDemande.carteId} duel={duel} cote="joueur" carteId={choixCoutDemande.carteId}
+        onAnnuler={() => { choixCoutRef.current = null; setChoixCoutDemande(null); }}
+        onChoisir={(choix) => { const demande = choixCoutDemande; choixCoutRef.current = { carteId: demande.carteId, choix }; setChoixCoutDemande(null); jouerCarteDepuisMain(demande.carteId, demande.handIndex, demande.emplacement); }} />}
       {sacrificeDemande && (
         <div className="rpg-sacrifice-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-sacrifice-titre" aria-describedby="rpg-sacrifice-texte">
           <div className="rpg-sacrifice-choix__panel">
