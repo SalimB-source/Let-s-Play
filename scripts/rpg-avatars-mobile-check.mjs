@@ -44,31 +44,37 @@ try {
           const avatar = document.querySelector(`.rpg-wizard-plate--${cote} .rpg-wizard-plate__avatar`);
           const cadre = getComputedStyle(avatar, '::before');
           const ornements = getComputedStyle(avatar, '::after');
-          const image = getComputedStyle(avatar.querySelector('img'));
+          const portrait = avatar.querySelector('img');
+          const image = getComputedStyle(portrait);
+          const imageRect = portrait.getBoundingClientRect();
           const rect = avatar.getBoundingClientRect();
           const diametre = parseFloat(cadre.width);
-          // Le cercle est en bas du visage : le haut de l'image le dépasse.
+          const cercle = { left: rect.left + (rect.width - diametre) / 2, right: rect.left + (rect.width + diametre) / 2,
+            bottom: rect.bottom - parseFloat(cadre.bottom), top: rect.bottom - parseFloat(cadre.bottom) - diametre };
           return { contenu: cadre.content, rayon: cadre.borderRadius, diametre,
-            depasse: rect.height - parseFloat(cadre.bottom) - diametre,
+            imageDansCercle: imageRect.left >= cercle.left && imageRect.right <= cercle.right && imageRect.top >= cercle.top && imageRect.bottom <= cercle.bottom,
             couleur: cadre.borderTopColor, fond: cadre.backgroundColor, overflow: getComputedStyle(avatar).overflow,
-            imageZ: Number(image.zIndex), imagePosition: image.objectPosition, masque: image.maskImage, tailleMasque: image.maskSize,
+            imageZ: Number(image.zIndex), imagePosition: image.objectPosition, imageRayon: image.borderRadius, masque: image.maskImage,
             coeur: getComputedStyle(avatar.parentElement.querySelector('.rpg-wizard-plate__hp-icon--heart')).display,
             vie: getComputedStyle(avatar.parentElement.querySelector('.rpg-jauge-vie__rond')).display, largeur: rect.width,
+            ancienneLargeur: avatar.closest('.rpg-battle').classList.contains('rpg-battle--touch')
+              ? Math.min(82, Math.max(48, Math.min(104, Math.max(44, innerHeight * .1555)) * 1.03))
+              : Math.min(116, Math.max(70, innerWidth * .088)),
             cadreZ: Number(cadre.zIndex), touches: cadre.pointerEvents,
             ornements: ornements.backgroundImage, touchesOrnements: ornements.pointerEvents };
         }, side);
         assert.equal(decor.contenu, '""', `${side} : médaillon présent`);
         assert.equal(decor.rayon, '50%', `${side} : médaillon rond`);
-        assert.ok(decor.diametre > 0 && decor.imageZ > decor.cadreZ && decor.depasse > 0, `${side} : la tête dépasse devant le cercle`);
+        assert.ok(decor.diametre > 0 && decor.imageZ > decor.cadreZ && decor.imageDansCercle, `${side} : le portrait tient à l’intérieur du cercle`);
         assert.equal(decor.couleur, 'rgb(215, 173, 97)', `${side} : cercle doré`);
         assert.equal(decor.fond, 'rgba(0, 0, 0, 0)', `${side} : centre transparent`);
-        assert.equal(decor.overflow, 'visible', `${side} : la coiffure peut dépasser`);
-        assert.match(decor.masque, /radial-gradient.*linear-gradient/, `${side} : masque circulaire et fenêtre pour la tête`);
-        assert.equal(decor.tailleMasque, '100% 82%, 58% 24%', `${side} : masque ajusté au médaillon`);
-        assert.ok(decor.largeur >= (touch ? 48 : 70), `${side} : avatar agrandi`);
+        assert.equal(decor.overflow, 'visible', `${side} : le cadre et ses ornements restent visibles`);
+        assert.equal(decor.imageRayon, '50%', `${side} : le portrait est rogné en cercle`);
+        assert.equal(decor.masque, 'none', `${side} : aucune fenêtre ne laisse dépasser la tête`);
+        assert.ok(decor.largeur > decor.ancienneLargeur, `${side} : avatar plus grand qu’avant`);
         assert.equal(decor.coeur, 'none', `${side} : cœur décoratif retiré`);
         assert.notEqual(decor.vie, 'none', `${side} : compteur de vie conservé`);
-        assert.equal(decor.imagePosition, '50% 0%', `${side} : le haut du portrait dépasse le cercle`);
+        assert.equal(decor.imagePosition, '50% 50%', `${side} : portrait centré dans le cercle`);
         assert.match(decor.ornements, /radial-gradient/, `${side} : ornements visibles`);
         assert.equal(decor.touches, 'none'); assert.equal(decor.touchesOrnements, 'none');
       }
@@ -97,6 +103,8 @@ try {
       }
       assert.ok(mesures.joueur.top >= mesures.creature.bottom - 1, 'la créature centrale ne recouvre pas l’avatar');
       assert.ok(mesures.vieJoueur.top >= mesures.creature.bottom - 1, 'les PV du joueur ne sont pas cachés par la créature');
+      assert.ok(mesures.vieJoueur.right - mesures.vieJoueur.left > 2 * (mesures.vieJoueur.bottom - mesures.vieJoueur.top), 'PV du joueur : barre horizontale');
+      assert.ok(mesures.vieEnnemi.right - mesures.vieEnnemi.left > 2 * (mesures.vieEnnemi.bottom - mesures.vieEnnemi.top), 'PV adverses : barre horizontale');
       assert.ok(mesures.vieJoueur.top >= mesures.joueur.bottom - 1 && Math.abs(mesures.vieJoueur.center - mesures.joueur.center) < 2, 'PV centrés sous le visage du joueur');
       assert.ok(mesures.vieJoueur.bottom <= mesures.table.bottom, 'PV du joueur dans la table');
       assert.ok(mesures.vieEnnemi.top >= mesures.ennemi.bottom - 1 && Math.abs(mesures.vieEnnemi.center - mesures.ennemi.center) < 2, 'PV centrés sous le visage adverse');
@@ -177,8 +185,8 @@ try {
       assert.ok(Math.abs(mouvement.ligne - (mouvement.hauteur * .7 - 1)) < 1, 'la ligne suit le territoire');
       console.log(`${largeur}×${hauteur}, ${mode} : cases, avatars et cible vérifiés`);
     }
-    // Un portrait plein permet de vérifier le masque réellement peint : les
-    // coins bas sont coupés, le centre et la fenêtre des cheveux restent visibles.
+    // Un portrait plein vérifie le rognage réellement peint : aucun pixel du
+    // portrait ne sort du cercle, tandis que le centre reste visible.
     if (largeur === 640 && hauteur === 280) {
       await page.evaluate(() => {
         const style = document.createElement('style');
@@ -196,14 +204,16 @@ try {
         await image.decode();
         const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
         const ctx = canvas.getContext('2d'); ctx.drawImage(image, 0, 0);
-        return [[5, 5], [50, 5], [50, 70], [5, 80], [95, 80]].map(([x, y]) => [...ctx.getImageData(x, y, 1, 1).data]);
+        return [[5, 5], [50, 5], [50, 70], [5, 80], [95, 80], [50, 25], [20, 25]].map(([x, y]) => [...ctx.getImageData(x, y, 1, 1).data]);
       }, png.toString('base64'));
       const rose = ([r, , b]) => r > 180 && b > 180;
       assert.equal(rose(pixels[0]), false, 'coin supérieur extérieur coupé');
-      assert.equal(rose(pixels[1]), true, 'cheveux visibles au-dessus du cercle');
+      assert.equal(rose(pixels[1]), false, 'aucune partie du portrait ne dépasse au-dessus du cercle');
       assert.equal(rose(pixels[2]), true, 'portrait visible dans le cercle');
       assert.equal(rose(pixels[3]), false, 'épaule gauche coupée hors du cercle');
       assert.equal(rose(pixels[4]), false, 'épaule droite coupée hors du cercle');
+      assert.equal(rose(pixels[5]), true, 'haut du portrait visible à l’intérieur du cercle');
+      assert.equal(rose(pixels[6]), false, 'coin supérieur du portrait rogné');
     }
     await context.close();
   }
