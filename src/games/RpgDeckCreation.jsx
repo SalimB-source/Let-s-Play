@@ -23,6 +23,7 @@
 
 import { useState } from 'react';
 import './rpg-deck-atelier.css';
+import './rpg-bouclier.css';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgDeckAssistant from './RpgDeckAssistant.jsx';
 import RpgDeckModeChoice from './RpgDeckModeChoice.jsx';

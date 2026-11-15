@@ -11,6 +11,7 @@ import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
+import { classeBouclier } from './rpgBouclier.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { convertirDeckSansTerrain } from './rpgCards.js';
@@ -31,6 +32,7 @@ import './rpg-mana-essai.css';
 import './rpg-soins.css';
 import './rpg-vie-compteurs.css';
 import './rpg-avatars-plateau.css';
+import './rpg-bouclier.css';
 import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
@@ -2944,6 +2946,8 @@ export function TableCard({
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         entite.furieDeclenchee ? '' : cardFrameClass(carte),
         cardMotifClass(carte),
+        // Défenseur imprimé ou reçu en cours de partie : la face devient un écu.
+        classeBouclier(carte, entite),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         !estSite && cardRarityInfo(carte).key === 'mythique' ? 'is-mythique-creature' : '',
         estSite ? 'rpg-card--site' : '',
@@ -3571,7 +3575,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const face = (
     <div className="rpg-hover-card-preview__empile">
     <div
-      className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+      className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)} ${classeBouclier(carte)}`}
       style={estEnFurie ? undefined : cardFrameStyle(carte)}
       data-furie-declenchee={estEnFurie ? 'true' : undefined}
       aria-hidden="true"
@@ -3932,6 +3936,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
         `rpg-mulligan__card--elem-${carte.element}`,
         cardFrameClass(carte),
         cardMotifClass(carte),
+        classeBouclier(carte),
         selectionnee ? 'is-selected' : '',
         nouvelle ? 'is-new' : '',
       ].filter(Boolean).join(' ')}
@@ -5999,7 +6004,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                       />
                       {prix !== null && <span className="rpg-card-catalogue__prix" aria-hidden="true">{creditsLisible(prix)} ◈</span>}
                       <div
-                        className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+                        className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)} ${classeBouclier(carte)}`}
                         style={cardFrameStyle(carte)}
                       >
                         <CatalogueCardFace carte={carte} exemplaires={exemplaires} verrouillee={verrouillee} />
@@ -14881,6 +14886,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     familleSort ? `rpg-hand__card--famille-${familleSort}` : '',
                     cardFrameClass(carte),
                     cardMotifClass(carte),
+                    classeBouclier(carte),
                     estCreature && estMythique ? 'is-mythique-creature' : '',
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
                     defausseSelectionnee ? 'is-discard-selected' : '',
