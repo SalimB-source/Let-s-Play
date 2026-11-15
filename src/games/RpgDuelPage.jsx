@@ -2815,6 +2815,7 @@ export function TableCard({
   ascensionSelection = null,
   reserveAscension = false,
   sacrificeEnAnimation = false,
+  entreeDifferee = false,
   spellTarget = false,
   sortBloqueParBouclier = false,
   coupRapideCible = false,
@@ -2896,13 +2897,20 @@ export function TableCard({
   const activation = carte?.activation;
   const malInvocation = !estSite && rpgSouffreMalInvocation(entite);
   const [blockDropHover, setBlockDropHover] = useState(false);
-  const [entreeEnCours, setEntreeEnCours] = useState(true);
+  const [entreeEnCours, setEntreeEnCours] = useState(!entreeDifferee);
   const cardRef = useRef(null);
 
   useEffect(() => {
+    // La carte adverse est déjà posée par le moteur, mais reste cachée pendant
+    // le rituel. Son entrée doit commencer lorsqu'elle devient visible.
+    if (entreeDifferee) {
+      setEntreeEnCours(false);
+      return undefined;
+    }
+    setEntreeEnCours(true);
     const timer = window.setTimeout(() => setEntreeEnCours(false), 620);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [entreeDifferee]);
 
   const commencerGlisserBloqueur = (event) => {
     if (!canDragBlocker) {
@@ -11511,14 +11519,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   /** La créature à sacrifier est désignée : sa carte se déchire à sa place,
    * PUIS seulement la nouvelle créature est posée dans l'emplacement libéré
    * (le moteur sacrifie et pose d'un seul geste, à ce moment-là). */
-  const commencerRituelSacrifice = (carteId, choisis) => {
+  const commencerRituelSacrifice = (carteId, choisis, depuisReserve = false) => {
     const champ = prendreInstantaneChamp();
     const token = ++sequenceAnimationRef.current;
     const victimes = choisis.map(id => champ.find(carte => carte.entityId === id)).filter(Boolean)
       .map(carte => ({ ...carte, effectId: `invocation-${token}-${carte.entityId}` }));
     setSacrificeEnCours(null);
     setSacrificesChoisis([]);
-    sacrificeEnCoursRef.current = { carteId, sacrificeIds: choisis, token,
+    sacrificeEnCoursRef.current = { carteId, sacrificeIds: choisis, token, depuisReserve,
       attendus: victimes.map(v => v.effectId), termines: new Set(), finPlanifiee: false };
     setSacrificeFx({ victimes, token });
     jouerSfx('destruction');
@@ -11556,9 +11564,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       else later(annoncerSuivantSorcier, delaiReflexionSorcier());
       return;
     }
-    // La voix de la nouvelle créature ne commence pas pendant le sacrifice.
-    annoncerVoixArrivee(enCours.carteId);
-    finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
+    // La carte reste en main pendant le rituel. Une fois celui-ci achevé,
+    // elle effectue le même vol qu'une pose ordinaire avant le paiement réel.
+    // L'Ascension vient de la réserve, pas de la main : elle se pose directement.
+    const carte = cardById(enCours.carteId);
+    const source = !enCours.depuisReserve && [...(tableRef.current?.querySelectorAll('.rpg-hand__card') ?? [])]
+      .find((element) => element.dataset.cardId === enCours.carteId);
+    const index = source ? Number(source.dataset.handIndex) : null;
+    const caseVictime = duel.modeMana === RPG_MODE_MANA_ESSAI
+      ? rpgEmplacementsChamp(duel.joueur).findIndex((entite) => entite?.id === enCours.sacrificeIds[0])
+      : -1;
+    if (carte && source && Number.isInteger(index) && index >= 0 && !animationsReduites()) {
+      demarrerVolCarte(carte, index, () => finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds),
+        caseVictime >= 0 ? caseVictime : null);
+    } else {
+      finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
+    }
     force();
   };
   const terminerCercleSacrifice = (effectId) => {
@@ -14017,6 +14038,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       sacrificeEnAnimation={sacrificeFx?.entiteArriveeId === entite.id}
+                      entreeDifferee={sacrificeFx?.entiteArriveeId === entite.id}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
@@ -15213,7 +15235,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           if (!reserveAscensionDisponible || !ascensionDisponible(duel, 'joueur', carteId)
             || !validerMateriauxAscension(duel.joueur, carteId, sacrificeIds).ok) return;
           selectionAscension.fermer();
-          commencerRituelSacrifice(carteId, sacrificeIds);
+          commencerRituelSacrifice(carteId, sacrificeIds, true);
         } : null}
       />}
       {cimetiereOuvert && (
