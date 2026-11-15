@@ -84,10 +84,10 @@ try {
       assert.ok(mesures.ennemiCreature.top >= mesures.vieEnnemi.bottom - 1, 'les PV adverses ne sont pas cachés par la créature');
       assert.ok(mesures.ennemiCreature.bottom <= mesures.creature.top + 1, 'les créatures des deux camps ne se chevauchent pas');
       if (!touch) {
-        assert.ok(Math.abs(mesures.ennemiCreature.bottom - mesures.ligne.top) <= 6, 'la créature adverse touche la ligne par le haut');
-        assert.ok(Math.abs(mesures.creature.top - mesures.ligne.bottom) <= 6, 'la créature alliée touche la ligne par le bas');
-        for (const slot of mesures.slotsEnnemis) assert.ok(Math.abs(slot.bottom - mesures.ligne.top) <= 6, 'les cases adverses sont au-dessus de la ligne');
-        for (const slot of mesures.slots) assert.ok(Math.abs(slot.top - mesures.ligne.bottom) <= 6, 'les cases alliées sont sous la ligne');
+        assert.ok(Math.abs(mesures.ligne.top - mesures.ennemiCreature.bottom - 10) <= 2, 'la créature adverse garde un espace au-dessus de la ligne');
+        assert.ok(Math.abs(mesures.creature.top - mesures.ligne.bottom - 10) <= 2, 'la créature alliée garde un espace sous la ligne');
+        for (const slot of mesures.slotsEnnemis) assert.ok(Math.abs(mesures.ligne.top - slot.bottom - 10) <= 2, 'les cases adverses sont au-dessus de la ligne');
+        for (const slot of mesures.slots) assert.ok(Math.abs(slot.top - mesures.ligne.bottom - 10) <= 2, 'les cases alliées sont sous la ligne');
         if (hauteur >= 700) assert.ok(mesures.table.bottom - mesures.vieJoueur.bottom >= 19, 'l’avatar joueur et ses PV sont remontés');
         const creaturesCliquables = await page.evaluate(() => [...document.querySelectorAll('.card-row > .rpg-card')].every((carte) => {
           const r = carte.getBoundingClientRect();
