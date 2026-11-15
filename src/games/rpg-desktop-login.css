@@ -2,9 +2,9 @@
  * Écran de connexion PC — src/games/rpg-desktop-login.css
  * ---------------------------------------------------------
  * Premier écran de la version installée : le joueur se connecte avec son
- * compte Let's Play avant de voir la table. Même keyart que l'écran
- * d'entrée (rpg-entry-choice.css) pour garder l'identité, mais une seule
- * carte centrée avec le formulaire.
+ * compte Let's Play avant de voir la table. Même désert lumineux sans
+ * personnages que l'accueil (rpg-entry-choice.css) pour garder l'identité,
+ * mais une seule carte centrée avec le formulaire.
  */
 
 .rpg-desktop-login {
@@ -14,9 +14,10 @@
   place-items: center;
   padding: 28px 18px 42px;
   background:
-    linear-gradient(105deg, rgba(5, 6, 15, 0.92) 0%, rgba(5, 6, 15, 0.80) 46%, rgba(5, 6, 15, 0.58) 100%),
-    url('../../public/sablier-de-bab-el-keyart.jpg') center / cover no-repeat fixed;
-  background-color: #05060f;
+    linear-gradient(105deg, rgba(12, 14, 26, 0.86) 0%, rgba(12, 14, 26, 0.62) 46%, rgba(12, 14, 26, 0.24) 100%),
+    linear-gradient(180deg, rgba(12, 14, 26, 0.14) 0%, transparent 38%, rgba(12, 14, 26, 0.22) 100%),
+    url('../../public/sablier-accueil-desert-clair.jpg') center / cover no-repeat fixed;
+  background-color: #263349;
   color: #e8eaf6;
 }
 
