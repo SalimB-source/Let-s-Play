@@ -181,7 +181,7 @@ ${EFFETS_SPRITE}
         <div class="face__coins"><div></div><div></div></div>
         <div class="face__nom">Jarl au marteau de guerre</div>
         <span class="rpg-card-icones rpg-card-icones--catalogue">
-          ${badge('provocation')}${badge('overkill')}${badge('furie', 2)}
+          ${badge('defenseur')}${badge('overkill')}${badge('furie', 2)}
         </span>
       </div>
       <div class="face">

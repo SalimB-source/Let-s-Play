@@ -503,5 +503,101 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-11",
     "section": "Actualités tech"
+  },
+  "/news/gta-6-prechargement-codes-boite-12-novembre": {
+    "title": "GTA VI LE PRÉCHARGEMENT EST LANCÉ. — Let’s Play",
+    "description": "Le préchargement de GTA VI est ouvert, et les boîtes avec code sont attendues à partir du 12 novembre. Rockstar annonce jusqu’à 212 Go à prévoir et confirme une cible de 30 images par seconde.",
+    "image": "https://media-rockstargames-com.akamaized.net/tina-uploads/posts/k4ak9okk485712/81e58e08369adca0d68a17dac9b12c3a63848fc3.jpg",
+    "type": "article",
+    "published": "2026-11-12",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/ray-gunn-netflix-deuxieme-trailer": {
+    "title": "RAY GUNN LE POLAR PREND LE FUTUR. — Let’s Play",
+    "description": "Netflix dévoile le deuxième trailer de Ray Gunn, le nouveau film animé de Brad Bird. L’enquête réunit Sam Rockwell, Scarlett Johansson et Tom Waits, avant une arrivée sur Netflix annoncée le 18 décembre.",
+    "image": "https://i.ytimg.com/vi/oAmCTknTA6I/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-12",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/gemini-data-cloud-connecteurs-preview": {
+    "title": "GEMINI DES QUESTIONS AUX DONNÉES. — Let’s Play",
+    "description": "Google met en avant les connecteurs Data Cloud dans Gemini, disponibles en preview pour interroger des données d’entreprise en langage naturel. Les requêtes restent liées aux permissions de l’utilisateur.",
+    "image": "https://storage.googleapis.com/gweb-cloudblog-publish/images/2_-_Knowledge_Catalog_prompt_interpretatio.max-1700x1700.png",
+    "type": "article",
+    "published": "2026-11-12",
+    "section": "Actualités tech"
+  },
+  "/news/fable-deepwood-gameplay-podcast-xbox": {
+    "title": "FABLE RETOUR DANS DEEPWOOD. — Let’s Play",
+    "description": "Playground Games commente les nouvelles images de Fable dans le podcast officiel Xbox du 13 novembre. Deepwood, Arden et les combats sont au centre de cette présentation de près de dix-sept minutes.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/Wire_EP290-b452df595ddb7f22b68e-1600x900.jpg",
+    "type": "article",
+    "published": "2026-11-13",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/dhindora-saison-2-trailer-netflix-20-novembre": {
+    "title": "DHINDORA 2 LE CHAOS RESTE EN FAMILLE. — Let’s Play",
+    "description": "Netflix dévoile le trailer de la deuxième saison de Dhindora. Bhuvan Bam reprend plusieurs personnages de son univers comique, rejoint par Sanjeeda Sheikh, avant une sortie annoncée le 20 novembre.",
+    "image": "https://i.ytimg.com/vi/AjGW8oxTars/hqdefault.jpg",
+    "type": "article",
+    "published": "2026-11-13",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/antigravity-teamwork-recherche-google": {
+    "title": "ANTIGRAVITY LA RECHERCHE EN ÉQUIPE. — Let’s Play",
+    "description": "Google Research présente de nouveaux travaux associant chercheurs et agents Antigravity /teamwork. Le principe : explorer plusieurs pistes, puis confronter les résultats à des vérifications adaptées.",
+    "image": "https://storage.googleapis.com/gweb-research2023-media/original_images/AntigravityTeamwork_HeroFinal.jpg",
+    "type": "article",
+    "published": "2026-11-13",
+    "section": "Actualités tech"
+  },
+  "/news/xbox-25-classiques-pc-retrocompatibilite": {
+    "title": "XBOX SUR PC 25 CLASSIQUES À RETROUVER. — Let’s Play",
+    "description": "Point du week-end : Xbox a ajouté vingt et un jeux de sa première console sur PC le 12 novembre, portant la sélection à vingt-cinq. Des succès arrivent aussi sur quatre titres, avec plusieurs conditions à connaître.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/111226_XBOX-Wire_PCBackCompat-JPG-6d6dbed266e723ed4c62-1600x900.jpg",
+    "type": "article",
+    "published": "2026-11-14",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/heartland-netflix-jessica-chastain-sortie": {
+    "title": "HEARTLAND NASHVILLE CACHE SES SECRETS. — Let’s Play",
+    "description": "À découvrir ce week-end : Netflix annonce Heartland disponible depuis le 13 novembre. Jessica Chastain incarne une ancienne star de la country revenue à Nashville pour retrouver sa nièce disparue.",
+    "image": "https://i.ytimg.com/vi/ziIz59enN1c/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-14",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/xbox-insiders-guide-droite-fonds-aleatoires": {
+    "title": "XBOX INSIDERS L’INTERFACE CHOISIT SON CAMP. — Let’s Play",
+    "description": "Des fonds dynamiques en rotation, le Guide à gauche ou à droite et un rangement dédié aux licences issues des disques : Xbox teste de nouvelles options. Elles commencent par le cercle Alpha Skip-Ahead.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/0.-Hero-261112-DiabloIV-4c1565a32512dee56997-1600x900.png",
+    "type": "article",
+    "published": "2026-11-14",
+    "section": "Actualités tech"
+  },
+  "/news/gta-6-calendrier-xbox-semaine-16-20-novembre": {
+    "title": "GTA VI LA SEMAINE DE LEONIDA APPROCHE. — Let’s Play",
+    "description": "GTA VI figure au programme Xbox de la semaine du 16 au 20 novembre. Le calendrier officiel maintient le 19 pour Leonida, aux côtés de Ranger’s Path, Unicorn Academy et Dark Rail.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/06/GTA-6-Official_Cover_Art_landscape-c3e36df9ed6c80b13d50.jpg",
+    "type": "article",
+    "published": "2026-11-15",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/kpop-demon-hunters-golden-world-tour-2027": {
+    "title": "KPOP DEMON HUNTERS HUNTR/X ENTRE EN SCÈNE. — Let’s Play",
+    "description": "Netflix et AEG Presents annoncent une tournée Golden World Tour autour de KPop Demon Hunters à partir de juin 2027. La billetterie générale est annoncée pour le 20 novembre, avec des préventes sous conditions.",
+    "image": "https://images.ctfassets.net/4cd45et68cgf/39x3qv6IsSoZO6PA3crYNK/e0df31844f379f040c4eb330ff5b718b/2027-KPopDemonHunters-GenericSocial-1920x1080.jpg?w=2000",
+    "type": "article",
+    "published": "2026-11-15",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/xbox-playback-historique-compte-pays": {
+    "title": "XBOX PLAYBACK VOTRE HISTOIRE EN CHIFFRES. — Let’s Play",
+    "description": "Xbox Playback propose un récapitulatif personnalisé de votre historique de jeu. Lancé le 12 novembre dans quinze pays, le service s’appuie sur les données disponibles du compte et reste annoncé jusqu’au 31 décembre.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/XBOX-Wire-Playback-Logo-1-431a9b50384ec62fcd33-1600x900.jpg",
+    "type": "article",
+    "published": "2026-11-15",
+    "section": "Actualités tech"
   }
 };

@@ -480,7 +480,7 @@ export const RPG_STORY_TOURS = [
         avatar: 'veilleuse-au-corbeau-noir',
         puissance: 5,
         ia: { niveau: 'veilleur', style: 'controle' },
-        note: 'Elle compte à voix basse : le Tribut prend deux PV à chaque contact de ses berserks, qui ouvrent le combat par leur Provocation.',
+        note: 'Elle compte à voix basse : le Tribut prend deux PV à chaque contact de ses berserks, qui protègent leur camp avec Défenseur.',
       },
       {
         id: 'corbeau-3',

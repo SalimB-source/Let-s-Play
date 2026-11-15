@@ -19,19 +19,18 @@ function partie(attaquant = 'ashigaru-des-braises', defenseur = 'tour-des-flots'
   return { duel, tour, allie };
 }
 
-test('classique : ne pas envoyer un Ashigaru sans effet contre la Tour des Flots', () => {
+test('classique : l’Ashigaru blesse la Tour des Flots avant son renvoi', () => {
   const { duel, tour, allie } = partie();
   let jets = 0;
   rpgReglerHasard(duel, () => { jets++; return .5; });
   const avant = JSON.stringify(duel);
-  assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: allie.id, cibleId: tour.id });
   assert.equal(JSON.stringify(duel), avant);
   assert.equal(jets, 0);
-  // Si l'attaque était réellement déclarée, la Tour renverrait l'Ashigaru
-  // avant de subir le moindre dégât.
+  // Le renvoi de la Tour a désormais lieu après les blessures de combat.
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', allie.id, tour.id).ok);
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
-  assert.equal(tour.pv, 4);
+  assert.equal(tour.pv, 3);
   assert.ok(duel.sorcier.main.includes('ashigaru-des-braises'));
   assert.ok(!duel.sorcier.creatures.includes(allie));
 });
@@ -58,22 +57,23 @@ test('classique : le Vampire peut entamer la Tour avant son propre renvoi', () =
   assert.deepEqual(choix, { attaquantId: allie.id, cibleId: tour.id });
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', choix.attaquantId, choix.cibleId).ok);
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
-  assert.equal(tour.pv, 3);
+  assert.equal(tour.pv, 1);
   assert.ok(duel.sorcier.main.includes('vampire-des-braises'));
 });
 
-test('classique : privilégier une Attaque ciblée plutôt que renvoyer gratuitement un allié', () => {
+test('classique : un allié peut entamer la Tour avant d’être renvoyé', () => {
   const { duel, tour, allie } = partie();
   duel.sorcier.main = ['tislit-des-aures'];
   const tireuse = rpgJouerCreature(duel, 'sorcier', 'tislit-des-aures').entite;
   assert.ok(tireuse);
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel);
-  assert.deepEqual(choix, { attaquantId: tireuse.id, cibleId: tour.id });
+  assert.deepEqual(choix, { attaquantId: allie.id, cibleId: tour.id });
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', choix.attaquantId, choix.cibleId).ok);
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
   assert.equal(tour.pv, 3);
-  assert.ok(duel.sorcier.creatures.includes(allie));
+  assert.ok(duel.sorcier.main.includes(allie.carteId));
+  assert.ok(duel.sorcier.creatures.includes(tireuse));
 });
 
 test('classique : le Scalde peut être renvoyé pour piocher si la main est faible et la table sûre', () => {
@@ -96,8 +96,8 @@ test('classique : le Scalde peut être renvoyé pour piocher si la main est faib
 });
 
 for (const contexte of ['main fournie', 'paquet presque vide', 'renfort', 'menace']) {
-  test(`classique : le Scalde reste en défense si ${contexte}`, () => {
-    const { duel, allie } = partie('scalde-des-runes');
+  test(`classique : le Scalde peut blesser la Tour avant son renvoi si ${contexte}`, () => {
+    const { duel, allie, tour } = partie('scalde-des-runes');
     duel.sorcier.main = [];
     if (contexte === 'main fournie') duel.sorcier.main = ['ashigaru-des-braises', 'ashigaru-des-braises'];
     if (contexte === 'paquet presque vide') duel.sorcier.deck = ['ashigaru-des-braises'];
@@ -110,8 +110,11 @@ for (const contexte of ['main fournie', 'paquet presque vide', 'renfort', 'menac
       duel.sorcier.main = [];
     }
     const avant = JSON.stringify(duel);
-    assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+    assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: allie.id, cibleId: tour.id });
     assert.equal(JSON.stringify(duel), avant);
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', allie.id, tour.id).ok);
+    assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+    assert.ok(!duel.joueur.creatures.includes(tour) || tour.pv < 4);
   });
 }
 
@@ -250,3 +253,31 @@ test('classique : une réponse ennemie après déclaration peut sauver le Défen
   assert.ok(duel.joueur.creatures.includes(tour));
   assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
 });
+
+for (const contexte of ['main faible', 'main fournie', 'paquet presque vide', 'renfort', 'menace']) {
+  test(`classique : sous le Grand Voile, le recyclage du Scalde reste contextuel (${contexte})`, () => {
+    const { duel, allie, tour } = partie('scalde-des-runes');
+    duel.sorcier.main = [];
+    if (contexte === 'main fournie') duel.sorcier.main = ['ashigaru-des-braises', 'ashigaru-des-braises'];
+    if (contexte === 'paquet presque vide') duel.sorcier.deck = ['ashigaru-des-braises'];
+    if (contexte === 'renfort') allie.atk += 2;
+    if (contexte === 'menace') {
+      rpgFinDeTour(duel);
+      duel.joueur.main = ['ashigaru-des-braises'];
+      assert.ok(rpgJouerCreature(duel, 'joueur', 'ashigaru-des-braises').ok);
+      rpgFinDeTour(duel);
+      duel.sorcier.main = [];
+    }
+    duel.brouillardCombat = true;
+    const avant = JSON.stringify(duel);
+    const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel);
+    assert.deepEqual(choix, contexte === 'main faible' ? { attaquantId: allie.id, cibleId: tour.id } : null);
+    assert.equal(JSON.stringify(duel), avant);
+    if (choix) {
+      assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', allie.id, tour.id).ok);
+      assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+      assert.equal(tour.pv, 4);
+      assert.ok(duel.sorcier.main.includes('scalde-des-runes'));
+    }
+  });
+}

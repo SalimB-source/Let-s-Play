@@ -57,10 +57,10 @@ test('Ralliement : comparer les renforts légaux sans consommer les autres carte
   assert.deepEqual(rpgMobaCandidatsRecherche(duel, 'joueur'), ['jarl-au-marteau-de-guerre', 'faucon-du-zenith']);
   const etat = JSON.stringify(duel);
   const choix = rpgMobaChoisirRechercheIA(duel, 'joueur');
-  assert.equal(choix, 'faucon-du-zenith');
+  assert.equal(choix, 'jarl-au-marteau-de-guerre');
   assert.equal(JSON.stringify(duel), etat);
   assert.equal(rpgMobaResoudreRecherche(duel, 'joueur', choix).ok, true);
-  assert.deepEqual(duel.joueur.main, ['jarl-au-marteau-de-guerre']);
+  assert.deepEqual(duel.joueur.main, ['faucon-du-zenith']);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
   assert.equal(rpgMobaChoisirRechercheIA(duel, 'joueur'), null);
 });

@@ -23,12 +23,12 @@ test('Défenseur ou Provocation portent une seule aura rouge dans les deux modes
     const pose = rpgJouerCreature(duel, 'joueur', 'gardien-de-la-porte-ardente');
     assert.equal(pose.ok, true);
     assert.equal(pose.entite.defenseur, true);
-    assert.equal(pose.entite.provocation, true);
     assert.equal(rendre(pose.entite, 'joueur', null).querySelectorAll('.rpg-card__resonance--garde').length, 1);
     for (const cote of ['joueur', 'ennemi']) for (const moba of [null, { className: 'moba__slot' }]) {
-      for (const capacite of [{ defenseur: true }, { provocation: true }, { prioriteAttaqueRapide: true }, { defenseur: true, provocation: true }]) {
+      for (const capacite of [{ defenseur: true }, { defenseurAccorde: true }, { provocation: true }, { prioriteAttaqueRapide: true }, { defenseur: true, provocation: true }]) {
         const doc = rendre(entite(capacite), cote, moba);
         assert.ok(doc.querySelector('.rpg-card.has-garde'));
+        assert.equal(doc.querySelectorAll('[data-effet="defenseur"]').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde .rpg-card__resonance-onde').length, 3);
         assert.equal(doc.querySelector('.rpg-card__resonance--garde').getAttribute('aria-hidden'), 'true');

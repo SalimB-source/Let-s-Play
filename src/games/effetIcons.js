@@ -1,3 +1,4 @@
+import { estDefenseur } from './rpgDefenseur.js';
 import { rpgCarteEmbuscade, rpgTexteConditionEmbuscade } from './rpgEmbuscade.js';
 /**
  * Le sprite des icônes d’effets du duel — les symboles validés
@@ -33,7 +34,6 @@ export const EFFETS_SPRITE = `
   <symbol id="i-traque" viewBox="0 0 24 24"><path d="M2 12C4.5 7.2 8.2 4.6 12 4.5c3.8.1 7.5 2.7 10 7.5-2.5 4.8-6.2 7.4-10 7.5-3.8-.1-7.5-2.7-10-7.5Z"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v1.8M12 13.6v1.8M8.6 12h1.8M13.6 12h1.8"/></symbol>
   <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
   <symbol id="i-defenseur" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/><path d="M12 6v2M12 14v2M7 11h2M15 11h2"/></symbol>
-  <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M5 11V7a2 2 0 0 1 4 0V6a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v6a7 7 0 0 1-7 7h-3a7 7 0 0 1-7-7v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 0 4H8"/><path d="M9 7v4M13 7v4M17 8v3"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
   <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
   <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
@@ -113,7 +113,6 @@ export const EFFET_ICONE = {
   coupCritique: 'i-coup-critique',
   traque: 'i-traque',
   traquePirates: 'i-traque',
-  provocation: 'i-provocation',
   defenseur: 'i-defenseur',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
@@ -186,7 +185,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'defenseur', 'overkill', 'furie', 'esquive',
+  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'defenseur', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement', 'poison',
@@ -195,7 +194,7 @@ export const MOTS_CLES_PASTILLES = [
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
 export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
   return MOTS_CLES_PASTILLES
-    .filter((cle) => Boolean(carte?.[cle]) || (cle === 'bouclier' && carte?.bouclierInitial))
+    .filter((cle) => Boolean(carte?.[cle]) || (cle === 'defenseur' && estDefenseur(carte)) || (cle === 'bouclier' && carte?.bouclierInitial))
     .flatMap((cle) => {
       if (cle !== 'protection' && cle !== 'protectionSortsContre') return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
       const contres = couleursProtectionCarte(carte);
@@ -234,7 +233,6 @@ export const EFFET_LIBELLES = {
   coupCritique: 'Coup critique',
   traque: 'Traque',
   traquePirates: 'Traque',
-  provocation: 'Provocation',
   defenseur: 'Défenseur',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
@@ -316,8 +314,7 @@ export function pastillesPourCarte(carte) {
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
-  if (carte.provocation) ajouter('provocation', 'Provocation');
-  if (carte.defenseur || carte.prioriteAttaqueRapide) ajouter('defenseur', 'Défenseur');
+  if (estDefenseur(carte)) ajouter('defenseur', 'Défenseur');
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
   // convoi, et le déclencheur de prise du Négociant.
@@ -513,7 +510,6 @@ const MOTIFS_LIGNE = [
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\battaque ciblée/iu],
   ['coupCritique', /\bcoup critique/iu],
-  ['provocation', /\bprovocation\b/iu],
   ['defenseur', /\bd[ée]fenseur/iu],
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
@@ -657,8 +653,7 @@ export const EFFET_DEFINITIONS = {
   coupRapide: 'Peut attaquer une créature adverse ou directement, sauf priorité applicable. Contre une créature, inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater sauf effet contraire ; certaines capacités peuvent riposter.',
   coupCritique: 'En combat, 15 % de chances de frapper 4 fois la créature adverse.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
-  defenseur: 'Une attaque adverse doit la viser en priorité si elle est accessible et qu’aucune Provocation accessible ne prime. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
-  provocation: 'Les attaques adverses doivent la viser en priorité si elle est accessible, avant les Défenseurs. Elle gagne +0/+1 jusqu’à la fin du tour pour chaque attaque qui la cible.',
+  defenseur: 'Une attaque adverse doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
   esquive: () => '15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
@@ -705,7 +700,6 @@ const LIBELLES_IMPRIMES = [
   ['coupRapide', 'Attaque ciblée'],
   ['coupCritique', 'Coup critique'],
   ['traque', 'Traque'],
-  ['provocation', 'Provocation'],
   ['defenseur', 'D[ée]fenseur'],
   ['overkill', 'Overkill'],
   ['envol', 'Envol'],
@@ -805,7 +799,7 @@ function texteCapacitesCombat(carte) {
 /** Les règles de combat imprimées historiques parlent de bloqueurs. Les
  * remplacer uniquement à la présentation, sans modifier le catalogue ni les
  * autres capacités de la carte (arrivées, durées et conditions comprises). */
-const MOTS_COMBAT_INDIVIDUEL = new Set(['envol', 'infiltration', 'coupRapide', 'defenseur', 'provocation', 'overkill']);
+const MOTS_COMBAT_INDIVIDUEL = new Set(['envol', 'infiltration', 'coupRapide', 'defenseur', 'overkill']);
 export function texteCombatIndividuel(carte) {
   const brut = texteCapacitesCombat(carte);
   if (!brut) return brut;

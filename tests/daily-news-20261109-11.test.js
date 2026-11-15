@@ -43,7 +43,7 @@ test('neuf sujets uniques, archives préservées et 11 novembre en tête de tous
     for (const date of ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-08']) assert.ok(text.includes(`from '../news/daily/${date}'`), `${f}: ${date}`);
     assert.ok(text.indexOf("from '../news/daily/2026-11-11'") < text.indexOf("from '../news/daily/2026-11-10'"));
   }
-  for (const f of ['src/pages/Home.jsx', 'src/pages/News.jsx']) assert.ok(read(f).includes("from '../news/daily/2026-11-11'"));
+  for (const f of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx']) assert.ok(read(f).includes("from '../news/daily/2026-11-11'"));
   assert.ok(!read('src/pages/News.jsx').includes('actus-hier'));
 });
 

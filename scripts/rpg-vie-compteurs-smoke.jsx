@@ -170,10 +170,10 @@ export async function checkRpgVieCompteurs(assert) {
 export async function plaquesViePourLayout() {
   const { renderToStaticMarkup } = await import('react-dom/server');
   return renderToStaticMarkup(<>
-    {[['25', 25, 25], ['bonus', 30, 50], ['record', 25, 50], ['100', 100, 100], ['blesse', 20, 50]]
-      .flatMap(([id, pv, pvMax]) => ['joueur', 'ennemi'].map(camp => (
+    {[['25', 25, 25], ['bonus', 30, 50], ['record', 25, 50], ['100', 100, 100], ['blesse', 20, 50], ['demi', 12.5, 25], ['zero', 0, 25], ['bouclier', 25, 25, 4]]
+      .flatMap(([id, pv, pvMax, bouclier = 0]) => ['joueur', 'ennemi'].map(camp => (
         <div key={`${id}-${camp}`} data-cas={`${id}-${camp}`} className={`rpg-wizard-plate rpg-wizard-plate--${camp}`}>
-          <PlaqueVie pv={pv} pvMax={pvMax} base={25} />
+          <PlaqueVie pv={pv} pvMax={pvMax} bouclier={bouclier} base={25} />
         </div>
       )))}
   </>);

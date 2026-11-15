@@ -292,10 +292,10 @@ test('Scorpion : Poison fonctionne en combat réel sans Vol de vie', () => {
   rpgFinDeTour(d); assert.equal(d.tour, 'sorcier'); assert.equal(cible.pv, 6); assert.equal(cible.poison.toursRestants, 1);
 });
 
-test('Colosse : Bouclier et Provocation, sans Contre-attaque', () => {
+test('Colosse : Bouclier et Défenseur, sans Contre-attaque', () => {
   const d = nouveau(); const es = materiaux(d, COLOSSE);
   const r = invoquer(d, COLOSSE, es); assert.ok(r.ok, r.raison);
-  assert.equal(r.entite.bouclier, 1); assert.equal(r.entite.provocation, true); assert.equal(r.entite.contreAttaque, false);
+  assert.equal(r.entite.bouclier, 1); assert.equal(r.entite.defenseur, true); assert.equal(r.entite.contreAttaque, false);
   assert.equal(d.renfortChoixEnAttente?.sourceCarteId, COLOSSE);
 });
 

@@ -101,20 +101,13 @@ test('deux créatures attaquent séparément pendant le même tour', () => {
   assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok, false);
 });
 
-test('Provocation accorde son bonus dès la déclaration, et un Défenseur apparu ne redirige pas', () => {
+test('ancien marqueur : Défenseur sans bonus à la déclaration', () => {
   const { d, a, c } = partie();
-  c.provocation = true; c.atk = 0; const defense = c.def;
+  c.provocation = true;
+  const avant = [c.def, c.pv, c.pvMax];
   assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).ok, false);
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
-  assert.equal(c.def, defense + 1);
-  d.sorcier.main = ['garde-du-trone-givre'];
-  assert.ok(rpgMobaJouerCreature(d, 'sorcier', 'garde-du-trone-givre', 'left', 1, { ouvrirReponse: true }).ok);
-  // Pas de redirection vers une nouvelle présence après la fenêtre de réponse.
-  return import('../src/games/rpgMobaLocal.js').then(({ rpgMobaPasserCreature }) => {
-    assert.ok(rpgMobaPasserCreature(d, 'joueur').ok);
-    assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
-    assert.equal(d.sorcier.creatures.find((e) => e.carteId === 'garde-du-trone-givre').pv, 4);
-  });
+  assert.deepEqual([c.def, c.pv, c.pvMax], avant);
 });
 
 test('un Bouclier de lumière empêche aussi le passage Overkill', () => {
@@ -277,6 +270,18 @@ test('Tour des Flots : le renvoi imprimé après les blessures conserve le plate
   assert.ok(!d.joueur.creatures.some((e) => e.id === a.id));
   assert.ok(d.joueur.main.includes(a.carteId));
   assert.ok(rpgMobaPlacementCoherent(d));
+});
+
+test('Tour des Flots MOBA : un bouclier arrête le renvoi après les blessures', () => {
+  const { d, a, c } = partie();
+  c.carteId = 'tour-des-flots'; c.atk = 0; c.pv = c.pvMax = c.def = 4;
+  a.bouclier = 1; const mainAvant = [...d.joueur.main];
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.equal(c.pv, 3); assert.equal(result.resume.blessures[0].montant, 1);
+  assert.ok(d.joueur.creatures.includes(a)); assert.equal(a.bouclier, 0);
+  assert.deepEqual(d.joueur.main, mainAvant); assert.ok(rpgMobaPlacementCoherent(d));
 });
 
 test('une cible qui quitte le plateau après l’annonce annule l’attaque sans viser la voie', async () => {

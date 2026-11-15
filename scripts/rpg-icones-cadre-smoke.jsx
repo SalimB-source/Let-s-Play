@@ -8,7 +8,7 @@ import { IconesCarte, EffetsSprite } from '../src/games/effetIcons.jsx';
 import '../src/games/rpg-moba.css';
 
 const quatre = { envol: true, infiltration: true, volDeVie: true, rapidite: true };
-const beaucoup = { ...quatre, coupRapide: true, provocation: true, defenseur: true, esquive: true, protection: { contre: ['eau', 'braise'] } };
+const beaucoup = { ...quatre, coupRapide: true, defenseur: true, esquive: true, protection: { contre: ['eau', 'braise'] } };
 const style = (width, height) => ({ position: 'relative', display: 'block', width, height, minHeight: 0, flex: 'none', padding: 0, border: '2px solid black', boxSizing: 'border-box', transform: 'none' });
 function App() {
   const [carte, setCarte] = useState(quatre);

@@ -422,6 +422,27 @@ test('PvP : une attaque ciblée peut viser le sorcier même en présence d’une
   assert.equal(duel.sorcier.pv, pv - 3);
 });
 
+test('PvP : la Tour des Flots reçoit les blessures avant le renvoi de l’attaquant', () => {
+  for (const cote of ['joueur', 'sorcier']) {
+    let duel = partieNeuve(123); duel.pvp = true; duel.phase = 'principale'; duel.tour = cote;
+    const adv = rpgPvpAutreCote(cote);
+    duel[cote].creatures = [{ id: 'a', carteId: 'ashigaru-des-braises', name: 'Ashigaru', ready: true, attaquee: false, atk: 2, def: 2, pv: 2, pvMax: 2 }];
+    duel[adv].creatures = [{ id: 'tour', carteId: 'tour-des-flots', name: 'Tour des Flots', ready: true, attaquee: false, atk: 0, def: 4, pv: 4, pvMax: 4, defenseur: true }];
+    duel[cote].main = []; duel[adv].main = [];
+    assert.ok(rpgPvpAppliquer(duel, cote, { type: 'attaquer', declarer: true, attaquants: ['a'], cibleId: 'tour' }).ok);
+    assert.equal(duel[adv].creatures[0].pv, 4, 'la fenêtre de réponse précède les dégâts');
+    assert.equal(rpgPvpCoteActif(duel), adv);
+    // Une reprise réseau relit aussi le combat depuis l'état sérialisé.
+    duel = JSON.parse(JSON.stringify(duel));
+    const resultat = rpgPvpAppliquer(duel, adv, { type: 'bloquer', blocages: {} });
+    assert.ok(resultat.ok, JSON.stringify(resultat));
+    assert.ok(duel.combatFeed.some(e => e.type === 'hit' && e.victim.id === 'tour' && e.amount === 2));
+    assert.equal(duel[adv].creatures[0].pv, 2);
+    assert.ok(duel[cote].main.includes('ashigaru-des-braises'));
+    assert.equal(duel[cote].creatures.length, 0);
+  }
+});
+
 test('PvP : une seule créature attaque à la fois, les autres restent libres', () => {
   const duel = partieNeuve(123);
   duel.phase = 'principale'; duel.tour = 'joueur';
@@ -520,4 +541,19 @@ test('PvP : une ancienne phase principale 2 est visible et jouable sans muter un
   const avant=JSON.stringify(d);assert.equal(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:['absent']}).ok,false);assert.equal(JSON.stringify(d),avant);
   assert.ok(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:[r.entite.id]}).ok);
   assert.ok(d.combatDeclare.cibleIndividuelle);
+});
+
+for (const cote of ['joueur', 'sorcier']) test(`PvP ${cote} : ancien marqueur devient Défenseur sans bonus`, () => {
+  const duel = partieNeuve(42);
+  duel.pvp = true; duel.tour = cote; duel.phase = 'principale';
+  const adv = rpgPvpAutreCote(cote);
+  const entite = (id, attrs = {}) => ({ id, carteId: 'ashigaru-des-braises', name: id, ready: true, attaquee: false, atk: 2, def: 2, pv: 2, pvMax: 2, ...attrs });
+  duel[cote].creatures = [entite('a')];
+  duel[adv].creatures = [entite('ancienne', { provocation: true }), entite('garde', { defenseur: true })];
+  const attaquer = cibleId => rpgPvpAppliquer(duel, cote, { type: 'attaquer', declarer: true, attaquants: ['a'], cibleId });
+  assert.equal(attaquer(null).raison, 'cible');
+  const cible = duel[adv].creatures[0];
+  const avant = [cible.def, cible.pv, cible.pvMax];
+  assert.ok(attaquer('ancienne').ok);
+  assert.deepEqual([cible.def, cible.pv, cible.pvMax], avant);
 });

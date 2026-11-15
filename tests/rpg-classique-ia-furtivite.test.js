@@ -68,7 +68,7 @@ test('classique : le renvoi de la Tour des Flots sauve le Djinn plutôt que le l
   assert.deepEqual(choix, { attaquantId: allie.id, cibleId: ennemie.id });
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', choix.attaquantId, choix.cibleId).ok);
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
-  assert.equal(ennemie.pv, 4);
+  assert.equal(ennemie.pv, 2);
   assert.ok(duel.sorcier.main.includes(allie.carteId));
   rpgFinDeTour(duel);
   assert.ok(duel.sorcier.main.includes(allie.carteId));
@@ -83,10 +83,13 @@ test('classique : ne pas jeter le Djinn contre la Tour de Braise sans gain', () 
   assert.ok(duel.sorcier.cimetiere.includes(allie.carteId));
 });
 
-test('classique : une main pleine ne garantit pas de conserver un Djinn renvoyé', () => {
-  const { duel } = partie('tour-des-flots');
+test('classique : même main pleine, le Djinn peut blesser la Tour avant le renvoi', () => {
+  const { duel, allie, ennemie } = partie('tour-des-flots');
   duel.sorcier.main = Array(6).fill('ashigaru-des-braises');
-  assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: allie.id, cibleId: ennemie.id });
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', allie.id, ennemie.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(ennemie.pv, 2);
 });
 
 test('classique : une créature durable n’est pas traitée comme un Djinn éphémère', () => {

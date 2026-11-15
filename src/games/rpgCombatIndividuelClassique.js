@@ -1,3 +1,4 @@
+import { estDefenseur } from './rpgDefenseur.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -20,9 +21,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = (duel[autre(cote)]?.creatures ?? []).filter((e) => accessible(attaquant, e, ciblee));
-  const provocations = possibles.filter((e) => e.provocation);
-  const defenseurs = possibles.filter((e) => e.defenseur || e.prioriteAttaqueRapide);
-  const prioritaires = provocations.length ? provocations : defenseurs;
+  const prioritaires = possibles.filter(estDefenseur);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
@@ -59,10 +58,6 @@ export function rpgDeclarerAttaqueIndividuelleClassique(duel, cote, attaquantId,
   delete attaquant.repriseAttaqueIndividuelle;
   const ciblee = Boolean(attaquant.coupRapide);
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
-  if (cible?.provocation) {
-    cible.def += 1; cible.pv += 1; cible.pvMax += 1;
-    (duel[autre(cote)].bonusTemporaires ??= []).push({ entiteId: cible.id, atk: 0, def: 1, tour: cote });
-  }
   attaquant.attaquee = true;
   duel.log.push(`${attaquant.name} annonce une attaque ${cible ? `contre ${cible.name}` : 'directe contre le sorcier'}.`);
   duel.phase = 'blocage';
@@ -175,51 +170,6 @@ function renvoiSansGain(duel, cote, attaquant, cible) {
   }
 }
 
-/** La Provocation du Gardien ajoute un PV avant l'attaque et sa réplique
- * détruit parfois Tislit sans que le Gardien perde de PV. Vérifier les deux
- * issues de son Attaque ciblée avec le moteur, sans préjuger d'un échange où
- * la cible pourrait mourir ou d'autres effets donner un gain. Cette vérification
- * reste limitée à Tislit sans équipement ni critique : d'autres effets aléatoires
- * pourraient avoir des issues intermédiaires qu'il faudrait explorer aussi. */
-function tislitSansGainFaceAuGardien(duel, cote, attaquant, cible) {
-  if (attaquant.carteId !== 'tislit-des-aures' || !attaquant.coupRapide || attaquant.arme || attaquant.coupCritique
-    || cible.carteId !== 'gardien-de-la-porte-ardente' || !cible.provocation) return false;
-  const adversaire = autre(cote);
-  const vue = (camp, exclureId, bonusTemporaires = camp.bonusTemporaires) => {
-    const { main, deck, cimetiere, creatures, bonusTemporaires: _bonus, ...publicCamp } = camp;
-    return JSON.stringify({ ...publicCamp, main: main.length, deck: deck.length,
-      cimetiere: cimetiere.length, creatures: creatures.filter((e) => e.id !== exclureId), bonusTemporaires });
-  };
-  const horsVie = ({ pv, pvMax, def, ...reste }) => reste;
-  try {
-    return rpgAvecCompteurEntitesIsole(() => [0.01, 0.99].every((jet) => {
-      const probe = typeof structuredClone === 'function' ? structuredClone(duel) : JSON.parse(JSON.stringify(duel));
-      rpgReglerHasard(probe, () => jet);
-      if (!rpgDeclarerAttaqueIndividuelleClassique(probe, cote, attaquant.id, cible.id).ok
-        || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok) return false;
-      if (rpgVainqueur(probe) || probe.destructionsEnAttente?.length || probe.arriveeEnAttente
-        || probe.effetCreatureEnAttente || probe.siteEnAttente || probe.defausseEnAttente) return false;
-      const cibleApres = probe[adversaire].creatures.find((e) => e.id === cible.id);
-      if (probe[cote].creatures.some((e) => e.id === attaquant.id) || !cibleApres
-        || cibleApres.pv < cible.pv || cibleApres.def < cible.def || cibleApres.pvMax < cible.pvMax
-        || JSON.stringify(horsVie(cibleApres)) !== JSON.stringify(horsVie(cible))) return false;
-      // La Provocation ajoute un bonus temporaire à la déclaration ; retirer
-      // uniquement cette entrée pour détecter d'autres effets sur le camp.
-      const bonus = [...(probe[adversaire].bonusTemporaires ?? [])];
-      let index = bonus.length - 1;
-      while (index >= 0 && !(bonus[index].entiteId === cible.id && bonus[index].atk === 0
-        && bonus[index].def === 1 && bonus[index].tour === cote)) index -= 1;
-      if (index < 0) return false;
-      bonus.splice(index, 1);
-      const avant = { ...duel[cote], cimetiere: [...duel[cote].cimetiere, null] };
-      return vue(avant, attaquant.id) === vue(probe[cote], null)
-        && vue(duel[adversaire], cible.id) === vue(probe[adversaire], cible.id, bonus);
-    }));
-  } catch {
-    return false;
-  }
-}
-
 /** Seule face à un Défenseur intact avec Contre-attaque, Tislit ne doit pas
  * se perdre pour une unique blessure. Vérifier l'échange et le raté réels ;
  * conserver le candidat s'il existe d'autres créatures, un équipement ou le
@@ -228,7 +178,7 @@ function sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible) {
   const adv = autre(cote);
   if (attaquant.carteId !== 'tislit-des-aures' || !attaquant.coupRapide || attaquant.arme
     || attaquant.coupCritique || attaquant.atk !== 1 || attaquant.pv !== 1
-    || !cible.defenseur || !cible.contreAttaque || cible.provocation
+    || !estDefenseur(cible) || !cible.contreAttaque
     || cible.pv !== cible.pvMax || cible.pv < 4
     || duel[cote].creatures.length !== 1 || duel[adv].creatures.length !== 1) return false;
   const vueCamp = (camp, normaliserAttaque, normaliserBlessure, cimetiereBonus = false) => {
@@ -612,7 +562,6 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier',
       const cible = duel[adversaire].creatures.find((e) => e.id === cibleId);
       if (!attaquantImpose && (attaqueSansEffetSousVoile(duel, cote, attaquant, cibleId)
         || renvoiSansGain(duel, cote, attaquant, cible)
-        || tislitSansGainFaceAuGardien(duel, cote, attaquant, cible)
         || sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible)
         || mortSansGain(duel, cote, attaquant, cibleId))) continue;
       const tue = attaquant.atk >= cible.pv;

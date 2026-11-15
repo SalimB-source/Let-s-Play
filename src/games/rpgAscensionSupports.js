@@ -7,8 +7,9 @@ export const RPG_ASCENSION_SUPPORT_CREATURES = Object.freeze([
     id: 'gardienne-des-sables-ensevelis', name: 'Gardienne des sables ensevelis', kind: 'creature',
     element: 'sable', set: 'ascension-soutiens', art: 'gardienne-des-sables-ensevelis',
     cost: 4, atk: 2, def: 4, rarity: 'rare', typeLine: 'Créature — Humaine · Gardienne',
+    defenseur: true,
     arrivee: { type: 'renfort-choisi', zone: 'cimetiere', coutMax: 3, ascensionAutorisee: true, bouclierRenfort: true },
-    text: 'À son arrivée : choisissez dans votre cimetière une créature de coût imprimé 3 ou moins et invoquez-la spécialement avec un bouclier avant son effet d’arrivée.',
+    text: 'Défenseur. À son arrivée : choisissez dans votre cimetière une créature de coût imprimé 3 ou moins et invoquez-la spécialement avec un bouclier avant son effet d’arrivée.',
     flavor: 'Le désert garde les noms que les vivants ont oubliés.',
   }),
   Object.freeze({

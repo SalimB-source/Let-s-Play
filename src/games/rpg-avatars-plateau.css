@@ -7,9 +7,9 @@
   left: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2);
   right: auto;
   display: block;
-  width: clamp(70px, 8.8vw, 116px);
+  width: clamp(76px, 9.5vw, 128px);
   max-width: none;
-  height: clamp(70px, 8.8vw, 116px);
+  height: clamp(76px, 9.5vw, 128px);
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -38,28 +38,22 @@
   box-shadow: none;
 }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate__avatar img {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: calc(2% + 3px);
   display: block;
-  width: 100%;
-  height: 100%;
+  /* La face tient dans le bord intérieur du médaillon (82 %, bord de 3 px).
+     On réduit le portrait entier, puis on rogne les coins en cercle : aucune
+     partie de l'avatar ne dépasse du cadre doré. */
+  width: calc(82% - 6px);
+  height: calc(82% - 6px);
+  transform: translateX(-50%);
+  border-radius: 50%;
   object-fit: contain;
-  /* Aligner le haut du visage : les cheveux et les cornes peuvent ainsi
-     dépasser le haut du cercle. */
-  object-position: center top;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .7));
-  /* Un cercle pour le buste, raccordé à une petite fenêtre en haut pour les
-     cheveux et les coiffes. Les deux masques sont additionnés : les épaules
-     et le bas du portrait restent à l'intérieur du médaillon. Les dimensions
-     correspondent exactement au cercle décoratif (82 %, bas à 2 %). */
-  -webkit-mask-image: radial-gradient(circle closest-side, #000 99%, transparent 100%), linear-gradient(#000, #000);
-  mask-image: radial-gradient(circle closest-side, #000 99%, transparent 100%), linear-gradient(#000, #000);
-  -webkit-mask-size: 100% 82%, 58% 24%;
-  mask-size: 100% 82%, 58% 24%;
-  /* 88,89 % de l’espace restant place le cercle à 2 % du bas. */
-  -webkit-mask-position: center 88.8889%, center top;
-  mask-position: center 88.8889%, center top;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
+  object-position: center;
 }
+
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__zones, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name),
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__zones, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name) { display: none; }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__pv.rpg-jauge-vie {
@@ -84,6 +78,57 @@
   box-shadow: none;
   overflow: visible;
 }
+/* Les PV se lisent comme une barre horizontale sous le médaillon. La même
+   jauge et le même chiffre sont conservés : seule sa présentation change. */
+.rpg-battle[data-scene="duel"] {
+  --rpg-vie-bar-width: clamp(90px, 10vw, 140px);
+  --rpg-vie-bar-height: clamp(20px, 1.7vw, 24px);
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table {
+  --rpg-vie-bar-width: clamp(64px, calc(var(--duel-card) * 1.25), 108px);
+  --rpg-vie-bar-height: 20px;
+}
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-jauge-vie__rond,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate .rpg-jauge-vie__rond {
+  width: var(--rpg-vie-bar-width);
+  height: var(--rpg-vie-bar-height);
+  border: 1px solid #d7ad61;
+  border-radius: 6px;
+  background: #2a090b;
+  box-shadow: 0 2px 5px #000a, inset 0 1px 3px #0009;
+  clip-path: none;
+  -webkit-clip-path: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+.rpg-battle[data-scene="duel"] .rpg-jauge-vie__nappe {
+  border-radius: inherit;
+  clip-path: none;
+  background: transparent;
+}
+.rpg-battle[data-scene="duel"] .rpg-jauge-vie__sable {
+  inset: 0 auto 0 0;
+  width: calc(var(--rpg-jauge-part, 1) * 100%);
+  height: 100%;
+  border-radius: 0;
+  background: linear-gradient(180deg, #e15a51, #9f1722 55%, #660914);
+  box-shadow: inset 0 1px rgba(255, 222, 183, .55);
+  transition: width 420ms cubic-bezier(.2, .7, .2, 1);
+}
+.rpg-battle[data-scene="duel"] .rpg-jauge-vie.is-critique .rpg-jauge-vie__sable {
+  background: linear-gradient(180deg, #f08460, #bf3027 55%, #760d12);
+}
+.rpg-battle[data-scene="duel"] .rpg-jauge-vie__chiffre { font-size: clamp(12px, 1.1vw, 15px); }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-jauge-vie__chiffre { font-size: 12px; }
+.rpg-battle[data-scene="duel"] .rpg-jauge-vie .rpg-wizard-plate__shield-value {
+  position: absolute;
+  left: calc(100% + 4px);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-battle[data-scene="duel"] .rpg-jauge-vie__sable { transition: none; }
+}
+
 /* Le chiffre et sa jauge restent visibles ; seul le cœur décoratif disparaît. */
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__hp-icon--heart { display: none; }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__shield-value {
@@ -132,7 +177,6 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { top: auto; bottom: calc(var(--rpg-touch-hand) + 2px); }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-wizard-plate__avatar { width: 100%; height: 100%; }
-.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-jauge-vie__rond { width: clamp(28px, calc(var(--duel-card) * .55), 40px); height: clamp(28px, calc(var(--duel-card) * .55), 40px); }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate__thinking { font-size: 7px; padding: 4px 6px; }
 /* L'éventail adverse ne doit pas recouvrir le personnage centré. Le nombre
    de cartes reste visible dans les compteurs de zones à gauche. */
@@ -192,8 +236,8 @@
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
   --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .82));
   --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.38 + env(safe-area-inset-bottom, 0px));
-  --rpg-avatar-height: clamp(48px, calc(var(--duel-card) * 1.03), 82px);
-  --rpg-avatar-vie: clamp(28px, calc(var(--duel-card) * .55), 40px);
+  --rpg-avatar-height: clamp(52px, calc(var(--duel-card) * 1.13), 90px);
+  --rpg-avatar-vie: var(--rpg-vie-bar-height);
   --rpg-avatar-nav: calc(var(--rpg-avatar-height) + var(--rpg-avatar-vie) + 4px);
   --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(34px, calc((50dvh - var(--rpg-avatar-height) - var(--rpg-avatar-vie) - 18px - env(safe-area-inset-bottom, 0px)) * .8)));
   --rpg-field-min: min(40px, var(--rpg-field-card));
@@ -229,6 +273,7 @@
 /* Les cases et les cartes partagent toujours la même grille et le même haut. */
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--equipe {
   align-items: start;
+  top: 4px;
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row--equipe .rpg-creature-slots {
   align-items: start;
@@ -238,7 +283,7 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
   box-sizing: border-box;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
-  width: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2 - var(--rpg-avatar-height) / 2 - 12px);
+  width: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2 - max(var(--rpg-avatar-height), var(--rpg-vie-bar-width)) / 2 - 12px);
   justify-content: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
@@ -262,19 +307,22 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row--ennemi .rpg-creature-slots {
   align-items: start;
 }
+/* Reculer les deux camps de la même distance tout en gardant la ligne neutre. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi { top: -4px; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi::after { bottom: -4px; }
 
 /* À la souris, les deux rangées s'ancrent de part et d'autre de la ligne
    neutre. Les cartes et les cases partagent le même bord, aussi avec terrains. */
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .card-row--ennemi,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .card-row--ennemi {
   top: auto;
-  bottom: calc(50% + 4px);
+  bottom: calc(50% + 10px);
   padding-block: 0;
   align-items: end;
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-row--ennemi .rpg-creature-slots { align-items: end; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .card-row--equipe {
-  top: calc(50% + 4px);
+  top: calc(50% + 10px);
   bottom: auto;
   padding-block: 0;
   align-items: start;
@@ -288,13 +336,12 @@
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: flex-start; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
   padding-left: calc(clamp(8px, 1.5vw, 24px) + 12px);
-  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - clamp(70px, 8.8vw, 116px) / 2 - 28px);
+  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - max(clamp(76px, 9.5vw, 128px), var(--rpg-vie-bar-width)) / 2 - 28px);
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }
 
-/* Médaillons ajourés pour les deux camps, sur tous les écrans. Le cercle est
-   derrière le visage détouré, abaissé pour laisser dépasser la tête et garder
-   le centre transparent ; aucune décoration ne capte les clics ni les flèches. */
+/* Médaillons ajourés pour les deux camps, sur tous les écrans. Le portrait
+   reste dans le cercle doré ; aucune décoration ne capte les clics ni les flèches. */
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar::before,
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar::after {
   content: "";
@@ -323,4 +370,3 @@
     radial-gradient(circle at 96% 50%, #fff0b1 0 2px, #a46e24 2.2px 3px, transparent 3.3px),
     radial-gradient(circle at 50% 96%, #fff0b1 0 2px, #a46e24 2.2px 3px, transparent 3.3px);
 }
-.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar img { position: relative; z-index: 1; }

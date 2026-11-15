@@ -17,19 +17,19 @@ function partie() {
   return { duel, gardien, tislit };
 }
 
-test('classique : ne pas perdre Tislit sur une riposte sans réellement entamer le Gardien', () => {
+test('classique : la riposte du Gardien intervient sans le bonus de Provocation supprimé', () => {
   const { duel, gardien, tislit } = partie();
   let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
   const avant = JSON.stringify(duel);
-  assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: tislit.id, cibleId: gardien.id });
   assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0);
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', tislit.id, gardien.id).ok);
-  assert.equal(gardien.pv, 5);
+  assert.equal(gardien.pv, 4);
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
   assert.ok(!duel.sorcier.creatures.includes(tislit));
-  assert.equal(gardien.pv, 4);
+  assert.equal(gardien.pv, 3);
   rpgFinDeTour(duel);
-  assert.equal(gardien.pv, 4);
+  assert.equal(gardien.pv, 3);
 });
 
 for (const jet of [.5, .01]) test(`classique : tenter l'échange demandé contre le Gardien blessé (jet ${jet})`, () => {

@@ -1,3 +1,4 @@
+import { estDefenseur } from './rpgDefenseur.js';
 /**
  * Les icônes d'effets en React — le pendant vivant d'`effetIcons.js`.
  *
@@ -404,8 +405,7 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
     if (entite.volDeVie) ajouter('volDeVie', 'Vol de vie');
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
     if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
-    if (entite.provocation) ajouter('provocation', 'Provocation');
-    if (entite.defenseur || entite.prioriteAttaqueRapide) ajouter('defenseur', 'Défenseur');
+    if (estDefenseur(entite)) ajouter('defenseur', 'Défenseur');
     if (entite.rapidite && !carte?.rapidite) ajouter('rapidite', 'Rapidité');
     if (entite.overkill) ajouter('overkill', 'Overkill');
     if (entite.esquive) ajouter('esquive', 'Esquive', null);
@@ -444,7 +444,7 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
     const colonne = colonneRef.current;
     if (!colonne || !className.includes('rpg-card-icones--colonne')) return undefined;
     // Le mulligan MOBA pose ses badges à côté de la face, dans son wrapper.
-    const cadre = colonne.closest('.rpg-card, .rpg-hand__card, .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art, .moba__mulligan-item');
+    const cadre = colonne.closest('.rpg-card, .rpg-hand__card, .rpg-mulligan__card, .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art, .moba__mulligan-item');
     if (!cadre) return undefined;
     const carteMoba = colonne.closest('.moba__real-slot .rpg-card');
     const nettoyer = () => {

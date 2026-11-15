@@ -1,7 +1,7 @@
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
-import { ciblesDefenseur } from './rpgDefenseur.js';
+import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -1709,7 +1709,6 @@ function creerEntiteCreature(carte, duel) {
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
-    provocation: Boolean(carte.provocation),
     envol: Boolean(carte.envol),
     volDeVie: Boolean(carte.volDeVie),
     infiltration: Boolean(carte.infiltration),
@@ -1793,7 +1792,7 @@ function creerEntiteCreature(carte, duel) {
     // Priorité d'attaque rapide (Tours de défense) : les créatures adverses
     // avec Attaque rapide doivent attaquer cette tour en priorité.
     prioriteAttaqueRapide: Boolean(carte.prioriteAttaqueRapide),
-    defenseur: Boolean(carte.defenseur),
+    defenseur: estDefenseur(carte),
     // L'arme attachée (`{ carteId }`), ou null : une seule par créature.
     // Bonus et mot-clé sont déjà fondus dans les champs ci-dessus (atk, def,
     // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
@@ -2960,7 +2959,7 @@ function degatsCreatureCombattue(carte, quand) {
 /** Effet de blocage déclaré par une carte. Le renvoi de la Tour des Flots
  * attend la fin des blessures normales ; la Tour de Neige ne gèle qu'à son arrivée.
  */
-function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null, avantBlessures = false) {
+function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null) {
   const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId) ?? bloqueurSnapshot;
   const attaquant = duel[autre(coteBloqueur)]?.creatures.find((e) => e.id === attaquantId);
   const combat = bloqueur && duelCardById(bloqueur.carteId)?.combat;
@@ -2976,7 +2975,7 @@ function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, ap
       && paradeZoneBloque(duel, attaquant, 'capacite', autre(coteBloqueur), coteBloqueur)) return;
     if (renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite')) {
       if (duel.moba) mobaRetirer(duel.moba, autre(coteBloqueur), attaquant.id);
-      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire ${avantBlessures ? 'avant' : 'après'} les blessures de combat.`);
+      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire après les blessures de combat.`);
     }
   }
 }
@@ -3438,6 +3437,9 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
     ? 'joueur' : 'sorcier';
   const coteVictimeEffective = coteVictime ?? autre(coteCapteur);
   ouvrirCale(duel, coteVictimeEffective, victime);
+  // Les mots-clés donnés tant que la créature est en jeu ne suivent pas
+  // sa présence hors du champ, même si la cale la restitue plus tard.
+  delete victime.defenseurAccorde;
   capteur.enCale = {
     carteId: victime.carteId,
     name: victime.name,
@@ -4382,6 +4384,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (entite && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) {
           entite.bouclier = 1;
+          if (effet.donneDefenseur && !estSite(entite)) {
+            entite.defenseurAccorde = true;
+            duel.log.push(`${entite.name} gagne Défenseur tant qu’elle reste en jeu.`);
+          }
           // Certains boucliers renforcent aussi durablement la même cible.
           const couleurs = cardColors(duelCardById(entite.carteId));
           const bonusCouleur = couleurs.reduce((somme, couleur) => ({
@@ -6139,7 +6145,7 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
   }
   if (duel.moba && carte.id === 'la-devoreuse' && !duel[autre(cote)].creatures.some((candidate) => candidate.id === cible)) cible = null;
   if (duel.moba && ['faiseur-de-passage', 'veilleuse-des-citernes'].includes(carte.id) && cible === entite.id) {
-    cible = duel[cote].creatures.find((candidate) => candidate.id !== entite.id && !rpgEstProtegee(candidate, cardColors(carte)))?.id ?? null;
+    cible = duel[cote].creatures.find((candidate) => candidate.id !== entite.id && (!carte.arrivee?.donneDefenseur || !estSite(candidate)) && !rpgEstProtegee(candidate, cardColors(carte)))?.id ?? null;
   }
   const signalerRetourMoba = (event) => {
     if (options?.surEvenementRetourMoba) { options.surEvenementRetourMoba(event); return; }
@@ -6240,6 +6246,7 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
       && (!sourceLane || portee === 'allie' || mobaPartageVoie(duel.moba, entite.mobaLane, sourceLane))
       && (carte?.id !== 'gardienne-du-croissant' || !estSite(entite))
+      && (!carte?.arrivee?.donneDefenseur || !estSite(entite))
       && (!['renvoi-ou-destruction', 'exil-temporaire'].includes(carte.arrivee?.type) || !estSite(entite))
       && (carte.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carte)))
       && cibleRespecteCoutMax(carte, entite)
@@ -6493,10 +6500,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const portee = arriveeCiblePortee(carte);
     const creatures = campsDePortee(cote, portee).flatMap((camp) => duel[camp].creatures);
     const cible = creatures.find((entite) => entite.id === cibleId);
-    if (cibleId && (!cible || (carte.arrivee?.type === 'exil-temporaire' && estSite(cible)))) return { ok: false, raison: 'cible' };
+    if (cibleId && (!cible || ((carte.arrivee?.type === 'exil-temporaire' || carte.arrivee?.donneDefenseur) && estSite(cible)))) return { ok: false, raison: 'cible' };
     if (cible && carte.arrivee?.type !== 'exil-temporaire' && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
     if (!cibleId && !cibleDifferee && creatures.some((entite) =>
-      carte.arrivee?.type === 'exil-temporaire' ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte)))) {
+      carte.arrivee?.type === 'exil-temporaire' ? !estSite(entite) : (!carte.arrivee?.donneDefenseur || !estSite(entite)) && !rpgEstProtegee(entite, cardColors(carte)))) {
       return { ok: false, raison: 'cible' };
     }
   }
@@ -6826,7 +6833,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
   const cible = campsDePortee(cote, portee)
     .flatMap((camp) => duel[camp].creatures)
     .find((candidate) => candidate.id === cibleId);
-  if (!cible || (carte?.id === 'gardienne-du-croissant' && estSite(cible))) return { ok: false, raison: 'cible' };
+  if (!cible || ((carte?.id === 'gardienne-du-croissant' || carte?.arrivee?.donneDefenseur) && estSite(cible))) return { ok: false, raison: 'cible' };
   if (!rpgCibleEmbuscadeLegale(duel, cote, carte, cible)) return { ok: false, raison: 'cible' };
   if (['renvoi-ou-destruction', 'exil-temporaire'].includes(carte?.arrivee?.type) && estSite(cible)) return { ok: false, raison: 'cible' };
   if (rpgArriveeExigeAttaquant(duel, carte) && !(attente.attaquants ?? []).includes(cible.id)) return { ok: false, raison: 'cible' };
@@ -7189,81 +7196,12 @@ const peutBloquerPourResolution = (entite) => entite && !estSite(entite) && !ent
  */
 export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = false) {
   if (!bloqueur || !attaquant || estSite(bloqueur) || estSite(attaquant)) return false;
-  // Seul MOBA attribue une voie aux entités. Les blocages obligatoires et la
-  // provocation utilisent eux aussi ce prédicat, donc restent dans leur voie.
+  // Seul MOBA attribue une voie aux entités : les blocages obligatoires
+  // utilisent eux aussi ce prédicat et restent dans leur voie.
   if ((bloqueur.mobaLane || attaquant.mobaLane) && bloqueur.mobaLane !== attaquant.mobaLane) return false;
   if (frappeRapide) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
-}
-
-/**
- * Provocation : chaque attaquant qui la porte doit recevoir au moins un
- * bloqueur, dans la limite de ce que les blocages légaux permettent.
- *
- * La limite compte : avec deux provocateurs et un seul défenseur capable de
- * les arrêter, exiger les deux rendrait le combat insoluble. On compare donc
- * les provocateurs réellement bloqués au plus grand appariement possible
- * entre provocateurs et bloqueurs légaux (un bloqueur ne compte qu'une fois).
- * Un provocateur dont la frappe rapide a choisi une créature n'attaque plus
- * le sorcier : rien ne peut ni ne doit le bloquer.
- */
-export function rpgProvocationValide(
-  duel,
-  cote,
-  attaquantIds = [],
-  blocages = {},
-  ciblesAttaque = {},
-) {
-  if (!duel?.[cote] || !duel?.[autre(cote)]) return true;
-  const adv = autre(cote);
-  const ids = [...new Set(attaquantIds ?? [])];
-  const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
-  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]);
-  const provocateurs = attaquants.filter((entite) => entite.provocation && !frappeSurCreature(entite));
-  if (!provocateurs.length) return true;
-
-  const bloqueurs = duel[adv].creatures.filter(peutBloquer);
-  const bloqueurParId = new Map(bloqueurs.map((entite) => [entite.id, entite]));
-  const legal = (bloqueur, attaquant) => Boolean(bloqueur)
-    && rpgPeutBloquerAttaquant(bloqueur, attaquant, false)
-    && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)));
-
-  // Provocateurs effectivement couverts par l'affectation proposée. Un même
-  // bloqueur écrit deux fois ne peut pas couvrir deux attaquants.
-  const bloqueursComptes = new Set();
-  let provocateursBloques = 0;
-  for (const attaquant of provocateurs) {
-    const idsBloqueurs = blocages?.[attaquant.id] ?? [];
-    const liste = Array.isArray(idsBloqueurs) ? idsBloqueurs : [idsBloqueurs];
-    const bloqueurLegal = liste
-      .map((id) => bloqueurParId.get(id))
-      .find((bloqueur) => bloqueur && !bloqueursComptes.has(bloqueur.id) && legal(bloqueur, attaquant));
-    if (bloqueurLegal) {
-      bloqueursComptes.add(bloqueurLegal.id);
-      provocateursBloques += 1;
-    }
-  }
-
-  // Plus grand nombre de provocateurs qu'une affectation légale peut couvrir.
-  const bloqueurAssigneA = new Map();
-  const essayer = (attaquant, dejaVus) => {
-    for (const bloqueur of bloqueurs) {
-      if (dejaVus.has(bloqueur.id) || !legal(bloqueur, attaquant)) continue;
-      dejaVus.add(bloqueur.id);
-      const occupant = bloqueurAssigneA.get(bloqueur.id);
-      if (!occupant || essayer(occupant, dejaVus)) {
-        bloqueurAssigneA.set(bloqueur.id, attaquant);
-        return true;
-      }
-    }
-    return false;
-  };
-  let maximumPossible = 0;
-  for (const attaquant of provocateurs) {
-    if (essayer(attaquant, new Set())) maximumPossible += 1;
-  }
-  return provocateursBloques >= maximumPossible;
 }
 
 /**
@@ -7398,7 +7336,7 @@ export function rpgCibleAuto(duel, cote, carte, sourceId = null) {
     if (combat?.cote !== autre(cote)) return null;
     return duel[autre(cote)].creatures.find((c) => combat.attaquants.includes(c.id) && !rpgEstProtegee(c, cardColors(carte)))?.id ?? null;
   }
-  return choisirCibleAutoIA(duel, cote, carte);
+  return choisirCibleAutoIA(duel, cote, carte, { sourceId });
 }
 
 /** Un contre ne vise que la carte que le sorcier vient d'annoncer. `cible` : 'carte'
@@ -8152,8 +8090,7 @@ export function rpgLancerAttaque(
     const candidats = attaquants
       .filter((attaque) => rpgPeutBloquerAttaquant(bloqueurOblig, attaque, frappeSurCreature(attaque))
         && !rpgEstProtegee(attaque, cardColors(duelCardById(bloqueurOblig.carteId))))
-      .sort((a, b) => Number(Boolean(b.provocation)) - Number(Boolean(a.provocation))
-        || (b.atk ?? 0) - (a.atk ?? 0));
+      .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
     if (!candidats.length) continue;
     affectations[candidats[0].id] = [...(affectations[candidats[0].id] ?? []), bloqueurOblig.id];
   }
@@ -8203,11 +8140,6 @@ export function rpgLancerAttaque(
     return { ok: false, raison: 'blocage-force' };
   }
 
-  // Provocation : l'affectation doit couvrir autant de provocateurs qu'une
-  // répartition légale des bloqueurs disponibles le permet.
-  if (!blocagesDejaDeclares && !rpgProvocationValide(duel, cote, ids, affectations, ciblesRapides)) {
-    return { ok: false, raison: 'provocation' };
-  }
 
   // La déclaration MOBA peut suspendre le combat avant les blessures. Elle ne
   // déclenche aucune capacité et ne consomme ni hasard ni état de la partie.
@@ -9011,10 +8943,6 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       }
       if (!duel.moba?.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
         && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId);
-      // En classique individuel, tous les effets « au blocage », y compris
-      // les renvois, se résolvent avant les blessures ordinaires.
-      if (classique && !duel.moba?.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
-        && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant, true);
     }
     // Une capacité peut tuer l'un ou les deux combattants : aucun coup
     // normal, retour de Sphère ni transfert Overkill ne part dans ce cas.
@@ -9068,9 +8996,9 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
           resume.frappeSorcier = degatsVoie;
           if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba?.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
         }
-        // En MOBA, les cartes indiquant « après les blessures » conservent
-        // cet ordre. En classique individuel, le blocage a déjà été résolu.
-        if (!classique && !ciblee && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
+        // Les renvois « après les blessures » suivent l'échange ordinaire en
+        // Duel comme en MOBA, même si le bloqueur a été détruit par ce coup.
+        if (!ciblee && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
       } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
     }
   } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {

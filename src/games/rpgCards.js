@@ -430,9 +430,9 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'gardien-de-la-porte-ardente', name: 'Gardien de la porte ardente',
     element: 'braise', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain · Gardien', defenseur: true, provocation: true,
+    typeLine: 'Créature — Humain · Gardien', defenseur: true,
     riposteAttaqueCiblee: 1,
-    text: 'Défenseur. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit.',
+    text: 'Défenseur. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit.',
     flavor: 'Derrière lui, le brasier veille sur les derniers vivants.',
   },
   {
@@ -509,8 +509,9 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
+    defenseur: true,
     arrivee: { type: 'exil-temporaire', cible: 'creature-amie', choisirCible: true },
-    text: 'À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
+    text: 'Défenseur. À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
     flavor: 'La marée reprend ce qu’elle protège.',
   },
   {
@@ -636,7 +637,8 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 4,
     rarity: 'commune',
-    typeLine: 'Créature — Élémental', arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] }, text: 'Quand la Dune arrive : cherchez une Magie Rapide ou une Sorcellerie dans votre deck et ajoutez-la à votre main.',
+    defenseur: true,
+    typeLine: 'Créature — Élémental', arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] }, text: 'Défenseur. Quand la Dune arrive : cherchez une Magie Rapide ou une Sorcellerie dans votre deck et ajoutez-la à votre main.',
     flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
   },
     {
@@ -682,8 +684,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Gardienne',
     art: 'veilleuse-des-citernes',
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, donneDefenseur: true },
+    text: 'Quand la Veilleuse arrive : une autre créature alliée ciblée gagne Défenseur tant qu’elle reste en jeu et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint. Sans autre cible légale, la Veilleuse reçoit les deux effets.',
     flavor: 'Elle garde les réserves, et la dernière porte.',
   },
   {
@@ -760,13 +762,14 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'rare',
     typeLine: 'Créature — Amazighe mozabite',
     art: 'amani-des-ksour',
+    defenseur: true,
     // Égide de la Gardienne — aura de voisinage, comme l'aura Sable de Tarek,
     // mais en défense : tant qu'Amani est en jeu, ses créatures ADJACENTES
     // gagnent +0/+1 (le moteur la tient dans `appliquerAuraAmani`). L'égide se
     // cumule par Amani voisine : une case vide coupe le voisinage, et une
     // Amani ne se protège jamais elle-même.
     aura: { type: 'buff-autres', atk: 0, def: 1, camps: 'camp' },
-    text: 'Tant qu’Amani est en jeu, vos créatures adjacentes gagnent +0/+1.',
+    text: 'Défenseur. Tant qu’Amani est en jeu, vos créatures adjacentes gagnent +0/+1.',
     flavor: 'Les portes de pierre tiennent parce que quelqu’un veille.',
   },
   {
@@ -1026,8 +1029,9 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
+    defenseur: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
-    text: 'Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Défenseur. Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -1100,8 +1104,8 @@ export const RPG_CREATURE_CARDS = [
     art: 'berserk-des-trois-hivers',
     furie: 2,
     overkill: true,
-    provocation: true,
-    text: 'Furie 2. Overkill — Les dégâts excédentaires sont infligés au sorcier adverse. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
+    defenseur: true,
+    text: 'Furie 2. Overkill — Les dégâts excédentaires sont infligés au sorcier adverse. Défenseur.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {
@@ -1115,8 +1119,8 @@ export const RPG_CREATURE_CARDS = [
     art: 'jarl-au-marteau-de-guerre',
     furie: 2,
     overkill: true,
-    provocation: true,
-    text: 'Furie 2. Overkill. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
+    defenseur: true,
+    text: 'Furie 2. Overkill. Défenseur.',
     flavor: 'Le vieux chef ne crie pas : il encaisse, puis il avance.',
   },
   {
@@ -1229,8 +1233,8 @@ export const RPG_CREATURE_CARDS = [
     id: 'garde-du-trone-givre', set: 'soldats-de-la-lune', name: 'Garde du trône givré',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
-    typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'attaquant', provocation: true, furie: 1,
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez une créature blessée et l’adversaire contrôle une créature. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
+    typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'attaquant', defenseur: true, furie: 1,
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez une créature blessée et l’adversaire contrôle une créature. Défenseur. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
     flavor: 'Il ne cède pas le passage, même quand la glace se teinte de rouge.',
   },
   {
@@ -1336,8 +1340,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
-    contreAttaque: true,
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
+    defenseur: true, contreAttaque: true,
+    text: 'Défenseur. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
     flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
   },
   {

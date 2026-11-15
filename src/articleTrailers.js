@@ -111,6 +111,138 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"fable-deepwood-gameplay-podcast-xbox": {
+  "label": "FABLE",
+  "meta": "XBOX WIRE",
+  "items": [
+    {
+      "id": "RoIL8hDHF9A",
+      "kind": "presentation",
+      "title": "Fable: Deep Dive Into New Gameplay With Playground Games | Official XBOX Podcast",
+      "channel": "XBOX",
+      "note": "Podcast officiel publié le 13 novembre 2026, avec les images de gameplay dévoilées le 12 novembre. Contient des éléments de quête. Une connexion YouTube ou une vérification d’âge peut être requise.",
+      "verified": "13.11.2026"
+    }
+  ],
+  "credit": "Visuel officiel du podcast Xbox consacré à Fable, publié le 13 novembre 2026. © Xbox / Playground Games."
+},
+"cinema/dhindora-saison-2-trailer-netflix-20-novembre": {
+  "label": "DHINDORA 2",
+  "meta": "NETFLIX",
+  "items": [
+    {
+      "id": "AjGW8oxTars",
+      "kind": "trailer",
+      "title": "Dhindora 2 | Official Trailer | Bhuvan Bam | Netflix India",
+      "channel": "Netflix India",
+      "note": "Bande-annonce officielle publiée le 13 novembre 2026 par Netflix India avec BB Ki Vines. La saison est annoncée pour le 20 novembre ; la vidéo contient des situations de l’intrigue.",
+      "verified": "13.11.2026"
+    }
+  ],
+  "credit": "Miniature du trailer officiel Dhindora 2, Netflix India et BB Ki Vines, publié le 13 novembre 2026."
+},
+"tech/antigravity-teamwork-recherche-google": {
+  "label": "ANTIGRAVITY",
+  "meta": "GOOGLE RESEARCH",
+  "items": [],
+  "credit": "Illustration officielle Google Research pour sa publication sur Antigravity /teamwork du 13 novembre 2026.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
+},
+"xbox-25-classiques-pc-retrocompatibilite": {
+  "label": "XBOX SUR PC",
+  "meta": "XBOX WIRE",
+  "items": [],
+  "credit": "Visuel officiel Xbox Backward Compatibility sur PC, publié par Xbox Wire le 12 novembre 2026.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
+},
+"cinema/heartland-netflix-jessica-chastain-sortie": {
+  "label": "HEARTLAND",
+  "meta": "NETFLIX TUDUM",
+  "items": [
+    {
+      "id": "ziIz59enN1c",
+      "kind": "trailer",
+      "title": "Heartland | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "note": "Trailer officiel publié le 6 octobre 2026, utilisé pour accompagner la sortie du film annoncée le 13 novembre. Ce n’est pas une nouvelle vidéo du 14 novembre ; contient des éléments de l’enquête.",
+      "verified": "14.11.2026"
+    }
+  ],
+  "credit": "Miniature de la bande-annonce officielle Netflix de Heartland, publiée le 6 octobre 2026 ; film annoncé disponible le 13 novembre."
+},
+"tech/xbox-insiders-guide-droite-fonds-aleatoires": {
+  "label": "XBOX INSIDERS",
+  "meta": "XBOX WIRE",
+  "items": [],
+  "credit": "Capture officielle de l’interface Xbox publiée le 12 novembre 2026 pour la présentation des fonctions Insider. © Microsoft.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
+},
+"gta-6-calendrier-xbox-semaine-16-20-novembre": {
+  "label": "GTA VI",
+  "meta": "XBOX WIRE",
+  "items": [
+    {
+      "id": "rz1B4B2yBZY",
+      "kind": "trailer",
+      "title": "Grand Theft Auto VI Launch Trailer",
+      "channel": "Rockstar Games",
+      "note": "Trailer officiel publié le 15 octobre 2026, uniquement utilisé comme illustration du jeu. La source de cette brève est le calendrier Xbox du 13 novembre, pas une nouvelle vidéo ou annonce Rockstar du 15.",
+      "verified": "15.11.2026"
+    }
+  ],
+  "credit": "Illustration officielle GTA VI reprise par Xbox Wire pour son calendrier du 13 novembre. © Rockstar Games. Le trailer d’illustration date du 15 octobre."
+},
+"cinema/kpop-demon-hunters-golden-world-tour-2027": {
+  "label": "KPOP DEMON HUNTERS",
+  "meta": "NETFLIX",
+  "items": [],
+  "credit": "Affiche officielle KPop Demon Hunters Golden World Tour, publiée par Netflix le 13 novembre 2026. © Netflix / AEG Presents.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
+},
+"tech/xbox-playback-historique-compte-pays": {
+  "label": "XBOX PLAYBACK",
+  "meta": "XBOX WIRE",
+  "items": [],
+  "credit": "Visuel officiel Xbox Playback publié le 12 novembre 2026. Il ne représente pas les statistiques personnelles de la rédaction.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le visuel officiel accompagne l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
+},
+"gta-6-prechargement-codes-boite-12-novembre": {
+  "label": "GTA VI",
+  "meta": "ROCKSTAR GAMES",
+  "items": [
+    {
+      "id": "rz1B4B2yBZY",
+      "kind": "trailer",
+      "title": "Grand Theft Auto VI Launch Trailer",
+      "channel": "Rockstar Games",
+      "verified": "12.11.2026",
+      "note": "Trailer officiel publié le 15 octobre 2026, utilisé pour illustrer le jeu. Ce n’est ni la vidéo Pre-Load Now du 10 novembre ni une démonstration du téléchargement ou un test des performances finales."
+    }
+  ],
+  "credit": "Capture officielle Rockstar Newswire : panorama de Vice City publié avec l’annonce du préchargement du 3 novembre. Vidéo d’illustration : trailer du 15 octobre, distinct de la vidéo Pre-Load Now du 10 novembre."
+},
+"cinema/ray-gunn-netflix-deuxieme-trailer": {
+  "label": "RAY GUNN",
+  "meta": "NETFLIX",
+  "items": [
+    {
+      "id": "oAmCTknTA6I",
+      "kind": "trailer",
+      "title": "Ray Gunn | Official Trailer #2 | Netflix",
+      "channel": "Netflix",
+      "verified": "12.11.2026",
+      "note": "Deuxième bande-annonce officielle publiée le 12 novembre 2026. Elle contient des scènes du film. La vidéo annonce une sélection de salles le 4 décembre puis Netflix le 18 décembre, sans garantir de séances dans chaque territoire."
+    }
+  ],
+  "credit": "Miniature et deuxième bande-annonce officielles Netflix, publiées le 12 novembre 2026."
+},
+"tech/gemini-data-cloud-connecteurs-preview": {
+  "label": "GEMINI",
+  "meta": "GOOGLE CLOUD",
+  "items": [],
+  "credit": "Schéma officiel Google Cloud : interprétation d’une requête avec Knowledge Catalog. Il s’agit d’un visuel de documentation, pas d’un test de la rédaction.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le schéma officiel Google Cloud illustre le fonctionnement documenté ; aucun trailer générique n’est ajouté."
+},
 "xbox-sorties-semaine-9-13-novembre-2026": {
   "label": "CETTE SEMAINE SUR XBOX",
   "meta": "XBOX WIRE",

@@ -10,7 +10,7 @@ import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
-import { ciblesDefenseur } from './rpgDefenseur.js';
+import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { convertirDeckSansTerrain } from './rpgCards.js';
@@ -277,7 +277,6 @@ import {
   rpgEstProtegeeDesSorts,
   rpgPeutBloquerAttaquant,
   rpgBlocageForceValide,
-  rpgProvocationValide,
   rpgPeutMulligan,
   rpgPeutPayer,
   rpgPoserTerrain,
@@ -1436,7 +1435,7 @@ const BLOCKER_DRAG_TYPE = 'application/x-bab-el-blocker';
  *  allumé. `variante` ne change que la teinte — bleue pour la résonance,
  *  jaune pour les cartes qui impriment une aura (la forge des Samouraïs, les
  *  Ksour, le héros du sable), violette pour la Malédiction (La Barbe Noire),
- *  rouge pour Défenseur ou Provocation : même sonar et même cadence. Le calque est
+ *  rouge pour Défenseur : même sonar et même cadence. Le calque est
  *  purement décoratif (`aria-hidden`) : l'effet est déjà annoncé par l'icône
  *  et par la description lue de la carte. Les ondes sont décalées d'un tiers
  *  de cycle pour qu'une nouvelle vague parte toujours avant que la précédente
@@ -2852,9 +2851,9 @@ export function TableCard({
 }) {
   const carte = moba ? rpgMobaCartePourApercu(cardById(entite.carteId)) : cardById(entite.carteId);
   const estSite = carte?.kind === 'site';
-  // Défenseur et Provocation partagent un seul signal rouge, même cumulés.
+  // Un Défenseur porte le signal rouge de priorité.
   // Les propriétés d'entité tiennent compte des capacités acquises ou perdues.
-  const auraGarde = !estSite && Boolean(entite.defenseur || entite.prioriteAttaqueRapide || entite.provocation);
+  const auraGarde = !estSite && estDefenseur(entite);
   const hybride = cardColors(carte).length > 1;
   const nom = entite.name;
   const armeCarte = entite.arme ? cardById(entite.arme.carteId) : cardById(entite.armes?.[0]);
@@ -3044,7 +3043,7 @@ export function TableCard({
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
       aria-haspopup={reserveAscension ? 'dialog' : undefined}
-      aria-label={ascensionSelection?.label ?? (reserveAscension ? `Voir l’aperçu de ${nom}` : null) ?? moba?.ariaLabel ?? `${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonanceDefense ?? carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 15 % de chances de rater'} et arrêter là son attaque ; elle ne peut attaquer le sorcier que si aucune créature adverse n’est en jeu (100 %)` : ''}${entite.defenseur || entite.prioriteAttaqueRapide ? ', Défenseur : les Attaques ciblées adverses doivent le viser en priorité si possible' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${cartesArmes.length ? `, armes équipées : ${cartesArmes.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${carte?.furtif ? ', Furtivité : détruite à la fin du tour où elle arrive en jeu' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée sans coût de mana, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? `, esquive : ${Math.round((entite.esquiveChance ?? 0.15) * 100)} % de chance d’esquiver une attaque, un sort ou un effet de créature adverse` : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation : ne peut pas attaquer avant le prochain tour de son camp, mais peut défendre' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${durabiliteArme ? `, son arme porte ${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${sortBloqueParBouclier ? ', ce bouclier bloquera le sort sélectionné puis se brisera' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', sélectionner cette créature comme sacrifice d’invocation' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={ascensionSelection?.label ?? (reserveAscension ? `Voir l’aperçu de ${nom}` : null) ?? moba?.ariaLabel ?? `${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonanceDefense ?? carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 15 % de chances de rater'} et arrêter là son attaque ; elle ne peut attaquer le sorcier que si aucune créature adverse n’est en jeu (100 %)` : ''}${estDefenseur(entite) ? ', Défenseur : les attaques adverses doivent le viser en priorité si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${cartesArmes.length ? `, armes équipées : ${cartesArmes.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${carte?.furtif ? ', Furtivité : détruite à la fin du tour où elle arrive en jeu' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée sans coût de mana, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? `, esquive : ${Math.round((entite.esquiveChance ?? 0.15) * 100)} % de chance d’esquiver une attaque, un sort ou un effet de créature adverse` : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation : ne peut pas attaquer avant le prochain tour de son camp, mais peut défendre' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${durabiliteArme ? `, son arme porte ${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${sortBloqueParBouclier ? ', ce bouclier bloquera le sort sélectionné puis se brisera' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', sélectionner cette créature comme sacrifice d’invocation' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : Boolean(selected || selectedBlocker)}
     >
       <img
@@ -3919,9 +3918,10 @@ function ApercuCarteCatalogue({
    la reprend : elle repart dans le paquet, qui est battu, et le camp pioche
    autant de cartes qu'il en a écartées. Un seul échange, et la main ne diminue
    jamais : c'est une décision, pas une punition. */
-function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
+function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, afficherIcones = true, moba = false }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+  const estArme = !moba && carteEstArme(carte);
   return (
     <button
       type="button"
@@ -3939,18 +3939,25 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       data-card-id={carte.id}
       data-mulligan-index={index}
       aria-pressed={selectionnee}
-      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : estArme ? ` — bonus d’arme ${bonusArmeTexte(carte)}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 
       <ManaCost carte={carte} showElement={false} />
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
+      {afficherIcones && <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />}
 
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
         </footer>
+      )}
+      {estArme && (
+        <span className="rpg-mulligan__stats rpg-mulligan__stats--arme" aria-hidden="true">
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
+          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
+        </span>
       )}
     </button>
   );
@@ -10120,13 +10127,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .reduce((total, amount) => total + Number(amount || 0), 0);
     return somme === attaquant.atk;
   });
-  const provocationValide = !combatEntrant || rpgProvocationValide(
-    duel,
-    combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier',
-    combatEntrant.attaquants,
-    combatEntrant.blocages,
-    combatEntrant.ciblesAttaque ?? {},
-  );
   const blocageForceValide = !combatEntrant || rpgBlocageForceValide(
     duel,
     combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier',
@@ -11957,7 +11957,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if ((!duel.arriveeEnAttente?.interceptionAttaque && carteSource?.arrivee?.type !== 'exil-temporaire'
       && rpgEstProtegee(entite, cardColors(carteSource)))
       || !rpgCibleEmbuscadeLegale(duel, 'joueur', carteSource, entite)
-      || (['renvoi-ou-destruction', 'exil-temporaire'].includes(carteSource?.arrivee?.type)
+      || ((['renvoi-ou-destruction', 'exil-temporaire'].includes(carteSource?.arrivee?.type) || carteSource?.arrivee?.donneDefenseur)
         && cardById(entite.carteId)?.kind === 'site')
       // Le Serpent du monde : aucun sort ne peut le viser.
       || (carteSource?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteSource)))
@@ -12419,7 +12419,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       blocages,
       attaquantsBloques,
       // Le partage est précalculé dès la déclaration : l'IA peut interposer
-      // plusieurs bloqueurs sur un même attaquant (Provocation, ou obligation
+      // plusieurs bloqueurs sur un même attaquant (par obligation
       // de blocage posée par l'Embuscade), et une répartition vide laissait le
       // bouton « Accepter les blocages » verrouillé pour toujours — la porte
       // `repartitionValide` exige une somme égale à la force de l'attaquant,
@@ -12801,7 +12801,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const resoudreCombat = () => {
     if (!combatCollectif && combatEntrant?.cibleIndividuelle) { resoudreAttaqueEnnemie(); return; }
     if (combatEntrant?.coteAttaquant === 'sorcier' && !combatEntrant.blocagesDeclares) {
-      if (!repartitionValide || !blocageForceValide || !provocationValide) return;
+      if (!repartitionValide || !blocageForceValide) return;
       setBloqueurSelectionne(null);
       setCombatEntrant((courant) => courant && ({
         ...courant,
@@ -13511,7 +13511,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 }
                 : (combatEntrant && reponseActive)
                   ? {
-                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}:${blocageForceValide ? 'force-ok' : 'force'}:${provocationValide ? 'provocation-ok' : 'provocation'}`,
+                    cle: `combat:${combatEntrant.coteAttaquant}:${bloqueurSelectionne ?? 'aucun'}:${blocageForceValide ? 'force-ok' : 'force'}`,
                     classe: 'rpg-combat-prompt',
                     texte: !combatCollectif && combatEntrant.cibleIndividuelle
                       ? `Attaque annoncée contre ${combatEntrant.cibleIndividuelle.cibleId ? (duel.joueur.creatures.find(e => e.id === combatEntrant.cibleIndividuelle.cibleId)?.name ?? 'une créature') : 'vous'} — jouez une réponse ou résolvez`
@@ -13521,9 +13521,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         ? 'Blocages déclarés — jouez une magie rapide, puis résolvez le combat'
                       : !blocageForceValide
                         ? 'Blocage forcé — assignez chaque créature marquée à un attaquant qu’elle peut bloquer'
-                        : !provocationValide
-                          ? 'Provocation — assignez au moins un bloqueur à l’attaquant provoquant'
-                          : bloqueurSelectionne
+                        : bloqueurSelectionne
                             ? 'Choisissez la créature attaquante à bloquer'
                             : 'Choisissez vos bloqueurs ou résolvez le combat',
                   }
@@ -14140,7 +14138,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && (entite.id !== duel.arriveeEnAttente?.entiteId
                             || Boolean(carteCiblee?.arrivee?.cibleSoi))
                           && (carteCiblee?.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carteCiblee)))
-                          && (carteCiblee?.arrivee?.type !== 'exil-temporaire' || cardById(entite.carteId)?.kind !== 'site')
+                          && (!(carteCiblee?.arrivee?.type === 'exil-temporaire' || carteCiblee?.arrivee?.donneDefenseur) || cardById(entite.carteId)?.kind !== 'site')
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
                           && cibleRespecteCoutMax(carteCiblee, entite)
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
@@ -14523,12 +14521,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
                     data-key-hint="Espace"
                     onClick={resoudreCombat}
-                    disabled={combatCollectif ? (!combatEntrant.blocagesDeclares && (!repartitionValide || !blocageForceValide || !provocationValide)) : Boolean(duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.siteEnAttente || duel.boualemEnAttente || duel.defausseEnAttente)}
+                    disabled={combatCollectif ? (!combatEntrant.blocagesDeclares && (!repartitionValide || !blocageForceValide)) : Boolean(duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.siteEnAttente || duel.boualemEnAttente || duel.defausseEnAttente)}
                     title={!blocageForceValide
                       ? 'Blocage forcé : assignez chaque créature marquée à un attaquant qu’elle peut légalement bloquer'
-                      : !provocationValide
-                        ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
-                        : 'Raccourci clavier : Espace'}
+                      : 'Raccourci clavier : Espace'}
                   >
                     {!combatCollectif && combatEntrant.cibleIndividuelle ? '⚔ Résoudre l’attaque' : combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : combatEntrant.blocagesDeclares ? '⚔ Résoudre le combat' : '✓ Déclarer les bloqueurs'}
                   </button>

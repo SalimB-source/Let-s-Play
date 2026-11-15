@@ -1,3 +1,4 @@
+import { estDefenseur } from './rpgDefenseur.js';
 /** Règles de ciblage et bonus propres au combat individuel MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { rpgEstProtegee } from './rpgDuel.js';
@@ -30,9 +31,7 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId, voieAttaque =
   if (!voie) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = duel[autre(side)].creatures.filter((e) => cibleAccessible(duel, attaquant, e, ciblee, voie));
-  const provocations = possibles.filter((e) => e.provocation);
-  const defenseurs = possibles.filter((e) => mobaPartageVoie(duel.moba, e.mobaLane, voie) && (e.defenseur || e.prioriteAttaqueRapide));
-  const prioritaires = provocations.length ? provocations : defenseurs;
+  const prioritaires = possibles.filter((e) => mobaPartageVoie(duel.moba, e.mobaLane, voie) && estDefenseur(e));
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
@@ -49,18 +48,6 @@ export function rpgMobaCibleIndividuelleEncoreLegale(duel, side, attackerId, cib
   if (cibleId === null) return true;
   const cible = duel[autre(side)]?.creatures.find((e) => e.id === cibleId);
   return cibleAccessible(duel, attaquant, cible, Boolean(cibleeAnnoncee), voieAnnoncee);
-}
-
-/** Le bonus est enregistré dans le carnet existant, expirant à la fin de ce tour. */
-export function rpgMobaBonusProvocation(duel, side, cibleId) {
-  const camp = duel?.[side];
-  const cible = camp?.creatures.find((e) => e.id === cibleId);
-  if (!cible?.provocation || !MOBA_SIDES.includes(duel.tour)) return false;
-  cible.def += 1;
-  cible.pv += 1;
-  cible.pvMax += 1;
-  (camp.bonusTemporaires ??= []).push({ entiteId: cible.id, atk: 0, def: 1, tour: duel.tour });
-  return true;
 }
 
 /** Excédent avant la frappe, à n'utiliser que si les dégâts ont réellement porté. */
