@@ -107,8 +107,7 @@ test('les contraintes de blocage sont validées avant le verrouillage',()=>{
  const {d,a,b,defender}=partie('joueur');
  a.envol=true;const avant=JSON.stringify(d);
  assert.equal(rpgMobaDeclarerBlocages(d,defender,{[a.id]:[b.id]}).ok,false);assert.equal(JSON.stringify(d),avant);
- a.envol=false;a.provocation=true;
- const avantProvoc=JSON.stringify(d);assert.equal(rpgMobaDeclarerBlocages(d,defender,{}).ok,false);assert.equal(JSON.stringify(d),avantProvoc);
+ a.envol=false;a.provocation=true; // ancienne sauvegarde : Défenseur, pas de blocage forcé
  assert.ok(rpgMobaDeclarerBlocages(d,defender,{[a.id]:[b.id]}).ok);
  b.gelToursRestants=1;assert.ok(rpgMobaLancerAttaque(d,'joueur',[a.id],d.combatDeclare.blocages,{declaree:true}).ok);
 });

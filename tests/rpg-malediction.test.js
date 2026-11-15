@@ -53,7 +53,7 @@ const libelles = () => pastillesPourCarte(cardById('la-barbe-noire'))
 test('La Barbe Noire est un 4/5 fixe qui imprime Malédiction -2/-0', () => {
   const noire = cardById('la-barbe-noire');
   assert.deepEqual([noire.cost, noire.atk, noire.def], [5, 4, 5]);
-  assert.equal(noire.provocation, true, 'elle garde le rempart');
+  assert.equal(noire.defenseur, true, 'elle garde le rempart');
   assert.equal(noire.abordage, 4, 'et son Abordage 4');
   assert.equal(noire.insaisissable, true, 'et le dédoublement');
   assert.equal(noire.alternance, undefined, 'les Deux Visages ont quitté la fiche');
@@ -66,7 +66,7 @@ test('La Barbe Noire est un 4/5 fixe qui imprime Malédiction -2/-0', () => {
 
 test('le mot-clé Malédiction remplace Deux Visages dans les pastilles et le glossaire', () => {
   const noire = cardById('la-barbe-noire');
-  assert.deepEqual(libelles(), ['Provocation', 'Abordage 4', 'Malédiction']);
+  assert.deepEqual(libelles(), ['Défenseur', 'Abordage 4', 'Malédiction']);
   assert.equal(iconePourLigne(noire,
     'Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0.'),
     'malediction');

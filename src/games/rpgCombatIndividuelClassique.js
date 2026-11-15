@@ -1,3 +1,4 @@
+import { estDefenseur } from './rpgDefenseur.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { rpgAppliquerBannieresAttaque, rpgEstProtegee, rpgPeutAttaquer, rpgResoudreEchangeIndividuelClassique, rpgVainqueur } from './rpgDuel.js';
@@ -19,9 +20,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = (duel[autre(cote)]?.creatures ?? []).filter((e) => accessible(attaquant, e, ciblee));
-  const provocations = possibles.filter((e) => e.provocation);
-  const defenseurs = possibles.filter((e) => e.defenseur || e.prioriteAttaqueRapide);
-  const prioritaires = provocations.length ? provocations : defenseurs;
+  const prioritaires = possibles.filter(estDefenseur);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
@@ -58,10 +57,6 @@ export function rpgDeclarerAttaqueIndividuelleClassique(duel, cote, attaquantId,
   delete attaquant.repriseAttaqueIndividuelle;
   const ciblee = Boolean(attaquant.coupRapide);
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
-  if (cible?.provocation) {
-    cible.def += 1; cible.pv += 1; cible.pvMax += 1;
-    (duel[autre(cote)].bonusTemporaires ??= []).push({ entiteId: cible.id, atk: 0, def: 1, tour: cote });
-  }
   attaquant.attaquee = true;
   duel.log.push(`${attaquant.name} annonce une attaque ${cible ? `contre ${cible.name}` : 'directe contre le sorcier'}.`);
   duel.phase = 'blocage';

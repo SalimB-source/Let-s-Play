@@ -43,7 +43,7 @@ Overkill, Bouclier et Furie 4. Le Scorpion possède Défenseur et Poison : à so
 arrivée, il détruit toutes les créatures blessées des deux camps ; en MOBA,
 cette vague reste limitée à sa voie. Il n’a plus Vol de vie.
 
-Le Colosse possède Bouclier et Provocation. À son arrivée, son contrôleur
+Le Colosse possède Bouclier et Défenseur. À son arrivée, son contrôleur
 choisit dans une fenêtre jusqu’à deux Djinns de coût imprimé 3 ou moins à
 invoquer spécialement depuis son cimetière. Chaque arrivée déclenche ses effets ;
 il peut arrêter après zéro ou une invocation.
@@ -271,10 +271,10 @@ par défaut, sans main ou champ préparés. `?mode=moba` ouvre le sélecteur MOB
 
 ## Renforts du cimetière et sélection automatique
 
-La Gardienne des sables ensevelis (Sable, coût 4) choisit une créature de coût imprimé 3 ou moins dans son cimetière et l’invoque spécialement et lui donne un bouclier avant son arrivée. Cette capacité est limitée à une fois par tour, toutes ses copies confondues. Les arrivées ciblées des créatures réanimées se résolvent sur une cible légale ; le renfort choisi peut demander cette cible.
+La Gardienne des sables ensevelis (Sable, coût 4) a Défenseur et choisit une créature de coût imprimé 3 ou moins dans son cimetière et l’invoque spécialement et lui donne un bouclier avant son arrivée. Cette capacité est limitée à une fois par tour, toutes ses copies confondues. Les arrivées ciblées des créatures réanimées se résolvent sur une cible légale ; le renfort choisi peut demander cette cible.
 
 La préparation de l’Ascension recherche les combinaisons respectant intégralement la recette, puis sélectionne celle dont la somme des ATQ et PV actuels est la plus faible. Les sacrifices proposés sont affichés avant confirmation ; le serveur revérifie la recette. En MOBA, la destination est choisie après cette confirmation.
 
 La Valkyrie et le Colosse ouvrent une fenêtre réservée à leur contrôleur pour choisir leurs renforts dans le cimetière. Les choix successifs sont sérialisés et les arrivées des créatures invoquées sont résolues.
 
-La Gardienne des derniers noms invoque depuis le dessus du deck, à sa mort, la première créature Ténèbres admissible de coût imprimé 2 ou moins. Le Veilleur des cendres invoque à sa mort une créature Ténèbres ou Neige choisie de coût imprimé 3 ou moins de son cimetière ; elle est détruite à la fin de ce tour, y compris pendant le tour adverse.
+La Gardienne des derniers noms a Défenseur et invoque depuis le dessus du deck, à sa mort, la première créature Ténèbres admissible de coût imprimé 2 ou moins. Le Veilleur des cendres invoque à sa mort une créature Ténèbres ou Neige choisie de coût imprimé 3 ou moins de son cimetière ; elle est détruite à la fin de ce tour, y compris pendant le tour adverse.

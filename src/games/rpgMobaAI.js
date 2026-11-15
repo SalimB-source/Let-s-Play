@@ -1,6 +1,7 @@
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
+import { estDefenseur } from './rpgDefenseur.js';
 import { mobaVieMaxPourCamp, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
 import { rpgCombinaisonsSacrificesIA } from './rpgAI.js';
@@ -69,6 +70,7 @@ function valeurCreature(entity) {
   const gelee = (entity.gelToursRestants ?? 0) > 0 || (entity.empecheAttaqueToursRestants ?? 0) > 0;
   let valeur = 2 + force * (gelee ? 0.5 : 1.5) + vie * 0.9;
   if (entity.bouclier) valeur += 1.4;
+  if (estDefenseur(entity)) valeur += 0.8;
   // Dodge prevents attacks and spells, not abilities; keep it a modest
   // bounded bonus rather than equating it with guaranteed protection.
   if (entity.esquive) valeur += Math.min(1, Math.max(0, Number.isFinite(entity.esquiveChance) ? entity.esquiveChance : 0.15)) * 5;
@@ -418,6 +420,11 @@ export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
       return score(b) - score(a);
     });
     return candidats.find((e) => rpgMobaResoudreArrivee(copie(duel), side, e.id).ok)?.id ?? null;
+  }
+  if (attente.carteId === 'veilleuse-des-citernes') {
+    const score = (e) => (e.pv ?? 0) * 1.5 + (e.atk ?? 0) + (estDefenseur(e) ? 0 : 2) + (e.bouclier ? 0 : 1);
+    return [...duel[side].creatures].sort((a, b) => score(b) - score(a))
+      .find((e) => rpgMobaResoudreArrivee(copie(duel), side, e.id).ok)?.id ?? null;
   }
   if (attente.carteId === 'gardienne-du-croissant') {
     const menace = duel.mobaReponseSuspendue?.attente;

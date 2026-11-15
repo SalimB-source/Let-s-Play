@@ -108,7 +108,7 @@ test('les couleurs demandées suivent le symbole sans recolorer les autres effet
   const attendues = { assaut: 'braise', tempo: 'azur', garde: 'azur', ombre: 'tenebres', flux: 'tenebres' };
   const exceptions = {
     'i-poison': 'venin',
-    'i-rapidite': 'braise', 'i-contre-attaque': 'braise', 'i-provocation': 'braise',
+    'i-rapidite': 'braise', 'i-contre-attaque': 'braise',
     'i-rebond': 'braise', 'i-vol-de-vie': 'braise', 'i-exil': 'braise',
     'i-bouclier': 'tenebres', 'i-invocation-speciale': 'or',
     'i-recherche': 'azur',

@@ -454,7 +454,7 @@ test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () 
   donner(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre');
   const jarlEnJeu = rpgJouerCreature(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre').entite;
   jarlEnJeu.ready = true;
-  jarlEnJeu.provocation = false; // isole la décision de blocage facultatif de l’obligation Provocation
+  jarlEnJeu.defenseur = false; // isole la décision de blocage facultatif
   assert.deepEqual(rpgChoisirBloqueurs(duelFurieux, 'sorcier', [jarlEnJeu.id]), {},
     'l’IA refuse d’écorner le Jarl : elle ne lui offrirait que +2/+0');
   assert.equal(duneContreJarl.atk, 2, 'le bloqueur reste en réserve');

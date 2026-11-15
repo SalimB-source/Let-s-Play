@@ -264,14 +264,12 @@ valkyries n'émettent plus de Résonance viking.
   dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
   les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
   deck, l'arrivée ne fait pas piocher de carte de remplacement.
-- **Provocation** (Berserk des trois hivers, 3 mana, 2/4, Furie 2) — quand
-  le Berserk attaque, le défenseur doit lui assigner au moins un bloqueur
-  légal si un tel blocage est possible. S'il y a plusieurs provocateurs et
-  trop peu de bloqueurs, l'affectation doit couvrir le plus grand nombre de
-  provocateurs qu'un appariement légal permet ; sans bloqueur légal,
-  l'attaque peut passer.
+- **Défenseur** (Berserk des trois hivers, 3 mana, 2/4, Furie 2) — les
+  attaques individuelles adverses doivent le viser en priorité s'il est
+  accessible ; en combat collectif, cette capacité ne force pas à bloquer.
+  En MOBA, la priorité s'applique aux attaques venant de sa voie.
 
-Les créatures du Nord gardent leurs capacités propres (Provocation du
+Les créatures du Nord gardent leurs capacités propres (Défenseur du
 Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, vent froid
 d'arrivée de la Valkyrie des glaces).
 
@@ -635,8 +633,17 @@ Trois cartes portent un `arrivee.bouclier` : le Guerrier au bouclier rond, la
 Veilleuse des citernes et la Tour de sable. Elles le **donnent**, elles ne se
 contentent pas de le garder : `choisirCible: true` ouvre la désignation sur la
 table (`arriveeEnAttente` puis `rpgResoudreArriveeCiblee`) et le bouclier va à
-la créature alliée touchée. Salem reste en `cible: 'soi'` : le sien ne se prête
-pas.
+la créature alliée touchée. La Veilleuse donne également Défenseur à cette
+créature tant qu'elle reste en jeu ; sans autre cible légale, elle reçoit elle-même
+les deux effets. Salem reste en `cible: 'soi'` : le sien ne se prête pas.
+
+Défenseur est aussi porté par Amani, la Guetteuse des marées, le Guerrier au
+bouclier rond, la Gardienne de la balance et l’Onna-musha des cendres : leur
+positionnement de gardien ou leur capacité défensive justifie cette priorité.
+S’y ajoutent la Gardienne des sables ensevelis, la Gardienne des derniers noms,
+le Hatamoto des cendres, la Dune marchante et le Veilleur du dernier crépuscule :
+leurs rôles de protection, de garde ou de riposte s’accordent avec Défenseur.
+Ils conservent leurs autres capacités.
 
 Le Guerrier ajoute `cibleSoi: true` — sa parade peut rester sur lui. Sans cette
 exception, un Guerrier seul sur le champ n'aurait aucune cible légale

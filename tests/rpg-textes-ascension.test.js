@@ -46,7 +46,7 @@ test('Ascensions : recettes et effets propres lisibles, définitions détaillée
     'samourai-du-dragon-rouge': ['contreAttaque', 'esquive', 'defenseur'],
     'jarl-du-dernier-rempart': ['overkill', 'bouclier', 'furie'],
     'scorpion-de-l-eclipse': ['defenseur', 'poison'],
-    'colosse-du-verre-ardent': ['bouclier', 'provocation'],
+    'colosse-du-verre-ardent': ['bouclier', 'defenseur'],
     'valkyrie-de-la-derniere-aurore': ['envol', 'volDeVie'],
     'amiral-des-abysses': ['bouclier', 'butin', 'abordage'],
   };

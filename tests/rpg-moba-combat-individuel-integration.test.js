@@ -101,20 +101,13 @@ test('deux créatures attaquent séparément pendant le même tour', () => {
   assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok, false);
 });
 
-test('Provocation accorde son bonus dès la déclaration, et un Défenseur apparu ne redirige pas', () => {
+test('ancien marqueur : Défenseur sans bonus à la déclaration', () => {
   const { d, a, c } = partie();
-  c.provocation = true; c.atk = 0; const defense = c.def;
+  c.provocation = true;
+  const avant = [c.def, c.pv, c.pvMax];
   assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).ok, false);
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
-  assert.equal(c.def, defense + 1);
-  d.sorcier.main = ['garde-du-trone-givre'];
-  assert.ok(rpgMobaJouerCreature(d, 'sorcier', 'garde-du-trone-givre', 'left', 1, { ouvrirReponse: true }).ok);
-  // Pas de redirection vers une nouvelle présence après la fenêtre de réponse.
-  return import('../src/games/rpgMobaLocal.js').then(({ rpgMobaPasserCreature }) => {
-    assert.ok(rpgMobaPasserCreature(d, 'joueur').ok);
-    assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
-    assert.equal(d.sorcier.creatures.find((e) => e.carteId === 'garde-du-trone-givre').pv, 4);
-  });
+  assert.deepEqual([c.def, c.pv, c.pvMax], avant);
 });
 
 test('un Bouclier de lumière empêche aussi le passage Overkill', () => {

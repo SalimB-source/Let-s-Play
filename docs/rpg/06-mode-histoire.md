@@ -113,7 +113,7 @@ seul set hybride **Neige + Ténèbres** du jeu (fiche complète :
 | Étage | Sorcier | Deck | Profil IA | Note |
 | --- | --- | --- | --- | --- |
 | 1 | La Vigie des neuf nuits | `corbeaux-du-givre` (corbeaux, boucliers, gel) | `normale` / `prudent` | la neige fait le travail : chaque corbeau fige une créature de coût 3 ou moins |
-| 2 | La Veilleuse au corbeau noir | `serment-des-neuf-nuits` (Tribut, berserks, provocations) | `veilleur` / `controle` | elle compte les morts, et la vie change de camp |
+| 2 | La Veilleuse au corbeau noir | `serment-des-neuf-nuits` (Tribut, berserks, défenseurs) | `veilleur` / `controle` | elle compte les morts, et la vie change de camp |
 | 3 | La Valkyrie des neuf nuits | `veille-du-corbeau` (Envol, Furie, exil) | `veilleur` / `agressif` | elle emporte les petites créatures avant qu'elles ne servent |
 | 4 | Le Maître des corbeaux | `maitre-des-corbeaux` (les figures des deux identités) | `sablier` / `equilibre` | **boss** : cinq mythiques, le gel et l'exil, un œil dans la nuit |
 

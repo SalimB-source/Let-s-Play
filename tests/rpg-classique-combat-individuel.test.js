@@ -32,7 +32,7 @@ test('les cibles sont celles du MOBA sans les voies : Envol, Infiltration et pri
   a.envol = true;
   assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: true });
   vol.provocation = true; sol.defenseur = true;
-  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [vol.id], directe: false });
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: false });
   vol.provocation = false;
   assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id], directe: false });
   sol.defenseur = false; a.coupRapide = true;
@@ -114,12 +114,12 @@ test('les conditions d’Embuscade dépendent du plateau, pas du type d’attaqu
   assert.equal(rpgConditionEmbuscadeRemplie(d2, 'sorcier', cardById('gardienne-du-croissant')), true);
 });
 
-test('Provocation donne son bonus temporaire et bloque l’attaque directe', () => {
+test('une ancienne Provocation fonctionne comme Défenseur, sans bonus', () => {
   const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier');
   c.provocation = true; const def = c.def;
   assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).raison, 'cible');
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
-  assert.equal(c.def, def + 1);
+  assert.equal(c.def, def);
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
   if (d.sorcier.creatures.some(e => e.id === c.id)) {
     rpgFinDeTour(d); assert.equal(c.def, def);

@@ -542,3 +542,18 @@ test('PvP : une ancienne phase principale 2 est visible et jouable sans muter un
   assert.ok(rpgPvpAppliquer(d,'joueur',{type:'attaquer',declarer:true,attaquants:[r.entite.id]}).ok);
   assert.ok(d.combatDeclare.cibleIndividuelle);
 });
+
+for (const cote of ['joueur', 'sorcier']) test(`PvP ${cote} : ancien marqueur devient Défenseur sans bonus`, () => {
+  const duel = partieNeuve(42);
+  duel.pvp = true; duel.tour = cote; duel.phase = 'principale';
+  const adv = rpgPvpAutreCote(cote);
+  const entite = (id, attrs = {}) => ({ id, carteId: 'ashigaru-des-braises', name: id, ready: true, attaquee: false, atk: 2, def: 2, pv: 2, pvMax: 2, ...attrs });
+  duel[cote].creatures = [entite('a')];
+  duel[adv].creatures = [entite('ancienne', { provocation: true }), entite('garde', { defenseur: true })];
+  const attaquer = cibleId => rpgPvpAppliquer(duel, cote, { type: 'attaquer', declarer: true, attaquants: ['a'], cibleId });
+  assert.equal(attaquer(null).raison, 'cible');
+  const cible = duel[adv].creatures[0];
+  const avant = [cible.def, cible.pv, cible.pvMax];
+  assert.ok(attaquer('ancienne').ok);
+  assert.deepEqual([cible.def, cible.pv, cible.pvMax], avant);
+});

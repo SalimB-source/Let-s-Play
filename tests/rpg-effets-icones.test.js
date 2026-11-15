@@ -41,11 +41,11 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 42 symboles validés, un par effet', () => {
+test('le sprite porte les 41 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 42);
+  assert.equal(symboles.length, 41);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -75,10 +75,8 @@ test('le sprite porte les 42 symboles validés, un par effet', () => {
   assert.doesNotMatch(abordage, /<circle|<ellipse/, 'les yeux sont des fentes, pas des cercles');
 });
 
-test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
+test('Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
   const corps = (id) => EFFETS_SPRITE.match(new RegExp(`<symbol id="${id}"[^>]*>(.*?)</symbol>`))?.[1];
-  assert.match(corps('i-provocation'), /M5 11V7a2 2/, 'un poing avec quatre doigts, pas un mégaphone');
-  assert.doesNotMatch(corps('i-provocation'), /18 4v16/, 'ancien mégaphone retiré');
   assert.match(corps('i-rebond'), /M12 21V4M4\.5 11\.5 12 4l7\.5 7\.5/, 'flèche verticale vers le haut');
   assert.match(corps('i-recherche'), /<circle cx="10\.5" cy="10\.5" r="6\.5"\/>/, 'loupe seule');
   assert.doesNotMatch(corps('i-recherche'), /<rect/, 'plus de document derrière la loupe');
@@ -94,9 +92,9 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Invocation spéciale', 'Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
     'le Scorpion affiche Poison, sans l’ancien effet de mort');
-  assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
-  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Overkill', 'Furie 2'],
-    'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');
+  assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Défenseur', 'Overkill', 'Furie 2']);
+  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Défenseur', 'Overkill', 'Furie 2'],
+    'les pastilles du Berserk affichent Défenseur et sa nouvelle Furie 2');
   assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque', 'Compagnie viking'],
     'Eirik affiche sa Contre-attaque et la Compagnie qui le fait grandir');
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
@@ -106,7 +104,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
     'Envol et protection contre tous les sorts, sans Résonance');
   assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol', 'Furie 2'],
     'la Valkyrie au corbeau porte Envol et Furie 2, sans Résonance');
-  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Harakiri'],
+  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Défenseur', 'Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
@@ -304,7 +302,7 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
     'une pastille qui ne nomme pas la phrase ne la cache pas');
 
   const jarl = effetsDetailles(cardById('jarl-au-marteau-de-guerre'));
-  assert.deepEqual(jarl.pastilles.map((pastille) => pastille.cle), ['provocation', 'overkill', 'furie']);
+  assert.deepEqual(jarl.pastilles.map((pastille) => pastille.cle), ['defenseur', 'overkill', 'furie']);
   assert.equal(jarl.pastilles.find((pastille) => pastille.cle === 'furie').description,
     'Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +2/+0.',
     'la fiche dit seulement « Furie 2. » : la pastille explique l’état, en une phrase');
@@ -313,11 +311,11 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(jarl.texte, '', 'les mots-clés sobres ne laissent aucun pavé de règle sur la face');
 
   const berserk = effetsDetailles(cardById('berserk-des-trois-hivers'));
-  assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['provocation', 'overkill', 'furie']);
-  assert.equal(berserk.pastilles.find((pastille) => pastille.cle === 'provocation').description,
-    'Les attaques adverses doivent la viser en priorité si elle est accessible, avant les Défenseurs. Elle gagne +0/+1 jusqu’à la fin du tour pour chaque attaque qui la cible.',
-    'la pastille Provocation explique la priorité et son bonus');
-  assert.equal(berserk.texte, '', 'Furie et Provocation vivent entièrement dans leurs pastilles');
+  assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['defenseur', 'overkill', 'furie']);
+  assert.equal(berserk.pastilles.find((pastille) => pastille.cle === 'defenseur').description,
+    'Une attaque adverse doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
+    'la pastille Défenseur explique la priorité');
+  assert.equal(berserk.texte, '', 'Furie et Défenseur vivent entièrement dans leurs pastilles');
 
   const corbeau = effetsDetailles(cardById('valkyrie-au-corbeau'));
   assert.deepEqual(corbeau.pastilles.map((pastille) => pastille.label), ['Envol', 'Furie']);

@@ -194,7 +194,7 @@ for (const moba of [false,true]) for (const side of ['joueur','sorcier']) test(`
 for (const moba of [false,true]) for (const side of ['joueur','sorcier']) test(`Colosse : choix successifs et arrivée du Djinn (${moba?'MOBA':'PvP'} ${side})`, () => {
  const d=partie(moba);d[side].mana={sable:20,eau:20,neige:20,braise:20,tenebres:20};
  const col=invoquerNomme(d,side,'colosse-du-verre-ardent',['djinn-de-la-premiere-etincelle','djinn-de-la-flamme-mourante','dune-marchante']);
- assert.ok(col);assert.equal(col.provocation,true);assert.equal(col.contreAttaque,false);assert.equal(col.bouclier,1);
+ assert.ok(col);assert.equal(col.defenseur,true);assert.equal(col.contreAttaque,false);assert.equal(col.bouclier,1);
  assert.equal(attenteRenfort(d)?.restant,2);
  assert.deepEqual(new Set(rpgCartesRenfortChoisi(d,side).map(c=>c.id)),new Set(['djinn-de-la-premiere-etincelle','djinn-de-la-flamme-mourante']));
  assert.equal(renoncerRenfort(d,side).ok,true);assert.equal(attenteRenfort(d),null);assert.equal(d[side].creatures.length,1);
