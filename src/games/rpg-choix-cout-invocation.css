@@ -1,0 +1,13 @@
+.rpg-choix-cout { position: fixed; inset: 0; z-index: 11000; display: grid; place-items: center; padding: 16px; background: rgba(7, 5, 10, .84); }
+.rpg-choix-cout__panel { width: min(520px, 100%); max-height: min(80vh, 720px); overflow: auto; padding: 24px; border: 1px solid #a88b55; border-radius: 12px; background: #17131b; color: #eee5d3; box-shadow: 0 12px 50px #000b; }
+.rpg-choix-cout__panel h2 { margin: 4px 0 10px; font: 700 24px Georgia, serif; color: #fff1cf; }
+.rpg-choix-cout__panel p { line-height: 1.5; }
+.rpg-choix-cout__eyebrow { margin: 0; color: #c9aa70; text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+.rpg-choix-cout__liste { display: grid; gap: 8px; margin: 18px 0; }
+.rpg-choix-cout__carte { display: flex; flex-direction: column; text-align: left; gap: 4px; padding: 12px; border: 1px solid #695a53; border-radius: 6px; background: #28212c; color: #fff1db; cursor: pointer; }
+.rpg-choix-cout__carte span { font-size: 12px; color: #c6bba7; }
+.rpg-choix-cout__carte.is-selected { border-color: #f4d18b; background: #4a3942; box-shadow: 0 0 0 2px #c39e5c; }
+.rpg-choix-cout__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.rpg-choix-cout__actions button { padding: 9px 16px; border: 1px solid #bda06c; border-radius: 5px; background: #4f3c32; color: #fff4df; cursor: pointer; }
+.rpg-choix-cout__actions button:disabled { opacity: .45; cursor: not-allowed; }
+.rpg-choix-cout__note { font-size: 12px; color: #bcb09f; }

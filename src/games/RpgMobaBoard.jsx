@@ -1,3 +1,6 @@
+import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
+import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
+import { rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import './rpg-bouclier.css';
@@ -6,6 +9,7 @@ import { rpgMobaPeutRepondreAttaque } from './rpgMobaReponseAttaque.js';
 import { rpgMobaCartePourApercu, rpgMobaNotesCarte } from './rpgMobaPresentation.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
+import { CimetiereVols, useCimetiereVols } from './RpgCimetiereVols.jsx';
 import { ascensionDisponible, ERREURS_ASCENSION, validerMateriauxAscension } from './rpgAscension.js';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
@@ -211,6 +215,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [version, redraw] = useReducer((n) => n + 1, 0);
   const [carte, setCarte] = useState(null);
   const [sacrificesChoisis, setSacrificesChoisis] = useState([]);
+  const [choixCoutDemande, setChoixCoutDemande] = useState(null);
   const [attaquants, setAttaquants] = useState([]);
   const [ciblesRapides, setCiblesRapides] = useState({});
   const [cibleRapideEnCours, setCibleRapideEnCours] = useState(null);
@@ -218,6 +223,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [blocages, setBlocages] = useState({});
   const [cible, setCible] = useState(null);
   const [etape, setEtape] = useState(initialiser === nouveau ? 'choix' : 'mulligan');
+  const plateauRef = useRef(null);
+  const volsCimetiere = useCimetiereVols({ duel, session: duel, rootRef: plateauRef, moba: true,
+    actif: etape !== 'choix' && etape !== 'mulligan' });
   const [deckJoueur, setDeckJoueur] = useState(null);
   const [deckSorcier, setDeckSorcier] = useState(null);
   const [plateauMoba, setPlateauMoba] = useState(MOBA_PLATEAU_PAR_DEFAUT);
@@ -848,12 +856,17 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       lancerMagie(id);
     } else { setSacrificesChoisis([]); setCarte(carte === id ? null : id); setPrixLane(null); setCibleSortPrimaire(null); setErreur(''); }
   };
-  const poser = (lane, slot, carteId = carte, sacrificeIds = sacrificesChoisis) => {
+  const poser = (lane, slot, carteId = carte, sacrificeIds = sacrificesChoisis, choixCoutInvocation = null) => {
     if (!carteId) return;
+    if (choixCoutInvocation === null && MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout
+      && rpgInvocationSpecialeSurSonTour(duel, mainSide, cardById(carteId))) {
+      setChoixCoutDemande({ lane, slot, carteId, sacrificeIds, cote: mainSide });
+      return;
+    }
     const avantDestructions = instantaneDestructions();
     const nombre = rpgMobaSacrificesInvocation(duel, mainSide, cardById(carteId));
     if (sacrificeIds.length !== nombre) { setErreur(`Choisissez ${nombre} créature${nombre > 1 ? 's' : ''} à sacrifier.`); return; }
-    const result = rpgMobaJouerCreature(duel, mainSide, carteId, lane, slot, { ouvrirReponse: true, sacrificeIds });
+    const result = rpgMobaJouerCreature(duel, mainSide, carteId, lane, slot, { ouvrirReponse: true, sacrificeIds, choixCoutInvocation });
     if (!afficherResultat(result)) return;
     montrerDestructions(avantDestructions, false, result.sacrificeIds, result.entite?.id);
     if (result.damageEvents?.length) setEvents(result.damageEvents);
@@ -1183,7 +1196,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     setAttaquants(ids); setCiblesRapides(cibles); setCibleRapideEnCours(null); setCibleVoieEnCours(null);
     setCarte(null); setEtape('blocage'); setCible(cibleId ? null : attaquantId);
   };
-  const nouvellePartie = (partie = null) => { setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
+  const nouvellePartie = (partie = null) => { setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setChoixCoutDemande(null); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
   const demarrerHistoire = () => {
     const deck = modeHistoire && deckCampagneRef.current ? deckCampagneRef.current : deckPour('joueur');
     if (!deck || !rpgMobaValiderDeck(deck).ok) return;
@@ -1279,7 +1292,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
           else if (creature) {
             const choixCreature = creature;
             const avant = instantaneDestructions();
-            const result = rpgMobaJouerCreature(duel, 'sorcier', choixCreature.id, choixCreature.lane, choixCreature.slot, { ouvrirReponse: true, sacrificeIds: choixCreature.sacrificeIds });
+            const result = rpgMobaJouerCreature(duel, 'sorcier', choixCreature.id, choixCreature.lane, choixCreature.slot, { ouvrirReponse: true, sacrificeIds: choixCreature.sacrificeIds, choixCoutAuto: true });
             if (afficherResultat(result)) { montrerDestructions(avant, false, result.sacrificeIds, result.entite?.id); if (result.damageEvents?.length) setEvents(result.damageEvents); if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier'); if (result.creatureEnAttente) setEtape('reponse-creature'); else if (result.arriveeEnAttente) setEtape('arrivee'); }
           } else {
             const choix = rpgMobaChoisirAttaqueIndividuelleIA(duel, 'sorcier');
@@ -1400,8 +1413,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             : carte ? 'Choisissez une case illuminée pour invoquer votre créature.'
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
   const reserveAscensionDisponible = etape === 'tour' && mainSide === 'joueur' && !iaAgit && !fini && !carte;
-  return <main onClickCapture={selectionAscension.intercepterClick} onPointerDownCapture={selectionAscension.intercepterPointer} onContextMenuCapture={selectionAscension.intercepterContexte} onKeyDownCapture={selectionAscension.intercepterClavier} className={`moba moba--${plateauMoba.id}${selectionAscension.rituel ? ' is-ascension-selecting' : ''}`} aria-label="MOBA, partie contre l’IA" data-moba-plateau={plateauMoba.id} style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-map': `url("${import.meta.env.BASE_URL}${plateauMoba.fichier}")`, '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`, '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
+  return <main ref={plateauRef} onClickCapture={selectionAscension.intercepterClick} onPointerDownCapture={selectionAscension.intercepterPointer} onContextMenuCapture={selectionAscension.intercepterContexte} onKeyDownCapture={selectionAscension.intercepterClavier} className={`moba moba--${plateauMoba.id}${selectionAscension.rituel ? ' is-ascension-selecting' : ''}`} aria-label="MOBA, partie contre l’IA" data-moba-plateau={plateauMoba.id} style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-map': `url("${import.meta.env.BASE_URL}${plateauMoba.fichier}")`, '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")`, '--rpg-dos-de-carte': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
     {rendu && <EffetsSprite />}
+    <CimetiereVols vols={volsCimetiere} />
     <p className="moba__sr-only moba__combat-result" role="status" aria-atomic="true">{[combatFeedback?.annonce, ...Object.values(impactsIndividuels).map((impact) => impact.annonce)].filter(Boolean).join(' ; ')}</p>
     <p className="moba__sr-only" role="status" aria-atomic="true">{duel.moba.lanes.filter((lane) => !lane.active && lane.conqueredBy).map((lane) => `${voies[lane.id]} conquise par ${noms[lane.conqueredBy]} ; ${lane.id === 'center' && duel.moba.centerJoined ? 'présence sur les deux voies latérales actives' : 'voie fermée'}.`).join(' ')}</p>
     <p className="moba__sr-only" role="status" aria-atomic="true">{Object.entries(retoursExil).filter(([id, retour]) => duel[retour.side]?.creatures.some((entity) => entity.id === id)).map(([, retour]) => `${retour.name}, ${noms[retour.side]}, ${voies[retour.laneId]} : revient d’exil`).join(' ; ')}</p>
@@ -1462,6 +1476,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <div className="moba__pending-copy"><small>{attente.armeMoba ? 'ARME' : 'SORT'} {attente.cote === 'sorcier' ? 'ADVERSE' : 'JOUÉ'} · EN ATTENTE</small><strong title={carteAttendue.name}>{carteAttendue.name}</strong><span title={cibleAttendue}>⌖ {cibleAttendue}</span></div>
       </div>;
     })()}
+    {choixCoutDemande && <RpgChoixCoutInvocation key={choixCoutDemande.carteId} duel={duel} cote={choixCoutDemande.cote} carteId={choixCoutDemande.carteId}
+      onAnnuler={() => setChoixCoutDemande(null)}
+      onChoisir={(choix) => { const demande = choixCoutDemande; setChoixCoutDemande(null); poser(demande.lane, demande.slot, demande.carteId, demande.sacrificeIds, choix); }} />}
     {carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">
       {cardById(carte).ascension ? <>
         Ascension prête pour {cardById(carte).name} : choisissez la place de l’un des sacrifices sélectionnés. Les sacrifices seront payés à la résolution.
