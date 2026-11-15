@@ -130,7 +130,7 @@
     "check:rpg-sort-joue": "node scripts/rpg-sort-joue-check.mjs",
     "check:rpg-tourbillon-eau": "node scripts/rpg-tourbillon-eau-check.mjs",
     "check:rpg-exil": "node scripts/rpg-exil-check.mjs",
-    "check:rpg-abordage-chaine": "node scripts/rpg-abordage-chaine-check.mjs",
+    "check:rpg-abordage-chaine": "node --test tests/rpg-prises-animation.test.js && node scripts/rpg-abordage-chaine-check.mjs",
     "check:rpg-roue-feu": "node scripts/rpg-roue-feu-check.mjs",
     "check:rpg-eclair-marteau": "node scripts/rpg-eclair-marteau-check.mjs",
     "check:rpg-tempete-sable": "node scripts/rpg-tempete-sable-check.mjs",

@@ -13316,6 +13316,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-destruction-fx.is-abordage {
   animation: rpg-abordage-prise 1400ms ease-in-out forwards;
 }
+.rpg-card-destruction-fx.is-abordage-attente { animation-play-state: paused; }
 .rpg-card-destruction-fx.is-abordage::before { display: none; }
 @keyframes rpg-abordage-chaine {
   0% { clip-path: inset(-36px 100% -36px -20px); opacity: 1; }
