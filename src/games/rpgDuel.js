@@ -1,4 +1,5 @@
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
+import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
@@ -8,7 +9,7 @@ import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import { candidatsRenfortChoisi, planRenfortAscension, renfortDejaJoue, marquerRenfort } from './rpgRenforts.js';
 import { MOBA_RAPIDITE_EMBUSCADES, rpgMobaConditionRapidite } from './rpgMobaRapidite.js';
 import { rpgMobaConditionSpeciale } from './rpgMobaEmbuscades.js';
-import { rpgMobaConditionImprimee } from './rpgMobaEmbuscadesImprimees.js';
+import { rpgMobaConditionImprimee, MOBA_EMBUSCADES_IMPRIMEES, rpgCandidatsCoutInvocationSpeciale, rpgCoutInvocationSpecialeDisponible, rpgPayerCoutInvocationSpeciale } from './rpgMobaEmbuscadesImprimees.js';
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
  *
@@ -2199,6 +2200,7 @@ function armeDePorteurMort(duel, cote, entite) {
       revenant.pv = revenant.def = revenant.pvMax = 1;
       camp.creatures.push(revenant);
       placerDansEmplacement(duel, cote, revenant, entite.emplacement);
+      noterSortieCimetiere(duel, cote, carte.id, 'jeu', revenant.id);
       duel.log.push(`${carteArme.name} : ${carte.name} revient en jeu avec 1 point de défense, sans son arme.`);
       appliquerArriveeDeRetour(duel, cote, carte, revenant);
       return;
@@ -3741,6 +3743,7 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
     entite.mobaLane = mobaVoieCombat(duel.moba, cote, place.voie.id);
     if (!mobaPlacer(duel.moba, cote, place.voie.id, place.slot, entite.id).ok) throw new Error('Placement de renfort MOBA incohérent');
   }
+  if (effet.zone === 'cimetiere') noterSortieCimetiere(duel, cote, id, 'jeu', entite.id);
   journaliserArriveeCreature(duel, cote, entite, 'renfort-choisi');
   duel.log.push(`${carteSource.name} invoque spécialement ${carte.name}.`);
   if (effet.bouclierRenfort) {
@@ -3809,6 +3812,7 @@ function appliquerRenfortAscension(duel, cote, effet, sourceCarteId, sauf, optio
       entite.mobaLane = mobaVoieCombat(duel.moba, cote, place.voie.id);
       if (!mobaPlacer(duel.moba, cote, place.voie.id, place.slot, entite.id).ok) throw new Error('Placement de renfort MOBA incohérent');
     }
+    if (effet.zone === 'cimetiere') noterSortieCimetiere(duel, cote, id, 'jeu', entite.id);
     journaliserArriveeCreature(duel, cote, entite, 'renfort-ascension');
     duel.log.push(`${source?.name ?? 'Renfort'} invoque spécialement ${carte.name} depuis ${effet.zone === 'deck' ? 'la pioche' : effet.zone === 'cimetiere' ? 'le cimetière' : 'la main'}.`);
     appliquerArriveeDeRetour(duel, cote, carte, entite, options);
@@ -5010,6 +5014,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       }
       const [carteRenvoyee] = camp.cimetiere.splice(index, 1);
       ajouterCarteEnMainOuReserve(camp, carteRenvoyee);
+      if (!estCarteAscension(carteRenvoyee)) noterSortieCimetiere(duel, cote, carteRenvoyee, 'main');
       duel.log.push(`${nomSource} renvoie ${cardById(carteRenvoyee)?.name ?? carteRenvoyee} du cimetière ${estCarteAscension(carteRenvoyee) ? 'à la réserve d’Ascension' : 'en main'}.`);
       return;
     }
@@ -6307,7 +6312,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false } = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
   if (!camp) return { ok: false, raison: 'camp' };
@@ -6508,9 +6513,17 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     }
   }
   if (!dejaPayee && !rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  // Capturer la voie spéciale avant de modifier la main ou le cimetière.
+  const invocationSpeciale = !dejaPayee && (duel.moba ? invocationSpecialeMoba : rpgInvocationSpecialeSurSonTour(duel, cote, carte));
+  const coutSpecial = invocationSpeciale && MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout;
+  const choixCout = coutSpecial && choixCoutInvocation === null && (choixCoutAuto || (!duel.moba && !duel.pvp && cote === 'sorcier'))
+    ? rpgCandidatsCoutInvocationSpeciale(duel, cote, carteId)[0] : choixCoutInvocation;
+  if (coutSpecial && choixCout == null) return { ok: false, raison: 'choix-cout-requis' };
+  if (coutSpecial && !rpgCoutInvocationSpecialeDisponible(duel, cote, carteId, choixCout)) return { ok: false, raison: 'choix-cout-invalide' };
   if (!dejaPayee && duel.moba && annoncerCreatureMoba) {
     payer(duel, cote, carte);
-    marquerInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
+    marquerInvocationMoba(duel, cote, carte, invocationSpeciale, invocationSpeciale);
+    if (invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, cote, carteId, choixCout);
     zoneSource.splice(zoneSource.indexOf(carteId), 1);
     duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), invocationSpecialeMoba, ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
@@ -6525,9 +6538,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (contreIA) {
       if (contreIA.contreAnnonceCreature) {
         const reponse = rpgJouerCreature(duel, 'sorcier', contreIA.id, null,
-          { annonceContree: { cote: 'joueur', carteId } });
+          { annonceContree: { cote: 'joueur', carteId, invocationSpeciale, choixCoutInvocation: choixCout } });
         if (reponse.ok) return reponse;
-      } else return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+      } else return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId, invocationSpeciale, choixCoutInvocation: choixCout });
     }
   }
   // Contre par une créature : la carte annoncée paie son coût et va au
@@ -6537,8 +6550,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (carte.contreAnnonceCreature && !rpgCarteEmbuscade(carte) && duel.tour !== cote && !contreCreatureMoba) {
     const cible = duelCardById(annonceReponse.carteId);
     if (!rpgPeutPayer(duel[annonceReponse.cote], cible)) return { ok: false, raison: 'mana' };
+    if (annonceReponse.invocationSpeciale && MOBA_EMBUSCADES_IMPRIMEES[cible.id]?.cout && (annonceReponse.choixCoutInvocation == null || !rpgCoutInvocationSpecialeDisponible(duel, annonceReponse.cote, cible.id, annonceReponse.choixCoutInvocation))) return { ok: false, raison: 'condition-embuscade' };
     payer(duel, annonceReponse.cote, cible);
     marquerInvocationMoba(duel, annonceReponse.cote, cible, Boolean(annonceReponse.invocationSpeciale));
+    if (annonceReponse.invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, annonceReponse.cote, cible.id, annonceReponse.choixCoutInvocation);
     const mainAdverse = estCarteAscension(cible) ? duel[annonceReponse.cote].reserveAscension : duel[annonceReponse.cote].main;
     mainAdverse.splice(mainAdverse.indexOf(cible.id), 1);
     duel[annonceReponse.cote].cimetiere.push(cible.id);
@@ -6575,7 +6590,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
-    marquerInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
+    marquerInvocationMoba(duel, cote, carte, invocationSpeciale, invocationSpeciale);
+    if (invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, cote, carteId, choixCout);
     zoneSource.splice(zoneSource.indexOf(carteId), 1);
   }
   // Un effet de mort payé comme sacrifice peut fermer la case ou terminer
@@ -7495,6 +7511,7 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   // MOBA reserves its announced spell and pays all costs before responses.
   const reserveMoba = Boolean(duel.moba && (annonce === duel.mobaSortEnAttente || annonce === duel.mobaCreatureEnAttente));
   if (!reserveMoba && !rpgPeutPayer(campAnnonce, cible)) return { ok: false, raison: 'mana' };
+  if (!reserveMoba && annonce.invocationSpeciale && MOBA_EMBUSCADES_IMPRIMEES[cible.id]?.cout && (annonce.choixCoutInvocation == null || !rpgCoutInvocationSpecialeDisponible(duel, annonce.cote, cible.id, annonce.choixCoutInvocation))) return { ok: false, raison: 'condition-embuscade' };
 
   // Payer la carte lancée, même si elle est immédiatement contrecarrée, puis
   // payer le contresort. Les cartes du joueur restent en main jusque-là ; les
@@ -7502,6 +7519,7 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   if (!reserveMoba) {
     payer(duel, annonce.cote, cible);
     marquerInvocationMoba(duel, annonce.cote, cible, Boolean(annonce.invocationSpeciale));
+    if (annonce.invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, annonce.cote, cible.id, annonce.choixCoutInvocation);
   }
   payer(duel, cote, carte);
   const main = estCarteAscension(cible) ? (campAnnonce.reserveAscension ?? []) : campAnnonce.main;
@@ -7829,6 +7847,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     const porteur = camp.creatures.find((entite) => entite.id === cibleId);
     if (index >= 0 && arme && porteur) {
       camp.cimetiere.splice(index, 1);
+      noterSortieCimetiere(duel, cote, arme.id, 'jeu', porteur.id);
       if (arme.kind === 'arme') resoudreAttachementArme(duel, cote, arme, porteur);
       else {
         appliquer(duel, cote, arme.effet, porteur.id, null, cardColors(arme), null, arme.id);
@@ -7966,6 +7985,7 @@ function declencherArmesAttaquants(duel, cote, bilans, { seulementAttaque = fals
           if (carteIndex >= 0) {
             duel[adv].cimetiere.splice(carteIndex, 1);
             ajouterCarteEnMainOuReserve(duel[adv], cible.carteId);
+            if (!estCarteAscension(cible.carteId)) noterSortieCimetiere(duel, adv, cible.carteId, 'main');
             duel.log.push(`${cible.name} revient ${estCarteAscension(cible.carteId) ? 'dans sa réserve d’Ascension' : 'dans la main de son propriétaire'} (sphère de rotation).`);
             declencheUn = true;
           }
@@ -9311,6 +9331,7 @@ function resoudreRetoursProgrammes(duel, retours) {
     const offsetVoie = voie ? { left: 0, center: 2, right: 3 }[voie.id] : null;
     placerDansEmplacement(duel, cote, entite, voie ? offsetVoie + slotVoie : null);
     if (voie) mobaPlacer(duel.moba, cote, voie.id, slotVoie, entite.id);
+    noterSortieCimetiere(duel, cote, carte.id, 'jeu', entite.id);
     if (retour.tenacite) journaliserArriveeCreature(duel, cote, entite, 'tenacite');
     // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
     const attente = preparerArriveeDeRetour(duel, cote, carte, entite);
@@ -9712,7 +9733,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
       continue;
     }
     const invocationSpeciale = rpgInvocationSpecialeSurSonTour(duel, 'sorcier', carte);
-    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null, ...(coup.sacrificeIds ? { sacrificeIds: coup.sacrificeIds } : {}), ...(invocationSpeciale ? { invocationSpeciale: true } : {}) };
+    duel.annonce = { cote: 'sorcier', carteId: coup.carteId, cibleId: cibleId ?? null, cibleAllieeId: coup.cibleAllieeId ?? null, ...(coup.sacrificeIds ? { sacrificeIds: coup.sacrificeIds } : {}), ...(invocationSpeciale ? { invocationSpeciale: true, choixCoutInvocation: rpgCandidatsCoutInvocationSpeciale(duel, 'sorcier', carte.id)[0] ?? null } : {}) };
     duel.fenetreReponse = true;
     duel.log.push(`Le sorcier annonce ${duelCardById(coup.carteId)?.name ?? magieById(coup.carteId)?.name ?? armeById(coup.carteId)?.name ?? coup.carteId}.`);
     return duel.annonce;
@@ -9738,7 +9759,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
-      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { attendreReponseEffet: true, sacrificeIds: sacrifices })
+      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { attendreReponseEffet: true, sacrificeIds: sacrifices, choixCoutInvocation: annonce.choixCoutInvocation ?? null })
       : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };

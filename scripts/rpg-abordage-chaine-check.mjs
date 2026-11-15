@@ -45,6 +45,7 @@ const {
   elementCapteurPourAnimation,
   vecteurVersCapteur,
   monterFantomeDevantTableVide,
+  rendreCapteurEtCases,
 } = await import('../node_modules/.cache/rpg-abordage-chaine/rpg-abordage-chaine-smoke.js');
 
 const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body></html>`).window.document;
@@ -60,6 +61,8 @@ const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body
     'la prise se nomme sans attendre la mesure : elle ne joue pas un adieu de morte');
   assert.equal(doc.querySelector('.rpg-abordage-chaine'), null,
     'aucune chaîne ne part d’une adresse inconnue');
+  assert.ok(fantome.classList.contains('is-abordage-attente'), 'le mouvement attend une destination fiable');
+  assert.equal(doc.querySelector('.rpg-abordage-liens'), null, 'les entraves attendent aussi le départ de la chaîne');
   assert.equal(fantome.getAttribute('data-rpg-destroyed-id'), 'entite-prise',
     'le fantôme garde l’identité de la créature prise');
   assert.equal(fantome.getAttribute('aria-hidden'), 'true', 'il est décoratif');
@@ -68,7 +71,7 @@ const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body
 // Les liens d’entrave : deux chaînes rivetées en croix sur les diagonales de
 // la carte, qui s’y verrouillent au contact du grappin.
 {
-  const doc = documentDe(rendreFantome({ abordage: null }));
+  const doc = documentDe(rendreFantome({ abordage: { dx: 500, dy: -260 } }));
   const liens = doc.querySelector('.rpg-abordage-liens');
   assert.ok(liens, 'la carte prise porte ses chaînes d’entrave en croix');
   const diagonales = [...doc.querySelectorAll('.rpg-abordage-liens__diagonale')];
@@ -238,11 +241,10 @@ assert.equal(elementCapteurPourAnimation({ table, capteurId: 'entite-capteur' })
   'le capteur déjà rendu reste la destination prioritaire');
 
 const slots = window.document.createElement('div');
-slots.className = 'rpg-creature-slots--sorcier';
+slots.className = 'rpg-creature-slots--ennemi';
 slots.innerHTML = '<div data-creature-slot="4"></div>';
 table.append(slots);
 const slot = slots.firstElementChild;
-const rangee = window.document.querySelector('.card-row--ennemi');
 const versSlot = elementCapteurPourAnimation({
   table, capteurId: 'entite-pas-encore-la', capteurVivant: { emplacement: 3 },
 });
@@ -250,7 +252,44 @@ assert.equal(versSlot, slot,
   `un capteur pas encore rendu vise sa case connue (reçu : ${versSlot?.outerHTML})`);
 assert.equal(elementCapteurPourAnimation({
   table, capteurId: 'entite-pas-encore-la', capteurVivant: {},
-}), rangee, 'sans case connue, le dernier repli est bien la rangée');
+}), null, 'sans case connue, ne jamais viser le centre de la rangée');
+
+const slotsJoueur = window.document.createElement('div');
+slotsJoueur.className = 'rpg-creature-slots--joueur';
+slotsJoueur.innerHTML = '<div data-creature-slot="2"></div>';
+table.append(slotsJoueur);
+assert.equal(elementCapteurPourAnimation({ table, capteurId: 'attente-joueur', coteCapteur: 'joueur', capteurVivant: { emplacement: 1 } }), slotsJoueur.firstElementChild,
+  'le capteur joueur vise sa propre case');
+assert.equal(elementCapteurPourAnimation({ table, capteurId: 'attente-sorcier', coteCapteur: 'sorcier', capteurVivant: { emplacement: 3 } }), slot,
+  'le camp sorcier utilise la classe ennemi réelle');
+const pile = window.document.createElement('span');
+pile.dataset.entitesPile = 'membre-visible capteur-masque';
+pile.innerHTML = '<button data-entity-id="membre-visible"></button>';
+table.append(pile);
+const facePile = pile.firstElementChild;
+facePile.getBoundingClientRect = rect(90, 480, 120, 150);
+assert.equal(elementCapteurPourAnimation({ table, capteurId: 'capteur-masque', coteCapteur: 'joueur' }), facePile,
+  'un capteur masqué dans une pile rejoint sa face visible, pas le centre');
+assert.deepEqual(vecteurVersCapteur({ table, capteurId: 'capteur-masque', effet }), { dx: -110, dy: 180 });
+facePile.getBoundingClientRect = rect(0, 0, 0, 0);
+assert.equal(vecteurVersCapteur({ table, capteurId: 'capteur-masque', effet }), null,
+  'une carte sans géométrie ne fournit pas un faux centre');
+
+// Le véritable wrapper de prise et les cases réellement produits par le jeu.
+{
+  const doc = documentDe(rendreCapteurEtCases());
+  const tableReelle = doc.querySelector('.card-table');
+  const carteReelle = doc.querySelector('.rpg-card-prison [data-entity-id="capteur-reel"]');
+  const caseReelle = doc.querySelector('.rpg-creature-slots--ennemi [data-creature-slot="4"]');
+  assert.ok(carteReelle && caseReelle, 'la carte détentrice et sa case existent dans le rendu réel');
+  tableReelle.getBoundingClientRect = rect(0, 0, 1000, 700);
+  carteReelle.getBoundingClientRect = rect(680, 50, 120, 150);
+  caseReelle.getBoundingClientRect = rect(670, 40, 140, 170);
+  assert.deepEqual(vecteurVersCapteur({ table: tableReelle, capteurId: 'capteur-reel', effet }), { dx: 480, dy: -250 });
+  carteReelle.remove();
+  assert.deepEqual(vecteurVersCapteur({ table: tableReelle, capteurId: 'capteur-reel', effet: { ...effet, coteCapteur: 'sorcier', emplacementCapteur: 3 } }),
+    { dx: 480, dy: -250 }, 'avant le rendu de la carte, sa vraie case est utilisée');
+}
 
 // ── 2 bis. Le geste réel : le capteur arrive APRÈS le fantôme ─────────────
 // C'est exactement la prise du sorcier : l'action se résout sans que sa
@@ -262,6 +301,11 @@ assert.equal(elementCapteurPourAnimation({
   tableVide.getBoundingClientRect = rect(0, 0, 1000, 700);
   assert.equal(container.querySelector('.rpg-abordage-chaine'), null,
     'aucune chaîne ne part tant que le capteur n’a pas de carte');
+
+  // Même un rendu retardé au-delà de douze images ne doit pas partir au centre.
+  await act(async () => { await attente(350); });
+  assert.equal(container.querySelector('.rpg-abordage-chaine'), null);
+  assert.ok(container.querySelector('.is-abordage-attente'));
 
   // Le capteur entre en jeu à sa place : en haut à droite de la table.
   const saCarte = window.document.createElement('button');
@@ -278,8 +322,38 @@ assert.equal(elementCapteurPourAnimation({
   assert.match(container.querySelector('.rpg-card-destruction-fx').getAttribute('style') ?? '',
     /--rpg-abordage-x:\s*500px;.*--rpg-abordage-y:\s*-260px/,
     'la carte prise vole vers ce même capteur');
+  assert.equal(container.querySelector('.is-abordage-attente'), null, 'le mouvement démarre une fois la carte trouvée');
+  saCarte.getBoundingClientRect = rect(620, 65, 120, 150);
+  await act(async () => { await attente(100); });
+  assert.match(container.querySelector('.rpg-abordage-chaine').getAttribute('style'), /left:\s*680px;\s*top:\s*140px/,
+    'la chaîne suit un capteur déplacé après son arrivée');
+  assert.match(container.querySelector('.rpg-card-destruction-fx').getAttribute('style'), /--rpg-abordage-x:\s*420px;.*--rpg-abordage-y:\s*-235px/);
   await act(async () => root.unmount());
   assert.equal(container.querySelector('.rpg-abordage-chaine'), null, 'le fantôme rend la table');
+}
+
+// Si la case existe avant la carte, elle sert de départ, puis la face réelle
+// prend le relais même si la rangée a changé entre-temps.
+{
+  const attente = (ms) => new Promise(resolve => window.setTimeout(resolve, ms));
+  const { container, table: tableVide, root } = await monterFantomeDevantTableVide({ coteCapteur: 'sorcier', emplacementCapteur: 3 });
+  tableVide.getBoundingClientRect = rect(0, 0, 1000, 700);
+  const grille = window.document.createElement('div');
+  grille.className = 'rpg-creature-slots--ennemi';
+  grille.innerHTML = '<span data-creature-slot="4"></span>';
+  grille.firstElementChild.getBoundingClientRect = rect(700, 40, 120, 150);
+  tableVide.append(grille);
+  await act(async () => { await attente(80); });
+  assert.match(container.querySelector('.rpg-abordage-chaine').getAttribute('style'), /left:\s*760px;\s*top:\s*115px/);
+  const carte = window.document.createElement('button');
+  carte.dataset.entityId = 'entite-capteur';
+  carte.getBoundingClientRect = rect(80, 70, 120, 150);
+  tableVide.append(carte);
+  await act(async () => { await attente(80); });
+  assert.match(container.querySelector('.rpg-abordage-chaine').getAttribute('style'), /left:\s*140px;\s*top:\s*145px/,
+    'la carte effective prime sur son ancienne case');
+  assert.match(container.querySelector('.rpg-card-destruction-fx').getAttribute('style'), /--rpg-abordage-x:\s*-120px;.*--rpg-abordage-y:\s*-230px/);
+  await act(async () => root.unmount());
 }
 
 // ── 3. La page : la mesure après rendu, et l'instantané pour estimation ───
@@ -287,8 +361,8 @@ const animer = page.slice(page.indexOf('const animerModificationsChamp = ('),
   page.indexOf('const conserverAnnulation ='));
 assert.match(animer, /capteurId: capteurId \?\? null,/,
   'l’effet emporte l’identité du capteur jusqu’au fantôme');
-assert.match(animer, /fantôme \(`FantomeCarteDetruite`\) remesure le capteur sur la table/,
-  'la page dit que la rangée n’est qu’une estimation d’attente');
+assert.match(animer, /sa carte ou sa case après le rendu, jamais le milieu de la rangée/,
+  'la page refuse le centre de la rangée');
 
 assert.match(page, /export function FantomeCarteDetruite\(\{ effet, tableRef, onTermine = null \}\)/,
   'le fantôme est un composant, pas une carte anonyme');
@@ -302,7 +376,7 @@ assert.match(page, /window\.requestAnimationFrame \?\? \(\(rappel\) => window\.s
   'si le capteur manque encore, la mesure est retentée');
 assert.match(page, /prise && vecteur && \(\s*<ChaineAbordage effet=\{\{ \.\.\.effet, abordage: vecteur \}\} \/>/s,
   'la chaîne utilise le MÊME vecteur mesuré que la carte');
-assert.match(page, /\{prise && <LiensAbordageCarte effet=\{effet\} \/>\}/,
+assert.match(page, /\{prise && vecteur && <LiensAbordageCarte effet=\{effet\} \/>\}/,
   'seule une prise en cale entrave la carte de ses chaînes diagonales, jamais une destruction');
 assert.match(page, /'--rpg-abordage-x': `\$\{vecteur\?\.dx \?\? 0\}px`/,
   'et la carte vole vers ce même capteur');

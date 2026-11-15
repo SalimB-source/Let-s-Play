@@ -23,7 +23,7 @@ export function instantaneSansSacrificesAnimes(avant, ids = []) {
   const resultat = avant.filter(entite => !exclus.has(entite.entityId));
   // Ces métadonnées empêchent de rejouer d’anciens projectiles et gardent
   // les coordonnées des avatars pour les effets réels de la même action.
-  for (const cle of ['combatAnimationIds', 'avatarRects']) {
+  for (const cle of ['combatAnimationIds', 'avatarRects', 'prisesAnimation']) {
     if (cle in avant) resultat[cle] = avant[cle];
   }
   return resultat;

@@ -111,7 +111,7 @@ function rpgMobaChoisirEmbuscadeIASurCopie(duel, side = 'sorcier') {
       for (let slot = 0; slot < lane.slots[side].length; slot++) {
         if (lane.slots[side][slot] !== null) continue;
         const probe = copie(duel);
-        const pose = rpgMobaJouerCreature(probe, side, id, lane.id, slot, { sacrificeIds: [] });
+        const pose = rpgMobaJouerCreature(probe, side, id, lane.id, slot, { sacrificeIds: [], choixCoutAuto: true });
         if (!pose.ok) continue;
         resoudreDestructionsSurCopie(probe);
         const score = valeurPosition(probe, side) - valeurPosition(duel, side);
@@ -296,7 +296,7 @@ function rpgMobaChoisirMagieIASurCopie(duel, side = 'sorcier', reaction = false)
         const prisePossible = sommation.some((creature) => lanes.some((voie) => {
           const slot = voie.slots[side].indexOf(null); if (slot < 0) return false;
           const essai = copie(simulation);
-          const pose = rpgMobaJouerCreature(essai, side, creature.id, voie.id, slot);
+          const pose = rpgMobaJouerCreature(essai, side, creature.id, voie.id, slot, { choixCoutAuto: true });
           if (!pose.ok) return false;
           if (essai.arriveeEnAttente && Number.isFinite(essai.arriveeEnAttente.abordage)) {
             const cible = rpgMobaChoisirArriveeIA(essai, side);
@@ -372,7 +372,7 @@ function rpgMobaChoisirCreatureIASurCopie(duel, side = 'sorcier') {
       : [lane.slots[side].indexOf(null)].filter((index) => index >= 0))) {
     const sacrificeIds = victimes.map((e) => e.id);
     const simulation = copie(duel);
-    const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot, { sacrificeIds });
+    const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot, { sacrificeIds, choixCoutAuto: true });
     if (!pose.ok) continue;
     resoudreDestructionsSurCopie(simulation);
     // Les renforts et leurs arrivées peuvent s'enchaîner : simuler leurs vrais

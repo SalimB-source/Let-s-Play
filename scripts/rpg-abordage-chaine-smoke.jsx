@@ -9,6 +9,8 @@ import {
   ChaineAbordage,
   elementCapteurPourAnimation,
   FantomeCarteDetruite,
+  TableCard,
+  CreatureSlots,
   vecteurVersCapteur,
 } from '../src/games/RpgDuelPage.jsx';
 
@@ -52,7 +54,7 @@ export function rendreMorte() {
  * puis on pose la carte du capteur — la mesure doit la trouver à l'image
  * suivante et non rester sur le milieu de la rangée.
  */
-export async function monterFantomeDevantTableVide() {
+export async function monterFantomeDevantTableVide(options = {}) {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement('div');
   const table = document.createElement('div');
@@ -60,9 +62,23 @@ export async function monterFantomeDevantTableVide() {
   container.append(table);
   document.body.append(container);
   const root = createRoot(container);
-  const effet = { ...PRISE, capteurId: 'entite-capteur', abordage: null };
+  const effet = { ...PRISE, capteurId: 'entite-capteur', abordage: null, ...options };
   await act(async () => {
     root.render(<FantomeCarteDetruite effet={effet} tableRef={{ current: table }} />);
   });
   return { container, table, root };
+}
+
+/** Structure réelle du capteur qui détient une créature, avec les cases du
+ * sorcier telles que le plateau les rend en mode essai. */
+export function rendreCapteurEtCases() {
+  const entite = {
+    id: 'capteur-reel', carteId: 'cotre-de-course', name: 'Cotre de course',
+    atk: 3, def: 3, pv: 3, pvMax: 3, ready: true, emplacement: 3,
+    enCale: { carteId: 'fennec-des-decombres', name: 'Fennec des décombres' },
+  };
+  return renderToStaticMarkup(<div className="card-table"><div className="card-row card-row--ennemi">
+    <CreatureSlots camp={{ creatures: [entite] }} cote="ennemi" />
+    <TableCard entite={entite} cote="ennemi" caseEssai={4} />
+  </div></div>);
 }

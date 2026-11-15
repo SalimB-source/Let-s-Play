@@ -45,13 +45,13 @@ export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {
   if (embuscade(duel, cote, carte, specialeMoba)) return null;
   return (duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee) ? 'creature-limite' : null;
 }
-export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false) {
+export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, specialeFixee = null) {
   if (carte?.ascension) return;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return;
   if (duel.moba) {
-    const quota = embuscade(duel, cote, carte, specialeMoba) ? 'embuscadesJouees' : 'creaturesJouees';
+    const quota = (specialeFixee ?? embuscade(duel, cote, carte, specialeMoba)) ? 'embuscadesJouees' : 'creaturesJouees';
     (duel.moba[quota] ??= {})[cote] = true;
-  } else if (!embuscade(duel, cote, carte, specialeMoba)) duel[cote].invocationNormaleJouee = true;
+  } else if (!(specialeFixee ?? embuscade(duel, cote, carte, specialeMoba))) duel[cote].invocationNormaleJouee = true;
 }
 export function victimesInvocation(camp) {
   return (camp?.creatures ?? []).filter(e => cardById(e.carteId)?.kind !== 'site');

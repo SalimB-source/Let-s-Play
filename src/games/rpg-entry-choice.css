@@ -1,9 +1,12 @@
 /*
  * Écran d'entrée du Sablier — src/games/rpg-entry-choice.css
  * ----------------------------------------------------------
- * Le même keyart de Bab El que le menu du duel (`RpgDuelPage.jsx`), voilé pour
- * porter les options Windows, Android et navigateur. Trois colonnes sur
- * ordinateur, une seule sous 720 px pour rester lisible sur téléphone.
+ * L'accueil du jeu : un désert lumineux et sans personnages
+ * (`public/sablier-accueil-desert-clair.jpg`), à la place de l'ancien keyart
+ * sombre de Bab El. Le voile reste dense à gauche pour porter le titre et les
+ * options Windows, Android et navigateur, puis s'efface vers la droite pour
+ * laisser respirer le ciel et les dunes. Trois colonnes sur ordinateur, une
+ * seule sous 720 px pour rester lisible sur téléphone.
  */
 
 .rpg-entry-choice {
@@ -13,9 +16,10 @@
   place-items: center;
   padding: 32px 18px 44px;
   background:
-    linear-gradient(105deg, rgba(5, 6, 15, 0.92) 0%, rgba(5, 6, 15, 0.78) 46%, rgba(5, 6, 15, 0.55) 100%),
-    url('../../public/sablier-de-bab-el-keyart.jpg') center / cover no-repeat fixed;
-  background-color: #05060f;
+    linear-gradient(105deg, rgba(12, 14, 26, 0.86) 0%, rgba(12, 14, 26, 0.62) 42%, rgba(12, 14, 26, 0.20) 78%, rgba(12, 14, 26, 0.08) 100%),
+    linear-gradient(180deg, rgba(12, 14, 26, 0.14) 0%, transparent 38%, rgba(12, 14, 26, 0.22) 100%),
+    url('../../public/sablier-accueil-desert-clair.jpg') center / cover no-repeat fixed;
+  background-color: #263349;
   color: #e8eaf6;
 }
 

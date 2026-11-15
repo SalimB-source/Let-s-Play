@@ -24,6 +24,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
+import './rpg-bouclier.css';
+import { classeBouclier } from './rpgBouclier.js';
 import { cardById, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
 import { TAMPON_CARTE, etatDeCarteRevelee as etatDeCarte, rayonParId } from './rpgBoosters.js';
 import { creditsLisible } from './rpgCredits.js';
@@ -59,7 +61,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
       aria-hidden={!visible || undefined}
       aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${annonce}`}
       title={`${carte.name} — clic droit pour ouvrir la fiche`}
-      className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'} is-${etat}`}
+      className={`rpg-souk__carte ${cardFrameClass(carte)} ${classeBouclier(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'} is-${etat}`}
       data-card-id={carte.id}
       data-souk-carte={visible ? carte.id : undefined}
       data-souk-carte-etat={detail.doublon ? 'doublon' : 'nouvelle'}

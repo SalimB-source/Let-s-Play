@@ -32,6 +32,7 @@ import {
   cardTypeLine,
   carteJouableSansTerrain,
 } from './rpgCards.js';
+import { classeBouclier } from './rpgBouclier.js';
 import { carteReveleePar, plafondVisible } from './rpgCollection.js';
 import { suggestionsNomsDeck } from './rpgDeckAuto.js';
 import {
@@ -754,7 +755,7 @@ export function RpgDeckAtelier({
                     dansLeDeck={dansLeDeck}
                   />
 
-                  <span className={`rpg-atelier__carte-art rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
+                  <span className={`rpg-atelier__carte-art rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)} ${classeBouclier(carte)}`}>
                     {renderCatalogueFace
                       ? renderCatalogueFace(carte, { exemplaires: possedee ? limite : 0, verrouillee: !possedee })
                       : <><img src={artUrl?.(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" /><Cout carte={carte} /></>}

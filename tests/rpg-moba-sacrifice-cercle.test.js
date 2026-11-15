@@ -37,7 +37,7 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
       return duel;
     };
     const FantomeCarteDetruite = ({ effet }) => React.createElement('div', { 'data-ghost-id': effet.entityId });
-    const props = { initialiser, onQuitter: () => {}, rendu: { CercleMagique: RPG_RENDU_MOBA.CercleMagique, FantomeCarteDetruite } };
+    const props = { initialiser, onQuitter: () => {}, rendu: { CercleMagique: RPG_RENDU_MOBA.CercleMagique, TableCard: RPG_RENDU_MOBA.TableCard, FantomeCarteDetruite } };
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
     const click = async (button) => {
@@ -70,9 +70,11 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
     assert.equal(circle.closest('[data-moba-slot]').dataset.mobaSlot, '0');
     assert.ok(document.querySelector('.moba__side--sorcier .moba__slot.is-invoking'), 'la nouvelle créature attend la fin du rituel');
     assert.equal(document.querySelector(`[data-ghost-id="${victim.id}"]`), null, 'pas de fantôme de mort en double');
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 700)));
     await act(async () => circle.dispatchEvent(new dom.window.Event('animationend', { bubbles: true })));
     assert.equal(document.querySelector(`[data-rpg-sacrifice-id="${victim.id}"]`), null, 'le cercle disparaît à la fin');
     assert.equal(document.querySelector('.moba__slot.is-invoking'), null, 'la créature apparaît après le cercle');
+    assert.ok(document.querySelector('.moba__side--sorcier .moba__real-slot .rpg-card.fx-enter'), 'la vraie carte rejoue son entrée après le rituel');
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();

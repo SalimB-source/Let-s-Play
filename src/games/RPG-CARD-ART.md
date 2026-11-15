@@ -1950,3 +1950,24 @@ L’Armure de cendres présente désormais son casque, son torse, ses brassière
 L’Armure de cendres est disposée séparément en ordre anatomique : casque en haut, torse au centre, bras sur les côtés et jambières en bas (révision `armurerie-metal-fusion-separe-v6`).
 
 L’armure séparée retrouve une silhouette ouvragée et des veines de métal incandescent (révision `armurerie-metal-fusion-separe-v7`).
+
+## L'écu des créatures Défenseur (novembre 2026)
+
+Les créatures et les héros qui portent **Défenseur** — imprimé sur la carte ou
+reçu en cours de partie — **deviennent l'écusson** : un aplat marine plein,
+arche haute, flancs droits, vraie pointe en V en bas. Il n'y a **ni rectangle
+qui dépasse, ni contour** : pas d'`outline`, pas de filet, pas de `stroke`, pas
+de bordure ni d'ombre portée. C'est la silhouette de référence, sans trait.
+
+Le découpage vit dans `rpg-bouclier.css` comme `mask-image` SVG (blanc sur
+fond transparent), posé sur le fond `::before` et sur l'illustration — **pas**
+sur les repères. Les pastilles ATQ/DÉF, la ligne de type, les pierres d'effets,
+le sonar rouge `has-garde` et la pastille d'arme gardent donc exactement la
+taille et la position des autres cartes et peuvent déborder librement
+(`overflow: visible`).
+
+Exception demandée : les **aperçus** (survol et fiche catalogue ouverte) ne
+reçoivent pas la classe et restent des cartes rectangulaires normales, avec
+ATQ à gauche et DÉF à droite. `rpgBouclier.js` pose la classe sur la table, la
+main, le mulligan, les vignettes du catalogue / atelier / guide / boosters et
+la main du MOBA. Les sites, terrains, armes et sorts restent sans écusson.
