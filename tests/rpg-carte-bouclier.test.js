@@ -1,8 +1,10 @@
 /**
  * L'écusson des créatures Défenseur — tests/rpg-carte-bouclier.test.js
  * ----------------------------------------------------------------------
- * Vérifie, sans navigateur : qui reçoit l'écusson, que la silhouette est un
- * masque SVG plein SANS aucun contour ni rectangle visible, que les repères
+ * Vérifie, sans navigateur : qui reçoit l'écusson, que le cadre acier biseauté
+ * et les deux ailettes « Provocation » de Hearthstone suivent la silhouette,
+ * avec un liseré de la couleur de l'élément et une ombre portée (aucun
+ * rectangle, aucun `outline`, aucun `box-shadow` de boîte), que les repères
  * (ATQ/DÉF, type, pierres, sonar) ne sont pas touchés, et que les APERÇUS
  * restent des cartes rectangulaires normales avec ATQ à gauche / DÉF à droite.
  */
@@ -96,42 +98,83 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
   } finally { await vite.close(); }
 });
 
-test('la carte EST l’écusson : masque plein, aucun contour, aucun rectangle', () => {
-  assert.match(css, /--rpg-ecusson-masque:\s*url\("data:image\/svg\+xml,/, 'masque vectoriel');
-  assert.match(css, /--rpg-ecusson-fond:\s*#211d3b;/, 'aplat marine de la référence');
-  assert.match(css, /background-color:\s*var\(--rpg-ecusson-fond\);/);
+test('la carte EST l’écusson : cadre acier, ailettes, liseré d’élément, ombre, aucun rectangle', () => {
+  // Quatre SVG, un seul tracé et un seul viewBox élargi : les marges latérales
+  // sont la place des ailettes « Provocation » de Hearthstone.
+  const svgDe = (nom) => {
+    const ligne = css.split('\n').find((l) => l.includes(`${nom}:`));
+    assert.ok(ligne, `${nom} existe`);
+    const uri = ligne.match(/url\("([^"]+)"\)/)[1];
+    return decodeURIComponent(uri.slice(uri.indexOf(',') + 1));
+  };
+  const aplat = svgDe('--rpg-ecusson-aplat');
+  const masque = svgDe('--rpg-ecusson-masque');
+  const cadreMasque = svgDe('--rpg-ecusson-cadre-masque');
+  const acier = svgDe('--rpg-ecusson-acier');
+  for (const [nom, svg] of [
+    ['aplat', aplat], ['masque', masque], ['cadre', cadreMasque], ['acier', acier],
+  ]) {
+    assert.match(svg, /^<svg /, `${nom} est un SVG`);
+    assert.match(svg, /viewBox='-10 -2 120 129'/, `marges des ailettes dans ${nom}`);
+    assert.match(svg, /50 124/, `pointe en V dans ${nom}`);
+  }
+  assert.match(aplat, /fill='rgb\(33,29,59\)'/, 'aplat marine plein');
+  assert.doesNotMatch(aplat, /stroke/, 'l’aplat n’a pas de trait');
+  assert.match(masque, /fill='rgb\(255,255,255\)'/, 'masque blanc de l’illustration');
+  assert.doesNotMatch(masque, /stroke/, 'le masque de l’illustration n’a pas de trait');
+
+  // Hearthstone : métal biseauté, gorge sombre, deux ailettes qui dépassent.
+  assert.match(acier, /<linearGradient id='a'/, 'dégradé acier');
+  assert.match(acier, /stop-color='#f4f7fc'/, 'reflet clair en haut à gauche');
+  assert.match(acier, /stroke='#242831'/, 'gorge sombre');
+  assert.match(acier, /stroke-width='7'/, 'anneau d’acier');
+  assert.match(acier, /stroke-width='2'/, 'gorge sombre de 2 unités');
+  assert.match(acier, /M-9 52 L5 50/, 'ailette gauche');
+  assert.match(acier, /M109 52 L95 50/, 'ailette droite');
+  // Le masque est plus large que l'acier : la couleur de l'élément reste
+  // visible en fin liseré de chaque côté du métal.
+  assert.match(cadreMasque, /stroke-width='10'/, 'masque de 10 contre acier de 7');
+  assert.match(cadreMasque, /M-10 51 L6 49/, 'ailette gauche dans le masque');
+  assert.match(cadreMasque, /M110 51 L94 49/, 'ailette droite dans le masque');
+
+  assert.match(css, /--rpg-ecusson-fond:\s*#211d3b;/, 'marine de la référence');
+  assert.match(css, /background-image:\s*var\(--rpg-ecusson-aplat\) !important;/, 'l’aplat remplace le fond des cadres');
   assert.match(css, /mask-image:\s*var\(--rpg-ecusson-masque\);/);
   assert.match(css, /-webkit-mask-image:\s*var\(--rpg-ecusson-masque\);/);
   assert.match(css, /mask-size:\s*100% 100%;/);
-  // Plus aucun rectangle : fond, cadre, bordure, rayon, ombre, outline.
+
+  // Le cadre : acier + liseré de la couleur de l'élément, sur `::before`.
+  assert.match(css, /background-color:\s*var\(--rpg-frame-color, #f1f3f5\);/);
+  assert.match(css, /background-image:\s*var\(--rpg-ecusson-acier\);/);
+  assert.match(css, /mask-image:\s*var\(--rpg-ecusson-cadre-masque\);/);
+  assert.match(css, /\.rpg-carte-bouclier::before\s*\{[^}]*z-index:\s*2;/s, 'cadre au-dessus du bandeau de titre');
+  assert.match(css, /pointer-events:\s*none;/);
+  assert.doesNotMatch(css, /--rpg-ecusson-liseret/, 'l’ancien liseré seul est remplacé par le cadre');
+
+  // Ombre portée : `drop-shadow` lit l'alpha de l'écusson ET des ailettes.
+  // Aucune ombre de boîte rectangulaire, aucun outline visible.
+  assert.match(css, /filter:\s*drop-shadow\(0 3px 6px rgba\(0, 0, 0, \.42\)\);/);
+  for (const [propriete, neutre] of [
+    ['box-shadow', /box-shadow\s*:\s*none\s*!important;/g],
+    ['outline', /outline\s*:\s*none\s*!important;/g],
+    ['border-radius', /border-radius\s*:\s*0\s*!important;/g],
+  ]) {
+    const total = (css.match(new RegExp(`${propriete}\\s*:`, 'g')) ?? []).length;
+    const sansRectangle = (css.match(neutre) ?? []).length;
+    assert.equal(total, sansRectangle, `aucune déclaration ${propriete} ne dessine un rectangle`);
+    assert.ok(total > 0, `${propriete} est bien neutralisée`);
+  }
   for (const regle of [
     /background:\s*transparent !important;/,
-    /background-image:\s*none !important;/,
     /border:\s*0 !important;/,
-    /border-radius:\s*0 !important;/,
-    /box-shadow:\s*none !important;/,
-    /outline:\s*none !important;/,
     /overflow:\s*visible !important;/,
   ]) assert.match(css, regle, `règle ${regle}`);
-  // Aucun trait résiduel : l'ancien filet or / liseré marine a disparu.
-  assert.doesNotMatch(css, /stroke=/, 'aucun stroke SVG');
+
+  // L'ancien tracé or en surimpression a disparu : la couleur vient de
+  // `--rpg-frame-color`, et aucun filet n'est codé en dur.
   assert.doesNotMatch(css, /--rpg-ecusson-trait/, 'l’ancien tracé contour est retiré');
   assert.doesNotMatch(css, /224,205,138|240, 205, 138|#e0cd8a/, 'plus de filet doré');
   assert.doesNotMatch(css, /clip-path\s*:/, 'mask-image et non clip-path : les repères débordent');
-  assert.equal(
-    (css.match(/border-radius\s*:/g) ?? []).length,
-    (css.match(/border-radius\s*:\s*0\s*!important;/g) ?? []).length,
-    'toutes les déclarations de rayon sont à zéro',
-  );
-  // Le masque décodé est un SVG valide, rempli de blanc, avec la vraie pointe.
-  const uri = css.match(/--rpg-ecusson-masque:\s*url\("([^"]+)"\)/)[1];
-  const svg = decodeURIComponent(uri.slice(uri.indexOf(',') + 1));
-  assert.match(svg, /^<svg /);
-  assert.match(svg, /50 124/, 'pointe en V lisible');
-  assert.match(svg, /fill='rgb\(255,255,255\)'/, 'silhouette pleine');
-  assert.doesNotMatch(svg, /stroke/, 'aucun contour dans le SVG');
-  assert.match(css, /\.rpg-carte-bouclier::before/, 'le fond masqué existe');
-  assert.match(css, /pointer-events:\s*none;/);
 });
 
 test('ATQ/DÉF et les autres repères restent exactement comme sur les autres cartes', () => {

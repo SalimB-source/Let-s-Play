@@ -3,10 +3,13 @@
  * ----------------------------------------------------------------------
  * Un Défenseur se repère déjà à son sonar rouge (`rpg-card__resonance--garde`)
  * et à sa pierre d'emblème (`i-defenseur`). Sa FACE devient l'ÉCUSSON lui-même
- * (voir `rpg-bouclier.css`) : aplat marine plein, arche haute, flancs droits,
- * vraie pointe en V, AUCUN contour et aucun rectangle qui dépasse. Le masque
- * ne touche qu'au fond et à l'illustration : ATQ/DÉF, type, pierres et sonar
- * gardent exactement la place et la taille des autres cartes.
+ * (voir `rpg-bouclier.css`) : aplat marine, arche haute, flancs droits, vraie
+ * pointe en V, aucun rectangle qui dépasse. Reprenant la « Provocation » de
+ * Hearthstone, elle porte un cadre acier biseauté, deux ailettes latérales, un
+ * fin liseré de la couleur de l'élément et une ombre portée — le tout dessiné
+ * le long de la silhouette, jamais de cadre ni d'ombre rectangulaires. Le
+ * masque ne touche qu'au fond et à l'illustration : ATQ/DÉF, type, pierres et
+ * sonar gardent exactement la place et la taille des autres cartes.
  *
  * Exception demandée : les APERÇUS (survol et fiche catalogue ouverte) ne
  * reçoivent PAS la classe et restent des cartes rectangulaires normales, avec

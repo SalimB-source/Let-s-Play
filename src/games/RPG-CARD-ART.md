@@ -1955,16 +1955,26 @@ L’armure séparée retrouve une silhouette ouvragée et des veines de métal i
 
 Les créatures et les héros qui portent **Défenseur** — imprimé sur la carte ou
 reçu en cours de partie — **deviennent l'écusson** : un aplat marine plein,
-arche haute, flancs droits, vraie pointe en V en bas. Il n'y a **ni rectangle
-qui dépasse, ni contour** : pas d'`outline`, pas de filet, pas de `stroke`, pas
-de bordure ni d'ombre portée. C'est la silhouette de référence, sans trait.
+arche haute, flancs droits, vraie pointe en V en bas. Il n'y a **aucun
+rectangle qui dépasse**.
 
-Le découpage vit dans `rpg-bouclier.css` comme `mask-image` SVG (blanc sur
-fond transparent), posé sur le fond `::before` et sur l'illustration — **pas**
-sur les repères. Les pastilles ATQ/DÉF, la ligne de type, les pierres d'effets,
-le sonar rouge `has-garde` et la pastille d'arme gardent donc exactement la
-taille et la position des autres cartes et peuvent déborder librement
-(`overflow: visible`).
+Le look reprend la **Provocation / Taunt de Hearthstone** (capture envoyée par
+le joueur) : un **cadre acier biseauté** — dégradé métal clair en haut à
+gauche, gorge sombre au milieu, filet de lumière — et deux **ailettes
+métalliques** qui dépassent à gauche et à droite vers le milieu de la carte.
+Une fine **bordure de `--rpg-frame-color`** (la couleur de l'élément, comme le
+cadre des autres cartes) reste visible en liseré autour de l'acier, et une
+**ombre portée** `filter: drop-shadow()` suit l'alpha de l'écu et des ailettes.
+Aucun `outline`, aucun `box-shadow` de boîte, aucun cadre rectangulaire.
+
+Les quatre SVG de `rpg-bouclier.css` partagent le viewBox `-10 -2 120 129` :
+les 10 unités de marge latérale sont la place des ailettes, tandis que le tracé
+de l'écu ne bouge pas (pointe `50 124`) — aplat, masque, cadre et illustration
+restent donc alignés. Le masque (blanc sur fond transparent) est posé sur
+l'aplat et sur l'illustration, **pas** sur les repères : les pastilles ATQ/DÉF,
+la ligne de type, les pierres d'effets, le sonar rouge `has-garde` et la
+pastille d'arme gardent exactement la taille et la position des autres cartes
+et peuvent déborder librement (`overflow: visible`).
 
 Exception demandée : les **aperçus** (survol et fiche catalogue ouverte) ne
 reçoivent pas la classe et restent des cartes rectangulaires normales, avec

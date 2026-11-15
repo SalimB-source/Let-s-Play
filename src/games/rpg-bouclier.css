@@ -2,18 +2,31 @@
  * L'écusson des créatures Défenseur — src/games/rpg-bouclier.css
  * ---------------------------------------------------------------
  * La carte Défenseur n'est PLUS un rectangle avec un dessin par-dessus : elle
- * EST la silhouette de l'écusson. Il n'y a donc aucun coin rectangulaire qui
- * dépasse, et AUCUN contour — ni `outline`, ni filet, ni `stroke`, ni bordure,
- * ni ombre portée. C'est un aplat marine plein, comme la référence envoyée,
- * avec l'illustration rognée à la même forme : arche haute, flancs droits,
- * vraie pointe en V en bas.
+ * EST la silhouette de l'écusson. arche haute, flancs droits, vraie pointe en
+ * V en bas, aplat marine. Aucun coin rectangulaire ne dépasse.
  *
- * Le découpage passe par `mask-image` (SVG blanc sur fond transparent), pas
- * par `clip-path` sur toute la carte : le masque est posé sur le fond et sur
- * l'illustration, PAS sur les pastilles ATQ/DÉF, les pierres d'effets, le
- * sonar rouge `has-garde` ni la pastille d'arme. Tous ces repères gardent
- * exactement la place et la taille des autres cartes et peuvent déborder
- * librement (`overflow: visible`).
+ * Look « Provocation » de Hearthstone (référence envoyée par le joueur) :
+ *   - un CADRE ACIER BISEAUTÉ : dégradé métal clair en haut à gauche, gorge
+ *     sombre au milieu, filet de lumière, le tout dessiné le long de la forme ;
+ *   - deux AILETTES métalliques qui dépassent à gauche et à droite, vers le
+ *     milieu de la carte, comme les crampons des serviteurs Provocation ;
+ *   - une fine BORDURE de la couleur de l'élément (`--rpg-frame-color`) qui
+ *     reste visible en liseré autour de l'acier : le masque du cadre est un
+ *     trait de 10, l'acier n'en occupe que 7, les 1,5 unités de chaque côté
+ *     laissent donc passer la couleur de l'élément ;
+ *   - une OMBRE PORTÉE `filter: drop-shadow()` : elle lit l'alpha du contenu
+ *     masqué (écu + ailettes), pas le rectangle de la boîte.
+ * Aucun `outline`, aucun `clip-path` global, aucun `box-shadow` de cadre.
+ *
+ * Les quatre SVG partagent le MÊME viewBox `-10 -2 120 129` : les 10 unités de
+ * marge à gauche et à droite sont la place des ailettes. Le tracé de l'écu,
+ * lui, ne bouge pas (pointe `50 124`), donc les illustrations, les voiles et
+ * le cadre restent alignés au pixel.
+ *
+ * Le `mask-image` ne touche PAS aux pastilles ATQ/DÉF, aux pierres d'effets,
+ * au sonar rouge `has-garde` ni à la pastille d'arme : ils gardent exactement
+ * la place et la taille des autres cartes et débordent librement
+ * (`overflow: visible`).
  *
  * Les APERÇUS (survol et fiche catalogue ouverte) ne reçoivent pas la classe :
  * ce sont des cartes rectangulaires normales, avec ATQ à gauche et DÉF à
@@ -21,38 +34,64 @@
  */
 
 .rpg-carte-bouclier {
-  /* Masque 100 × 125 = le 4:5 de la carte. Blanc = visible, transparent =
-     coupé. Aucun trait : seule la silhouette compte. */
-  --rpg-ecusson-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20125'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3C/svg%3E");
+  /* Les URI encodées ne peuvent pas lire une variable CSS : la couleur marine
+     y est écrite en dur, en accord avec `--rpg-ecusson-fond`. */
   --rpg-ecusson-fond: #211d3b;
+  --rpg-ecusson-aplat: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-10%20-2%20120%20129'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%2833,29,59%29'/%3E%3C/svg%3E");
+  --rpg-ecusson-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-10%20-2%20120%20129'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3C/svg%3E");
+  /* Forme blanche du cadre : anneau de 10 + les deux ailettes. */
+  --rpg-ecusson-cadre-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-10%20-2%20120%20129'%20preserveAspectRatio='none'%3E%3Cpath%20d='M-10%2051%20L6%2049%20L6%2073%20L-10%2071%20Z'%20fill='rgb%28255,255,255%29'/%3E%3Cpath%20d='M110%2051%20L94%2049%20L94%2073%20L110%2071%20Z'%20fill='rgb%28255,255,255%29'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='10'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* Acier biseauté : dégradé métal, ailettes, anneau de 7, gorge sombre de 2,
+     filet de lumière de 0,7. */
+  --rpg-ecusson-acier: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-10%20-2%20120%20129'%20preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient%20id='a'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23f4f7fc'/%3E%3Cstop%20offset='.26'%20stop-color='%23c2c9d6'/%3E%3Cstop%20offset='.52'%20stop-color='%23767e8d'/%3E%3Cstop%20offset='.76'%20stop-color='%233b404c'/%3E%3Cstop%20offset='1'%20stop-color='%239aa2b0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d='M-9%2052%20L5%2050%20L5%2072%20L-9%2070%20Z'%20fill='url%28%23a%29'%20stroke='%23252933'%20stroke-width='0.9'%20stroke-linejoin='round'/%3E%3Cpath%20d='M109%2052%20L95%2050%20L95%2072%20L109%2070%20Z'%20fill='url%28%23a%29'%20stroke='%23252933'%20stroke-width='0.9'%20stroke-linejoin='round'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='url%28%23a%29'%20stroke-width='7'%20stroke-linejoin='round'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='%23242831'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='%23e8eef7'%20stroke-width='0.7'%20stroke-linejoin='round'/%3E%3C/svg%3E");
   position: relative;
-  /* Plus aucun rectangle : fond, cadre, bordure, rayon, ombre et outline. */
+  /* L'aplat marine SUIT la silhouette : transparent ailleurs, donc aucun
+     rectangle peint. Le `background-image: none` des cadres ornés est
+     remplacé, pas simplement neutralisé. */
   background: transparent !important;
-  background-image: none !important;
+  background-image: var(--rpg-ecusson-aplat) !important;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  /* Jamais de rectangle : ni cadre, ni rayon, ni ombre de boîte, ni outline. */
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   outline: none !important;
   overflow: visible !important;
   isolation: isolate;
+  /* Ombre portée discrète : `drop-shadow` épouse l'alpha de l'écusson ET des
+     ailettes, contrairement à `box-shadow` qui suivrait le rectangle. */
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .42));
 }
 
-/* L'aplat marine, découpé à la forme de l'écusson. Aucun stroke, aucun
-   `outline`, aucun `box-shadow` : c'est une silhouette pleine. */
+/* Le CADRE : acier biseauté + ailettes, avec la couleur de l'élément en fin
+   liseré tout autour (`background-color` vue à travers le masque de 10, là où
+   l'acier de 7 ne peint pas). z-index 2 : au-dessus du bandeau de titre (1) ;
+   les pastilles de la main sont à 2 mais passent après dans le DOM (et le pied
+   d'aperçu est à 4), donc ATQ/DÉF restent au premier plan. */
 .rpg-carte-bouclier::before {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 0;
-  background-color: var(--rpg-ecusson-fond);
-  -webkit-mask-image: var(--rpg-ecusson-masque);
-  mask-image: var(--rpg-ecusson-masque);
+  z-index: 2;
+  background-color: var(--rpg-frame-color, #f1f3f5);
+  background-image: var(--rpg-ecusson-acier);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  -webkit-mask-image: var(--rpg-ecusson-cadre-masque);
+  mask-image: var(--rpg-ecusson-cadre-masque);
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
   pointer-events: none;
 }
 
@@ -83,17 +122,17 @@
   border-radius: 0 !important;
 }
 
-/* Le fond reste derrière l'illustration ; les voiles `::after` passent devant
-   elle mais restent SOUS les pastilles (z-index 2/4). */
+/* L'illustration est sous le cadre ; les voiles `::after` restent au-dessus
+   du fond mais sous le cadre et les pastilles. */
 .rpg-carte-bouclier > img,
 .rpg-card.rpg-carte-bouclier > .rpg-card__img {
   z-index: 0;
 }
-.rpg-carte-bouclier::before { z-index: 0; }
 .rpg-carte-bouclier::after { z-index: 1; }
 
 /* Le booster ouvre une scène 3D : son volume peignait un rectangle. On lui
-   retire fond, bordure et ombre ; l'art et le reflet sont déjà masqués. */
+   retire fond, bordure et ombre de boîte ; l'art et le reflet sont déjà
+   masqués, et l'ombre d'écu vient du `drop-shadow` de la carte. */
 .rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-volume {
   background: transparent !important;
   border: 0 !important;
