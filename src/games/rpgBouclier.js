@@ -5,17 +5,20 @@
  * et à sa pierre d'emblème (`i-defenseur`). Sa FACE devient l'ÉCUSSON lui-même
  * (voir `rpg-bouclier.css`) : aplat marine, arche haute, flancs droits, vraie
  * pointe en V, aucun rectangle qui dépasse. Reprenant la « Provocation » de
- * Hearthstone, elle porte un cadre acier biseauté, deux ailettes latérales, un
- * fin liseré de la couleur de l'élément et une ombre portée — le tout dessiné
- * le long de la silhouette, jamais de cadre ni d'ombre rectangulaires. Le
- * masque ne touche qu'au fond et à l'illustration : ATQ/DÉF, type, pierres et
- * sonar gardent exactement la place et la taille des autres cartes.
+ * Hearthstone, elle porte un cadre acier AFFINÉ (sans les ailettes latérales
+ * refusées par le joueur), un fin liseré de la couleur de l'élément et une
+ * ombre portée — le tout dessiné le long de la silhouette, jamais de cadre ni
+ * d'ombre rectangulaires. La pointe du bas n'est pas coupée : le viewBox des
+ * SVG laisse de la marge sous `50 124`. Le masque ne touche qu'au fond et à
+ * l'illustration : ATQ/DÉF, type, pierres et sonar gardent exactement la place
+ * et la taille des autres cartes.
  *
- * Exception demandée : les APERÇUS (survol et fiche catalogue ouverte) ne
- * reçoivent PAS la classe et restent des cartes rectangulaires normales, avec
- * ATQ à gauche et DÉF à droite. La classe est posée sur la table, la main, le
- * mulligan, les vignettes du catalogue / atelier / guide / boosters et la main
- * du MOBA.
+ * Exception demandée : la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
+ * (survol + fiche catalogue ouverte) ne reçoivent PAS la classe et restent des
+ * cartes rectangulaires normales, avec ATQ à gauche et DÉF à droite — comme
+ * dans Hearthstone, où la Provocation ne se voit que sur le plateau. La classe
+ * est donc posée sur la table et les vignettes du catalogue / atelier / guide /
+ * boosters.
  *
  * Deux sources pour le mot-clé :
  *   - la carte imprimée (`defenseur: true`, ou les anciens marqueurs

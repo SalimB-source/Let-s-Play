@@ -3953,7 +3953,8 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
         `rpg-mulligan__card--elem-${carte.element}`,
         cardFrameClass(carte),
         cardMotifClass(carte),
-        classeBouclier(carte),
+        // Le mulligan reste une carte rectangulaire normale, comme la main et
+        // les aperçus : pas d'écusson avant la pose sur le plateau.
         selectionnee ? 'is-selected' : '',
         nouvelle ? 'is-new' : '',
       ].filter(Boolean).join(' ')}
@@ -14931,7 +14932,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     familleSort ? `rpg-hand__card--famille-${familleSort}` : '',
                     cardFrameClass(carte),
                     cardMotifClass(carte),
-                    classeBouclier(carte),
+                    // La main reste une carte rectangulaire normale, avec ATQ à
+                    // gauche et DÉF à droite : l'écu n'apparaît qu'une fois la
+                    // créature posée sur le plateau (demande du joueur).
                     estCreature && estMythique ? 'is-mythique-creature' : '',
                     piocheEnCours ? 'rpg-hand-card--drawing' : '',
                     defausseSelectionnee ? 'is-discard-selected' : '',
