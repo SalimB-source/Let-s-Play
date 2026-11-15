@@ -186,6 +186,9 @@
     "check:desktop": "node scripts/desktop-check.mjs",
     "check:rpg-combat-controls": "node scripts/rpg-combat-controls-check.mjs",
     "check:rpg-annonce-taille": "node scripts/rpg-annonce-taille-check.mjs",
+    "check:rpg-annonce-moba-taille": "node scripts/rpg-annonce-moba-taille-check.mjs",
+    "check:rpg-pastille-position": "node scripts/rpg-pastille-position-check.mjs",
+    "check:rpg-plateau-visuel": "node scripts/rpg-plateau-visuel-check.mjs",
     "check:rpg-annonce-magie": "node --test tests/rpg-annonce-magie.test.js && node scripts/rpg-annonce-magie-check.mjs",
     "check:rpg-mythique-lueur": "node --test tests/rpg-mythique-lueur-creature.test.js tests/rpg-embuscade-lueur.test.js && node scripts/rpg-mythique-lueur-check.mjs",
     "check:rpg-avatars-mobile": "node scripts/rpg-avatars-mobile-check.mjs",
@@ -204,7 +207,9 @@
     "check:live-assistance": "node scripts/driving-live-assistance-check.mjs",
     "check:city-rush-performance": "node --test tests/city-rush-performance.test.js",
     "check:vice-city-portrait": "node --test tests/vice-city-portrait.test.js",
-    "check:rpg-mal-invocation": "node --test tests/rpg-invocation-speciale-tour.test.js tests/rpg-moba-attaque-immediate.test.js tests/rpg-mal-invocation-ui.test.js tests/rpg-embuscade-commune.test.js tests/rpg-moba-embuscade-reponse-sans-mana.test.js tests/rpg-classique-combat-individuel.test.js tests/rpg-moba-ia-conquete.test.js tests/rpg-effets-icones.test.js tests/rpg-tutorial.test.js"
+    "check:rpg-mal-invocation": "node --test tests/rpg-invocation-speciale-tour.test.js tests/rpg-moba-attaque-immediate.test.js tests/rpg-mal-invocation-ui.test.js tests/rpg-embuscade-commune.test.js tests/rpg-moba-embuscade-reponse-sans-mana.test.js tests/rpg-classique-combat-individuel.test.js tests/rpg-moba-ia-conquete.test.js tests/rpg-effets-icones.test.js tests/rpg-tutorial.test.js",
+    "check:rpg-moba-plateau-visuel": "node scripts/rpg-moba-plateau-visuel-check.mjs",
+    "check:rpg-ia-decisions": "node --test tests/rpg-classique-ia-volva.test.js tests/rpg-classique-ia-attaque.test.js tests/rpg-classique-ia-riposte.test.js tests/rpg-classique-ia-brouillard.test.js tests/rpg-classique-ia-victoire.test.js tests/rpg-classique-ia-furtivite.test.js tests/rpg-moba-ia-recherche.test.js tests/rpg-moba-ia-soin.test.js tests/rpg-moba-ia-site.test.js tests/rpg-moba-ia-arrivee-victoire.test.js tests/rpg-moba-ia-arrivee-cible.test.js tests/rpg-moba-ia-destruction.test.js tests/rpg-moba-ia-simulations.test.js tests/rpg-ia-defausse-preference.test.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

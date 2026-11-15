@@ -190,15 +190,43 @@
   position: absolute;
   z-index: 6;
   left: calc(var(--terrain-inset) * .2);
-  width: calc(var(--rpg-touch-left) - var(--terrain-inset) * .2);
-  display: block;
-  color: #fff2d2;
-  font: 600 clamp(8px, calc(var(--duel-card) * .14), 10px)/1.2 var(--mono, monospace);
-  text-shadow: 0 1px 3px #000, 0 0 4px #000;
+  width: max-content;
+  max-width: calc(var(--rpg-touch-left) - var(--terrain-inset) * .2);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 7px;
+  padding: 3px 5px;
+  border: 1px solid rgba(217, 182, 121, .45);
+  border-radius: 5px;
+  background: rgba(13, 12, 14, .88);
+  color: #e5d3b7;
+  font: 600 clamp(9px, calc(var(--duel-card) * .16), 11px)/1.2 var(--mono, monospace);
+  text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
+.rpg-table-zones__item { display: inline-flex; align-items: baseline; gap: 3px; white-space: nowrap; }
+.rpg-table-zones__item b { color: #fff5dc; font-variant-numeric: tabular-nums; }
+.rpg-table-zones__court { display: none; }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--ennemi { top: calc(var(--rpg-touch-nav) + var(--rpg-touch-pad) + 4px); }
-.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--joueur { bottom: calc(var(--rpg-touch-hand) + 5px); }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--joueur { bottom: calc(var(--rpg-touch-hand) + 7px); }
+/* Sur les paysages très bas, garder la plaque sur une ligne pour ne pas
+   recouvrir l'accès à la réserve d'Ascension juste au-dessus. */
+@media (max-height: 340px) and (orientation: landscape) {
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-table-zones {
+    max-width: calc(var(--rpg-touch-left) - var(--terrain-inset) * .2 + 30px);
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 2px 3px;
+    font: 600 9px/1.1 system-ui, sans-serif;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--ennemi {
+    top: max(var(--rpg-touch-pad), env(safe-area-inset-top, 0px));
+  }
+  .rpg-table-zones__item { gap: 2px; }
+  .rpg-table-zones__long { display: none; }
+  .rpg-table-zones__court { display: inline; }
+}
 
 /* Sur mobile, la frontière neutre partage la table en deux : les créatures
    du joueur commencent au-dessous de 50 %, sans toucher celles du sorcier.

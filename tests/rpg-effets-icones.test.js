@@ -433,6 +433,18 @@ test('les cartes qui modifient les statistiques affichent leur chiffre', () => {
     'une seule pastille par carte');
 });
 
+test('la bulle Abordage distingue un seuil chiffré d’un seuil défini par la carte', () => {
+  for (const id of ['lettre-de-marque', 'grappin-d-abordage']) {
+    const pastille = effetsDetailles(cardById(id)).pastilles.find((p) => p.cle === 'abordage');
+    assert.match(pastille.description, /selon le seuil et le moment indiqués sur la carte/, id);
+    assert.doesNotMatch(pastille.description, /coût N|À son arrivée, cette créature/, id);
+    assert.match(pastille.description, /ne déclenche pas de mort/);
+    assert.match(pastille.description, /s’il est renvoyé ou exilé, elle revient en main/);
+  }
+  const fixe = pastillesPourCarte(cardById('cotre-de-course')).find((p) => p.cle === 'abordage');
+  assert.match(definitionPastille(fixe), /À son arrivée.*coût 2 ou moins/, 'le seuil imprimé reste explicite');
+});
+
 test('la pastille chiffrée explique le malus, statistique par statistique', () => {
   const lire = (id) => definitionPastille(pastillesPourCarte(cardById(id))[0]);
   assert.equal(lire('lame-de-mer'),

@@ -16,7 +16,7 @@ import { estDefenseur } from './rpgDefenseur.js';
  *   surfaces de lecture (grille du catalogue, guide), où le texte reste
  *   écrit en entier.
  */
-import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   EFFETS_SPRITE,
@@ -209,21 +209,51 @@ function LibellePastille({ pastille }) {
  * les aperçus rognent ce qui dépasse, la bulle, elle, ne doit jamais l'être.
  * En plein écran, elle suit l'élément affiché en grand.
  */
-function BulleEffet({ id, ancre, titre, description }) {
+function BulleEffet({ id, ancre, titre, description, onAncreMasquee }) {
   const bulleRef = useRef(null);
   const [position, setPosition] = useState(null);
   useLayoutEffect(() => {
     const bulle = bulleRef.current;
     if (!bulle || !ancre) return;
-    const cible = ancre.getBoundingClientRect();
-    const boite = bulle.getBoundingClientRect();
-    const largeurVue = window.innerWidth || document.documentElement.clientWidth || 1024;
-    const marge = 8;
-    const left = Math.max(marge, Math.min(cible.left + (cible.width / 2) - (boite.width / 2), largeurVue - boite.width - marge));
-    const dessous = cible.top - boite.height - 8 < marge;
-    const top = dessous ? cible.bottom + 8 : cible.top - boite.height - 8;
-    setPosition({ left, top, dessous });
-  }, [ancre, description]);
+    const placer = (event) => {
+      const cible = ancre.getBoundingClientRect();
+      const boite = bulle.getBoundingClientRect();
+      const largeurVue = window.innerWidth || document.documentElement.clientWidth || 1024;
+      const hauteurVue = window.innerHeight || document.documentElement.clientHeight || 768;
+      if (event?.type === 'scroll') {
+        // Une bulle portée par un portail ne doit pas flotter sur le plateau
+        // une fois sa pastille entièrement sortie de la fiche défilante.
+        let masque = cible.bottom <= 0 || cible.top >= hauteurVue || cible.right <= 0 || cible.left >= largeurVue;
+        for (let parent = ancre.parentElement; parent && !masque; parent = parent.parentElement) {
+          const style = window.getComputedStyle(parent);
+          const rect = parent.getBoundingClientRect();
+          const coupe = (valeur) => /^(auto|scroll|hidden|clip)$/.test(valeur);
+          masque = (coupe(style.overflowY) && (cible.bottom <= rect.top || cible.top >= rect.bottom))
+            || (coupe(style.overflowX) && (cible.right <= rect.left || cible.left >= rect.right));
+        }
+        if (masque) { onAncreMasquee(); return; }
+      }
+      const marge = 8;
+      const left = Math.max(marge, Math.min(cible.left + (cible.width / 2) - (boite.width / 2), largeurVue - boite.width - marge));
+      const haut = cible.top - boite.height - marge;
+      const bas = cible.bottom + marge;
+      // Si les deux côtés manquent de place, garder la bulle dans l'écran
+      // plutôt que de la laisser déborder sous une fiche en paysage.
+      const dessous = haut < marge && (bas + boite.height <= hauteurVue - marge || cible.top < hauteurVue - cible.bottom);
+      const top = Math.max(marge, Math.min(dessous ? bas : haut, hauteurVue - boite.height - marge));
+      setPosition((ancienne) => ancienne?.left === left && ancienne?.top === top && ancienne?.dessous === dessous
+        ? ancienne : { left, top, dessous });
+    };
+    placer();
+    // Le portail est fixe : il ne suit pas spontanément le défilement d'une
+    // fiche ni un changement d'orientation. Capturer aussi les scrolls internes.
+    window.addEventListener('scroll', placer, true);
+    window.addEventListener('resize', placer);
+    return () => {
+      window.removeEventListener('scroll', placer, true);
+      window.removeEventListener('resize', placer);
+    };
+  }, [ancre, description, onAncreMasquee]);
   if (typeof document === 'undefined') return null;
   const hote = document.fullscreenElement ?? document.body;
   return createPortal(
@@ -256,6 +286,7 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false }) {
   const ancreRef = useRef(null);
   const [survolee, setSurvolee] = useState(false);
   const [epinglee, setEpinglee] = useState(false);
+  const fermerBulle = useCallback(() => { setSurvolee(false); setEpinglee(false); }, []);
   const texte = pastilleTexte(pastille);
   const explication = pastille.description ? String(pastille.description) : '';
   const ouverte = Boolean(explication) && (survolee || epinglee);
@@ -294,12 +325,18 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false }) {
           event.stopPropagation();
           setSurvolee(false);
           setEpinglee(false);
+        } else if (explication && (event.key === 'Enter' || event.key === ' ')) {
+          // Après Échap, rouvrir sans devoir quitter puis retrouver la pastille.
+          event.stopPropagation();
+          event.preventDefault();
+          if (ouverte) { setSurvolee(false); setEpinglee(false); }
+          else setEpinglee(true);
         }
       }}
     >
       <IconePastille pastille={pastille} size={20} />
       <LibellePastille pastille={pastille} />
-      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={<LibellePastille pastille={pastille} />} description={explication} />}
+      {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={<LibellePastille pastille={pastille} />} description={explication} onAncreMasquee={fermerBulle} />}
     </span>
   );
 }

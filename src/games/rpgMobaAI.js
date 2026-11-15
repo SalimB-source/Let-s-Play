@@ -4,28 +4,86 @@ import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
 import { estDefenseur } from './rpgDefenseur.js';
 import { mobaVieMaxPourCamp, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
-import { rpgCombinaisonsSacrificesIA } from './rpgAI.js';
-import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana } from './rpgDuel.js';
+import { choisirCouleurManaIA, rpgCombinaisonsSacrificesIA } from './rpgAI.js';
+import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana, rpgAvecCompteurEntitesIsole } from './rpgDuel.js';
 import {
   MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaResoudreRecherche, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
+  rpgMobaResoudreRecherche, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
 } from './rpgMobaLocal.js';
 
-/** Select from the AI's private candidates without exposing them in the UI. */
+/** Choisir un renfort en évaluant ses effets réels sur une copie du plateau.
+ * Une recherche qui ajoute à la main reste distincte : elle ne met encore
+ * aucune créature en jeu et ne doit pas être évaluée comme une invocation. */
 export function rpgMobaChoisirRechercheIA(duel, side = 'sorcier') {
-  return rpgMobaCandidatsRecherche(duel, side)[0] ?? null;
+  const candidats = rpgMobaCandidatsRecherche(duel, side);
+  if (!candidats.length) return null;
+  if (!duel.mobaRechercheEnAttente?.renfort || duel.mobaRechercheEnAttente.recherche) return candidats[0];
+  return rpgAvecCompteurEntitesIsole(() => {
+    let meilleur = null;
+    for (const id of candidats) {
+      const essai = copie(duel);
+      if (!rpgMobaResoudreRecherche(essai, side, id).ok) continue;
+      resoudreDestructionsSurCopie(essai);
+      // Une arrivée peut demander plusieurs désignations (Oni, Abordage),
+      // puis ouvrir une fenêtre de réponse. Estimer les effets après passage
+      // de la réponse, sur copie uniquement ; ne pas noter un choix inachevé.
+      for (let i = 0; i < 8 && !essai.moba.winner; i++) {
+        if (essai.destructionsEnAttente?.length) {
+          resoudreDestructionsSurCopie(essai);
+          if (essai.destructionsEnAttente?.length) break;
+        } else if (essai.effetCreatureEnAttente) {
+          if (!rpgMobaPasserEffetCreature(essai, autre(essai.effetCreatureEnAttente.cote)).ok) break;
+        } else if (essai.arriveeEnAttente?.cote === side && !essai.mobaRechercheEnAttente) {
+          const cible = rpgMobaChoisirArriveeIA(essai, side);
+          if (!cible || !rpgMobaResoudreArrivee(essai, side, cible).ok) break;
+        } else break;
+      }
+      if (essai.arriveeEnAttente || essai.effetCreatureEnAttente || essai.destructionsEnAttente?.length
+        || essai.mobaRechercheEnAttente || essai.siteEnAttente || essai.defausseEnAttente || essai.boualemEnAttente) continue;
+      const score = valeurPosition(essai, side);
+      if (!meilleur || score > meilleur.score) meilleur = { id, score };
+    }
+    // Le moteur reste seul arbitre des choix. En cas de simulation impossible,
+    // préserver le comportement antérieur et ne jamais bloquer la partie.
+    return meilleur?.id ?? candidats[0];
+  });
 }
 
-/** Choose a legal Source recipient without changing the live game or its RNG. */
+/** La Source soigne, renforce et protège : apprécier le danger visible et
+ * l'utilité offensive en plus du soin réellement appliqué sur une copie. */
 export function rpgMobaChoisirSiteIA(duel, side = 'sorcier') {
-  const candidats = rpgMobaCiblesSite(duel, side).map((id) => duel[side].creatures.find((e) => e.id === id));
-  return candidats.sort((a, b) => {
-    const score = (e) => (e.atk ?? 0) + (e.pv ?? 0) + Math.max(0, (e.pvMax ?? 0) - (e.pv ?? 0))
-      + (e.tenaciteDisponible ? 0 : 2) + (e.bouclier ? 0 : 1);
-    return score(b) - score(a);
-  })[0]?.id ?? null;
+  const candidats = rpgMobaCiblesSite(duel, side);
+  return rpgAvecCompteurEntitesIsole(() => {
+    let meilleur = null;
+    const enemy = autre(side);
+    for (const id of candidats) {
+      const allie = duel[side].creatures.find((e) => e.id === id);
+      const essai = copie(duel);
+      if (!allie || !rpgMobaResoudreSite(essai, side, id).ok) continue;
+      const apres = essai[side].creatures.find((e) => e.id === id);
+      if (!apres) continue;
+      const bonusMax = Math.max(0, (apres.pvMax ?? 0) - (allie.pvMax ?? 0));
+      const soin = Math.max(0, (apres.pv ?? 0) - (allie.pv ?? 0) - bonusMax);
+      // Estimation, pas prédiction : un ennemi doit pouvoir cibler cette voie
+      // et infliger un coup mortel ; un bouclier déjà présent l'évite déjà.
+      const menace = !allie.bouclier && !allie.bouclierLumiere && duel[enemy].creatures.some((ennemi) => {
+        const force = Number(ennemi.atk) || 0;
+        return !ennemi.mur && !ennemi.nePeutPasAttaquer && !(ennemi.gelToursRestants > 0)
+          && !(ennemi.empecheAttaqueToursRestants > 0) && force >= (allie.pv ?? 0)
+          && (apres.bouclier || apres.bouclierLumiere || (apres.pv ?? 0) > force)
+          && rpgMobaCiblesIndividuelles(duel, enemy, ennemi.id).cibles.includes(id);
+      });
+      const attaque = Math.max(0, Number(allie.atk) || 0);
+      const score = attaque + (allie.pv ?? 0) + soin
+        + (allie.tenaciteDisponible ? 0 : 2) + (allie.bouclier ? 0 : 1)
+        + (rpgPeutAttaquer(allie) ? Math.min(8, attaque) * 0.1 : 0)
+        + (menace ? valeurCreature(allie) * 0.8 : 0);
+      if (!meilleur || score > meilleur.score || (score === meilleur.score && soin > meilleur.soin)) meilleur = { id, score, soin };
+    }
+    return meilleur?.id ?? candidats[0] ?? null;
+  });
 }
 
 // The live game's RNG is stored outside the serializable state. Give each
@@ -40,6 +98,10 @@ const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 
 /** Tester les Embuscades adverses sur copie, sans consommer de sacrifice. */
 export function rpgMobaChoisirEmbuscadeIA(duel, side = 'sorcier') {
+  return rpgAvecCompteurEntitesIsole(() => rpgMobaChoisirEmbuscadeIASurCopie(duel, side));
+}
+
+function rpgMobaChoisirEmbuscadeIASurCopie(duel, side = 'sorcier') {
   if (!duel?.moba || duel.tour === side || !duel.fenetreReponse) return null;
   let meilleur = null;
   for (const id of new Set(duel[side].main)) {
@@ -143,6 +205,10 @@ function resoudrePriseGrappinSurCopie(duel) {
 /** Compare legal audited spells on bounded copies, including symmetrical board
  * wipes. Effects still execute exactly once, on the authoritative adapter. */
 export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) {
+  return rpgAvecCompteurEntitesIsole(() => rpgMobaChoisirMagieIASurCopie(duel, side, reaction));
+}
+
+function rpgMobaChoisirMagieIASurCopie(duel, side = 'sorcier', reaction = false) {
   const enemy = autre(side);
   const lanes = duel.moba.lanes.filter((lane) => lane.active);
   const places = duel.moba.lanes.filter((lane) => mobaVoieJouable(duel.moba, side, lane.id));
@@ -269,6 +335,10 @@ function adversaireGagneProchainCombatMoba(duel, side) {
 }
 
 export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
+  return rpgAvecCompteurEntitesIsole(() => rpgMobaChoisirCreatureIASurCopie(duel, side));
+}
+
+function rpgMobaChoisirCreatureIASurCopie(duel, side = 'sorcier') {
   const enemy = autre(side);
   const lanes = duel.moba.lanes.filter((l) => l.active || (l.id === 'center' && duel.moba.centerJoined?.side === side)).sort((a, b) => {
     const score = (l) => (mobaVieMaxPourCamp(duel.moba, enemy, l.id) - l.hp[enemy]) + l.slots[enemy].filter(Boolean).length * 2 - l.slots[side].filter(Boolean).length * 3;
@@ -384,6 +454,10 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
 }
 
 export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
+  return rpgAvecCompteurEntitesIsole(() => rpgMobaChoisirArriveeIASurCopie(duel, side));
+}
+
+function rpgMobaChoisirArriveeIASurCopie(duel, side = 'sorcier') {
   const attente = duel.arriveeEnAttente;
   if (!attente) return null;
   if (Number.isFinite(attente.abordage)) {
@@ -421,6 +495,88 @@ export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
     });
     return candidats.find((e) => rpgMobaResoudreArrivee(copie(duel), side, e.id).ok)?.id ?? null;
   }
+  if (attente.carteId === 'volva-soigneuse') {
+    // Comparer le soin réel, la capacité offensive et les menaces visibles.
+    // Un allié intact ne reçoit aucun bonus ; une créature sauvée d'une frappe
+    // accessible vaut davantage, mais ce n'est qu'une estimation tactique.
+    return rpgAvecCompteurEntitesIsole(() => {
+      let meilleur = null;
+      const adversaire = autre(side);
+      for (const allie of duel[side].creatures) {
+        const essai = copie(duel);
+        if (!rpgMobaResoudreArrivee(essai, side, allie.id).ok) continue;
+        const apres = essai[side].creatures.find((e) => e.id === allie.id);
+        const soin = Math.max(0, (apres?.pv ?? 0) - (allie.pv ?? 0));
+        const force = valeurCreature(allie);
+        const menace = soin > 0 && duel[adversaire].creatures.some((ennemi) =>
+          !ennemi.nePeutPasAttaquer && !(ennemi.gelToursRestants > 0) && !(ennemi.empecheAttaqueToursRestants > 0)
+          && (Number(ennemi.atk) || 0) >= (allie.pv ?? 0) && (Number(ennemi.atk) || 0) < (apres?.pv ?? 0)
+          && rpgMobaCiblesIndividuelles(duel, adversaire, ennemi.id).cibles.includes(allie.id));
+        const attaque = Math.min(10, Math.max(0, Number(allie.atk) || 0));
+        const score = soin * (1 + attaque * 0.2) + (menace ? force * 0.8 : 0)
+          + (soin && rpgPeutAttaquer(allie) ? 0.5 : 0);
+        if (!meilleur || score > meilleur.score || (score === meilleur.score && force > meilleur.force)) meilleur = { id: allie.id, score, force };
+      }
+      return meilleur?.id ?? null;
+    });
+  }
+  if (attente.carteId === 'tour-de-braise') {
+    // Pour le dégât d'arrivée, préférer une élimination réelle et profitable
+    // plutôt que choisir uniquement la plus grosse carte. Ne pas supposer
+    // qu'une esquive réussira ou échouera, ni compter une Tenacité comme une
+    // élimination définitive. Les choix non résolus restent conservateurs.
+    const cibleMortelle = rpgAvecCompteurEntitesIsole(() => {
+      const enemy = autre(side);
+      const initial = valeurPosition(duel, side);
+      let meilleur = null;
+      for (const cible of duel[enemy].creatures) {
+        if (cible.esquive || cible.tenaciteDisponible || !(cible.pv > 0 && cible.pv <= 1)) continue;
+        const essai = copie(duel);
+        if (!rpgMobaResoudreArrivee(essai, side, cible.id).ok) continue;
+        if (essai.effetCreatureEnAttente && !rpgMobaPasserEffetCreature(essai, enemy).ok) continue;
+        resoudreDestructionsSurCopie(essai);
+        if (essai.moba.winner === enemy || essai.arriveeEnAttente || essai.effetCreatureEnAttente
+          || essai.destructionsEnAttente?.length || essai.mobaRechercheEnAttente || essai.siteEnAttente
+          || essai.defausseEnAttente || essai.boualemEnAttente) continue;
+        if (essai[enemy].creatures.some((e) => e.id === cible.id)
+          || (essai[enemy].retoursProgrammes ?? []).some((retour) => retour.mobaSourceId === cible.id)
+          || duel[side].creatures.some((allie) => !essai[side].creatures.some((reste) => reste.id === allie.id))) continue;
+        const score = valeurPosition(essai, side) - initial;
+        if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { id: cible.id, score };
+      }
+      return meilleur?.id ?? null;
+    });
+    if (cibleMortelle) return cibleMortelle;
+  }
+  if (attente.carteId === 'maitre-du-marteau') {
+    // Si la réponse est laissée passer, une victoire immédiate prime. Pour
+    // une première voie, appliquer les préférences confirmées : perdre le
+    // Maître seul, ou le Maître et un Ashigaru 1/1 sans équipement ni bonus
+    // défensif. Ne pas étendre ce choix à d'autres sacrifices d'alliés.
+    const conqueteUtile = rpgAvecCompteurEntitesIsole(() => {
+      const essai = copie(duel);
+      if (!rpgMobaResoudreArrivee(essai, side, 'sorcier').ok) return false;
+      if (essai.effetCreatureEnAttente && !rpgMobaPasserEffetCreature(essai, autre(side)).ok) return false;
+      resoudreDestructionsSurCopie(essai);
+      if (essai.moba.winner === side) return true;
+      if (essai.moba.winner || essai.arriveeEnAttente || essai.effetCreatureEnAttente
+        || essai.destructionsEnAttente?.length || essai.mobaRechercheEnAttente || essai.siteEnAttente
+        || essai.defausseEnAttente || essai.boualemEnAttente) return false;
+      const premiereVoie = !duel.moba.lanes.some((lane) => lane.conqueredBy === side)
+        && duel.moba.lanes.some((lane) => lane.active
+          && essai.moba.lanes.find((apres) => apres.id === lane.id)?.conqueredBy === side);
+      const autresAlliesPerdus = duel[side].creatures.filter((allie) => allie.id !== attente.entiteId
+        && !essai[side].creatures.some((reste) => reste.id === allie.id));
+      const ashigaruSimple = autresAlliesPerdus.length === 1 && (() => {
+        const allie = autresAlliesPerdus[0];
+        return allie.carteId === 'ashigaru-des-braises' && allie.atk === 1 && allie.pv === 1 && allie.pvMax === 1
+          && !allie.arme && !allie.armes?.length && !allie.enCale && !allie.bouclier && !allie.bouclierLumiere
+          && !allie.tenaciteDisponible && !allie.esquive && !allie.protection;
+      })();
+      return premiereVoie && (autresAlliesPerdus.length === 0 || ashigaruSimple);
+    });
+    if (conqueteUtile) return 'sorcier';
+  }
   if (attente.carteId === 'veilleuse-des-citernes') {
     const score = (e) => (e.pv ?? 0) * 1.5 + (e.atk ?? 0) + (estDefenseur(e) ? 0 : 2) + (e.bouclier ? 0 : 1);
     return [...duel[side].creatures].sort((a, b) => score(b) - score(a))
@@ -443,6 +599,10 @@ export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
 /** Choisit une attaque individuelle en simulant les cibles légales sur une
  * copie. Aucun jet ni aucune mutation ne touche la partie réelle. */
 export function rpgMobaChoisirAttaqueIndividuelleIA(duel, side = 'sorcier') {
+  return rpgAvecCompteurEntitesIsole(() => rpgMobaChoisirAttaqueIndividuelleIASurCopie(duel, side));
+}
+
+function rpgMobaChoisirAttaqueIndividuelleIASurCopie(duel, side = 'sorcier') {
   const initial = valeurPosition(duel, side);
   let meilleur = null;
   let meilleurePriorite = -1;

@@ -386,6 +386,29 @@
   border-color: rgba(240, 214, 150, .22);
   background: rgba(10, 8, 5, .12);
 }
+/* Deux petits repères gravés habillent les cases libres sans toucher aux
+   cartes ni aux halos interactifs de pose, de ciblage ou d'attaque. */
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::before,
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::after {
+  content: '';
+  position: absolute;
+  width: clamp(7px, 1vw, 13px);
+  height: clamp(7px, 1vw, 13px);
+  opacity: .62;
+  pointer-events: none;
+}
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::before {
+  top: 5px;
+  left: 5px;
+  border-top: 1px solid #edd4a1;
+  border-left: 1px solid #edd4a1;
+}
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::after {
+  bottom: 5px;
+  right: 5px;
+  border-bottom: 1px solid #edd4a1;
+  border-right: 1px solid #edd4a1;
+}
 /* Quand le joueur glisse une créature depuis sa main, TOUTES les cases
    libres de sa rangée s'éclairent d'un halo doré : déposer la carte sur
    l'une d'elles la pose sur cette case (la déposer ailleurs garde la

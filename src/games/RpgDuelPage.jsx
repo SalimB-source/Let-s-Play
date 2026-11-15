@@ -7998,6 +7998,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // le tour ne se ferme qu'une fois les cartes choisies défaussées.
   const finTourApresDefausseRef = useRef(false);
   const [annonceApercueFermeePour, setAnnonceApercueFermeePour] = useState(null);
+  const retourFocusAnnonceRef = useRef(false);
   // Mulligan : à l'ouverture du duel, la main de départ se découvre en grand
   // et le joueur choisit les cartes qu'il renvoie dans le paquet. `null` dès
   // que l'échange est validé (ou impossible) : la partie est à lui.
@@ -9249,6 +9250,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const surRaccourciDuel = (event) => {
       if (event.defaultPrevented || event.repeat || event.altKey) return;
       if (vientDunChampDeSaisie(event.target) || gesteSurMiseAJourDesktop(event)) return;
+      // Dans la fiche d'annonce, Espace sert notamment à faire défiler le
+      // texte : il ne doit pas laisser passer la carte à l'insu du lecteur.
+      // Les autres raccourcis du plateau ne doivent pas non plus interférer.
+      if (event.target?.closest?.('.rpg-annonce-sort .rpg-hover-card-preview__details')) return;
       const coque = shellRef.current;
       if (!coque || coque.getAttribute('data-scene') !== 'duel') return;
       if (apercuAppui || apercuCatalogue || reserveAscensionOuverte || navMenuOuvert || navParametresOuvert || messagerieVoletOuvert || monteeNiveau) return;
@@ -9874,6 +9879,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
   const fenetreEffetCreature = Boolean(duel.effetCreatureEnAttente?.cote === 'sorcier' && !vainqueur && !sacrificeFx);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
+  const repondreAnnonceDesactive = Boolean(tutorielActif && etapeTutoriel?.on === 'annonce-passee');
+  const passerAnnonceDesactive = Boolean(tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee');
+  // Ne pas prendre le focus à un autre volet déjà ouvert au-dessus du duel.
+  const focusAnnoncePossible = !viewport.portrait && !apercuAppui && !apercuCatalogue && !cimetiereOuvert
+    && !reserveAscensionOuverte && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert && !monteeNiveau;
   const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
   const sorcierArtId = etageHistoire
     ? 'ifrit-al-ahmar'
@@ -13069,6 +13079,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     setApercuSurvol(null);
+    // Si le focus était dans l'annonce, le ramener sur sa commande compacte
+    // au lieu de l'abandonner au document lorsque la fenêtre disparaît.
+    retourFocusAnnonceRef.current = Boolean(shellRef.current?.querySelector('.rpg-annonce-sort')?.contains(document.activeElement));
     signalerTutoriel('annonce-repondue', { cardId: duel.annonce.carteId });
     setAnnonceApercueFermeePour(duel.annonce);
   };
@@ -13929,8 +13942,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {nbMainAdverse}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckAdverse}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
           {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>
-        <div className="rpg-table-zones rpg-table-zones--ennemi" aria-label={`Zones adverses : main ${nbMainAdverse}, paquet ${nbDeckAdverse}, cimetière ${duel.sorcier.cimetiere.length}`}>
-          Main {nbMainAdverse} · Paquet {nbDeckAdverse} · Cimetière {duel.sorcier.cimetiere.length}
+        <div className="rpg-table-zones rpg-table-zones--ennemi" role="group" aria-label={`Zones adverses : main ${nbMainAdverse}, paquet ${nbDeckAdverse}, cimetière ${duel.sorcier.cimetiere.length}`}>
+          <span className="rpg-table-zones__item">Main <b>{nbMainAdverse}</b></span>
+          <span className="rpg-table-zones__item"><span className="rpg-table-zones__long">Paquet</span><span className="rpg-table-zones__court" aria-hidden="true">Paq</span> <b>{nbDeckAdverse}</b></span>
+          <span className="rpg-table-zones__item"><span className="rpg-table-zones__long">Cimetière</span><span className="rpg-table-zones__court" aria-hidden="true">Cim</span> <b>{duel.sorcier.cimetiere.length}</b></span>
         </div>
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
@@ -14443,8 +14458,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
           {soinJoueur && <EclatSoin key={soinJoueur.token} />}
         </div>
-        <div className="rpg-table-zones rpg-table-zones--joueur" aria-label={`Vos zones : main ${duel.joueur.main.length}, paquet ${nbDeckJoueur}, cimetière ${duel.joueur.cimetiere.length}`}>
-          Main {duel.joueur.main.length} · Paquet {nbDeckJoueur} · Cimetière {duel.joueur.cimetiere.length}
+        <div className="rpg-table-zones rpg-table-zones--joueur" role="group" aria-label={`Vos zones : main ${duel.joueur.main.length}, paquet ${nbDeckJoueur}, cimetière ${duel.joueur.cimetiere.length}`}>
+          <span className="rpg-table-zones__item">Main <b>{duel.joueur.main.length}</b></span>
+          <span className="rpg-table-zones__item"><span className="rpg-table-zones__long">Paquet</span><span className="rpg-table-zones__court" aria-hidden="true">Paq</span> <b>{nbDeckJoueur}</b></span>
+          <span className="rpg-table-zones__item"><span className="rpg-table-zones__long">Cimetière</span><span className="rpg-table-zones__court" aria-hidden="true">Cim</span> <b>{duel.joueur.cimetiere.length}</b></span>
         </div>
 
         <div className="rpg-bottombar" inert={selectionAscension.rituel ? true : undefined}>
@@ -14612,6 +14629,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   type="button"
                   className="rpg-btn rpg-annonce-sort__compact-preview"
                   aria-label={`Voir l’aperçu de ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
+                  ref={(bouton) => {
+                    if (bouton && retourFocusAnnonceRef.current) {
+                      retourFocusAnnonceRef.current = false;
+                      bouton.focus({ preventScroll: true });
+                    }
+                  }}
                   onClick={rouvrirApercuAnnonce}
                 >
                   Voir l’aperçu
@@ -14686,7 +14709,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className={`rpg-btn rpg-annonce-sort__respond${aReponseJouableEnMain ? ' is-response-available' : ''}`}
                       data-tutorial-target={cibleTutoriel('respond-annonce') ? 'respond-annonce' : undefined}
                       aria-label={`Répondre à ${carteAnnoncee?.name ?? 'la carte annoncée'} avec une magie rapide`}
-                      disabled={Boolean(tutorielActif && etapeTutoriel?.on === 'annonce-passee')}
+                      disabled={repondreAnnonceDesactive}
+                      autoFocus={focusAnnoncePossible && !repondreAnnonceDesactive}
                       onClick={repondreAAnnonce}
                     >
                       <span aria-hidden="true">✦</span>
@@ -14697,7 +14721,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-btn rpg-annonce-sort__pass"
                       data-tutorial-target={cibleTutoriel('pass-annonce') ? 'pass-annonce' : undefined}
                       aria-label={`Laisser passer ${carteAnnoncee?.name ?? 'la carte annoncée'}`}
-                      disabled={Boolean(tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee')}
+                      disabled={passerAnnonceDesactive}
+                      autoFocus={focusAnnoncePossible && repondreAnnonceDesactive && !passerAnnonceDesactive}
                       onClick={laisserPasser}
                     >
                       <span aria-hidden="true">➜</span>

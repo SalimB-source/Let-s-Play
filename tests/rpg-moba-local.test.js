@@ -7433,7 +7433,7 @@ test('Ghul MOBA : parade et protection limitent correctement la cible et son imp
 
 test('Ghul MOBA : le Ghul IA choisit automatiquement et n’ouvre pas d’attente humaine', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable'];duel.joueur.mana.sable=30;const cible=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;rpgFinDeTour(duel);
-  duel.sorcier.main=['ghul-des-cendres'];duel.sorcier.mana.braise=30;const ghul=rpgMobaJouerCreature(duel,'sorcier','ghul-des-cendres','left',0).entite;rpgFinDeTour(duel);duel.joueur.main=['trait-de-braise'];duel.joueur.mana.braise=30;
+  duel.sorcier.main=['ghul-des-cendres'];duel.sorcier.mana.braise=30;const ghul=rpgMobaJouerCreature(duel,'sorcier','ghul-des-cendres','right',0).entite;rpgFinDeTour(duel);duel.joueur.main=['trait-de-braise'];duel.joueur.mana.braise=30;
   const mort=rpgMobaLancerMagie(duel,'joueur','trait-de-braise',ghul.id);assert.equal(mort.ok,true);assert.equal(cible.pv,3);assert.ok(!duel.destructionsEnAttente?.length);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
@@ -8186,9 +8186,9 @@ test('Source de Bimini MOBA : choix successifs de deux Sites avant le reste du d
   assert.ok(rpgMobaResoudreSite(duel,'joueur',cible.id).ok);assert.equal(duel.siteEnAttente,null);assert.equal(duel.phase,'principale');assert.equal(cible.atk,7);assert.equal(cible.pvMax,10);assert.ok(!duel.joueur.creatures.includes(lima));assert.equal(duel.joueur.cimetiere.filter(id=>id==='source-de-bimini').length,2);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Source de Bimini MOBA : pas de créature éligible ou choix automatique du sorcier', () => {
+test('Source de Bimini MOBA : pas de créature éligible ou choix du sorcier via l’adaptateur', () => {
   const seul=partie();seul.joueur.main=['source-de-bimini'];seul.joueur.mana.sable=30;seul.joueur.mana.eau=30;const site=rpgMobaJouerCreature(seul,'joueur','source-de-bimini','left',0).entite;site.heures.restants=1;terminerEtPasser(seul,'joueur');terminerEtPasser(seul,'sorcier');assert.equal(seul.siteEnAttente,null);assert.ok(seul.joueur.cimetiere.includes('source-de-bimini'));assert.equal(rpgMobaPlacementCoherent(seul),true);
-  const ia=partie();terminerEtPasser(ia,'joueur');ia.sorcier.main=['gardienne-des-portes-de-sable','source-de-bimini'];ia.sorcier.mana.sable=30;ia.sorcier.mana.eau=30;const cible=rpgMobaJouerCreature(ia,'sorcier','gardienne-des-portes-de-sable','right',0).entite;const source=rpgMobaJouerCreature(ia,'sorcier','source-de-bimini','center',0).entite;source.heures.restants=1;terminerEtPasser(ia,'sorcier');terminerEtPasser(ia,'joueur');assert.equal(ia.siteEnAttente,null);assert.equal(cible.atk,4);assert.ok(ia.sorcier.cimetiere.includes('source-de-bimini'));assert.equal(rpgMobaPlacementCoherent(ia),true);
+  const ia=partie();terminerEtPasser(ia,'joueur');ia.sorcier.main=['gardienne-des-portes-de-sable','source-de-bimini'];ia.sorcier.mana.sable=30;ia.sorcier.mana.eau=30;const cible=rpgMobaJouerCreature(ia,'sorcier','gardienne-des-portes-de-sable','right',0).entite;const source=rpgMobaJouerCreature(ia,'sorcier','source-de-bimini','center',0).entite;source.heures.restants=1;terminerEtPasser(ia,'sorcier');terminerEtPasser(ia,'joueur');assert.equal(ia.siteEnAttente?.entiteId,source.id);assert.ok(rpgMobaResoudreSite(ia,'sorcier',cible.id).ok);assert.equal(ia.siteEnAttente,null);assert.equal(cible.atk,4);assert.ok(ia.sorcier.cimetiere.includes('source-de-bimini'));assert.equal(rpgMobaPlacementCoherent(ia),true);
 });
 
 test('Source de Bimini MOBA : la consécration précède les échos du début de tour', () => {

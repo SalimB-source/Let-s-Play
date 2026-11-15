@@ -62,6 +62,14 @@ try {
         });
         assert.ok(lecture.maxRules <= 1, 'le texte long se déplace avec la fiche');
         assert.ok(lecture.cibleVisible, 'la cible reste accessible après défilement');
+        if (!touch && width === 640) {
+          const zone = page.locator('.rpg-hover-card-preview__details');
+          await zone.focus();
+          await zone.evaluate((el) => { el.scrollTop = 0; });
+          await page.keyboard.press('Space');
+          await page.waitForFunction(() => document.querySelector('.rpg-hover-card-preview__details').scrollTop > 0);
+          assert.equal(await page.locator('#choix').textContent(), '', 'Espace défile sans choisir une réponse');
+        }
       }
       if (!touch) {
         assert.ok(m.details.right <= m.layout.right && m.details.left >= m.layout.left, 'la fiche tient dans la fenêtre');
