@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 const CARTES = {
   jarl: { id: 'jarl-du-dernier-rempart', couts: [3, 5], materiaux: ['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'], effets: ['overkill', 'bouclier', 'furie'], stats: [4, 10], recette: /Berserk des trois hivers.*Jarl au marteau de guerre.*total 8/ },
   scorpion: { id: 'scorpion-de-l-eclipse', couts: [2, 3, 3], materiaux: ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin'], effets: ['poison', 'defenseur'], stats: [5, 9], recette: /Scorpion du seuil.*Uræus du seuil.*Momie de lin.*total 8/ },
-  colosse: { id: 'colosse-du-verre-ardent', couts: [1, 3, 4], materiaux: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'], effets: ['bouclier', 'provocation'], stats: [7, 8], recette: /Djinn de la première étincelle.*Djinn de la flamme mourante.*Dune marchante.*total 8/ },
+  colosse: { id: 'colosse-du-verre-ardent', couts: [1, 3, 4], materiaux: ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'], effets: ['bouclier', 'defenseur'], stats: [7, 8], recette: /Djinn de la première étincelle.*Djinn de la flamme mourante.*Dune marchante.*total 8/ },
 };
 
 export async function verifierDuoBrowser(browser, port, dossier) {

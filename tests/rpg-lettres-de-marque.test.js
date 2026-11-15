@@ -859,8 +859,8 @@ test('La Barbe Noire maudit tout le camp adverse tant qu’elle est en jeu', () 
   donner(duel, 'joueur', 'la-barbe-noire');
   const noire = jouer(duel, 'joueur', 'la-barbe-noire', tercio.id).entite;
   assert.ok(noire.enCale?.carteId === 'tercio-de-cuivre', 'l’Abordage 4 a pris le Tercio à l’arrivée');
-  assert.deepEqual([noire.atk, noire.def, noire.provocation], [4, 5, true],
-    'la Noire est un 4/5 fixe avec Provocation — plus aucun visage');
+  assert.deepEqual([noire.atk, noire.def, noire.defenseur], [4, 5, true],
+    'la Noire est un 4/5 fixe avec Défenseur — plus aucun visage');
   assert.equal(noire.visage, undefined, 'le champ `visage` a disparu des entités');
   assert.equal(rousse.atk, atkRousse - 2, 'la créature adverse déjà en jeu perd 2 ATQ');
   assert.equal(mien.atk, atkMien, 'son propre camp est épargné');
@@ -1013,7 +1013,7 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
   assert.deepEqual(noire.malediction, { atk: 2, def: 0 }, 'Malédiction : -2/-0');
   assert.ok(puissanceCarte(noire) > puissanceCarte({ ...noire, malediction: null, insaisissable: false }),
     'la Malédiction et le dédoublement valent leur prix au barème');
-  assert.deepEqual(libellesPastilles('la-barbe-noire'), ['Provocation', 'Abordage 4', 'Malédiction'],
+  assert.deepEqual(libellesPastilles('la-barbe-noire'), ['Défenseur', 'Abordage 4', 'Malédiction'],
     'la Barbe Noire porte ses trois pastilles');
   assert.equal(iconePourLigne(noire,
     'Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0.'),

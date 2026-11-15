@@ -3,7 +3,7 @@
  *
  * Assemble, sans navigateur ni React, une planche unique avec le balisage réel
  * des emblèmes (`plaqueSvg`, sprite des symboles et données des fiches) :
- * avant/après, faces de cartes, pastilles, les 64 pierres rangées par famille,
+ * avant/après, faces de cartes, pastilles, les pierres rangées par famille,
  * l'échelle des tailles et les états.
  *
  *   node scripts/effets-pierres-planche.mjs
@@ -103,7 +103,7 @@ y += 92;
 parts.push(texte(48, y, 'SUR UNE FACE DE CARTE', { size: 12, weight: 600, fill: '#edcb8b', ls: 1.6 }));
 parts.push(texte(300, y, 'hexagone = effets, losange = couleur / type / coût, repères : la même taille, la même facture', { size: 12, fill: '#8d8171' }));
 const faces = [
-  ['Jarl au marteau de guerre', [['provocation'], ['overkill'], ['furie', 2]]],
+  ['Jarl au marteau de guerre', [['defenseur'], ['overkill'], ['furie', 2]]],
   ['Maître du marteau', [['envol'], ['overkill'], ['furie', 3], ['tenacite']]],
   ['Maître — gains en attente', [['envol', null, true], ['overkill', null, true], ['furie', 3]]],
 ];

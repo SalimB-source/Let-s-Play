@@ -57,7 +57,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
     kind: 'creature', element: 'braise', colors: Object.freeze(['braise', 'sable']),
     set: 'ascension', art: 'colosse-du-verre-ardent', rarity: 'mythique',
     cost: 8, atk: 7, def: 8,
-    bouclierInitial: true, provocation: true,
+    bouclierInitial: true, defenseur: true,
     arrivee: Object.freeze({ type: 'renfort-choisi', zone: 'cimetiere', typeImprime: 'djinn', coutMax: 3, nombre: 2, facultatif: true }),
     ascension: Object.freeze({ nombre: 3, coutTotal: 8,
       materiaux: Object.freeze([
@@ -66,7 +66,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
         Object.freeze({ carteId: 'dune-marchante' }),
       ]) }),
     typeLine: 'Créature d’Ascension — Golem · Élémental',
-    text: 'Ascension — Djinn de la première étincelle + Djinn de la flamme mourante + Dune marchante. Coût total : 8. Bouclier. Provocation. À son arrivée : choisissez et invoquez spécialement jusqu’à 2 Djinns de coût imprimé 3 ou moins depuis votre cimetière.',
+    text: 'Ascension — Djinn de la première étincelle + Djinn de la flamme mourante + Dune marchante. Coût total : 8. Bouclier. Défenseur. À son arrivée : choisissez et invoquez spécialement jusqu’à 2 Djinns de coût imprimé 3 ou moins depuis votre cimetière.',
     flavor: 'Le sable a oublié comment se disperser.',
   }),
   Object.freeze({

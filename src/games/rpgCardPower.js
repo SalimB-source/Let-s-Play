@@ -95,7 +95,7 @@ function valeurEffet(effet = {}) {
       // Sa valeur ne dépend plus du montant imprimé (toujours 1 désormais).
       // `cible: 'soi'` (Salem) vaut la même chose : la parade est garantie
       // sur le corps qui arrive, sans allié à désigner.
-      return 2.2;
+      return 2.2 + (effet.donneDefenseur ? 1 : 0);
     case 'bouclier-lumiere':
       return 2.5;
     case 'brouillard':
@@ -328,9 +328,8 @@ export function valeurCarte(carte) {
   // La Traque du Chasseur : +N/+0 contre les seules proies de la course —
   // un tiers de la force brute, elle ne frappe pas à tous les combats.
   if (carte.traquePirates) valeur += 0.4 * carte.traquePirates;
-  // Provocation détourne un bloqueur vers ce corps et ouvre la voie aux
-  // autres attaquants : une pression tactique, sans valoir l'Infiltration.
-  if (carte.provocation) valeur += 1;
+  // Défenseur attire les attaques adverses accessibles.
+  if (carte.defenseur || carte.prioriteAttaqueRapide) valeur += 1;
   // Une créature qui ne peut pas attaquer garde sa force en blocage, mais
   // ne menace jamais directement le sorcier adverse.
   if (carte.nePeutPasAttaquer) valeur -= 0.5 * Math.max(0, Number(carte.atk) || 0);

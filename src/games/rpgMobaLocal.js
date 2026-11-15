@@ -4,7 +4,7 @@
  * effects and online play are not yet supported. Never bypass the audit gate.
  */
 import { armeById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
-import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation } from './rpgMobaAttaqueIndividuelle.js';
+import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale } from './rpgMobaAttaqueIndividuelle.js';
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import { candidatsRenfortChoisi } from './rpgRenforts.js';
 import {
@@ -839,7 +839,6 @@ export function rpgMobaDeclarerAttaqueIndividuelle(duel, side, attackerId, cible
   const voie = candidatesLegales[0];
   const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, side, [attackerId]);
   const ciblee = Boolean(attaquant.coupRapide);
-  if (cibleId !== null) rpgMobaBonusProvocation(duel, side === 'joueur' ? 'sorcier' : 'joueur', cibleId);
   attaquant.attaquee = true;
   duel.log.push(`${attaquant.name} annonce une attaque${cibleId ? ` contre ${duel[side === 'joueur' ? 'sorcier' : 'joueur'].creatures.find((e) => e.id === cibleId)?.name ?? 'une créature'}` : ' directe sur sa voie'}.`);
   duel.phase = 'blocage'; // Réutilisation des fenêtres de réponse, pas de blocage.

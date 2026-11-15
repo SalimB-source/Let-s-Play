@@ -130,7 +130,7 @@ test('la fiche et la carte sur table montrent la nouvelle icône Défenseur', as
 test('les nouveaux Défenseurs Braise et Sable sont jouables et disponibles', async () => {
   const { COLLECTION_DEPART } = await import('../src/games/rpgCollection.js');
   for (const [id, element, cost, atk, def, provocation] of [
-    ['gardien-de-la-porte-ardente', 'braise', 3, 2, 4, true],
+    ['gardien-de-la-porte-ardente', 'braise', 3, 2, 4, false],
     ['gardienne-des-portes-de-sable', 'sable', 2, 1, 4, false],
   ]) {
     const carte = cardById(id);
@@ -214,7 +214,7 @@ test('la réplique du Gardien ne part ni sur une magie ni sur un combat bloqué 
   assert.equal(attaquant.pv, 1, 'seuls les 2 dégâts du blocage normal sont subis');
 });
 
-test('le gardien Braise attire un bloqueur quand il attaque, sans obligation d’attaquer', () => {
+test('le gardien Braise peut attaquer sans forcer un blocage', () => {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 });
   for (const c of ['joueur', 'sorcier']) d[c].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
   d.joueur.main.push('gardien-de-la-porte-ardente');
@@ -222,8 +222,9 @@ test('le gardien Braise attire un bloqueur quand il attaque, sans obligation d�
   const a = rpgJouerCreature(d, 'joueur', 'gardien-de-la-porte-ardente').entite;
   const b = rpgJouerCreature(d, 'sorcier', 'dune-marchante').entite;
   a.ready = true;
-  assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], {}).raison, 'provocation');
-  assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], { [a.id]: [b.id] }).ok, true);
+  a.malInvocation = false;
+  assert.ok(b);
+  assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], {}).ok, true);
 });
 
 test('le Gardien viking du fjord protège ses alliés et soutient la Compagnie viking', async () => {

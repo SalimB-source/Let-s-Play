@@ -236,7 +236,7 @@ test('non-winning conquest removes both sides and leaves other lanes playable', 
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).ok, true);
 });
 
-test('provocation cannot force a blocker from a different lane', () => {
+test('a defender cannot be blocked from a different lane', () => {
   const duel = partieCombat();
   duel.joueur.main.push('berserk-des-trois-hivers');
   duel.joueur.mana.neige = 10;
@@ -253,7 +253,7 @@ test('provocation cannot force a blocker from a different lane', () => {
   assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 10);
 });
 
-test('provocation and overkill use original combat rules within the lane', () => {
+test('overkill uses original combat rules within the lane', () => {
   const duel = partieCombat();
   duel.joueur.main.push('jarl-au-marteau-de-guerre');
   duel.joueur.mana.neige = 10;
@@ -263,7 +263,6 @@ test('provocation and overkill use original combat rules within the lane', () =>
   duel.sorcier.mana.sable = 10;
   const blocker = rpgMobaJouerCreature(duel, 'sorcier', 'mousse-des-galiotes', 'left', 0).entite;
   rpgFinDeTour(duel);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], {}).raison, 'provocation');
   const result = rpgMobaLancerAttaque(duel, 'joueur', [attacker.id], { [attacker.id]: [blocker.id] });
   assert.equal(result.ok, true);
   assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 9);
@@ -721,7 +720,7 @@ for (const [first, second] of [[0, 1], [2, 1], [0, 2], [2, 2], [3, 0], [0, 3], [
       assert.equal(rpgChoisirCouleurMana(duel, side, color).ok, true);
     }
     // Use only actual cards in hand and printed costs. Declining to block is a
-    // legal hot-seat choice, except where the classic Provocation rule applies.
+    // legal hot-seat choice unless another effect forces blocks.
     for (const cardId of [...camp.main]) {
       if (magieById(cardId)) continue;
       const lane = duel.moba.lanes.filter((item) => item.active && item.slots[side].includes(null))
@@ -739,13 +738,7 @@ for (const [first, second] of [[0, 1], [2, 1], [0, 2], [2, 2], [3, 0], [0, 3], [
     }
     const attackers = camp.creatures.filter(rpgPeutAttaquer).map((entity) => entity.id);
     if (attackers.length && rpgMobaDeclarerAttaque(duel, side, attackers).ok) {
-      const blocks = {}, used = new Set();
-      for (const attacker of camp.creatures.filter((entity) => attackers.includes(entity.id) && entity.provocation)) {
-        const defender = duel[enemy].creatures.find((entity) => entity.mobaLane === attacker.mobaLane && !used.has(entity.id)
-          && !entity.attaquee && !(entity.gelToursRestants > 0) && !(entity.empecheBlocageToursRestants > 0)
-          && rpgPeutBloquerAttaquant(entity, attacker));
-        if (defender) { blocks[attacker.id] = [defender.id]; used.add(defender.id); }
-      }
+      const blocks = {};
       const combat = rpgMobaLancerAttaque(duel, side, attackers, blocks, { declaree: true });
       assert.equal(combat.ok, true, `turn ${turn}: ${combat.raison}`);
     }
@@ -1878,7 +1871,6 @@ test('Gardien provokes only blockers in its lane and retaliates against targeted
   assert.ok(blocker);
   assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
   assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [guard.id]).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [guard.id], {}, { declaree: true }).raison, 'provocation');
   assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [guard.id], { [guard.id]: [blocker.id] }, { declaree: true }).ok, true);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
@@ -6827,11 +6819,11 @@ test('Barbe Noire : insaisissable et priorité à Abordage imprimé plutôt qu�
   assert.equal(galion.enCale,null);assert.equal(duel.arriveeEnAttente,null);assert.ok(duel[side].creatures.includes(noire));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Barbe Noire : provocation n’impose des bloqueurs que dans sa voie', () => {
+test('Barbe Noire peut attaquer sans imposer de bloqueur', () => {
   const {duel,side,enemy,targets:[a,b]}=oniFixture('joueur',2);duel[side].main=['la-barbe-noire'];duel[side].mana.tenebres=30;
   assert.equal(rpgMobaJouerCreature(duel,side,'la-barbe-noire','left',0,{ouvrirReponse:true}).creatureEnAttente,true);const noire=rpgMobaPasserCreature(duel,enemy).entite;
   assert.equal(rpgMobaResoudreArrivee(duel,side,b.id).ok,true);noire.ready=true;
-  assert.equal(rpgMobaLancerAttaque(duel,side,[noire.id],{}).raison,'provocation');assert.equal(rpgMobaLancerAttaque(duel,side,[noire.id],{[noire.id]:[a.id]}).ok,true);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.ok(a);assert.equal(rpgMobaLancerAttaque(duel,side,[noire.id],{}).ok,true);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 for (const side of ['joueur','sorcier']) test(`Lien du Poids MOBA : cible et voie choisies, paiement et résolution pour ${side}`, () => {
@@ -7105,7 +7097,7 @@ test('IA MOBA : un blocage du Brûlot peut gagner la seconde voie sans toucher a
   const duel=partie(),side='sorcier',enemy='joueur';rpgFinDeTour(duel);duel.sorcier.main=['le-brulot','gardienne-des-portes-de-sable'];duel.sorcier.mana.braise=30;duel.sorcier.mana.sable=30;
   const brulot=rpgMobaJouerCreature(duel,side,'le-brulot','right',0).entite;const gardienne=rpgMobaJouerCreature(duel,side,'gardienne-des-portes-de-sable','right',1).entite;rpgFinDeTour(duel);
   duel.joueur.main=['jarl-au-marteau-de-guerre'];duel.joueur.mana.neige=30;const jarl=rpgMobaJouerCreature(duel,enemy,'jarl-au-marteau-de-guerre','right',0).entite;jarl.ready=true;jarl.overkill=false;
-  mobaInfliger(duel.moba,side,'left',10);mobaInfliger(duel.moba,side,'right',8);jarl.provocation=false;
+  mobaInfliger(duel.moba,side,'left',10);mobaInfliger(duel.moba,side,'right',8);jarl.defenseur=false;
   assert.equal(rpgMobaDeclarerAttaque(duel,enemy,[jarl.id]).ok,true);let appels=0;rpgReglerHasard(duel,()=>{appels++;return .5;});const before=JSON.stringify(duel);
   const classic=choisirBloqueursIA({...duel,[side]:{...duel[side],pv:10}},enemy,[jarl.id]);assert.ok(!classic[jarl.id]?.includes(brulot.id),JSON.stringify(classic));assert.ok(gardienne);
   const blocks=rpgMobaChoisirBlocagesIA(duel,enemy,[jarl.id]);assert.ok(blocks[jarl.id]?.includes(brulot.id));assert.equal(JSON.stringify(duel),before);assert.equal(appels,0);

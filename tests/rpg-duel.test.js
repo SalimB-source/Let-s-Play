@@ -30,7 +30,6 @@ import {
   rpgPeutAttaquer,
   rpgPeutBloquerAttaquant,
   rpgBlocageForceValide,
-  rpgProvocationValide,
   rpgResonanceEnJeu,
   rpgResoudreDestructionCiblee,
   rpgResoudreContresortBoualem,
@@ -1068,17 +1067,17 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.deepEqual(
     {
       cost: berserk.cost, atk: berserk.atk, def: berserk.def, furie: berserk.furie,
-      provocation: berserk.provocation, coupRapide: berserk.coupRapide,
+      defenseur: berserk.defenseur, coupRapide: berserk.coupRapide,
     },
-    { cost: 3, atk: 2, def: 4, furie: 2, provocation: true, coupRapide: undefined },
-    'le Berserk devient 2/4 pour 3 manas, avec Furie 2 et Provocation',
+    { cost: 3, atk: 2, def: 4, furie: 2, defenseur: true, coupRapide: undefined },
+    'le Berserk devient 2/4 pour 3 manas, avec Furie 2 et Défenseur',
   );
-  assert.match(berserk.text, /Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible/);
+  assert.match(berserk.text, /Défenseur/);
 
   const jarl = cardById('jarl-au-marteau-de-guerre');
   assert.deepEqual(
-    { cost: jarl.cost, atk: jarl.atk, def: jarl.def, furie: jarl.furie, overkill: jarl.overkill, provocation: jarl.provocation, text: jarl.text },
-    { cost: 5, atk: 3, def: 5, furie: 2, overkill: true, provocation: true, text: 'Furie 2. Overkill. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.' },
+    { cost: jarl.cost, atk: jarl.atk, def: jarl.def, furie: jarl.furie, overkill: jarl.overkill, defenseur: jarl.defenseur, text: jarl.text },
+    { cost: 5, atk: 3, def: 5, furie: 2, overkill: true, defenseur: true, text: 'Furie 2. Overkill. Défenseur.' },
   );
 
   const drakkar = cardById('drakkar-a-tete-de-dragon');
@@ -2450,66 +2449,20 @@ test('la frappe de l’Attaque ciblée n’est pas bloquable : l’attaquant s�
   assert.equal(feriel.attaquee, false, 'un refus ne consomme rien — ni l’attaque, ni la phase');
 });
 
-test('Provocation : l’IA réserve le seul bloqueur capable d’arrêter le provocateur volant', () => {
-  const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 30);
-  donnerMana(duel, 'sorcier', 30);
-  donner(duel, 'joueur', 'berserk-des-trois-hivers');
-  const auSol = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
-  donner(duel, 'joueur', 'berserk-des-trois-hivers');
-  const volant = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
-  volant.envol = true; // même provocateur, mais seul un bloqueur volant peut l'arrêter
-  donner(duel, 'sorcier', 'anqa-des-braises');
-  const bloqueurVolant = rpgJouerCreature(duel, 'sorcier', 'anqa-des-braises').entite;
-  bloqueurVolant.jeton = true; // le choix le plus tentant pour le Berserk au sol
-  donner(duel, 'sorcier', 'chien-du-guet');
-  const bloqueurAuSol = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-
-  const blocages = rpgChoisirBloqueurs(duel, 'joueur', [auSol.id, volant.id]);
-  assert.deepEqual(blocages[volant.id], [bloqueurVolant.id],
-    'le bloqueur volant est réservé au seul attaquant qu’il peut arrêter');
-  assert.deepEqual(blocages[auSol.id], [bloqueurAuSol.id],
-    'le bloqueur terrestre couvre l’autre provocateur');
-  assert.equal(rpgProvocationValide(duel, 'joueur', [auSol.id, volant.id], blocages), true);
-  assert.equal(rpgProvocationValide(
-    duel, 'joueur', [auSol.id, volant.id], { [auSol.id]: [bloqueurVolant.id] },
-  ), false, 'utiliser le bloqueur volant au sol laisserait le provocateur volant découvert alors qu’un appariement complet existe');
-});
-
-test('Provocation : sans bloqueur légal, l’attaque peut passer', () => {
+test('Défenseur ne force pas le blocage en combat collectif, même dans une ancienne sauvegarde', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'berserk-des-trois-hivers');
   const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
-  berserk.envol = true;
-  berserk.ready = true;
+  assert.equal(berserk.defenseur, true);
+  berserk.provocation = true; // ancienne sauvegarde
+  berserk.ready = true; berserk.malInvocation = false;
   donner(duel, 'sorcier', 'chien-du-guet');
-  rpgJouerCreature(duel, 'sorcier', 'chien-du-guet'); // terrestre : aucun blocage légal du volant
-
-  assert.equal(rpgProvocationValide(duel, 'joueur', [berserk.id], {}), true,
-    '« si possible » ne crée pas un bloqueur volant inexistant');
-  const pvSorcier = duel.sorcier.pv;
+  rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  const pv = duel.sorcier.pv;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [berserk.id], {}).ok, true);
-  assert.equal(duel.sorcier.pv, pvSorcier - 2);
-});
-
-test('Provocation : deux provocateurs pour un seul bloqueur n’exigent que le maximum possible', () => {
-  const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 30);
-  donnerMana(duel, 'sorcier', 30);
-  donner(duel, 'joueur', 'berserk-des-trois-hivers');
-  const premier = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
-  donner(duel, 'joueur', 'berserk-des-trois-hivers');
-  const second = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
-  donner(duel, 'sorcier', 'chien-du-guet');
-  const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-
-  assert.equal(rpgProvocationValide(duel, 'joueur', [premier.id, second.id], {}), false,
-    'le seul bloqueur disponible doit tout de même s’interposer');
-  assert.equal(rpgProvocationValide(
-    duel, 'joueur', [premier.id, second.id], { [premier.id]: [bloqueur.id] },
-  ), true, 'un bloqueur ne peut pas couvrir deux provocateurs : le maximum possible suffit');
+  assert.equal(duel.sorcier.pv, pv - berserk.atk);
 });
 
 test('l’IA abat d’une attaque ciblée la créature qu’elle peut tuer, et son attaque s’arrête', () => {
@@ -4884,9 +4837,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(duel.joueur.main.length, mainAvant,
     'le Drakkar détruit fait piocher une seule carte');
 
-  // Berserk : Provocation — son attaque ne peut pas partir sans bloqueur
-  // tant qu'un blocage légal est possible. Le Fennec 3/1 s'interpose donc :
-  // il tombe sous les deux points du Berserk, mais ses 3 dégâts allument sa Furie.
+  // Le Berserk peut être bloqué normalement et déclencher sa Furie.
   donner(duel, 'sorcier', 'fennec-des-decombres');
   rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres');
   const fennec = duel.sorcier.creatures.at(-1);
@@ -4894,13 +4845,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
   assert.equal(cardById('berserk-des-trois-hivers').coupRapide, undefined,
     'Attaque ciblée a quitté la fiche');
-  assert.equal(berserk.provocation, true, 'l’entité porte Provocation');
+  assert.equal(berserk.defenseur, true, 'l’entité porte Défenseur');
   berserk.ready = true;
   const pvSorcierAvantBerserk = duel.sorcier.pv;
-  const sansBloqueur = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [] });
-  assert.equal(sansBloqueur.ok, false, 'sans bloqueur, la déclaration est refusée');
-  assert.equal(sansBloqueur.raison, 'provocation');
-  assert.equal(berserk.attaquee, false, 'le refus ne consomme pas son attaque');
   const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [fennec.id] });
   assert.equal(attaque.ok, true, 'avec un bloqueur légal, l’attaque se résout');
   assert.deepEqual(attaque.resume.furies, [{

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mobaNouveau } from '../src/games/rpgMoba.js';
-import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation, rpgMobaExcedentOverkill } from '../src/games/rpgMobaAttaqueIndividuelle.js';
+import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaExcedentOverkill } from '../src/games/rpgMobaAttaqueIndividuelle.js';
 import { rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgLancerMagie, rpgNouveauDuel } from '../src/games/rpgDuel.js';
 import { rpgMobaJouerCreature, rpgMobaNouveauDuel, rpgMobaDeclarerAttaque, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaPeutEmbuscade, rpgMobaLancerMagie, rpgMobaResoudreArrivee } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
@@ -35,13 +35,13 @@ test('Attaque ciblée : Défenseur ne force que les attaques de sa propre voie',
   assert.deepEqual(choix(d), { cibles: ['garde-local'], directe: false });
 });
 
-test('Provocation prime sur Défenseur uniquement si accessible', () => {
+test('anciens marqueurs et Défenseurs partagent la priorité de voie', () => {
   const d = position({}, [entite('garde', 'left', { defenseur: true }), entite('provoque', 'left', { provocation: true, envol: true }), entite('loin', 'right', { provocation: true })]);
   assert.deepEqual(choix(d), { cibles: ['garde'], directe: false });
   d.joueur.creatures[0].envol = true;
-  assert.deepEqual(choix(d), { cibles: ['provoque'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['garde', 'provoque'], directe: false });
   d.joueur.creatures[0].coupRapide = true;
-  assert.deepEqual(choix(d), { cibles: ['provoque', 'loin'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['garde', 'provoque'], directe: false });
 });
 
 test('cible fixée : nouveau Défenseur sans effet rétroactif, mais perte ou illégalité annule', () => {
@@ -59,7 +59,7 @@ test('le ciblage fonctionne aussi pour le camp sorcier et la voie de combat effe
   const d = position({}, [entite('attaquant-sorcier', 'right')]);
   d.sorcier.creatures[0].coupRapide = true;
   d.joueur.creatures.push(entite('provocation', 'left', { provocation: true }));
-  assert.deepEqual(rpgMobaCiblesIndividuelles(d, 'sorcier', 'attaquant-sorcier'), { cibles: ['provocation'], directe: false });
+  assert.deepEqual(rpgMobaCiblesIndividuelles(d, 'sorcier', 'attaquant-sorcier'), { cibles: ['a', 'provocation'], directe: true });
   d.sorcier.creatures[0].coupRapide = false;
   d.sorcier.creatures[0].mobaLane = 'left';
   assert.deepEqual(rpgMobaCiblesIndividuelles(d, 'sorcier', 'attaquant-sorcier'), { cibles: ['provocation'], directe: false });
@@ -74,20 +74,6 @@ test('perdre Attaque ciblée ou Envol rend une cible fixe illégale sans redirec
   assert.equal(rpgMobaCibleIndividuelleEncoreLegale(d, 'joueur', 'a', 'c', false, 'left'), true);
   d.joueur.creatures[0].envol = false;
   assert.equal(rpgMobaCibleIndividuelleEncoreLegale(d, 'joueur', 'a', 'c', false, 'left'), false);
-});
-
-test('bonus de Provocation cumulable, inscrit pour expiration en fin de tour', () => {
-  const deck = Array(30).fill('ashigaru-des-braises');
-  const d = rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
-  rpgMulligan(d, 'joueur', []); rpgMulligan(d, 'sorcier', []); rpgDemarrerManaEssai(d);
-  d.joueur.main = ['ashigaru-des-braises'];
-  const c = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
-  c.provocation = true; const base = [c.def, c.pv, c.pvMax];
-  assert.equal(rpgMobaBonusProvocation(d, 'joueur', c.id), true);
-  assert.equal(rpgMobaBonusProvocation(d, 'joueur', c.id), true);
-  assert.deepEqual([c.def, c.pv, c.pvMax], base.map((v) => v + 2));
-  rpgFinDeTour(d);
-  assert.deepEqual([c.def, c.pv, c.pvMax], base);
 });
 
 test('Overkill ne calcule que l’excédent de dégâts', () => {
@@ -151,7 +137,7 @@ for (const side of ['joueur', 'sorcier']) {
       local.defenseur = false; local.prioriteAttaqueRapide = true;
       assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['local'], directe: false });
       lointain.provocation = true;
-      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['lointain'], directe: false }, 'Provocation reste prioritaire');
+      assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['local'], directe: false }, 'ancien marqueur limité à sa voie');
       lointain.provocation = false;
       attaquant.coupRapide = false;
       assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: ['local'], directe: false }, 'attaque normale inchangée');

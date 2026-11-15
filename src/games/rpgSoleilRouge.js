@@ -97,10 +97,11 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'onna-musha-des-cendres', name: 'Onna-musha des cendres',
+    defenseur: true,
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
-    text: 'Esquive — 15 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout.',
+    text: 'Défenseur. Esquive — 15 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -134,7 +135,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'hatamoto-des-cendres', name: 'Hatamoto des cendres',
     cost: 2, atk: 2, def: 2, rarity: 'commune',
     typeLine: 'Créature — Humain · Samouraï',
-    text: '—',
+    defenseur: true,
+    text: 'Défenseur.',
     flavor: 'Il marche derrière son seigneur, et devant la mort.',
   }),
   carte({

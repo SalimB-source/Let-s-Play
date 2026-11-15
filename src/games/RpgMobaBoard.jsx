@@ -1,3 +1,4 @@
+import { estDefenseur } from './rpgDefenseur.js';
 import { rpgCartesRenfortChoisi } from './rpgDuel.js';
 import { rpgMobaPeutRepondreAttaque } from './rpgMobaReponseAttaque.js';
 import { rpgMobaCartePourApercu, rpgMobaNotesCarte } from './rpgMobaPresentation.js';
@@ -102,7 +103,6 @@ const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 const message = {
   ...ERREURS_ASCENSION,
   mana: 'Carte impossible à jouer.', 'creature-limite': 'Une seule créature normale peut être jouée par camp et par tour.', 'sort-limite': 'Un seul sort peut être joué par camp et par tour.', 'arme-limite': 'Une seule arme peut être jouée par camp et par tour.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
-  provocation: 'Une Provocation accessible doit être attaquée en priorité.',
   'blocage-force': 'Les créatures marquées doivent bloquer si elles le peuvent dans leur voie.',
   'attaque-jouee': 'La phase d’attaque est déjà terminée.', 'cible-obligatoire': 'Choisissez une cible légale pour chaque attaquant ciblé.', emplacement: 'Cet emplacement n’est pas libre.', 'emplacement-sacrifice': 'La créature doit prendre la place d’une victime choisie.',
   'blocage-indisponible-moba': 'Ce sort impose un blocage et ne peut pas être joué en MOBA.',
@@ -175,10 +175,10 @@ function etatsCreature(entity) {
   else if (entity.attaquee) etats.push('A attaqué');
   else if (!entity.ready) etats.push('Non prête');
   if (entity.coupRapide) etats.push('Attaque ciblée');
+  if (estDefenseur(entity)) etats.push('Défenseur');
   if (entity.coupCritique?.chance) etats.push(`Coup critique : ${Math.round(entity.coupCritique.chance * 100)} % ×${entity.coupCritique.fois}`);
   if (entity.mur) etats.push('Mur : ne peut pas attaquer ni être équipé');
   if (entity.doitBloquer) etats.push('Doit bloquer si possible');
-  if (entity.provocation) etats.push('Provocation');
   if (entity.blocageForce) etats.push('Doit bloquer si possible');
   if (entity.envol) etats.push('Envol');
   if (entity.esquive) etats.push('Esquive');
@@ -1364,7 +1364,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             : duel.arriveeEnAttente?.carteId === 'tour-de-sable'
         ? 'Choisissez une créature alliée, y compris la Tour, pour recevoir un bouclier.'
             : duel.arriveeEnAttente?.carteId === 'veilleuse-des-citernes'
-        ? 'Choisissez une autre créature alliée pour recevoir son bouclier.'
+        ? 'Choisissez une autre créature alliée : elle gagne Défenseur et reçoit un bouclier.'
         : 'Choisissez une créature alliée, y compris le Guerrier lui-même, pour recevoir son bouclier.')
     : defausse ? `Choisissez ${defausse} carte${defausse > 1 ? 's' : ''} à défausser${duel.defausseEnAttente?.motif === 'fin-de-tour' ? ' pour terminer votre tour' : ''}.`
     : ['le-tresor-de-lima', 'source-de-bimini'].includes(carte) ? 'Choisissez une case libre pour installer le Site.'
@@ -1420,7 +1420,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       <details className="moba__rules"><summary>Règles du plateau</summary><div>
         <p>La réserve d’Ascension est hors du paquet. Sacrifiez les créatures du type demandé dont les coûts imprimés totalisent exactement le seuil : cette invocation spéciale ne consomme pas votre invocation normale.</p>
         <p>Trois voies indépendantes : 20 / 15 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
-        <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide avant les dégâts. Il n’y a pas de choix de bloqueurs : la créature visée par une attaque normale déclenche ses effets « au blocage ». Les dégâts des effets « à l’attaque » et « au blocage » frappent juste avant le duel, puis les créatures encore en jeu échangent leurs dégâts simultanément ; les effets imprimés « après les blessures » se résolvent ensuite. Vous pouvez choisir de frapper directement la voie même si des créatures adverses sont présentes, sous réserve des priorités. Envol permet de viser les créatures volantes. Infiltration protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Provocation impose une cible accessible prioritaire ; à défaut, Défenseur impose une cible accessible dans la voie de l’attaquant.</p>
+        <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide avant les dégâts. Il n’y a pas de choix de bloqueurs : la créature visée par une attaque normale déclenche ses effets « au blocage ». Les dégâts des effets « à l’attaque » et « au blocage » frappent juste avant le duel, puis les créatures encore en jeu échangent leurs dégâts simultanément ; les effets imprimés « après les blessures » se résolvent ensuite. Vous pouvez choisir de frapper directement la voie même si des créatures adverses sont présentes, sous réserve des priorités. Envol permet de viser les créatures volantes. Infiltration protège des attaques normales. L’Attaque ciblée peut viser une créature de n’importe quelle voie ou frapper directement, sans riposte ordinaire. Défenseur impose une cible accessible dans la voie de l’attaquant.</p>
         <p>Après la conquête du centre, le vainqueur conserve sa case centrale et peut y jouer. Les créatures centrales participent aux deux voies latérales actives ; les PV restants du centre disparaissent.</p>
         <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Sans Rapidité, une créature ne peut pas attaquer avant le début du prochain tour de son camp, mais elle peut défendre dès son arrivée. Rapidité permet d’attaquer dès l’arrivée, sous réserve des autres restrictions. En MOBA, certaines créatures avec Rapidité ont aussi une Invocation spéciale propre à chacune, indiquée sur leur fiche : elles peuvent être invoquées spécialement si leur condition est remplie, pendant votre phase principale. Les Sandales de Tislit donnent +1/+1 en MOBA et s’attachent uniquement pendant votre tour ; les jetons ne se jouent pas depuis la main, mais Tarek et Kusayla peuvent être invoqués spécialement. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Invocation spéciale se joue si sa condition est remplie pendant votre phase principale : elle ne demande ni sacrifice ni quota et ne consomme pas la pose normale. Si sa condition manque, la créature peut être invoquée normalement pendant votre tour. Ses conditions portent sur tout le plateau, parfois aussi sur votre main ou votre cimetière. Les sorts et les armes ne sont pas limités en nombre par tour. Toute invocation normale annoncée compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
@@ -1540,7 +1540,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             const arriveeOffensive = MOBA_ARRIVEES_HOSTILES.includes(duel.arriveeEnAttente?.carteId);
             const mayArrivalTarget = etape === 'arrivee' && (Number.isFinite(duel.arriveeEnAttente?.abordage) ? side === autre(arriveeSide) && entity && rpgMobaCiblesPrise(duel, arriveeSide).includes(id) : (MOBA_ARRIVEES_NEUTRES.includes(duel.arriveeEnAttente?.carteId) || side === (arriveeOffensive ? autre(arriveeSide) : arriveeSide)) && (MOBA_ARRIVEES_ALLIEES.includes(duel.arriveeEnAttente?.carteId) || mobaPartageVoie(duel.moba, entity?.mobaLane, getEntity(arriveeSide, duel.arriveeEnAttente?.entiteId)?.mobaLane)) && mobaVoiesCombat(duel.moba, entity?.mobaLane).length > 0 && !fini
               && (entity.id !== duel.arriveeEnAttente?.entiteId || cardById(duel.arriveeEnAttente?.carteId)?.arrivee?.cibleSoi)
-              && (duel.arriveeEnAttente?.carteId !== 'gardienne-du-croissant' || cardById(entity.carteId)?.kind !== 'site')
+              && (!(['gardienne-du-croissant', 'veilleuse-des-citernes'].includes(duel.arriveeEnAttente?.carteId)) || cardById(entity.carteId)?.kind !== 'site')
               && cibleRespecteCoutMax(cardById(duel.arriveeEnAttente?.carteId), entity)
               && rpgCibleEmbuscadeLegale(duel, arriveeSide, cardById(duel.arriveeEnAttente?.carteId), entity)
               && (!cardById(duel.arriveeEnAttente?.carteId)?.arrivee?.attaquanteSeulement || (duel.arriveeEnAttente?.attaquants ?? []).includes(entity.id))

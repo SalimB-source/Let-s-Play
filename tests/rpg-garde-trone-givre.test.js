@@ -9,10 +9,10 @@ function duel() {
   for (const camp of ['joueur', 'sorcier']) d[camp].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 20]));
   return d;
 }
-test('Le Garde Viking et Vampire a coût 3, 2/4, Provocation et Furie 1', () => {
+test('Le Garde Viking et Vampire a coût 3, 2/4, Défenseur et Furie 1', () => {
   const c = cardById(id);
   assert.deepEqual([c.cost, c.atk, c.def, c.furie], [3, 2, 4, 1]);
-  assert.ok(c.provocation && c.reactionTourAdverse);
+  assert.ok(c.defenseur && c.reactionTourAdverse);
   assert.deepEqual(cardColors(c), ['neige', 'tenebres']);
   assert.ok(cardHasPrintedType(c, 'Viking') && cardHasPrintedType(c, 'Vampire'));
   assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)));

@@ -237,8 +237,9 @@ test('AI responds to a human declaration and assigns mandatory blocks automatica
     assert.ok([...document.querySelectorAll('.moba__hand .moba__card')].every((card) => card.disabled));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.combatDeclare, null, 'AI finished its defense');
-    assert.ok(!duel.sorcier.creatures.some((e) => e.id === blocker.entite.id), 'AI satisfied provocation and blocked');
-    assert.equal(duel.moba.lanes[0].hp.sorcier, 9, 'only Overkill excess reaches the lane');
+    const bloqueurSurvit = duel.sorcier.creatures.some((e) => e.id === blocker.entite.id);
+    assert.equal(duel.moba.lanes[0].hp.sorcier, bloqueurSurvit ? 7 : 9,
+      'la voie reçoit la frappe directe ou uniquement l’excédent si l’IA bloque');
     assert.ok(document.querySelector('[aria-label="Votre main"]'));
   } finally {
     if (root) await act(async () => root.unmount());

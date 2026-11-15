@@ -315,7 +315,7 @@ test('AI uses a legal instant in a response window and does not cross lanes when
   if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'neige'));
   ok(rpgMobaDeclarerAttaque(duel, 'joueur', [attacker.entite.id]));
   const blocks = rpgMobaChoisirBlocagesIA(duel, 'joueur', [attacker.entite.id]);
-  assert.deepEqual(blocks[attacker.entite.id], [blocker.entite.id], 'provocation is satisfied in the same lane');
+  assert.ok(!(blocks[attacker.entite.id] ?? []).some(id => id !== blocker.entite.id), 'AI never blocks across lanes');
   duel.sorcier.mana.neige = 10;
   duel.sorcier.main = ['poigne-de-givre'];
   const magie = rpgMobaChoisirMagieIA(duel, 'sorcier', true);

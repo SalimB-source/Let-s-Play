@@ -12,8 +12,8 @@ test('les mots-clés décrivent les cibles individuelles et leurs priorités', (
   assert.match(description('danseuse-des-ombres-de-dune', 'infiltration'), /attaque normale.*Attaque ciblée/);
   assert.match(description('feriel', 'coupRapide'), /créature adverse ou directement.*priorité/);
   assert.match(description('feriel', 'coupRapide'), /15 %.*capacités peuvent riposter/);
-  assert.match(description('gardienne-des-portes-de-sable', 'defenseur'), /priorité.*Provocation/);
-  assert.match(description('gardien-de-la-porte-ardente', 'provocation'), /priorité.*Défenseurs.*\+0\/\+1/);
+  assert.match(description('gardienne-des-portes-de-sable', 'defenseur'), /priorité.*accessible/);
+  assert.match(description('gardien-de-la-porte-ardente', 'defenseur'), /priorité.*accessible/);
   assert.match(description('jarl-au-marteau-de-guerre', 'overkill'), /dépassent la défense/);
 });
 
@@ -21,10 +21,10 @@ test('les textes complets accessibles remplacent les anciennes règles sans perd
   const garde = cardById('gardien-de-la-porte-ardente');
   const texte = texteCombatIndividuel(garde);
   assert.match(texte, /Défenseur —.*priorité/);
-  assert.match(texte, /Provocation —.*\+0\/\+1/);
+  assert.doesNotMatch(texte, /Provocation/);
   assert.match(texte, /Quand une créature adverse le cible avec Attaque ciblée.*1 dégât/);
   assert.doesNotMatch(texte, /doit être bloqué/);
-  assert.match(garde.text, /doit être bloquée/, 'le catalogue ne change pas');
+  assert.doesNotMatch(garde.text, /doit être bloquée/);
   assert.match(texteCombatIndividuel(cardById('valkyrie-au-corbeau')), /Quand elle arrive : piochez/);
 });
 

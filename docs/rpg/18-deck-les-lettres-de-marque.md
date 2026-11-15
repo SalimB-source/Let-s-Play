@@ -751,11 +751,11 @@ par leur nom — la saveur porte l’histoire. Toutes hors recette du boîtier
 | **Le Chien de la Reine** | Eau | 5 | 4/3 | **Rapidité, Butin** ; arrivée : piochez 1 carte |
 | **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : une parade anti-sort |
 | **Celle qui tient le Routier** | Eau | 4 | 2/3 | **Envol** ; arrivée : piochez 2 cartes puis défaussez 1 |
-| **La Barbe Noire, la malédiction** | **Ténèbres** | 5 | 4/5 | **Provocation, Abordage 4, Malédiction, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
+| **La Barbe Noire, la malédiction** | **Ténèbres** | 5 | 4/5 | **Défenseur, Abordage 4, Malédiction, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
 
 **La Barbe Noire** (la carte de la malédiction, devenue carte 100 % Ténèbres
 et révélée au sommet de la Nécropole — `necropole-4`) a perdu ses **Deux
-Visages** : c'est désormais un corps fixe **4/5 avec Provocation**, qui garde
+Visages** : c'est désormais un corps fixe **4/5 avec Défenseur**, qui garde
 son Abordage 4 et son `insaisissable`.
 
 - **Malédiction** — `malediction: { atk: 2, def: 0 }` : tant qu'elle est en

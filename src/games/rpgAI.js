@@ -1,6 +1,6 @@
 import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
 import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
-import { ciblesDefenseur } from './rpgDefenseur.js';
+import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
  * Le cerveau du sorcier — décisions tactiques de l’IA du duel.
@@ -263,7 +263,7 @@ export function valeurEntite(entite) {
   // n'est pas encore allumée garde ce potentiel.
   else if (carte.furieGains?.envol) valeur += 0.9;
   if (entite?.coupRapide) valeur += 2;
-  if (entite?.provocation || carte.provocation) valeur += 0.8;
+  if (estDefenseur(entite) || estDefenseur(carte)) valeur += 0.8;
   if (entite?.nePeutPasAttaquer || carte.nePeutPasAttaquer) {
     valeur -= 0.5 * Math.max(0, Number(entite?.atk) || 0);
   }
@@ -543,7 +543,7 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
   if (carte?.arrivee?.type === 'bouclier' && carte.arrivee.cible === 'creature-amie' && carte.arrivee.choisirCible) {
     // La Veilleuse choisit un allié déjà présent ; seule sur la table, le
     // moteur retombe sur elle-même après son arrivée.
-    return meilleureCibleAmie(duel, cote, carte);
+    return meilleureCibleAmie(duel, cote, carte, options.sourceId);
   }
   if (carte?.arrivee?.type === 'soin-creatures' && carte.arrivee.cible === 'creature-amie' && carte.arrivee.choisirCible) {
     // Le soin d'arrivée de la Völva : la créature la plus ENTAMÉE, pas la plus
@@ -651,12 +651,14 @@ function meilleureCibleArme(duel, cote, carte) {
 }
 
 /** Meilleure créature amie pour un renfort ciblé (bouclier…) : la plus précieuse. */
-function meilleureCibleAmie(duel, cote, carte) {
+function meilleureCibleAmie(duel, cote, carte, sourceId = null) {
   const couleurs = cardColors(carte);
   return duel[cote].creatures
     .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte))
+    .filter((entite) => !carte.arrivee?.donneDefenseur || (entite.id !== sourceId && duelCardById(entite.carteId)?.kind !== 'site'))
     .filter((entite) => carte.effet?.type !== 'arme' || entite.pv + (carte.effet.def ?? 0) > 0)
-    .map((entite) => ({ entite, score: valeurEntite(entite) }))
+    .map((entite) => ({ entite, score: valeurEntite(entite)
+      + (carte.arrivee?.donneDefenseur && !estDefenseur(entite) ? Math.min(3, Math.max(0, entite.pv ?? 0)) : 0) }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
 
@@ -844,11 +846,8 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   // s'arrête sur sa frappe — rien à bloquer.
   const attaquantsBloquables = duel[coteAttaquant].creatures
     .filter((entite) => ids.includes(entite.id) && !ciblesAttaque?.[entite.id]);
-  const attaquants = attaquantsBloquables
-    // Les attaquants à 0 d'attaque n'ont rien à arrêter : les ignorer évite de
-    // gaspiller un bloqueur pour 0 dégât (Porteuse 0/3, etc.). Provocation
-    // fait exception : même réduite à 0, elle réclame son bloqueur légal.
-    .filter((entite) => (entite.atk ?? 0) > 0 || entite.provocation);
+  // Les attaquants à 0 ATQ ne constituent pas une menace ordinaire.
+  const attaquants = attaquantsBloquables.filter((entite) => (entite.atk ?? 0) > 0);
   const bloqueurs = duel[coteDefense].creatures.filter(peutBloquerEntite);
   const affectations = {};
   if (!attaquantsBloquables.length || !bloqueurs.length) return affectations;
@@ -861,11 +860,7 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
   // 0) Blocages obligatoires : les créatures avec `doitBloquer` et celles
   // marquées par l'Appât de la meute / l'Embuscade DOIVENT être déclarées.
-  // Elles servent d'abord un provocateur encore découvert, en commençant par
-  // celui qui a le moins de bloqueurs légaux : un bloqueur contraint ne doit
-  // pas prendre la seule place capable d'arrêter un autre provocateur. À
-  // défaut, l'IA les déclare devant la plus grosse menace encore découverte —
-  // même à 0 d'attaque, car l'obligation porte sur tout blocage légal.
+  // Ils bloquent la plus grosse menace légale, même à 0 ATQ si nécessaire.
   const bloqueursForces = bloqueurs.filter((entite) => entite.doitBloquer
     || entite.blocageForce?.par === coteAttaquant);
   const nombreBloqueursLegaux = (attaquant) => [...libres]
@@ -877,9 +872,6 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
     if (!libres.has(bloqueurForce.id)) continue;
     const ciblesLegales = attaquantsBloquables.filter((attaquant) => legal(attaquant, bloqueurForce));
     const cible = ciblesLegales
-      .filter((attaquant) => attaquant.provocation && !(affectations[attaquant.id] ?? []).length)
-      .sort((a, b) => nombreBloqueursLegaux(a) - nombreBloqueursLegaux(b))[0]
-      ?? ciblesLegales
         .filter((attaquant) => !(affectations[attaquant.id] ?? []).length)
         .sort(parMenaceForcee)[0]
       ?? [...ciblesLegales].sort(parMenaceForcee)[0];
@@ -940,62 +932,9 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   // douteux reste en réserve pour la phase de survie.
   const seuil = profil.style === 'agressif' ? -0.6 : profil.style === 'prudent' ? 0.8 : 0;
 
-  // 0bis) Provocation : ce n'est pas un choix tactique. Chaque provocateur
-  // encore découvert doit recevoir un bloqueur légal, dans la limite du
-  // plus grand appariement possible — le meilleur échange disponible s'il
-  // existe, sinon le corps le moins précieux. L'appariement maximal évite
-  // qu'un choix localement séduisant consomme le seul bloqueur capable
-  // d'arrêter un autre provocateur. Le taux d'erreur du niveau Récit ne
-  // peut pas rendre l'attaque illégale.
-  const provocateursRestants = attaquants
-    .filter((entite) => entite.provocation && !(affectations[entite.id] ?? []).length);
-  if (provocateursRestants.length) {
-    const candidatsParAttaquant = new Map(provocateursRestants.map((attaquant) => {
-      const candidats = [...libres]
-        .map(bloqueurParId)
-        .filter((bloqueur) => legal(attaquant, bloqueur))
-        .map((bloqueur) => ({ bloqueur, score: scoreBlocage(attaquant, bloqueur) }))
-        .sort((a, b) => {
-          const aFini = Number.isFinite(a.score);
-          const bFini = Number.isFinite(b.score);
-          if (aFini !== bFini) return aFini ? -1 : 1;
-          if (aFini && bFini && a.score !== b.score) return b.score - a.score;
-          const jetonA = a.bloqueur.jeton ? 0 : 1;
-          const jetonB = b.bloqueur.jeton ? 0 : 1;
-          if (jetonA !== jetonB) return jetonA - jetonB;
-          return valeurEntite(a.bloqueur) - valeurEntite(b.bloqueur)
-            || (a.bloqueur.pv ?? 0) - (b.bloqueur.pv ?? 0);
-        })
-        .map(({ bloqueur }) => bloqueur);
-      return [attaquant.id, candidats];
-    }));
-    const parRareteDesBloqueurs = [...provocateursRestants]
-      .sort((a, b) => candidatsParAttaquant.get(a.id).length - candidatsParAttaquant.get(b.id).length);
-    const bloqueurAssigneA = new Map();
-    const essayerAppariement = (attaquant, dejaVus) => {
-      for (const bloqueur of candidatsParAttaquant.get(attaquant.id) ?? []) {
-        if (dejaVus.has(bloqueur.id)) continue;
-        dejaVus.add(bloqueur.id);
-        const occupant = bloqueurAssigneA.get(bloqueur.id);
-        if (!occupant || essayerAppariement(occupant, dejaVus)) {
-          bloqueurAssigneA.set(bloqueur.id, attaquant);
-          return true;
-        }
-      }
-      return false;
-    };
-    for (const attaquant of parRareteDesBloqueurs) {
-      essayerAppariement(attaquant, new Set());
-    }
-    for (const [bloqueurId, attaquant] of bloqueurAssigneA) {
-      libres.delete(bloqueurId);
-      affectations[attaquant.id] = [...(affectations[attaquant.id] ?? []), bloqueurId];
-    }
-  }
-
   // Le Grand Voile blanc annule tous les dégâts de combat de ce tour : un
   // blocage volontaire n'évite plus rien. Les déclarations obligatoires
-  // ci-dessus (blocage forcé, Tours, Provocation) restent dues au moteur ;
+  // ci-dessus (blocage forcé, Tours) restent dues au moteur ;
   // tout le reste demeure en réserve.
   if (duel.brouillardCombat) return affectations;
 

@@ -70,13 +70,14 @@ export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'gardienne-de-la-balance',
     name: 'Gardienne de la balance',
+    defenseur: true,
     cost: 2,
     atk: 0,
     def: 3,
     rarity: 'commune',
     destruction: { type: 'soin', amount: 3 },
     typeLine: 'Créature — Humaine · Gardienne',
-    text: 'Quand Gardienne de la balance meurt, vous gagnez 3 PV.',
+    text: 'Défenseur. Quand Gardienne de la balance meurt, vous gagnez 3 PV.',
     flavor: 'Elle tient la lame et le lin d’un geste appris avant qu’elle ne parle.',
   }),
   carte({

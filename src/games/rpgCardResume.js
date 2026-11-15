@@ -35,7 +35,6 @@ const RACCOURCIS = [
   [/Rapidité\s*[-—:]\s*(?:Cette créature )?[Pp]eut attaquer le tour où (?:elle|il) arrive\.?/gu, 'Rapidité : attaque dès l’arrivée.'],
   [/Butin\s*[-—:]\s*Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une\.?/gu, 'Butin : piochez 1, défaussez 1.'],
   [/Envol\s*[-—:]\s*Ne peut être bloqué[e]? que par une créature avec Envol\.?/gu, 'Envol.'],
-  [/Provocation\s*[-—:]\s*[^.]*\./gu, 'Provocation : cible prioritaire.'],
   [/Tenacité\s*[-—:]\s*Une fois par partie, quand (?:il|elle) meurt \(sauf exilé\), (?:il|elle) revient en jeu au début de votre prochain tour avec 1 point de défense\.?/gu, 'Tenacité : revient une fois.'],
   [/Overkill\s*[-—:]\s*Quand (?:il|elle) attaque et qu[’']on (?:le|la) bloque, l[’']excédent de sa force au-delà des bloqueurs perce jusqu[’']au sorcier adverse\.?/gu, 'Overkill : perce les bloqueurs.'],
   [/Protection contre les sorts\s*[-—:]\s*Aucun sort \(Magie Rapide ou Sorcellerie\) ne peut (?:le|la) cibler ni (?:le|la) blesser\.?/gu, 'Immunisé contre les sorts.'],
