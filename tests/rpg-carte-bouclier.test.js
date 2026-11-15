@@ -4,10 +4,12 @@
  * Vérifie, sans navigateur : qui reçoit l'écusson, que le cadre acier AFFINÉ
  * suit la silhouette SANS ailettes et SANS couper la pointe du bas, avec un
  * liseré de la couleur de l'élément et une ombre portée (aucun rectangle,
- * aucun `outline`, aucun `box-shadow` de boîte), que les repères (ATQ/DÉF,
- * type, pierres, sonar) ne sont pas touchés, et que MAIN, MULLIGAN, MAIN MOBA
- * et APERÇUS restent des cartes rectangulaires normales avec ATQ à gauche /
- * DÉF à droite.
+ * aucun `outline`, aucun `box-shadow` de boîte), que TOUS les effets pleine
+ * face (égide de Bouclier, impact, Furie, Envol, brume, ondes, sang, givre)
+ * prennent eux aussi la forme de l'écu, que les repères (ATQ/DÉF, type,
+ * pierres, sonar) ne sont pas touchés, et que MAIN, MULLIGAN, MAIN MOBA et
+ * APERÇUS restent des cartes rectangulaires normales avec ATQ à gauche / DÉF
+ * à droite.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -123,8 +125,11 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
   const masque = svgDe('--rpg-ecusson-masque');
   const cadreMasque = svgDe('--rpg-ecusson-cadre-masque');
   const acier = svgDe('--rpg-ecusson-acier');
+  const effetMasque = svgDe('--rpg-ecusson-effet-masque');
+  const effetLiseret = svgDe('--rpg-ecusson-effet-liseret');
   for (const [nom, svg] of [
-    ['aplat', aplat], ['masque', masque], ['cadre', cadreMasque], ['acier', acier],
+    ['aplat', aplat], ['masque', masque], ['cadre', cadreMasque],
+    ['acier', acier], ['effets', effetMasque], ['filet', effetLiseret],
   ]) {
     assert.match(svg, /^<svg /, `${nom} est un SVG`);
     assert.match(svg, /viewBox='-5 -5 110 137'/, `marges de respiration dans ${nom}`);
@@ -141,6 +146,13 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
   assert.doesNotMatch(aplat, /stroke/, 'l’aplat n’a pas de trait');
   assert.match(masque, /fill='rgb\(255,255,255\)'/, 'masque blanc de l’illustration');
   assert.doesNotMatch(masque, /stroke/, 'le masque de l’illustration n’a pas de trait');
+  // Le masque des effets = le plein de l'écu + un anneau : leur halo suit la
+  // silhouette au lieu de dessiner un rectangle autour de la carte.
+  assert.match(effetMasque, /<path d='[^']+' fill='rgb\(255,255,255\)'\/>/, 'plein de l’écu pour les effets');
+  assert.match(effetMasque, /stroke='rgb\(255,255,255\)' stroke-width='8'/, 'anneau de halo pour les effets');
+  assert.equal((effetMasque.match(/<path /g) ?? []).length, 2, 'exactement deux tracés dans le masque des effets');
+  assert.match(effetLiseret, /stroke-width='3\.2'/, 'filet fin du liseré des effets');
+  assert.doesNotMatch(effetLiseret, /fill='rgb/, 'le liseré n’est qu’un trait');
 
   // Cadre AFFINÉ : dégradé, traits fins, reflet sur le dôme. Plus d'ailettes.
   assert.match(acier, /<linearGradient id='a'/, 'dégradé acier');
@@ -194,6 +206,54 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
   assert.doesNotMatch(css, /--rpg-ecusson-trait/, 'l’ancien tracé contour est retiré');
   assert.doesNotMatch(css, /224,205,138|240, 205, 138|#e0cd8a/, 'plus de filet doré');
   assert.doesNotMatch(css, /clip-path\s*:/, 'mask-image et non clip-path : les repères débordent');
+});
+
+test('tous les effets pleine face prennent la forme de l’écu, avec un liseré d’écu', () => {
+  // Les six calques qui peignaient un rectangle bordé sur la table. Le sang et
+  // le givre étaient déjà dans la liste des fonds masqués.
+  const regleEffets = css.match(/\.rpg-card\.rpg-carte-bouclier > :is\(\s*\.rpg-bouclier-egide([\s\S]*?)\) \{[^}]*\}/);
+  assert.ok(regleEffets, 'la règle commune aux effets existe');
+  for (const calque of [
+    '.rpg-bouclier-egide', '.rpg-bouclier-impact', '.rpg-furie-vignette',
+    '.rpg-card__envol', '.rpg-card__brume', '.rpg-card__resonance',
+  ]) {
+    assert.ok(regleEffets[0].includes(calque), `${calque} est découpé en écu`);
+  }
+  const corps = regleEffets[0];
+  assert.match(corps, /mask-image:\s*var\(--rpg-ecusson-effet-masque\);/, 'masque écu + halo');
+  assert.match(corps, /-webkit-mask-image:\s*var\(--rpg-ecusson-effet-masque\);/);
+  assert.match(corps, /mask-size:\s*100% 100%;/);
+  // Plus aucun contour / rayon / ombre de boîte rectangulaire sur ces calques.
+  for (const neutre of [
+    /border:\s*0 !important;/, /border-radius:\s*0 !important;/,
+    /box-shadow:\s*none !important;/, /outline:\s*none !important;/,
+  ]) assert.match(corps, neutre, `rectangle neutralisé : ${neutre}`);
+
+  // L'égide, l'impact et le sonar retrouvent un liseré coloré en forme d'écu.
+  const liseres = css.match(/\.rpg-card\.rpg-carte-bouclier > :is\(\.rpg-bouclier-egide, \.rpg-bouclier-impact, \.rpg-card__resonance\)::after \{[^}]*\}/);
+  assert.ok(liseres, 'le pseudo-élément du liseré existe');
+  assert.match(liseres[0], /background-color:\s*rgba\(var\(--rpg-bouclier-teinte/,
+    'teinte violette / dorée de l’égide');
+  assert.match(liseres[0], /mask-image:\s*var\(--rpg-ecusson-effet-liseret\);/,
+    'le liseré suit exactement le tracé de l’écu, en filet fin');
+  assert.match(liseres[0], /filter:\s*drop-shadow\(/, 'halo qui épouse la forme');
+  assert.match(liseres[0], /pointer-events:\s*none;/);
+  for (const variante of [
+    /\.rpg-bouclier-impact::after \{[^}]*rgba\(var\(--rpg-bouclier-teinte, 186, 132, 255\), \.88\)/,
+    /\.rpg-bouclier-egide--colore::after \{[^}]*--bouclier-couleur-a/,
+    /\.rpg-card__resonance::after \{[^}]*96, 178, 255/,
+    /\.rpg-card__resonance--aura::after \{[^}]*250, 205, 90/,
+    /\.rpg-card__resonance--malediction::after \{[^}]*178, 146, 245/,
+    /\.rpg-card__resonance--garde::after \{[^}]*255, 97, 79/,
+  ]) assert.match(css, variante, `variante de liseré : ${variante}`);
+
+  // Le sonar rouge de Défenseur et les autres calques d'origine restent
+  // intacts dans `rpg-battle.css` : seul l'écu les redessine.
+  assert.match(battleCss, /\.rpg-card__resonance--garde/, 'sonar rouge toujours présent');
+  assert.match(battleCss, /\.rpg-bouclier-egide \{/, 'l’égide d’origine reste sur les cartes normales');
+  assert.match(battleCss, /\.rpg-furie-vignette \{/, 'la Furie reste sur les cartes normales');
+  assert.match(battleCss, /\.rpg-card__brume \{/, 'la brume reste sur les cartes normales');
+  assert.doesNotMatch(css, /clip-path\s*:/, 'toujours mask-image, jamais clip-path global');
 });
 
 test('ATQ/DÉF et les autres repères restent exactement comme sur les autres cartes', () => {
