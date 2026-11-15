@@ -1,0 +1,100 @@
+/*
+ * L'écu des créatures Défenseur — src/games/rpg-bouclier.css
+ * -----------------------------------------------------------
+ * Une créature Défenseur ne se contente plus de son sonar rouge : sa FACE
+ * prend la silhouette d'un bouclier. Haut presque droit, flancs parallèles,
+ * puis deux arcs qui se rejoignent en une pointe douce au bas de la carte.
+ *
+ * Le dessin passe par `border-radius`, jamais par `clip-path` : les ondes du
+ * sonar (`overflow-clip-margin: 58px`), les pierres d'effets qui débordent du
+ * bord droit et la pastille d'arme restent visibles. L'illustration, le fond,
+ * le cadre coloré et l'ombre portée suivent le rayon, y compris sur les faces
+ * `overflow: clip` : l'image reprend `border-radius: inherit` à son compte.
+ *
+ * `border-radius: … !important` reprend la main sur les gabarits mobiles qui
+ * écrivent un rayon en dur (7–8 px) sur `.rpg-card` : l'écu garde la même
+ * silhouette du bureau au téléphone. Les repères imprimés (type, ATQ/DÉF,
+ * pierres du catalogue) sont remontés et resserrés pour rester DANS la pointe
+ * au lieu de flotter dans les angles coupés. Tout est décoratif — DOM,
+ * libellés et règles du jeu ne changent pas.
+ */
+
+.rpg-carte-bouclier {
+  /* Coin haut : 8 % / 5 %. Coin bas : 50 % / 22 % — les deux arcs se
+     rejoignent au centre du bas, comme la pointe d'un écu. */
+  --rpg-card-radius: 8% 8% 50% 50% / 5% 5% 22% 22%;
+  --rpg-card-radius-sm: 8% 8% 50% 50% / 5% 5% 22% 22%;
+  border-radius: var(--rpg-card-radius-sm) !important;
+}
+
+/* Un liseré d'acier et d'or suit le bord de l'écu : même sur une illustration
+   très sombre, on lit la forme au premier coup d'œil. Calque décoratif, au-
+   dessus de la peinture mais sous les pastilles et le texte. */
+.rpg-card.rpg-carte-bouclier::before,
+.rpg-hand__card.rpg-carte-bouclier::before,
+.rpg-mulligan__card.rpg-carte-bouclier::before,
+.rpg-hover-card-preview__face.rpg-carte-bouclier::before,
+.rpg-card-catalogue__art.rpg-carte-bouclier::before,
+.rpg-atelier__carte-art.rpg-carte-bouclier::before,
+.rpg-card-guide__example.rpg-carte-bouclier::before,
+.rpg-souk__carte.rpg-carte-bouclier::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 2px rgba(240, 205, 138, .62),
+    inset 0 0 16px rgba(240, 205, 138, .16);
+  pointer-events: none;
+}
+
+/* ── Les repères rentrent dans la pointe ───────────────────────────────────
+   À 5 % du bas, l'écu ne mesure plus que ~56 % de la largeur : les deux
+   pastilles ATQ/DÉF se serrent au centre. Le type remonte à 20 %, là où les
+   flancs sont encore droits. Spécificité volontairement plus haute que les
+   multiples gabarits de `rpg-battle.css` et `rpg-mobile.css`. */
+.rpg-card--img.rpg-carte-bouclier .rpg-card__foot,
+.rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__stats {
+  left: 22% !important;
+  right: 22% !important;
+  bottom: 5% !important;
+}
+
+.rpg-card--img.rpg-carte-bouclier .rpg-card__type,
+.rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__type {
+  top: auto !important;
+  bottom: 20% !important;
+  left: 8% !important;
+  right: 8% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Les statistiques s'adaptent aux petites faces : deux pastilles de 27–38 px
+   ne tiennent pas dans la pointe d'une carte de 68 px. `cqw` se mesure sur la
+   face, qui ouvre déjà son conteneur (`rpg-battle.css`, « Une seule mesure »). */
+.rpg-card--img.rpg-carte-bouclier .rpg-card__stat--atk,
+.rpg-card--img.rpg-carte-bouclier .rpg-card__pt,
+.rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__stat {
+  min-width: 0 !important;
+  padding-inline: 2px !important;
+  font-size: clamp(7px, 7cqw, 11px) !important;
+}
+
+.rpg-hover-card-preview__face.rpg-carte-bouclier .rpg-card__foot,
+.rpg-mulligan__card.rpg-carte-bouclier .rpg-card__foot,
+.rpg-mulligan__card.rpg-carte-bouclier .rpg-mulligan__stats {
+  left: 16% !important;
+  right: 16% !important;
+  bottom: 8% !important;
+}
+
+/* Le catalogue, l'atelier et le guide empilent leurs pierres en colonne :
+   remontée au-dessus de la pointe, le bord reste lisible. */
+.rpg-card-catalogue__art.rpg-carte-bouclier .rpg-card-icones--colonne,
+.rpg-atelier__carte-art.rpg-carte-bouclier .rpg-card-icones--colonne,
+.rpg-card-guide__example.rpg-carte-bouclier .rpg-card-icones--colonne {
+  bottom: 20% !important;
+  right: 6% !important;
+}

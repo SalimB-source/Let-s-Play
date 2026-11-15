@@ -6,6 +6,8 @@ import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
 import { RPG_CARD_LESSONS } from './rpgCardLessons.js';
 import { bonusArme, cardById, cardColorCost, cardColors, cardFrameClass, cardFrameColor, cardHybridGradient, cardMotifClass, cardTypeLine, carteEstArme, magieFamille, libelleModificationStats, modificationStats } from './rpgCards.js';
 import './rpg-card-guide.css';
+import './rpg-bouclier.css';
+import { classeBouclier } from './rpgBouclier.js';
 
 const ELEMENT_LABELS = {
   braise: 'Braise',
@@ -33,7 +35,7 @@ function GuideCard({ carte, cardArt }) {
 
   return (
     <article
-      className={`rpg-card-guide__example rpg-card-guide__example--${carte.kind} ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+      className={`rpg-card-guide__example rpg-card-guide__example--${carte.kind} ${cardFrameClass(carte)} ${cardMotifClass(carte)} ${classeBouclier(carte)}`}
       data-card-id={carte.id}
       style={{ '--rpg-guide-frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte) }}
     >

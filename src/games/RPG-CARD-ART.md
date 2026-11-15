@@ -1950,3 +1950,20 @@ L’Armure de cendres présente désormais son casque, son torse, ses brassière
 L’Armure de cendres est disposée séparément en ordre anatomique : casque en haut, torse au centre, bras sur les côtés et jambières en bas (révision `armurerie-metal-fusion-separe-v6`).
 
 L’armure séparée retrouve une silhouette ouvragée et des veines de métal incandescent (révision `armurerie-metal-fusion-separe-v7`).
+
+## L'écu des créatures Défenseur (novembre 2026)
+
+Les créatures et les héros qui portent **Défenseur** — imprimé sur la carte ou
+reçu en cours de partie — prennent une **face en bouclier** : haut légèrement
+arrondi, flancs droits, deux arcs qui se rejoignent en pointe douce en bas.
+C'est un repère de silhouette, pas une nouvelle illustration : les peintures du
+catalogue restent inchangées. Le sonar rouge `has-garde`, la pierre
+`i-defenseur` et les règles de Défenseur ne bougent pas ; l'écu s'y ajoute.
+
+La forme vit dans `rpg-bouclier.css` via `border-radius` (jamais `clip-path`,
+qui rognerait les ondes et les pierres qui débordent de la carte). Le liseré
+or suit le bord ; le type et les statistiques sont resserrés dans la pointe
+pour rester lisibles, y compris sur les petites faces mobiles. `rpgBouclier.js`
+pose la classe sur la table, la main, le mulligan, l'aperçu, le catalogue,
+l'atelier, le guide, les boosters et la main du MOBA. Les sites, terrains,
+armes et sorts restent rectangulaires.
