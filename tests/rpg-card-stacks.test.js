@@ -26,7 +26,7 @@ test('a hand without duplicates keeps one slot per card', () => {
   assert.deepEqual(groupCartesMain(), []);
 });
 
-test('la main se lit du coût le plus bas au plus haut sans modifier les index du moteur', () => {
+test('la main trie les coûts imprimés avant les cartes sans coût sans modifier les index', () => {
   const main = Object.freeze([
     'jormungandr', 'rapport-du-greffier', 'chien-du-guet',
     'tislit-des-aures', 'fennec-des-decombres', 'djinn-de-foudre',
@@ -36,8 +36,8 @@ test('la main se lit du coût le plus bas au plus haut sans modifier les index d
     { carteId: 'chien-du-guet', indices: [2] },
     { carteId: 'fennec-des-decombres', indices: [4] },
     { carteId: 'djinn-de-foudre', indices: [5] },
-    { carteId: 'rapport-du-greffier', indices: [1] },
     { carteId: 'jormungandr', indices: [0] },
+    { carteId: 'rapport-du-greffier', indices: [1] },
   ], 'les égalités gardent leur ordre et le coût hybride compte une seule fois');
 });
 

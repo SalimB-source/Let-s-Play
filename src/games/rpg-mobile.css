@@ -35,19 +35,6 @@
 .card-row > .rpg-card-prison:last-child,
 .card-row > .rpg-card-stack__toggle:last-child { margin-inline-end: auto; }
 
-/* La confirmation de sort reste utilisable à la souris, au clavier et au doigt. */
-.rpg-spell-confirm__actions .rpg-btn {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 10px 14px;
-  font-size: 13px;
-  line-height: 1.2;
-  text-align: center;
-}
-
 /* A pair of bounded cells, not two fixed minimum-width badges: landscape
    phones can render cards narrower than the old 2 × 38px stat minimum. */
 .rpg-stat-icon { display: block; width: 1em; height: 1em; flex: 0 0 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -1048,8 +1035,6 @@
 .rpg-battle--touch .card-row .rpg-card { container-type: inline-size; }
 .rpg-battle--touch .rpg-card__foot .rpg-stat-icon,
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
-.rpg-battle--touch .rpg-spell-confirm { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 28px); overflow-y: auto; }
-.rpg-battle--touch .rpg-spell-confirm__actions { position: sticky; bottom: 0; padding-block: 6px; background: #14131cee; }
 /* Pendant une réponse, l’aperçu centré reste visible au doigt même si les
    tooltips de survol sont masqués. Les commandes gardent une vraie zone tactile. */
 .rpg-battle--touch .rpg-hover-card-preview--annonce { display: grid; }

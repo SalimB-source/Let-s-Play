@@ -21,7 +21,7 @@ Le coût est indiqué en mana. ATQ/DEF désigne l’attaque et la défense de ba
 | **Celle qui pèse** | 4 | 3/3 | rare | Quand Celle qui pèse arrive : l’adversaire défausse une carte. |
 | **La Dévoreuse** | 6 | 4/5 | mythique | Quand La Dévoreuse arrive : retirez de la partie une créature adverse ciblée. |
 | **Celui qui juge** | 6 | 3/5 | rare | Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Arrivée : détruit toutes les créatures qui coûtent 3 mana ou moins. |
-| **Le Passeur au masque de chacal** | 6 | 5/5 | mythique | Quand Le Passeur au masque de chacal arrive : la dernière créature de votre cimetière revient en jeu. |
+| **Le Passeur au masque de chacal** | 6 | 5/5 | mythique | Quand Le Passeur au masque de chacal arrive : choisissez une créature de votre cimetière qui revient en jeu. |
 | **Le Maître des hiéroglyphes** | 5 | 3/5 | mythique | Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater ; 100 % de chances de toucher le sorcier adverse) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes. |
 
 ## Magies

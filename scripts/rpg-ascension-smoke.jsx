@@ -43,7 +43,7 @@ export async function checkTextesApercuAscension(assert) {
       const regles = container.querySelector('.rpg-hover-card-preview__rules');
       assert.ok(regles, `${mode} ${id} : effet visible`);
       assert.doesNotMatch(regles.textContent, /sans Rapidité|invocation normale|ne peut pas attaquer ce tour|riposte aux attaques ciblées/i);
-      if (id === 'retour-des-ensevelis') assert.match(regles.textContent, /dernière créature Ténèbres non-Ascension.*coût imprimé 3 ou moins.*cimetière.*Une fois par tour, toutes copies confondues/);
+      if (id === 'retour-des-ensevelis') assert.match(regles.textContent, /créature Ténèbres non-Ascension.*coût imprimé 3 ou moins.*cimetière/);
       if (id === 'samourai-du-dragon-rouge') {
         assert.match(regles.textContent, /Rōnin du Soleil rouge.*Onna-musha des cendres/);
         for (const cle of ['contreAttaque', 'esquive', 'defenseur']) assert.ok(container.querySelector(`[data-pastille="${cle}"]`), cle);
@@ -52,6 +52,12 @@ export async function checkTextesApercuAscension(assert) {
         assert.match(regles.textContent, /piochez une carte/);
         for (const cle of ['butin', 'abordage', 'bouclier']) assert.ok(container.querySelector(`[data-pastille="${cle}"]`), cle);
       }
+    }
+    for (const id of ['trait-de-braise', 'sabre-maudit', 'takouba-des-pistes', 'dune-marchante']) {
+      const carte = cardById(id);
+      await act(async () => root.render(<HoverCardPreview carte={carte} variante="catalogue" />));
+      assert.equal(Boolean(container.querySelector('.rpg-mana-cost')), carte.cost != null, `${id} : coût visible seulement si imprimé`);
+      assert.equal(container.querySelector('[aria-label^="Aperçu de"]').getAttribute('aria-label').includes('coût'), carte.cost != null || id === 'dune-marchante' && carte.text.includes('coût'));
     }
     console.log('Textes Ascension : effets concis et mots-clés consultables en Duel et MOBA.');
   } finally { await act(async () => root.unmount()); container.remove(); }
@@ -68,6 +74,22 @@ export async function checkAscensionDuel(assert, tactile = false) {
     await act(async () => root.render(<RpgDuelPage joueurDeck={RPG_DECK_SOLEIL_ROUGE_BASE} sorcierDeck={RPG_DECK_SOLEIL_ROUGE_BASE} rng={() => .9} />));
     await lancerDuelDepuisMenu(container, t.click); await pause(); await passerMulligan(container, t.click); await pause();
     const duel = window.__RPG_DUEL__; assert.ok(duel);
+    // Un sort ciblé ouvre directement la désignation, puis un sort sans cible
+    // se résout au clic : ni l’un ni l’autre ne demande de confirmation.
+    duel.joueur.main = ['trait-de-braise', 'rapport-du-greffier'];
+    duel.joueur.deck = ['chien-du-guet', 'fennec-des-decombres'];
+    duel.sorcier.main = []; duel.sorcier.deck = [];
+    await act(async () => window.__RPG_FORCE__());
+    const main = id => container.querySelector(`.rpg-hand__card[data-card-id="${id}"]`);
+    await t.click(main('trait-de-braise'));
+    assert.equal(container.querySelector('.rpg-spell-confirm'), null);
+    assert.ok(duel.joueur.main.includes('trait-de-braise'), 'le sort ciblé attend encore sa cible');
+    const pv = duel.sorcier.pv;
+    await t.click(container.querySelector('.rpg-wizard-plate--ennemi')); await pause(100);
+    assert.ok(duel.sorcier.pv < pv); assert.ok(!duel.joueur.main.includes('trait-de-braise'));
+    await t.click(main('rapport-du-greffier'));
+    assert.equal(container.querySelector('.rpg-spell-confirm'), null);
+    assert.ok(!duel.joueur.main.includes('rapport-du-greffier'), 'le sort sans cible se lance directement');
     duel.joueur.reserveAscension = [DRAGON]; duel.sorcier.reserveAscension = [DRAGON];
     duel.joueur.manaChoixEnAttente = null; duel.sorcier.main = []; duel.sorcier.deck = [];
     const corps = ['ronin-du-soleil-rouge', 'onna-musha-des-cendres', 'hatamoto-des-cendres'].map((id) => {
@@ -146,6 +168,13 @@ export async function checkAscensionDuel(assert, tactile = false) {
     await act(async () => window.__RPG_FORCE__()); panneau = container.querySelector('.rpg-renfort-choix__panel');
     assert.match(panneau.textContent, /Viking/); assert.doesNotMatch(panneau.textContent, /Chien du guet/);
     await t.click(panneau.querySelector('.rpg-renfort-choix__carte')); assert.equal(container.querySelector('.rpg-renfort-choix__panel'), null);
+    duel.joueur.deck = ['trait-de-braise', 'sabre-maudit', 'rapport-du-greffier'];
+    duel.renfortChoixEnAttente = { cote: 'joueur', sourceCarteId: 'dune-marchante', recherche: true, renfort: true, restant: 1 };
+    await act(async () => window.__RPG_FORCE__()); panneau = container.querySelector('.rpg-renfort-choix__panel');
+    assert.match(panneau.textContent, /Magie Rapide ou une Sorcellerie/); assert.doesNotMatch(panneau.textContent, /Sabre maudit|Coût/);
+    assert.equal(panneau.querySelectorAll('.rpg-renfort-choix__carte').length, 2);
+    await t.click([...panneau.querySelectorAll('.rpg-renfort-choix__carte')].find(b => b.textContent.includes('Rapport du greffier')));
+    assert.ok(duel.joueur.main.includes('rapport-du-greffier'));
     console.log(`Ascension Duel ${tactile ? 'tactile' : 'souris'} : réserve compacte, faces plateau, aperçu, Retour/focus, choix et invocation vérifiés.`);
   } finally {
     await act(async () => root.unmount()); container.remove();
@@ -211,6 +240,13 @@ export async function checkAscensionMoba(assert) {
     await act(async () => root.render(<RpgMobaBoard {...props} />)); panneau = container.querySelector('.moba__overlay .moba__modal.moba__mulligan');
     assert.match(panneau.textContent, /Viking/); assert.doesNotMatch(panneau.textContent, /Chien du guet/);
     await t.click(panneau.querySelector('.moba__mulligan-card')); assert.equal(container.querySelector('.moba__overlay .moba__modal.moba__mulligan'), null);
+    duel.joueur.deck = ['trait-de-braise', 'sabre-maudit', 'rapport-du-greffier'];
+    duel.mobaRechercheEnAttente = { cote: 'joueur', sourceCarteId: 'dune-marchante' };
+    await act(async () => root.render(<RpgMobaBoard {...props} />)); panneau = container.querySelector('.moba__overlay .moba__modal.moba__mulligan');
+    assert.ok(panneau); assert.doesNotMatch(panneau.textContent, /Sabre maudit|COÛT/);
+    assert.equal(panneau.querySelectorAll('.moba__mulligan-card').length, 2);
+    await t.click([...panneau.querySelectorAll('.moba__mulligan-card')].find(b => b.textContent.includes('Rapport du greffier')));
+    assert.ok(duel.joueur.main.includes('rapport-du-greffier'));
     console.log('Ascension MOBA : réserve, aperçu, Retour/focus, préparation, annulation et invocation vérifiés.');
   } finally { await act(async () => root.unmount()); container.remove(); }
 }

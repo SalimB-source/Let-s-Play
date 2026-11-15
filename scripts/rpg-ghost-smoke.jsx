@@ -285,8 +285,6 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
         continue;
       }
       if (await click(q('.rpg-btn--resolve-combat'), 'resoudre-combat')) continue;
-      // 3. Confirmation d'une magie.
-      if (await click(q('.rpg-spell-confirm .rpg-btn--primary'), 'confirmer-magie')) continue;
       // 4. Choix de cible en cours.
       const annulerCible = boutonTexte(/Annuler la cible/);
       if (annulerCible) {
@@ -425,7 +423,6 @@ export async function verifierRelance(assert) {
         if (!jouable) break;
         await click(jouable);
         await horloge.avancer(1200);
-        await click(q('.rpg-spell-confirm .rpg-btn--primary'));
         await horloge.avancer(600);
       }
       await click(q('.rpg-btn--endturn'));

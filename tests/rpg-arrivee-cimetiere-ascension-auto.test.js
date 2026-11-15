@@ -44,7 +44,9 @@ test('Ascension : la combinaison valide des présences les plus faibles est dét
 for (const moba of [false,true]) for (const side of ['joueur','sorcier']) test(`Réanimation : arrivée ciblée résolue (${moba?'MOBA':'PvP'} ${side})`, () => {
   const d=partie(moba); d.tour=side; d[side].main=['reanimation']; d[side].cimetiere=['guerrier-au-bouclier-rond']; d[side].mana.sable=20;
   const r=moba?rpgMobaLancerMagie(d,side,'reanimation',null,'left',null,{emplacementReanimation:0}):rpgPvpAppliquer(d,side,{type:'jouer-carte',carteId:'reanimation'});
-  assert.ok(r.ok,JSON.stringify(r)); const e=d[side].creatures[0]; assert.ok(e); assert.ok(!d.arriveeEnAttente);
+  assert.ok(r.ok,JSON.stringify(r)); choisirCimetiere(d,side,'guerrier-au-bouclier-rond');
+  const e=d[side].creatures[0]; assert.ok(e); assert.equal(d.arriveeEnAttente?.entiteId,e.id);
+  const arrivee=moba?rpgMobaResoudreArrivee(d,side,e.id):rpgPvpAppliquer(d,side,{type:'resoudre-arrivee',cibleId:e.id}); assert.ok(arrivee.ok,JSON.stringify(arrivee));
   assert.equal(e.bouclier,1); if(moba) assert.ok(rpgMobaPlacementCoherent(d));
 });
 
@@ -75,7 +77,8 @@ for (const moba of [false,true]) test(`Gardienne : chaîne limitée à une activ
  const d=partie(moba); d.joueur.main=['reanimation']; d.joueur.mana.sable=20;
  d.joueur.cimetiere=['gardienne-des-sables-ensevelis','viking-des-neiges','gardienne-des-sables-ensevelis'];
  const r=moba?rpgMobaLancerMagie(d,'joueur','reanimation',null,'left',null,{emplacementReanimation:0}):rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:'reanimation'});
- assert.ok(r.ok,JSON.stringify(r)); const c=rpgCartesRenfortChoisi(d,'joueur'); assert.deepEqual(c.map(x=>x.id),['viking-des-neiges']);
+ assert.ok(r.ok,JSON.stringify(r)); choisirCimetiere(d,'joueur','gardienne-des-sables-ensevelis');
+ const c=rpgCartesRenfortChoisi(d,'joueur'); assert.deepEqual(c.map(x=>x.id),['viking-des-neiges']);
  const rr=moba?rpgMobaResoudreRecherche(d,'joueur',c[0].id,c[0].index):rpgPvpAppliquer(d,'joueur',{type:'choisir-renfort',index:c[0].index});
  assert.ok(rr.ok); assert.equal(d.joueur.creatures.length,2); assert.equal(d.joueur.creatures.find(e => e.carteId === 'viking-des-neiges').bouclier, 1); assert.ok(!d.renfortChoixEnAttente && !d.mobaRechercheEnAttente);
  // Une seconde copie peut arriver, mais ne rouvre pas la capacité ce tour.
@@ -250,7 +253,7 @@ for (const moba of [false,true]) test(`Réanimation de l'Amiral : pioche et Abor
  const cible=poserPourCapacite(d,'sorcier','chien-du-guet','left',0);
  d.tour='joueur';d.joueur.main=['reanimation'];d.joueur.deck=['viking-des-neiges'];d.joueur.cimetiere=['amiral-des-abysses'];
  const r=moba?rpgMobaLancerMagie(d,'joueur','reanimation',null,'left',null,{emplacementReanimation:0}):rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:'reanimation'});
- assert.ok(r.ok,JSON.stringify(r));const amiral=d.joueur.creatures.find(e=>e.carteId==='amiral-des-abysses');
+ assert.ok(r.ok,JSON.stringify(r));choisirCimetiere(d,'joueur','amiral-des-abysses');const amiral=d.joueur.creatures.find(e=>e.carteId==='amiral-des-abysses');
  assert.ok(amiral);assert.equal(amiral.bouclier,1);assert.ok(d.joueur.main.includes('viking-des-neiges'));
  assert.ok(amiral.enCale);assert.ok(!d.sorcier.creatures.some(e=>e.id===cible.id));
  if(moba)assert.ok(rpgMobaPlacementCoherent(d));
@@ -260,7 +263,7 @@ for (const moba of [false,true]) test(`Deux Valkyries mortes : leurs choix reste
  const d=partie(moba);d.joueur.mana={sable:20,eau:20,neige:20,braise:20,tenebres:20};
  const premiere=invoquerNomme(d,'joueur','valkyrie-de-la-derniere-aurore',['guerrier-au-bouclier-rond','gardien-viking-du-fjord']);
  d.joueur.cimetiere.push('valkyrie-de-la-derniere-aurore');d.joueur.main=['reanimation'];
- const r=moba?rpgMobaLancerMagie(d,'joueur','reanimation',null,'right',null,{emplacementReanimation:0}):rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:'reanimation'});assert.ok(r.ok,JSON.stringify(r));
+ const r=moba?rpgMobaLancerMagie(d,'joueur','reanimation',null,'right',null,{emplacementReanimation:0}):rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:'reanimation'});assert.ok(r.ok,JSON.stringify(r)); choisirCimetiere(d,'joueur','valkyrie-de-la-derniere-aurore');
  const seconde=d.joueur.creatures.find(e=>e.carteId==='valkyrie-de-la-derniere-aurore' && e.id!==premiere.id);assert.ok(seconde);
  d.joueur.cimetiere.push('viking-des-neiges','viking-des-neiges');premiere.pv=0;seconde.pv=0;rpgActionsEtat(d);
  assert.equal(attenteRenfort(d)?.sourceCarteId,'valkyrie-de-la-derniere-aurore');assert.equal(d.renfortsChoixFiles.length,1);

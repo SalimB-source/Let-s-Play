@@ -45,7 +45,7 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
-import { candidatsRenfortChoisi, indexReanimation, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
+import { candidatsRenfortChoisi, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
 import { armesPortees } from './rpgCardStacks.js';
 // Accès différé au moteur (cycle d'import maîtrisé : aucune de ces fonctions
 // n'est appelée pendant l'évaluation des modules) — il s'agit ici de tester la
@@ -1628,14 +1628,11 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       return { score: Math.max(0, score), cibleId: null };
     }
     if (effet.type === 'reanimation') {
-      // La Réanimation ramène la DERNIÈRE créature du cimetière (le moteur) :
-      // elle ne se paie que si ce corps-là vaut son mana.
-      const index = indexReanimation(camp, effet);
-      const derniere = index >= 0 ? camp.cimetiere[index] : null;
-      if (!derniere) return null;
-      const valeur = valeurEntite(entiteDeSecours(duelCardById(derniere), duel));
+      const choix = candidatsRenfortChoisi(camp, { ...effet, type: 'renfort-choisi', zone: 'cimetiere', ascensionAutorisee: !effet.sansAscension });
+      if (!choix.length || (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= 5)) return null;
+      const valeur = Math.max(...choix.map(c => valeurEntite(entiteDeSecours(duelCardById(c.id), duel))));
       const score = 1.5 + valeur - cout * 0.2;
-      return { score: score > 0 ? score : 0, cibleId: null };
+      return { score: Math.max(0, score), cibleId: null };
     }
     if (effet.type === 'combat' && effet.sourceCible === 'creature-amie') {
       // Le Défi du Jarl : un duel à deux cibles. Sans champion, rien à jouer ;

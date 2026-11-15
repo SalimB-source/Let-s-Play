@@ -62,7 +62,6 @@ export async function checkRpgStoryNarrative(assert) {
     await click(query('[data-story-start-duel]'));
     await passerMulligan(container, click);
     await click(query('.rpg-hand__card[data-card-id="trait-de-braise"]'));
-    await click(query('.rpg-spell-confirm .rpg-btn--primary'));
     await click(query('.rpg-wizard-plate--ennemi'));
   };
 
@@ -111,7 +110,6 @@ export async function checkRpgStoryNarrative(assert) {
     assert.ok(query('.rpg-mulligan'), 'annuler la lecture permet de reprendre le duel intact');
     await passerMulligan(container, click);
     await click(query('.rpg-hand__card[data-card-id="trait-de-braise"]'));
-    await click(query('.rpg-spell-confirm .rpg-btn--primary'));
     await click(query('.rpg-wizard-plate--ennemi'));
     assert.equal(query('[data-story-cursor]')?.dataset.storyCursor, 'listes-1-apres', 'une victoire réelle du moteur ouvre l’après-duel');
     assert.deepEqual(lire().etagesVaincus, ['listes-1']);

@@ -35,6 +35,7 @@ export function carteCorrespondMateriau(carteOuId, role = {}) {
     && (!role.carteId || carte.id === role.carteId)
     && (!role.type || cardHasPrintedType(carte, role.type))
     && (!role.element || cardColors(carte).includes(role.element))
+    && (!role.elements || role.elements.some(element => cardColors(carte).includes(element)))
     && (!Number.isFinite(role.cout) || carte.cost === role.cout)
     && (!Number.isFinite(role.coutMax) || carte.cost <= role.coutMax)
     && (!role.sansAscension || !carte.ascension));

@@ -534,3 +534,5 @@ deck builder), `npm run check:rpg-deck-ui` (la page rendue dans jsdom, plus les
 garde-fous de source, l'atelier par la crate jusqu'à la copie) et
 `npm run check:rpg-ui` (le geste d'aperçu au doigt, atelier compris) — ces
 commandes doivent rester vertes, ainsi que `npx vite build`.
+
+> Règle actuelle : les sorts et les armes n’ont pas de coût imprimé. La courbe et le coût moyen ne comprennent que les cartes qui ont un coût imprimé ; les coûts d’activation et les Prix en PV restent applicables.

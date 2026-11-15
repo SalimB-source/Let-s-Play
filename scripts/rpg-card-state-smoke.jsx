@@ -66,8 +66,6 @@ async function avecDuel(assert, props, scenario, { mobile = false } = {}) {
     const carte = hand(id);
     assert.equal(carte?.dataset.jouable, 'true', `${id} est jouable`);
     await click(carte);
-    const confirmer = container.querySelector('.rpg-spell-confirm .rpg-btn--primary');
-    if (confirmer) await click(confirmer);
   };
   const annonces = async () => {
     for (let i = 0; i < 12; i += 1) {

@@ -2895,7 +2895,7 @@ test('Faussoyeur recovers the latest creature and keeps its lane-aware Butin', (
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-for (const [id, expected] of [['dune-marchante', 'trait-de-braise'], ['scribe-de-la-liste', 'ashigaru-des-braises']]) {
+for (const [id, expected] of [['scribe-de-la-liste', 'ashigaru-des-braises']]) {
   test(`${id} recycles eligible graveyard cards on death, not on conquest`, () => {
     for (const mode of ['death', 'conquest']) {
       const duel = partieCombat(); duel.joueur.mana.sable = 20;
@@ -5594,6 +5594,8 @@ test('Réanimation : chaque créature du pool revient sans désynchroniser le pl
     rpgFinDeTour(duel); duel.joueur.cimetiere = [id]; duel.joueur.main = ['reanimation']; duel.joueur.mana.sable = 20;
     const result = rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'right', null, {emplacementReanimation:1});
     assert.equal(result.ok, true, `${id}: ${JSON.stringify(result)}`);
+    const selection = rpgMobaResoudreRecherche(duel, 'joueur', id);
+    assert.equal(selection.ok, true, `${id}: ${JSON.stringify(selection)}`);
     assert.equal(rpgMobaPlacementCoherent(duel), true, `${id}: placement incohérent`);
   }
 });

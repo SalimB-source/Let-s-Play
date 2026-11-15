@@ -616,7 +616,7 @@ function placerApercuSurvol(rectangle, panneau) {
 }
 
 function ManaCost({ carte, compact = false, showElement = true }) {
-  if (!carte || carte.kind === 'terrain') return null;
+  if (!carte || carte.cost == null || carte.kind === 'terrain') return null;
   // La couleur du disque suit le **coût** de la carte (les pips à payer), dans
   // le même sens que les bandes de son cadre : en main, la couleur lue sur la
   // carte et celle du coût ne font plus qu'une.
@@ -3531,7 +3531,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
             <figure className="rpg-hover-card-preview__weapon" data-arme-equipee={arme.id} key={`${arme.id}-${index}`}>
               <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
                 <img src={cardArt(arme)} alt="" />
-                <span className="rpg-hover-card-preview__weapon-cost">{arme.cost}</span>
+                {arme.cost != null && <span className="rpg-hover-card-preview__weapon-cost">{arme.cost}</span>}
               </span>
               <figcaption>
                 <strong>{arme.name}</strong>
@@ -3611,7 +3611,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden={variante === 'graveyard' ? 'true' : undefined}
       data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
       data-effets-inactifs={effetsInactifsActifs.length ? effetsInactifsActifs.join(' ') : undefined}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${description ? `, effet ${description}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) && !statsDejaExpliquees ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain || carte.cost == null ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${description ? `, effet ${description}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) && !statsDejaExpliquees ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
       style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
       {variante === 'annonce' ? (
@@ -3939,7 +3939,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       data-card-id={carte.id}
       data-mulligan-index={index}
       aria-pressed={selectionnee}
-      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 
@@ -4018,37 +4018,6 @@ function VoletMulligan({
           )}
         </footer>
       </div>
-    </div>
-  );
-}
-
-function ConfirmationSort({ carte, onConfirmer, onAnnuler }) {
-  if (!carte) return null;
-  const effets = cardEffectLines(texteCombatIndividuel(carte));
-  return (
-    <div
-      className="rpg-spell-confirm-backdrop"
-      role="presentation"
-      onClick={(event) => { if (event.target === event.currentTarget) onAnnuler(); }}
-    >
-      <section
-        className="rpg-spell-confirm"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rpg-spell-confirm-title"
-      >
-        <h2 id="rpg-spell-confirm-title">Lancer {carte.name} ?</h2>
-        <p className="rpg-spell-confirm__type">{cardFaceTypeLine(carte)}</p>
-        <div className="rpg-spell-confirm__rules" aria-label="Effets">
-          {effets.length
-            ? effets.map((ligne, index) => <span key={`${index}-${ligne}`}>{ligne}</span>)
-            : <span>Aucune capacité.</span>}
-        </div>
-        <div className="rpg-spell-confirm__actions">
-          <button type="button" className="rpg-btn rpg-btn--primary" onClick={onConfirmer}>Lancer le sort</button>
-          <button type="button" className="rpg-btn rpg-btn--ghost" onClick={onAnnuler}>Annuler</button>
-        </div>
-      </section>
     </div>
   );
 }
@@ -4732,7 +4701,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
     const cout = Number(carte.cost);
     const coutCorrespond = catalogueCout === 'tous'
       || (catalogueCout === 'terrain' ? carte.kind === 'terrain'
-        : carte.kind !== 'terrain' && (catalogueCout === '0-2' ? cout <= 2
+        : carte.kind !== 'terrain' && carte.cost != null && (catalogueCout === '0-2' ? cout <= 2
           : catalogueCout === '3-4' ? cout >= 3 && cout <= 4
             : cout >= 5));
     const texteCarte = [
@@ -5660,7 +5629,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                           <li key={carte.id} data-card-id={carte.id}>
                             <button type="button" className="rpg-deck-list__ouvrir" aria-label={`Voir ${carte.name}`} onClick={() => onOpenCardPreview?.(carte)}>
                               <img src={cardArt(carte)} alt="" />
-                              <span><strong>{carte.name}</strong><small className={classeLigneFamille(carte).trim() || undefined}>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
+                              <span><strong>{carte.name}</strong><small className={classeLigneFamille(carte).trim() || undefined}>{cardFaceTypeLine(carte)}{carte.kind === 'terrain' || carte.cost == null ? '' : ` · ${cardCostLabel(carte)}`}</small></span>
                             </button>
                             <b>×{count}</b>
                           </li>
@@ -6008,7 +5977,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         type="button"
                         className="rpg-card-catalogue__ouvrir"
                         data-catalogue-open={carte.id}
-                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${verrouillee ? ', carte verrouillée' : ''}${prix !== null ? `, disponible pour ${creditsLisible(prix)} crédits` : ''}`}
+                        aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain || carte.cost == null ? '' : `, coût ${cardCostLabel(carte)}`}${verrouillee ? ', carte verrouillée' : ''}${prix !== null ? `, disponible pour ${creditsLisible(prix)} crédits` : ''}`}
                         onClick={() => onOpenCardPreview?.(carte)}
                       />
                       {prix !== null && <span className="rpg-card-catalogue__prix" aria-hidden="true">{creditsLisible(prix)} ◈</span>}
@@ -8011,7 +7980,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.removeEventListener('pointerdown', onDown);
   }, [navMenuOuvert, navParametresOuvert]);
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
-  const [confirmationSort, setConfirmationSort] = useState(null);
   const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
   // Invocation : `sacrificeDemande` confirme le prix du joueur,
   // `sacrificeEnCours` désigne ses victimes ; `sacrificeFx` montre les
@@ -8441,7 +8409,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setBloqueurSelectionne(null);
     clicApresGlisserBloqueurRef.current = null;
     setCibleEnCours(null);
-    setConfirmationSort(null);
     setPoseEnCours(null);
     setEmplacementSurvole(null);
     setSacrificeDemande(null);
@@ -10395,7 +10362,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const effet = duel.effetCreatureEnAttente?.cote === 'sorcier';
     const arrivee = duel.arriveeEnAttente?.cote === 'joueur' && duel.arriveeEnAttente?.retour;
     const defausse = duel.defausseEnAttente?.cote === 'joueur';
-    if (!destruction && !site && !boualem && !effet && !arrivee && !defausse) return false;
+    const renfort = duel.renfortChoixEnAttente?.cote === 'joueur';
+    if (!destruction && !site && !boualem && !effet && !arrivee && !defausse && !renfort) return false;
     repriseSorcierRef.current = reprendre;
     force();
     return true;
@@ -11011,7 +10979,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCiblesAttaque({});
     setCibleEnCours(null);
     setPoseEnCours(null);
-    setConfirmationSort(null);
     setApercuSurvol(null);
     force();
   };
@@ -11940,24 +11907,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx('select');
       return;
     }
-    if (carte.kind === 'magie' && peutJouerCarte(carte)) {
-      // En leçon, la carte part directement : le voile encadre déjà la main et
-      // la fenêtre de confirmation viendrait s'interposer sous lui.
-      if (tutorielActif) {
-        jouerCarteDepuisMain(carteId, handIndex);
-        return;
-      }
-      setConfirmationSort({ carteId, handIndex });
-      return;
-    }
     jouerCarteDepuisMain(carteId, handIndex);
-  };
-
-  const confirmerSort = () => {
-    const confirmation = confirmationSort;
-    setConfirmationSort(null);
-    if (!confirmation) return;
-    jouerCarteDepuisMain(confirmation.carteId, confirmation.handIndex);
   };
 
   const resoudreCible = (entite, cote) => {
@@ -12861,7 +12811,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && combatEntrant.cibleIndividuelle && duel.combatDeclare?.cote === 'sorcier' && duel.fenetreReponse
     && !rpgVainqueur(duel) && !duel.annonce && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente
     && !duel.destructionsEnAttente?.length && !duel.siteEnAttente && !duel.boualemEnAttente && !duel.defausseEnAttente
-    && !carteEnVol && !confirmationSort && !cibleEnCours && !poseEnCours && !sacrificeDemande && !sacrificeEnCours && !sacrificeFx
+    && !carteEnVol && !cibleEnCours && !poseEnCours && !sacrificeDemande && !sacrificeEnCours && !sacrificeFx
     && !apercuAppui && !apercuCatalogue && !cimetiereOuvert && !reserveAscensionOuverte && !navParametresOuvert && !messagerieVoletOuvert
     && (duel.combatDeclare?.cibleIndividuelle?.interrompueParEmbuscade
       || !duel.joueur.main.some((id) => peutJouerCarte(cardById(id)))));
@@ -13605,14 +13555,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             const result = rpgResoudreRenfortChoisi(duel, 'joueur', index);
             if (!result.ok) { jouerSfx('erreur'); return; }
             force();
+            reprendreSorcier();
           }
         };
         return <div className="rpg-renfort-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-renfort-choix-titre">
           <section className="rpg-renfort-choix__panel">
-            <h2 id="rpg-renfort-choix-titre">{source?.name} · Choisissez une créature</h2>
-            <p>{source?.id === 'appel-des-marees' ? 'Voici les trois cartes du dessus, de la première à la troisième. Les autres vont sous le deck.' : source?.id === 'ralliement-des-neiges' ? 'Choisissez une créature Neige de coût 4 ou moins. Le deck sera mélangé.' : source?.id === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : source?.id === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : source?.id === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez un Samouraï de coût 3 ou moins dans votre main.'}</p>
+            <h2 id="rpg-renfort-choix-titre">{source?.name} · Choisissez {duel.renfortChoixEnAttente.recherche ? 'une carte' : 'une créature'}</h2>
+            <p>{duel.renfortChoixEnAttente.recherche ? 'Choisissez une Magie Rapide ou une Sorcellerie dans votre deck pour l’ajouter à votre main.' : source?.id === 'appel-des-marees' ? 'Voici les trois cartes du dessus. Choisissez une créature Eau de coût 3 ou moins ; les autres vont sous le deck.' : source?.id === 'ralliement-des-neiges' ? 'Choisissez une créature de coût 5 dans votre main.' : source?.id === 'veilleur-des-cendres' ? 'Choisissez une créature Ténèbres ou Neige de coût 3 ou moins dans votre cimetière. Elle sera détruite à la fin du tour.' : ['reanimation', 'reveil-de-la-horde', 'passeur-au-masque-de-chacal', 'retour-des-ensevelis'].includes(source?.id) ? 'Choisissez une créature admissible dans votre cimetière.' : source?.id === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : source?.id === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : source?.id === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez une créature Braise de coût 3 dans votre main. Elle sera détruite à la fin du tour.'}</p>
             <div className="rpg-renfort-choix__cartes">{cartes.map((c) => <button key={c.index} type="button" className="rpg-renfort-choix__carte" disabled={!c.admissible} onClick={() => choisir(c.index)}>
-              <img src={cardArt(c.id)} alt="" /><strong>{cardById(c.id)?.name}</strong><small>Coût {cardById(c.id)?.cost}{c.admissible ? '' : ' · non admissible'}</small>
+              <img src={cardArt(c.id)} alt="" /><strong>{cardById(c.id)?.name}</strong>{(cardById(c.id)?.cost != null || !c.admissible) && <small>{cardById(c.id)?.cost != null ? `Coût ${cardById(c.id).cost}` : ''}{c.admissible ? '' : ' · non admissible'}</small>}
             </button>)}</div>
             {!disponibles.length && <button type="button" autoFocus className="rpg-btn rpg-btn--primary" onClick={() => choisir(null)}>Aucune invocation possible · Continuer</button>}
             {disponibles.length > 0 && source?.id === 'colosse-du-verre-ardent' && <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => choisir(null)}>Terminer sans invoquer davantage</button>}
@@ -14937,7 +14888,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-embuscade-jouable={embuscadeJouable ? 'true' : undefined}
                   data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Invocation spéciale disponible' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'lancer le sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Invocation spéciale disponible' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 
@@ -15003,13 +14954,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         )}
 
-        {confirmationSort && (
-          <ConfirmationSort
-            carte={cardById(confirmationSort.carteId)}
-            onConfirmer={confirmerSort}
-            onAnnuler={() => setConfirmationSort(null)}
-          />
-        )}
         {vainqueur && (
           <div className={`rpg-overlay${vainqueur === 'joueur' ? ' rpg-overlay--win' : ' rpg-overlay--loss'}`}>
             <h2>

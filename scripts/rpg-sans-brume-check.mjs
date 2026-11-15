@@ -185,7 +185,6 @@ try {
   await verifierPage(page, 'sur la fiche d’arme');
   await page.reload();
   await page.locator('.rpg-hand__card[data-card-id="serment-de-la-forge"]').click();
-  await page.getByRole('button', { name: 'Lancer le sort' }).click();
   // L'annonce est éphémère : vérifier son image sans attendre son décodage,
   // qui peut finir après la disparition de la vignette.
   const sort = page.locator('img.rpg-spell-played__art');

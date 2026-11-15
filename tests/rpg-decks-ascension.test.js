@@ -52,12 +52,11 @@ test('Jarl : Berserk et Jarl nommés en deux exemplaires, soutenus par Ralliemen
   for (const id of ['berserk-des-trois-hivers','jarl-au-marteau-de-guerre']) assert.equal(compte(d,id),2);
   assert.equal(compte(d, 'ralliement-des-neiges'), 1); assert.equal(compte(d, 'valkyrie-au-corbeau'), 2);
 });
-test('Scorpion : pas de petit Sable parasite pour le Convoi ; pioche et attaques ciblées pour la proie', () => {
+test('Scorpion : Convoi peut récupérer les matériaux depuis le cimetière', () => {
   const d = deck('ascension-eclipse'), effet = cardById('convoi-des-dunes').arrivee;
-  const cibles = d.cardIds.filter(id => id !== 'convoi-des-dunes' && carteCorrespondMateriau(id, effet.roles[0]));
-  assert.deepEqual(cibles, ['scorpion-du-seuil','scorpion-du-seuil']);
+  assert.deepEqual(effet.elements, ['sable', 'eau', 'tenebres']); assert.equal(effet.coutMax, 3);
+  for (const id of ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin']) assert.ok(compte(d, id) >= 2);
   assert.equal(compte(d, 'rapport-du-greffier'), 2); assert.equal(compte(d, 'javelot-du-beffroi'), 1);
-  assert.equal(compte(d, 'ureus-du-seuil'), 2);
 });
 test('Colosse : deux exemplaires de chaque soutien et du matériau recherché dans la pioche', () => {
   const d = deck('ascension-verre');
@@ -78,15 +77,28 @@ function partie(id, moba, main, cimetiere = []) {
   for (const s of ['joueur','sorcier']) p[s].manaChoixEnAttente = false;
   return p;
 }
+function resoudreRechercheDune(p) {
+  const attente = p.moba ? p.mobaRechercheEnAttente : p.renfortChoixEnAttente;
+  if (attente?.sourceCarteId !== 'dune-marchante') return;
+  const choix = p.moba ? p.joueur.deck.find(id => ['Magie Rapide', 'Sorcellerie'].some(t => (cardById(id)?.typeLine ?? '').includes(t))) : rpgCartesRenfortChoisi(p, 'joueur')[0]?.id;
+  const r = p.moba ? rpgMobaResoudreRecherche(p, 'joueur', choix) : rpgResoudreRenfortChoisi(p, 'joueur', p.joueur.deck.indexOf(choix));
+  assert.ok(r.ok, JSON.stringify(r));
+}
 function poser(p, id, lane = 'left', slot = 0, sacrificeIds = []) {
   const r = p.moba ? rpgMobaJouerCreature(p, 'joueur', id, lane, slot, { sacrificeIds }) : rpgJouerCreature(p, 'joueur', id, null, { sacrificeIds });
-  assert.ok(r.ok, `${id} : ${r.raison}`); return r.entite;
+  assert.ok(r.ok, `${id} : ${r.raison}`); resoudreRechercheDune(p); return r.entite;
 }
 function sort(p, id, lane = 'right', slot = 1) {
   const r = p.moba ? (cardById(id).effet.type === 'reanimation'
     ? rpgMobaLancerMagie(p, 'joueur', id, null, lane, null, { emplacementReanimation: slot })
     : rpgMobaLancerMagie(p, 'joueur', id)) : rpgLancerMagie(p, 'joueur', id);
-  assert.ok(r.ok, `${id} : ${r.raison}`); return r;
+  assert.ok(r.ok, `${id} : ${r.raison}`); resoudreRechercheDune(p);
+  if (cardById(id).effet.type === 'reanimation') {
+    const choix = rpgCartesRenfortChoisi(p, 'joueur').find(c => c.admissible); assert.ok(choix);
+    const selection = p.moba ? rpgMobaResoudreRecherche(p, 'joueur', choix.id, choix.index) : rpgResoudreRenfortChoisi(p, 'joueur', choix.index);
+    assert.ok(selection.ok, JSON.stringify(selection));
+  }
+  return r;
 }
 function tourSuivant(p) { rpgFinDeTour(p); assert.equal(p.tour, 'sorcier'); rpgFinDeTour(p); assert.equal(p.tour, 'joueur'); }
 function ascension(p, id, materiaux) {
@@ -105,19 +117,19 @@ for (const moba of [false, true]) {
     poser(p, 'ronin-du-soleil-rouge'); sort(p, 'reanimation');
     ascension(p, 'samourai-du-dragon-rouge', ['ronin-du-soleil-rouge','onna-musha-des-cendres']);
   });
-  test(`Jarl (${mode}) : le Ralliement invoque le Berserk nommé après la pose du Jarl`, () => {
-    const p = partie('ascension-rempart', moba, ['viking-des-neiges','jarl-au-marteau-de-guerre','ralliement-des-neiges']);
-    const petit = poser(p, 'viking-des-neiges'); tourSuivant(p);
-    poser(p, 'jarl-au-marteau-de-guerre', 'left', 0, [petit.id]); sort(p, 'ralliement-des-neiges');
-    const choix = rpgCartesRenfortChoisi(p, 'joueur').find(c => c.id === 'berserk-des-trois-hivers');
+  test(`Jarl (${mode}) : le Ralliement invoque le Jarl nommé depuis la main`, () => {
+    const p = partie('ascension-rempart', moba, ['berserk-des-trois-hivers','jarl-au-marteau-de-guerre','ralliement-des-neiges']);
+    poser(p, 'berserk-des-trois-hivers'); sort(p, 'ralliement-des-neiges');
+    const choix = rpgCartesRenfortChoisi(p, 'joueur').find(c => c.id === 'jarl-au-marteau-de-guerre');
     assert.ok(choix);
     const r = moba ? rpgMobaResoudreRecherche(p, 'joueur', choix.id, choix.index) : rpgResoudreRenfortChoisi(p, 'joueur', choix.index);
     assert.ok(r.ok, JSON.stringify(r));
     ascension(p, 'jarl-du-dernier-rempart', ['jarl-au-marteau-de-guerre','berserk-des-trois-hivers']);
   });
-  test(`Scorpion (${mode}) : le Convoi trouve le Scorpion, Retour relève la Momie, puis trois sacrifices`, () => {
+  test(`Scorpion (${mode}) : Retour relève la Momie, puis les matériaux nommés sont réunis`, () => {
     const p = partie('ascension-eclipse', moba, ['ureus-du-seuil','convoi-des-dunes','scorpion-du-seuil','retour-des-ensevelis'], ['momie-de-lin']);
-    poser(p, 'ureus-du-seuil'); tourSuivant(p); poser(p, 'convoi-des-dunes', 'left', 1); sort(p, 'retour-des-ensevelis');
+    poser(p, 'ureus-du-seuil'); sort(p, 'retour-des-ensevelis');
+    tourSuivant(p); poser(p, 'scorpion-du-seuil', 'left', 1);
     ascension(p, 'scorpion-de-l-eclipse', ['scorpion-du-seuil','ureus-du-seuil','momie-de-lin']);
   });
   test(`Colosse (${mode}) : invocation normale consommée, Confluence + Éveil, puis trois sacrifices`, () => {
@@ -133,12 +145,12 @@ test('le guide reproduit les quantités, coûts et matériaux nommés de chaque 
   const guide = readFileSync(new URL('../docs/rpg/32-decks-ascension.md', import.meta.url), 'utf8');
   for (const id of THEMES) {
     const d = deck(id), section = guide.split(`. ${d.name}\n`)[1]?.split('\n## ')[0]; assert.ok(section, id);
-    const lignes = [...section.matchAll(/^\| (\d+)× \| ([^|]+) \| (\d+) \| ([^|]+) \|$/gm)];
+    const lignes = [...section.matchAll(/^\| (\d+)× \| ([^|]+) \| (\d+|—) \| ([^|]+) \|$/gm)];
     assert.equal(lignes.length, new Set(d.cardIds).size, id);
     assert.equal(lignes.reduce((n, l) => n + Number(l[1]), 0), 30, id);
     for (const l of lignes) {
       const carteId = d.cardIds.find(c => cardById(c).name === l[2].trim()); assert.ok(carteId, l[2]);
-      const c = cardById(carteId); assert.equal(Number(l[1]), compte(d, carteId)); assert.equal(Number(l[3]), c.cost);
+      const c = cardById(carteId); assert.equal(Number(l[1]), compte(d, carteId)); assert.equal(l[3] === '—' ? undefined : Number(l[3]), c.cost);
       assert.equal(l[4].includes('Oui'), materiauAscensionValide(cardById(d.boxArt), { carteId, pv: c.def }), `${id} : ${c.name}`);
     }
   }

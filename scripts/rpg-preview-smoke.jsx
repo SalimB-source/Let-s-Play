@@ -24,7 +24,6 @@ export async function checkRpgPreviewActions(assert) {
   const terrain = () => container.querySelector('.rpg-terrain--joueur');
   const terrainsJoueurs = () => container.querySelectorAll('.rpg-terrain--joueur');
   const confirmDialog = () => container.querySelector('.rpg-spell-confirm[role="dialog"]');
-  const confirmButton = (label) => [...(confirmDialog()?.querySelectorAll('button') ?? [])].find((b) => b.textContent === label);
   const fennec = () => container.querySelector('.rpg-card--equipe[data-card-id="fennec-des-decombres"]');
   const caseLibre = (numero) => container.querySelector(`.rpg-creature-slot--choix[data-creature-slot="${numero}"]`);
   const poserSurCase = async (numero = 1) => {
@@ -502,17 +501,7 @@ export async function checkRpgPreviewActions(assert) {
     await attendreTourJoueur();
     const mainAvantSort = totalMain();
     await click(hand('rapport-du-greffier'));
-    assert.ok(confirmDialog(), 'cliquer une magie ouvre la confirmation de lancement');
-    assert.ok(confirmDialog().textContent.includes('Lancer Rapport du greffier ?'),
-      'la confirmation nomme le sort à lancer');
-    assert.equal(confirmDialog().querySelectorAll('.rpg-spell-confirm__rules > span').length, 1,
-      'la confirmation montre les effets du sort, un par ligne');
-    await click(confirmButton('Annuler'));
-    assert.equal(confirmDialog(), null, 'Annuler ferme la confirmation');
-    assert.equal(totalMain(), mainAvantSort, 'le sort annulé reste en main');
-    await click(hand('rapport-du-greffier'));
-    await click(confirmButton('Lancer le sort'));
-    assert.equal(confirmDialog(), null, 'confirmer ferme la boîte de lancement');
+    assert.equal(confirmDialog(), null, 'le sort se lance sans confirmation');
     assert.equal(totalMain(), mainAvantSort + 1,
       'le sort se lance : il quitte la main et pioche deux cartes');
     assert.ok(hand('faiseur-de-passage') && hand('tour-de-sable'),

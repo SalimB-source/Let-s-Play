@@ -301,7 +301,7 @@ export const RPG_TOUR_OUBLIEE_MAGIES = [
     id: 'encre-du-registre',
     name: 'Encre du registre',
     kind: 'magie',
-    cost: 1,
+
     rarity: 'commune',
     instant: true,
     cibles: ['creature-amie'],
@@ -314,7 +314,7 @@ export const RPG_TOUR_OUBLIEE_MAGIES = [
     id: 'aiguille-du-sabbat',
     name: 'Aiguille du sabbat',
     kind: 'magie',
-    cost: 2,
+
     rarity: 'inhabituelle',
     cibles: ['creature'],
     effet: { type: 'debuff', atk: -2, def: -2, cible: 'creature', minimum: 1 },
@@ -326,7 +326,7 @@ export const RPG_TOUR_OUBLIEE_MAGIES = [
     id: 'soif-du-sabbat',
     name: 'Soif du sabbat',
     kind: 'magie',
-    cost: 3,
+
     rarity: 'inhabituelle',
     instant: true,
     cibles: ['sorcier'],
@@ -339,7 +339,7 @@ export const RPG_TOUR_OUBLIEE_MAGIES = [
     id: 'pacte-de-l-oubliee',
     name: 'Pacte de l’Oubliée',
     kind: 'magie',
-    cost: 2,
+
     rarity: 'rare',
     prixPv: 3,
     cibles: ['soi'],
@@ -352,12 +352,12 @@ export const RPG_TOUR_OUBLIEE_MAGIES = [
     id: 'reveil-de-la-horde',
     name: 'Réveil de la horde',
     kind: 'magie',
-    cost: 5,
+
     rarity: 'rare',
     cibles: ['soi'],
     effet: { type: 'reanimation' },
     typeLine: 'Sorcellerie — Horde · Ténèbres',
-    text: 'La dernière créature de votre cimetière revient en jeu.',
+    text: 'Choisissez une créature de votre cimetière et invoquez-la spécialement.',
     flavor: 'On ne ressuscite pas un nom : on le remet au travail.',
   }),
 ];
@@ -367,7 +367,7 @@ export const RPG_TOUR_OUBLIEE_ARMES = [
     id: 'pilon-du-fossoyeur',
     name: 'Pilon du fossoyeur',
     kind: 'arme',
-    cost: 2,
+
     rarity: 'commune',
     typeLine: 'Arme — Pilon',
     bonus: { atk: 1, def: 1 },
