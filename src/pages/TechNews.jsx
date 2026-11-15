@@ -1,4 +1,8 @@
-import { dailyNewsListing as news20261111, editionDate } from '../news/daily/2026-11-11';
+import { dailyNewsListing as news20261115, editionDate } from '../news/daily/2026-11-15';
+import { dailyNewsListing as news20261114 } from '../news/daily/2026-11-14';
+import { dailyNewsListing as news20261113 } from '../news/daily/2026-11-13';
+import { dailyNewsListing as news20261112 } from '../news/daily/2026-11-12';
+import { dailyNewsListing as news20261111 } from '../news/daily/2026-11-11';
 import { dailyNewsListing as news20261110 } from '../news/daily/2026-11-10';
 import { dailyNewsListing as news20261109 } from '../news/daily/2026-11-09';
 import { dailyNewsListing as news20261108 } from '../news/daily/2026-11-08';
@@ -110,6 +114,10 @@ export default function TechNews() {
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   // Source brute, en français : traduite plus bas par `useLocalizedListings`.
   const rawArticles = useMemo(() => [
+    ...news20261115.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
+    ...news20261114.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
+    ...news20261113.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
+    ...news20261112.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261111.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261110.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261109.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
