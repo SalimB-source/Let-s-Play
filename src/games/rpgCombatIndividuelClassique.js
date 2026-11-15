@@ -264,8 +264,10 @@ function mortSansGain(duel, cote, attaquant, cibleId) {
 /** Un éphémère qui disparaîtra à la fin du tour n'a pas le même coût de
  * perte qu'un défenseur durable. N'enlever cette pénalité que pour un échange
  * simple et certain : la simulation doit détruire l'attaquant, blesser la
- * cible et ne produire aucun autre changement matériel ou effet différé. */
-function ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible) {
+ * cible et ne produire aucun autre changement matériel ou effet différé.
+ * Pour le score d'attaque seulement, on peut également reconnaître l'excédent
+ * exact d'Overkill des deux Djinns dont c'est la seule capacité offensive. */
+function ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible, autoriserOverkill = false) {
   const adv = autre(cote);
   if (!attaquant.detruireFinDuTour || attaquant.coupRapide
     || duelCardById(attaquant.carteId)?.destruction || attaquant.tenaciteDisponible
@@ -282,9 +284,24 @@ function ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible) {
       if (cibleApres && !(cibleApres.pv < cible.pv)) return false;
       const avantAllie = { ...duel[cote], creatures: duel[cote].creatures.filter((e) => e.id !== attaquant.id),
         cimetiere: [...duel[cote].cimetiere, attaquant.carteId] };
-      const avantAdv = cibleApres ? duel[adv] : { ...duel[adv],
+      const overkillSimple = autoriserOverkill && attaquant.overkill && !attaquant.arme && !attaquant.armes?.length
+        && ['djinn-du-dernier-brasier', 'ifrit-des-ergs'].includes(attaquant.carteId);
+      // Les Sandales n'ont pas de déclenchement à la mort : elles rejoignent
+      // simplement le cimetière avant leur porteur. Ne pas étendre cette
+      // hypothèse aux équipements dont les effets seraient à évaluer.
+      const sandales = overkillSimple && cible.arme?.carteId === 'sandales-de-tislit'
+        && !cible.armes?.length ? ['sandales-de-tislit'] : [];
+      let avantAdv = cibleApres ? duel[adv] : { ...duel[adv],
         creatures: duel[adv].creatures.filter((e) => e.id !== cible.id),
-        cimetiere: [...duel[adv].cimetiere, cible.carteId] };
+        cimetiere: [...duel[adv].cimetiere, ...sandales, cible.carteId] };
+      if (overkillSimple && !cibleApres) {
+        const exces = Math.max(0, attaquant.atk - Math.max(0, Number(cible.def) || 0));
+        const absorbes = Math.min(duel[adv].bouclier ?? 0, exces);
+        const recus = exces - absorbes;
+        avantAdv = { ...avantAdv, pv: duel[adv].pv - recus,
+          bouclier: Math.max(0, (duel[adv].bouclier ?? 0) - absorbes),
+          degatsRecus: (duel[adv].degatsRecus ?? 0) + recus };
+      }
       const apresAdv = cibleApres ? { ...probe[adv], creatures: probe[adv].creatures.map((e) =>
         e.id === cible.id ? { ...e, pv: cible.pv, def: cible.def } : e) } : probe[adv];
       const vueDuel = (etat) => {
@@ -566,7 +583,7 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier',
         || mortSansGain(duel, cote, attaquant, cibleId))) continue;
       const tue = attaquant.atk >= cible.pv;
       const meurt = !attaquant.coupRapide && cible.atk >= attaquant.pv;
-      const perte = meurt && !ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible)
+      const perte = meurt && !ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible, true)
         ? 5 + attaquant.atk + attaquant.pv : 0;
       const score = (tue ? 5 + cible.atk + cible.pv : Math.min(attaquant.atk, cible.pv)) - perte;
       choix.push({ attaquantId: attaquant.id, cibleId, score });

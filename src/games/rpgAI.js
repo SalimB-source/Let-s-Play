@@ -1,6 +1,6 @@
 import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
-import { invocationPossible, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
+import { invocationPossible, rpgInvocationSpecialeSurSonTour, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
@@ -2164,10 +2164,20 @@ function adversaireGagneProchainCombat(duel, cote) {
   } catch { return null; }
 }
 
+// En seconde principale classique, les attaques sont terminées même si la
+// créature porte encore ses marqueurs de disponibilité individuels.
+function attaqueDisponiblePourSacrifice(duel, victime) {
+  return (duel.moba || duel.phase !== 'principale2') && moteur.rpgPeutAttaquer(victime);
+}
+
 /** Before committing to any sacrifice, require a concrete tactical payoff on
  * an isolated engine simulation, not just the card's mana cost or printed
  * arrival text. A winning attack is an explicit exception. */
 export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null) {
+  return moteur.rpgAvecCompteurEntitesIsole(() => choisirSacrificesInvocationIAInterne(duel, cote, carte, cibleId));
+}
+
+function choisirSacrificesInvocationIAInterne(duel, cote, carte, cibleId) {
   const n = sacrificesInvocation(carte, duel, cote);
   if (!n) return [];
   let menaceInitiale;
@@ -2194,7 +2204,8 @@ export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null)
       if (victoireInitiale) continue;
       if (moteur.rpgVainqueur(probe) === cote) return ids;
       if (probe.arriveeEnAttente || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length || probe.siteEnAttente || probe.defausseEnAttente) continue;
-      const cout = victimes.reduce((total, victime) => total + 4 + (moteur.rpgPeutAttaquer(victime) ? 4 : 0), 0);
+      const cout = victimes.reduce((total, victime) => total + 4
+        + (attaqueDisponiblePourSacrifice(duel, victime) ? 4 : 0), 0);
       const gain = evaluerPositionIA(probe, cote) - evaluerPositionIA(duel, cote) - cout;
       const progression = (etat) => etat[cote].creatures.some((e) =>
         duelCardById(e.carteId)?.kind !== 'site' && !e.nePeutPasAttaquer && (Number(e.atk) || 0) > 0);
@@ -2219,18 +2230,30 @@ export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null)
   return null;
 }
 
-/** Dans un cas simple et sans allié, conserver un Djinn furtif en main si
- * chacune de ses attaques résolues est sans effet matériel. Toute incertitude,
- * carte pouvant préparer le combat, déclenchement ou changement de plateau
+/** Conserver un Djinn furtif en main si ses attaques et, en présence d'une
+ * alliée simple seule sous le Voile, sa disparition ne produisent aucun effet.
+ * Toute incertitude, possibilité de préparer le combat ou changement de plateau
  * laisse le choix habituel : on ne prédit ni les pioches ni les réponses. */
 function djinnSansEffetCeTour(duel, cote, carte) {
   const camp = duel[cote];
-  if (duel.moba || duel.tour !== cote || duel.phase !== 'principale' || camp.creatures.length
+  const allie = camp.creatures[0];
+  // Avec d'autres alliés ou ennemis, une autre attaque pourrait débloquer ou
+  // modifier celle du Djinn : ce plan n'est pas exploré ici.
+  // Ces deux créatures n'ont ni effet d'attaque ni effet de mort alliée.
+  const allieSimpleSousVoile = duel.brouillardCombat && camp.creatures.length === 1
+    && ['gardienne-des-portes-de-sable', 'ashigaru-des-braises'].includes(allie.carteId)
+    && !allie.arme && !allie.armes?.length && duel[autre(cote)].creatures.length === 0;
+  if (duel.moba || duel.tour !== cote || duel.phase !== 'principale'
+    || (camp.creatures.length && !allieSimpleSousVoile)
     || !carte.furtif || !carte.ephemere || !carte.rapidite || carte.arrivee || carte.destruction
     || carte.honneur || carte.tenacite || carte.mortAlliee || sacrificesInvocation(carte, duel, cote)
     // Une magie, une arme ou une invocation spéciale pourrait changer le plan.
     || camp.main.some((id) => !duelCardById(id) || duelCardById(id)?.kind === 'site'
-      || (id !== carte.id && rpgCarteEmbuscade(id)))) return false;
+      || (id !== carte.id && rpgCarteEmbuscade(id)))
+    // L'invocation spéciale du Djinn laisse le quota normal libre : une autre
+    // créature en main pourrait être jouée ensuite et changer son intérêt.
+    || (rpgInvocationSpecialeSurSonTour(duel, cote, carte)
+      && camp.main.some((id) => id !== carte.id))) return false;
   try {
     return moteur.rpgAvecCompteurEntitesIsole(() => {
       const posee = copierDuelPourRecherche(duel);
@@ -2241,7 +2264,8 @@ function djinnSansEffetCeTour(duel, cote, carte) {
         || !moteur.rpgPeutAttaquer(pose.entite)) return false;
       const main = [...camp.main];
       main.splice(main.indexOf(carte.id), 1);
-      const attendu = { ...camp, main, creatures: [pose.entite], invocationNormaleJouee: true };
+      const quotaApresPose = camp.invocationNormaleJouee || !rpgInvocationSpecialeSurSonTour(duel, cote, carte);
+      const attendu = { ...camp, main, creatures: [...camp.creatures, pose.entite], invocationNormaleJouee: quotaApresPose };
       const vueDuel = (etat) => {
         const { joueur, sorcier, log, combatDeclare, combatFeed, combatAnimations, combatAnimationSeq, prochainUid, ...visible } = etat;
         return visible;
@@ -2252,14 +2276,15 @@ function djinnSansEffetCeTour(duel, cote, carte) {
       const choix = rpgCiblesIndividuellesClassique(posee, cote, pose.entite.id);
       const cibles = [...(choix.directe ? [null] : []), ...choix.cibles];
       if (!cibles.length) return false;
-      return cibles.every((cibleId) => {
+      const attaquesSansEffet = cibles.every((cibleId) => {
         const probe = copierDuelPourRecherche(posee);
         let jets = 0;
         moteur.rpgReglerHasard(probe, () => { jets += 1; return 0.5; });
         if (!rpgDeclarerAttaqueIndividuelleClassique(probe, cote, pose.entite.id, cibleId).ok
           || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets || moteur.rpgVainqueur(probe)) return false;
         const survivant = probe[cote].creatures.find((e) => e.id === pose.entite.id);
-        const avant = survivant ? posee[cote] : { ...posee[cote], creatures: [],
+        const avant = survivant ? posee[cote] : { ...posee[cote],
+          creatures: posee[cote].creatures.filter((e) => e.id !== pose.entite.id),
           cimetiere: [...posee[cote].cimetiere, carte.id] };
         const apres = survivant ? { ...probe[cote], creatures: probe[cote].creatures.map((e) =>
           e.id === pose.entite.id ? { ...e, attaquee: pose.entite.attaquee } : e) } : probe[cote];
@@ -2267,6 +2292,92 @@ function djinnSansEffetCeTour(duel, cote, carte) {
           && JSON.stringify(posee[autre(cote)]) === JSON.stringify(probe[autre(cote)])
           && JSON.stringify(vueDuel(posee)) === JSON.stringify(vueDuel(probe));
       });
+      if (!attaquesSansEffet || !camp.creatures.length) return attaquesSansEffet;
+
+      // Une alliée peut réagir à la mort de l'éphémère, même s'il ne frappe
+      // pas. Comparer les deux fins de tour avec le moteur, sans réponses ni
+      // hasard ; masquer les paquets et la main adverse avant toute simulation.
+      const sans = copierDuelPourRecherche(duel);
+      const avec = copierDuelPourRecherche(posee);
+      const adv = autre(cote);
+      let jets = 0;
+      for (const etat of [sans, avec]) {
+        for (const side of ['joueur', 'sorcier']) {
+          etat[side].deck = etat[side].deck.map(() => 'ashigaru-des-braises');
+        }
+        etat[adv].main = etat[adv].main.map(() => 'ashigaru-des-braises');
+        moteur.rpgReglerHasard(etat, () => { jets += 1; return 0.5; });
+        moteur.rpgFinDeTour(etat);
+        if (etat.tour !== adv || moteur.rpgVainqueur(etat) || etat.renfortChoixEnAttente
+          || etat.arriveeEnAttente || etat.effetCreatureEnAttente || etat.destructionsEnAttente?.length
+          || etat.defausseEnAttente || etat.siteEnAttente || etat.boualemEnAttente
+          || etat.joueur.manaChoixEnAttente || etat.sorcier.manaChoixEnAttente
+          || etat.transitionRetours || etat.finDeTour || etat.annonce) return false;
+      }
+      if (jets || avec[cote].creatures.some((e) => e.id === pose.entite.id)) return false;
+      const vueCamp = (etatCamp) => {
+        const { main: mainCachee, deck, ...visible } = etatCamp;
+        return { ...visible, main: mainCachee.length, deck: deck.length };
+      };
+      const sansAllie = vueCamp(sans[cote]);
+      // Une invocation spéciale ne consomme pas le quota normal. Dans les
+      // deux cas, son état est un coût éventuel, pas un bénéfice de la pose.
+      const attenduFin = { ...sansAllie, main: sansAllie.main - 1, invocationNormaleJouee: quotaApresPose,
+        cimetiere: [...sansAllie.cimetiere, carte.id] };
+      return JSON.stringify(attenduFin) === JSON.stringify(vueCamp(avec[cote]))
+        && JSON.stringify(vueCamp(sans[adv])) === JSON.stringify(vueCamp(avec[adv]))
+        && JSON.stringify(vueDuel(sans)) === JSON.stringify(vueDuel(avec));
+    });
+  } catch {
+    return false;
+  }
+}
+
+/** Plan borné après le combat : une Étincelle invoquée spécialement peut être
+ * le second sacrifice nécessaire à une grosse créature sans effet d'arrivée.
+ * Ne l'autoriser que si le moteur et la politique de sacrifice confirment les
+ * deux poses sans aléa ni choix en attente. */
+function etincellePrepareSacrifice(duel, cote, carte, exclus) {
+  const camp = duel[cote];
+  const allie = camp.creatures[0];
+  const suiteId = camp.main.find((id) => id !== carte.id);
+  if (duel.moba || duel.tour !== cote || duel.phase !== 'principale2'
+    || carte.id !== 'djinn-de-la-premiere-etincelle' || camp.main.length !== 2
+    || !['orochi', 'fleau-de-la-lune-noire'].includes(suiteId) || exclus.has(suiteId)
+    || camp.creatures.length !== 1
+    // Ces trois créatures n'ont pas d'effet déclenché par leur destruction.
+    || !['ashigaru-des-braises', 'novice-des-cendres', 'messagere-des-cendres'].includes(allie.carteId)
+    || allie.arme || allie.armes?.length
+    || !rpgInvocationSpecialeSurSonTour(duel, cote, carte)) return false;
+  const suite = duelCardById(suiteId);
+  if (!suite || invocationPossible(duel, cote, suite)) return false;
+  try {
+    return moteur.rpgAvecCompteurEntitesIsole(() => {
+      const probe = copierDuelPourRecherche(duel);
+      const adv = autre(cote);
+      // Seules les tailles des zones cachées sont utilisées, jamais leur contenu.
+      for (const side of ['joueur', 'sorcier']) probe[side].deck = probe[side].deck.map(() => 'ashigaru-des-braises');
+      probe[adv].main = probe[adv].main.map(() => 'ashigaru-des-braises');
+      let jets = 0;
+      moteur.rpgReglerHasard(probe, () => { jets += 1; return 0.5; });
+      const avant = copierDuelPourRecherche(probe);
+      const pose = moteur.rpgJouerCreature(probe, cote, carte.id);
+      if (!pose.ok || !pose.entite || jets || probe[cote].invocationNormaleJouee
+        || moteur.rpgVainqueur(probe) || probe.renfortChoixEnAttente || probe.arriveeEnAttente
+        || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length || probe.defausseEnAttente
+        || probe.siteEnAttente || probe.boualemEnAttente || probe.annonce || probe.finDeTour
+        || !invocationPossible(probe, cote, suite)) return false;
+      const victimes = choisirSacrificesInvocationIA(probe, cote, suite);
+      if (!victimes || victimes.length !== 2 || !victimes.includes(allie.id)
+        || !victimes.includes(pose.entite.id)) return false;
+      const resultat = moteur.rpgJouerCreature(probe, cote, suite.id, null, { sacrificeIds: victimes });
+      if (!resultat.ok || !resultat.entite || jets || moteur.rpgVainqueur(probe)
+        || probe.renfortChoixEnAttente || probe.arriveeEnAttente || probe.effetCreatureEnAttente
+        || probe.destructionsEnAttente?.length || probe.defausseEnAttente || probe.siteEnAttente
+        || probe.boualemEnAttente || probe.annonce || probe.finDeTour) return false;
+      // Ne pas justifier la préparation par une simulation du prochain tour ou
+      // par une carte cachée : le gain doit être matériel dès la seconde pose.
+      return evaluerPositionIA(probe, cote) - evaluerPositionIA(avant, cote) >= 4;
     });
   } catch {
     return false;
@@ -2290,7 +2401,8 @@ function candidatsCartesIA(duel, cote, options = {}) {
     // de disparaître. Ne pas écarter les arrivées ou les synergies de mort.
     if (!duel.moba && duel.phase === 'principale2' && carte.furtif && carte.ephemere
       && !carte.arrivee && !carte.destruction && sacrificesInvocation(carte, duel, cote) === 0
-      && !camp.creatures.some((e) => duelCardById(e.carteId)?.mortAlliee)) continue;
+      && !camp.creatures.some((e) => duelCardById(e.carteId)?.mortAlliee)
+      && !etincellePrepareSacrifice(duel, cote, carte, exclus)) continue;
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
@@ -2322,7 +2434,7 @@ function candidatsCartesIA(duel, cote, options = {}) {
       cibleAllieeId: evaluation.cibleAllieeId ?? null,
       score: evaluation.score - sacrificeIds.reduce((total, id) => {
         const victime = camp.creatures.find((e) => e.id === id);
-        return total + 4 + (victime && moteur.rpgPeutAttaquer(victime) ? 4 : 0);
+        return total + 4 + (attaqueDisponiblePourSacrifice(duel, victime) ? 4 : 0);
       }, 0) + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
     });
   }
@@ -2480,6 +2592,12 @@ function djinnGagnantImmediat(duel, cote, candidats) {
  * du moteur ; le Veilleur explore plus de réponses et deux coups à l'avance.
  */
 export function choisirCarteIA(duel, cote, options = {}) {
+  // La recherche crée des entités dans ses copies ; aucune ne doit consommer
+  // les identifiants de la partie réelle, même en cas d'exception.
+  return moteur.rpgAvecCompteurEntitesIsole(() => choisirCarteIAInterne(duel, cote, options));
+}
+
+function choisirCarteIAInterne(duel, cote, options) {
   const { profil, rng } = optionsIA(duel, cote, options);
   const candidats = candidatsCartesIA(duel, cote, options);
   if (!candidats.length) return null;
