@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rpgBlesserCreature, rpgFermerFenetreReponse, rpgFinDeTour, rpgJouerArme, rpgJouerCreature, rpgLancerMagie, rpgNoterCompteurEntites, rpgNouveauDuel, rpgOuvrirFenetreReponse, rpgReglerHasard, rpgResoudreDestructionCiblee, rpgSorcierAnnonceSuivante, rpgSorcierResoudreAnnonce } from '../src/games/rpgDuel.js';
 import { rpgChoisirAttaqueIndividuelleClassiqueIA, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from '../src/games/rpgCombatIndividuelClassique.js';
-import { choisirCarteIA } from '../src/games/rpgAI.js';
+import { choisirCarteIA, choisirSacrificesInvocationIA } from '../src/games/rpgAI.js';
+import { duelCardById } from '../src/games/rpgCards.js';
 
 function partie(cible = 'gardienne-des-portes-de-sable', attaquant = 'djinn-de-la-premiere-etincelle', poseForcee = false) {
   const deck = Array(30).fill('ashigaru-des-braises');
@@ -701,4 +702,690 @@ test('classique : une Flèche équipée ne suit pas le départage des tirs simpl
   assert.ok(djinn.contreAttaque);
   assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier', djinn.id),
     { attaquantId: djinn.id, cibleId: ghul.id });
+});
+
+function overkillFurtif(cote = 'sorcier', bouclier = 0, { carte = 'djinn-du-dernier-brasier', armeDefenseur = null } = {}) {
+  const deck = Array(30).fill('ashigaru-des-braises');
+  const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
+  const adv = cote === 'sorcier' ? 'joueur' : 'sorcier';
+  if (adv === 'sorcier') rpgFinDeTour(duel);
+  duel[adv].main = ['pourfendeur-des-djinns'];
+  const defenseur = rpgJouerCreature(duel, adv, 'pourfendeur-des-djinns').entite;
+  assert.ok(defenseur);
+  if (armeDefenseur) {
+    duel[adv].main = [armeDefenseur];
+    assert.ok(rpgJouerArme(duel, adv, armeDefenseur, defenseur.id).ok);
+  }
+  const blessures = armeDefenseur === 'cuirasse-de-sel' ? 5 : armeDefenseur === 'sandales-de-tislit' ? 3 : 2;
+  assert.ok(rpgBlesserCreature(duel, adv, defenseur.id, blessures).ok);
+  duel[adv].bouclier = bouclier;
+  rpgFinDeTour(duel);
+  if (carte === 'ifrit-des-ergs') {
+    duel[cote].main = ['ashigaru-des-braises'];
+    assert.ok(rpgJouerCreature(duel, cote, 'ashigaru-des-braises').ok);
+    rpgFinDeTour(duel); rpgFinDeTour(duel);
+  }
+  duel[cote].main = [carte];
+  const pose = rpgJouerCreature(duel, cote, carte);
+  assert.ok(pose.ok, JSON.stringify(pose));
+  const djinn = pose.entite;
+  assert.ok(djinn && djinn.detruireFinDuTour && djinn.overkill);
+  if (!armeDefenseur) assert.deepEqual([djinn.atk, djinn.pv, defenseur.atk, defenseur.pv], [carte === 'ifrit-des-ergs' ? 5 : 4, 3, 3, 2]);
+  return { duel, djinn, defenseur, adv };
+}
+
+for (const cote of ['sorcier', 'joueur']) for (const bouclier of [0, 3]) {
+  test(`classique ${cote} : le Djinn échange avec le Défenseur et son Overkill perce (${bouclier} bouclier)`, () => {
+    const { duel, djinn, defenseur, adv } = overkillFurtif(cote, bouclier);
+    let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote), { attaquantId: djinn.id, cibleId: defenseur.id });
+    assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, cote, djinn.id, defenseur.id).ok);
+    assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, cote).ok);
+    assert.ok(!duel[cote].creatures.includes(djinn)); assert.ok(!duel[adv].creatures.includes(defenseur));
+    assert.equal(duel[adv].pv, 25 - Math.max(0, 2 - bouclier));
+    assert.equal(duel[adv].bouclier, Math.max(0, bouclier - 2));
+  });
+}
+
+test('classique : le moteur applique bien l’Overkill malgré la mort simultanée du Djinn', () => {
+  const { duel, djinn, defenseur, adv } = overkillFurtif();
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel[adv].pv, 23);
+  assert.ok(!duel.sorcier.creatures.includes(djinn));
+  assert.ok(!duel.joueur.creatures.includes(defenseur));
+});
+
+test('classique : l’Ifrit furtif reconnaît aussi son échange avec Overkill', () => {
+  const { duel, djinn, defenseur } = overkillFurtif('sorcier', 0, { carte: 'ifrit-des-ergs' });
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: djinn.id, cibleId: defenseur.id });
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel.joueur.pv, 22);
+  assert.ok(!duel.joueur.creatures.includes(defenseur)); assert.ok(!duel.sorcier.creatures.includes(djinn));
+});
+
+test('classique : une réponse à l’Overkill peut sauver le Défenseur', () => {
+  const { duel, djinn, defenseur } = overkillFurtif();
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: djinn.id, cibleId: defenseur.id });
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  duel.joueur.main = ['rempart-de-dunes'];
+  assert.ok(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.ok(duel.joueur.creatures.includes(defenseur));
+  assert.equal(defenseur.pv, 1); assert.equal(duel.joueur.pv, 25);
+  assert.ok(!duel.sorcier.creatures.includes(djinn));
+});
+
+test('classique : une Esquive ne rend pas l’échange avec Overkill certain', () => {
+  const { duel, djinn, defenseur } = overkillFurtif('sorcier', 0, { armeDefenseur: 'cuirasse-de-sel' });
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .01; });
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.ok(jets > 0); assert.ok(duel.joueur.creatures.includes(defenseur)); assert.equal(duel.joueur.pv, 25);
+});
+
+test('classique : l’Overkill ne fait pas ignorer la pioche à la mort du Défenseur équipé', () => {
+  const { duel, djinn, defenseur } = overkillFurtif('sorcier', 0, { armeDefenseur: 'licou-du-chien-de-sable' });
+  const paquet = duel.joueur.deck.length;
+  assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel.joueur.deck.length, paquet - 1);
+});
+
+test('classique : l’attaquant imposé conserve sa cible avec Overkill', () => {
+  const { duel, djinn, defenseur } = overkillFurtif();
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier', djinn.id),
+    { attaquantId: djinn.id, cibleId: defenseur.id });
+});
+
+for (const cote of ['sorcier', 'joueur']) for (const bouclier of [0, 3]) test(`classique ${cote} : l’Overkill élimine un Défenseur équipé des Sandales (${bouclier} bouclier)`, () => {
+  const { duel, djinn, defenseur, adv } = overkillFurtif(cote, bouclier, { armeDefenseur: 'sandales-de-tislit' });
+  assert.deepEqual([defenseur.atk, defenseur.pv], [3, 2]);
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote), { attaquantId: djinn.id, cibleId: defenseur.id });
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, cote, djinn.id, defenseur.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, cote).ok);
+  assert.ok(!duel[cote].creatures.includes(djinn)); assert.ok(!duel[adv].creatures.includes(defenseur));
+  assert.equal(duel[adv].pv, 25 - Math.max(0, 2 - bouclier));
+  assert.equal(duel[adv].bouclier, Math.max(0, bouclier - 2));
+  assert.ok(duel[adv].cimetiere.includes('sandales-de-tislit'));
+});
+
+test('classique : les Sandales ne garantissent pas l’échange si une réponse renforce le Défenseur', () => {
+  const { duel, djinn, defenseur } = overkillFurtif('sorcier', 0, { armeDefenseur: 'sandales-de-tislit' });
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: djinn.id, cibleId: defenseur.id });
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  duel.joueur.main = ['rempart-de-dunes'];
+  assert.ok(rpgLancerMagie(duel, 'joueur', 'rempart-de-dunes').ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(defenseur.pv, 1); assert.ok(duel.joueur.creatures.includes(defenseur));
+  assert.equal(duel.joueur.pv, 25); assert.equal(defenseur.arme.carteId, 'sandales-de-tislit');
+});
+
+test('classique : l’Ifrit utilise son Overkill aussi contre les Sandales', () => {
+  const { duel, djinn, defenseur } = overkillFurtif('sorcier', 0, { carte: 'ifrit-des-ergs', armeDefenseur: 'sandales-de-tislit' });
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: djinn.id, cibleId: defenseur.id });
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', djinn.id, defenseur.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel.joueur.pv, 22);
+  assert.ok(duel.joueur.cimetiere.includes('sandales-de-tislit'));
+});
+
+test('classique : sous le Grand Voile, les Sandales ne rendent pas l’attaque du Djinn utile', () => {
+  const { duel } = overkillFurtif('sorcier', 0, { armeDefenseur: 'sandales-de-tislit' });
+  duel.brouillardCombat = true;
+  const avant = JSON.stringify(duel);
+  assert.equal(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null);
+  assert.equal(JSON.stringify(duel), avant);
+});
+
+function furtifAvecAllie(cote = 'sorcier', { voile = true, allieId = 'gardienne-des-portes-de-sable', arme = null, ennemiId = null } = {}) {
+  const deck = Array(30).fill('ashigaru-des-braises');
+  const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
+  const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+  if (ennemiId) {
+    if (adv === 'sorcier') rpgFinDeTour(duel);
+    duel[adv].main = [ennemiId];
+    assert.ok(rpgJouerCreature(duel, adv, ennemiId).ok);
+  }
+  if (duel.tour !== cote) rpgFinDeTour(duel);
+  duel[cote].main = [allieId];
+  const allie = rpgJouerCreature(duel, cote, allieId).entite;
+  assert.ok(allie);
+  if (arme) {
+    duel[cote].main = [arme];
+    assert.ok(rpgJouerArme(duel, cote, arme, allie.id).ok);
+  }
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
+  if (voile) {
+    duel[adv].main = ['grand-voile-blanc'];
+    assert.ok(rpgOuvrirFenetreReponse(duel, cote));
+    assert.ok(rpgLancerMagie(duel, adv, 'grand-voile-blanc').ok);
+    rpgFermerFenetreReponse(duel);
+    assert.equal(duel.brouillardCombat, true);
+  }
+  duel[cote].main = ['djinn-de-la-premiere-etincelle'];
+  return { duel, allie, adv };
+}
+
+for (const cote of ['sorcier', 'joueur']) test(`classique ${cote} : conserver le Djinn sous le Voile avec une Gardienne alliée`, () => {
+  const { duel, allie } = furtifAvecAllie(cote);
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  assert.equal(choisirCarteIA(duel, cote, { rng: () => .5 }), null);
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  assert.ok(duel[cote].creatures.includes(allie));
+});
+
+test('classique : sous le Voile, l’IA garde en main le Djinn et son invocation avec une Gardienne seule', () => {
+  const { duel, allie } = furtifAvecAllie();
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null);
+  assert.equal(duel.sorcier.invocationNormaleJouee, false);
+  rpgFinDeTour(duel);
+  assert.ok(duel.sorcier.main.includes('djinn-de-la-premiere-etincelle'));
+  assert.ok(duel.sorcier.creatures.includes(allie));
+  assert.ok(!duel.sorcier.cimetiere.includes('djinn-de-la-premiere-etincelle'));
+});
+
+test('classique : sans le Voile, une Gardienne alliée n’empêche pas la frappe du Djinn', () => {
+  const { duel, adv } = furtifAvecAllie('sorcier', { voile: false });
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  const pose = rpgSorcierResoudreAnnonce(duel); assert.ok(pose.ok);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', pose.entite.id, null).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel[adv].pv, 23);
+});
+
+test('classique : sous le Voile, une autre créature durable est préférée au Djinn inutile', () => {
+  const { duel } = furtifAvecAllie();
+  duel.sorcier.main.push('ashigaru-des-braises');
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'ashigaru-des-braises');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.ok(duel.sorcier.main.includes('djinn-de-la-premiere-etincelle'));
+});
+
+test('classique : sous le Voile avec une Gardienne, la Flamme mourante reste utile pour sa pioche', () => {
+  const { duel } = furtifAvecAllie();
+  duel.sorcier.main = ['djinn-de-la-flamme-mourante'];
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-flamme-mourante');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.equal(duel.sorcier.main.length, 1);
+});
+
+test('classique : sous le Voile, la mort du furtif peut alimenter le Djinn vengeur allié', () => {
+  const { duel, adv } = furtifAvecAllie('sorcier', { allieId: 'djinn-des-cendres-vengeresses' });
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  const vie = duel[adv].pv;
+  rpgFinDeTour(duel);
+  assert.equal(duel[adv].pv, vie - 1);
+});
+
+test('classique : une Gardienne équipée sort du cas simple de pose sous le Voile', () => {
+  const { duel } = furtifAvecAllie('sorcier', { arme: 'takouba-de-tin-hinan' });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+});
+
+test('classique : le filtre de pose sous le Voile ne dépend pas des cartes cachées adverses', () => {
+  const { duel } = furtifAvecAllie();
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  for (const [main, paquet] of [
+    [['rempart-de-dunes'], ['takouba-de-tin-hinan', 'ashigaru-des-braises']],
+    [['poigne-de-givre'], ['djinn-des-cendres-vengeresses', 'ghul-des-cendres']],
+  ]) {
+    duel.joueur.main = main; duel.joueur.deck = paquet;
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+    assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  }
+});
+
+test('classique : avec une Gardienne alliée, la Tour des Flots sous le Voile peut récupérer le Djinn', () => {
+  const { duel } = furtifAvecAllie('sorcier', { ennemiId: 'tour-des-flots' });
+  const tour = duel.joueur.creatures.find((e) => e.carteId === 'tour-des-flots');
+  assert.ok(tour);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  const pose = rpgSorcierResoudreAnnonce(duel); assert.ok(pose.ok);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', pose.entite.id, tour.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.ok(duel.sorcier.main.includes(pose.entite.carteId));
+  assert.equal(tour.pv, 4);
+});
+
+for (const cote of ['sorcier', 'joueur']) test(`classique ${cote} : conserver le Djinn sous le Voile avec un Ashigaru allié`, () => {
+  const { duel, allie } = furtifAvecAllie(cote, { allieId: 'ashigaru-des-braises' });
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  assert.equal(choisirCarteIA(duel, cote, { rng: () => .5 }), null);
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  assert.ok(duel[cote].creatures.includes(allie));
+});
+
+test('classique : sous le Voile, l’Ashigaru ne profite pas d’une attaque directe', () => {
+  const { duel, allie, adv } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
+  const pv = duel[adv].pv;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', allie.id, null).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel[adv].pv, pv);
+  assert.deepEqual([allie.atk, allie.pv], [1, 1]);
+});
+
+test('classique : sans le Voile, le Djinn frappe même avec un Ashigaru allié', () => {
+  const { duel, adv } = furtifAvecAllie('sorcier', { voile: false, allieId: 'ashigaru-des-braises' });
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  const pose = rpgSorcierResoudreAnnonce(duel); assert.ok(pose.ok);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', pose.entite.id, null).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  assert.equal(duel[adv].pv, 23);
+});
+
+test('classique : le Djinn sous le Voile est une invocation spéciale avec l’Ashigaru', () => {
+  const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
+  assert.equal(duel.sorcier.invocationNormaleJouee, false);
+  assert.ok(rpgJouerCreature(duel, 'sorcier', 'djinn-de-la-premiere-etincelle').ok);
+  assert.equal(duel.sorcier.invocationNormaleJouee, false);
+  duel.sorcier.main = ['djinn-des-cendres-vengeresses'];
+  assert.ok(rpgJouerCreature(duel, 'sorcier', 'djinn-des-cendres-vengeresses').ok);
+  const pv = duel.joueur.pv;
+  rpgFinDeTour(duel);
+  assert.equal(duel.joueur.pv, pv - 1);
+});
+
+test('classique : ne pas exclure le Djinn spécial si une autre créature en main peut profiter de sa mort', () => {
+  const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
+  duel.sorcier.main.push('djinn-des-cendres-vengeresses');
+  // Exclure l'autre choix de carte isole le filtre sans retirer sa présence en main.
+  const choix = choisirCarteIA(duel, 'sorcier', { rng: () => .5, exclus: new Set(['djinn-des-cendres-vengeresses']) });
+  assert.equal(choix?.carteId, 'djinn-de-la-premiere-etincelle');
+});
+
+test('classique : une arme sur l’Ashigaru sort du cas simple sous le Voile', () => {
+  const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises', arme: 'takouba-de-tin-hinan' });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+});
+
+test('classique : l’invocation spéciale reste inutile même après consommation du quota normal', () => {
+  const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
+  duel.sorcier.invocationNormaleJouee = true;
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : l’IA garde le Djinn spécial sous le Voile et peut le jouer au tour suivant', () => {
+  const { duel, allie } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null);
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
+  assert.equal(duel.brouillardCombat, false);
+  assert.ok(duel.sorcier.creatures.includes(allie));
+  assert.ok(duel.sorcier.main.includes('djinn-de-la-premiere-etincelle'));
+  assert.ok(!duel.sorcier.cimetiere.includes('djinn-de-la-premiere-etincelle'));
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+});
+
+test('classique : l’effet du filtre avec l’Ashigaru ne dépend pas des cartes cachées', () => {
+  const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  for (const [main, paquet] of [
+    [['rempart-de-dunes'], ['takouba-de-tin-hinan', 'ashigaru-des-braises']],
+    [['poigne-de-givre'], ['djinn-des-cendres-vengeresses', 'ghul-des-cendres']],
+  ]) {
+    duel.joueur.main = main; duel.joueur.deck = paquet;
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+    assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  }
+});
+
+
+function sacrificesApresAttaque(cote = 'sorcier', { poserDjinn = true, allieId = 'ashigaru-des-braises', carteSacrifice = 'orochi', ennemiId = 'ashigaru-des-braises' } = {}) {
+  const { duel, allie } = furtifAvecAllie(cote, { voile: false, allieId, ennemiId });
+  // Une attaque réellement résolue, puis la seconde principale : le Djinn
+  // arrive prêt, mais la fenêtre où il aurait pu attaquer est passée.
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, cote, allie.id, null).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, cote).ok);
+  duel.phase = 'principale2';
+  if (!poserDjinn) {
+    duel[cote].main.push(carteSacrifice);
+    return { duel, allie };
+  }
+  const pose = rpgJouerCreature(duel, cote, 'djinn-de-la-premiere-etincelle');
+  assert.ok(pose.ok); assert.equal(duel[cote].invocationNormaleJouee, false);
+  duel[cote].main = ['orochi'];
+  return { duel, allie, djinn: pose.entite };
+}
+
+for (const cote of ['sorcier', 'joueur']) test(`classique ${cote} : après l’attaque, ne pas surévaluer une frappe impossible en choisissant des sacrifices`, () => {
+  const { duel, allie, djinn } = sacrificesApresAttaque(cote);
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  const choix = choisirCarteIA(duel, cote, { rng: () => .5 });
+  assert.equal(choix?.carteId, 'orochi');
+  assert.deepEqual(new Set(choix.sacrificeIds), new Set([allie.id, djinn.id]));
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  let pose;
+  if (cote === 'sorcier') {
+    assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'orochi');
+    pose = rpgSorcierResoudreAnnonce(duel);
+  } else pose = rpgJouerCreature(duel, cote, 'orochi', null, { sacrificeIds: choix.sacrificeIds });
+  assert.ok(pose.ok, JSON.stringify(pose));
+  assert.deepEqual(new Set(pose.sacrificeIds), new Set([allie.id, djinn.id]));
+  assert.equal(pose.entite.carteId, 'orochi');
+  assert.equal(pose.entite.id, `entite-${uid + 1}`);
+});
+
+test('classique : avant les attaques, la frappe encore disponible entre dans le coût des sacrifices', () => {
+  const { duel } = sacrificesApresAttaque();
+  duel.phase = 'principale';
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : après les attaques, l’IA refuse toujours de sacrifier une alliée trop précieuse', () => {
+  const { duel, allie } = sacrificesApresAttaque();
+  Object.assign(allie, { atk: 15, pv: 15, def: 15, pvMax: 15 });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : la recherche directe de sacrifices ne consomme pas les identifiants réels', () => {
+  const { duel, allie, djinn } = sacrificesApresAttaque();
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  for (let i = 0; i < 3; i++) {
+    const ids = choisirSacrificesInvocationIA(duel, 'sorcier', duelCardById('orochi'));
+    assert.deepEqual(new Set(ids), new Set([allie.id, djinn.id]));
+    assert.equal(rpgNoterCompteurEntites(duel), uid); assert.equal(JSON.stringify(duel), avant);
+  }
+  const pose = rpgJouerCreature(duel, 'sorcier', 'orochi', null, { sacrificeIds: [allie.id, djinn.id] });
+  assert.ok(pose.ok); assert.equal(pose.entite.id, `entite-${uid + 1}`);
+});
+
+for (const cote of ['sorcier', 'joueur']) test(`classique ${cote} : après l’attaque, préparer Orochi avec le Djinn spécial`, () => {
+  const { duel, allie } = sacrificesApresAttaque(cote, { poserDjinn: false });
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  const choix = choisirCarteIA(duel, cote, { rng: () => .5 });
+  assert.equal(choix?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  let pose;
+  if (cote === 'sorcier') {
+    assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+    pose = rpgSorcierResoudreAnnonce(duel);
+  } else pose = rpgJouerCreature(duel, cote, choix.carteId);
+  assert.ok(pose.ok); assert.equal(pose.entite.id, `entite-${uid + 1}`);
+  assert.equal(duel[cote].invocationNormaleJouee, false);
+  const suivant = choisirCarteIA(duel, cote, { rng: () => .5 });
+  assert.equal(suivant?.carteId, 'orochi');
+  assert.deepEqual(new Set(suivant.sacrificeIds), new Set([allie.id, pose.entite.id]));
+  let orochi;
+  if (cote === 'sorcier') {
+    assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'orochi');
+    orochi = rpgSorcierResoudreAnnonce(duel);
+  } else orochi = rpgJouerCreature(duel, cote, 'orochi', null, { sacrificeIds: suivant.sacrificeIds });
+  assert.ok(orochi.ok); assert.equal(orochi.entite.carteId, 'orochi');
+  assert.ok(duel[cote].cimetiere.includes('djinn-de-la-premiere-etincelle'));
+});
+
+test('classique : ne pas préparer Orochi si le quota normal est déjà utilisé', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  duel.sorcier.invocationNormaleJouee = true;
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : ne pas préparer Orochi si sacrifier l’Ashigaru serait trop coûteux', () => {
+  const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  Object.assign(allie, { atk: 15, pv: 15, def: 15, pvMax: 15 });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : ne pas poser le Djinn en seconde principale sans Orochi à préparer', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  duel.sorcier.main = ['djinn-de-la-premiere-etincelle'];
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : la préparation d’Orochi ne lit pas les cartes cachées adverses', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  for (const [main, deck] of [
+    [['rempart-de-dunes'], ['takouba-de-tin-hinan', 'ashigaru-des-braises']],
+    [['poigne-de-givre'], ['djinn-des-cendres-vengeresses', 'ghul-des-cendres']],
+  ]) {
+    duel.joueur.main = main; duel.joueur.deck = deck;
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+    assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  }
+});
+
+test('classique : une réponse détruisant l’Ashigaru interrompt le plan Orochi', () => {
+  const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  duel.joueur.main = ['trait-de-braise'];
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.ok(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', allie.id).ok);
+  assert.ok(!duel.sorcier.creatures.includes(allie));
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null);
+  assert.ok(duel.sorcier.main.includes('orochi'));
+});
+
+test('classique : ne pas préparer une invocation explicitement exclue', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5, exclus: new Set(['orochi']) }), null);
+});
+
+test('classique : une carte supplémentaire laisse la recherche tardive prudente', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false });
+  duel.sorcier.main.push('ashigaru-des-braises');
+  const choix = choisirCarteIA(duel, 'sorcier', { rng: () => .5 });
+  assert.notEqual(choix?.carteId, 'djinn-de-la-premiere-etincelle');
+});
+
+for (const allieId of ['novice-des-cendres', 'messagere-des-cendres']) for (const cote of ['sorcier', 'joueur']) {
+  test(`classique ${cote} : ${allieId} peut aussi aider à préparer Orochi`, () => {
+    const { duel, allie } = sacrificesApresAttaque(cote, { poserDjinn: false, allieId });
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+    assert.equal(choisirCarteIA(duel, cote, { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+    assert.equal(JSON.stringify(duel), avant); assert.equal(rpgNoterCompteurEntites(duel), uid); assert.equal(jets, 0);
+    let resultatDjinn;
+    if (cote === 'sorcier') {
+      assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+      resultatDjinn = rpgSorcierResoudreAnnonce(duel);
+    } else resultatDjinn = rpgJouerCreature(duel, cote, 'djinn-de-la-premiere-etincelle');
+    assert.ok(resultatDjinn.ok); const djinn = resultatDjinn.entite;
+    assert.equal(djinn.id, `entite-${uid + 1}`);
+    const choix = choisirCarteIA(duel, cote, { rng: () => .5 });
+    assert.equal(choix?.carteId, 'orochi');
+    assert.deepEqual(new Set(choix.sacrificeIds), new Set([allie.id, djinn.id]));
+    let pose;
+    if (cote === 'sorcier') {
+      assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'orochi');
+      pose = rpgSorcierResoudreAnnonce(duel);
+    } else pose = rpgJouerCreature(duel, cote, 'orochi', null, { sacrificeIds: choix.sacrificeIds });
+    assert.ok(pose.ok); assert.equal(pose.entite.carteId, 'orochi');
+  });
+}
+
+for (const allieId of ['novice-des-cendres', 'messagere-des-cendres']) {
+  test(`classique : une ${allieId} équipée ne relève pas du plan simple`, () => {
+    const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false, allieId });
+    duel.sorcier.main = ['takouba-de-tin-hinan'];
+    assert.ok(rpgJouerArme(duel, 'sorcier', 'takouba-de-tin-hinan', allie.id).ok);
+    duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'orochi'];
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+  });
+  test(`classique : ne pas sacrifier une ${allieId} trop renforcée pour préparer Orochi`, () => {
+    const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false, allieId });
+    Object.assign(allie, { atk: 15, pv: 15, def: 15, pvMax: 15 });
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+  });
+}
+
+test('classique : le Ghul et sa destruction ciblée restent hors du plan simple', () => {
+  const { duel, allie } = sacrificesApresAttaque('joueur', { poserDjinn: false, allieId: 'ghul-des-cendres' });
+  assert.equal(choisirCarteIA(duel, 'joueur', { rng: () => .5 }), null);
+  const djinn = rpgJouerCreature(duel, 'joueur', 'djinn-de-la-premiere-etincelle').entite;
+  assert.ok(djinn);
+  assert.ok(rpgJouerCreature(duel, 'joueur', 'orochi', null, { sacrificeIds: [allie.id, djinn.id] }).ok);
+  assert.equal(duel.destructionsEnAttente?.[0]?.carteId, 'ghul-des-cendres');
+  const ennemi = duel.sorcier.creatures[0];
+  assert.ok(rpgResoudreDestructionCiblee(duel, 'joueur', ennemi.id).ok);
+  assert.ok(!duel.sorcier.creatures.includes(ennemi));
+});
+
+test('classique : la réponse adverse peut interrompre le plan avec la Messagère', () => {
+  const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false, allieId: 'messagere-des-cendres' });
+  duel.joueur.main = ['trait-de-braise'];
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.ok(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', allie.id).ok);
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null);
+  assert.ok(duel.sorcier.main.includes('orochi'));
+});
+
+for (const allieId of ['novice-des-cendres', 'messagere-des-cendres']) {
+  test(`classique : le plan avec ${allieId} ne dépend pas de la main adverse ni des paquets`, () => {
+    const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false, allieId });
+    let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+    for (const [main, deck, paquetAllie] of [
+      [['rempart-de-dunes'], ['takouba-de-tin-hinan', 'ashigaru-des-braises'], ['ashigaru-des-braises', 'ghul-des-cendres']],
+      [['poigne-de-givre'], ['djinn-des-cendres-vengeresses', 'ghul-des-cendres'], ['trait-de-braise', 'orochi']],
+    ]) {
+      duel.joueur.main = main; duel.joueur.deck = deck; duel.sorcier.deck = paquetAllie;
+      const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+      assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+      assert.equal(JSON.stringify(duel), avant); assert.equal(rpgNoterCompteurEntites(duel), uid); assert.equal(jets, 0);
+    }
+  });
+}
+
+for (const allieId of ['ashigaru-des-braises', 'novice-des-cendres', 'messagere-des-cendres']) for (const cote of ['sorcier', 'joueur']) {
+  test(`classique ${cote} : préparer le Fléau avec l’Étincelle et ${allieId}`, () => {
+    const { duel, allie } = sacrificesApresAttaque(cote, { poserDjinn: false, allieId, carteSacrifice: 'fleau-de-la-lune-noire' });
+    let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    assert.equal(choisirCarteIA(duel, cote, { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+    assert.equal(JSON.stringify(duel), avant); assert.equal(rpgNoterCompteurEntites(duel), uid); assert.equal(jets, 0);
+    let premiere;
+    if (cote === 'sorcier') {
+      assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+      premiere = rpgSorcierResoudreAnnonce(duel);
+    } else premiere = rpgJouerCreature(duel, cote, 'djinn-de-la-premiere-etincelle');
+    assert.ok(premiere.ok); assert.equal(premiere.entite.id, `entite-${uid + 1}`);
+    const choix = choisirCarteIA(duel, cote, { rng: () => .5 });
+    assert.equal(choix?.carteId, 'fleau-de-la-lune-noire');
+    assert.deepEqual(new Set(choix.sacrificeIds), new Set([allie.id, premiere.entite.id]));
+    let seconde;
+    if (cote === 'sorcier') {
+      assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'fleau-de-la-lune-noire');
+      seconde = rpgSorcierResoudreAnnonce(duel);
+    } else seconde = rpgJouerCreature(duel, cote, choix.carteId, null, { sacrificeIds: choix.sacrificeIds });
+    assert.ok(seconde.ok, JSON.stringify(seconde)); assert.equal(seconde.entite.carteId, choix.carteId);
+    assert.equal(seconde.entite.id, `entite-${uid + 2}`);
+    assert.ok(duel[cote].cimetiere.includes('djinn-de-la-premiere-etincelle'));
+  });
+}
+
+for (const allieId of ['ashigaru-des-braises', 'novice-des-cendres', 'messagere-des-cendres']) {
+  test(`classique : conserver une ${allieId} trop précieuse plutôt que préparer le Fléau`, () => {
+    const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false, allieId, carteSacrifice: 'fleau-de-la-lune-noire' });
+    Object.assign(allie, { atk: 15, pv: 15, def: 15, pvMax: 15 });
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+  });
+}
+
+test('classique : ne pas préparer le Fléau sans quota normal', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'fleau-de-la-lune-noire' });
+  duel.sorcier.invocationNormaleJouee = true;
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : ne pas préparer le Fléau explicitement exclu', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'fleau-de-la-lune-noire' });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5, exclus: new Set(['fleau-de-la-lune-noire']) }), null);
+});
+
+test('classique : le Fléau ne justifie pas le plan si l’alliée est équipée', () => {
+  const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'fleau-de-la-lune-noire' });
+  duel.sorcier.main = ['takouba-de-tin-hinan'];
+  assert.ok(rpgJouerArme(duel, 'sorcier', 'takouba-de-tin-hinan', allie.id).ok);
+  duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'fleau-de-la-lune-noire'];
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : une arrivée ciblée comme le Kraken reste hors du plan simple', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'kraken' });
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+});
+
+test('classique : le plan Fléau ne dépend pas des cartes cachées ou de l’aléa réel', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'fleau-de-la-lune-noire' });
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
+  for (const [main, deck, paquetAllie] of [
+    [['trait-de-braise'], ['ashigaru-des-braises', 'takouba-de-tin-hinan'], ['ghul-des-cendres', 'ashigaru-des-braises']],
+    [['rempart-de-dunes'], ['djinn-des-cendres-vengeresses', 'poigne-de-givre'], ['orochi', 'trait-de-braise']],
+  ]) {
+    duel.joueur.main = main; duel.joueur.deck = deck; duel.sorcier.deck = paquetAllie;
+    const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+    assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 })?.carteId, 'djinn-de-la-premiere-etincelle');
+    assert.equal(JSON.stringify(duel), avant); assert.equal(rpgNoterCompteurEntites(duel), uid); assert.equal(jets, 0);
+  }
+});
+
+test('classique : après une réponse au Fléau, l’IA renonce si le Djinn a été détruit', () => {
+  const { duel, allie } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'fleau-de-la-lune-noire' });
+  duel.joueur.main = ['trait-de-braise'];
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  const djinn = rpgSorcierResoudreAnnonce(duel).entite; assert.ok(djinn);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'fleau-de-la-lune-noire');
+  assert.ok(rpgLancerMagie(duel, 'joueur', 'trait-de-braise', djinn.id).ok);
+  const resultat = rpgSorcierResoudreAnnonce(duel);
+  assert.equal(resultat.ok, false); assert.equal(resultat.raison, 'sacrifice-inutile');
+  assert.ok(duel.sorcier.creatures.includes(allie)); assert.ok(duel.sorcier.main.includes('fleau-de-la-lune-noire'));
+});
+
+test('classique : le plan Fléau peut rester utile malgré sa Résonance adverse', () => {
+  const { duel } = sacrificesApresAttaque('sorcier', { poserDjinn: false, carteSacrifice: 'fleau-de-la-lune-noire', ennemiId: 'novice-des-cendres' });
+  const ennemi = duel.joueur.creatures[0];
+  assert.deepEqual([ennemi.atk, ennemi.pv], [1, 1]);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'fleau-de-la-lune-noire');
+  const fleau = rpgSorcierResoudreAnnonce(duel).entite;
+  assert.ok(fleau); assert.deepEqual([fleau.atk, fleau.pv], [8, 8]);
+  assert.deepEqual([ennemi.atk, ennemi.pv], [2, 2]);
+});
+
+test('classique : le plan Fléau est refusé si sa Résonance renforce trop de Vampires adverses', () => {
+  const deck = Array(30).fill('ashigaru-des-braises');
+  const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
+  duel.joueur.main = ['novice-des-cendres'];
+  assert.ok(rpgJouerCreature(duel, 'joueur', 'novice-des-cendres').ok);
+  rpgFinDeTour(duel);
+  duel.sorcier.main = ['ashigaru-des-braises'];
+  const allie = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite; assert.ok(allie);
+  rpgFinDeTour(duel);
+  duel.joueur.main = ['messagere-des-cendres', 'chasseuse-de-braise'];
+  assert.ok(rpgJouerCreature(duel, 'joueur', 'messagere-des-cendres').ok);
+  assert.ok(rpgJouerCreature(duel, 'joueur', 'chasseuse-de-braise').ok);
+  rpgFinDeTour(duel);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', allie.id, null).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(duel, 'sorcier').ok);
+  duel.phase = 'principale2'; duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'fleau-de-la-lune-noire'];
+  const adversaires = [...duel.joueur.creatures];
+  assert.deepEqual(adversaires.map(e => [e.atk, e.pv]), [[1, 1], [1, 1], [2, 2]]);
+  const uid = rpgNoterCompteurEntites(duel); const avant = JSON.stringify(duel);
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => .5 }), null);
+  assert.equal(JSON.stringify(duel), avant); assert.equal(rpgNoterCompteurEntites(duel), uid);
+  // Vérifier la conséquence réelle de la ligne refusée.
+  const djinn = rpgJouerCreature(duel, 'sorcier', 'djinn-de-la-premiere-etincelle').entite; assert.ok(djinn);
+  assert.ok(rpgJouerCreature(duel, 'sorcier', 'fleau-de-la-lune-noire', null, { sacrificeIds: [allie.id, djinn.id] }).ok);
+  assert.deepEqual(adversaires.map(e => [e.atk, e.pv]), [[2, 2], [2, 2], [3, 3]]);
 });
