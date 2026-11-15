@@ -1,4 +1,8 @@
-import { gamingNews as gamingNews20261111, editionDate } from '../news/daily/2026-11-11';
+import { gamingNews as gamingNews20261115, editionDate } from '../news/daily/2026-11-15';
+import { gamingNews as gamingNews20261114 } from '../news/daily/2026-11-14';
+import { gamingNews as gamingNews20261113 } from '../news/daily/2026-11-13';
+import { gamingNews as gamingNews20261112 } from '../news/daily/2026-11-12';
+import { gamingNews as gamingNews20261111 } from '../news/daily/2026-11-11';
 import { gamingNews as gamingNews20261110 } from '../news/daily/2026-11-10';
 import { gamingNews as gamingNews20261109 } from '../news/daily/2026-11-09';
 import { gamingNews as gamingNews20261108 } from '../news/daily/2026-11-08';
@@ -84,6 +88,10 @@ const FEATURED_COPY = {
 // 28-29.09.2026, celles du robot et les articles manuels de la rédaction dans l'ordre.
 export const latestGamingStories = [
   // La nouvelle édition ouvre la liste ; les articles précédents sont conservés.
+  ...gamingNews20261115,
+  ...gamingNews20261114,
+  ...gamingNews20261113,
+  ...gamingNews20261112,
   ...gamingNews20261111,
   ...gamingNews20261110,
   ...gamingNews20261109,
