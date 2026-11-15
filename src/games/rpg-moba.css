@@ -1678,3 +1678,15 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
     height: 100%;
   }
 }
+
+/* Sur ordinateur, agrandir les chiffres et leurs icônes en main comme sur le
+   champ (y compris les piles), sans changer les faces tactiles ni les aperçus.
+   La taille suit la largeur réelle de la carte pour éviter les débordements. */
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  .rpg-battle:not(.rpg-battle--touch)[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat,
+  .rpg-battle:not(.rpg-battle--touch)[data-scene="duel"] .card-table .card-row .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
+  .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt),
+  .rpg-battle.rpg-battle--moba .moba .moba__real-hand.rpg-hand__card--type-creature .rpg-hand__stat {
+    font-size: clamp(11px, 20cqw, 20px);
+  }
+}
