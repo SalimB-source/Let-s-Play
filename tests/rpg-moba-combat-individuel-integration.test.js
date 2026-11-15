@@ -279,6 +279,18 @@ test('Tour des Flots : le renvoi imprimé après les blessures conserve le plate
   assert.ok(rpgMobaPlacementCoherent(d));
 });
 
+test('Tour des Flots MOBA : un bouclier arrête le renvoi après les blessures', () => {
+  const { d, a, c } = partie();
+  c.carteId = 'tour-des-flots'; c.atk = 0; c.pv = c.pvMax = c.def = 4;
+  a.bouclier = 1; const mainAvant = [...d.joueur.main];
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
+  const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.equal(c.pv, 3); assert.equal(result.resume.blessures[0].montant, 1);
+  assert.ok(d.joueur.creatures.includes(a)); assert.equal(a.bouclier, 0);
+  assert.deepEqual(d.joueur.main, mainAvant); assert.ok(rpgMobaPlacementCoherent(d));
+});
+
 test('une cible qui quitte le plateau après l’annonce annule l’attaque sans viser la voie', async () => {
   const { mobaRetirer } = await import('../src/games/rpgMoba.js');
   const { d, a, c } = partie();

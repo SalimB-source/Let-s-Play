@@ -43,7 +43,7 @@ test('le mulligan MOBA montre les pierres d’effets en marge sans changer la ca
       assert.equal(badges.closest('button'), null);
       assert.equal(badges.querySelectorAll('.rpg-card-icone').length, effects.length);
     }
-    assert.match(items[1].querySelector('.rpg-card-icones--mulligan-moba').getAttribute('aria-label'), /Embuscade/);
+    assert.match(items[1].querySelector('.rpg-card-icones--mulligan-moba').getAttribute('aria-label'), /Invocation spéciale/);
     assert.equal(cardById('faiseur-de-passage').reactionTourAdverse, undefined,
       'le mulligan ne modifie pas les règles ni les faces hors MOBA');
     assert.equal(items[0].querySelectorAll('.rpg-card-icone').length, 4,

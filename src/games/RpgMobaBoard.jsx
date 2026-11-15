@@ -1726,7 +1726,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       if (rendu?.CarteMulligan) {
         const CarteMulligan = rendu.CarteMulligan;
         return <div className="moba__mulligan-item" key={`${id}-${index}`} {...interactionsApercu(id)}>
-          <CarteMulligan carte={card} index={index} selectionnee={choisi} onBasculer={toggle} />
+          <CarteMulligan carte={card} index={index} selectionnee={choisi} onBasculer={toggle} afficherIcones={false} moba />
           <IconesCarte carte={rpgMobaCartePourApercu(card)} className="rpg-card-icones--colonne rpg-card-icones--mulligan-moba" />
         </div>;
       }

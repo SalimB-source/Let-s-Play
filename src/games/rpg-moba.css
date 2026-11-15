@@ -1692,3 +1692,41 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
     font-size: clamp(11px, 20cqw, 20px);
   }
 }
+
+/* Mulligan : les mêmes repères que les cartes en main. Les créatures portent
+   les deux statistiques empilées en bas à gauche, et les effets suivent le
+   bord droit. Les armes en duel gardent leurs bonus colorés côte à côte. */
+.rpg-battle[data-scene="duel"] .rpg-mulligan .rpg-mulligan__card--type-creature .rpg-mulligan__stats,
+.rpg-battle .moba__mulligan-overlay .rpg-mulligan__card--type-creature .rpg-mulligan__stats {
+  left: 5%; right: auto; bottom: 4%; width: max-content;
+  grid-template-columns: max-content; grid-template-rows: auto auto;
+  grid-auto-flow: row; justify-items: start; align-content: end; gap: 1px;
+}
+.rpg-battle[data-scene="duel"] .rpg-mulligan .rpg-mulligan__card--type-creature .rpg-mulligan__stats > :is(.rpg-card__stat--atk, .rpg-card__pt),
+.rpg-battle .moba__mulligan-overlay .rpg-mulligan__card--type-creature .rpg-mulligan__stats > :is(.rpg-card__stat--atk, .rpg-card__pt) {
+  min-width: 0; gap: 1cqw; padding: 2cqw 3cqw; border-radius: 5px;
+  font: 900 clamp(9px, 16cqw, 14px)/1.2 Georgia, serif;
+}
+.rpg-battle .rpg-mulligan__card--type-creature .rpg-mulligan__stats .rpg-stat-icon {
+  width: .85em; height: .85em; flex-basis: .85em;
+}
+.rpg-battle .rpg-mulligan__stats--arme > .rpg-card__stat--atk { background: rgba(114, 47, 26, .9); }
+.rpg-battle .rpg-mulligan__stats--arme > .rpg-card__pt { background: rgba(34, 73, 91, .92); }
+/* Dans la main MOBA, tous les marqueurs mesurent 26 % de la largeur de la
+   face. La colonne de pierres, hors du bouton, utilise la même mesure. */
+.moba .moba__mulligan-overlay .rpg-mulligan__card > * {
+  --rpg-card-marker-size: 27cqw;
+  --rpg-plaque-taille: 26cqw;
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
+}
+.moba .moba__mulligan-overlay .moba__mulligan-item { container-type: inline-size; }
+.moba .moba__mulligan-overlay .rpg-card-icones--mulligan-moba {
+  --rpg-plaque-taille: 26cqw;
+  top: 5%; right: 0; gap: 3px;
+}
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  .rpg-battle:not(.rpg-battle--touch)[data-scene="duel"] .rpg-mulligan .rpg-mulligan__card--type-creature .rpg-mulligan__stats > :is(.rpg-card__stat--atk, .rpg-card__pt),
+  .rpg-battle:not(.rpg-battle--touch) .moba__mulligan-overlay .rpg-mulligan__card--type-creature .rpg-mulligan__stats > :is(.rpg-card__stat--atk, .rpg-card__pt) {
+    font-size: clamp(11px, 20cqw, 20px);
+  }
+}

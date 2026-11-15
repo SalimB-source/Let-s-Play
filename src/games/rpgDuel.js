@@ -2953,7 +2953,7 @@ function degatsCreatureCombattue(carte, quand) {
 /** Effet de blocage déclaré par une carte. Le renvoi de la Tour des Flots
  * attend la fin des blessures normales ; la Tour de Neige ne gèle qu'à son arrivée.
  */
-function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null, avantBlessures = false) {
+function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null) {
   const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId) ?? bloqueurSnapshot;
   const attaquant = duel[autre(coteBloqueur)]?.creatures.find((e) => e.id === attaquantId);
   const combat = bloqueur && duelCardById(bloqueur.carteId)?.combat;
@@ -2969,7 +2969,7 @@ function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, ap
       && paradeZoneBloque(duel, attaquant, 'capacite', autre(coteBloqueur), coteBloqueur)) return;
     if (renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite')) {
       if (duel.moba) mobaRetirer(duel.moba, autre(coteBloqueur), attaquant.id);
-      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire ${avantBlessures ? 'avant' : 'après'} les blessures de combat.`);
+      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire après les blessures de combat.`);
     }
   }
 }
@@ -8999,10 +8999,6 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       }
       if (!duel.moba?.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
         && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId);
-      // En classique individuel, tous les effets « au blocage », y compris
-      // les renvois, se résolvent avant les blessures ordinaires.
-      if (classique && !duel.moba?.winner && duel[cote].creatures.some((e) => e.id === attaquantId)
-        && duel[adv].creatures.some((e) => e.id === cibleId)) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant, true);
     }
     // Une capacité peut tuer l'un ou les deux combattants : aucun coup
     // normal, retour de Sphère ni transfert Overkill ne part dans ce cas.
@@ -9056,9 +9052,9 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
           resume.frappeSorcier = degatsVoie;
           if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba?.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
         }
-        // En MOBA, les cartes indiquant « après les blessures » conservent
-        // cet ordre. En classique individuel, le blocage a déjà été résolu.
-        if (!classique && !ciblee && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
+        // Les renvois « après les blessures » suivent l'échange ordinaire en
+        // Duel comme en MOBA, même si le bloqueur a été détruit par ce coup.
+        if (!ciblee && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
       } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
     }
   } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {

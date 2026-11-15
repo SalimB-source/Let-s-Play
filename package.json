@@ -189,6 +189,7 @@
     "check:rpg-mythique-lueur": "node --test tests/rpg-mythique-lueur-creature.test.js tests/rpg-embuscade-lueur.test.js && node scripts/rpg-mythique-lueur-check.mjs",
     "check:rpg-avatars-mobile": "node scripts/rpg-avatars-mobile-check.mjs",
     "check:rpg-avatars-visages": "node --test tests/rpg-avatars-visages.test.js",
+    "check:rpg-tour-flots": "node --test tests/rpg-classique-combat-individuel.test.js && node --test --test-name-pattern='Tour des Flots' tests/rpg-moba-combat-individuel-integration.test.js tests/rpg-card-changements.test.js tests/rpg-pvp.test.js && node scripts/rpg-tour-flots-ui-check.mjs",
     "check:rpg-classique-individuel": "node --test tests/rpg-classique-combat-individuel.test.js tests/rpg-combat-indications.test.js tests/rpg-descriptions-combat-individuel.test.js tests/rpg-embuscade-lueur.test.js tests/rpg-lien-lueur.test.js && node scripts/rpg-classique-individuel-ui-check.mjs",
     "art:aleger": "bash scripts/aleger-art-cartes.sh",
     "check:rpg-art": "node --test tests/rpg-art-allegee.test.js",
