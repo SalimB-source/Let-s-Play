@@ -3584,10 +3584,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   );
   // L'Abordage se lit dans les détails : la créature captive est montrée en
   // vignette, comme une arme portée, sans doubler la face principale.
+  // L'aperçu au survol et la fiche ouverte restent des cartes rectangulaires
+  // normales : ATQ à gauche, DÉF à droite, comme toutes les autres cartes.
   const face = (
     <div className="rpg-hover-card-preview__empile">
     <div
-      className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)} ${classeBouclier(carte)}`}
+      className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}`}
       style={estEnFurie ? undefined : cardFrameStyle(carte)}
       data-furie-declenchee={estEnFurie ? 'true' : undefined}
       aria-hidden="true"

@@ -1,11 +1,10 @@
 /**
  * L'écusson des créatures Défenseur — tests/rpg-carte-bouclier.test.js
  * ----------------------------------------------------------------------
- * Vérifie, sans navigateur : qui reçoit l'écusson (et qui ne le reçoit pas),
- * que la classe est bien posée sur les faces du duel, que le tracé SVG montre
- * une vraie pointe en bas, et surtout que la feuille ne touche PLUS aux
- * pastilles ATQ/DÉF ni aux autres repères — ils restent comme sur les autres
- * cartes. Aucun `border-radius` de découpe, aucun `clip-path`.
+ * Vérifie, sans navigateur : qui reçoit l'écusson, que la silhouette est un
+ * masque SVG plein SANS aucun contour ni rectangle visible, que les repères
+ * (ATQ/DÉF, type, pierres, sonar) ne sont pas touchés, et que les APERÇUS
+ * restent des cartes rectangulaires normales avec ATQ à gauche / DÉF à droite.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,12 +51,15 @@ test('seules les créatures et les héros Défenseur deviennent des écus', () =
   for (const carte of imprimees) assert.equal(classeBouclier(carte), CLASSE_BOUCLIER, carte.id);
 });
 
-test('la classe est posée sur les faces du duel, du catalogue et de l’atelier', () => {
+test('la classe est posée sur les faces en jeu, mais PAS sur les aperçus', () => {
   assert.match(duel, /import '\.\/rpg-bouclier\.css';/, 'la feuille est chargée par le duel');
   assert.match(duel, /classeBouclier\(carte, entite\)/, 'la table lit l’état courant de l’entité');
-  // Une classe par présentation : main, mulligan, aperçu, catalogue.
-  assert.equal((duel.match(/classeBouclier\(carte\)/g) ?? []).length, 4,
-    'main, mulligan, aperçu et catalogue portent la classe');
+  // Main, mulligan et vignette du catalogue : l'aperçu au survol est retiré.
+  assert.equal((duel.match(/classeBouclier\(carte\)/g) ?? []).length, 3,
+    'main, mulligan et catalogue portent la classe ; plus l’aperçu');
+  const ligneApercu = duel.split('\n').find((l) => l.includes('className={`rpg-hover-card-preview__face'));
+  assert.ok(ligneApercu, 'la face d’aperçu existe');
+  assert.doesNotMatch(ligneApercu, /classeBouclier/, 'l’aperçu reste une carte rectangulaire normale');
   assert.match(lire('RpgDeckAtelier.jsx'), /classeBouclier\(carte\)/, 'vignette de l’atelier');
   assert.match(lire('RpgMobaBoard.jsx'), /classeBouclier\(card\)/, 'main du MOBA');
   assert.match(lire('RpgBoosterOuverture.jsx'), /classeBouclier\(carte\)/, 'carte révélée au Souk');
@@ -94,49 +96,68 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
   } finally { await vite.close(); }
 });
 
-test('l’écusson est un tracé SVG avec une vraie pointe, sans découper la carte', () => {
-  assert.match(css, /--rpg-ecusson-trait:\s*url\("data:image\/svg\+xml,/, 'tracé vectoriel');
-  assert.match(css, /M1%208/, 'arche haute');
-  assert.match(css, /50%20124/, 'pointe centrée en bas');
-  assert.match(css, /C99%20100%2065%20112%2050%20124/, 'courbe droite qui descend vers la pointe');
-  assert.match(css, /C35%20112%201%20100%201%2062/, 'courbe gauche qui remonte depuis la pointe');
-  assert.match(css, /stroke='rgb%28224,205,138%29'/, 'filet or');
-  assert.match(css, /stroke='rgb%2831,28,56%29'/, 'liseré marine');
-  // L'URI reste un SVG valide une fois décodée : la pointe ne doit pas être
-  // perdue dans un mauvais échappement.
-  const uri = css.match(/--rpg-ecusson-trait:\s*url\("([^"]+)"\)/)[1];
+test('la carte EST l’écusson : masque plein, aucun contour, aucun rectangle', () => {
+  assert.match(css, /--rpg-ecusson-masque:\s*url\("data:image\/svg\+xml,/, 'masque vectoriel');
+  assert.match(css, /--rpg-ecusson-fond:\s*#211d3b;/, 'aplat marine de la référence');
+  assert.match(css, /background-color:\s*var\(--rpg-ecusson-fond\);/);
+  assert.match(css, /mask-image:\s*var\(--rpg-ecusson-masque\);/);
+  assert.match(css, /-webkit-mask-image:\s*var\(--rpg-ecusson-masque\);/);
+  assert.match(css, /mask-size:\s*100% 100%;/);
+  // Plus aucun rectangle : fond, cadre, bordure, rayon, ombre, outline.
+  for (const regle of [
+    /background:\s*transparent !important;/,
+    /background-image:\s*none !important;/,
+    /border:\s*0 !important;/,
+    /border-radius:\s*0 !important;/,
+    /box-shadow:\s*none !important;/,
+    /outline:\s*none !important;/,
+    /overflow:\s*visible !important;/,
+  ]) assert.match(css, regle, `règle ${regle}`);
+  // Aucun trait résiduel : l'ancien filet or / liseré marine a disparu.
+  assert.doesNotMatch(css, /stroke=/, 'aucun stroke SVG');
+  assert.doesNotMatch(css, /--rpg-ecusson-trait/, 'l’ancien tracé contour est retiré');
+  assert.doesNotMatch(css, /224,205,138|240, 205, 138|#e0cd8a/, 'plus de filet doré');
+  assert.doesNotMatch(css, /clip-path\s*:/, 'mask-image et non clip-path : les repères débordent');
+  assert.equal(
+    (css.match(/border-radius\s*:/g) ?? []).length,
+    (css.match(/border-radius\s*:\s*0\s*!important;/g) ?? []).length,
+    'toutes les déclarations de rayon sont à zéro',
+  );
+  // Le masque décodé est un SVG valide, rempli de blanc, avec la vraie pointe.
+  const uri = css.match(/--rpg-ecusson-masque:\s*url\("([^"]+)"\)/)[1];
   const svg = decodeURIComponent(uri.slice(uri.indexOf(',') + 1));
   assert.match(svg, /^<svg /);
-  assert.match(svg, /50 124/, 'pointe lisible dans le SVG décodé');
-  assert.match(svg, /rgb\(224,205,138\)/, 'or lisible dans le SVG décodé');
-  assert.match(css, /background-image:\s*var\(--rpg-ecusson-trait\);/);
-  assert.match(css, /background-size:\s*100% 100%;/);
-  assert.match(css, /z-index:\s*1;/, 'sous le titre et les statistiques');
+  assert.match(svg, /50 124/, 'pointe en V lisible');
+  assert.match(svg, /fill='rgb\(255,255,255\)'/, 'silhouette pleine');
+  assert.doesNotMatch(svg, /stroke/, 'aucun contour dans le SVG');
+  assert.match(css, /\.rpg-carte-bouclier::before/, 'le fond masqué existe');
   assert.match(css, /pointer-events:\s*none;/);
-  assert.doesNotMatch(css, /--rpg-card-radius/, 'la carte garde son rayon habituel');
-  assert.doesNotMatch(css, /border-radius\s*:/, 'aucune découpe de la face');
-  assert.doesNotMatch(css, /clip-path\s*:/, 'le sonar et les pierres qui débordent restent visibles');
-  for (const face of [
-    '.rpg-card', '.rpg-hand__card', '.rpg-mulligan__card', '.rpg-hover-card-preview__face',
-    '.rpg-card-catalogue__art', '.rpg-atelier__carte-art', '.rpg-card-guide__example', '.rpg-souk__carte',
-  ]) {
-    assert.match(css, new RegExp(`${face.replace('.', '\\.')}\\.rpg-carte-bouclier::before`), `écusson sur ${face}`);
-  }
 });
 
 test('ATQ/DÉF et les autres repères restent exactement comme sur les autres cartes', () => {
-  // La feuille de l'écusson ne doit plus contenir la moindre règle sur les
-  // repères : c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi.
+  // La feuille de l'écusson ne contient aucune règle de position / de taille
+  // sur les repères : c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi.
   for (const selectors of [
     'rpg-card__foot', 'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
-    'rpg-hand__stat', 'rpg-card__type', 'rpg-hand__type', 'rpg-card-icones--colonne',
+    'rpg-hand__stat', 'rpg-card-icones--colonne',
   ]) {
     assert.doesNotMatch(css, new RegExp(selectors), `${selectors} n'est pas touché`);
   }
+  assert.doesNotMatch(css, /rpg-card__type\s*\{/, 'le type n’est pas repositionné');
+  assert.doesNotMatch(css, /rpg-hand__type\s*\{/, 'le type de la main n’est pas repositionné');
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit normal du pied de carte');
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__stat--atk/, 'gabarit normal de l’ATQ');
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__pt/, 'gabarit normal de la DÉF');
   assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit mobile inchangé');
-  // Le sonar rouge et la pierre Défenseur restent protégés par leur propre test.
   assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
+});
+
+test('les aperçus restent rectangulaires avec ATQ à gauche et DÉF à droite', () => {
+  const ligneApercu = duel.split('\n').find((l) => l.includes('className={`rpg-hover-card-preview__face'));
+  assert.ok(ligneApercu);
+  assert.doesNotMatch(ligneApercu, /classeBouclier/, 'pas d’écusson sur l’aperçu');
+  assert.match(ligneApercu, /rpg-hover-card-preview__face/, 'la face d’aperçu existe bien');
+  // Le pied de l'aperçu garde sa grille deux colonnes : ATQ à gauche, DÉF à droite.
+  assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__foot,[\s\S]{0,400}?grid-template-columns:\s*repeat\(2,/, 'ATQ à gauche, DÉF à droite');
+  assert.match(duel, /rpg-hover-card-preview__face[\s\S]{0,1200}?rpg-card__foot/, 'les statistiques restent sur la face d’aperçu');
 });
