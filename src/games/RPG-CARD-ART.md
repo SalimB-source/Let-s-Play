@@ -1968,7 +1968,21 @@ cartes) reste visible en liseré autour de l'acier, et une **ombre portée**
 `filter: drop-shadow()` suit l'alpha de l'écu. Aucun `outline`, aucun
 `box-shadow` de boîte, aucun cadre rectangulaire.
 
-Les quatre SVG de `rpg-bouclier.css` partagent le viewBox **`-5 -5 110 137`**.
+**Les effets prennent la forme de l'écu.** L'égide de Bouclier (violette,
+dorée ou colorée) et son impact de rupture, la vignette de Furie, le souffle
+d'Envol, la brume d'Infiltration, le sang, le givre et les ondes d'Aura /
+Résonance / Malédiction / garde rouge peignaient chacun un rectangle bordé sur
+la face. `rpg-bouclier.css` les découpe désormais avec
+`--rpg-ecusson-effet-masque` — le plein de l'écu **plus** un anneau de 8, pour
+que leur petit halo suive la pointe — et neutralise leurs `border`,
+`border-radius` et `box-shadow` de boîte. L'égide, l'impact et les quatre
+sonars retrouvent un **liseré coloré en forme d'écu** sur `::after`, dessiné
+avec `--rpg-ecusson-effet-liseret` : un filet dédié de 3,2 unités, même
+épaisseur apparente que l'ancien `border: 2px`, et un halo `drop-shadow`.
+Leurs dégradés, reflets, ondes, éclats et animations restent inchangés. Les pastilles ATQ/DÉF, les pierres d'effets, les compteurs, le badge
+d'arme et les libellés ne sont pas masqués.
+
+Les six SVG de `rpg-bouclier.css` partagent le viewBox **`-5 -5 110 137`**.
 Ce n'est plus la place des ailettes, mais une marge de respiration : le tracé
 s'arrête à la pointe `50 124` et le trait du cadre descend jusqu'à 128, alors
 que le viewBox va jusqu'à 132 — la **pointe du bas n'est donc pas coupée**, et

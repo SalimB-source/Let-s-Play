@@ -9,9 +9,13 @@
  * refusées par le joueur), un fin liseré de la couleur de l'élément et une
  * ombre portée — le tout dessiné le long de la silhouette, jamais de cadre ni
  * d'ombre rectangulaires. La pointe du bas n'est pas coupée : le viewBox des
- * SVG laisse de la marge sous `50 124`. Le masque ne touche qu'au fond et à
- * l'illustration : ATQ/DÉF, type, pierres et sonar gardent exactement la place
- * et la taille des autres cartes.
+ * SVG laisse de la marge sous `50 124`. Les EFFETS pleine face (égide de
+ * Bouclier et son impact, Furie, Envol, brume, ondes d'Aura, sang, givre)
+ * prennent eux aussi la forme de l'écu : `rpg-bouclier.css` les masque et
+ * remplace leur contour de boîte par un liseré d'écu coloré. Le masque ne
+ * touche qu'aux calques : ATQ/DÉF, type, pierres, compteurs et badges gardent
+ * exactement la place et la taille des autres cartes ; le sonar `has-garde`
+ * reste présent, dessiné dans la forme de l'écu.
  *
  * Exception demandée : la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
  * (survol + fiche catalogue ouverte) ne reçoivent PAS la classe et restent des
