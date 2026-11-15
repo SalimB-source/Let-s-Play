@@ -141,26 +141,72 @@ export function MonthTimeline({ month, monthName, releases, today, lang, copy })
 }
 
 /**
- * Carte d'une sortie. Avec visuel si l'entrée du calendrier en fournit un,
- * sinon une vignette « ticket » date + mois, pour que chaque sortie datée ait
- * sa carte même avant que le key art soit déposé dans public/releases/.
- * Une entrée peut pointer vers un article existant via `to`.
+ * Visuel éditorial généré à partir des métadonnées : les sorties sans key art
+ * officiel ont quand même une vraie miniature, cohérente et unique par jeu.
+ */
+function ReleaseArtwork({ release, dayLabel, monthLabel, past }){
+  const palette = [
+    ['#152b55', '#0b1228', '#23d6e8'],
+    ['#51234d', '#1b1332', '#ff719c'],
+    ['#284b40', '#101d2d', '#b5ef70'],
+    ['#54351d', '#1c1626', '#ffbd59'],
+    ['#29356f', '#101329', '#a88cff'],
+    ['#5a2831', '#1b1428', '#ff775e'],
+  ];
+  const seed = Array.from(release.slug || release.title).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const [start, end, accent] = palette[seed % palette.length];
+  const id = `release-${String(release.slug).replace(/[^a-z0-9]/gi, '-')}`;
+  const title = String(release.title || '').toUpperCase();
+  const words = title.split(/\s+/);
+  const middle = Math.ceil(words.length / 2);
+  const lines = words.length > 3
+    ? [words.slice(0, middle).join(' '), words.slice(middle).join(' ')]
+    : [title];
+
+  return (
+    <div className={`release-card-image is-placeholder${past ? ' is-past' : ''}`} aria-hidden="true">
+      <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <defs>
+          <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1"><stop stopColor={start}/><stop offset="1" stopColor={end}/></linearGradient>
+          <radialGradient id={`${id}-glow`}><stop stopColor={accent} stopOpacity=".75"/><stop offset="1" stopColor={accent} stopOpacity="0"/></radialGradient>
+          <linearGradient id={`${id}-shade`} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#070916" stopOpacity="0"/><stop offset="1" stopColor="#070916" stopOpacity=".96"/></linearGradient>
+        </defs>
+        <rect width="800" height="450" fill={`url(#${id}-bg)`}/>
+        <circle cx="615" cy="130" r="245" fill={`url(#${id}-glow)`}/>
+        <path d="M450 0h350v450H315z" fill={accent} opacity=".1"/>
+        <path d="M535 0h265v450H425z" fill="none" stroke={accent} strokeOpacity=".28" strokeWidth="2"/>
+        <circle cx="616" cy="162" r="111" fill="none" stroke={accent} strokeOpacity=".38" strokeWidth="2"/>
+        <circle cx="616" cy="162" r="78" fill="none" stroke="#fff" strokeOpacity=".17"/>
+        <path d="M0 365 352 116l95 78L170 450H0z" fill="#fff" opacity=".055"/>
+        <path d="M0 0h800v450H0z" fill={`url(#${id}-shade)`}/>
+        <path d="M36 38h62M36 38v28M764 412h-62m62 0v-28" fill="none" stroke={accent} strokeWidth="3" opacity=".9"/>
+        <text x="42" y="74" fill={accent} fontFamily="monospace" fontSize="14" fontWeight="700" letterSpacing="4">LET’S PLAY  /  RELEASE FILE</text>
+        <text x="42" y="315" fill="#fff" fontFamily="Arial, sans-serif" fontSize={lines.length > 1 ? '38' : '44'} fontWeight="800" letterSpacing="1" textLength="700" lengthAdjust="spacingAndGlyphs">{lines[0]}</text>
+        {lines[1] ? <text x="42" y="361" fill={accent} fontFamily="Arial, sans-serif" fontSize="38" fontWeight="800" letterSpacing="1" textLength="700" lengthAdjust="spacingAndGlyphs">{lines[1]}</text> : null}
+        <text x="44" y="407" fill="#dce8fa" fontFamily="monospace" fontSize="15" fontWeight="600" letterSpacing="3">{dayLabel} {monthLabel.join(' ')}  ·  {String(release.platforms || '').toUpperCase()}</text>
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Carte d'une sortie. Le key art officiel est privilégié ; s'il n'existe pas
+ * (ou si son URL est cassée), une miniature éditoriale déterministe prend le
+ * relais. Une entrée peut pointer vers un article existant via `to`.
  */
 export function ReleaseCard({ release, today, lang, copy }){
   const past = isPastRelease(release, today);
+  const [imageFailed, setImageFailed] = useState(false);
   const [dayLabel, ...monthLabel] = releaseDayLabel(release, lang).split(' ');
+  const showArtwork = !release.image || imageFailed;
   const body = (
     <>
-      {release.image ? (
-        <div className="release-card-image">
-          <img src={`${base}${release.image}`} alt={release.alt} loading="lazy" />
-          {past ? <span className="release-past-badge">{copy.outBadge}</span> : null}
-        </div>
+      {showArtwork ? (
+        <ReleaseArtwork release={release} dayLabel={dayLabel} monthLabel={monthLabel} past={past} />
       ) : (
-        <div className={`release-card-image is-placeholder${past ? ' is-past' : ''}`} aria-hidden="true">
-          <span className="release-placeholder-day">{dayLabel}</span>
-          <span className="release-placeholder-month">{monthLabel.join(' ')}</span>
-          <em>{copy.artwork}</em>
+        <div className="release-card-image">
+          <img src={`${base}${release.image}`} alt={release.alt} loading="lazy" onError={() => setImageFailed(true)} />
+          {past ? <span className="release-past-badge">{copy.outBadge}</span> : null}
         </div>
       )}
       <div className="release-card-body">
