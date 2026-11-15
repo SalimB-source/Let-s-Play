@@ -1,10 +1,11 @@
 /**
- * La face en bouclier des créatures Défenseur — tests/rpg-carte-bouclier.test.js
- * ----------------------------------------------------------------------------
- * Vérifie, sans navigateur : qui reçoit l'écu (et qui ne le reçoit pas), que
- * la classe est bien posée sur les faces du duel, et que la feuille dessine la
- * forme avec un rayon — jamais un `clip-path`, qui couperait le sonar rouge,
- * les pierres d'effets et la pastille d'arme qui débordent de la carte.
+ * L'écusson des créatures Défenseur — tests/rpg-carte-bouclier.test.js
+ * ----------------------------------------------------------------------
+ * Vérifie, sans navigateur : qui reçoit l'écusson (et qui ne le reçoit pas),
+ * que la classe est bien posée sur les faces du duel, que le tracé SVG montre
+ * une vraie pointe en bas, et surtout que la feuille ne touche PLUS aux
+ * pastilles ATQ/DÉF ni aux autres repères — ils restent comme sur les autres
+ * cartes. Aucun `border-radius` de découpe, aucun `clip-path`.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,6 +20,8 @@ import { CLASSE_BOUCLIER, classeBouclier, estCreatureBouclier } from '../src/gam
 
 const lire = (nom) => readFileSync(new URL(`../src/games/${nom}`, import.meta.url), 'utf8');
 const css = lire('rpg-bouclier.css');
+const battleCss = lire('rpg-battle.css');
+const mobileCss = lire('rpg-mobile.css');
 const duel = lire('RpgDuelPage.jsx');
 
 test('seules les créatures et les héros Défenseur deviennent des écus', () => {
@@ -91,43 +94,49 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
   } finally { await vite.close(); }
 });
 
-test('l’écusson est un rayon héraldique, pas un rognage', () => {
-  const rayon = /50% 50% 50% 50% \/ 7% 7% 38% 38%/;
-  assert.match(css, /--rpg-card-radius:\s*50% 50% 50% 50% \/ 7% 7% 38% 38%;/);
-  assert.match(css, /--rpg-card-radius-sm:\s*50% 50% 50% 50% \/ 7% 7% 38% 38%;/);
-  assert.ok(rayon.test(css), 'arche haute + longue pointe basse');
-  assert.doesNotMatch(css, /clip-path\s*:/, 'un clip-path couperait les débordements du sonar et des pierres');
-  assert.match(css, /border-radius:\s*var\(--rpg-card-radius-sm\) !important;/, 'les gabarits mobiles ne remettent pas la face au carré');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::before[\s\S]{0,900}?inset 0 0 0 2px/, 'liseré de l’écusson');
-  for (const face of ['.rpg-card-guide__example', '.rpg-souk__carte']) {
-    assert.match(css, new RegExp(`${face.replace('.', '\\.')}\\.rpg-carte-bouclier::before`), `liseré sur ${face}`);
+test('l’écusson est un tracé SVG avec une vraie pointe, sans découper la carte', () => {
+  assert.match(css, /--rpg-ecusson-trait:\s*url\("data:image\/svg\+xml,/, 'tracé vectoriel');
+  assert.match(css, /M1%208/, 'arche haute');
+  assert.match(css, /50%20124/, 'pointe centrée en bas');
+  assert.match(css, /C99%20100%2065%20112%2050%20124/, 'courbe droite qui descend vers la pointe');
+  assert.match(css, /C35%20112%201%20100%201%2062/, 'courbe gauche qui remonte depuis la pointe');
+  assert.match(css, /stroke='rgb%28224,205,138%29'/, 'filet or');
+  assert.match(css, /stroke='rgb%2831,28,56%29'/, 'liseré marine');
+  // L'URI reste un SVG valide une fois décodée : la pointe ne doit pas être
+  // perdue dans un mauvais échappement.
+  const uri = css.match(/--rpg-ecusson-trait:\s*url\("([^"]+)"\)/)[1];
+  const svg = decodeURIComponent(uri.slice(uri.indexOf(',') + 1));
+  assert.match(svg, /^<svg /);
+  assert.match(svg, /50 124/, 'pointe lisible dans le SVG décodé');
+  assert.match(svg, /rgb\(224,205,138\)/, 'or lisible dans le SVG décodé');
+  assert.match(css, /background-image:\s*var\(--rpg-ecusson-trait\);/);
+  assert.match(css, /background-size:\s*100% 100%;/);
+  assert.match(css, /z-index:\s*1;/, 'sous le titre et les statistiques');
+  assert.match(css, /pointer-events:\s*none;/);
+  assert.doesNotMatch(css, /--rpg-card-radius/, 'la carte garde son rayon habituel');
+  assert.doesNotMatch(css, /border-radius\s*:/, 'aucune découpe de la face');
+  assert.doesNotMatch(css, /clip-path\s*:/, 'le sonar et les pierres qui débordent restent visibles');
+  for (const face of [
+    '.rpg-card', '.rpg-hand__card', '.rpg-mulligan__card', '.rpg-hover-card-preview__face',
+    '.rpg-card-catalogue__art', '.rpg-atelier__carte-art', '.rpg-card-guide__example', '.rpg-souk__carte',
+  ]) {
+    assert.match(css, new RegExp(`${face.replace('.', '\\.')}\\.rpg-carte-bouclier::before`), `écusson sur ${face}`);
   }
-  assert.match(css, /\.rpg-card--img\.rpg-carte-bouclier \.rpg-card__foot,\s*\.rpg-hand__card--img\.rpg-carte-bouclier \.rpg-hand__stats \{[^}]*left:\s*22% !important;[^}]*bottom:\s*8% !important;/s);
-  assert.match(css, /\.rpg-card--img\.rpg-carte-bouclier \.rpg-card__type,[\s\S]{0,300}?bottom:\s*20% !important;/);
-  assert.match(css, /font-size:\s*clamp\(6px, 7cqw, 11px\) !important;/, 'statistiques réduites dans la pointe');
-  assert.match(css, /rpg-hover-card-preview__face\.rpg-carte-bouclier \.rpg-card__foot[\s\S]{0,300}?left:\s*18% !important;[^}]*bottom:\s*10% !important;/s);
-  assert.match(css, /rpg-card-catalogue__art\.rpg-carte-bouclier \.rpg-card-icones--colonne[\s\S]{0,300}?bottom:\s*22% !important;[^}]*right:\s*8% !important;/s);
 });
 
-test('les repères restent à l’intérieur de la silhouette de l’écusson', () => {
-  // Même géométrie que `--rpg-card-radius` : haut 7 %, bas 38 %, rayons
-  // horizontaux 50 %. Demi-largeur disponible à une hauteur y donnée.
-  const HAUT = 0.07;
-  const BAS = 0.38;
-  const demiLargeur = (y) => {
-    if (y <= HAUT) return 0.5 * Math.sqrt(Math.max(0, 1 - ((HAUT - y) / HAUT) ** 2));
-    if (y >= 1 - BAS) return 0.5 * Math.sqrt(Math.max(0, 1 - ((y - (1 - BAS)) / BAS) ** 2));
-    return 0.5;
-  };
-  // marge = part coupée de chaque côté ; la demi-largeur utile est 0.5 - marge.
-  const tient = (marge, bas) => {
-    const y = 1 - bas;
-    return 0.5 - marge <= demiLargeur(y) + 1e-9;
-  };
-  assert.ok(tient(0.22, 0.08), 'ATQ/DÉF de la table et de la main');
-  assert.ok(tient(0.18, 0.10), 'ATQ/DÉF de l’aperçu et du mulligan');
-  assert.ok(tient(0.08, 0.20), 'ligne de type');
-  assert.ok(tient(0.08, 0.22), 'colonne de pierres du catalogue');
-  // Le haut bombé laisse passer le titre posé à 5 % du haut, marge 6 %.
-  assert.ok(0.5 - 0.06 <= demiLargeur(0.05) + 1e-9, 'titre dans l’arche haute');
+test('ATQ/DÉF et les autres repères restent exactement comme sur les autres cartes', () => {
+  // La feuille de l'écusson ne doit plus contenir la moindre règle sur les
+  // repères : c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi.
+  for (const selectors of [
+    'rpg-card__foot', 'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
+    'rpg-hand__stat', 'rpg-card__type', 'rpg-hand__type', 'rpg-card-icones--colonne',
+  ]) {
+    assert.doesNotMatch(css, new RegExp(selectors), `${selectors} n'est pas touché`);
+  }
+  assert.match(battleCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit normal du pied de carte');
+  assert.match(battleCss, /\.rpg-card--img \.rpg-card__stat--atk/, 'gabarit normal de l’ATQ');
+  assert.match(battleCss, /\.rpg-card--img \.rpg-card__pt/, 'gabarit normal de la DÉF');
+  assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit mobile inchangé');
+  // Le sonar rouge et la pierre Défenseur restent protégés par leur propre test.
+  assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
 });

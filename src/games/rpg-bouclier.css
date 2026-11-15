@@ -1,38 +1,32 @@
 /*
  * L'écusson des créatures Défenseur — src/games/rpg-bouclier.css
  * ---------------------------------------------------------------
- * Une créature Défenseur ne se contente plus de son sonar rouge : sa FACE
- * prend la silhouette d'un écusson héraldique, d'après la référence envoyée :
- * haut légèrement bombé, coins adoucis, flancs droits jusqu'à ~62 % de la
- * hauteur, puis deux longs arcs qui se rejoignent en pointe douce en bas.
+ * Un Défenseur porte un ÉCUSSON HÉRALDIQUE dessiné PAR-DESSUS sa carte, et
+ * non plus une carte découpée. La face reste donc rigoureusement identique
+ * aux autres : même rectangle, même rayon, MÊMES pastilles ATQ/DÉF, même
+ * ligne de type, mêmes pierres d'effets. C'était la demande : la pointe doit
+ * se voir, mais les statistiques ne doivent pas bouger.
  *
- * Le dessin passe par `border-radius`, jamais par `clip-path` : les ondes du
- * sonar (`overflow-clip-margin: 58px`), les pierres d'effets qui débordent du
- * bord droit et la pastille d'arme restent visibles. L'illustration, le fond,
- * le cadre coloré et l'ombre portée suivent le rayon, y compris sur les faces
- * `overflow: clip` : l'image reprend `border-radius: inherit` à son compte.
+ * Le tracé est un SVG en `background-image` sur `::before` : arche haute,
+ * flancs droits, puis deux courbes qui se rejoignent en une VRAIE POINTE au
+ * centre du bas. La pointe est visible dans l'espace laissé libre entre les
+ * deux pastilles ATQ et DÉF. Un filet or sur liseré marine le rend lisible
+ * sur les illustrations claires comme sur les illustrations sombres.
  *
- * `border-radius: … !important` reprend la main sur les gabarits mobiles qui
- * écrivent un rayon en dur (7–8 px) sur `.rpg-card` : l'écusson garde la même
- * silhouette du bureau au téléphone. Les repères imprimés (type, ATQ/DÉF,
- * pierres du catalogue) sont remontés et resserrés pour rester DANS la pointe
- * au lieu de flotter dans les angles coupés. Tout est décoratif — DOM,
- * libellés et règles du jeu ne changent pas.
+ * Aucun `border-radius` de découpe, aucun `clip-path`, aucune règle sur les
+ * repères : le sonar rouge (`overflow-clip-margin: 58px`), les pierres qui
+ * débordent du bord droit et la pastille d'arme restent intacts. `::before`
+ * est au-dessus de l'illustration mais sous le titre et les statistiques
+ * (`z-index: 1` contre 1 puis 2 pour eux, l'ordre du DOM faisant le reste).
  */
 
 .rpg-carte-bouclier {
-  /* Les quatre rayons horizontaux valent 50 % : le haut est une arche douce
-     (7 % de hauteur) et le bas une pointe centrée. Les rayons verticaux bas
-     (38 %) font commencer la courbe à 62 % de la hauteur, comme l'écusson
-     de référence. Flancs droits entre 7 % et 62 %. */
-  --rpg-card-radius: 50% 50% 50% 50% / 7% 7% 38% 38%;
-  --rpg-card-radius-sm: 50% 50% 50% 50% / 7% 7% 38% 38%;
-  border-radius: var(--rpg-card-radius-sm) !important;
+  /* viewBox 100 × 125 = le 4:5 de la carte. Le tracé reste dans la face :
+     la pointe tombe à y = 124, entre les deux pastilles du bas. */
+  --rpg-ecusson-trait: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20125'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%2833,29,59%29'%20fill-opacity='0.10'%20stroke='rgb%2831,28,56%29'%20stroke-width='5'%20stroke-linejoin='round'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28224,205,138%29'%20stroke-width='2.2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-/* Un liseré d'acier et d'or suit le bord de l'écu : même sur une illustration
-   très sombre, on lit la forme au premier coup d'œil. Calque décoratif, au-
-   dessus de la peinture mais sous les pastilles et le texte. */
+/* Le même écusson sur toutes les présentations de la carte. */
 .rpg-card.rpg-carte-bouclier::before,
 .rpg-hand__card.rpg-carte-bouclier::before,
 .rpg-mulligan__card.rpg-carte-bouclier::before,
@@ -44,60 +38,10 @@
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 3;
-  border-radius: inherit;
-  box-shadow:
-    inset 0 0 0 2px rgba(240, 205, 138, .62),
-    inset 0 0 16px rgba(240, 205, 138, .16);
+  z-index: 1;
+  background-image: var(--rpg-ecusson-trait);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
   pointer-events: none;
-}
-
-/* ── Les repères rentrent dans la pointe ───────────────────────────────────
-   À 8 % du bas, l'écusson ne mesure plus que ~61 % de la largeur : les deux
-   pastilles ATQ/DÉF se serrent au centre. Le type remonte à 20 %, là où les
-   flancs sont encore droits. Spécificité volontairement plus haute que les
-   multiples gabarits de `rpg-battle.css` et `rpg-mobile.css`. */
-.rpg-card--img.rpg-carte-bouclier .rpg-card__foot,
-.rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__stats {
-  left: 22% !important;
-  right: 22% !important;
-  bottom: 8% !important;
-}
-
-.rpg-card--img.rpg-carte-bouclier .rpg-card__type,
-.rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__type {
-  top: auto !important;
-  bottom: 20% !important;
-  left: 8% !important;
-  right: 8% !important;
-  height: auto !important;
-  min-height: 0 !important;
-}
-
-/* Les statistiques s'adaptent aux petites faces : deux pastilles de 27–38 px
-   ne tiennent pas dans la pointe d'une carte de 68 px. `cqw` se mesure sur la
-   face, qui ouvre déjà son conteneur (`rpg-battle.css`, « Une seule mesure »). */
-.rpg-card--img.rpg-carte-bouclier .rpg-card__stat--atk,
-.rpg-card--img.rpg-carte-bouclier .rpg-card__pt,
-.rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__stat {
-  min-width: 0 !important;
-  padding-inline: 1px !important;
-  font-size: clamp(6px, 7cqw, 11px) !important;
-}
-
-.rpg-hover-card-preview__face.rpg-carte-bouclier .rpg-card__foot,
-.rpg-mulligan__card.rpg-carte-bouclier .rpg-card__foot,
-.rpg-mulligan__card.rpg-carte-bouclier .rpg-mulligan__stats {
-  left: 18% !important;
-  right: 18% !important;
-  bottom: 10% !important;
-}
-
-/* Le catalogue, l'atelier et le guide empilent leurs pierres en colonne :
-   remontée au-dessus de la pointe, le bord reste lisible. */
-.rpg-card-catalogue__art.rpg-carte-bouclier .rpg-card-icones--colonne,
-.rpg-atelier__carte-art.rpg-carte-bouclier .rpg-card-icones--colonne,
-.rpg-card-guide__example.rpg-carte-bouclier .rpg-card-icones--colonne {
-  bottom: 22% !important;
-  right: 8% !important;
 }
