@@ -4729,9 +4729,19 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
       && carteACapacite(carte, catalogueCapacite)
       && rechercheCorrespond;
   });
-  // Voile noir volontairement léger : le keyart de Bab El reste lisible derrière
-  // les menus, le côté gauche garde assez d'ombre pour porter les textes.
-  const menuBackground = `linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%), url("${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg")`;
+  // Fond de l'accueil « Jouer » : le désert lumineux sans personnages
+  // (`public/sablier-accueil-desert-clair.jpg`) remplace le keyart sombre de Bab
+  // El. Le voile reste dense à gauche pour la marque et les onglets, puis
+  // s'efface : le ciel clair et les dunes doivent rester visibles. Les autres
+  // écrans (Deck, Souk, Catalogue…) gardent leur keyart d'origine.
+  const estAccueilJouer = screen === 'jouer';
+  const fondMenu = estAccueilJouer
+    ? 'sablier-accueil-desert-clair.jpg'
+    : 'sablier-de-bab-el-keyart.jpg';
+  const voileMenu = estAccueilJouer
+    ? 'linear-gradient(105deg, rgba(10, 11, 20, .78) 0%, rgba(10, 11, 20, .48) 48%, rgba(10, 11, 20, .16) 100%)'
+    : 'linear-gradient(105deg, rgba(8, 7, 13, .80) 0%, rgba(8, 7, 13, .58) 48%, rgba(8, 7, 13, .40) 100%)';
+  const menuBackground = `${voileMenu}, url("${import.meta.env.BASE_URL}${fondMenu}")`;
   // Quitter l'onglet Deck referme l'étagère et l'atelier : le prochain passage repart sans liste.
   useEffect(() => { if (screen !== 'decks') { setOpenDeckId(null); setAtelier(null); } }, [screen]);
   useEffect(() => { if (screen !== 'jouer') setPartieRapideOuverte(false); }, [screen]);

@@ -32,7 +32,7 @@ console.log('1. La route passe par l’écran d’entrée');
 const routeur = lire('src/main.jsx');
 assert.match(
   routeur,
-  /<Route path="\/jeu\/sablier-de-bab-el" element=\{<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,140}?><RpgEntryChoice variantesPlateaux \/><\/Suspense><\/GameLoadBoundary><\/PaysageSablier>\} \/>/,
+  /<Route path="\/jeu\/sablier-de-bab-el" element=\{(?:<RpgConnexionRequise>)?<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,140}?><RpgEntryChoice variantesPlateaux \/><\/Suspense><\/GameLoadBoundary><\/PaysageSablier>(?:<\/RpgConnexionRequise>)?\} \/>/,
   'la route du Sablier ne monte plus RpgEntryChoice sous GameLoadBoundary',
 );
 assert.match(routeur, /const RpgEntryChoice = lazy\(\(\) => import\('\.\/games\/RpgEntryChoice'\)\);/,
@@ -61,8 +61,10 @@ assert.match(
 );
 assert.match(entree, /releases\/tag\/desktop/, 'lien « toutes les versions » absent');
 const workflow = lire('.github/workflows/desktop-windows.yml');
-assert.match(workflow, /cp "le-sablier-de-bab-el-\$\{VERSION\}-setup\.exe" le-sablier-de-bab-el-setup\.exe/,
+assert.match(workflow, /cp "\$\{FICHIER\}-\$\{VERSION\}-setup\.exe" "\$\{FICHIER\}-setup\.exe"/,
   'le workflow ne publie plus la copie au nom fixe : le bouton du site casserait');
+assert.match(workflow, /FICHIER="\$\{\{ matrix\.fichier \}\}"/,
+  'la copie au nom fixe doit reprendre le nom du jeu publié par la matrice');
 ok('asset au nom fixe publié par la CI, bouton et lien Release cohérents');
 
 console.log('4. L’écran s’efface quand il n’a rien à proposer');
@@ -83,7 +85,7 @@ ok('coque PC, APK et choix retenu entrent directement ; téléphone inclus, en u
 
 console.log('5. Aucun écran noir quand un fichier du jeu manque');
 assert.match(routeur,
-  /<Route path="\/jeu\/sablier-de-bab-el\/defi" element=\{<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,160}?><RpgPvpSalon \/><\/Suspense><\/GameLoadBoundary><\/PaysageSablier>\} \/>/,
+  /<Route path="\/jeu\/sablier-de-bab-el\/defi" element=\{(?:<RpgConnexionRequise>)?<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,160}?><RpgPvpSalon \/><\/Suspense><\/GameLoadBoundary><\/PaysageSablier>(?:<\/RpgConnexionRequise>)?\} \/>/,
   'le salon du duel en ligne doit être protégé par le même filet');
 assert.match(routeur, /import GameLoadBoundary from '\.\/games\/GameLoadBoundary\.jsx';/,
   'GameLoadBoundary doit être importé par le routeur');
@@ -102,8 +104,10 @@ ok('filet + reprise : le duel se recharge, sinon un écran explique la panne');
 
 console.log('6. Styles');
 const styles = lire('src/games/rpg-entry-choice.css');
-assert.match(styles, /url\('\.\.\/\.\.\/public\/sablier-de-bab-el-keyart\.jpg'\)/,
-  'le keyart doit passer par public/ pour respecter la base du build');
+assert.match(styles, /url\('\.\.\/\.\.\/public\/sablier-accueil-desert-clair\.jpg'\)/,
+  'l’illustration de désert lumineux doit passer par public/ pour respecter la base du build');
+assert.doesNotMatch(styles, /sablier-de-bab-el-keyart\.jpg/,
+  'l’ancien keyart sombre avec personnages ne doit plus être le fond de l’accueil');
 assert.match(styles, /@media \(max-width: 720px\)/, 'pas de repli une colonne');
 
 const dom = new JSDOM(`<!doctype html><html><head><style>${styles}</style></head><body>
@@ -145,7 +149,7 @@ assert.equal(styleDe('.rpg-entry-choice__option--android .rpg-entry-choice__opti
   'le titre de la carte Android doit être blanc');
 assert.equal(styleDe('.rpg-entry-choice__option--web .rpg-entry-choice__logo').color, 'rgb(232, 183, 92)',
   'la carte navigateur garde son logo doré');
-ok('keyart via public/, carte PC blanche + logo bleu, carte Android verte + logo blanc, repli une colonne');
+ok('désert clair via public/, carte PC blanche + logo bleu, carte Android verte + logo blanc, repli une colonne');
 
 console.log('');
 console.log('7. Le Sablier s’ouvre en paysage, écran d’entrée compris');
