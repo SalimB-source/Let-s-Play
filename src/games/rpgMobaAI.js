@@ -14,8 +14,7 @@ import {
 
 /** Select from the AI's private candidates without exposing them in the UI. */
 export function rpgMobaChoisirRechercheIA(duel, side = 'sorcier') {
-  return rpgMobaCandidatsRecherche(duel, side)
-    .sort((a, b) => (cardById(a)?.cost ?? 99) - (cardById(b)?.cost ?? 99))[0] ?? null;
+  return rpgMobaCandidatsRecherche(duel, side)[0] ?? null;
 }
 
 /** Choose a legal Source recipient without changing the live game or its RNG. */
@@ -195,7 +194,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
         ? rpgMobaJouerArme(simulation, side, id, cible, { laneId: lane, slot: emplacementReanimation })
         : rpgMobaLancerMagie(simulation, side, id, cible, lane, prixLane, { cibleSecondaireId: cibleSecondaire, emplacementReanimation });
       if (!result.ok) continue;
-      if (simulation.mobaRechercheEnAttente?.renfort) {
+      if (simulation.mobaRechercheEnAttente?.cote === side) {
         const selection = rpgMobaChoisirRechercheIA(simulation, side);
         if (!rpgMobaResoudreRecherche(simulation, side, selection).ok) continue;
       }
@@ -239,7 +238,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
         }));
         if (prisePossible) score += 40;
       }
-      score -= 0.5 + (card.cost ?? 0) * 0.15;
+      score -= 0.5;
       if (score > 0.5 && (!meilleur || score > meilleur.score)) meilleur = { id, cible, lane, prixLane, ...(cibleSecondaire ? { cibleSecondaire } : {}), ...(emplacementReanimation !== null ? (id === 'lame-des-ergs' ? { emplacementArme: emplacementReanimation } : { emplacementReanimation }) : {}), score };
     }
   }
@@ -307,7 +306,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     // Les renforts et leurs arrivées peuvent s'enchaîner : simuler leurs vrais
     // choix avant d'évaluer le plateau, sans toucher à la partie réelle.
     for (let i = 0; i < 8 && !simulation.moba.winner; i++) {
-      if (simulation.mobaRechercheEnAttente?.renfort && simulation.mobaRechercheEnAttente.cote === side) {
+      if (simulation.mobaRechercheEnAttente?.cote === side) {
         const choix = rpgMobaChoisirRechercheIA(simulation, side);
         if (!rpgMobaResoudreRecherche(simulation, side, choix ?? null).ok) break;
       } else if (simulation.arriveeEnAttente) {

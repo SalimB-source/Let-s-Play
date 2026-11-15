@@ -363,9 +363,9 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     name: 'Lettre de marque',
     element: 'sable',
     colors: ['sable', 'eau'],
-    colorCost: { sable: 1, eau: 1 },
+
     kind: 'magie',
-    cost: 2,
+
     rarity: 'commune',
     typeLine: 'Sorcellerie — Chancellerie · Sable + Eau',
     cibles: ['soi'],
@@ -384,7 +384,7 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     name: 'Haut-fond',
     element: 'eau',
     kind: 'magie',
-    cost: 1,
+
     rarity: 'commune',
     instant: true,
     typeLine: 'Magie Rapide — Eau',
@@ -401,7 +401,7 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     name: 'Le Routier',
     element: 'eau',
     kind: 'magie',
-    cost: 3,
+
     rarity: 'inhabituelle',
     typeLine: 'Sorcellerie — Carte marine · Eau',
     cibles: ['soi'],
@@ -417,9 +417,9 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     name: 'Le Grand Débarquement',
     element: 'sable',
     colors: ['sable', 'eau'],
-    colorCost: { sable: 1, eau: 1 },
+
     kind: 'magie',
-    cost: 5,
+
     rarity: 'rare',
     typeLine: 'Sorcellerie — Assaut · Sable + Eau',
     cibles: ['soi'],
@@ -438,7 +438,7 @@ export const RPG_LETTRES_DE_MARQUE_ARMES = [
     id: 'grappin-d-abordage',
     name: 'Grappin d’abordage',
     kind: 'arme',
-    cost: 4,
+
     rarity: 'rare',
     typeLine: 'Arme — Grappin',
     bonus: { atk: 1, def: 1 },

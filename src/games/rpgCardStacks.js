@@ -25,7 +25,7 @@ export function trierCartesMainParCout(main = [], empiler = false) {
   const cartes = empiler
     ? groupCartesMain(main)
     : (main ?? []).map((carteId, index) => ({ carteId, indices: [index] }));
-  return cartes.sort((a, b) => cardCost(cardById(a.carteId)) - cardCost(cardById(b.carteId)));
+  return cartes.sort((a, b) => (cardCost(cardById(a.carteId)) ?? Infinity) - (cardCost(cardById(b.carteId)) ?? Infinity));
 }
 
 /** Préserve les exemplaires déjà en main pendant le tourbillon de renvoi.

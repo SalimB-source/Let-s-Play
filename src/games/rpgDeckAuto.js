@@ -208,11 +208,11 @@ const sommeJusque = (jetons, liste, gain, plafond) => {
  */
 export function bonusStyle(carte, style) {
   if (style === 'aggro') {
-    const cout = palierDeCout(carte?.cost);
+    const cout = carte?.cost == null ? null : palierDeCout(carte.cost);
     let bonus = 0;
     // La tempo d'abord : tout ce qui arrive tôt prend l'ascendant, les gros
     // coûts sont taxés — un deck aggro veut finir avant eux.
-    if (cout <= 2) bonus += 0.9;
+    if (cout != null && cout <= 2) bonus += 0.9;
     else if (cout === 3) bonus += 0.45;
     else if (cout === 5) bonus -= 0.35;
     else if (cout >= 6) bonus -= 0.8;
@@ -224,13 +224,13 @@ export function bonusStyle(carte, style) {
     return bonus;
   }
   if (style === 'controle') {
-    const cout = palierDeCout(carte?.cost);
+    const cout = carte?.cost == null ? null : palierDeCout(carte.cost);
     let bonus = 0;
     // Le contrôle achète du temps : il évite les cartes trop précoces et
     // récompense les finishers tardifs.
     if (cout >= 5) bonus += 0.7;
     else if (cout === 4) bonus += 0.2;
-    else if (cout <= 1) bonus -= 0.5;
+    else if (cout != null && cout <= 1) bonus -= 0.5;
     const jetons = mecaniquesDeCarte(carte);
     bonus += sommeJusque(jetons, EFFETS_CONTROLE, 0.5, 1.2);
     bonus += sommeJusque(jetons, EFFETS_AVANTAGE, 0.45, 0.8);
@@ -262,10 +262,10 @@ export function scoreComplementarite(carte, etat) {
     if (couverture >= 2) break;
   }
   // 3. Courbe de mana : la place du palier encore ouverte, selon le style.
-  const palier = palierDeCout(carte?.cost);
+  const palier = carte?.cost == null ? null : palierDeCout(carte.cost);
   const courbeCible = etat.courbeCible ?? COURBE_CIBLE;
-  const cible = courbeCible[palier - 1];
-  const ouvert = Math.max(0, cible - etat.parPalier[palier - 1]);
+  const cible = palier == null ? 1 : courbeCible[palier - 1];
+  const ouvert = palier == null ? 0 : Math.max(0, cible - etat.parPalier[palier - 1]);
   const courbe = (ouvert / cible) * 1.5;
   // 4. Mix : créatures et sorts selon la répartition visée par le style.
   const famille = familleDeCarte(carte);
@@ -353,7 +353,7 @@ export function bonusIntention(carte, intention, etat = {}) {
   if (!intention) return 0;
   const jetons = mecaniquesDeCarte(carte);
   const famille = familleDeCarte(carte);
-  const cout = palierDeCout(carte?.cost);
+  const cout = carte?.cost == null ? null : palierDeCout(carte.cost);
   let bonus = 0;
 
   // 1. Le thème : les cartes du thème (nommément) ou ses tribus imprimées,
@@ -381,8 +381,8 @@ export function bonusIntention(carte, intention, etat = {}) {
   if (cibleTheme > 0 && famille === 'arme') bonus += 0.5;
 
   // 4. La courbe dite (« deck rapide », « gros finishers »).
-  if (intention.courbe === 'basse') bonus += cout <= 2 ? 0.55 : cout >= 6 ? -0.4 : 0;
-  if (intention.courbe === 'haute') bonus += cout >= 5 ? 0.55 : cout <= 1 ? -0.4 : 0;
+  if (cout != null && intention.courbe === 'basse') bonus += cout <= 2 ? 0.55 : cout >= 6 ? -0.4 : 0;
+  if (cout != null && intention.courbe === 'haute') bonus += cout >= 5 ? 0.55 : cout <= 1 ? -0.4 : 0;
 
   // 5. Les raretés dites (« un deck de légendaires »).
   if (intention.raretes.length && intention.raretes.includes(carte?.rarity)) bonus += 0.6;
@@ -414,7 +414,7 @@ function etatDeConstruction(cardIds, choixIds, cartesParId, style = 'mix', inten
     if (!carte) continue;
     const jetons = mecaniquesDeCarte(carte);
     for (const jeton of jetons) jetonsDeck.add(jeton);
-    parPalier[palierDeCout(carte.cost) - 1] += 1;
+    if (carte.cost != null) parPalier[palierDeCout(carte.cost) - 1] += 1;
     parFamille[familleDeCarte(carte)] += 1;
     for (const couleur of (carte.couleurs ?? [])) couleursDeck.add(couleur);
     if (estDuTheme(id, jetons)) themePose += 1;
@@ -466,7 +466,7 @@ export function cartesPourEtape(couleurs, famille, catalogue, collection = null)
     if (!couleursCarte.length || !couleursCarte.every((couleur) => identite.has(couleur))) return false;
     if (Array.isArray(collection) && !collection.includes(carte.id)) return false;
     return true;
-  }).sort((a, b) => (Number(a.cost) || 0) - (Number(b.cost) || 0)
+  }).sort((a, b) => (a.cost ?? Infinity) - (b.cost ?? Infinity)
     || String(a.name ?? a.id).localeCompare(String(b.name ?? b.id), 'fr'));
 }
 

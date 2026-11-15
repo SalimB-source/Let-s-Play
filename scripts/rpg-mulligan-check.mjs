@@ -53,9 +53,9 @@ const mobileCss = readFileSync(new URL('../src/games/rpg-mobile.css', import.met
 const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const duelEngine = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
 const aiBrain = readFileSync(new URL('../src/games/rpgAI.js', import.meta.url), 'utf8');
-const mulliganPanel = battlePage.slice(battlePage.indexOf('function CarteMulligan('), battlePage.indexOf('function ConfirmationSort('));
+const mulliganPanel = battlePage.slice(battlePage.indexOf('function CarteMulligan('), battlePage.indexOf('function SpellAnnouncement('));
 assert.ok(mulliganPanel.length > 400 && mulliganPanel.includes('VoletMulligan'),
-  'le volet du mulligan est un composant dédié, entre l’aperçu au doigt et la confirmation de sort');
+  'le volet du mulligan est un composant dédié, entre l’aperçu au doigt et l’annonce de sort');
 
 // ── Le volet est une étape du jeu, pas une couche décorative ────────────────
 assert.match(battlePage, /setMulligan\(!modeTutoriel && rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,

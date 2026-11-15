@@ -482,7 +482,7 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 
 | Carte | Identifiant | Couleur(s) | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|---|
-| **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime la dernière créature de votre cimetière |
+| **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime une créature choisie de votre cimetière |
 | **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Attaque ciblée** (15 % de chances de rater une créature, 100 % de chances de toucher le sorcier) ; arrivée : piochez 2 cartes |
 | **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Attaque ciblée** (15 % de chances de rater une créature, 100 % de chances de toucher le sorcier), **Tribut 1**, **Protection Ténèbres** (permanente) |
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
@@ -545,7 +545,7 @@ passe de 3/2 à 2/1 ; les autres statistiques restent inchangées.
 - **Celle qui pèse** remplace Tribut 1 par une défausse adverse à l’arrivée,
   choisie par la victime. Sans carte en main adverse, cet effet ne fait rien.
 - **Le Passeur au masque de chacal** perd Tribut 2 et conserve la réanimation
-  à l’arrivée : la dernière créature du cimetière revient, si le champ a une
+  à l’arrivée : une créature choisie du cimetière revient, si le champ a une
   place libre. Il reste une menace de reconstruction plutôt qu’un finisseur
   supplémentaire par transfert de vie.
 - **Le Maître des hiéroglyphes** perd Tribut 1, gagne Envol et Attaque ciblée et conserve

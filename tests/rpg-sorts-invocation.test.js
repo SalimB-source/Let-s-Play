@@ -16,13 +16,13 @@ const choisir = (d, side, choix) => d.moba ? rpgMobaResoudreRecherche(d, side, c
 for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
   test(`Appel : choix parmi les trois, autres sous le deck (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
     const d = partie(moba); d.tour = side; d[side].main = ['appel-des-marees'];
-    d[side].deck = ['viking-des-neiges','chien-du-guet','loup-des-neiges','trait-de-braise','chacal-du-seuil'];
+    d[side].deck = ['viking-des-neiges','chien-du-guet','cotre-de-course','trait-de-braise','chacal-du-seuil'];
     const r = lancer(d, side, 'appel-des-marees'); assert.ok(r.ok, JSON.stringify(r)); passer(d, side);
-    const cartes = rpgCartesRenfortChoisi(d, side); assert.deepEqual(cartes.map(c => c.id), ['chacal-du-seuil','trait-de-braise','loup-des-neiges']);
-    assert.deepEqual(cartes.map(c => c.admissible), [true,false,true]);
+    const cartes = rpgCartesRenfortChoisi(d, side); assert.deepEqual(cartes.map(c => c.id), ['chacal-du-seuil','trait-de-braise','cotre-de-course']);
+    assert.deepEqual(cartes.map(c => c.admissible), [false,false,true]);
     const avant = JSON.stringify(d); assert.equal(choisir(d, side, cartes[1]).ok, false); assert.equal(JSON.stringify(d), avant);
     assert.ok(choisir(d, side, cartes[2]).ok); assert.deepEqual(d[side].deck, ['trait-de-braise','chacal-du-seuil','viking-des-neiges','chien-du-guet']);
-    assert.equal(d[side].creatures[0].carteId, 'loup-des-neiges');
+    assert.equal(d[side].creatures[0].carteId, 'cotre-de-course');
     assert.equal(d[side].invocationNormaleJouee ?? false, false); if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
   test(`Appel sans créature : les trois cartes sont mises sous le deck (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
@@ -31,21 +31,24 @@ for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
     assert.ok(lancer(d, side, 'appel-des-marees').ok); passer(d, side);
     assert.ok(choisir(d, side, null).ok); assert.deepEqual(d[side].deck, ['trait-de-braise','verglas','papyrus','chien-du-guet']);
   });
-  test(`Ralliement : choix neige depuis le deck, mélange et destruction à la fin du tour (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
-    const d = partie(moba); d.tour = side; d[side].main = ['ralliement-des-neiges'];
-    d[side].deck = ['chien-du-guet','loup-des-neiges','viking-des-neiges','chacal-du-seuil'];
+  test(`Ralliement : créature de coût 5 depuis la main, permanente (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
+    const d = partie(moba); d.tour = side; d[side].main = ['ralliement-des-neiges','jarl-au-marteau-de-guerre','loup-des-neiges','leviathan'];
+    d[side].deck = ['chien-du-guet'];
     assert.ok(lancer(d, side, 'ralliement-des-neiges').ok); passer(d, side);
-    const cartes = rpgCartesRenfortChoisi(d, side); assert.ok(cartes.some(c=>c.id==='loup-des-neiges'));
-    assert.ok(choisir(d, side, cartes.find(c=>c.id==='loup-des-neiges')).ok);
-    assert.equal(d[side].creatures[0].detruireFinDuTour, true); assert.deepEqual([...d[side].deck].sort(), ['chien-du-guet','viking-des-neiges','chacal-du-seuil'].sort());
-    rpgFinDeTour(d); assert.equal(d[side].creatures.length, 0); assert.ok(d[side].cimetiere.includes('loup-des-neiges'));
+    const cartes = rpgCartesRenfortChoisi(d, side); assert.deepEqual(cartes.map(c=>c.id), ['jarl-au-marteau-de-guerre']);
+    assert.ok(choisir(d, side, cartes[0]).ok); assert.equal(d[side].creatures[0].carteId, 'jarl-au-marteau-de-guerre');
+    assert.ok(!d[side].creatures[0].detruireFinDuTour); assert.deepEqual(d[side].deck, ['chien-du-guet']);
+    rpgFinDeTour(d); assert.equal(d[side].creatures[0].carteId, 'jarl-au-marteau-de-guerre');
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
-  test(`Veille : seuls les Samouraïs de coût ≤ 3 de la main sont proposés (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
-    const d = partie(moba); d.tour = side; d[side].main = ['veille-des-braises','hatamoto-des-cendres','loup-des-neiges','daimyo-du-soleil-rouge'];
+  test(`Veille : Braise coût exactement 3 depuis la main, détruite en fin de tour (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
+    const d = partie(moba); d.tour = side; d[side].main = ['veille-des-braises','djinn-de-la-flamme-mourante','hatamoto-des-cendres','loup-des-neiges','daimyo-du-soleil-rouge'];
     assert.ok(lancer(d, side, 'veille-des-braises').ok); passer(d, side);
-    const cartes = rpgCartesRenfortChoisi(d, side); assert.deepEqual(cartes.map(c=>c.id), ['hatamoto-des-cendres']);
-    assert.ok(choisir(d, side, cartes[0]).ok); assert.equal(d[side].creatures[0].carteId,'hatamoto-des-cendres');
-    assert.ok(d[side].main.includes('daimyo-du-soleil-rouge'));
+    const cartes = rpgCartesRenfortChoisi(d, side); assert.deepEqual(cartes.map(c=>c.id), ['djinn-de-la-flamme-mourante']);
+    assert.ok(choisir(d, side, cartes[0]).ok); assert.equal(d[side].creatures[0].carteId,'djinn-de-la-flamme-mourante');
+    assert.equal(d[side].creatures[0].detruireFinDuTour, true); assert.ok(d[side].main.includes('hatamoto-des-cendres'));
+    rpgFinDeTour(d); assert.equal(d[side].creatures.length, 0); assert.ok(d[side].cimetiere.includes('djinn-de-la-flamme-mourante'));
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
 }
 test('PvP : le serveur bloque les actions pendant le choix et refuse un choix adverse ou invalide', () => {
@@ -67,10 +70,10 @@ test('MOBA : le sort contrecarré ne révèle ni ne déplace les cartes du dessu
 });
 for (const moba of [false, true]) {
   test(`Appel fonctionne avec moins de trois cartes et conserve les doublons (${moba ? 'MOBA' : 'PvP'})`, () => {
-    const d = partie(moba); d.joueur.main = ['appel-des-marees']; d.joueur.deck = ['loup-des-neiges','loup-des-neiges'];
+    const d = partie(moba); d.joueur.main = ['appel-des-marees']; d.joueur.deck = ['cotre-de-course','cotre-de-course'];
     assert.ok(lancer(d, 'joueur', 'appel-des-marees').ok); passer(d,'joueur');
     assert.ok(choisir(d,'joueur',rpgCartesRenfortChoisi(d,'joueur')[1]).ok);
-    assert.deepEqual(d.joueur.deck, ['loup-des-neiges']); assert.equal(d.joueur.creatures.length, 1);
+    assert.deepEqual(d.joueur.deck, ['cotre-de-course']); assert.equal(d.joueur.creatures.length, 1);
   });
   test(`le choix est résolu même lorsque la zone ne contient aucune cible (${moba ? 'MOBA' : 'PvP'})`, () => {
     const d = partie(moba); d.joueur.main = ['ralliement-des-neiges']; d.joueur.deck = [];
@@ -79,15 +82,13 @@ for (const moba of [false, true]) {
     assert.equal(d.joueur.creatures.length, 0); assert.ok(!d.mobaRechercheEnAttente && !d.renfortChoixEnAttente);
   });
 }
-test('le mélange PvP est déterministe et utilise le hasard sérialisé', () => {
-  function jouer() {
-    const d = partie(); d.joueur.main = ['ralliement-des-neiges'];
-    d.joueur.deck = ['chien-du-guet','chacal-du-seuil','viking-des-neiges','trait-de-braise','loup-des-neiges','papyrus'];
-    assert.ok(lancer(d,'joueur','ralliement-des-neiges').ok);
-    assert.ok(choisir(d,'joueur',rpgCartesRenfortChoisi(d,'joueur').find(c=>c.id==='loup-des-neiges')).ok);
-    return d;
-  }
-  const a = jouer(), b = jouer(); assert.deepEqual(a.joueur.deck,b.joueur.deck); assert.ok(a.hasard.compteur > 0);
+test('Ralliement ne consulte ni ne mélange le deck en PvP', () => {
+  const d = partie(); d.joueur.main = ['ralliement-des-neiges','jarl-au-marteau-de-guerre'];
+  d.joueur.deck = ['chien-du-guet','chacal-du-seuil','viking-des-neiges','trait-de-braise'];
+  const deck = [...d.joueur.deck], compteur = d.hasard.compteur;
+  assert.ok(lancer(d,'joueur','ralliement-des-neiges').ok);
+  assert.ok(choisir(d,'joueur',rpgCartesRenfortChoisi(d,'joueur')[0]).ok);
+  assert.deepEqual(d.joueur.deck,deck); assert.equal(d.hasard.compteur,compteur);
 });
 test('les autres actions de moteur ne peuvent pas interrompre le choix', () => {
   const d = partie(); d.joueur.main = ['appel-des-marees','chien-du-guet']; d.joueur.deck = ['loup-des-neiges'];
@@ -98,25 +99,27 @@ test('les autres actions de moteur ne peuvent pas interrompre le choix', () => {
 
 test('l’IA du Duel choisit et résout un sort de renfort sans intervention humaine', async () => {
   const { choisirCarteIA } = await import('../src/games/rpgAI.js');
-  const d = partie(); d.pvp = false; d.tour = 'sorcier'; d.sorcier.main = ['veille-des-braises','hatamoto-des-cendres']; d.sorcier.invocationNormaleJouee = true; d.sorcier.reserveAscension = [];
+  const d = partie(); d.pvp = false; d.tour = 'sorcier'; d.sorcier.main = ['veille-des-braises','veilleur-des-cendres']; d.sorcier.invocationNormaleJouee = true; d.sorcier.reserveAscension = [];
   const choix = choisirCarteIA(d,'sorcier',{rng:()=>.5}); assert.equal(choix?.carteId,'veille-des-braises');
   assert.ok(rpgLancerMagie(d,'sorcier','veille-des-braises').ok);
-  assert.equal(d.sorcier.creatures[0].carteId,'hatamoto-des-cendres'); assert.ok(!d.renfortChoixEnAttente);
+  assert.equal(d.sorcier.creatures[0].carteId,'veilleur-des-cendres'); assert.ok(!d.renfortChoixEnAttente);
 });
 test('l’IA MOBA évalue le renfort et résout son choix', async () => {
   const { rpgMobaChoisirMagieIA, rpgMobaChoisirRechercheIA } = await import('../src/games/rpgMobaAI.js');
-  const d = partie(true); d.tour='sorcier'; d.sorcier.main=['veille-des-braises','hatamoto-des-cendres']; d.moba.creaturesJouees.sorcier=true;
+  const d = partie(true); d.tour='sorcier'; d.sorcier.main=['veille-des-braises','veilleur-des-cendres']; d.moba.creaturesJouees.sorcier=true;
   const choix=rpgMobaChoisirMagieIA(d,'sorcier'); assert.equal(choix?.id,'veille-des-braises');
   assert.ok(rpgMobaLancerMagie(d,'sorcier',choix.id).ok);
-  assert.equal(rpgMobaChoisirRechercheIA(d,'sorcier'),'hatamoto-des-cendres');
-  assert.ok(rpgMobaResoudreRecherche(d,'sorcier','hatamoto-des-cendres').ok);
-  assert.equal(d.sorcier.creatures[0].carteId,'hatamoto-des-cendres');
+  assert.equal(rpgMobaChoisirRechercheIA(d,'sorcier'),'veilleur-des-cendres');
+  assert.ok(rpgMobaResoudreRecherche(d,'sorcier','veilleur-des-cendres').ok);
+  assert.equal(d.sorcier.creatures[0].carteId,'veilleur-des-cendres');
 });
 for (const moba of [false, true]) test(`l’arrivée ciblée de la créature invoquée reste à choisir (${moba ? 'MOBA' : 'PvP'})`, async () => {
-  const d=partie(moba); d.joueur.main=['ralliement-des-neiges']; d.joueur.deck=['guerrier-au-bouclier-rond'];
-  assert.ok(lancer(d,'joueur','ralliement-des-neiges').ok); passer(d,'joueur');
+  const d=partie(moba); d.joueur.main=['chien-du-guet'];
+  const allie = moba ? (await import('../src/games/rpgMobaLocal.js')).rpgMobaJouerCreature(d,'joueur','chien-du-guet','left',0) : (await import('../src/games/rpgDuel.js')).rpgJouerCreature(d,'joueur','chien-du-guet');
+  assert.ok(allie.ok); d.joueur.main=['appel-des-marees']; d.joueur.deck=['veilleuse-des-citernes'];
+  assert.ok(lancer(d,'joueur','appel-des-marees').ok); passer(d,'joueur');
   assert.ok(choisir(d,'joueur',rpgCartesRenfortChoisi(d,'joueur')[0]).ok);
-  const e=d.joueur.creatures[0]; assert.equal(d.arriveeEnAttente?.carteId,'guerrier-au-bouclier-rond');
+  const e=allie.entite; assert.equal(d.arriveeEnAttente?.carteId,'veilleuse-des-citernes');
   const result = moba ? (await import('../src/games/rpgMobaLocal.js')).rpgMobaResoudreArrivee(d,'joueur',e.id)
     : rpgPvpAppliquer(d,'joueur',{type:'resoudre-arrivee',cibleId:e.id});
   assert.ok(result.ok,JSON.stringify(result)); assert.equal(e.bouclier,1); assert.ok(!d.arriveeEnAttente);
@@ -124,11 +127,11 @@ for (const moba of [false, true]) test(`l’arrivée ciblée de la créature inv
 
 test('MOBA : choisir un doublon précis conserve l’ordre des autres cartes', () => {
   const d=partie(true); d.joueur.main=['appel-des-marees'];
-  d.joueur.deck=['chien-du-guet','loup-des-neiges','trait-de-braise','loup-des-neiges'];
+  d.joueur.deck=['chien-du-guet','cotre-de-course','trait-de-braise','cotre-de-course'];
   assert.ok(lancer(d,'joueur','appel-des-marees').ok); passer(d,'joueur');
   const cartes=rpgCartesRenfortChoisi(d,'joueur');
   assert.ok(rpgMobaResoudreRecherche(d,'joueur',cartes[2].id,cartes[2].index).ok);
-  assert.deepEqual(d.joueur.deck,['trait-de-braise','loup-des-neiges','chien-du-guet']);
+  assert.deepEqual(d.joueur.deck,['trait-de-braise','cotre-de-course','chien-du-guet']);
 });
 for (const side of ['joueur','sorcier']) test(`PvP : le choix est privé pour le camp ${side}`, () => {
   const d=partie(); d.tour=side; d[side].main=['appel-des-marees']; d[side].deck=['chien-du-guet','loup-des-neiges','trait-de-braise'];
@@ -163,4 +166,36 @@ test('Duel : une attaque individuelle ne contourne pas le choix obligatoire', as
   const creature=rpgJouerCreature(d,'joueur','djinn-des-braises-voilees'); assert.ok(creature.ok);
   d.joueur.main=['appel-des-marees'];d.joueur.deck=['chien-du-guet'];assert.ok(lancer(d,'joueur','appel-des-marees').ok);
   assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d,'joueur',creature.entite.id).ok,false);
+});
+
+for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
+  test(`Ralliement accepte une créature non-Neige de coût exactement 5 (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
+    const d = partie(moba); d.tour = side;
+    d[side].main = ['ralliement-des-neiges', 'faucon-du-zenith', 'dune-marchante', 'leviathan', 'papyrus'];
+    d[side].deck = ['jarl-au-marteau-de-guerre'];
+    assert.ok(lancer(d, side, 'ralliement-des-neiges').ok); passer(d, side);
+    const cartes = rpgCartesRenfortChoisi(d, side);
+    assert.deepEqual(cartes.map(c => c.id), ['faucon-du-zenith']);
+    assert.ok(choisir(d, side, cartes[0]).ok);
+    assert.equal(d[side].creatures[0].carteId, 'faucon-du-zenith');
+    assert.deepEqual(d[side].deck, ['jarl-au-marteau-de-guerre']);
+    assert.equal(d[side].invocationNormaleJouee ?? false, false);
+    if (moba) assert.ok(rpgMobaPlacementCoherent(d));
+  });
+  test(`Appel écarte Eau coût 5 et créatures d'autres éléments (${moba ? 'MOBA' : 'PvP'} ${side})`, () => {
+    const d = partie(moba); d.tour = side; d[side].main = ['appel-des-marees'];
+    d[side].deck = ['cotre-de-course', 'chien-du-guet', 'galion-de-la-flotte', 'loup-des-neiges'];
+    assert.ok(lancer(d, side, 'appel-des-marees').ok); passer(d, side);
+    assert.ok(rpgCartesRenfortChoisi(d, side).every(c => !c.admissible));
+    assert.ok(choisir(d, side, null).ok); assert.equal(d[side].creatures.length, 0);
+    assert.deepEqual(d[side].deck, ['chien-du-guet', 'galion-de-la-flotte', 'loup-des-neiges', 'cotre-de-course']);
+  });
+}
+for (const moba of [false, true]) test(`Veille détruit une créature Braise multicolore de coût 3 (${moba ? 'MOBA' : 'PvP'})`, () => {
+  const d = partie(moba); d.joueur.main = ['veille-des-braises', 'sanguinaire-des-dunes'];
+  assert.ok(lancer(d, 'joueur', 'veille-des-braises').ok); passer(d, 'joueur');
+  assert.ok(choisir(d, 'joueur', rpgCartesRenfortChoisi(d, 'joueur')[0]).ok);
+  assert.equal(d.joueur.creatures[0].carteId, 'sanguinaire-des-dunes');
+  rpgFinDeTour(d); assert.ok(d.joueur.cimetiere.includes('sanguinaire-des-dunes'));
+  if (moba) assert.ok(rpgMobaPlacementCoherent(d));
 });

@@ -20,7 +20,7 @@ test('MOBA : les trois cartes sont montrées, une carte inéligible est désacti
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, props)));
     await act(async () => document.querySelector('.moba__mulligan .moba__primary').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
-    duel.joueur.main = ['appel-des-marees']; duel.joueur.deck = ['chien-du-guet','loup-des-neiges','trait-de-braise','chacal-du-seuil'];
+    duel.joueur.main = ['appel-des-marees']; duel.joueur.deck = ['chien-du-guet','cotre-de-course','trait-de-braise','chacal-du-seuil'];
     assert.ok(rpgMobaLancerMagie(duel,'joueur','appel-des-marees',null,null,null,{ ouvrirReponse: true }).ok);
     assert.ok(rpgMobaPasserSort(duel,'sorcier').ok);
     await act(async () => root.render(React.createElement(Board, props)));
@@ -28,8 +28,36 @@ test('MOBA : les trois cartes sont montrées, une carte inéligible est désacti
     const boutons = [...modal.querySelectorAll('.moba__mulligan-card')]; assert.equal(boutons.length, 3);
     assert.match(boutons[0].textContent, /Chacal/i); assert.equal(boutons[1].disabled, true);
     await act(async () => boutons[2].dispatchEvent(new dom.window.MouseEvent('click',{ bubbles: true })));
-    assert.equal(duel.joueur.creatures[0].carteId,'loup-des-neiges'); assert.equal(duel.mobaRechercheEnAttente,null);
+    assert.equal(duel.joueur.creatures[0].carteId,'cotre-de-course'); assert.equal(duel.mobaRechercheEnAttente,null);
     assert.equal(document.querySelector('[aria-label="Choix de carte"]'),null);
+    for (const [sort, valide, nonValide, texte] of [
+      ['veille-des-braises', 'veilleur-des-cendres', 'hatamoto-des-cendres', /Braise de coût 3.*détruite à la fin du tour/],
+      ['ralliement-des-neiges', 'ifrit-des-ergs', 'dune-marchante', /créature de coût 5 dans votre main/],
+    ]) {
+      duel.joueur.main = [sort, valide, nonValide];
+      assert.ok(rpgMobaLancerMagie(duel, 'joueur', sort, null, null, null, { ouvrirReponse: true }).ok);
+      assert.ok(rpgMobaPasserSort(duel, 'sorcier').ok);
+      await act(async () => root.render(React.createElement(Board, props)));
+      const panneau = document.querySelector('[aria-label="Choix de carte"]'); assert.ok(panneau);
+      assert.match(panneau.textContent, texte);
+      const choix = [...panneau.querySelectorAll('.moba__mulligan-card')];
+      assert.equal(choix.length, 1); assert.match(choix[0].textContent, new RegExp(valide === 'ifrit-des-ergs' ? 'Ifrit furtif' : 'Veilleur des cendres', 'i'));
+      await act(async () => choix[0].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
+      assert.ok(duel.joueur.creatures.some(c => c.carteId === valide));
+      assert.ok(duel.joueur.main.includes(nonValide));
+    }
+    duel.joueur.main = ['reanimation']; duel.joueur.cimetiere = ['ureus-du-seuil', 'viking-des-neiges'];
+    assert.ok(rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'right', null, { emplacementReanimation: 1, ouvrirReponse: true }).ok);
+    assert.ok(rpgMobaPasserSort(duel, 'sorcier').ok);
+    await act(async () => root.render(React.createElement(Board, props)));
+    const panneau = document.querySelector('[aria-label="Choix de carte"]'); assert.ok(panneau);
+    assert.match(panneau.textContent, /cimetière/);
+    const choix = [...panneau.querySelectorAll('.moba__mulligan-card')];
+    assert.equal(choix.length, 2);
+    const ureus = choix.find(c => /Uræus du seuil/.test(c.textContent)); assert.ok(ureus);
+    await act(async () => ureus.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
+    assert.ok(duel.joueur.creatures.some(c => c.carteId === 'ureus-du-seuil'));
+    assert.ok(duel.joueur.cimetiere.includes('viking-des-neiges'));
   } finally {
     if (root) await act(async () => root.unmount()); await vite.close(); dom.window.close();
     globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
@@ -55,7 +83,7 @@ for (const camp of ['joueur', 'sorcier']) test(`PvP : le camp ${camp} choisit av
     const {rpgPvpVue,rpgPvpAppliquer,rpgPvpBrancherHasard}=await vite.ssrLoadModule('/src/games/rpgPvp.js');
     const d=rpgNouveauDuel({joueurDeck:Array(30).fill('chien-du-guet'),sorcierDeck:Array(30).fill('chien-du-guet'),modeMana:'essai',pvp:true,rng:()=>.5});
     d.mulliganFait={joueur:true,sorcier:true};d.manaEssaiDemarre=true;d.joueur.manaChoixEnAttente=null;d.sorcier.manaChoixEnAttente=null;
-    d.tour=camp; d[camp].main=['appel-des-marees'];d[camp].deck=['chien-du-guet','loup-des-neiges','trait-de-braise','chacal-du-seuil'];rpgPvpBrancherHasard(d,12);
+    d.tour=camp; d[camp].main=['appel-des-marees'];d[camp].deck=['chien-du-guet','cotre-de-course','trait-de-braise','chacal-du-seuil'];rpgPvpBrancherHasard(d,12);
     assert.ok(rpgPvpAppliquer(d,camp,{type:'jouer-carte',carteId:'appel-des-marees'}).ok);
     const intentions=[];
     const props={vue:rpgPvpVue(d,camp), siege:camp, code:'ABCDEF12', statut:'en_cours',onQuitter(){},onIntention:async intention=>{intentions.push(intention);const r=rpgPvpAppliquer(d,camp,intention);assert.ok(r.ok,JSON.stringify(r));return {etat:rpgPvpVue(d,camp),seq:1};}};
@@ -63,7 +91,7 @@ for (const camp of ['joueur', 'sorcier']) test(`PvP : le camp ${camp} choisit av
     const modal=document.querySelector('[aria-labelledby="rpg-renfort-choix-titre"]');assert.ok(modal);
     const boutons=[...modal.querySelectorAll('.rpg-renfort-choix__carte')];assert.equal(boutons.length,3);assert.equal(boutons[1].disabled,true);
     await act(async()=>boutons[2].click());
-    assert.equal(intentions[0].type,'choisir-renfort');assert.equal(d[camp].creatures[0].carteId,'loup-des-neiges');
+    assert.equal(intentions[0].type,'choisir-renfort');assert.equal(d[camp].creatures[0].carteId,'cotre-de-course');
     assert.equal(document.querySelector('[aria-labelledby="rpg-renfort-choix-titre"]'),null);
   } finally {
     if(root) await act(async()=>root.unmount()); await vite.close();dom.window.close();

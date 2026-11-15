@@ -98,7 +98,7 @@ l’arrivée, sans pioche ni défausse quand il touche le sorcier adverse.
 
 ## 4. Dune marchante — le recyclage des magies
 
-**Règle actuelle :** à sa mort, la Dune récupère automatiquement le dernier sort (hors armes) de coût imprimé 3 ou moins dans son cimetière. Les valeurs et l’extrait ci-dessous documentent la version historique de ce changement.
+**Règle actuelle :** à son arrivée, la Dune cherche une Magie Rapide ou une Sorcellerie dans son deck et l’ajoute à sa main. Les valeurs et l’extrait ci-dessous documentent la version historique de ce changement.
 
 **Changement :** `text: '—'` → l’effet de mort qui remonte une **carte Magie
 ou Sorcellerie** du cimetière. Nouvel effet moteur `recyclage` (voir Impact).

@@ -29,7 +29,7 @@ Les Ascensions restent dans la **réserve séparée**, et non dans les 30 cartes
 | **Flotte de l’abordage** | Amiral des abysses | 2 Raïs de la galiote + 2 Légendes du Hollandais volant |
 | **Flotte de l’abordage** | Serpent des deux rivages | 2 Cotres de course + 2 Légendes du Hollandais volant |
 
-Dans la Meute des braises, jouer Dune marchante puis Confluence des étincelles invoque les deux Djinns éphémères le même tour, avant leur disparition. Le Ralliement des neiges aide les Drakkars à retrouver un Viking, tandis que la Flotte partage le Hollandais volant entre les recettes de l’Amiral et du Serpent : le sacrifier pour l’un ne le laisse pas disponible pour l’autre.
+Dans la Meute des braises, jouer Dune marchante puis Confluence des étincelles invoque les deux Djinns éphémères le même tour, avant leur disparition. Le Ralliement des neiges invoque depuis la main une créature de coût 5, comme un Drakkar, tandis que la Flotte partage le Hollandais volant entre les recettes de l’Amiral et du Serpent : le sacrifier pour l’un ne le laisse pas disponible pour l’autre.
 
 ## 1. Éveil du Dragon Rouge
 
@@ -62,23 +62,23 @@ La recette exige précisément le Rōnin du Soleil rouge (3) et l’Onna-musha d
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 2× | Réanimation | 5 | — |
-| 2× | Rapport du greffier | 4 | — |
-| 2× | Frappe d’iaijutsu | 1 | — |
-| 2× | Rempart de dunes | 2 | — |
-| 1× | Vent rouge | 3 | — |
+| 2× | Réanimation | — | — |
+| 2× | Rapport du greffier | — | — |
+| 2× | Frappe d’iaijutsu | — | — |
+| 2× | Rempart de dunes | — | — |
+| 1× | Vent rouge | — | — |
 
 **Armes — 1 carte**
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 1× | Armure de cendres | 4 | — |
+| 1× | Armure de cendres | — | — |
 
 ### Plan de jeu
 
 1. Poser et conserver le Rōnin, puis réunir l’Onna-musha. Les coûts imprimés ne changent pas avec le Shogun ou les armes.
-2. Tiziri trouve un sort et le Rapport du greffier fait piocher deux cartes. Le Convoi appelle un petit Sable : Scarabée pour préparer une pioche à sa mort, ou Tiziri pour trouver un sort. Il n’appelle pas un Samouraï.
-3. Si un Samouraï est tombé, Réanimation peut le remettre en jeu sans utiliser l’invocation normale. Le sort ramène la dernière créature admissible du cimetière : surveiller l’ordre des morts, ce n’est pas un choix libre de Samouraï.
+2. Tiziri trouve un sort et le Rapport du greffier fait piocher deux cartes. Le Convoi récupère en main une petite créature Sable, Eau ou Ténèbres de son cimetière.
+3. Si un Samouraï est tombé, Réanimation peut le remettre en jeu sans utiliser l’invocation normale. Le sort permet de choisir la créature admissible dans le cimetière.
 4. Pour poser Daimyō ou Tojiro depuis la main, sacrifier plutôt un petit soutien que l’autre moitié de la recette. Le Rempart de dunes aide à conserver les matériaux. Les autres Samouraïs, même de coût total 7, ne remplacent pas les deux cartes nommées.
 
 **Exemple de préparation :** Rōnin du Soleil rouge 3 joué normalement + Onna-musha 4 revenue par Réanimation → Dragon Rouge. Le quota normal déjà consommé reste consommé ; l’Ascension n’en demande pas un deuxième.
@@ -112,33 +112,33 @@ La recette exige le Berserk des trois hivers (3) et le Jarl au marteau de guerre
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 2× | Retour des ensevelis | 3 | — |
-| 2× | Papyrus | 1 | — |
-| 2× | Poigne de givre | 2 | — |
-| 2× | Festin des vaillants | 3 | — |
-| 1× | Mur de boucliers | 5 | — |
-| 1× | Ralliement des neiges | 2 | — |
+| 2× | Retour des ensevelis | — | — |
+| 2× | Papyrus | — | — |
+| 2× | Poigne de givre | — | — |
+| 2× | Festin des vaillants | — | — |
+| 1× | Mur de boucliers | — | — |
+| 1× | Ralliement des neiges | — | — |
 
 **Armes — 1 carte**
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 1× | Lance de la lune givrée | 3 | — |
+| 1× | Lance de la lune givrée | — | — |
 
 ### Plan de jeu
 
 1. Le Viking des neiges peut payer la pose du Jarl au marteau. Ne sacrifiez pas votre unique Berserk.
 2. La Valkyrie au corbeau pioche un Viking au hasard dans le deck ; elle augmente l’accès aux matériaux sans garantir un coût précis. La recherche est aléatoire et peut trouver un autre Viking.
-3. Ralliement des neiges peut invoquer le Berserk depuis le deck ; réalisez l’Ascension avant que le renfort éphémère ne disparaisse. Retour des ensevelis relève d’autres Vikings Ténèbres, mais pas le Berserk uniquement Neige.
+3. Ralliement des neiges peut invoquer le Jarl de coût 5 depuis la main ; réunissez-le avec le Berserk pour réaliser l’Ascension. Retour des ensevelis relève d’autres Vikings Ténèbres, mais pas le Berserk uniquement Neige.
 4. Les deux Vikings hybrides 3 ont une Embuscade conditionnelle. Le Guerrier au bouclier rond protège un matériau, Poigne de givre retient une menace et les soins prolongent les corps nécessaires. Leurs coûts imprimés ne changent pas même blessés ou équipés.
 
-**Exemple de préparation :** Viking des neiges déjà en jeu → le sacrifier pour poser le Jarl au marteau 5 ; Ralliement invoque le Berserk des trois hivers 3 → Jarl du Dernier Rempart.
+**Exemple de préparation :** Berserk des trois hivers 3 déjà en jeu → Ralliement invoque le Jarl au marteau 5 depuis la main → Jarl du Dernier Rempart.
 
 ## 3. Rite de l’Éclipse
 
 **Sable / Ténèbres · Ascension : Scorpion de l’Éclipse.**
 
-2 Scorpions du seuil et 6 créatures Ténèbres de coût 3 : deux Uræus, deux Momies et deux Veuves. Les autres petits Sable ont été retirés pour ne pas détourner le Convoi du Scorpion.
+2 Scorpions du seuil et 6 créatures Ténèbres de coût 3 : deux Uræus, deux Momies et deux Veuves. Le Convoi peut récupérer une petite créature admissible du cimetière.
 
 **Mulligan :** Chercher Scorpion du seuil + Convoi, puis au moins un Ténèbres 3. Garder Retour des ensevelis si le cimetière pourra fournir le second Ténèbres 3 ; utiliser la pioche pour trouver la pièce manquante.
 
@@ -164,26 +164,26 @@ La recette exige le Berserk des trois hivers (3) et le Jarl au marteau de guerre
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 2× | Retour des ensevelis | 3 | — |
-| 2× | Rapport du greffier | 4 | — |
-| 2× | Offrande de lin | 2 | — |
-| 2× | Effacement des faibles | 3 | — |
-| 2× | Papyrus | 1 | — |
+| 2× | Retour des ensevelis | — | — |
+| 2× | Rapport du greffier | — | — |
+| 2× | Offrande de lin | — | — |
+| 2× | Effacement des faibles | — | — |
+| 2× | Papyrus | — | — |
 
 **Armes — 1 carte**
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 1× | Javelot du beffroi | 2 | — |
+| 1× | Javelot du beffroi | — | — |
 
 ### Plan de jeu
 
-1. Le Convoi appelle la première créature Sable de coût 2 de la main. En dehors des autres Convois, la liste ne lui propose que le Scorpion du seuil ; plusieurs Convois ne créent pas de boucle.
-2. Retour des ensevelis remet en jeu le dernier Ténèbres admissible de coût 3 ou moins. Une Momie ou un Uræus peuvent donc préparer la recette sans deuxième invocation normale.
+1. Le Convoi remet en main la dernière créature Sable, Eau ou Ténèbres admissible du cimetière ; il ne l’invoque pas.
+2. Retour des ensevelis remet en jeu un Ténèbres choisi de coût 3 ou moins. Une Momie ou un Uræus peuvent donc préparer la recette sans deuxième invocation normale.
 3. L’Uræus dispose déjà d’Attaque ciblée ; le Javelot en donne une autre source. Blesser les ennemis prépare la vague du grand Scorpion, qui détruit toutes les créatures blessées des deux camps : attention à vos alliés. Une perte d’armure seule ne suffit pas.
 4. Réunir précisément Scorpion du seuil, Uræus du seuil et Momie de lin. Le Convoi n’est pas un Scorpion et ne remplace pas ce rôle. Rapports du greffier et Papyrus servent à trouver les trois pièces.
 
-**Exemple de préparation :** Uræus 3 conservé sur le terrain + Scorpion du seuil 2 appelé par le Convoi + Momie 3 relevée par Retour des ensevelis → Scorpion de l’Éclipse.
+**Exemple de préparation :** Uræus 3 conservé sur le terrain + Scorpion du seuil 2 invoqué normalement + Momie 3 relevée par Retour des ensevelis → Scorpion de l’Éclipse.
 
 ## 4. Forge du Verre Ardent
 
@@ -215,22 +215,22 @@ Djinns Braise 1 et 3 en plusieurs exemplaires, deux Dunes marchantes et deux exe
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 2× | Confluence des étincelles | 3 | — |
-| 2× | Éveil des dunes | 4 | — |
-| 2× | Trait de braise | 3 | — |
-| 2× | Vent rouge | 3 | — |
-| 2× | Frappe d’iaijutsu | 1 | — |
+| 2× | Confluence des étincelles | — | — |
+| 2× | Éveil des dunes | — | — |
+| 2× | Trait de braise | — | — |
+| 2× | Vent rouge | — | — |
+| 2× | Frappe d’iaijutsu | — | — |
 
 **Armes — 2 cartes**
 
 | Qté | Carte | Coût imprimé | Matériau de l’Ascension |
 | ---: | --- | ---: | --- |
-| 1× | Armure de cendres | 4 | — |
-| 1× | Braise et sable | 3 | — |
+| 1× | Armure de cendres | — | — |
+| 1× | Braise et sable | — | — |
 
 ### Plan de jeu
 
-1. Éveil des dunes trouve la première Dune marchante admissible depuis le dessus de la pioche. Il ne sort pas une Dune de la main et ne modifie pas l’ordre des autres cartes.
+1. Éveil des dunes trouve la première Dune marchante admissible depuis le dessus de la pioche. À son arrivée, choisissez une Magie Rapide ou Sorcellerie de votre deck à ajouter à votre main. Il ne sort pas une Dune de la main et ne modifie pas l’ordre des autres cartes.
 2. Confluence appelle le premier Djinn Braise 1, puis le premier Djinn Braise 3 de la main. La pioche d’arrivée du Djinn de la flamme mourante fonctionne réellement.
 3. Quand les deux sorts sont disponibles, Éveil avant Confluence sécurise la Dune avant la pioche du Djinn. Garder de la place pour trois matériaux et vérifier que la Dune est encore dans la pioche.
 4. Plusieurs Djinns sont furtifs : ne pas compter les conserver jusqu’au tour suivant. Préparer puis réaliser l’Ascension dans le même tour est préférable. Les invocations par effets ne rendent pas le quota normal disponible à nouveau.

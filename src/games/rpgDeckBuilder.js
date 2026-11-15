@@ -364,7 +364,7 @@ export function reparerCasierHorsStock(casier, collection = null, comptes = null
 export const RPG_COURBE_PALIERS = [1, 2, 3, 4, 5, 6, 7];
 
 /**
- * La courbe de mana d'un deck — les cartes non-terrain réparties par coût,
+ * La courbe des coûts imprimés d'un deck — les cartes qui ont un coût, réparties
  * de 1 à 6 puis « 7+ » (les coûts 0 rejoignent le premier palier). Rend
  * `{ paliers: [{ cout, label, nombre }], max, moyenne, nonTerrains }` ;
  * `moyenne` est arrondie au dixième, `0` sans carte.
@@ -375,7 +375,7 @@ export function courbeDeMana(cardIds) {
   let somme = 0;
   for (const id of (Array.isArray(cardIds) ? cardIds : [])) {
     const carte = cardById(id);
-    if (!carte || carte.kind === 'terrain') continue;
+    if (!carte || carte.kind === 'terrain' || carte.cost == null) continue;
     const cout = Math.max(0, Number(carte.cost) || 0);
     const palier = Math.min(Math.max(cout, 1), 7);
     nombres.set(palier, nombres.get(palier) + 1);

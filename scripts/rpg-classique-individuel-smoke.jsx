@@ -154,7 +154,6 @@ export async function checkCombatIndividuel(assert) {
     await act(async () => window.__RPG_FORCE__());
     await click(container.querySelector('.rpg-hand__card[data-card-id="trait-de-braise"]'));
     assert.ok(duel.combatDeclare, 'la désignation du sort suspend la résolution');
-    await click(container.querySelector('.rpg-spell-confirm .rpg-btn--primary'));
     await click(card(ennemi.id));
     for (let i = 0; i < 20 && duel.joueur.main.includes('trait-de-braise'); i++) {
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 250)); });

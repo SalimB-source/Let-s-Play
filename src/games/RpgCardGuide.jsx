@@ -40,7 +40,7 @@ function GuideCard({ carte, cardArt }) {
       <div className="rpg-card-guide__art">
         <img src={cardArt(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" />
         {magieFamille(carte) && <SortSceau carte={carte} className="rpg-card-guide__sort" />}
-        {carte.kind !== 'terrain' && <span
+        {carte.kind !== 'terrain' && carte.cost != null && <span
           className={`rpg-card-guide__cost${degradeCout ? ' rpg-card-guide__cost--hybride' : ''}`}
           style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}
           aria-label={`Coût : ${carte.cost} mana${exigencesCout ? `, dont ${exigencesCout}` : ''}`}

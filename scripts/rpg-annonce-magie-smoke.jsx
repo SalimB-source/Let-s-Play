@@ -55,7 +55,6 @@ export async function checkAnnonceMagie(assert) {
     await act(async () => window.__RPG_FORCE__());
     await click(container.querySelector('.rpg-annonce-sort--magie .rpg-annonce-sort__respond'));
     await click(container.querySelector('.rpg-hand__card[data-card-id="silence-decume"]'));
-    await click(container.querySelector('.rpg-spell-confirm .rpg-btn--primary'));
     assert.equal(duel.annonce, null, 'le contre défait le sort en attente');
     assert.equal(duel.joueur.pv, vie);
     assert.ok(duel.sorcier.cimetiere.includes('trait-de-braise'));

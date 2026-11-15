@@ -230,7 +230,7 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'mythique',
     arrivee: { type: 'reanimation' },
     typeLine: 'Créature légendaire — Passeur du seuil',
-    text: 'Quand Le Passeur au masque de chacal arrive : la dernière créature de votre cimetière revient en jeu.',
+    text: 'À son arrivée : choisissez une créature de votre cimetière et invoquez-la spécialement.',
     flavor: 'Il connaît le poids de chaque cœur avant même que l’aiguille ne bouge.',
   }),
   carte({
@@ -321,7 +321,7 @@ export const RPG_TENEBRES_FIGURES = RPG_TENEBRES_CREATURES.slice(-5);
 export const RPG_TENEBRES_MAGIES = [
   carte({
     id: 'effacement-des-faibles', name: 'Effacement des faibles',
-    kind: 'magie', cost: 3, rarity: 'inhabituelle',
+    kind: 'magie',  rarity: 'inhabituelle',
     typeLine: 'Sorcellerie — Ténèbres',
     effet: { type: 'destruction-cible', cible: 'creature', coutMax: 3 },
     cibles: ['creature', 'creature-amie'],
@@ -330,7 +330,7 @@ export const RPG_TENEBRES_MAGIES = [
   }),
   carte({
     id: 'le-jugement-des-colosses', name: 'Le Jugement des colosses',
-    kind: 'magie', cost: 5, rarity: 'rare',
+    kind: 'magie',  rarity: 'rare',
     typeLine: 'Sorcellerie — Ténèbres',
     effet: { type: 'destruction-cible', cible: 'creature', coutMin: 4 },
     cibles: ['creature', 'creature-amie'],
@@ -341,7 +341,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'la-derniere-pesee',
     name: 'La Dernière Pesée',
     kind: 'magie',
-    cost: 8,
+
     rarity: 'mythique',
     typeLine: 'Sorcellerie — Jugement · Ténèbres',
     effet: { type: 'destruction-totale' },
@@ -353,7 +353,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'papyrus',
     name: 'Papyrus',
     kind: 'magie',
-    cost: 1,
+
     rarity: 'commune',
     instant: true,
     prixPv: 2,
@@ -367,7 +367,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'nom-efface',
     name: 'Nom effacé',
     kind: 'magie',
-    cost: 2,
+
     rarity: 'inhabituelle',
     typeLine: 'Sorcellerie — Effacement · Ténèbres',
     effet: { type: 'defausse-adverse' },
@@ -379,7 +379,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'offrande-de-lin',
     name: 'Offrande de lin',
     kind: 'magie',
-    cost: 2,
+
     rarity: 'commune',
     prixPv: 1,
     typeLine: 'Sorcellerie — Offrande · Ténèbres',
@@ -392,7 +392,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'le-poids',
     name: 'Le Poids',
     kind: 'magie',
-    cost: 3,
+
     rarity: 'commune',
     instant: true,
     typeLine: 'Magie Rapide — Ténèbres',
@@ -413,7 +413,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'les-feuillets',
     name: 'Les feuillets',
     kind: 'magie',
-    cost: 4,
+
     rarity: 'rare',
     typeLine: 'Sorcellerie — Livre des morts · Ténèbres',
     effet: { type: 'defaussePaquet', amount: 3 },
@@ -428,7 +428,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'la-grande-pesee',
     name: 'La Grande Pesée',
     kind: 'magie',
-    cost: 5,
+
     rarity: 'rare',
     prixPv: 1,
     typeLine: 'Sorcellerie — Pesée · Ténèbres',
@@ -447,7 +447,7 @@ export const RPG_TENEBRES_ARMES = [
     id: 'khopesh-d-or',
     name: 'Khopesh d’or',
     kind: 'arme',
-    cost: 3,
+
     rarity: 'rare',
     typeLine: 'Arme — Khopesh',
     bonus: { atk: 2, def: 1 },

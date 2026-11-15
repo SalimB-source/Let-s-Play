@@ -115,7 +115,7 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   }
   // L'étagement par rareté du prototype : chiffres, effets d'élément, immunité.
   assert.equal(armeById('takouba-des-pistes').rarity, 'commune');
-  assert.equal(armeById('takouba-des-pistes').cost, 3);
+  assert.equal(armeById('takouba-des-pistes').cost, undefined);
   assert.deepEqual(armeById('takouba-des-pistes').bonus, { atk: 2, def: 0 });
   assert.equal(armeById('takouba-des-pistes').donne.infiltration, true);
   assert.equal(armeById('baton-des-citernes').arrivee.jeton, 'serpent-des-citernes');
@@ -133,7 +133,7 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   assert.equal(armeById('armure-de-cendres').donne.contreAttaque, true);
   // La Hache de la banquise : le forfait d'attachement et le bouclier de l'arme.
   const hache = armeById('hache-de-la-banquise');
-  assert.equal(hache.cost, 3);
+  assert.equal(hache.cost, undefined);
   assert.equal(hache.element, 'neige');
   assert.deepEqual(hache.bonus, { atk: 3, def: 0 });
   assert.match(hache.text, /\+3\/\+0/);

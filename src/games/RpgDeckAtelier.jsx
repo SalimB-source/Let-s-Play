@@ -99,6 +99,7 @@ function Pip({ element }) {
  * des cartes de la collection et à l'extrémité droite des barres du deck.
  */
 function Cout({ carte }) {
+  if (carte.cost == null) return null;
   const exigences = Object.entries(cardColorCost(carte)).map(([couleur, n]) => `${n} ${COULEUR_LABELS[couleur] ?? couleur}`).join(' et ');
   const couleurs = cardColors(carte);
   const modificateur = couleurs.length > 1
@@ -122,11 +123,11 @@ function trierCatalogue(liste, tri) {
       if (ecart !== 0) return ecart;
     }
     if (tri === 'cout-desc') {
-      const ecart = cardCost(b) - cardCost(a);
+      const ecart = (cardCost(b) ?? -1) - (cardCost(a) ?? -1);
       if (ecart !== 0) return ecart;
       return a.name.localeCompare(b.name, 'fr');
     }
-    const ecartCout = cardCost(a) - cardCost(b);
+    const ecartCout = (cardCost(a) ?? Infinity) - (cardCost(b) ?? Infinity);
     if (ecartCout !== 0) return ecartCout;
     return a.name.localeCompare(b.name, 'fr');
   });
@@ -336,6 +337,7 @@ export function RpgDeckAtelier({
       if (specType?.test && !specType.test(carte)) return false;
       if (coutsActifs.size > 0) {
         const cout = cardCost(carte);
+        if (cout == null) return false;
         const palier = cout >= 7 ? 7 : cout;
         if (!coutsActifs.has(palier)) return false;
       }
@@ -355,7 +357,7 @@ export function RpgDeckAtelier({
       const carte = cardById(id);
       if (carte) entrees.push({ carte, nombre });
     }
-    return entrees.sort((a, b) => cardCost(a.carte) - cardCost(b.carte) || a.carte.name.localeCompare(b.carte.name, 'fr'));
+    return entrees.sort((a, b) => (cardCost(a.carte) ?? Infinity) - (cardCost(b.carte) ?? Infinity) || a.carte.name.localeCompare(b.carte.name, 'fr'));
   }, [compte]);
 
   const deckParGroupe = useMemo(() => GROUPES.map((groupe) => {
@@ -879,7 +881,7 @@ export function RpgDeckAtelier({
                 <span aria-hidden="true">·</span>
                 <span title="Armes">🗡 <b>{statsTypes.armes}</b> armes</span>
                 <span aria-hidden="true">·</span>
-                <span title="Coût moyen de mana">Ø <b>{statsTypes.coutMoyen}</b></span>
+                <span title="Coût imprimé moyen des cartes ayant un coût">Ø <b>{statsTypes.coutMoyen}</b></span>
               </p>
 
               <p className={`rpg-atelier__verdict ${validation.ok ? 'is-valid' : 'is-invalid'}`} role="status">

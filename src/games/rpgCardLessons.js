@@ -36,7 +36,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['brise-lame', 'sabre-maudit', 'takouba-des-pistes'],
     title: 'Une Braise peut briser une arme équipée',
-    text: 'Brise-lame est une Magie Rapide de coût 3 : elle détruit une arme portée par une créature adverse, puis fait piocher une carte. La créature doit être équipée — une arme du prototype ou le Sabre maudit — sinon le sort ne se lance pas. L’arme rejoint le cimetière de son camp ; le porteur perd les bonus et les mots-clés qu’elle donnait, mais reste sur la table. Un bouclier de Braise bloque le sort et se brise ; une protection contre les sorts ou une Esquive peuvent aussi empêcher la destruction.',
+    text: 'Brise-lame est une Magie Rapide : elle détruit une arme portée par une créature adverse, puis fait piocher une carte. La créature doit être équipée — une arme du prototype ou le Sabre maudit — sinon le sort ne se lance pas. L’arme rejoint le cimetière de son camp ; le porteur perd les bonus et les mots-clés qu’elle donnait, mais reste sur la table. Un bouclier de Braise bloque le sort et se brise ; une protection contre les sorts ou une Esquive peuvent aussi empêcher la destruction.',
   },
   {
     id: 'rituel-ephemere',
@@ -50,7 +50,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['trait-de-braise', 'tempete-de-sable', 'vent-rouge'],
     title: 'Choisir une cible ou frapper une zone',
-    text: 'Le Trait de braise demande une cible légale : une créature ou le sorcier. La Tempête de sable et le Vent rouge touchent toutes les créatures adverses. Le Vent rouge est hybride : son coût exige Braise et Sable, et son disque de coût partage leurs couleurs. Sa ligne de type indique qu’il s’agit d’une Sorcellerie. Regardez toujours la cible et la portée écrites sur la carte.',
+    text: 'Le Trait de braise demande une cible légale : une créature ou le sorcier. La Tempête de sable et le Vent rouge touchent toutes les créatures adverses. Le Vent rouge est hybride : son cadre porte les couleurs Braise et Sable. Sa ligne de type indique qu’il s’agit d’une Sorcellerie. Regardez toujours la cible et la portée écrites sur la carte.',
   },
   {
     id: 'soin-et-pioche',
@@ -260,7 +260,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['kraken'],
     title: 'Une arrivée peut offrir un sort gratuit',
-    text: 'Quand le Kraken émerge, vous pouvez lancer depuis votre main une magie rapide ou une sorcellerie sans payer son coût de mana. Un éventuel Prix en PV reste dû, et un contresort — qui ne vit qu’en réponse — n’entre pas dans la faveur. La fenêtre se referme dès le sort lancé, ou à la fin du tour si vous y renoncez.',
+    text: 'Quand le Kraken émerge, vous pouvez lancer depuis votre main une magie rapide ou une sorcellerie pendant cette fenêtre. Un éventuel Prix en PV reste dû, et un contresort — qui ne vit qu’en réponse — n’entre pas dans la faveur. La fenêtre se referme dès le sort lancé, ou à la fin du tour si vous y renoncez.',
   },
   {
     id: 'embuscade',

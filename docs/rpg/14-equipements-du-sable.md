@@ -3,6 +3,8 @@
 **Onze cartes Arme** pour l'élément **Sable**, dessinées dans l'esprit des
 *Equipment* de Magic the Gathering et traduites dans la grammaire du Sablier.
 
+**Note :** les fiches et chiffres ci-dessous documentent le design historique ; les anciens coûts d’armes cités ici ne sont plus des règles. Les armes n’ont désormais aucun coût imprimé.
+
 **État : lot codé.** Les dix fiches vivent dans `RPG_ARME_CARDS`
 (`src/games/rpgCards.js`), les six briques moteur dans `src/games/rpgDuel.js`
 et `src/games/rpgAI.js`, les contrôles dans `tests/rpg-equipements-sable.test.js`.
@@ -11,7 +13,7 @@ existe, ce que le code ne dit pas.
 
 Rappel du cadre qui contraint tout le lot (§ 9 de `05-concept-cartes.md`) :
 
-- l'arme **s'attache** depuis la main, en payant son coût, à **une créature
+- l'arme **s'attache** depuis la main, sans coût imprimé, à **une créature
   alliée** (héros et jetons compris) ;
 - **une seule arme par créature** ; attacher la seconde envoie la première au
   cimetière ;

@@ -6,7 +6,7 @@
 import { armeById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
 import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale, rpgMobaBonusProvocation } from './rpgMobaAttaqueIndividuelle.js';
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
-import { indexReanimation } from './rpgRenforts.js';
+import { candidatsRenfortChoisi } from './rpgRenforts.js';
 import {
   rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
@@ -196,7 +196,7 @@ export function rpgMobaCandidatsRecherche(duel, side) {
   if (recherche.renfort) return [...new Set(rpgCartesRenfortChoisi(duel, side).filter(c => c.admissible).map(c => c.id))];
   return [...new Set(duel[side].deck.filter((id) => {
     if (recherche.sourceCarteId === 'pilote-de-la-carreira') return cardHasPrintedType(id, 'Navire');
-    if (recherche.sourceCarteId !== 'tiziri-du-djurdjura') return false;
+    if (!['tiziri-du-djurdjura', 'dune-marchante'].includes(recherche.sourceCarteId)) return false;
     const ligne = magieById(id)?.typeLine ?? '';
     return ligne.includes('Magie Rapide') || ligne.includes('Sorcellerie');
   }))];
@@ -208,9 +208,20 @@ export function rpgMobaResoudreRecherche(duel, side, cardId, index = undefined) 
   if (duel.mobaRechercheEnAttente.renfort) {
     const choix = rpgCartesRenfortChoisi(duel, side).find(c => c.admissible && c.id === cardId && (index === undefined || c.index === index));
     if (cardId !== null && !choix) return fail('cible');
+    rpgConsommerSoinsCreatureMoba(duel); rpgConsommerDegatsCapaciteMoba(duel); rpgConsommerPiochesRetourExilMoba(duel);
     const result = rpgResoudreRenfortChoisi(duel, side, choix?.index ?? null);
-    if (result.ok) { synchroniserSorties(duel); normaliserArriveeMoba(duel); }
-    return result;
+    const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
+    const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
+    const drawEvents = rpgConsommerPiochesRetourExilMoba(duel);
+    if (result.ok) {
+      synchroniserSorties(duel); normaliserArriveeMoba(duel);
+      if (duel.mobaEmbuscadeArrivee && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente && !duel.mobaRechercheEnAttente) {
+        duel.mobaEmbuscadeArrivee = null; reconcilerCombatDeclare(duel);
+        if (duel.mobaReponseSuspendue) reprendreReponseSuspendue(duel);
+        else if (duel.combatDeclare) duel.fenetreReponse = true;
+      }
+    }
+    return { ...result, ...(healingEvents.length ? { healingEvents } : {}), ...(damageEvents.length ? { damageEvents } : {}), ...(drawEvents.length ? { drawEvents } : {}) };
   }
   if (!rpgMobaCandidatsRecherche(duel, side).includes(cardId)) return fail('cible');
   const [id] = duel[side].deck.splice(duel[side].deck.indexOf(cardId), 1);
@@ -425,7 +436,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   // deferred arrival choices. Other arrivals remain gated until audited.
   const soinArrivee = ['porteuse-de-cruches', 'yamina', 'dame-des-neuf-mondes', 'tour-des-flots'].includes(cardId);
   const arriveeCiblee = MOBA_ARRIVEES_ALLIEES.includes(cardId) || MOBA_ARRIVEES_HOSTILES.includes(cardId) || MOBA_ARRIVEES_NEUTRES.includes(cardId);
-  const arriveeGlobale = MOBA_ARRIVEES_GLOBALES.includes(cardId) || ['tiziri-du-djurdjura', 'pilote-de-la-carreira', 'pretre-de-la-bouche'].includes(cardId);
+  const arriveeGlobale = MOBA_ARRIVEES_GLOBALES.includes(cardId) || ['tiziri-du-djurdjura', 'dune-marchante', 'pilote-de-la-carreira', 'pretre-de-la-bouche'].includes(cardId);
   if ((carte.arrivee && carte.arrivee.type !== 'pioche' && !soinArrivee && !arriveeCiblee && !arriveeGlobale) || (Number.isFinite(carte.abordage) && !MOBA_ABORDAGE_IMPRIME.includes(cardId)) || carte.interceptionAttaque
     || carte.prixPv || (carte.kind !== 'site' && duel[side].abordageDesArrivees)) return fail('effet-non-pris-en-charge');
   // Une invocation payée par sacrifice prend physiquement la place d'une
@@ -730,7 +741,7 @@ export function rpgMobaPasserSort(duel, side) {
   const retour = attente.reanimationMoba;
   const placementArmeInvalide = attente.placementArmeVivante && !emplacementReanimationValide(duel, attente.cote, attente.placementArmeVivante.laneId, attente.placementArmeVivante.slot);
   const equipementInvalide = attente.carteId === 'memoire-de-l-armurerie' && (attente.cibleSecondaireId !== 'sabre-maudit' || !duel[attente.cote].cimetiere.includes('sabre-maudit') || rpgEstProtegee(duel[attente.cote].creatures.find((e) => e.id === attente.cibleId), cardColors(magieById('sabre-maudit'))));
-  const retourInvalide = MOBA_MAGIES_REANIMATION.includes(attente.carteId) && (!retour || !emplacementReanimationValide(duel, attente.cote, retour.laneId, retour.slot) || !derniereCreatureReanimable(duel, attente.cote, attente.carteId));
+  const retourInvalide = MOBA_MAGIES_REANIMATION.includes(attente.carteId) && (!retour || !emplacementReanimationValide(duel, attente.cote, retour.laneId, retour.slot) || !creatureReanimable(duel, attente.cote, attente.carteId));
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
   const result = placementArmeInvalide || equipementInvalide || retourInvalide || (voiePerdue && attente.carteId !== 'festin-des-vaillants') ? fail('cible') : attente.armeMoba
@@ -738,7 +749,7 @@ export function rpgMobaPasserSort(duel, side) {
     : rpgLancerMagie(duel, attente.cote, attente.carteId, attente.cibleId, attente.cibleSecondaireId ?? null, {
     resoudreSortMoba: true,
     ...(attente.laneId ? { mobaLane: attente.laneId } : {}),
-    ...(retour ? { placerReanimationMoba: placementReanimation(duel, attente.cote, retour.laneId, retour.slot), surEvenementRetourMoba: observerRetour(damageEvents, healingEvents) } : {}),
+    ...(retour ? { reanimationMoba: retour, surEvenementRetourMoba: observerRetour(damageEvents, healingEvents) } : {}),
     ...(attente.carteId === 'feux-de-kitsune' && attente.cibleSecondaireId ? { ciblesIndependantesMoba: true } : {}),
     ...(transfertVoie ? { mobaLane: attente.laneId, surTransfertMoba: (event) => {
       damageEvents.push({ ...event, laneId: attente.laneId, targetSide: side, cardId: attente.carteId, transfert: true });
@@ -888,12 +899,11 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
   return rpgMobaResoudreAttaqueIndividuelle(duel, side);
 }
 
-// Match the classic engine's latest eligible creature, without skipping an
-// unsupported card to revive an older one. Returns never bypass the audit gate.
-function derniereCreatureReanimable(duel, side, carteId = 'reanimation') {
-  const index = indexReanimation(duel[side], magieById(carteId)?.effet);
-  const id = index >= 0 ? duel[side].cimetiere[index] : null;
-  return id && CARTES_COMBAT_AUDITEES.has(id) ? id : null;
+// Une carte admissible et auditée suffit : le joueur choisira laquelle.
+function creatureReanimable(duel, side, carteId = 'reanimation') {
+  const effet = magieById(carteId)?.effet ?? {};
+  return candidatsRenfortChoisi(duel[side], { ...effet, type: 'renfort-choisi', zone: 'cimetiere', ascensionAutorisee: !effet.sansAscension })
+    .some(c => CARTES_COMBAT_AUDITEES.has(c.id));
 }
 function emplacementReanimationValide(duel, side, laneId, slot) {
   const voie = mobaVoie(duel.moba, laneId);
@@ -903,13 +913,6 @@ function observerRetour(damageEvents, healingEvents) {
   return (event) => {
     if (event.type === 'degats' || event.type === 'transfert') damageEvents.push({ ...event, targetSide: event.cote === 'joueur' ? 'sorcier' : 'joueur', cardId: event.carteId });
     if (event.type === 'soin' || event.type === 'transfert') healingEvents.push({ ...event, side: event.cote, cardId: event.carteId });
-  };
-}
-function placementReanimation(duel, side, laneId, slot) {
-  return (entite) => {
-    entite.emplacement = OFFSETS[laneId] + slot;
-    entite.mobaLane = mobaVoieCombat(duel.moba, side, laneId);
-    if (!mobaPlacer(duel.moba, side, laneId, slot, entite.id).ok) throw new Error('Placement de Réanimation MOBA incohérent');
   };
 }
 
@@ -994,7 +997,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   const contreCreature = Boolean(duel.mobaCreatureEnAttente && ['ecueil', 'contresort-des-abimes'].includes(cardId));
   if (contre && (!reaction || (!contreSort && !contreCreature) || cibleId !== null || laneId !== null || prixLaneId !== null)) return fail('timing');
   if (reanimation) {
-    if (cibleId !== null || prixLaneId !== null || !emplacementReanimationValide(duel, side, laneId, emplacementReanimation) || !derniereCreatureReanimable(duel, side, cardId)) return fail('cible');
+    if (cibleId !== null || prixLaneId !== null || !emplacementReanimationValide(duel, side, laneId, emplacementReanimation) || !creatureReanimable(duel, side, cardId)) return fail('cible');
   } else if (prix) {
     // A transfer with a price has two independent choices: one lane pays,
     // and a possibly different active lane receives the transfer.
@@ -1036,7 +1039,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     ...(cardId === 'le-grand-debarquement' ? { nomsCiblesMoba: ['Créatures alliées avec une prise en cale'] } : {}),
     ...(['feux-de-kitsune', 'defi-du-jarl'].includes(cardId) ? { nomsCiblesMoba: [nomCible(cibleId), nomCible(cibleSecondaireId, cardId === 'defi-du-jarl' ? side : undefined)] } : {}),
     ...(cardId === 'memoire-de-l-armurerie' ? { nomsCiblesMoba: [`${nomCible(cibleId, side)} · Sabre maudit au cimetière`] } : {}),
-    ...(reanimation ? { placerReanimationMoba: placementReanimation(duel, side, laneId, emplacementReanimation), surEvenementRetourMoba: observerRetour(damageEvents, healingEvents) } : {}),
+    ...(reanimation ? { reanimationMoba: { laneId, slot: emplacementReanimation, nomVoie: NOMS_VOIES[laneId] }, surEvenementRetourMoba: observerRetour(damageEvents, healingEvents) } : {}),
     ...(cardId === 'feux-de-kitsune' && cibleSecondaireId ? { ciblesIndependantesMoba: true } : {}),
     ...(contre ? (contreCreature ? { contrerCreatureMoba: true } : { contrerSortMoba: true }) : {}),
     ...(ouvrirReponse && !reaction && !duel.fenetreReponse && MOBA_SORTS_REPONSE.includes(cardId)

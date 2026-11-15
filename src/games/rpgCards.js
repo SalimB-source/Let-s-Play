@@ -636,7 +636,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 4,
     rarity: 'commune',
-    typeLine: 'Créature — Élémental', destruction: { type: 'recyclage', cible: 'magie-cimetiere', coutMax: 3, exclureArmes: true }, text: 'Quand la Dune meurt : renvoyez dans votre main le dernier sort de coût imprimé 3 ou moins de votre cimetière.',
+    typeLine: 'Créature — Élémental', arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] }, text: 'Quand la Dune arrive : cherchez une Magie Rapide ou une Sorcellerie dans votre deck et ajoutez-la à votre main.',
     flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
   },
     {
@@ -1941,7 +1941,7 @@ export function convertirDeckSansTerrain(ids, collection = null, limiteDe = card
   const candidats = RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)
     && cardColors(carte).every((c) => couleurs.includes(c))
     && (!collection || collection.includes(carte.id)))
-    .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0) || a.id.localeCompare(b.id));
+    .sort((a, b) => (a.cost ?? Infinity) - (b.cost ?? Infinity) || a.id.localeCompare(b.id));
   // D'abord les cartes de la recette, puis les renforts du catalogue.
   const ordre = [...new Set([...retenues, ...candidats.map((c) => c.id)])];
   for (const id of ordre) {
@@ -1990,7 +1990,7 @@ export const RPG_MAGIE_CARDS = [
   ...RPG_SORTS_INVOCATION,
   {
     id: 'memoire-de-l-armurerie', name: 'Mémoire de l’armurerie', element: 'sable', kind: 'magie',
-    typeLine: 'Sorcellerie — Sable', cost: 5, rarity: 'rare', cibles: ['creature-amie'],
+    typeLine: 'Sorcellerie — Sable',  rarity: 'rare', cibles: ['creature-amie'],
     effet: { type: 'equiper-cimetiere', cible: 'creature-amie' },
     text: 'Équipez une créature alliée ciblée avec une arme de votre cimetière.',
     flavor: 'Les armes oubliées attendent une main nouvelle.',
@@ -2006,7 +2006,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Braise',
     art: 'trait-de-braise',
-    cost: 3,
+
     rarity: 'commune',
     instant: true,
     cibles: ['creature', 'sorcier'],
@@ -2024,7 +2024,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Braise',
     art: 'brise-lame',
-    cost: 3,
+
     rarity: 'inhabituelle',
     instant: true,
     cibles: ['creature'],
@@ -2045,7 +2045,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Eau',
     art: 'eau-de-la-source',
-    cost: 1,
+
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'soin', amount: 4 },
@@ -2060,7 +2060,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Sable',
     art: 'rapport-du-greffier',
-    cost: 4,
+
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'pioche', amount: 2 },
@@ -2074,7 +2074,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Eau',
     art: 'lame-de-mer',
-    cost: 3,
+
     rarity: 'commune',
     cibles: ['creature'],
     // `exilEnMourant` : si la créature ne survit pas à la morsure, elle est
@@ -2094,7 +2094,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Sable',
     art: 'rempart-de-dunes',
     instant: true,
-    cost: 2,
+
     rarity: 'commune',
     cibles: ['soi'],
     // Le mur de sable ne grandit pas les siens : il les tient debout le temps
@@ -2115,7 +2115,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Sable',
     art: 'tempete-de-sable',
-    cost: 5,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
@@ -2134,7 +2134,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Protection',
     art: 'parade-du-verre',
     instant: true,
-    cost: 2,
+
     rarity: 'rare',
     cibles: ['creature-amie'],
     effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
@@ -2149,7 +2149,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'brisure-de-verre',
     instant: true,
-    cost: 2,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
@@ -2158,7 +2158,7 @@ export const RPG_MAGIE_CARDS = [
   },
     {
       id: 'ecueil', name: 'Écueil', element: 'eau', kind: 'magie',
-      typeLine: 'Magie Rapide — Eau', art: 'ecueil', instant: true, cost: 2, rarity: 'commune',
+      typeLine: 'Magie Rapide — Eau', art: 'ecueil', instant: true,  rarity: 'commune',
       cibles: ['soi'],
       effet: { type: 'contresort', cible: 'creature' },
       text: 'Magie Rapide — Contrez une créature adverse.',
@@ -2166,10 +2166,10 @@ export const RPG_MAGIE_CARDS = [
     },
     {
       id: 'reanimation', name: 'Réanimation', element: 'sable', kind: 'magie',
-      typeLine: 'Sorcellerie — Sable', art: 'reanimation', cost: 5, rarity: 'rare',
+      typeLine: 'Sorcellerie — Sable', art: 'reanimation',  rarity: 'rare',
       cibles: ['soi'],
       effet: { type: 'reanimation' },
-      text: 'Fait revenir une créature de votre cimetière en jeu.',
+      text: 'Choisissez une créature de votre cimetière et invoquez-la spécialement.',
       flavor: 'Le sable rend tout, tôt ou tard.',
     },
   {
@@ -2179,7 +2179,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Sihr de braise',
     art: 'nuage-de-cendres',
-    cost: 5,
+
     rarity: 'rare',
     cibles: ['toutes'],
     // Le nuage ne se dissipe pas à la première bourrasque : `echo` est la
@@ -2197,11 +2197,11 @@ export const RPG_MAGIE_CARDS = [
     name: 'Vent rouge',
     element: 'braise',
     colors: ['braise', 'sable'],
-    colorCost: { braise: 1, sable: 1 },
+
     kind: 'magie',
     typeLine: 'Sorcellerie — Sable et Braise',
     art: 'vent-rouge',
-    cost: 3,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
@@ -2218,7 +2218,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Neige',
     art: 'eclair-du-marteau',
     instant: true,
-    cost: 2,
+
     rarity: 'commune',
     cibles: ['creature', 'sorcier'],
     effet: { type: 'degats', amount: 3, cible: 'creature' },
@@ -2232,7 +2232,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'mur-de-boucliers',
-    cost: 5,
+
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 0, overkill: true, tours: 1 },
@@ -2246,7 +2246,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'festin-des-vaillants',
-    cost: 3,
+
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 },
@@ -2263,7 +2263,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'brume-du-fjord',
-    cost: 2,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.15 },
@@ -2277,7 +2277,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'hurlement-du-blizzard',
-    cost: 4,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gelChance: 0.15 },
@@ -2302,7 +2302,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Neige',
     art: 'poigne-de-givre',
-    cost: 2,
+
     rarity: 'commune',
     instant: true,
     cibles: ['creature'],
@@ -2320,7 +2320,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Neige',
     art: 'grand-voile-blanc',
-    cost: 2,
+
     rarity: 'rare',
     instant: true,
     cibles: ['soi'],
@@ -2335,7 +2335,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Neige',
     art: 'appat-de-la-meute',
-    cost: 2,
+
     rarity: 'inhabituelle',
     instant: true,
     cibles: ['creature'],
@@ -2350,7 +2350,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'verglas',
-    cost: 5,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gel: true },
@@ -2364,7 +2364,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'defi-du-jarl',
-    cost: 3,
+
     rarity: 'rare',
     cibles: ['creature-amie', 'creature'],
     effet: { type: 'combat', cible: 'creature', sourceCible: 'creature-amie' },
@@ -2378,7 +2378,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'embuscade',
-    cost: 5,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: {
@@ -2400,7 +2400,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige',
     art: 'grand-hiver',
-    cost: 2,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 1, cible: 'toutes-autres' },
@@ -2412,11 +2412,11 @@ export const RPG_MAGIE_CARDS = [
     name: 'Tempête de foudre et de givre',
     element: 'neige',
     colors: ['neige', 'braise'],
-    colorCost: { neige: 1, braise: 1 },
+
     kind: 'magie',
     typeLine: 'Sorcellerie — Neige et Braise',
     art: 'tempete-de-foudre-et-de-givre',
-    cost: 5,
+
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 3, cible: 'toutes-autres' },
@@ -2433,7 +2433,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'contresort-des-abimes',
     instant: true,
-    cost: 3,
+
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'carte' },
@@ -2448,7 +2448,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'silence-decume',
     instant: true,
-    cost: 2,
+
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'sort' },
@@ -2463,7 +2463,7 @@ export const RPG_MAGIE_CARDS = [
     typeLine: 'Magie Rapide — Eau',
     art: 'maree-contraire',
     instant: true,
-    cost: 3,
+
     rarity: 'rare',
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'sort', pioche: 1 },
@@ -2484,7 +2484,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Magie Rapide — Eau',
     instant: true,
-    cost: 1,
+
     rarity: 'commune',
     cibles: ['creature'],
     effet: { type: 'retour-main', cible: 'creature' },
@@ -2497,7 +2497,7 @@ export const RPG_MAGIE_CARDS = [
     element: 'eau',
     kind: 'magie',
     typeLine: 'Sorcellerie — Eau',
-    cost: 3,
+
     rarity: 'rare',
     cibles: ['creature'],
     effet: { type: 'retour-main', cible: 'creature', pioche: 1 },
@@ -2509,18 +2509,18 @@ export const RPG_MAGIE_CARDS = [
   },
   {
     id: 'voile-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Voile de la lune noire',
-    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    element: 'sable', colors: ['sable', 'tenebres'],
     kind: 'magie', typeLine: 'Magie Rapide — Sable et Ténèbres',
-    cost: 2, rarity: 'inhabituelle', instant: true,
+     rarity: 'inhabituelle', instant: true,
     cibles: ['creature-amie'], effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
     text: 'Magie Rapide — Une créature alliée ciblée reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'La nuit protège ceux qui veillent sous son croissant.',
   },
   {
     id: 'ressac-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Ressac de la lune noire',
-    element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
+    element: 'eau', colors: ['eau', 'tenebres'],
     kind: 'magie', typeLine: 'Sorcellerie — Eau et Ténèbres',
-    cost: 5, rarity: 'inhabituelle', cibles: ['toutes-autres'],
+     rarity: 'inhabituelle', cibles: ['toutes-autres'],
     effet: { type: 'retour-main', cible: 'toutes-autres', exclutType: 'Vampire' },
     text: 'Sorcellerie — Renvoyez toutes les créatures, sauf les Vampires, dans la main de leur propriétaire.',
     flavor: 'À la marée noire, même les conquérants font retraite.',
@@ -2569,7 +2569,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Takouba',
-    cost: 3,
+
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { infiltration: true },
@@ -2583,7 +2583,7 @@ export const RPG_ARME_CARDS = [
     element: 'eau',
     kind: 'arme',
     typeLine: 'Arme — Bâton',
-    cost: 4,
+
     rarity: 'rare',
     bonus: { atk: 0, def: 3 },
     arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', remplirChamp: true },
@@ -2596,7 +2596,7 @@ export const RPG_ARME_CARDS = [
     element: 'braise',
     kind: 'arme',
     typeLine: 'Arme — Armure',
-    cost: 4,
+
     rarity: 'mythique',
     bonus: { atk: 0, def: 4 },
     donne: { contreAttaque: true },
@@ -2609,7 +2609,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige',
     kind: 'arme',
     typeLine: 'Arme — Lance',
-    cost: 3,
+
     rarity: 'rare',
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
@@ -2623,7 +2623,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige',
     kind: 'arme',
     typeLine: 'Arme — Hache',
-    cost: 3,
+
     rarity: 'commune',
     bonus: { atk: 3, def: 0 },
     blessurePorteur: 1,
@@ -2642,7 +2642,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Bottes',
-    cost: 1,
+
     rarity: 'commune',
     bonus: { atk: 0, def: 1 },
     donne: { rapidite: true },
@@ -2655,7 +2655,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Armure',
-    cost: 2,
+
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
     donne: { esquive: true },
@@ -2673,7 +2673,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Javelot',
-    cost: 2,
+
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
@@ -2686,7 +2686,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Licou',
-    cost: 1,
+
     rarity: 'inhabituelle',
     bonus: { atk: 1, def: -1 },
     porteurMeurt: { type: 'pioche', amount: 1 },
@@ -2699,7 +2699,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Harnais',
-    cost: 3,
+
     rarity: 'inhabituelle',
     bonus: { atk: 1, def: 2 },
     porteurAttaque: { type: 'sable', amount: 1 },
@@ -2712,7 +2712,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Masque',
-    cost: 2,
+
     rarity: 'rare',
     bonus: { atk: 1, def: 1 },
     porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
@@ -2730,7 +2730,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Jitte',
-    cost: 4,
+
     rarity: 'rare',
     bonus: { atk: 2, def: 2 },
     donne: { protection: { contre: 'tenebres' } },
@@ -2743,7 +2743,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Khopesh',
-    cost: 4,
+
     rarity: 'rare',
     bonus: { atk: 3, def: 1 },
     // Arme vivante (Batterskull) : jouable la main vide, elle fait naître le
@@ -2762,7 +2762,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Takouba',
-    cost: 4,
+
     rarity: 'mythique',
     bonus: { atk: 3, def: 2 },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
@@ -2777,7 +2777,7 @@ export const RPG_ARME_CARDS = [
     colors: ['eau', 'sable'],
     kind: 'arme',
     typeLine: 'Arme — Boule d\'acier',
-    cost: 3,
+
     rarity: 'rare',
     bonus: { atk: 1, def: 2 },
     donne: { bouclier: 1 },
@@ -2791,16 +2791,16 @@ export const RPG_ARME_CARDS = [
   },
   {
     id: 'sabre-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Sabre du croissant noir',
-    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    kind: 'arme', typeLine: 'Arme — Sabre', cost: 3, rarity: 'inhabituelle',
+    element: 'sable', colors: ['sable', 'tenebres'],
+    kind: 'arme', typeLine: 'Arme — Sabre',  rarity: 'inhabituelle',
     bonus: { atk: 2, def: 0 }, donne: { infiltration: true, volDeVie: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
     text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie. Endurance 1 : le Sabre est détruit après son attaque.',
     flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
   },
   {
     id: 'lance-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Lance de la lune givrée',
-    element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
-    kind: 'arme', typeLine: 'Arme — Lance', cost: 3, rarity: 'inhabituelle',
+    element: 'neige', colors: ['neige', 'tenebres'],
+    kind: 'arme', typeLine: 'Arme — Lance',  rarity: 'inhabituelle',
     bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.15 }, coupRapideImmanquable: true,
     text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 15 % de chances de doubler ses dégâts contre une créature.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
@@ -2933,6 +2933,7 @@ export function cardReceivesResonance(cardOrId, group) {
 /** Pips colorés exigés. Les cartes mono gardent leur règle historique. */
 export function cardColorCost(cardOrId) {
   const card = typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
+  if (card?.kind === 'magie' || card?.kind === 'arme') return {};
   if (card?.colorCost && typeof card.colorCost === 'object') {
     return Object.fromEntries(Object.entries(card.colorCost)
       .filter(([color, amount]) => RPG_CARD_COLORS.has(color) && Number.isInteger(amount) && amount > 0));
@@ -2992,7 +2993,7 @@ export function cardArtId(cardOrId) {
 
 /** Le sable à payer pour poser une carte. */
 export function cardCost(card) {
-  return Number(card?.cost) || 0;
+  return card?.cost == null ? null : Number(card.cost) || 0;
 }
 
 /**

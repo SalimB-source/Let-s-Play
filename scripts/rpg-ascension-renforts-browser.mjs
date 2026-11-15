@@ -22,7 +22,6 @@ export async function verifierRenfortsBrowser(browser, port, dossier) {
     const sort = async carte => {
       const n = main(carte); assert.equal(await n.isEnabled(), true); assert.match(await n.getAttribute('class'), /is-playable/);
       await choisir(n);
-      if (mode === 'duel') await choisir(page.getByRole('button', { name: 'Lancer le sort', exact: true }));
       if (mode === 'moba' && carte === 'retour-des-ensevelis') await choisir(page.locator('[data-moba-lane="right"][data-moba-side="joueur"][data-moba-slot="1"] button'));
     };
     try {
@@ -31,11 +30,16 @@ export async function verifierRenfortsBrowser(browser, port, dossier) {
         assert.equal(await main('convoi-des-dunes').isEnabled(), true);
         await choisir(main('convoi-des-dunes'));
         await choisir(mode === 'duel' ? page.locator('[data-creature-slot-choix="true"]').first() : page.locator('[data-moba-lane="left"][data-moba-side="joueur"][data-moba-slot="1"] button'));
-        await attendre('scorpion-du-seuil');
+        await attendre('convoi-des-dunes');
         const apresConvoi = await lire();
         assert.equal(apresConvoi.joueur.creatures.filter(e => e.carteId === 'convoi-des-dunes').length, 1);
-        assert.equal(apresConvoi.joueur.creatures.find(e => e.carteId === 'scorpion-du-seuil').ready, false);
-        await sort('retour-des-ensevelis'); await attendre('momie-de-lin');
+        assert.ok(apresConvoi.joueur.main.includes('chien-du-guet'), 'le Convoi récupère une créature du cimetière');
+        await sort('retour-des-ensevelis');
+        const selection = mode === 'moba' ? page.locator('.moba__modal.moba__mulligan') : page.locator('.rpg-renfort-choix__panel');
+        await selection.waitFor();
+        assert.ok(await selection.getByRole('button', { name: /Uræus du seuil/ }).count(), 'un autre choix est proposé');
+        await choisir(selection.getByRole('button', { name: /Momie de lin/ }));
+        await attendre('momie-de-lin');
       } else {
         const debut = await lire();
         assert.equal(mode === 'moba' ? debut.moba.creaturesJouees.joueur : debut.joueur.invocationNormaleJouee, true, 'invocation normale déjà dépensée');

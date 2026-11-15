@@ -47,8 +47,7 @@ const aiBrain = readFileSync(new URL('../src/games/rpgAI.js', import.meta.url), 
 const cardsSource = readFileSync(new URL('../src/games/rpgCards.js', import.meta.url), 'utf8');
 const tableCardSource = battlePage.slice(battlePage.indexOf('function TableCard('), battlePage.indexOf('function HoverCardPreview('));
 const compteursSource = readFileSync(new URL('../src/games/RpgVieCompteurs.jsx', import.meta.url), 'utf8');
-const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function ConfirmationSort('));
-const confirmSortSource = battlePage.slice(battlePage.indexOf('function ConfirmationSort('), battlePage.indexOf('function SpellAnnouncement('));
+const hoverPreviewSource = battlePage.slice(battlePage.indexOf('function HoverCardPreview('), battlePage.indexOf('function CarteMulligan('));
 assert.match(battlePage, /const ELEMENT_GLYPHS = \{ braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' \};/,
   'les éléments utilisent flamme, goutte d’eau, sablier, flocon de neige, tête de mort et repère bicolore');
 assert.match(battlePage, /FILTRE_COULEUR_LABELS = \{ toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' \};/,
@@ -118,14 +117,10 @@ assert.doesNotMatch(battleCss, /\.rpg-card-(rapidity|evasion|protection|stat-boo
   'les styles des icônes d’effet sur carte ont été retirés');
 assert.doesNotMatch(tableCardSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
   'les icônes d’effets sont absentes des cartes posées');
-assert.doesNotMatch(confirmSortSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
-  'la confirmation de sort ne montre aucune icône d’effet');
 assert.doesNotMatch(hoverPreviewSource, /CardRapidityBadge|CardEvasionBadge|CardProtectionBadge|rpg-card-stat-boost/,
   'l’aperçu au survol ne montre aucune icône d’effet');
 assert.match(battlePage, /function cardEffectLines\(text\)[\s\S]*?\.split\(/,
   'les effets des cartes sont séparés pour les afficher sur plusieurs lignes');
-assert.match(confirmSortSource, /rpg-spell-confirm__rules[\s\S]*?effets\.map/,
-  'chaque effet occupe une ligne dans la confirmation de sort');
 assert.doesNotMatch(hoverPreviewSource, /rpg-hover-card-preview__rules/,
   'l’aperçu n’imprime plus de bloc de règles : ses mots-clés portent la règle');
 assert.match(hoverPreviewSource, /aMotsClesExplicables && \([\s\S]*?Survolez un mot-clé pour lire son effet/s,
@@ -182,14 +177,12 @@ assert.match(battlePage, /onMouseEnter=\{\(event\) => afficherApercuSurvol\(cart
   'les cartes affichent leur aperçu dès l’entrée de la souris');
 assert.match(battlePage, /const cliquerCarteMain = \(carteId, handIndex\) => \{[\s\S]*?jouerCarteDepuisMain\(carteId, handIndex\)/,
   'cliquer une carte de la main la joue directement');
-assert.match(battlePage, /carte\.kind === 'magie' && peutJouerCarte\(carte\)[\s\S]*?setConfirmationSort\(\{ carteId, handIndex \}\)/,
-  'cliquer une magie demande une confirmation avant le lancement');
+assert.doesNotMatch(battlePage, /setConfirmationSort|function ConfirmationSort/,
+  'cliquer une magie ne demande pas de confirmation');
 assert.doesNotMatch(battlePage, /function CardPreview\(|setCarteEnApercu|ouvrirApercuEntite/,
   'l’aperçu détaillé au clic a été retiré au profit du clic action');
 assert.doesNotMatch(battleCss, /\.rpg-card-preview\b/,
   'les styles de l’aperçu au clic ont été retirés');
-assert.match(battleCss, /\.rpg-spell-confirm\s*\{/,
-  'la confirmation de lancement des magies est stylée');
 assert.match(battlePage, /onClick=\{\(\) => cliquerCreatureJoueur\(entite\)\}/,
   'le clic sur une créature alliée agit directement, sans aperçu');
 assert.match(battlePage, /onClick=\{\(\) => cliquerCreatureEnnemie\(entite\)\}/,
@@ -1224,8 +1217,6 @@ assert.match(battleCss, /\.rpg-annonce-sort__respond\.is-response-available\s*\{
   'Répondre devient bleu clair seulement quand une carte jouable est disponible');
 assert.doesNotMatch(battleCss, /rpg-annonce-respond-glow|is-response-ready|@keyframes[^}]*respond/i,
   'aucune lueur ni animation ne subsiste sur le bouton Répondre');
-assert.match(battleCss, /\.rpg-spell-confirm-backdrop\s*\{[^}]*z-index:\s*1000;/s,
-  'la confirmation d’une magie jouée en réponse passe au-dessus de l’annonce adverse');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce\s*\{[^}]*--rpg-annonce-card-width:\s*clamp\(140px, min\(28vw, 42dvh\), 280px\);[^}]*--rpg-annonce-column-width:\s*min\(360px,[^}]*position:\s*absolute;[^}]*inset:\s*0;/s,
   'l’aperçu annoncé réserve une grande carte et sa colonne de texte/actions');
 assert.match(battleCss, /\.rpg-hover-card-preview--annonce \.rpg-hover-card-preview__layout\s*\{[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*grid-template-columns:\s*var\(--rpg-annonce-card-width\) minmax\(0, var\(--rpg-annonce-column-width\)\);[^}]*width:\s*calc\(var\(--rpg-annonce-card-width\) \+ var\(--rpg-annonce-column-gap\) \+ var\(--rpg-annonce-column-width\)\);[^}]*transform:\s*translate\(-50%, -50%\);/s,

@@ -64,12 +64,12 @@ nom et par tour**, toutes les copies de ce nom confondues.
 Les cartes indiquent leurs conditions propres sans répéter ces règles générales ;
 les mots-clés des Ascensions sont expliqués par leurs pastilles dans l’aperçu.
 
-| Soutien | Carte | Invocation spéciale |
+| Soutien | Carte | Effet |
 | --- | --- | --- |
-| **Convoi des dunes** | Créature Sable 2, 1/2, Humain · Éclaireur, inhabituelle | À l’arrivée : la **première** créature Sable de coût imprimé **2** de votre main |
-| **Retour des ensevelis** | Sorcellerie Ténèbres 3, inhabituelle | La **dernière créature admissible** Ténèbres **≤ 3** du cimetière ; **exclut les Ascensions** |
-| **Confluence des étincelles** | Sorcellerie Braise 3, rare | Le **premier Djinn Braise 1**, puis le **premier Djinn Braise 3** de votre main, selon présence et place disponible |
-| **Éveil des dunes** | Sorcellerie Sable 4, rare | Le **premier Élémental Sable 4 depuis le dessus de la pioche** ; les autres cartes gardent leur ordre |
+| **Convoi des dunes** | Créature Sable 2, 1/2, Humain · Éclaireur, inhabituelle | À l’arrivée : la **dernière** créature Sable, Eau ou Ténèbres de coût imprimé **≤ 3** du cimetière rejoint la main |
+| **Retour des ensevelis** | Sorcellerie Ténèbres, inhabituelle | Une **créature choisie** Ténèbres **≤ 3** du cimetière ; **exclut les Ascensions** |
+| **Confluence des étincelles** | Sorcellerie Braise, rare | Le **premier Djinn Braise 1**, puis le **premier Djinn Braise 3** de votre main, selon présence et place disponible |
+| **Éveil des dunes** | Sorcellerie Sable, rare | Le **premier Élémental Sable 4 depuis le dessus de la pioche** ; les autres cartes gardent leur ordre |
 
 Les effets d’arrivée des renforts restent actifs, notamment la vraie pioche
 du Djinn de la flamme mourante. Une carte sans **Rapidité imprimée** ne peut
@@ -77,8 +77,7 @@ pas attaquer ce tour ; elle pourra le faire à son prochain tour. Rapidité
 est conservée. Les règles d’attaque à l’arrivée des créatures ordinaires ne
 sont pas changées globalement.
 
-- Le Convoi joué normalement utilise le quota normal ; **son renfort non**.
-  Un deuxième Convoi appelé par le premier n’ouvre pas une boucle.
+- Le Convoi joué normalement utilise le quota normal ; sa capacité remet une carte en main, sans invocation spéciale.
 - Les trois sorcelleries se jouent uniquement pendant la phase principale du
   propriétaire, sans réponse ni choix obligatoire en attente. Un lancement
   sans matériau ou sans place est refusé **avant paiement**.
@@ -106,9 +105,8 @@ chacun de **30 cartes**, bicolore et validé par les règles de copies :
   hivers et deux Jarls au marteau de guerre, avec recherche viking, Ralliement
   des neiges, boucliers et soins.
 - **Rite de l’Éclipse** — Sable / Ténèbres : Convois, Retours des ensevelis,
-  Scorpions du seuil et six créatures Ténèbres de coût 3. Les petits Sable qui
-  détournaient le Convoi sont remplacés par de la pioche ; Uræus et Javelot
-  peuvent préparer la cible blessée.
+  Scorpions du seuil et six créatures Ténèbres de coût 3. Le Convoi récupère
+  les petits matériaux depuis le cimetière ; Uræus et Javelot peuvent préparer la cible blessée.
 - **Forge du Verre Ardent** — Braise / Sable : Confluences, Éveils, Djinns 1 et 3,
   et Dunes marchantes de coût 4.
 
@@ -278,3 +276,5 @@ La Gardienne des sables ensevelis (Sable, coût 4) choisit une créature de coû
 La préparation de l’Ascension recherche les combinaisons respectant intégralement la recette, puis sélectionne celle dont la somme des ATQ et PV actuels est la plus faible. Les sacrifices proposés sont affichés avant confirmation ; le serveur revérifie la recette. En MOBA, la destination est choisie après cette confirmation.
 
 La Valkyrie et le Colosse ouvrent une fenêtre réservée à leur contrôleur pour choisir leurs renforts dans le cimetière. Les choix successifs sont sérialisés et les arrivées des créatures invoquées sont résolues.
+
+La Gardienne des derniers noms invoque depuis le dessus du deck, à sa mort, la première créature Ténèbres admissible de coût imprimé 2 ou moins. Le Veilleur des cendres invoque à sa mort une créature Ténèbres ou Neige choisie de coût imprimé 3 ou moins de son cimetière ; elle est détruite à la fin de ce tour, y compris pendant le tour adverse.

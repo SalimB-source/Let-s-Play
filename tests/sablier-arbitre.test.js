@@ -632,7 +632,7 @@ for (const camp of ['joueur', 'sorcier']) test(`expiration PvP : choix de renfor
   await jouerTour(monde, HOTE, code);
   await jouerTour(monde, INVITE, code);
   const ligne = monde.magasin.duels.get(code), d = ligne.etat;
-  d.tour = camp; d[camp].main = ['appel-des-marees']; d[camp].deck = ['chien-du-guet','loup-des-neiges'];
+  d.tour = camp; d[camp].main = ['appel-des-marees']; d[camp].deck = ['chien-du-guet','cotre-de-course'];
   d[camp].manaChoixEnAttente = false;
   const { rpgPvpAppliquer } = await import('../src/games/rpgPvp.js');
   assert.ok(rpgPvpAppliquer(d, camp, { type: 'jouer-carte', carteId: 'appel-des-marees' }).ok);
@@ -641,7 +641,7 @@ for (const camp of ['joueur', 'sorcier']) test(`expiration PvP : choix de renfor
   const resultat = await api(monde, camp === 'joueur' ? HOTE : INVITE, { action: 'etat', code });
   assert.equal(resultat.seq, seq + 1);
   assert.equal(monde.magasin.duels.get(code).etat.renfortChoixEnAttente, null);
-  assert.equal(monde.magasin.duels.get(code).etat[camp].creatures[0].carteId, 'loup-des-neiges');
+  assert.equal(monde.magasin.duels.get(code).etat[camp].creatures[0].carteId, 'cotre-de-course');
   assert.equal(monde.magasin.duels.get(code).etat.retards[camp], 1);
 });
 

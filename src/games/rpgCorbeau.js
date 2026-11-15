@@ -27,7 +27,7 @@ const carte = (definition) => ({
   // carte est bien hybride : le cadre, le coût et le deck lisent `colors`.
   element: definition.element ?? 'tenebres',
   colors: definition.colors ?? ['neige', 'tenebres'],
-  colorCost: definition.colorCost ?? { neige: 1, tenebres: 1 },
+  ...(definition.kind === 'magie' ? {} : { colorCost: definition.colorCost ?? { neige: 1, tenebres: 1 } }),
   set: RPG_CORBEAU_SET_ID,
   art: definition.id,
 });
@@ -97,7 +97,7 @@ export const RPG_CORBEAU_MAGIES = [
     id: 'neige-noire',
     name: 'Neige noire',
     kind: 'magie',
-    cost: 6,
+
     rarity: 'rare',
     prixPv: 3,
     typeLine: 'Sorcellerie — Neige · Ténèbres',

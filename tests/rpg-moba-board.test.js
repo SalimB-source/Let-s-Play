@@ -3288,16 +3288,20 @@ test('Réanimation : choix de case, annonce du cimetière puis retour dans la vo
     root = createRoot(document.getElementById('root')); await act(async () => root.render(React.createElement(Board, props)));
     const click = async button => { assert.ok(button, 'button exists'); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles:true }))); };
     await click(document.querySelector('.moba__mulligan .moba__primary'));
-    duel.joueur.main = ['reanimation']; duel.joueur.mana.sable = 20; duel.joueur.cimetiere = ['gardienne-des-portes-de-sable']; duel.sorcier.main = [];
+    duel.joueur.main = ['reanimation']; duel.joueur.mana.sable = 20; duel.joueur.cimetiere = ['gardienne-des-portes-de-sable', 'viking-des-neiges']; duel.sorcier.main = [];
     await act(async () => root.render(React.createElement(Board, props)));
     const spell = () => [...document.querySelectorAll('.moba__card')].find(card => card.textContent.includes('Réanimation'));
-    await click(spell()); assert.match(document.querySelector('.moba__hint').textContent, /où réanimer.*cimetière/);
+    await click(spell()); assert.match(document.querySelector('.moba__hint').textContent, /où invoquer.*cimetière/);
     const slot = document.querySelector('[data-moba-lane="right"][data-moba-side="joueur"][data-moba-slot="1"] button.moba__slot');
     assert.match(slot.getAttribute('aria-label'), /réanimer ici/); await click(slot);
     assert.equal(duel.mobaSortEnAttente?.reanimationMoba.slot, 1); assert.equal(duel.joueur.creatures.length, 0);
     assert.match(document.querySelector('.moba__hint').textContent, /Réanimation.*Cimetière.*droite/i);
     await act(async () => new Promise(resolve => setTimeout(resolve, 520)));
-    assert.equal(duel.mobaSortEnAttente, null); assert.equal(duel.joueur.creatures[0].mobaLane, 'right');
+    assert.equal(duel.mobaSortEnAttente, null);
+    const panel = document.querySelector('[aria-label="Choix de carte"]'); assert.ok(panel);
+    const choix = [...panel.querySelectorAll('.moba__mulligan-card')]; assert.equal(choix.length, 2);
+    await click(choix.find(c => c.textContent.includes('Gardienne des portes de sable')));
+    assert.equal(duel.joueur.creatures[0].mobaLane, 'right');
     assert.equal(duel.moba.lanes.find(lane => lane.id === 'right').slots.joueur[1], duel.joueur.creatures[0].id);
     assert.equal(engine.rpgMobaPlacementCoherent(duel), true);
   } finally {
@@ -3329,7 +3333,9 @@ test('IA annonce Réanimation puis le joueur passe et voit la créature revenir'
     assert.match(document.querySelector('.moba__hint').textContent, /Réanimation.*Cimetière.*IA/);
     assert.match(document.querySelector('.moba__pending-spell--sorcier').textContent, /Réanimation.*Cimetière.*IA/);
     await click([...document.querySelectorAll('.moba__controls button')].find(button => button.textContent.includes('Passer')));
-    assert.equal(duel.mobaSortEnAttente, null); assert.equal(duel.sorcier.creatures[0].carteId, 'gardienne-des-portes-de-sable');
+    assert.equal(duel.mobaSortEnAttente, null);
+    await act(async () => new Promise(resolve => setTimeout(resolve, 520)));
+    assert.equal(duel.sorcier.creatures[0].carteId, 'gardienne-des-portes-de-sable');
     assert.equal(engine.rpgMobaPlacementCoherent(duel), true);
   } finally {
     if (root) await act(async () => root.unmount());

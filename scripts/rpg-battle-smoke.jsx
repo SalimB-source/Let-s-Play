@@ -1420,10 +1420,7 @@ export async function checkRpgBattle(assert) {
   const lameDeMer = waterHand().find((button) => button.getAttribute('aria-label')?.includes('Lame de mer'));
   assert.ok(lameDeMer && estJouable(lameDeMer), 'deux terrains permettent de payer le sort Eau');
   await act(async () => { lameDeMer.click(); });
-  const confirmerLameDeMer = waterContainer.querySelector('.rpg-spell-confirm .rpg-btn--primary');
-  assert.ok(confirmerLameDeMer?.textContent.includes('Lancer le sort'),
-    'la Lame de mer attend une confirmation avant son choix de cible');
-  await act(async () => { confirmerLameDeMer.click(); });
+  assert.equal(waterContainer.querySelector('.rpg-spell-confirm'), null, 'aucune confirmation avant le choix de cible');
   const cibleEau = waterContainer.querySelector('.rpg-card--ennemi');
   assert.ok(cibleEau?.getAttribute('aria-label')?.includes('Fennec des décombres'), 'le Fennec est la cible de Lame de mer');
   await act(async () => { cibleEau.click(); });
@@ -1851,9 +1848,7 @@ export async function checkRpgBattle(assert) {
   const nuageEnMain = nuageHand().find((card) => card.getAttribute('aria-label')?.includes('Nuage de cendres'));
   assert.ok(nuageEnMain && estJouable(nuageEnMain), 'le Nuage se paie avec cinq Montagnes');
   await act(async () => { nuageEnMain.click(); });
-  const confirmerNuage = nuageContainer.querySelector('.rpg-spell-confirm .rpg-btn--primary');
-  assert.ok(confirmerNuage, 'lancer le Nuage demande confirmation');
-  await act(async () => { confirmerNuage.click(); });
+  assert.equal(nuageContainer.querySelector('.rpg-spell-confirm'), null, 'le sort sans cible se lance directement');
   await act(async () => { await wait(900); });
   assert.equal(ennemisEnJeu().length, 0, 'la première vague emporte les deux Chiens 2/2 et vide la table');
   assert.match(journalNuage(), /Nuage de cendres diffère 2 dégâts : ils tomberont au début de votre prochain tour/u,

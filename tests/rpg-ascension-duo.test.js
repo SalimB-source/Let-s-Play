@@ -10,12 +10,12 @@ import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
 import {
   cibleRespecteCoutMax, rpgActionsEtat, rpgAttaquerCreature, rpgBlesserCreature,
   rpgFinDeTour, rpgJouerCreature, rpgLancerAttaque, rpgLancerMagie, rpgNouveauDuel, rpgPeutAttaquer,
-  rpgResoudreArriveeCiblee, rpgResoudreDestructionCiblee, rpgSortACibleValide,
+  rpgResoudreArriveeCiblee, rpgResoudreDestructionCiblee, rpgSortACibleValide, rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi,
 } from '../src/games/rpgDuel.js';
 import {
   MOBA_CARTES_AUTORISEES, rpgMobaCiblesDestruction, rpgMobaJouerCreature, rpgMobaLancerMagie,
   rpgMobaNouveauDuel, rpgMobaPasserCreature, rpgMobaPasserEffetCreature, rpgMobaPasserSort,
-  rpgMobaPlacementCoherent, rpgMobaResoudreArrivee, rpgMobaResoudreDestruction,
+  rpgMobaPlacementCoherent, rpgMobaResoudreArrivee, rpgMobaResoudreDestruction, rpgMobaResoudreRecherche,
 } from '../src/games/rpgMobaLocal.js';
 import { rpgCombinaisonsSacrificesIA, choisirCarteIA } from '../src/games/rpgAI.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
@@ -29,6 +29,13 @@ import { rpgReglerHasard, rpgSorcierAnnonceSuivante, rpgSorcierResoudreAnnonce }
 
 const JARL = 'jarl-du-dernier-rempart', SCORPION = 'scorpion-de-l-eclipse', COLOSSE = 'colosse-du-verre-ardent';
 const CONVOI = 'convoi-des-dunes', RETOUR = 'retour-des-ensevelis', CONFLUENCE = 'confluence-des-etincelles', EVEIL = 'eveil-des-dunes';
+function choisirCimetiere(d, side, id) {
+  const choix = rpgCartesRenfortChoisi(d, side).find(c => c.id === id && c.admissible);
+  assert.ok(choix, `choix ${id}`);
+  const res = d.moba ? rpgMobaResoudreRecherche(d, side, id, choix.index) : rpgResoudreRenfortChoisi(d, side, choix.index);
+  assert.ok(res.ok, JSON.stringify(res));
+}
+
 const RECETTES = {
   [JARL]: ['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'],
   [SCORPION]: ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin'],
@@ -292,13 +299,12 @@ test('Colosse : Bouclier et Provocation, sans Contre-attaque', () => {
   assert.equal(d.renfortChoixEnAttente?.sourceCarteId, COLOSSE);
 });
 
-for (const moba of [false, true]) test(`Convoi : vrai renfort, sans seconde invocation normale et sans boucle (${moba ? 'MOBA' : 'Duel'})`, () => {
-  const d = nouveau(moba); d.joueur.main = [CONVOI, CONVOI, 'scorpion-du-seuil'];
+for (const moba of [false, true]) test(`Convoi : récupère une créature admissible depuis le cimetière (${moba ? 'MOBA' : 'Duel'})`, () => {
+  const d = nouveau(moba); d.joueur.main = [CONVOI];
+  d.joueur.cimetiere = ['scorpion-du-seuil', 'viking-des-neiges', 'ureus-du-seuil', 'trait-de-braise'];
   const r = moba ? rpgMobaJouerCreature(d, 'joueur', CONVOI, 'left', 0) : rpgJouerCreature(d, 'joueur', CONVOI);
-  assert.ok(r.ok, r.raison); assert.equal(d.joueur.creatures.filter(e => e.carteId === CONVOI).length, 2);
-  assert.deepEqual(d.joueur.main, ['scorpion-du-seuil']);
-  const renfort = d.joueur.creatures.find(e => e.id !== r.entite.id);
-  assert.equal(renfort.ready, false); assert.equal(renfort.malInvocation, true); assert.equal(rpgPeutAttaquer(renfort), false);
+  assert.ok(r.ok, r.raison); assert.deepEqual(d.joueur.main, ['ureus-du-seuil']);
+  assert.deepEqual(d.joueur.cimetiere, ['scorpion-du-seuil', 'viking-des-neiges', 'trait-de-braise']);
   assert.equal(moba ? d.moba.creaturesJouees.joueur : d.joueur.invocationNormaleJouee, true);
   if (moba) assert.ok(rpgMobaPlacementCoherent(d));
 });
@@ -346,12 +352,12 @@ test('Confluence partielle : ne retire pas la deuxième carte si la première re
   assert.equal(d.joueur.creatures.length, 5); assert.deepEqual(d.joueur.main, ['djinn-de-la-flamme-mourante']);
 });
 
-for (const moba of [false, true]) test(`Retour des ensevelis : dernière créature admissible, pas la dernière carte ni une Ascension (${moba ? 'MOBA' : 'Duel'})`, () => {
+for (const moba of [false, true]) test(`Retour des ensevelis : choix admissible, pas une Ascension (${moba ? 'MOBA' : 'Duel'})`, () => {
   const d = nouveau(moba); d.joueur.cimetiere = ['momie-de-lin', 'viking-des-neiges', JARL, 'lecteur-du-dernier-nom'];
   d.joueur.main = [RETOUR];
   assert.equal(indexReanimation(d.joueur, cardById(RETOUR).effet), 0);
   const r = moba ? rpgMobaLancerMagie(d, 'joueur', RETOUR, null, 'right', null, { emplacementReanimation: 1 }) : rpgLancerMagie(d, 'joueur', RETOUR);
-  assert.ok(r.ok, r.raison); assert.equal(d.joueur.creatures[0].carteId, 'momie-de-lin');
+  assert.ok(r.ok, r.raison); choisirCimetiere(d, 'joueur', 'momie-de-lin'); assert.equal(d.joueur.creatures[0].carteId, 'momie-de-lin');
   assert.equal(d.joueur.creatures[0].ready, false);
   assert.ok(d.joueur.cimetiere.includes(JARL)); assert.equal(d.joueur.invocationNormaleJouee ?? false, false);
   if (moba) { assert.equal(d.moba.creaturesJouees.joueur, false); assert.equal(d.joueur.creatures[0].mobaLane, 'right'); assert.ok(rpgMobaPlacementCoherent(d)); }
@@ -460,7 +466,8 @@ for (const moba of [false, true]) for (const id of [CONFLUENCE, EVEIL, RETOUR]) 
   assert.equal(moba ? choix?.id : choix?.carteId, id); assert.equal(JSON.stringify(d), avant);
   const r = moba ? rpgMobaLancerMagie(d, side, choix.id, choix.cible, choix.lane, choix.prixLane, choix)
     : (assert.equal(rpgSorcierAnnonceSuivante(d, () => .5)?.carteId, id), rpgSorcierResoudreAnnonce(d));
-  assert.ok(r.ok, r.raison); assert.equal(d[side].creatures.length, id === CONFLUENCE ? 2 : 1);
+  assert.ok(r.ok, r.raison); if (moba && id === RETOUR) choisirCimetiere(d, side, 'momie-de-lin');
+  assert.equal(d[side].creatures.length, id === CONFLUENCE ? 2 : 1);
   assert.equal(moba ? d.moba.creaturesJouees[side] : d[side].invocationNormaleJouee, true);
 });
 
@@ -472,7 +479,7 @@ for (const moba of [false, true]) test(`Réanimation ordinaire reste compatible 
   }
   d.joueur.main = ['reanimation']; d.joueur.invocationNormaleJouee = true; if (moba) d.moba.creaturesJouees.joueur = true;
   const r = moba ? rpgMobaLancerMagie(d, 'joueur', 'reanimation', null, 'right', null, { emplacementReanimation: 1 }) : rpgLancerMagie(d, 'joueur', 'reanimation');
-  assert.ok(r.ok, r.raison); const revient = d.joueur.creatures.find(e => e.carteId === JARL);
+  assert.ok(r.ok, r.raison); choisirCimetiere(d, 'joueur', JARL); const revient = d.joueur.creatures.find(e => e.carteId === JARL);
   assert.ok(revient); assert.equal(revient.atk, 4); assert.equal(revient.pv, 10); assert.equal(revient.bouclier, 1);
   assert.ok(!d.joueur.cimetiere.includes(JARL)); assert.ok(!d.joueur.reserveAscension.includes(JARL));
   assert.equal(moba ? d.moba.creaturesJouees.joueur : d.joueur.invocationNormaleJouee, true);
@@ -542,17 +549,6 @@ test('deux préconstruits Ascension de 30 cartes, légaux en Duel et MOBA, avec 
   }
 });
 
-for (const moba of [false, true]) test(`IA ${moba ? 'MOBA' : 'Duel'} : le Convoi prépare réellement un Scorpion depuis la main`, () => {
-  const d = nouveau(moba); const side = moba ? 'joueur' : 'sorcier'; d.tour = side;
-  d[side].reserveAscension = []; d[side].main = [CONVOI, 'scorpion-du-seuil'];
-  const avant = JSON.stringify(d);
-  const choix = moba ? rpgMobaChoisirCreatureIA(d, side) : choisirCarteIA(d, side, { rng: () => .5 });
-  assert.equal(moba ? choix?.id : choix?.carteId, CONVOI); assert.equal(JSON.stringify(d), avant);
-  const r = moba ? rpgMobaJouerCreature(d, side, choix.id, choix.lane, choix.slot, choix)
-    : (assert.equal(rpgSorcierAnnonceSuivante(d, () => .5)?.carteId, CONVOI), rpgSorcierResoudreAnnonce(d));
-  assert.ok(r.ok, r.raison); assert.ok(d[side].creatures.some(e => e.carteId === 'scorpion-du-seuil'));
-});
-
 test('Scorpion : sa vague ne dépend pas du coût de la créature blessée', () => {
   const d = nouveau(); const es = materiaux(d, SCORPION); const cible = poser(d, 'gardien-viking-du-fjord', 'sorcier');
   rpgBlesserCreature(d, 'sorcier', cible.id, 1); Object.assign(cible, { coutBonusArme: 10, cost: 99 });
@@ -562,7 +558,7 @@ test('Scorpion : sa vague ne dépend pas du coût de la créature blessée', () 
 for (const moba of [false, true]) test(`renfort sans Rapidité : ne peut attaquer avant son prochain tour, puis se dégage (${moba ? 'MOBA' : 'Duel'})`, () => {
   const d = nouveau(moba); d.joueur.main = [RETOUR]; d.joueur.cimetiere = ['ureus-du-seuil'];
   const r = moba ? rpgMobaLancerMagie(d, 'joueur', RETOUR, null, 'left', null, { emplacementReanimation: 0 }) : rpgLancerMagie(d, 'joueur', RETOUR);
-  assert.ok(r.ok, r.raison); const e = d.joueur.creatures[0]; assert.equal(rpgPeutAttaquer(e), false);
+  assert.ok(r.ok, r.raison); choisirCimetiere(d, 'joueur', 'ureus-du-seuil'); const e = d.joueur.creatures[0]; assert.equal(rpgPeutAttaquer(e), false);
   rpgFinDeTour(d); assert.equal(d.tour, 'sorcier'); assert.equal(rpgPeutAttaquer(e), false);
   rpgFinDeTour(d); assert.equal(d.tour, 'joueur'); assert.equal(rpgPeutAttaquer(e), true);
 });

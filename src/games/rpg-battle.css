@@ -3892,55 +3892,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: none !important;
 }
 
-/* Confirmation de lancement des magies au clic : dialogue sobre, uniquement
-   pour valider le sort avant de le lancer. */
-.rpg-spell-confirm-backdrop {
-  position: absolute;
-  z-index: 1000;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgba(5, 7, 9, .62);
-  backdrop-filter: blur(4px);
-}
-.rpg-spell-confirm {
-  display: grid;
-  gap: 12px;
-  width: min(420px, 100%);
-  padding: 20px;
-  border: 1px solid rgba(237, 203, 139, .78);
-  border-radius: 16px;
-  background: radial-gradient(circle at 15% 8%, rgba(160, 115, 53, .27), transparent 40%), linear-gradient(145deg, #261b14, #10151a 76%);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, .82);
-  color: #f7edda;
-}
-.rpg-spell-confirm h2 { margin: 0; color: #ffe8b0; font: 700 clamp(19px, 3vw, 25px)/1.15 Georgia, serif; text-wrap: balance; }
-.rpg-spell-confirm__type { margin: 0; padding: 6px 9px; border-block: 1px solid rgba(226, 190, 119, .35); color: #f1d5a1; font: 700 12px/1.2 Georgia, serif; }
-.rpg-spell-confirm {
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.rpg-spell-confirm__rules {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  max-height: min(40vh, 14em);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(101, 78, 42, .35) transparent;
-  padding: 12px;
-  border: 1px solid rgba(223, 196, 143, .34);
-  border-radius: 9px;
-  background: rgba(238, 228, 204, .95);
-  color: #21180f;
-  font: 600 15px/1.45 Georgia, serif;
-}
-.rpg-spell-confirm__rules > span { display: block; }
-.rpg-spell-confirm__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
-
 /* Magie jouée : une fiche compacte rectangulaire, pas un aperçu. Elle se pose
    au **milieu du plateau**, quel que soit le lanceur : la carte en petit à
    gauche, son texte à côté. Aucun voile, aucun flou — la table reste lisible

@@ -413,7 +413,7 @@ export function puissanceCarte(carte) {
   if (!carte || carte.kind === 'terrain') return 0;
   // Un Prix en PV (set Ténèbres) alourdit le vrai coût : à rendement égal,
   // une carte qui se paie en vie vaut moins qu'une carte au mana seul.
-  const cout = Math.max(1.5, (Number(carte.cost) || 1) + (Number(carte.prixPv) || 0) * 0.6);
+  const cout = Math.max(1.5, (carte.cost == null ? 1.5 : Number(carte.cost) || 1) + (Number(carte.prixPv) || 0) * 0.6);
   return rangRarete(carte) * 10 + valeurCarte(carte) / cout;
 }
 
@@ -426,6 +426,6 @@ export function puissanceCarte(carte) {
 export function comparerCartesParPuissance(a, b) {
   return rangRarete(b) - rangRarete(a)
     || puissanceCarte(b) - puissanceCarte(a)
-    || (a?.cost ?? 0) - (b?.cost ?? 0)
+    || (a?.cost ?? Infinity) - (b?.cost ?? Infinity)
     || String(a?.id).localeCompare(String(b?.id));
 }

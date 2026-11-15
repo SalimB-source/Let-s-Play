@@ -1,83 +1,92 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cardById, carteEstArme } from '../src/games/rpgCards.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie } from '../src/games/rpgDuel.js';
-import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
+import { cardById, cardColorCost, RPG_MAGIE_CARDS, RPG_ARME_CARDS } from '../src/games/rpgCards.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgBlesserCreature, rpgLancerMagie, rpgJouerArme } from '../src/games/rpgDuel.js';
+import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche } from '../src/games/rpgMobaLocal.js';
+import { rpgPvpVue, rpgPvpAppliquer } from '../src/games/rpgPvp.js';
+import { rpgMobaChoisirCreatureIA, rpgMobaChoisirRechercheIA } from '../src/games/rpgMobaAI.js';
+import { courbeDeMana } from '../src/games/rpgDeckBuilder.js';
 
-const adversaire = cote => cote === 'joueur' ? 'sorcier' : 'joueur';
-function partie(moba, cote) {
-  const d = (moba ? rpgMobaNouveauDuel : rpgNouveauDuel)({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), pvp: true, modeMana: 'essai', rng: () => .5 });
+const candidats = ['trait-de-braise', 'rapport-du-greffier'];
+function partie(moba, cote, deck, pvp = true) {
+  const d = (moba ? rpgMobaNouveauDuel : rpgNouveauDuel)({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), pvp, modeMana: 'essai', rng: () => .5 });
   d.mulliganFait = { joueur: true, sorcier: true }; d.manaEssaiDemarre = true;
-  for (const camp of ['joueur', 'sorcier']) {
-    d[camp].main = []; d[camp].cimetiere = []; d[camp].manaChoixEnAttente = null;
-    d[camp].mana = { sable: 20, braise: 20, neige: 20, eau: 20, tenebres: 20 };
-  }
-  d.tour = cote; d[cote].main = ['dune-marchante'];
+  for (const camp of ['joueur', 'sorcier']) { d[camp].main = []; d[camp].manaChoixEnAttente = null; }
+  d.tour = cote; d[cote].main = ['dune-marchante']; d[cote].deck = deck.slice();
   const r = moba ? rpgMobaJouerCreature(d, cote, 'dune-marchante', 'left', 0) : rpgJouerCreature(d, cote, 'dune-marchante');
   assert.ok(r.ok, JSON.stringify(r));
-  return { d, dune: r.entite };
-}
-function detruire(d, dune, cote) {
-  const ennemi = adversaire(cote);
-  d.tour = ennemi; d[ennemi].main = ['eclair-du-marteau']; dune.pv = 1;
-  const r = d.moba ? rpgMobaLancerMagie(d, ennemi, 'eclair-du-marteau', dune.id) : rpgLancerMagie(d, ennemi, 'eclair-du-marteau', dune.id);
-  assert.ok(r.ok, JSON.stringify(r));
-  assert.ok(!d[cote].creatures.includes(dune));
-  assert.ok(d[cote].cimetiere.includes('dune-marchante'));
-  if (d.moba) assert.ok(rpgMobaPlacementCoherent(d));
+  return d;
 }
 
-test('Dune marchante : texte et filtre de coût imprimé cohérents', () => {
-  const carte = cardById('dune-marchante');
-  assert.deepEqual(carte.destruction, { type: 'recyclage', cible: 'magie-cimetiere', coutMax: 3, exclureArmes: true });
-  assert.match(carte.text, /sort de coût imprimé 3 ou moins/);
-  assert.equal(cardById('trait-de-braise').cost, 3);
-  assert.equal(cardById('rapport-du-greffier').cost, 4);
-  assert.ok(carteEstArme(cardById('javelot-du-beffroi')));
+test('Les sorts et armes ne possèdent ni coût imprimé ni pips ; les autres coûts sont préservés', () => {
+  for (const c of [...RPG_MAGIE_CARDS, ...RPG_ARME_CARDS, cardById('encre-du-registre'), cardById('pilon-du-fossoyeur')]) {
+    assert.ok(!Object.hasOwn(c, 'cost'), c.id); assert.deepEqual(cardColorCost(c), {}, c.id);
+  }
+  assert.equal(cardById('dune-marchante').cost, 4);
+  assert.equal(cardById('neige-noire').prixPv, 3);
+  assert.equal(cardById('dune-marchante').destruction, undefined);
+  assert.equal(courbeDeMana(['dune-marchante', ...candidats]).nonTerrains, 1);
 });
 
 for (const moba of [false, true]) for (const cote of ['joueur', 'sorcier']) {
   const mode = moba ? 'MOBA' : 'Duel PvP';
-  test(`Dune : récupère le dernier sort éligible, sans prendre arme ou sort trop cher (${mode}, ${cote})`, () => {
-    const { d, dune } = partie(moba, cote);
-    d[cote].cimetiere = ['eclair-du-marteau', 'trait-de-braise', 'rapport-du-greffier', 'javelot-du-beffroi', 'chien-du-guet'];
-    d[adversaire(cote)].cimetiere = ['vent-rouge'];
-    detruire(d, dune, cote);
-    assert.deepEqual(d[cote].main, ['trait-de-braise']);
-    assert.deepEqual(d[cote].cimetiere, ['eclair-du-marteau', 'rapport-du-greffier', 'javelot-du-beffroi', 'chien-du-guet', 'dune-marchante']);
-    assert.ok(d[adversaire(cote)].cimetiere.includes('vent-rouge'));
+  test(`Dune choisit seulement un sort de son deck (${mode}, ${cote})`, () => {
+    const d = partie(moba, cote, ['sabre-maudit', 'chien-du-guet', ...candidats, 'javelot-du-beffroi']);
+    const cs = moba ? rpgMobaCandidatsRecherche(d, cote) : rpgCartesRenfortChoisi(d, cote).map(c => c.id);
+    assert.deepEqual(cs, candidats);
+    const adverse = cote === 'joueur' ? 'sorcier' : 'joueur';
+    assert.deepEqual(moba ? rpgMobaCandidatsRecherche(d, adverse) : rpgCartesRenfortChoisi(d, adverse), []);
+    const invalid = moba ? rpgMobaResoudreRecherche(d, cote, 'sabre-maudit') : rpgResoudreRenfortChoisi(d, cote, 0);
+    assert.equal(invalid.ok, false);
+    const ok = moba ? rpgMobaResoudreRecherche(d, cote, candidats[1]) : rpgResoudreRenfortChoisi(d, cote, 3);
+    assert.ok(ok.ok); assert.deepEqual(d[cote].main, [candidats[1]]);
+    assert.deepEqual(d[cote].deck, ['sabre-maudit', 'chien-du-guet', candidats[0], 'javelot-du-beffroi']);
+    assert.ok(!d.log.some(line => line.includes('Rapport du greffier')));
   });
-  test(`Dune : rien à récupérer si seules armes, créatures et sorts trop chers sont au cimetière (${mode}, ${cote})`, () => {
-    const { d, dune } = partie(moba, cote);
-    d[cote].cimetiere = ['rapport-du-greffier', 'verglas', 'javelot-du-beffroi', 'sabre-maudit', 'chien-du-guet'];
-    detruire(d, dune, cote);
-    assert.deepEqual(d[cote].main, []);
-    assert.deepEqual(d[cote].cimetiere, ['rapport-du-greffier', 'verglas', 'javelot-du-beffroi', 'sabre-maudit', 'chien-du-guet', 'dune-marchante']);
-  });
-  test(`Dune : les doublons restent distincts et un seul sort revient en main (${mode}, ${cote})`, () => {
-    const { d, dune } = partie(moba, cote);
-    d[cote].cimetiere = ['trait-de-braise', 'trait-de-braise'];
-    detruire(d, dune, cote);
-    assert.deepEqual(d[cote].main, ['trait-de-braise']);
-    assert.deepEqual(d[cote].cimetiere, ['trait-de-braise', 'dune-marchante']);
+  test(`Dune ne bloque pas sans sort admissible (${mode}, ${cote})`, () => {
+    const d = partie(moba, cote, ['chien-du-guet', 'sabre-maudit']);
+    assert.equal(d.renfortChoixEnAttente ?? d.mobaRechercheEnAttente, undefined);
   });
 }
+test('Dune : IA du duel résout sa recherche', () => {
+  const d = partie(false, 'sorcier', candidats, false);
+  assert.equal(d.renfortChoixEnAttente, null); assert.equal(d.sorcier.main.length, 1);
+});
+test('Dune : vue PvP masque le deck et le choix adverses', () => {
+  const d = partie(false, 'sorcier', candidats);
+  const vue = rpgPvpVue(d, 'joueur');
+  assert.deepEqual(vue.sorcier.deck, []); assert.deepEqual(rpgCartesRenfortChoisi(vue, 'joueur'), []);
+});
 
-for (const moba of [false, true]) test(`Sacrifice pour le Colosse : la Dune récupère un sort éligible (${moba ? 'MOBA' : 'Duel'})`, () => {
-  const d = (moba ? rpgMobaNouveauDuel : rpgNouveauDuel)({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), pvp: true, modeMana: 'essai', rng: () => .5 });
+test('Dune : le protocole PvP vérifie le camp, l’indice et masque la carte choisie', () => {
+  const d = partie(false, 'sorcier', candidats);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'choisir-renfort', index: 0 }).ok, false);
+  assert.equal(rpgPvpAppliquer(d, 'sorcier', { type: 'choisir-renfort', index: 8 }).ok, false);
+  assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'choisir-renfort', index: 1 }).ok);
+  assert.deepEqual(rpgPvpVue(d, 'joueur').sorcier.main, []);
+  assert.ok(!d.log.some(line => line.includes('Rapport du greffier')));
+});
+
+test('La mort de Dune ne recycle plus de sort', () => {
+  const d = partie(false, 'joueur', ['chien-du-guet']);
+  d.joueur.cimetiere = ['trait-de-braise'];
+  rpgBlesserCreature(d, 'joueur', d.joueur.creatures[0].id, 99);
+  assert.deepEqual(d.joueur.main, []);
+  assert.ok(d.joueur.cimetiere.includes('trait-de-braise'));
+});
+test('Le Prix en PV reste dû et une arme reste jouable sans mana', () => {
+  const d = partie(false, 'joueur', ['chien-du-guet']);
+  d.joueur.pv = 10; d.joueur.main = ['papyrus', 'takouba-des-pistes'];
+  d.joueur.mana = { sable: 0, braise: 0, eau: 0, neige: 0, tenebres: 0 };
+  assert.ok(rpgLancerMagie(d, 'joueur', 'papyrus').ok); assert.equal(d.joueur.pv, 8);
+  assert.ok(rpgJouerArme(d, 'joueur', 'takouba-des-pistes', d.joueur.creatures[0].id).ok);
+});
+test('L’IA MOBA prévoit la recherche de Dune et la résout', () => {
+  const d = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), rng: () => .5 });
   d.mulliganFait = { joueur: true, sorcier: true }; d.manaEssaiDemarre = true;
-  d.joueur.manaChoixEnAttente = null; d.joueur.mana = { sable: 20, braise: 20, neige: 20, eau: 20, tenebres: 20 };
-  const materiaux = ['djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante', 'dune-marchante'].map((id, i) => {
-    d.joueur.main = [id]; d.joueur.invocationNormaleJouee = false;
-    if (moba) d.moba.creaturesJouees.joueur = false;
-    const pose = moba ? rpgMobaJouerCreature(d, 'joueur', id, i === 2 ? 'right' : 'left', i === 2 ? 0 : i) : rpgJouerCreature(d, 'joueur', id);
-    assert.ok(pose.ok, JSON.stringify(pose)); return pose.entite.id;
-  });
-  d.joueur.main = []; d.joueur.cimetiere = ['confluence-des-etincelles', 'rapport-du-greffier'];
-  const r = moba ? rpgMobaJouerCreature(d, 'joueur', 'colosse-du-verre-ardent', 'left', 0, { sacrificeIds: materiaux })
-    : rpgJouerCreature(d, 'joueur', 'colosse-du-verre-ardent', null, { sacrificeIds: materiaux });
-  assert.ok(r.ok, JSON.stringify(r)); assert.deepEqual(d.joueur.main, ['confluence-des-etincelles']);
-  assert.ok(d.joueur.cimetiere.includes('rapport-du-greffier'));
-  assert.ok(d.moba ? d.mobaRechercheEnAttente : d.renfortChoixEnAttente);
-  if (moba) assert.ok(rpgMobaPlacementCoherent(d));
+  d.tour = 'sorcier'; d.sorcier.manaChoixEnAttente = null; d.sorcier.main = ['dune-marchante']; d.sorcier.deck = [...candidats]; d.sorcier.reserveAscension = [];
+  const decision = rpgMobaChoisirCreatureIA(d, 'sorcier'); assert.equal(decision?.id, 'dune-marchante');
+  assert.ok(rpgMobaJouerCreature(d, 'sorcier', decision.id, decision.lane, decision.slot, { sacrificeIds: decision.sacrificeIds }).ok);
+  const choix = rpgMobaChoisirRechercheIA(d); assert.ok(candidats.includes(choix));
+  assert.ok(rpgMobaResoudreRecherche(d, 'sorcier', choix).ok);
 });

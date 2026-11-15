@@ -15,16 +15,16 @@ test('Soutiens : textes courts sans répéter les règles générales, limite pa
     for (const texte of [vue.text, texteCombatIndividuel(vue), apercu(vue)]) {
       assert.ok(texte.length <= 210, carte.id);
       assert.doesNotMatch(texte, /sans Rapidité|ne consomme pas votre invocation normale|ne peut pas attaquer ce tour/i, carte.id);
-      assert.match(texte, /Une fois par tour, toutes copies confondues/, carte.id);
+      assert.doesNotMatch(texte, /copies confondues/i, carte.id);
     }
   }
 });
 
-test('Retour des ensevelis : les conditions et le choix automatique restent lisibles', () => {
+test('Retour des ensevelis : les conditions et le choix restent lisibles', () => {
   for (const vue of [cardById('retour-des-ensevelis'), rpgMobaCartePourApercu(cardById('retour-des-ensevelis'))]) {
     const texte = apercu(vue);
-    assert.match(texte, /dernière créature Ténèbres non-Ascension de coût imprimé 3 ou moins de votre cimetière/);
-    assert.match(texte, /Une fois par tour, toutes copies confondues/);
+    assert.match(texte, /une créature Ténèbres non-Ascension de coût imprimé 3 ou moins de votre cimetière/);
+    assert.doesNotMatch(texte, /copies confondues/i);
     assert.ok(effetsDetailles(vue).pastilles.find(p => p.cle === 'reanimation')?.description);
   }
 });
@@ -32,7 +32,7 @@ test('Retour des ensevelis : les conditions et le choix automatique restent lisi
 test('Chaque soutien conserve sa source, sa sélection et ses contraintes essentielles', () => {
   const motifs = {
     'gardienne-des-sables-ensevelis': /choisissez dans votre cimetière.*coût imprimé 3 ou moins.*spécialement.*bouclier avant son effet d’arrivée/,
-    'convoi-des-dunes': /première créature Sable de coût imprimé 2 de votre main/,
+    'convoi-des-dunes': /main la dernière créature Sable, Eau ou Ténèbres de coût imprimé 3 ou moins de votre cimetière/,
     'confluence-des-etincelles': /depuis votre main jusqu’à deux Djinns Braise : le premier de coût imprimé 1, puis le premier de coût 3/,
     'eveil-des-dunes': /premier Élémental Sable de coût imprimé 4 depuis le dessus de votre pioche/,
   };
@@ -62,4 +62,16 @@ test('Ascensions : recettes et effets propres lisibles, définitions détaillée
   const abordage = effetsDetailles(cardById('amiral-des-abysses')).pastilles.find(p => p.cle === 'abordage');
   assert.match(abordage.description, /coût 5 ou moins/);
   assert.match(abordage.description, /ne peut pas être rachetée/);
+});
+
+test('Les fiches de renfort restent concises et ne répètent plus les copies confondues', async () => {
+  const { RPG_DUEL_CARDS } = await import('../src/games/rpgCards.js');
+  for (const carte of RPG_DUEL_CARDS) assert.doesNotMatch(carte.text ?? '', /copies?[^.]*confondues/i, carte.id);
+  for (const id of ['gardienne-des-derniers-noms', 'veilleur-des-cendres', 'appel-des-marees', 'ralliement-des-neiges', 'veille-des-braises']) {
+    const carte = cardById(id);
+    for (const vue of [carte, rpgMobaCartePourApercu(carte)]) {
+      assert.ok(vue.text.length <= 190, `${id}: ${vue.text.length}`);
+      assert.doesNotMatch(vue.text, /ne consomme pas votre invocation normale|sans Rapidité/i);
+    }
+  }
 });

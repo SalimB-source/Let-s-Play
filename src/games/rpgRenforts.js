@@ -42,7 +42,9 @@ export function candidatsRenfortChoisi(camp, effet) {
     const c = cardById(id);
     return index >= debut && c && ['creature', 'hero'].includes(c.kind) && (!c.ascension || effet.ascensionAutorisee) && !c.jeton
       && (!effet.element || cardColors(c).includes(effet.element))
+      && (!effet.elements?.length || effet.elements.some(e => cardColors(c).includes(e)))
       && (!effet.typeImprime || cardHasPrintedType(c, effet.typeImprime))
+      && (!Number.isFinite(effet.coutExact) || c.cost === effet.coutExact)
       && (!Number.isFinite(effet.coutMax) || c.cost <= effet.coutMax) ? [{ id, index }] : [];
   });
 }

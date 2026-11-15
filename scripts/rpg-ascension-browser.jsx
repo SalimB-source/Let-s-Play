@@ -57,15 +57,18 @@ if (scene === 'dragon') {
   const cible = poser('sorcier', 'gardien-viking-du-fjord', 'left', 0);
   rpgBlesserCreature(partie, 'sorcier', cible.id, 1);
 } else if (scene === 'colosse') {
-  poser('joueur', 'djinn-de-la-premiere-etincelle', 'left', 0); poser('joueur', 'djinn-de-la-flamme-mourante', 'left', 1); poser('joueur', 'dune-marchante', 'right', 1);
+  poser('joueur', 'djinn-de-la-premiere-etincelle', 'left', 0); poser('joueur', 'djinn-de-la-flamme-mourante', 'left', 1);
+  const deckAvantDune = partie.joueur.deck; partie.joueur.deck = [];
+  poser('joueur', 'dune-marchante', 'right', 1); partie.joueur.deck = deckAvantDune;
   poser('joueur', 'ashigaru-des-braises', 'right', 0);
   poser('sorcier', 'gardien-viking-du-fjord', 'left', 0); poser('sorcier', 'gardien-viking-du-fjord', 'right', 0);
 } else if (scene === 'soutiens-scorpion') {
   poser('joueur', 'ureus-du-seuil', 'left', 0);
-  partie.joueur.cimetiere.push('momie-de-lin');
+  poser('joueur', 'scorpion-du-seuil', 'right', 0);
+  partie.joueur.cimetiere.push('ureus-du-seuil', 'momie-de-lin', 'chien-du-guet');
 }
 partie.tour = 'joueur';
-partie.joueur.main = scene === 'soutiens-scorpion' ? ['convoi-des-dunes', 'scorpion-du-seuil', 'retour-des-ensevelis']
+partie.joueur.main = scene === 'soutiens-scorpion' ? ['convoi-des-dunes', 'retour-des-ensevelis']
   : scene === 'soutiens-colosse' ? ['confluence-des-etincelles', 'eveil-des-dunes', 'eveil-des-dunes', 'djinn-de-la-premiere-etincelle', 'djinn-de-la-flamme-mourante']
   : ['viking-des-neiges'];
 if (scene === 'soutiens-colosse') partie.joueur.deck = ['dune-marchante', 'dune-marchante', ...Array(20).fill('ghul-des-cendres')];

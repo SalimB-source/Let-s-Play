@@ -183,8 +183,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
 export const RPG_SOLEIL_ROUGE_ARMES = [
   carte({
     id: 'braise-et-sable', name: 'Braise et sable',
-    kind: 'arme', cost: 3, rarity: 'rare',
-    colors: ['braise', 'sable'], colorCost: { braise: 1, sable: 1 },
+    kind: 'arme',  rarity: 'rare',
+    colors: ['braise', 'sable'],
     typeLine: 'Arme — Lame de braise et de sable',
     bonus: { atk: 1, def: 0 }, donne: { coupRapide: true, coupCritique: 0.15 }, durabilite: 1,
     // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
@@ -199,7 +199,7 @@ export const RPG_SOLEIL_ROUGE_ARMES = [
 export const RPG_SOLEIL_ROUGE_MAGIES = [
   carte({
     id: 'sabre-maudit', name: 'Sabre maudit',
-    kind: 'magie', cost: 4, rarity: 'rare',
+    kind: 'magie',  rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.15, volDeVie: true },
@@ -208,7 +208,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
   carte({
     id: 'frappe-iaijutsu', name: 'Frappe d’iaijutsu',
-    kind: 'magie', cost: 1, rarity: 'rare', instant: true,
+    kind: 'magie',  rarity: 'rare', instant: true,
     typeLine: 'Magie Rapide — Technique · Braise',
     cibles: ['creature'],
     effet: { type: 'degats', amount: 2, cible: 'creature' },
@@ -220,7 +220,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
   carte({
     id: 'feux-de-kitsune', name: 'Feux de kitsune',
-    kind: 'magie', cost: 5, rarity: 'rare',
+    kind: 'magie',  rarity: 'rare',
     typeLine: 'Sorcellerie — Feu follet · Braise',
     cibles: ['creature', 'creature'],
     effet: { type: 'degats', amount: 4, cible: 'creature', choixDegats: true },
@@ -232,7 +232,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   }),
   carte({
     id: 'serment-de-la-forge', name: 'Serment de la forge',
-    kind: 'magie', cost: 4, rarity: 'mythique',
+    kind: 'magie',  rarity: 'mythique',
     typeLine: 'Sorcellerie — Serment · Braise',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
