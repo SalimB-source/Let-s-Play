@@ -1,9 +1,10 @@
 /*
- * L'écu des créatures Défenseur — src/games/rpg-bouclier.css
- * -----------------------------------------------------------
+ * L'écusson des créatures Défenseur — src/games/rpg-bouclier.css
+ * ---------------------------------------------------------------
  * Une créature Défenseur ne se contente plus de son sonar rouge : sa FACE
- * prend la silhouette d'un bouclier. Haut presque droit, flancs parallèles,
- * puis deux arcs qui se rejoignent en une pointe douce au bas de la carte.
+ * prend la silhouette d'un écusson héraldique, d'après la référence envoyée :
+ * haut légèrement bombé, coins adoucis, flancs droits jusqu'à ~62 % de la
+ * hauteur, puis deux longs arcs qui se rejoignent en pointe douce en bas.
  *
  * Le dessin passe par `border-radius`, jamais par `clip-path` : les ondes du
  * sonar (`overflow-clip-margin: 58px`), les pierres d'effets qui débordent du
@@ -12,7 +13,7 @@
  * `overflow: clip` : l'image reprend `border-radius: inherit` à son compte.
  *
  * `border-radius: … !important` reprend la main sur les gabarits mobiles qui
- * écrivent un rayon en dur (7–8 px) sur `.rpg-card` : l'écu garde la même
+ * écrivent un rayon en dur (7–8 px) sur `.rpg-card` : l'écusson garde la même
  * silhouette du bureau au téléphone. Les repères imprimés (type, ATQ/DÉF,
  * pierres du catalogue) sont remontés et resserrés pour rester DANS la pointe
  * au lieu de flotter dans les angles coupés. Tout est décoratif — DOM,
@@ -20,10 +21,12 @@
  */
 
 .rpg-carte-bouclier {
-  /* Coin haut : 8 % / 5 %. Coin bas : 50 % / 22 % — les deux arcs se
-     rejoignent au centre du bas, comme la pointe d'un écu. */
-  --rpg-card-radius: 8% 8% 50% 50% / 5% 5% 22% 22%;
-  --rpg-card-radius-sm: 8% 8% 50% 50% / 5% 5% 22% 22%;
+  /* Les quatre rayons horizontaux valent 50 % : le haut est une arche douce
+     (7 % de hauteur) et le bas une pointe centrée. Les rayons verticaux bas
+     (38 %) font commencer la courbe à 62 % de la hauteur, comme l'écusson
+     de référence. Flancs droits entre 7 % et 62 %. */
+  --rpg-card-radius: 50% 50% 50% 50% / 7% 7% 38% 38%;
+  --rpg-card-radius-sm: 50% 50% 50% 50% / 7% 7% 38% 38%;
   border-radius: var(--rpg-card-radius-sm) !important;
 }
 
@@ -50,7 +53,7 @@
 }
 
 /* ── Les repères rentrent dans la pointe ───────────────────────────────────
-   À 5 % du bas, l'écu ne mesure plus que ~56 % de la largeur : les deux
+   À 8 % du bas, l'écusson ne mesure plus que ~61 % de la largeur : les deux
    pastilles ATQ/DÉF se serrent au centre. Le type remonte à 20 %, là où les
    flancs sont encore droits. Spécificité volontairement plus haute que les
    multiples gabarits de `rpg-battle.css` et `rpg-mobile.css`. */
@@ -58,7 +61,7 @@
 .rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__stats {
   left: 22% !important;
   right: 22% !important;
-  bottom: 5% !important;
+  bottom: 8% !important;
 }
 
 .rpg-card--img.rpg-carte-bouclier .rpg-card__type,
@@ -78,16 +81,16 @@
 .rpg-card--img.rpg-carte-bouclier .rpg-card__pt,
 .rpg-hand__card--img.rpg-carte-bouclier .rpg-hand__stat {
   min-width: 0 !important;
-  padding-inline: 2px !important;
-  font-size: clamp(7px, 7cqw, 11px) !important;
+  padding-inline: 1px !important;
+  font-size: clamp(6px, 7cqw, 11px) !important;
 }
 
 .rpg-hover-card-preview__face.rpg-carte-bouclier .rpg-card__foot,
 .rpg-mulligan__card.rpg-carte-bouclier .rpg-card__foot,
 .rpg-mulligan__card.rpg-carte-bouclier .rpg-mulligan__stats {
-  left: 16% !important;
-  right: 16% !important;
-  bottom: 8% !important;
+  left: 18% !important;
+  right: 18% !important;
+  bottom: 10% !important;
 }
 
 /* Le catalogue, l'atelier et le guide empilent leurs pierres en colonne :
@@ -95,6 +98,6 @@
 .rpg-card-catalogue__art.rpg-carte-bouclier .rpg-card-icones--colonne,
 .rpg-atelier__carte-art.rpg-carte-bouclier .rpg-card-icones--colonne,
 .rpg-card-guide__example.rpg-carte-bouclier .rpg-card-icones--colonne {
-  bottom: 20% !important;
-  right: 6% !important;
+  bottom: 22% !important;
+  right: 8% !important;
 }
