@@ -5252,11 +5252,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    À l'ouverture du duel, le volet isole la table et montre la main de départ :
    les cinq cartes, entières, toutes à l'écran — la rangée ne défile jamais, ni
    en largeur ni en hauteur. Chaque carte est la **face 4:5** du jeu et rien
-   d'autre : l'illustration plein cadre, le coût, le badge d'élément et, pour
-   les créatures, l'attaque et la défense. Aucun mot d'interface n'est imprimé
-   dessus — nom, type et effets se lisent dans l'**aperçu rapide** : au survol à
-   la souris (`.rpg-hover-card-preview--mulligan`, posé au-dessus du volet), à
-   l'appui long d'une seconde au doigt (l'aperçu au doigt, déjà plus haut). Ce
+   d'autre : l'illustration plein cadre, le coût, les pierres d'effets et les
+   statistiques des créatures ou les bonus des armes, comme dans la main.
+   Aucun mot d'interface n'est imprimé dessus ; la fiche reste accessible par
+   les gestes de consultation du jeu. Ce
    qui reste sur la carte, c'est la décision : l'illustration devient grise et
    le cadre porte une lueur rouge pour une carte mise de côté. Pour que les
    cinq tiennent, la largeur d'une carte se plafonne deux fois : par la hauteur
@@ -5340,6 +5339,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: grid;
   place-items: center;
   min-height: 0;
+  box-sizing: border-box;
+  /* Les pierres de coût débordent à gauche, comme dans la main : réserver
+     leur place pour que la première ne soit pas rognée au bord de l'écran. */
+  padding-inline: clamp(12px, 2vw, 24px);
   container-type: size;
 }
 .rpg-mulligan__cards {

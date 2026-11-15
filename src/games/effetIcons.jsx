@@ -407,7 +407,7 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
     const colonne = colonneRef.current;
     if (!colonne || !className.includes('rpg-card-icones--colonne')) return undefined;
     // Le mulligan MOBA pose ses badges à côté de la face, dans son wrapper.
-    const cadre = colonne.closest('.rpg-card, .rpg-hand__card, .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art, .moba__mulligan-item');
+    const cadre = colonne.closest('.rpg-card, .rpg-hand__card, .rpg-mulligan__card, .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art, .moba__mulligan-item');
     if (!cadre) return undefined;
     const carteMoba = colonne.closest('.moba__real-slot .rpg-card');
     const nettoyer = () => {

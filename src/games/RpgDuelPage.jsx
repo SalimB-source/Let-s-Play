@@ -3919,9 +3919,10 @@ function ApercuCarteCatalogue({
    la reprend : elle repart dans le paquet, qui est battu, et le camp pioche
    autant de cartes qu'il en a écartées. Un seul échange, et la main ne diminue
    jamais : c'est une décision, pas une punition. */
-function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
+function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, afficherIcones = true, moba = false }) {
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
+  const estArme = !moba && carteEstArme(carte);
   return (
     <button
       type="button"
@@ -3939,18 +3940,25 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       data-card-id={carte.id}
       data-mulligan-index={index}
       aria-pressed={selectionnee}
-      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : estArme ? ` — bonus d’arme ${bonusArmeTexte(carte)}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
 
       <ManaCost carte={carte} showElement={false} />
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
+      {afficherIcones && <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />}
 
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
         </footer>
+      )}
+      {estArme && (
+        <span className="rpg-mulligan__stats rpg-mulligan__stats--arme" aria-hidden="true">
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
+          <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
+        </span>
       )}
     </button>
   );
