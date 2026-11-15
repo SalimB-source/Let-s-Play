@@ -708,11 +708,13 @@ aux boosters, comme le font les six autres boîtiers.
     dont les demi-ondes alternent entre un calque arrière et un calque avant —
     c’est l’ordre de peinture, et lui seul, qui fait passer un brin dessus et
     l’autre dessous. Et c’est le **capteur** qui en tient le bout. Son adresse se mesure **sur la table rendue**
-    (`vecteurVersCapteur`, relu par `FantomeCarteDetruite` à la première
-    image) : le sorcier pose sa créature et prend sa prise dans le même
-    geste, si bien que l’instantané d’avant l’action ne la connaît pas — la
-    chaîne partait alors du **centre de sa rangée**, en plein milieu de la
-    table (`check:rpg-abordage-chaine`).
+    (`vecteurVersCapteur`, suivi par `FantomeCarteDetruite`) : le sorcier peut
+    poser sa créature et prendre sa prise dans le même geste. Le fantôme attend
+    une position fiable, vise la carte rendue ou sa case exacte et la suit si
+    elle bouge. Sur mobile, il retrouve aussi le capteur caché dans une pile
+    repliée. Sans position connue, il ne vise jamais le centre de la rangée ;
+    un délai de sécurité retire le fantôme si le capteur ne réapparaît pas
+    (`check:rpg-abordage-chaine`).
 
 ## 13. Direction artistique & sons
 
