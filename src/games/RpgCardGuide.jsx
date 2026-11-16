@@ -1,3 +1,4 @@
+import RpgCadreSort from './RpgCadreSort.jsx';
 import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
@@ -41,6 +42,7 @@ function GuideCard({ carte, cardArt }) {
     >
       <div className="rpg-card-guide__art">
         <img src={cardArt(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" />
+        <RpgCadreSort carte={carte} />
         {magieFamille(carte) && <SortSceau carte={carte} className="rpg-card-guide__sort" />}
         {carte.kind !== 'terrain' && carte.cost != null && <span
           className={`rpg-card-guide__cost${degradeCout ? ' rpg-card-guide__cost--hybride' : ''}`}
