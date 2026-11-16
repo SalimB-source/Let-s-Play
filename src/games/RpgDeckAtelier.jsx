@@ -1,3 +1,4 @@
+import RpgCadreCarte from './RpgCadreCarte.jsx';
 /**
  * L'atelier de création et d'édition de deck — `src/games/RpgDeckAtelier.jsx`
  * ----------------------------------------------------------------------------
@@ -758,7 +759,7 @@ export function RpgDeckAtelier({
                   <span className={`rpg-atelier__carte-art rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)} ${classeBouclier(carte)}`}>
                     {renderCatalogueFace
                       ? renderCatalogueFace(carte, { exemplaires: possedee ? limite : 0, verrouillee: !possedee })
-                      : <><img src={artUrl?.(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" /><Cout carte={carte} /></>}
+                      : <><img src={artUrl?.(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" /><RpgCadreCarte carte={carte} /><Cout carte={carte} /></>}
                     <button
                       type="button"
                       className="rpg-atelier__carte-ouvrir rpg-card-catalogue__ouvrir"
