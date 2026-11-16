@@ -41,7 +41,7 @@ globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.windo
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const { rendreJournal } = await import('../node_modules/.cache/rpg-journal-duel/rpg-journal-duel-smoke.js');
-const { ferme, ouvert, referme, hors, echap, nouveau, vide } = await rendreJournal();
+const { ferme, ouvert, referme, hors, echap, nouveau, lisibilite, vide } = await rendreJournal();
 dom.window.close();
 
 assert.equal(ferme.bouton.exists, true, 'le journal est un onglet, présent dès le premier échange');
@@ -65,6 +65,14 @@ assert.equal(referme.badge, null, 'les faits déjà lus ne rallument pas le badg
 assert.equal(hors.panneau.hidden, true, 'un toucher ailleurs referme le panneau, comme une infobulle');
 assert.equal(echap.panneau.hidden, true, 'Échap le referme aussi, sans quitter la table');
 assert.equal(nouveau.badge, '1', 'un fait qui arrive après la lecture rallume le badge — seulement lui');
+assert.equal(lisibilite[0].issue, '2 dégâts');
+assert.equal(lisibilite[1].issue, 'prise en cale');
+assert.match(lisibilite[1].texte, /Effet de jeu/);
+assert.equal(lisibilite[1].icone, true, 'la chaîne ne dépend pas d’une police emoji');
+assert.equal(lisibilite[2].issue, 'détruite');
+assert.equal(lisibilite[2].sources, 2, 'les deux sources restent présentes');
+assert.equal(lisibilite[2].icone, true, 'la destruction dispose aussi d’une icône vectorielle');
+assert.match(lisibilite[2].texte, /Sonneur fêlé.*Corsaire.*Tercio de cuivre/);
 assert.equal(vide.bouton.exists, false, 'sans échange à raconter, la table ne porte aucun onglet vide');
 
 // ── 2. Où vit l'onglet dans la feuille ──────────────────────────────────────
@@ -89,6 +97,9 @@ assert.match(panneau, /max-height:\s*min\(200px, 56vh\);/, 'sa hauteur aussi : i
 assert.match(panneau, /pointer-events:\s*auto;/, 'ouvert, il peut défiler sous le doigt');
 assert.match(css, /\.rpg-combat-feed__panel\[hidden\]\s*\{\s*display:\s*none;/, 'la règle `hidden` l’emporte sur le `display` du panneau');
 assert.match(css, /\.rpg-combat-feed__toggle\s*\{[^}]*pointer-events:\s*auto;/s, 'seule la capsule prend le pointeur');
+assert.match(css, /\.rpg-combat-feed \.rpg-combat-feed__heading\s*\{[^}]*position:\s*sticky;/s, 'le titre et la fermeture restent disponibles au défilement');
+assert.match(css, /\.rpg-combat-feed \.rpg-combat-feed__card span\s*\{[^}]*overflow:\s*visible;[^}]*overflow-wrap:\s*anywhere;/s, 'les noms complets ne sont pas coupés dans le journal du duel');
+assert.match(css, /\.rpg-combat-feed \.rpg-combat-feed__participants:has\(> \.rpg-combat-feed__card:nth-child\(2\)\)/, 'deux sources se rangent sans écraser la victime');
 
 assert.doesNotMatch(css, /\.rpg-combat-feed \{[^}]*width:\s*min\(286px/s,
   'le panneau déplié ne donne plus sa largeur ni sa hauteur à l’onglet');

@@ -1387,30 +1387,47 @@ export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null 
   const boutonFermerRef = useRef(null);
   useEffect(() => { boutonFermerRef.current?.focus({ preventScroll: true }); }, []);
   const visibles = cartesDisponibles.filter(({ carte }) => filtre === 'toutes' || (filtre === 'creature' ? ['creature', 'hero'].includes(carte.kind) : filtre === 'arme' ? carteEstArme(carte) : carte.kind === filtre && !carteEstArme(carte)));
-  const choisie = cartesDisponibles.find(({ index }) => index === selection)?.carte ?? visibles[0]?.carte;
+  // Une carte retirée ou filtrée ne doit pas rester sélectionnée dans le détail.
+  const selectionVisible = visibles.find(({ index }) => index === selection) ?? visibles[0];
+  const choisie = selectionVisible?.carte;
   return (
     <div className="rpg-card-peek rpg-card-peek--catalogue rpg-graveyard-carousel" role="dialog" aria-modal="true" aria-label={`Cimetière de ${campLabel}`} onClick={onClose}>
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <section className="rpg-graveyard-carousel__content" onClick={(event) => event.stopPropagation()}>
         <header className="rpg-graveyard-carousel__heading">
-          <div><span>{campLabel} · CIMETIÈRE</span><strong>{cartesDisponibles.length} carte{cartesDisponibles.length === 1 ? '' : 's'}</strong></div>
+          <div className="rpg-graveyard-carousel__heading-copy">
+            <span className="rpg-graveyard-carousel__eyebrow"><span aria-hidden="true">✦</span> Les archives du duel</span>
+            <h2>{campLabel} · Cimetière</h2>
+            <strong>{cartesDisponibles.length} carte{cartesDisponibles.length === 1 ? '' : 's'} dans ce cimetière</strong>
+          </div>
           <button type="button" ref={boutonFermerRef} className="rpg-graveyard-carousel__close" onClick={onClose} aria-label="Fermer le cimetière">×</button>
         </header>
-        <div className="rpg-graveyard-carousel__filters" aria-label="Filtrer les cartes">
+        <div className="rpg-graveyard-carousel__filters" role="group" aria-label="Filtrer les cartes">
           {[[ 'toutes', 'Toutes' ], [ 'creature', 'Créatures' ], [ 'magie', 'Sorts' ], [ 'arme', 'Armes' ]].map(([id, label]) => <button type="button" key={id} aria-pressed={filtre === id} onClick={() => { setFiltre(id); setSelection(null); }}>{label}</button>)}
         </div>
         <div className="rpg-graveyard-carousel__body">
-          <div className="rpg-graveyard-carousel__cards" role="list" aria-label={`Cartes du cimetière de ${campLabel}`}>
-            {visibles.map(({ carte, index }) => <div className="rpg-graveyard-carousel__item" role="listitem" data-card-id={carte.id} key={`${carte.id}-${index}`}>
-              <button type="button" className="rpg-graveyard-carousel__card-button" aria-label={`Voir ${carte.name}`} aria-pressed={choisie === carte && (selection === index || selection === null && visibles[0]?.index === index)} onClick={() => setSelection(index)}>
-                <HoverCardPreview carte={carte} variante="graveyard" />
-                <span className="rpg-graveyard-carousel__name">{carte.name}</span>
-              </button>
-            </div>)}
-            {!visibles.length && <p className="rpg-graveyard-carousel__empty">Aucune carte dans cette catégorie.</p>}
+          <div className="rpg-graveyard-carousel__collection">
+            <div className="rpg-graveyard-carousel__collection-heading" aria-hidden="true"><span>Cartes récentes d’abord</span><span>{visibles.length} affichée{visibles.length === 1 ? '' : 's'}</span></div>
+            <div className="rpg-graveyard-carousel__cards" role="list" aria-label={`Cartes du cimetière de ${campLabel}`}>
+              {visibles.map(({ carte, index }) => <div className="rpg-graveyard-carousel__item" role="listitem" data-card-id={carte.id} key={`${carte.id}-${index}`}>
+                <button type="button" className="rpg-graveyard-carousel__card-button" aria-label={`Voir ${carte.name}`} aria-pressed={selectionVisible?.index === index} onClick={() => setSelection(index)}>
+                  <HoverCardPreview carte={carte} variante="graveyard" />
+                  <span className="rpg-graveyard-carousel__name">{carte.name}</span>
+                  <span className="rpg-graveyard-carousel__selection-mark" aria-hidden="true">✓</span>
+                </button>
+              </div>)}
+              {!visibles.length && <p className="rpg-graveyard-carousel__empty"><span aria-hidden="true">◇</span> Aucune carte dans cette catégorie.</p>}
+            </div>
           </div>
           <aside className="rpg-graveyard-carousel__details" aria-live="polite">
-            {choisie ? <><span>CARTE SÉLECTIONNÉE</span><h2>{choisie.name}</h2><p className="rpg-graveyard-carousel__type">{choisie.typeLine}</p><p>{choisie.text || 'Aucun effet particulier.'}</p>{onChoose && carteEstArme(choisie) && <button type="button" className="rpg-btn" onClick={() => onChoose(choisie.id)}>Choisir cette arme</button>}</> : <p>Sélectionnez une carte pour lire son effet.</p>}
+            {choisie ? <>
+              <div className="rpg-graveyard-carousel__detail-heading">
+                <span className="rpg-graveyard-carousel__detail-art" aria-hidden="true"><img key={choisie.id} src={cardArt(choisie)} alt="" onError={(event) => { event.currentTarget.hidden = true; }} /></span>
+                <div><span className="rpg-graveyard-carousel__detail-eyebrow">Carte sélectionnée</span><h2>{choisie.name}</h2><p className="rpg-graveyard-carousel__type">{choisie.typeLine}</p></div>
+              </div>
+              <div className="rpg-graveyard-carousel__rule"><span>Effet de la carte</span><p>{choisie.text || 'Aucun effet particulier.'}</p></div>
+              {onChoose && carteEstArme(choisie) && <button type="button" className="rpg-btn rpg-graveyard-carousel__choose" onClick={() => onChoose(choisie.id)}>Choisir cette arme</button>}
+            </> : <div className="rpg-graveyard-carousel__detail-empty"><span aria-hidden="true">◇</span><p>Sélectionnez une carte pour lire son effet.</p></div>}
           </aside>
         </div>
       </section>
@@ -4181,10 +4198,10 @@ function CombatFeedEvent({ event }) {
           <span>{event.victim.name}</span>
         </span>
         {event.type === 'death'
-          ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
+          ? <span className="rpg-combat-feed__skull" role="img" aria-label="détruite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 10a7 7 0 0 1 14 0c0 2.5-1.2 4-3 5v3H8v-3c-1.8-1-3-2.5-3-5Z"/><path d="M9 18v2h6v-2M9 11h.01M15 11h.01M11 15h2"/></svg></span>
           : event.type === 'prise'
-            ? <span className="rpg-combat-feed__skull" aria-label="prise en cale">⛓</span>
-            : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
+            ? <span className="rpg-combat-feed__skull" role="img" aria-label="prise en cale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.8-2.8a4 4 0 0 0-5.7-5.7l-1.6 1.6"/><path d="M14 11a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 0 0 5.7 5.7l1.6-1.6"/></svg></span>
+            : <span className="rpg-combat-feed__damage" role="img" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
       </div>
     </li>
   );
@@ -4254,8 +4271,11 @@ export function CombatFeed({ events = [] }) {
       </button>
       <div className="rpg-combat-feed__panel" id={panneauId} hidden={!ouvert}>
         <div className="rpg-combat-feed__heading">
-          <span aria-hidden="true">⚔</span>
-          <strong>Journal du duel</strong>
+          <span className="rpg-combat-feed__heading-icon" aria-hidden="true">⚔</span>
+          <div className="rpg-combat-feed__heading-copy">
+            <strong>Journal du duel</strong>
+            <small>Derniers échanges</small>
+          </div>
           <button type="button" className="rpg-combat-feed__close" onClick={() => setOuvert(false)} aria-label="Fermer le journal du duel">✕</button>
         </div>
         <ol className="rpg-combat-feed__list" aria-live="polite" aria-relevant="additions">
