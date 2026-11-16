@@ -3102,6 +3102,7 @@ export function TableCard({
           se lit à sa couleur, comme celle d'un bonus. */}
       {carte?.malediction ? <AuraOndes variante="malediction" phase={phaseAura(entite)} /> : null}
       {auraGarde ? <AuraOndes variante="garde" phase={phaseAura(entite)} /> : null}
+      {auraGarde ? <span className="rpg-card__liseret-garde" aria-hidden="true" /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
           aile qui passe — décalé lui aussi par entité. */}
       {entite.envol && (

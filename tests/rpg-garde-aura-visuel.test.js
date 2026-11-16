@@ -29,13 +29,18 @@ test('Défenseur ou Provocation portent une seule aura rouge dans les deux modes
         const doc = rendre(entite(capacite), cote, moba);
         assert.ok(doc.querySelector('.rpg-card.has-garde'));
         assert.equal(doc.querySelectorAll('[data-effet="defenseur"]').length, 1);
+        const icone = doc.querySelector('[data-effet="defenseur"] .rpg-effet-icone');
+        assert.equal(icone?.getAttribute('data-pierre'), 'braise', 'icône Défenseur rouge');
+        assert.ok(icone?.querySelector('polygon[fill="#a8282d"]'), 'pierre rouge visible');
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde').length, 1);
+        assert.equal(doc.querySelectorAll('.rpg-card__liseret-garde[aria-hidden="true"]').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde .rpg-card__resonance-onde').length, 3);
         assert.equal(doc.querySelector('.rpg-card__resonance--garde').getAttribute('aria-hidden'), 'true');
         assert.match(doc.querySelector('.rpg-card__resonance--garde').getAttribute('style'), /--rpg-resonance-phase:/);
       }
       assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__resonance--garde'), null);
-      assert.equal(rendre(entite({ carteId: 'source-de-bimini', defenseur: true }), cote, moba).querySelector('.rpg-card__resonance--garde'), null);
+      assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__liseret-garde'), null);
+      assert.equal(rendre(entite({ carteId: 'source-de-bimini', defenseur: true }), cote, moba).querySelector('.rpg-card__liseret-garde'), null);
       const avecArme = rendre(entite({ defenseur: true, arme: { carteId: 'armure-de-cendres' } }), cote, moba);
       assert.ok(avecArme.querySelector('.rpg-card.has-garde.has-arme .rpg-card__arme-vignette'));
       const cumul = rendre(entite({ carteId: 'la-barbe-noire', defenseur: true }), cote, moba);

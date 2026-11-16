@@ -169,6 +169,7 @@ const PIERRE_SPECIALE_PAR_SYMBOLE = Object.freeze({
   'i-rebond': 'braise',
   'i-vol-de-vie': 'braise',
   'i-exil': 'braise',
+  'i-defenseur': 'braise',
   'i-bouclier': 'tenebres',
   'i-invocation-speciale': 'or',
   'i-recherche': 'azur',
