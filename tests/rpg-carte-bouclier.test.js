@@ -2,7 +2,7 @@
  * L'écusson des créatures Défenseur — tests/rpg-carte-bouclier.test.js
  * ----------------------------------------------------------------------
  * Vérifie, sans navigateur : qui reçoit l'écusson, que sa silhouette reste
- * intacte sans cadre métallique et avec un fin liseré rouge sur le plateau, que
+ * intacte sans cadre métallique et avec un fin liseré orange sur le plateau, que
  * les effets pleine face (égide, impact, Furie, Envol, brume, ondes, sang, givre)
  * prennent eux aussi la forme de l'écu, que les Défenseur POSÉS sont 10 % plus
  * grands avec des icônes inchangées et des emplacements plus espacés, que sur
@@ -102,7 +102,7 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
       'Défenseur accordé pendant la partie');
     const imprime = { id: 'c2', carteId: 'gardien-de-la-porte-ardente', name: 'Gardien', atk: 2, def: 4, pv: 4, pvMax: 4, ready: true };
     assert.equal(rendre(imprime).classList.contains(CLASSE_BOUCLIER), true, 'Défenseur imprimé');
-    // Le sonar rouge et la pierre Défenseur restent en place : l’écu s’ajoute,
+    // Le sonar orange et la pierre Défenseur restent en place : l’écu s’ajoute,
     // il ne remplace aucun des repères existants.
     const carte = rendre(imprime);
     assert.ok(carte.classList.contains('has-garde'));
@@ -114,7 +114,7 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
   } finally { await vite.close(); }
 });
 
-test('la carte garde sa forme d’écusson avec un fin liseré rouge sur le plateau', () => {
+test('la carte garde sa forme d’écusson avec un fin liseré orange sur le plateau', () => {
   const svgDe = (nom) => {
     const ligne = css.split('\n').find((l) => l.includes(`${nom}:`));
     assert.ok(ligne, `${nom} existe`);
@@ -164,8 +164,8 @@ test('la carte garde sa forme d’écusson avec un fin liseré rouge sur le plat
 
   // Aucun cadre n'est recréé par un gabarit plus spécifique.
   assert.match(css, /\.rpg-carte-bouclier::before\s*\{[^}]*content:\s*none !important;[^}]*display:\s*none !important;/s);
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__liseret-garde\s*\{[^}]*z-index:\s*5;[^}]*background-color:\s*#e75a4d;[^}]*mask-image:\s*var\(--rpg-ecusson-defenseur-liseret\)[^}]*pointer-events:\s*none/s,
-    'un calque fixe dessine le trait rouge suivant l’écu, au-dessus du givre');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__liseret-garde\s*\{[^}]*z-index:\s*5;[^}]*background-color:\s*#ff982f;[^}]*mask-image:\s*var\(--rpg-ecusson-defenseur-liseret\)[^}]*pointer-events:\s*none/s,
+    'un calque fixe dessine le trait orange suivant l’écu, au-dessus du givre');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier :is\(\.rpg-mana-cost, \.rpg-card__foot\),[\s\S]*?z-index:\s*7;/,
     'coût et statistiques restent devant le trait et la sélection');
 
@@ -232,9 +232,9 @@ test('les effets pleine face prennent la forme de l’écu sans contour permanen
     /\.rpg-card__resonance--malediction::after \{[^}]*178, 146, 245/,
   ]) assert.match(css, variante, `variante de liseré : ${variante}`);
 
-  // Le sonar rouge de Défenseur et les autres calques d'origine restent
+  // Le sonar orange de Défenseur et les autres calques d'origine restent
   // intacts dans `rpg-battle.css` : seul l'écu les redessine.
-  assert.match(battleCss, /\.rpg-card__resonance--garde/, 'sonar rouge toujours présent');
+  assert.match(battleCss, /\.rpg-card__resonance--garde/, 'sonar orange toujours présent');
   assert.match(battleCss, /\.rpg-bouclier-egide \{/, 'l’égide d’origine reste sur les cartes normales');
   assert.match(battleCss, /\.rpg-furie-vignette \{/, 'la Furie reste sur les cartes normales');
   assert.match(battleCss, /\.rpg-card__brume \{/, 'la brume reste sur les cartes normales');
@@ -258,7 +258,7 @@ test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gab
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__stat--atk/, 'gabarit normal de l’ATQ');
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__pt/, 'gabarit normal de la DÉF');
   assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit mobile inchangé');
-  assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
+  assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar orange toujours présent');
 });
 
 test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement', () => {
@@ -383,13 +383,13 @@ test('les Défenseur posés sont 10 % plus grands, icônes inchangées, emplacem
   assert.match(lire('rpg-mana-essai.css'), /gap: inherit;/, 'les cinq emplacements héritent de la gouttière');
 });
 
-test('la sélection temporaire des Défenseurs prime sur le fin filet rouge', async () => {
+test('la sélection temporaire des Défenseurs prime sur le fin filet orange', async () => {
   const selection = '.rpg-card.rpg-carte-bouclier:is(.is-active, .is-selected, .is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover, .is-sacrifice, .is-ascension-chosen)';
   const regle = css.match(/\.rpg-card\.rpg-carte-bouclier:is\(\.is-active,[^}]+\)::before\s*\{[^}]*\}/);
   assert.ok(regle, 'les états sélectionnés ajoutent leur propre contour');
   assert.match(regle[0], /content:\s*''\s*!important;/);
   assert.match(regle[0], /display:\s*block\s*!important;/);
-  assert.match(regle[0], /z-index:\s*6;/, 'la sélection reste devant le filet rouge');
+  assert.match(regle[0], /z-index:\s*6;/, 'la sélection reste devant le filet orange');
   assert.match(regle[0], /background:\s*#ffdf55;/);
   assert.match(regle[0], /mask-image:\s*var\(--rpg-ecusson-effet-liseret\);/);
   assert.match(regle[0], /-webkit-mask-image:\s*var\(--rpg-ecusson-effet-liseret\);/);
