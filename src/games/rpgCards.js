@@ -1104,8 +1104,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'berserk-des-trois-hivers',
     furie: 2,
     overkill: true,
-    defenseur: true,
-    text: 'Furie 2. Overkill — Les dégâts excédentaires sont infligés au sorcier adverse. Défenseur.',
+    text: 'Furie 2. Overkill — Les dégâts excédentaires sont infligés au sorcier adverse.',
     flavor: 'Trois hivers de rage tenus dans un seul bras — et le sang ne fait que l’attiser.',
   },
   {

@@ -4,9 +4,9 @@ import { cardById } from '../src/games/rpgCards.js';
 import { pastillesPourCarte } from '../src/games/effetIcons.js';
 import { rpgNouveauDuel, rpgChoisirBloqueurs } from '../src/games/rpgDuel.js';
 
-const anciennes = ['gardien-de-la-porte-ardente', 'berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre', 'garde-du-trone-givre', 'berserk-du-crepuscule', 'colosse-du-verre-ardent', 'la-barbe-noire'];
+const anciennes = ['gardien-de-la-porte-ardente', 'jarl-au-marteau-de-guerre', 'garde-du-trone-givre', 'berserk-du-crepuscule', 'colosse-du-verre-ardent', 'la-barbe-noire'];
 
-test('toutes les anciennes cartes affichent Défenseur une fois, sans ancienne mécanique', () => {
+test('les autres anciennes cartes affichent Défenseur une fois, sans ancienne mécanique', () => {
   for (const id of anciennes) {
     const carte = cardById(id);
     assert.ok(carte, id);

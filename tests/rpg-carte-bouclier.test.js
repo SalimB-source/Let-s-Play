@@ -1,14 +1,13 @@
 /**
  * L'écusson des créatures Défenseur — tests/rpg-carte-bouclier.test.js
  * ----------------------------------------------------------------------
- * Vérifie, sans navigateur : qui reçoit l'écusson, que le cadre acier AFFINÉ
- * suit la silhouette SANS ailettes et SANS couper la pointe du bas, avec un
- * liseré de la couleur de l'élément et une ombre portée (aucun rectangle,
- * aucun `outline`, aucun `box-shadow` de boîte), que TOUS les effets pleine
+ * Vérifie, sans navigateur : qui reçoit l'écusson, que sa silhouette reste
+ * intacte sans cadre métallique ni liseré permanent, que les effets pleine
  * face (égide de Bouclier, impact, Furie, Envol, brume, ondes, sang, givre)
  * prennent eux aussi la forme de l'écu, que les Défenseur POSÉS sont 10 % plus
- * grands avec des icônes inchangées et des emplacements plus espacés, que les
- * repères (ATQ/DÉF, type, pierres, sonar) ne sont pas touchés, et que MAIN,
+ * grands avec des icônes inchangées et des emplacements plus espacés, que sur
+ * le plateau leur pied ATQ/DÉF remonte de quelques pixels SANS agrandissement,
+ * que les repères (type, pierres, sonar) ne sont pas touchés, et que MAIN,
  * MULLIGAN, MAIN MOBA et APERÇUS restent des cartes rectangulaires normales
  * avec ATQ à gauche / DÉF à droite.
  */
@@ -115,7 +114,7 @@ test('TableCard dessine l’écu pour un Défenseur, pas pour les autres', async
   } finally { await vite.close(); }
 });
 
-test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe non coupée', () => {
+test('la carte garde sa forme d’écusson sans cadre ni liseré permanent', () => {
   const svgDe = (nom) => {
     const ligne = css.split('\n').find((l) => l.includes(`${nom}:`));
     assert.ok(ligne, `${nom} existe`);
@@ -124,13 +123,10 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
   };
   const aplat = svgDe('--rpg-ecusson-aplat');
   const masque = svgDe('--rpg-ecusson-masque');
-  const cadreMasque = svgDe('--rpg-ecusson-cadre-masque');
-  const acier = svgDe('--rpg-ecusson-acier');
   const effetMasque = svgDe('--rpg-ecusson-effet-masque');
   const effetLiseret = svgDe('--rpg-ecusson-effet-liseret');
   for (const [nom, svg] of [
-    ['aplat', aplat], ['masque', masque], ['cadre', cadreMasque],
-    ['acier', acier], ['effets', effetMasque], ['filet', effetLiseret],
+    ['aplat', aplat], ['masque', masque], ['effets', effetMasque], ['filet', effetLiseret],
   ]) {
     assert.match(svg, /^<svg /, `${nom} est un SVG`);
     assert.match(svg, /viewBox='-5 -5 110 137'/, `marges de respiration dans ${nom}`);
@@ -155,19 +151,7 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
   assert.match(effetLiseret, /stroke-width='3\.2'/, 'filet fin du liseré des effets');
   assert.doesNotMatch(effetLiseret, /fill='rgb/, 'le liseré n’est qu’un trait');
 
-  // Cadre AFFINÉ : dégradé, traits fins, reflet sur le dôme. Plus d'ailettes.
-  assert.match(acier, /<linearGradient id='a'/, 'dégradé acier');
-  assert.match(acier, /stroke-width='6\.4'/, 'contour sombre affiné');
-  assert.match(acier, /stroke-width='4\.8'/, 'acier affiné (contre 7 avant)');
-  assert.match(acier, /stroke-width='1\.3'/, 'gorge sombre affinée');
-  assert.match(acier, /stroke-width='0\.55'/, 'filet de lumière');
-  assert.match(acier, /stroke-opacity='\.55'/, 'reflet sur le dôme');
-  assert.doesNotMatch(acier, /stroke-width='(?:7|10)'/, 'plus de trait épais');
-  assert.match(cadreMasque, /stroke-width='8'/, 'masque de 8 (au lieu de 10)');
-  for (const [nom, svg] of [['cadre', cadreMasque], ['acier', acier]]) {
-    assert.doesNotMatch(svg, /M-9 52|M109 52|M-10 51|M110 51/, `${nom} : aucune ailette latérale`);
-  }
-  assert.doesNotMatch(css, /M-9%2052|M109%2052|M-10%2051|M110%2051/, 'aucun tracé d’ailette encodé');
+  assert.doesNotMatch(css, /--rpg-ecusson-acier|--rpg-ecusson-cadre-masque/, 'les anciens tracés du cadre sont retirés');
 
   assert.match(css, /--rpg-ecusson-fond:\s*#211d3b;/, 'marine de la référence');
   assert.match(css, /background-image:\s*var\(--rpg-ecusson-aplat\) !important;/, 'l’aplat remplace le fond des cadres');
@@ -175,13 +159,10 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
   assert.match(css, /-webkit-mask-image:\s*var\(--rpg-ecusson-masque\);/);
   assert.match(css, /mask-size:\s*100% 100%;/);
 
-  // Le cadre : acier + liseré de la couleur de l'élément, sur `::before`.
-  assert.match(css, /background-color:\s*var\(--rpg-frame-color, #f1f3f5\);/);
-  assert.match(css, /background-image:\s*var\(--rpg-ecusson-acier\);/);
-  assert.match(css, /mask-image:\s*var\(--rpg-ecusson-cadre-masque\);/);
-  assert.match(css, /\.rpg-carte-bouclier::before\s*\{[^}]*z-index:\s*2;/s, 'cadre au-dessus du bandeau de titre');
-  assert.match(css, /pointer-events:\s*none;/);
-  assert.doesNotMatch(css, /--rpg-ecusson-liseret/, 'l’ancien liseré seul est remplacé par le cadre');
+  // Aucun cadre n'est recréé par un gabarit plus spécifique.
+  assert.match(css, /\.rpg-carte-bouclier::before\s*\{[^}]*content:\s*none !important;[^}]*display:\s*none !important;/s);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__resonance--garde::after\s*\{[^}]*content:\s*none;[^}]*display:\s*none;/s,
+    'le sonar Défenseur ne redessine pas de bord permanent');
 
   // Ombre portée : `drop-shadow` lit l'alpha de l'écusson. Aucune ombre de
   // boîte rectangulaire, aucun outline visible.
@@ -202,14 +183,13 @@ test('la carte EST l’écusson : cadre acier affiné, aucune ailette, pointe no
     /overflow:\s*visible !important;/,
   ]) assert.match(css, regle, `règle ${regle}`);
 
-  // L'ancien tracé or en surimpression a disparu : la couleur vient de
-  // `--rpg-frame-color`, et aucun filet n'est codé en dur.
+  // Aucun ancien tracé or n'est conservé sur la silhouette.
   assert.doesNotMatch(css, /--rpg-ecusson-trait/, 'l’ancien tracé contour est retiré');
   assert.doesNotMatch(css, /224,205,138|240, 205, 138|#e0cd8a/, 'plus de filet doré');
   assert.doesNotMatch(css, /clip-path\s*:/, 'mask-image et non clip-path : les repères débordent');
 });
 
-test('tous les effets pleine face prennent la forme de l’écu, avec un liseré d’écu', () => {
+test('les effets pleine face prennent la forme de l’écu sans contour permanent de Défenseur', () => {
   // Les six calques qui peignaient un rectangle bordé sur la table. Le sang et
   // le givre étaient déjà dans la liste des fonds masqués.
   const regleEffets = css.match(/\.rpg-card\.rpg-carte-bouclier > :is\(\s*\.rpg-bouclier-egide([\s\S]*?)\) \{[^}]*\}/);
@@ -230,7 +210,7 @@ test('tous les effets pleine face prennent la forme de l’écu, avec un liseré
     /box-shadow:\s*none !important;/, /outline:\s*none !important;/,
   ]) assert.match(corps, neutre, `rectangle neutralisé : ${neutre}`);
 
-  // L'égide, l'impact et le sonar retrouvent un liseré coloré en forme d'écu.
+  // L'égide, l'impact et les autres sonars gardent leur liseré d'effet.
   const liseres = css.match(/\.rpg-card\.rpg-carte-bouclier > :is\(\.rpg-bouclier-egide, \.rpg-bouclier-impact, \.rpg-card__resonance\)::after \{[^}]*\}/);
   assert.ok(liseres, 'le pseudo-élément du liseré existe');
   assert.match(liseres[0], /background-color:\s*rgba\(var\(--rpg-bouclier-teinte/,
@@ -245,7 +225,6 @@ test('tous les effets pleine face prennent la forme de l’écu, avec un liseré
     /\.rpg-card__resonance::after \{[^}]*96, 178, 255/,
     /\.rpg-card__resonance--aura::after \{[^}]*250, 205, 90/,
     /\.rpg-card__resonance--malediction::after \{[^}]*178, 146, 245/,
-    /\.rpg-card__resonance--garde::after \{[^}]*255, 97, 79/,
   ]) assert.match(css, variante, `variante de liseré : ${variante}`);
 
   // Le sonar rouge de Défenseur et les autres calques d'origine restent
@@ -257,11 +236,13 @@ test('tous les effets pleine face prennent la forme de l’écu, avec un liseré
   assert.doesNotMatch(css, /clip-path\s*:/, 'toujours mask-image, jamais clip-path global');
 });
 
-test('ATQ/DÉF et les autres repères restent exactement comme sur les autres cartes', () => {
-  // La feuille de l'écusson ne contient aucune règle de position / de taille
-  // sur les repères : c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi.
+test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gabarit', () => {
+  // La feuille de l'écusson ne contient AUCUNE règle de taille sur les repères :
+  // c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi. La seule exception
+  // est le `translate` de 6 px du pied, testé plus bas : il ne touche à aucun
+  // sélecteur de pastille et ne change aucune mesure.
   for (const selectors of [
-    'rpg-card__foot', 'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
+    'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
     'rpg-hand__stat', 'rpg-card-icones--colonne',
   ]) {
     assert.doesNotMatch(css, new RegExp(selectors), `${selectors} n'est pas touché`);
@@ -273,6 +254,52 @@ test('ATQ/DÉF et les autres repères restent exactement comme sur les autres ca
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__pt/, 'gabarit normal de la DÉF');
   assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit mobile inchangé');
   assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
+});
+
+test('sur le plateau, ATQ et DÉF remontent de quelques pixels, sans agrandissement', () => {
+  // « juste un décalage de quelques pixels vers le haut, pas d'agrandissement » :
+  // UNE seule règle, UNE seule propriété, sur le pied des seules cartes POSÉES.
+  const regles = [...css.matchAll(/\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{([^}]*)\}/g)];
+  assert.equal(regles.length, 1, 'une unique règle de remontée du pied');
+  const corps = regles[0][1];
+  assert.match(corps, /translate:\s*0 -6px;/, 'décalage de 6 px vers le haut');
+  assert.equal(corps.trim(), 'translate: 0 -6px;', 'rien d’autre que ce décalage');
+
+  // Aucun agrandissement, aucun déplacement latéral, aucun changement de
+  // taille, de police, de marge ou de point d'ancrage.
+  for (const interdit of [
+    /\bwidth\s*:/, /\bheight\s*:/, /\bmax-width\s*:/, /\bmin-width\s*:/,
+    /\bbottom\s*:/, /\btop\s*:/, /\bleft\s*:/, /\bright\s*:/, /\bmargin\s*:/,
+    /\bfont-size\s*:/, /\bpadding\s*:/, /\bgap\s*:/,
+    /\bscale\s*:/, /\bzoom\s*:/, /\btransform\s*:/, /!important/,
+    /--rpg-defenseur-echelle/,
+  ]) assert.doesNotMatch(corps, interdit, `ni ${interdit} dans la remontée`);
+
+  // Le `scale` visuel de la carte et le `scale` inverse des enfants restent
+  // exactement tels quels : la demande ne porte que sur la hauteur du pied.
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*--rpg-defenseur-echelle: 1\.1;[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
+    'l’échelle 1.1 de la carte n’est pas modifiée');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \* \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
+    'les icônes restent ramenées à l’échelle 1');
+
+  // Ciblage étroit : pas de main, mulligan, aperçu, vignette ni variante mobile.
+  for (const exclu of [
+    'rpg-hand__card', 'rpg-mulligan__card', 'rpg-hover-card-preview__face',
+    'rpg-card-catalogue__art', 'rpg-atelier__carte-art', 'rpg-card-guide__example',
+    'rpg-souk__carte', '.card-row', '.moba__',
+  ]) assert.doesNotMatch(regles[0][0], new RegExp(exclu.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `${exclu} n’est pas visé`);
+  assert.doesNotMatch(css, /@media[^{]*\{[^}]*rpg-card__foot/, 'aucune variante par écran');
+
+  // Les gabarits d'origine des autres feuilles restent intacts : le pied d'une
+  // carte normale (et celui des aperçus / mulligan) ne bouge pas d'un pixel.
+  assert.match(battleCss, /\.rpg-card--img \.rpg-card__foot \{[\s\S]{0,300}?bottom: 4%;/,
+    'bottom: 4 % des cartes normales inchangé');
+  assert.match(mobileCss, /bottom: var\(--rpg-field-foot, 3%\)/, 'bottom du tactile inchangé');
+  for (const [nom, source] of [
+    ['rpg-battle.css', battleCss], ['rpg-mobile.css', mobileCss], ['rpg-moba.css', lire('rpg-moba.css')],
+  ]) assert.doesNotMatch(source, /rpg-card__foot[^{]*\{[^}]*translate\s*:/s,
+    `${nom} ne remonte pas le pied des autres cartes`);
 });
 
 test('main, mulligan, main MOBA et aperçus restent des cartes rectangulaires', () => {
@@ -344,4 +371,37 @@ test('les Défenseur posés sont 10 % plus grands, icônes inchangées, emplacem
   assert.match(mobileCss, /--rpg-field-gap: max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/,
     'gouttière au doigt : 16 % → 22 %');
   assert.match(lire('rpg-mana-essai.css'), /gap: inherit;/, 'les cinq emplacements héritent de la gouttière');
+});
+
+test('la sélection temporaire des Défenseurs dessine un filet en écu, sans cadre au repos', async () => {
+  const selection = '.rpg-card.rpg-carte-bouclier:is(.is-active, .is-selected, .is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover, .is-sacrifice, .is-ascension-chosen)';
+  const regle = css.match(/\.rpg-card\.rpg-carte-bouclier:is\(\.is-active,[^}]+\)::before\s*\{[^}]*\}/);
+  assert.ok(regle, 'seuls les états sélectionnés ajoutent un contour');
+  assert.match(regle[0], /content:\s*''\s*!important;/);
+  assert.match(regle[0], /display:\s*block\s*!important;/);
+  assert.match(regle[0], /background:\s*#ffdf55;/);
+  assert.match(regle[0], /mask-image:\s*var\(--rpg-ecusson-effet-liseret\);/);
+  assert.match(regle[0], /-webkit-mask-image:\s*var\(--rpg-ecusson-effet-liseret\);/);
+  assert.match(regle[0], /pointer-events:\s*none;/);
+  assert.match(css, /\.rpg-battle--touch \.card-row \.rpg-card\.rpg-carte-bouclier\.is-declared-attacker::before\s*\{[^}]*background:\s*#ff534c;/);
+  assert.match(css, /\.rpg-battle--touch \.card-row \.rpg-card\.rpg-carte-bouclier\.is-selected::before\s*\{[^}]*background:\s*#ffe082;/);
+  assert.match(css, /\.moba \.rpg-card\.rpg-carte-bouclier:is\(\.is-blocking, \.is-target\)::before\s*\{[^}]*background:\s*#9edcf3;/);
+  assert.match(css, /\.rpg-carte-bouclier::before\s*\{[^}]*content:\s*none !important;[^}]*display:\s*none !important;/s,
+    'aucun cadre ne revient au repos');
+
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' });
+  try {
+    const { TableCard } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const e = { id: 'g', carteId: 'gardien-de-la-porte-ardente', name: 'Gardien', atk: 2, def: 4, pv: 4, pvMax: 4, ready: true };
+    const rendre = (extra, moba = null, entite = e) => new JSDOM(renderToStaticMarkup(React.createElement(TableCard, { entite, cote: 'joueur', moba, ...extra }))).window.document.querySelector('.rpg-card');
+    for (const moba of [null, { className: 'moba__slot' }]) {
+      assert.equal(rendre({}, moba).matches(selection), false, 'aucun contour au repos');
+      for (const props of [{ selected: true }, { active: true }, { selectedBlocker: true }, { blocking: true }, { ascensionSelection: { numero: 1 } }]) {
+        assert.equal(rendre(props, moba).matches(selection), true, JSON.stringify(props));
+      }
+      const normal = { ...e, carteId: 'chien-du-guet' };
+      assert.equal(rendre({ selected: true }, moba, normal).matches(selection), false, 'une carte rectangulaire conserve sa sélection habituelle');
+    }
+    assert.equal(rendre({}, { className: 'moba__slot is-sacrifice' }).matches(selection), true, 'sacrifice choisi en MOBA');
+  } finally { await vite.close(); }
 });
