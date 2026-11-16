@@ -14194,7 +14194,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
                           // La créature qui vient d'arriver n'est jamais sa
                           // propre cible, sauf quand l'arrivée l'autorise
-                          // (`cibleSoi`, le bouclier du Guerrier).
+                          // (`cibleSoi`, par exemple la Tour de sable).
                           && (entite.id !== duel.arriveeEnAttente?.entiteId
                             || Boolean(carteCiblee?.arrivee?.cibleSoi))
                           && (carteCiblee?.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carteCiblee)))

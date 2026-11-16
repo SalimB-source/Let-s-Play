@@ -79,11 +79,11 @@ test('la Source soigne une créature et lui donne un bouclier, sans modifier les
 });
 
 test('arrivée alliée : le soin et le bouclier ciblent un autre flanc via le plateau', () => plateau(async ({ duel, engine, render, click }) => {
-  duel.joueur.main = ['ashigaru-des-braises', 'volva-soigneuse', 'guerrier-au-bouclier-rond'];
+  duel.joueur.main = ['ashigaru-des-braises', 'volva-soigneuse', 'tour-de-sable'];
   const cible = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
   cible.pv = 1; cible.def = 1;
   duel.sorcier.main = [];
-  for (const [nom, lane] of [['Völva soigneuse', 'Voie droite'], ['Guerrier au bouclier rond', 'Voie centrale']]) {
+  for (const [nom, lane] of [['Völva soigneuse', 'Voie droite'], ['Tour de Sable', 'Voie centrale']]) {
     duel.moba.creaturesJouees.joueur = false;
     await render();
     await click(carte(nom));

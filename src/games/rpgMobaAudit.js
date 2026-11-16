@@ -21,7 +21,7 @@ export const CARTES_COMBAT_AUDITEES = new Set([
   'volva-soigneuse', 'faiseur-de-passage', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'geant-des-banquises', 'leviathan',
   'gardien-de-la-porte-ardente', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'ifrit-al-ahmar', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'yamina', 'dame-des-neuf-mondes', 'la-devoreuse', 'valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'kraken', 'fennec-des-decombres', 'chien-du-guet', 'le-renegat', 'tiziri-du-djurdjura', 'pilote-de-la-carreira',
   ...MOBA_ABORDAGE_IMPRIME, 'le-brulot', 'negociant-des-ranscons', 'le-chasseur-d-ocracoke', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert',
-  'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher',
+  'griffon-des-dunes-gelees', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher',
   'chacal-du-seuil', 'veilleuse-au-corbeau-noir', 'berserk-du-crepuscule', 'seigneur-des-machoires', 'faucon-du-zenith', 'celui-qui-juge', 'pretre-de-la-bouche', 'ouvrier-du-natron', 'gardienne-de-la-balance',
   'orochi', 'momie-de-lin', 'daimyo-du-soleil-rouge', 'tarek',
   'braisier-du-souk', 'valkyrie-des-glaces', 'maitre-des-corbeaux', 'guetteur-du-beffroi', 'dune-marchante', 'faussoyeur-des-dunes', 'scribe-de-la-liste',

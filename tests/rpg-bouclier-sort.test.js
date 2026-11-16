@@ -55,7 +55,7 @@ const scene = () => {
 };
 
 test('les sources de bouclier n’annoncent plus qu’une parade', () => {
-  for (const id of ['guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'tour-de-sable', 'parade-du-verre']) {
+  for (const id of ['veilleuse-des-citernes', 'tour-de-sable', 'parade-du-verre']) {
     const carte = cardById(id);
     const effet = carte.arrivee?.type === 'bouclier' ? carte.arrivee : carte.effet;
     assert.equal(effet.type, 'bouclier', `${id} pose un bouclier`);
@@ -65,51 +65,52 @@ test('les sources de bouclier n’annoncent plus qu’une parade', () => {
   }
 });
 
-test('le bouclier du Guerrier se donne : à lui-même ou à une autre créature alliée', () => {
+test('le bouclier de la Tour se donne : à lui-même ou à une autre créature alliée', () => {
   // Le texte imprimé doit dire les deux destinations : c'est lui qui annonce
   // au joueur que la parade se désigne.
-  assert.match(cardById('guerrier-au-bouclier-rond').text, /une créature alliée ciblée — ou lui-même/,
-    'le Guerrier annonce les deux porteurs possibles');
-  assert.equal(cardById('guerrier-au-bouclier-rond').arrivee.cibleSoi, true,
+  assert.match(cardById('tour-de-sable').text, /une créature alliée ciblée reçoit un bouclier/,
+    'la Tour annonce les deux porteurs possibles');
+  assert.equal(cardById('tour-de-sable').arrivee.cibleSoi, true,
     'l’arrivée accepte la créature qui la porte');
 
-  // 1. Seul sur le champ, le Guerrier garde sa parade : la désignation porte
+  // 1. Seul sur le champ, la Tour garde sa parade : la désignation porte
   // sur lui-même, et l'attente se referme.
   const duel = duelVide();
   duel.tour = 'joueur';
   manaPlein(duel, 'joueur');
-  donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
-  const seul = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
+  donner(duel, 'joueur', 'tour-de-sable');
+  const seul = rpgJouerCreature(duel, 'joueur', 'tour-de-sable', null, { cibleDifferee: true });
   assert.equal(seul.ok, true);
   assert.equal(seul.arriveeEnAttente, true, 'la table attend la désignation du porteur');
   assert.equal(seul.entite.bouclier ?? 0, 0, 'aucun bouclier n’est posé avant le choix');
   const designe = rpgResoudreArriveeCiblee(duel, 'joueur', seul.entite.id);
-  assert.equal(designe.ok, true, 'le Guerrier peut se désigner lui-même');
-  assert.equal(seul.entite.bouclier, 1, 'la parade reste sur le Guerrier');
+  assert.equal(designe.ok, true, 'la Tour peut se désigner lui-même');
+  assert.equal(seul.entite.bouclier, 1, 'la parade reste sur la Tour');
   assert.equal(duel.arriveeEnAttente, null, 'l’attente est levée');
 
-  // 2. Avec un allié, la même pose prête la parade : le Guerrier reste nu.
+  // 2. Avec un allié, la même pose prête la parade : la Tour reste nue.
   const duelAllie = duelVide();
   duelAllie.tour = 'joueur';
   manaPlein(duelAllie, 'joueur');
   donner(duelAllie, 'joueur', 'chien-du-guet');
-  donner(duelAllie, 'joueur', 'guerrier-au-bouclier-rond');
+  donner(duelAllie, 'joueur', 'tour-de-sable');
   const chien = rpgJouerCreature(duelAllie, 'joueur', 'chien-du-guet').entite;
-  const pret = rpgJouerCreature(duelAllie, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
+  duelAllie.joueur.invocationNormaleJouee = false;
+  const pret = rpgJouerCreature(duelAllie, 'joueur', 'tour-de-sable', null, { cibleDifferee: true });
   assert.equal(pret.arriveeEnAttente, true);
   assert.equal(rpgResoudreArriveeCiblee(duelAllie, 'joueur', chien.id).ok, true);
   assert.equal(chien.bouclier, 1, 'l’allié désigné reçoit le bouclier');
-  assert.equal(pret.entite.bouclier ?? 0, 0, 'le Guerrier ne le garde pas en plus');
+  assert.equal(pret.entite.bouclier ?? 0, 0, 'la Tour ne le garde pas en plus');
 
   // 3. Une pose directe (sans désignation) retombe sur le porteur : la carte
   // reste jouable par l’IA et par les scripts, et son bouclier ne se perd pas.
   const duelDirect = duelVide();
   duelDirect.tour = 'joueur';
   manaPlein(duelDirect, 'joueur');
-  donner(duelDirect, 'joueur', 'guerrier-au-bouclier-rond');
-  const direct = rpgJouerCreature(duelDirect, 'joueur', 'guerrier-au-bouclier-rond');
+  donner(duelDirect, 'joueur', 'tour-de-sable');
+  const direct = rpgJouerCreature(duelDirect, 'joueur', 'tour-de-sable');
   assert.equal(direct.ok, true);
-  assert.equal(direct.entite.bouclier, 1, 'sans cible désignée, le Guerrier se couvre lui-même');
+  assert.equal(direct.entite.bouclier, 1, 'sans cible désignée, la Tour se couvre lui-même');
 });
 
 test('le bouclier bloque tout le premier sort adverse qui cible la créature', () => {

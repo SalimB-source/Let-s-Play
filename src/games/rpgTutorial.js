@@ -103,9 +103,8 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
     res.entite.attaquee = false;
   }
   if (duel.arriveeEnAttente?.entiteId === res.entite?.id) {
-    // Une scène de leçon est muette : quand l'arrivée sait se prendre pour
-    // cible (le Guerrier au bouclier rond garde sa parade), la créature posée
-    // se désigne elle-même plutôt que de laisser une attente ouverte. Les
+    // Une scène de leçon est muette : quand l'arrivée autorise l'autociblage,
+    // la créature posée se désigne elle-même plutôt que de laisser une attente ouverte. Les
     // arrivées qui exigent une autre cible retombent sur la levée simple.
     rpgResoudreArriveeCiblee(duel, cote, res.entite.id);
     if (duel.arriveeEnAttente?.entiteId === res.entite.id) duel.arriveeEnAttente = null;
@@ -939,7 +938,7 @@ export const RPG_TUTORIELS = Object.freeze([
     element: 'neige',
     reward: 150,
     tagline: 'Boucliers, appel viking, sorts bloqués et Furie : survivre pour mieux frapper.',
-    description: 'Le deck Neige apprend la patience du Nord : le Guerrier arrive avec un bouclier qui bloque le premier sort adverse, la Valkyrie au corbeau appelle au hasard une carte Viking du deck, la Poigne de givre se brise sur ce bouclier, et la Furie aiguise l’attaque d’une créature tant que sa défense reste sous sa DEF de base. Une leçon de défense et de contre-attaque.',
+    description: 'Le deck Neige apprend la patience du Nord : le Guerrier est un Défenseur 2/3, la Valkyrie au corbeau appelle au hasard une carte Viking du deck, la Poigne de givre se brise sur un bouclier adverse préparé pour la leçon, et la Furie aiguise l’attaque d’une créature tant que sa défense reste sous sa DEF de base.',
     opponentDeckId: 'serment-des-neuf-hivers',
     opponentName: 'Sorcier du fjord',
     openingHand: ['guerrier-au-bouclier-rond', 'valkyrie-au-corbeau', 'poigne-de-givre'],
@@ -949,7 +948,7 @@ export const RPG_TUTORIELS = Object.freeze([
     // Un seul assaillant : la leçon montre qu'un bouclier tombe devant un
     // sort, mais qu'il ne protège pas la créature au combat ensuite.
     stagedOpponent: [
-      { cardId: 'guerrier-au-bouclier-rond', ready: false },
+      { cardId: 'guerrier-au-bouclier-rond', ready: false, bouclier: 1 },
     ],
     stagedPlayer: [
       { cardId: 'berserk-des-trois-hivers', ready: false },
@@ -971,7 +970,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · TROIS RÉPONSES',
         title: 'Lire la main du Nord',
-        text: 'Le Guerrier au bouclier rond est une 2/2 qui arrive avec un bouclier, sans Furie. La Valkyrie au corbeau est une 2/4 avec Envol : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse — si son bouclier ne la bloque pas. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; un Guerrier adverse protégé est en face.',
+        text: 'Le Guerrier au bouclier rond est un Défenseur 2/3, sans Bouclier ni Furie. La Valkyrie au corbeau est une 2/4 avec Envol : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse — si son bouclier ne la bloque pas. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; un Guerrier adverse déjà protégé par un bouclier préparé pour la leçon est en face.',
         nextLabel: 'Poser le Guerrier',
         side: 'top',
       },
@@ -981,31 +980,20 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 2 · LE REMPART',
         title: 'Posez le Guerrier',
-        text: 'Touchez le Guerrier au bouclier rond. À son arrivée, il reçoit un bouclier — ou le donne à une autre créature alliée : le premier sort adverse qui l’atteindra sera bloqué.',
+        text: 'Touchez le Guerrier au bouclier rond. Ce Défenseur 2/3 protège votre ligne, mais ne donne pas de Bouclier à son arrivée.',
         on: 'creature-jouee',
-        cardId: 'guerrier-au-bouclier-rond',
-        side: 'top',
-      },
-      {
-        id: 'guerrier-cible',
-        kind: 'action',
-        target: '.card-row--equipe .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
-        eyebrow: 'ÉTAPE 2 · LE REMPART',
-        title: 'Gardez le bouclier pour lui',
-        text: 'Le bouclier peut aller à une autre créature alliée, ou rester sur le Guerrier : touchez-le pour le garder. Il bloquera le premier sort adverse qui le ciblera.',
-        on: 'arrivee-designee',
         cardId: 'guerrier-au-bouclier-rond',
         side: 'top',
       },
       {
         id: 'bouclier',
         kind: 'info',
-        target: '[data-tutorial-target="player-field"]',
+        target: '.card-row--ennemi .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'RÈGLE · BOUCLIER',
         title: 'Une parade contre un sort',
-        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier ici —, puis le bouclier tombe. Un sort qui la cible est lancé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque passe normalement ; un sort ou effet de créature allié passe aussi. Une capacité de créature adverse consomme le bouclier. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
+        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier adverse préparé pour cette leçon —, puis le bouclier tombe. Un sort qui la cible est lancé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque passe normalement ; un sort ou effet de créature allié passe aussi. Une capacité de créature adverse consomme le bouclier. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
         nextLabel: 'Appeler la Valkyrie',
-        side: 'top',
+        side: 'bottom',
       },
       {
         id: 'fin-tour-valkyrie', kind: 'action', target: '[data-tutorial-target="end-turn"]',
@@ -1057,7 +1045,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 5 · CIBLE',
         title: 'Brisez le bouclier adverse',
-        text: 'Touchez le Guerrier au bouclier rond adverse. Son bouclier bloque la Poigne entière : ni les 2 dégâts, ni le gel ne s’appliquent. Le Guerrier reste à 2 de défense, intact et libre d’attaquer — mais il n’a plus de bouclier.',
+        text: 'Touchez le Guerrier au bouclier rond adverse. Son bouclier bloque la Poigne entière : ni les 2 dégâts, ni le gel ne s’appliquent. Le Guerrier reste à 3 de défense, intact et libre d’attaquer — mais il n’a plus de bouclier.',
         on: 'magie-lancee',
         cardId: 'poigne-de-givre',
         side: 'bottom',
@@ -1120,7 +1108,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="resolve-combat"]',
         eyebrow: 'ÉTAPE 9 · LA FURIE',
         title: 'Résolvez le combat',
-        text: 'Touchez « Résoudre l’attaque ». Le Guerrier inflige 2 au Berserk, qui lui rend 2 et le terrasse : un bouclier tombé au sort n’encaisse aucun coup au combat. Blessé sous sa DEF de base, le Berserk déclenche sa Furie 2 et son attaque passe à 4. Vos points de vie, eux, restent intacts.',
+        text: 'Touchez « Résoudre l’attaque ». Le Guerrier inflige 2 au Berserk, qui lui rend 2 et le laisse à 1 de défense : un bouclier tombé au sort n’encaisse aucun coup au combat. Blessé sous sa DEF de base, le Berserk déclenche sa Furie 2 et son attaque passe à 4. Vos points de vie, eux, restent intacts.',
         on: 'combat-adverse-resolu',
         side: 'top',
       },
@@ -1292,7 +1280,9 @@ export function preparerDuelTutoriel(duel, tutorielOuId = RPG_TUTORIELS[0]) {
   duel.mulliganFait = { joueur: true, sorcier: true };
 
   for (const scene of tutoriel.stagedOpponent ?? []) {
-    poserCreatureSurChamp(duel, 'sorcier', scene.cardId, { ready: Boolean(scene.ready) });
+    const entite = poserCreatureSurChamp(duel, 'sorcier', scene.cardId, { ready: Boolean(scene.ready) });
+    // Certaines leçons préparent un état explicitement, sans changer la carte.
+    if (entite && scene.bouclier) entite.bouclier = scene.bouclier;
   }
   for (const scene of tutoriel.stagedPlayer ?? []) {
     poserCreatureSurChamp(duel, 'joueur', scene.cardId, { ready: Boolean(scene.ready) });

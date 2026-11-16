@@ -6236,12 +6236,12 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
   // permet : l'effet trouve donc toujours quelqu'un à frapper (le retour de
   // Tenacité, lui aussi, ne se dissipe plus faute de créature).
   if (arriveeViseSorcier(carte)) return true;
-  // Un bouclier peut rester sur la créature qui arrive (`cibleSoi`, le Guerrier
-  // au bouclier rond) : le joueur peut donc la désigner elle-même. La question
+  // Un bouclier peut rester sur la créature qui arrive (`cibleSoi`, la Tour
+  // de sable) : le joueur peut donc la désigner elle-même. La question
   // ne se pose que pendant la désignation — `entiteId` est alors l'arrivante.
   // Hors de là (validation d'une pose directe, choix de l'IA), elle reste
-  // « reste-t-il une AUTRE cible ? », sans quoi le sorcier écarterait son
-  // Guerrier dès qu'il est seul.
+  // « reste-t-il une AUTRE cible ? », sans quoi le sorcier écarterait une
+  // créature pouvant se cibler dès qu’elle est seule.
   if (entiteId && carte?.arrivee?.cibleSoi) {
     const source = duel[cote].creatures.find((entite) => entite.id === entiteId);
     if (source && (carte.arrivee.type === 'exil-temporaire' || !rpgEstProtegee(source, cardColors(carte)))) return true;
@@ -6856,8 +6856,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
   // « une AUTRE créature » : celle qui porte l'arrivée ne se désigne jamais
   // elle-même — l'exil du Susanoo, qui choisit pourtant dans les deux camps,
   // ne peut pas se retourner contre la créature qu'il vient de poser. Sauf
-  // quand l'arrivée le permet (`cibleSoi`) : le Guerrier au bouclier rond
-  // garde sa parade au lieu de la prêter.
+  // quand l'arrivée le permet (`cibleSoi`), comme la Tour de Sable.
   if (cible.id === entite.id && !carte?.arrivee?.cibleSoi) return { ok: false, raison: 'cible' };
   // Le Père des corbeaux (coût 3 ou moins) et Susanoo (coût 5 ou plus) :
   // une cible hors seuil reste illégale, l'attente reste ouverte.

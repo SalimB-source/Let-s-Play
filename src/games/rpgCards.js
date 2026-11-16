@@ -1025,13 +1025,12 @@ export const RPG_CREATURE_CARDS = [
     element: 'neige',
     cost: 2,
     atk: 2,
-    def: 2,
+    def: 3,
     rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
     defenseur: true,
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
-    text: 'Défenseur. Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Défenseur.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -1390,6 +1389,15 @@ export const RPG_CREATURE_CARDS = [
     arrivee: { type: 'gel', cible: 'toutes-creatures' },
     text: 'Défenseur. Quand Le cavalier du ressac gelé arrive : gelez toutes les créatures adverses ; elles ne peuvent ni attaquer ni bloquer jusqu’à la fin de leur prochain tour.',
     flavor: 'La vague s’est figée debout, et lui seul continue d’avancer.',
+  },
+  {
+    id: 'griffon-des-dunes-gelees', name: 'Griffon des dunes gelées',
+    element: 'sable', colors: ['sable', 'neige'], colorCost: { sable: 1, neige: 1 },
+    cost: 5, atk: 4, def: 5, rarity: 'rare',
+    typeLine: 'Créature — Griffon', art: 'griffon-des-dunes-gelees',
+    defenseur: true, envol: true, volDeVie: true,
+    text: 'Défenseur. Envol. Vol de vie.',
+    flavor: 'Là où le sable gèle, ses ailes gardent le dernier passage.',
   },
   {
     // Sable + Neige — le sablier pris dans la glace. Les compteurs d'Heures

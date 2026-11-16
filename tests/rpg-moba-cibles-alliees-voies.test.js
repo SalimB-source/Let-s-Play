@@ -17,11 +17,11 @@ for (const side of ['joueur', 'sorcier']) {
   test(`${side} : les soins et boucliers à cible alliée traversent les voies`, () => {
     const d = partie();
     if (side === 'sorcier') rpgFinDeTour(d);
-    d[side].main = ['ashigaru-des-braises', 'volva-soigneuse', 'guerrier-au-bouclier-rond'];
+    d[side].main = ['ashigaru-des-braises', 'volva-soigneuse', 'tour-de-sable'];
     const cible = rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite;
     assert.ok(cible);
     cible.pv = 1; cible.def = 1;
-    for (const [id, lane, slot] of [['volva-soigneuse', 'right', 0], ['guerrier-au-bouclier-rond', 'center', 0]]) {
+    for (const [id, lane, slot] of [['volva-soigneuse', 'right', 0], ['tour-de-sable', 'center', 0]]) {
       // Fixture : préparer plusieurs arrivées sans attendre les tours de l'IA.
       d.moba.creaturesJouees[side] = false;
       const pose = rpgMobaJouerCreature(d, side, id, lane, slot);
