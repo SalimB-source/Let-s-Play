@@ -83,10 +83,14 @@
 .rpg-battle[data-scene="duel"] {
   --rpg-vie-bar-width: clamp(90px, 10vw, 140px);
   --rpg-vie-bar-height: clamp(20px, 1.7vw, 24px);
+  /* Diamètre du disque doré, repris par le calque d'éclatement : 82 % de la
+     hauteur de la plaque, comme le `::before` du médaillon. */
+  --rpg-eclat-portee: calc(clamp(76px, 9.5vw, 128px) * .82);
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table {
   --rpg-vie-bar-width: clamp(64px, calc(var(--duel-card) * 1.25), 108px);
   --rpg-vie-bar-height: 20px;
+  --rpg-eclat-portee: calc(clamp(52px, calc(var(--duel-card) * 1.2), 96px) * .82);
 }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-jauge-vie__rond,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate .rpg-jauge-vie__rond {
@@ -340,8 +344,10 @@
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }
 
-/* Médaillons ajourés pour les deux camps, sur tous les écrans. Le portrait
-   reste dans le cercle doré ; aucune décoration ne capte les clics ni les flèches. */
+/* Médaillons PLEINS pour les deux camps, sur tous les écrans. Le disque est
+   un laiton opaque dessiné en CSS — aucun PNG transparent, aucun jour qui
+   laisserait voir le plateau derrière le personnage. Le portrait détouré se
+   pose dessus ; aucune décoration ne capte les clics ni les flèches. */
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar::before,
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar::after {
   content: "";
@@ -359,7 +365,11 @@
   z-index: 0;
   box-sizing: border-box;
   border: 3px solid #d7ad61;
-  background: transparent;
+  /* Le rond doré est REMPLI COMPLÈTEMENT : couleur opaque partout, plus un
+     dégradé de laiton pour le relief. `background-color` reste opaque même
+     si un navigateur ignore le dégradé — aucun PNG transparent n'est chargé. */
+  background-color: #d7ad61;
+  background-image: radial-gradient(circle at 50% 30%, #f7db91 0%, #e3bd70 34%, #c9973f 68%, #8f5d20 100%);
   box-shadow: 0 2px 7px #000b, 0 0 0 2px #372111, 0 0 0 4px #a97b35,
     0 0 0 5px #f3d590, inset 0 0 0 2px #654017, inset 0 0 0 3px #f7db91;
 }
@@ -369,4 +379,15 @@
     radial-gradient(circle at 4% 50%, #fff0b1 0 2px, #a46e24 2.2px 3px, transparent 3.3px),
     radial-gradient(circle at 96% 50%, #fff0b1 0 2px, #a46e24 2.2px 3px, transparent 3.3px),
     radial-gradient(circle at 50% 96%, #fff0b1 0 2px, #a46e24 2.2px 3px, transparent 3.3px);
+}
+
+/* ── FIN DE DUEL : l'avatar du perdant éclate ────────────────────────────────
+   Dès que la plaque passe `is-eclatant`, le disque, le portrait et les
+   ornements s'effacent : le calque `RpgAvatarEclatement` (enfant direct,
+   z-index 4) prend le relais avec ~1 000 morceaux. Lui seul reste visible ;
+   le gagnant, la jauge de vie et les commandes ne sont pas touchés. */
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar.is-eclatant > img,
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar.is-eclatant::before,
+.rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar.is-eclatant::after {
+  opacity: 0;
 }

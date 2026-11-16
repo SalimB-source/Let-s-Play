@@ -67,7 +67,7 @@ try {
         assert.equal(decor.rayon, '50%', `${side} : médaillon rond`);
         assert.ok(decor.diametre > 0 && decor.imageZ > decor.cadreZ && decor.imageDansCercle, `${side} : le portrait tient à l’intérieur du cercle`);
         assert.equal(decor.couleur, 'rgb(215, 173, 97)', `${side} : cercle doré`);
-        assert.equal(decor.fond, 'rgba(0, 0, 0, 0)', `${side} : centre transparent`);
+        assert.equal(decor.fond, 'rgb(215, 173, 97)', `${side} : rond doré rempli complètement, sans transparence`);
         assert.equal(decor.overflow, 'visible', `${side} : le cadre et ses ornements restent visibles`);
         assert.equal(decor.imageRayon, '50%', `${side} : le portrait est rogné en cercle`);
         assert.equal(decor.masque, 'none', `${side} : aucune fenêtre ne laisse dépasser la tête`);

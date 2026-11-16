@@ -111,6 +111,7 @@ import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExempla
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
+import RpgAvatarEclatement from './RpgAvatarEclatement.jsx';
 import {
   RpgMainThemeMusic,
   RPG_PLATEAUX_MUSICAUX,
@@ -8712,6 +8713,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : 'egalite')
     : null;
   const vainqueur = vainqueurPvp ?? (duel ? rpgVainqueur(duel) : null);
+  // Fin de duel : SEUL l'avatar du camp perdant éclate en mille morceaux. Le
+  // gagnant reste intact ; en cas d'égalité les deux éclatent. Mouvement réduit
+  // (réglage joueur ou système) : aucun éclat et l'écran de fin arrive de suite.
+  const eclatementActif = Boolean(vainqueur) && !rpgAnimationsReduites(animReduite);
+  const eclatementPlateauEnnemi = eclatementActif && vainqueur !== 'sorcier';
+  const eclatementPlateauJoueur = eclatementActif && vainqueur !== 'joueur';
   // L'XP de la partie qui vient de se terminer : la barre de fin monte du
   // total d'avant le duel à celui du moment. Elle vaut pour la victoire comme
   // pour la défaite — perdre ne remet pas l'XP des cartes posées —, et jamais
@@ -14053,7 +14060,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
           title={modePvp ? nomSorcierAdverse : 'Le sorcier adverse'}
           aria-label={`${nomSorcierAdverse} : ${duel.sorcier.pv} points de vie${duel.sorcier.bouclier ? `, ${duel.sorcier.bouclier} de bouclier` : ''}`}>
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi" data-scene-avatar="ennemi" aria-hidden="true"><img src={avatarPlateauAdverse} data-personnage={personnageSorcier ?? undefined} alt="" /></span>
+          <span className={`rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi${eclatementPlateauEnnemi ? ' is-eclatant' : ''}`} data-scene-avatar="ennemi" aria-hidden="true"><img src={avatarPlateauAdverse} data-personnage={personnageSorcier ?? undefined} alt="" />{eclatementPlateauEnnemi && <RpgAvatarEclatement image={avatarPlateauAdverse} camp="ennemi" />}</span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
             <strong>{modePvp ? nomSorcierAdverse : etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
@@ -14582,7 +14589,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
           data-soin={soinJoueur ? soinJoueur.montant : undefined}
           data-tutorial-target={cibleTutoriel('player-health') ? 'player-health' : undefined}>
-          <span className="rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur" data-scene-avatar="joueur" aria-hidden="true"><img src={avatarPlateauJoueur} alt="" /></span>
+          <span className={`rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur${eclatementPlateauJoueur ? ' is-eclatant' : ''}`} data-scene-avatar="joueur" aria-hidden="true"><img src={avatarPlateauJoueur} alt="" />{eclatementPlateauJoueur && <RpgAvatarEclatement image={avatarPlateauJoueur} camp="joueur" />}</span>
           <span className="rpg-wizard-plate__profile-name">{nomJoueurAffiche}</span>
           <span className="rpg-wizard-plate__identity"><strong>{modePvp ? nomJoueurAffiche : 'VOUS'}</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
           <PlaqueVie
@@ -15118,7 +15125,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         {vainqueur && (
-          <div className={`rpg-overlay${vainqueur === 'joueur' ? ' rpg-overlay--win' : ' rpg-overlay--loss'}`}>
+          <div className={`rpg-overlay${vainqueur === 'joueur' ? ' rpg-overlay--win' : ' rpg-overlay--loss'}${eclatementActif ? ' rpg-overlay--apres-eclat' : ''}`}>
             <h2>
               {modePvp
                 ? (vainqueur === 'joueur' ? 'Victoire !' : vainqueur === 'sorcier' ? 'Défaite' : 'Match nul')
