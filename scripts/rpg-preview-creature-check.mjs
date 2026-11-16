@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { build } from 'vite';
+import { JSDOM } from 'jsdom';
+
+const env = process.env.NODE_ENV;
+await build({ logLevel: 'error', build: { ssr: 'scripts/rpg-preview-creature-smoke.jsx', outDir: 'node_modules/.cache/rpg-preview-creature', emptyOutDir: true } });
+if (env === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = env;
+const { table, apercu, apercuSort, defenseurMain } = await import('../node_modules/.cache/rpg-preview-creature/rpg-preview-creature-smoke.js');
+const dom = new JSDOM('<!doctype html><body></body>');
+const document = dom.window.document;
+const rendre = (html) => { document.body.innerHTML = html; return document.body; };
+const source = rendre(table()).querySelector('.rpg-card');
+assert.ok(source.classList.contains('rpg-carte-bouclier'));
+const visuel = JSON.parse(source.dataset.apercuEntite);
+assert.equal(visuel.defenseurAccorde, true);
+assert.equal(visuel.atk, 7);
+assert.equal(visuel.pv, 0);
+assert.equal(visuel.blessee, true);
+for (const variante of ['', 'appui-long', 'catalogue']) {
+  const face = rendre(apercu(visuel, variante)).querySelector('.rpg-hover-card-preview__face');
+  assert.ok(face, `${variante} : face visible`);
+  assert.ok(face.classList.contains('rpg-carte-bouclier'), `${variante} : Défenseur acquis`);
+  assert.equal(face.querySelector('img').getAttribute('src'), visuel.art);
+  assert.equal(face.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, '7');
+  assert.equal(face.querySelector('.rpg-card__pt .rpg-stat-value').textContent, '0');
+  assert.ok(face.querySelector('.rpg-card__stat--atk.is-buffed'));
+  assert.ok(face.querySelector('.rpg-card__pt.is-debuffed.is-wounded'));
+  for (const sel of ['.rpg-card__liseret-garde', '.rpg-card__blood', '.rpg-card__frost-ice', '.rpg-bouclier-egide', '.rpg-card__envol']) assert.ok(face.querySelector(sel), `${variante} : ${sel}`);
+  assert.ok(face.querySelector('[data-effet="defenseur"]') || face.innerHTML.includes('i-defenseur'), 'icône Défenseur acquis');
+}
+const main = rendre(apercu(null)).querySelector('.rpg-hover-card-preview__face');
+assert.ok(main);
+assert.equal(main.classList.contains('rpg-carte-bouclier'), false, 'la main reste rectangulaire');
+assert.equal(main.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, '3');
+const mainDefenseur = rendre(defenseurMain()).querySelector('.rpg-hover-card-preview__face');
+assert.ok(mainDefenseur);
+assert.equal(mainDefenseur.classList.contains('rpg-carte-bouclier'), false, 'un Défenseur imprimé en main reste rectangulaire');
+assert.equal(rendre(apercuSort()).querySelector('.rpg-hover-card-preview__face'), null, 'le survol des sorts reste textuel');
+const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+assert.match(page, /setApercuAppuiEntite\(entiteDeLaCarte\)/);
+assert.match(page, /entite: arme \? null : entiteApercuDepuisHote\(hote\)/);
+assert.match(page, /entite=\{apercuSurvol.entite\}/);
+const moba = readFileSync(new URL('../src/games/RpgMobaBoard.jsx', import.meta.url), 'utf8');
+assert.match(moba, /entite=\{apercu.entiteVisuelle\}/);
+dom.window.close();
+console.log('✓ Aperçus de créatures : main et plateau, états courants, Défenseur acquis, survol, appui long et fiche.');

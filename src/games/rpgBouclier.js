@@ -25,12 +25,10 @@
  * boîte de mise en page ne change pas, donc les `cqw` et les tailles en px
  * restent identiques, et les seules icônes sont ramenées à l'échelle 1.
  *
- * Exception demandée : la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
- * (survol + fiche catalogue ouverte) ne reçoivent PAS la classe et restent des
- * cartes rectangulaires normales, avec ATQ à gauche et DÉF à droite — comme
- * dans Hearthstone, où la Provocation ne se voit que sur le plateau. La classe
- * est donc posée sur la table et les vignettes du catalogue / atelier / guide /
- * boosters.
+ * La main et le mulligan restent rectangulaires. Un aperçu reprend la
+ * silhouette de sa source : rectangle en main ou hors partie, écusson si la
+ * créature consultée est posée avec Défenseur. Les vignettes du catalogue /
+ * atelier / guide / boosters portent aussi la classe selon leur propre gabarit.
  *
  * Deux sources pour le mot-clé :
  *   - la carte imprimée (`defenseur: true`, ou les anciens marqueurs

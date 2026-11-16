@@ -298,3 +298,13 @@ Les cartes posées n’impriment plus leur type sur l’illustration ; celui-ci 
 ## Consulter le cimetière
 
 En duel comme en Conquête, le cimetière présente les cartes les plus récentes d’abord dans un écrin sombre, avec leurs filtres toujours visibles et une fiche dédiée à la sélection. La carte active est distinguée par un cadre doré et une coche ; la fiche montre son illustration, son type et son effet. Le choix d’une arme utilise cette même fiche. La liste et le détail défilent indépendamment : en portrait la fiche passe sous la grille, en paysage elle reste à côté, même sur un écran peu haut. Les statistiques des vignettes restent contenues dans les cartes, sans empiéter sur leurs voisines.
+
+## Choix d’un renfort en duel
+
+Quand un effet demande de choisir une carte, la consigne reste en tête du volet et les cartes seules défilent. Les cartes non admissibles restent visibles, désactivées et identifiées par leur texte ; le focus initial va à la première carte admissible, ou au bouton Continuer si aucun choix n’est possible. Pour le Colosse, l’action permettant de terminer sans autre invocation reste visible sous la liste, y compris en paysage sur téléphone. Ces changements ne modifient ni les candidats ni la résolution du choix ; Conquête conserve son propre panneau.
+
+Les aperçus de créatures montrent la face aussi bien au survol qu’en fiche ou
+à l’appui long. Une carte consultée en main garde sa face imprimée rectangulaire ;
+une créature posée reprend sa silhouette (écusson si Défenseur), ses statistiques
+courantes et ses effets visibles, y compris en MOBA. La consultation ne joue pas
+la carte et les aperçus rapides des autres types restent textuels.

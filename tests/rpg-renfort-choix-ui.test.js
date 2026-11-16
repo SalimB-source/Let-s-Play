@@ -90,6 +90,10 @@ for (const camp of ['joueur', 'sorcier']) test(`PvP : le camp ${camp} choisit av
     root=createRoot(document.getElementById('root')); await act(async()=>root.render(React.createElement(Board,props)));
     const modal=document.querySelector('[aria-labelledby="rpg-renfort-choix-titre"]');assert.ok(modal);
     const boutons=[...modal.querySelectorAll('.rpg-renfort-choix__carte')];assert.equal(boutons.length,3);assert.equal(boutons[1].disabled,true);
+    assert.match(boutons[1].textContent, /Non admissible/);
+    assert.equal(document.activeElement, boutons.find((b) => !b.disabled), 'première carte admissible au focus');
+    assert.equal(modal.getAttribute('aria-describedby'), 'rpg-renfort-choix-consigne');
+    assert.equal(modal.querySelector('.rpg-renfort-choix__cartes').getAttribute('tabindex'), '0');
     await act(async()=>boutons[2].click());
     assert.equal(intentions[0].type,'choisir-renfort');assert.equal(d[camp].creatures[0].carteId,'cotre-de-course');
     assert.equal(document.querySelector('[aria-labelledby="rpg-renfort-choix-titre"]'),null);

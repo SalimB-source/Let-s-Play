@@ -25,7 +25,7 @@ test('toutes les cartes utilisent le cadre Le Sablier', async () => {
 
 test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les interactions', () => {
   const duel = lire('RpgDuelPage.jsx');
-  for (const art of ['cardArt(carte)} alt={`Illustration de ${carte.name}`}', 'estEnFurie ? cardArtFurie(carte) : cardArt(carte)', 'className="rpg-mulligan__img"', 'className="rpg-hand__img"', 'className={`rpg-card__img']) {
+  for (const art of ['cardArt(carte)} alt={`Illustration de ${carte.name}`}', 'estEnFurie ? cardArtFurie(carte) : (entite?.art ?? cardArt(carte))', 'className="rpg-mulligan__img"', 'className="rpg-hand__img"', 'className={`rpg-card__img']) {
     const start = duel.indexOf(art);
     const frame = duel.indexOf('<RpgCadreCarte carte={carte} />', start);
     assert.ok(start >= 0 && frame > start && frame - start < 300, art);

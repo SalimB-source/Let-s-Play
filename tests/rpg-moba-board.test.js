@@ -1187,7 +1187,8 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     await click(document.querySelector('.moba__mulligan .moba__primary'));
     duel.joueur.mana.braise = 1; duel.joueur.manaMax.braise = 1; duel.joueur.manaSources.push('braise');
-    await click(document.querySelector('.rpg-flux-choix__option--braise'));
+    const choixFlux = document.querySelector('.rpg-flux-choix__option--braise');
+    if (choixFlux) await click(choixFlux);
     const hand = document.querySelector('.moba__hand-item');
     const card = hand.querySelector('.rpg-hand__card');
     const before = JSON.stringify(duel);
@@ -1230,6 +1231,8 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     await click(document.querySelector('.moba__side--joueur .moba__slot.is-empty:not(:disabled)'));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
     assert.equal(duel.joueur.creatures.length, 1);
+    Object.assign(duel.joueur.creatures[0], { atk: 9, pv: 1, defenseurAccorde: true });
+    await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA })));
     const placed = document.querySelector('.moba__real-slot');
     assert.ok(placed.querySelector('.rpg-card-icone'), 'classic effect icons appear on the field card');
     await mouse(placed, 'mouseover');
@@ -1237,6 +1240,10 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     assert.equal(document.querySelector('.moba__inspect'), null, 'aucun i sur les créatures posées');
     await mouse(placed, 'contextmenu');
     assert.ok(document.querySelector('.moba__preview-layer'));
+    const previewFace = document.querySelector('.moba__preview-layer .rpg-hover-card-preview__face');
+    assert.ok(previewFace.classList.contains('rpg-carte-bouclier'), 'la fiche reprend le Défenseur acquis');
+    assert.equal(previewFace.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, '9');
+    assert.equal(previewFace.querySelector('.rpg-card__pt .rpg-stat-value').textContent, '1');
     assert.equal(duel.joueur.creatures.length, 1, 'previewing a placed creature does not act');
     await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     placed.focus();

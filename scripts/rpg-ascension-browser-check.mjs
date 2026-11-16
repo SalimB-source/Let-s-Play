@@ -82,6 +82,23 @@ try {
       assert.ok(geometrie.w <= 180 && geometrie.h <= 320, 'petite fenêtre verticale');
       assert.ok(geometrie.auDessus && geometrie.ecart >= 3 && geometrie.ecart <= 12, 'fenêtre juste au-dessus de l’Ascension');
       assert.ok(geometrie.renduPlateau && geometrie.carte.cliquable && geometrie.carte.w >= 44 && geometrie.carte.h >= 44, 'vraie face plateau cliquable');
+      const premiereLecture = await reserve().evaluate((n) => {
+        const liste = n.querySelector('.rpg-ascension-reserve-cards');
+        const item = n.querySelector('.rpg-ascension-reserve-item');
+        const nom = item.querySelector('.rpg-ascension-reserve-name');
+        const statut = item.querySelector('.rpg-ascension-reserve-status');
+        const cadre = liste.getBoundingClientRect();
+        const visible = (el) => { const r = el.getBoundingClientRect(); return getComputedStyle(el).display !== 'none' && r.top >= cadre.top - 1 && r.bottom <= cadre.bottom + 1 && r.left >= cadre.left - 1 && r.right <= cadre.right + 1; };
+        return { nom: nom.textContent, statut: statut.textContent, nomVisible: visible(nom), statutVisible: visible(statut),
+          defile: liste.scrollHeight > liste.clientHeight, sansDebordement: liste.scrollWidth <= liste.clientWidth };
+      });
+      assert.match(premiereLecture.nom, /Samouraï du Dragon Rouge/);
+      assert.match(premiereLecture.statut, /Invocable/);
+      assert.ok(premiereLecture.nomVisible && premiereLecture.statutVisible, 'nom et statut lisibles dès l’ouverture, même sur téléphone');
+      assert.ok(premiereLecture.defile && premiereLecture.sansDebordement, 'la liste reste défilable sans débordement horizontal');
+      await reserve().locator('.rpg-ascension-reserve-item').last().scrollIntoViewIfNeeded();
+      assert.ok(await reserve().locator('.rpg-ascension-reserve-cards').evaluate((n) => n.scrollTop > 0), 'toutes les cartes restent accessibles');
+      await face().scrollIntoViewIfNeeded();
       assert.equal(await face().getAttribute('data-entity-id'), null);
       assert.equal(await face().locator('.rpg-card__foot').innerText().then((s) => s.replace(/\s/g, '')), '77');
       assert.match(await face().locator('.rpg-card__img').getAttribute('src'), /ascension-dragon-humanoide-v2/);

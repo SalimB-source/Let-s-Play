@@ -164,6 +164,25 @@ function ApercuAscension({ carte, selection, consultation, disponible, duel, Hov
   </div>;
 }
 
+// Sur les écrans peu hauts, signaler le texte qui reste sous la zone visible.
+// Le calcul est purement visuel et ne touche ni à la recette ni à la partie.
+function useSuiteDeLecture(dependances) {
+  const ref = useRef(null);
+  const [suite, setSuite] = useState(false);
+  useLayoutEffect(() => {
+    const noeud = ref.current;
+    if (!noeud) return undefined;
+    const mesurer = () => setSuite(noeud.scrollTop + noeud.clientHeight < noeud.scrollHeight - 1);
+    mesurer();
+    const observateur = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(mesurer);
+    observateur?.observe(noeud);
+    noeud.addEventListener('scroll', mesurer);
+    window.addEventListener('resize', mesurer);
+    return () => { observateur?.disconnect(); noeud.removeEventListener('scroll', mesurer); window.removeEventListener('resize', mesurer); };
+  }, dependances);
+  return { ref, suite };
+}
+
 function RituelAscension({ carte, duel, selection, disponible, onInvoquer, choixEmplacement }) {
   const titreId = useId();
   // Recalculer sur l'état courant : une modification distante ne peut jamais
@@ -172,15 +191,24 @@ function RituelAscension({ carte, duel, selection, disponible, onInvoquer, choix
   const recette = validerMateriauxAscension(duel.joueur, carte, ids);
   const victimes = ids.map((id) => duel.joueur.creatures.find((e) => e.id === id)).filter(Boolean);
   const prete = disponible && ascensionDisponible(duel, 'joueur', carte) && recette.ok;
+  const lectureRecette = useSuiteDeLecture([carte.id]);
+  const lectureSacrifices = useSuiteDeLecture([carte.id, recette.ok, recette.raison, ids.join('|')]);
   return <section className="rpg-ascension-ritual" role="region" aria-labelledby={titreId} inert={selection.apercuId ? true : undefined} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
     <button type="button" className="rpg-ascension-ritual-art" aria-label={`Voir l’aperçu de ${carte.name}`} onClick={(e) => selection.voir(carte.id, e.currentTarget)}><img src={cardArt(carte.id)} alt="" /><RpgCadreCarte carte={carte} /></button>
-    <div className="rpg-ascension-board-link">
-      <small>ASCENSION · {libelleRecetteAscension(carte)}</small>
-      <strong id={titreId}>{carte.name}</strong><span>Sacrifices automatiques : les créatures les plus faibles</span>
+    <div className="rpg-ascension-board-wrap">
+      <div ref={lectureRecette.ref} className="rpg-ascension-board-link" role="region" aria-label="Recette d’Ascension" tabIndex={0}>
+        <strong id={titreId}>{carte.name}</strong>
+        <small>ASCENSION · {libelleRecetteAscension(carte)}</small>
+        <span>Sacrifices automatiques : les créatures les plus faibles</span>
+      </div>
+      {lectureRecette.suite && <span className="rpg-ascension-scroll-hint" aria-hidden="true">Défiler ↓</span>}
     </div>
-    <div className={`rpg-ascension-total${recette.ok ? ' is-exact' : ' is-invalid'}`} role="status" aria-live="polite" aria-atomic="true">
-      <strong>{victimes.map((entite) => coutImprimeAscension(entite)).join(' + ') || '0'}<small> / {carte.cost}</small></strong>
-      <span>{recette.ok ? victimes.map((entite) => entite.name).join(' + ') : (ERREURS_ASCENSION[recette.raison] ?? 'Aucune combinaison valide')}</span>
+    <div className="rpg-ascension-total-wrap">
+      <div ref={lectureSacrifices.ref} className={`rpg-ascension-total${recette.ok ? ' is-exact' : ' is-invalid'}`} role="status" aria-label="Coûts et sacrifices proposés" aria-live="polite" aria-atomic="true" tabIndex={0}>
+        <strong><span>{victimes.map((entite) => coutImprimeAscension(entite)).join(' + ') || '0'}</span><small> / {carte.cost}</small></strong>
+        <span>{recette.ok ? victimes.map((entite) => entite.name).join(' + ') : (ERREURS_ASCENSION[recette.raison] ?? 'Aucune combinaison valide')}</span>
+      </div>
+      {lectureSacrifices.suite && <span className="rpg-ascension-scroll-hint" aria-hidden="true">Défiler ↓</span>}
     </div>
     <button type="button" autoFocus className="rpg-ascension-invoke" disabled={!prete} onClick={() => {
       const actuels = sacrificesAutomatiquesAscension(duel.joueur, carte);
@@ -220,8 +248,10 @@ export default function ReserveAscension({ duel, cote, selection, onClose, onInv
           return <div role="listitem" key={c.id} className={`rpg-ascension-reserve-item${prete ? ' is-ready' : ''}`}>
             {TableCard ? <TableCard entite={entite} cote={cote === 'joueur' ? 'joueur' : 'ennemi'} reserveAscension onClick={ouvrir} />
               : <button type="button" className="rpg-ascension-card-fallback" data-ascension-reserve-card={c.id} aria-label={`Voir l’aperçu de ${c.name}`} onClick={ouvrir}><img src={cardArt(c.id)} alt="" /><RpgCadreCarte carte={c} /><span className="rpg-ascension-card-fallback-stats">⚔ {c.atk} · ◆ {c.def}</span></button>}
-            <span className="rpg-ascension-reserve-name">{c.name}</span>
-            <span className="rpg-ascension-reserve-status">{consultation ? 'Voir l’aperçu' : prete ? '✦ Invocable' : 'Conditions à réunir'}</span>
+            <div className="rpg-ascension-reserve-info">
+              <span className="rpg-ascension-reserve-name">{c.name}</span>
+              <span className="rpg-ascension-reserve-status">{consultation ? 'Voir l’aperçu' : prete ? '✦ Invocable' : 'Conditions à réunir'}</span>
+            </div>
           </div>;
         })}
         {!cartes.length && <p className="rpg-ascension-empty">Réserve vide</p>}
