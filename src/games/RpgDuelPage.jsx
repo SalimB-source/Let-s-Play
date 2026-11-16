@@ -1,4 +1,4 @@
-import RpgCadreSort from './RpgCadreSort.jsx';
+import RpgCadreCarte from './RpgCadreCarte.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
@@ -984,7 +984,7 @@ function CatalogueCardFace({ carte, exemplaires, verrouillee }) {
   return (
     <>
       <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
-      <RpgCadreSort carte={carte} />
+      <RpgCadreCarte carte={carte} />
 
       <ManaCost carte={carte} showElement={false} />
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-card-catalogue__sort" />}
@@ -3074,6 +3074,7 @@ export function TableCard({
         alt=""
         aria-hidden="true"
       />
+      <RpgCadreCarte carte={carte} />
       {cartesArmes.length > 0 && (
         <span className={`rpg-card__arme-vignette${durabiliteArme > 0 || entite.arme?.compteurs > 0 ? ' has-compteurs' : ''}`} data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
           <img src={cardArt(cartesArmes[0])} alt="" />
@@ -3601,7 +3602,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden="true"
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
-      <RpgCadreSort carte={carte} />
+      <RpgCadreCarte carte={carte} />
       {estEnFurie && <VignetteFurie />}
 
       <ManaCost carte={carte} showElement={false} />
@@ -3969,7 +3970,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
       aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : estArme ? ` — bonus d’arme ${bonusArmeTexte(carte)}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      <RpgCadreSort carte={carte} />
+      <RpgCadreCarte carte={carte} />
 
       <ManaCost carte={carte} showElement={false} />
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
@@ -14993,7 +14994,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'lancer le sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Invocation spéciale disponible' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-                  <RpgCadreSort carte={carte} />
+                  <RpgCadreCarte carte={carte} />
 
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />

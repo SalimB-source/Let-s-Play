@@ -1,4 +1,4 @@
-import RpgCadreSort from './RpgCadreSort.jsx';
+import RpgCadreCarte from './RpgCadreCarte.jsx';
 /**
  * La cérémonie d'ouverture — les cinq cartes d'un paquet, retournées une à une.
  *
@@ -74,7 +74,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
       <div className="rpg-souk__carte-volume">
         <div className="rpg-souk__carte-art">
           <img src={cardArt(carte)} alt="" width="176" height="238" />
-          <RpgCadreSort carte={carte} />
+          <RpgCadreCarte carte={carte} />
         </div>
         <span className="rpg-souk__carte-reflet" aria-hidden="true" />
         <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__carte-copies" />
