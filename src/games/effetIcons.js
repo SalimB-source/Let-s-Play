@@ -194,7 +194,7 @@ export const MOTS_CLES_PASTILLES = [
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
 export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
   return MOTS_CLES_PASTILLES
-    .filter((cle) => Boolean(carte?.[cle]) || (cle === 'defenseur' && estDefenseur(carte)) || (cle === 'bouclier' && carte?.bouclierInitial))
+    .filter((cle) => cle === 'defenseur' ? estDefenseur(carte) : Boolean(carte?.[cle]) || (cle === 'bouclier' && carte?.bouclierInitial))
     .flatMap((cle) => {
       if (cle !== 'protection' && cle !== 'protectionSortsContre') return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
       const contres = couleursProtectionCarte(carte);

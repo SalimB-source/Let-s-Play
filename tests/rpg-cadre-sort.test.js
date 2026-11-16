@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { RPG_ASCENSION_CARDS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
+import { CARD_FRAME_COLORS, RPG_ASCENSION_CARDS, RPG_DUEL_CARDS, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 
 const lire = (chemin) => readFileSync(new URL(`../src/games/${chemin}`, import.meta.url), 'utf8');
 
@@ -12,7 +12,7 @@ test('toutes les cartes utilisent le cadre Le Sablier', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'silent' });
   try {
     const { default: Cadre } = await vite.ssrLoadModule('/src/games/RpgCadreCarte.jsx');
-    const cadre = /class="rpg-cadre-carte rpg-cadre-carte--sablier" aria-hidden="true"/;
+    const cadre = /class="rpg-cadre-carte rpg-cadre-carte--sablier"(?: style="[^"]*")? aria-hidden="true"/;
     for (const carte of [...RPG_DUEL_CARDS, ...RPG_ASCENSION_CARDS, ...['magie', 'arme', 'creature', 'hero', 'terrain', 'site'].map(kind => ({ kind }))]) {
       assert.match(renderToStaticMarkup(React.createElement(Cadre, { carte })), cadre, carte.id ?? carte.kind);
     }
@@ -21,6 +21,31 @@ test('toutes les cartes utilisent le cadre Le Sablier', async () => {
   } finally {
     await vite.close();
   }
+});
+
+test('la couleur suit les éléments et les hybrides conservent chaque couleur', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { default: Cadre } = await vite.ssrLoadModule('/src/games/RpgCadreCarte.jsx');
+    const html = (carte) => renderToStaticMarkup(React.createElement(Cadre, { carte }));
+    const svg = (carte) => decodeURIComponent(html(carte).match(/data:image\/svg\+xml,([^&"\s]+)/)?.[1] ?? '');
+    const source = lire('assets/cadre-le-sablier.svg');
+    for (const element of RPG_ELEMENTS) {
+      const attendu = source.replaceAll('#ffd60b', CARD_FRAME_COLORS[element].color);
+      for (const kind of ['creature', 'hero', 'magie', 'arme', 'terrain', 'site']) {
+        assert.equal(svg({ kind, element }), attendu, `${kind} ${element}`);
+      }
+    }
+    const hybride = { kind: 'creature', colors: ['tenebres', 'braise', 'eau', 'braise'] };
+    const dessin = svg(hybride);
+    assert.equal(dessin, svg({ ...hybride, colors: ['eau', 'tenebres', 'braise'] }), 'ordre canonique et doublons');
+    assert.match(dessin, /gradientUnits="userSpaceOnUse"/);
+    const teintes = [...dessin.matchAll(/stop-color="(#[a-f0-9]+)"/gi)].map(m => m[1]);
+    assert.deepEqual(teintes, ['braise', 'eau', 'tenebres'].flatMap(e => [CARD_FRAME_COLORS[e].color, CARD_FRAME_COLORS[e].color]));
+    assert.equal(dessin.replace(/<linearGradient[^]*?<\/linearGradient>/, '').replaceAll('url(#cadre-elements)', '#ffd60b'), source, 'seules les couleurs du SVG changent');
+    assert.doesNotMatch(html({ kind: 'creature' }), /style=/, 'sans élément, repli sur le dessin doré');
+    assert.doesNotMatch(html({ kind: 'creature', element: 'inconnu' }), /style=/);
+  } finally { await vite.close(); }
 });
 
 test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les interactions', () => {

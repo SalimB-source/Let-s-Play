@@ -1,4 +1,4 @@
-/* Les Défenseurs gardent leur taille, leurs repères et leur liseré rouge,
+/* Les Défenseurs gardent leur taille, leurs repères et leur liseré orange,
    mais leur face, leur cadre et tous leurs effets sont rectangulaires comme
    ceux des autres cartes. La classe décrit le statut, pas une découpe. */
 
@@ -34,7 +34,7 @@
 }
 /* Les calques pleine face et le cadre suivent la taille de la carte. */
 .rpg-card.rpg-carte-bouclier > :is(
-  .rpg-cadre-carte, .rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance, .rpg-card__liseret-garde,
+  .rpg-cadre-carte, .rpg-card__img, .rpg-card__ombre-garde, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance, .rpg-card__liseret-garde,
   .rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-furie-vignette,
   .rpg-card__envol, .rpg-card__brume,
   .rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set
@@ -81,8 +81,19 @@
   position: absolute;
   inset: 0;
   z-index: 5;
-  border: 1px solid #e75a4d;
+  border: 1px solid #ff982f;
   border-radius: inherit;
   pointer-events: none;
 }
 .rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card__foot) { z-index: 7; }
+
+/* L'ombre reste indépendante des animations, mais suit la face rectangulaire. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__ombre-garde {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #211d3b;
+  border-radius: inherit;
+  filter: drop-shadow(0 7px 12px rgba(0, 0, 0, .85));
+  pointer-events: none;
+}

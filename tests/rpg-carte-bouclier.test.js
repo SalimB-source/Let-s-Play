@@ -90,7 +90,7 @@ test('TableCard distingue les Défenseurs sans changer leurs règles', async () 
       'Défenseur accordé pendant la partie');
     const imprime = { id: 'c2', carteId: 'gardien-de-la-porte-ardente', name: 'Gardien', atk: 2, def: 4, pv: 4, pvMax: 4, ready: true };
     assert.equal(rendre(imprime).classList.contains(CLASSE_BOUCLIER), true, 'Défenseur imprimé');
-    // Le sonar rouge et la pierre Défenseur restent en place : le repère s’ajoute,
+    // Le sonar orange et la pierre Défenseur restent en place : le repère s’ajoute,
     // il ne remplace aucun des repères existants.
     const carte = rendre(imprime);
     assert.ok(carte.classList.contains('has-garde'));
@@ -107,7 +107,7 @@ test('toutes les faces Défenseur et leurs effets restent rectangulaires', () =>
   const cadre = lire('rpg-cadre-carte.css');
   assert.doesNotMatch(cadre, /--rpg-ecusson|:not\(\.rpg-carte-bouclier\)/);
   assert.match(cadre, /--rpg-cadre-decoupe: polygon\(2\.23% 1\.56%, 97\.77% 1\.56%, 97\.77% 98\.44%, 2\.23% 98\.44%\)/);
-  assert.match(css, /rpg-card__liseret-garde[\s\S]*?border: 1px solid #e75a4d;[\s\S]*?pointer-events: none/);
+  assert.match(css, /rpg-card__liseret-garde[\s\S]*?border: 1px solid #ff982f;[\s\S]*?pointer-events: none/);
   assert.match(css, /\.rpg-cadre-carte, \.rpg-card__img/);
   assert.doesNotMatch(battleCss, /--rpg-ecusson/);
 });
@@ -129,7 +129,7 @@ test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gab
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__stat--atk/, 'gabarit normal de l’ATQ');
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__pt/, 'gabarit normal de la DÉF');
   assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit mobile inchangé');
-  assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
+  assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar orange toujours présent');
 });
 
 test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement', () => {

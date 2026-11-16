@@ -8,7 +8,7 @@ import { JSDOM } from 'jsdom';
 
 const entite = (extra = {}) => ({ id: 'c1', carteId: 'chien-du-guet', name: 'Chien du guet', atk: 2, def: 2, pv: 2, pvMax: 2, ready: true, ...extra });
 
-test('Défenseur ou Provocation portent une seule aura rouge dans les deux modes et les deux camps', async () => {
+test('Défenseur ou Provocation portent une seule aura orange dans les deux modes et les deux camps', async () => {
   const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' });
   try {
     const { TableCard } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
@@ -34,12 +34,14 @@ test('Défenseur ou Provocation portent une seule aura rouge dans les deux modes
         assert.ok(icone?.querySelector('polygon[fill="#a8282d"]'), 'pierre rouge visible');
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__liseret-garde[aria-hidden="true"]').length, 1);
+        assert.equal(doc.querySelectorAll('.rpg-card__ombre-garde[aria-hidden="true"]').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde .rpg-card__resonance-onde').length, 3);
         assert.equal(doc.querySelector('.rpg-card__resonance--garde').getAttribute('aria-hidden'), 'true');
         assert.match(doc.querySelector('.rpg-card__resonance--garde').getAttribute('style'), /--rpg-resonance-phase:/);
       }
       assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__resonance--garde'), null);
       assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__liseret-garde'), null);
+      assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__ombre-garde'), null);
       assert.equal(rendre(entite({ carteId: 'source-de-bimini', defenseur: true }), cote, moba).querySelector('.rpg-card__liseret-garde'), null);
       const avecArme = rendre(entite({ defenseur: true, arme: { carteId: 'armure-de-cendres' } }), cote, moba);
       assert.ok(avecArme.querySelector('.rpg-card.has-garde.has-arme .rpg-card__arme-vignette'));
@@ -50,13 +52,19 @@ test('Défenseur ou Provocation portent une seule aura rouge dans les deux modes
   } finally { await vite.close(); }
 });
 
-test('le sonar rouge conserve le débordement, la cadence et le mouvement réduit des autres auras', () => {
+test('le sonar orange conserve le débordement, la cadence et le mouvement réduit des autres auras', () => {
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-card\.has-garde\s*\{[^}]*overflow-clip-margin:\s*58px/);
   assert.match(css, /\.rpg-card\.has-arme\.has-garde\s*\{[^}]*overflow-clip-margin:\s*58px/);
-  assert.match(css, /\.rpg-card__resonance--garde\s*\{[^}]*rgba\(205, 35, 32/s);
+  assert.match(css, /\.rpg-card__resonance--garde\s*\{[^}]*rgba\(238, 111, 20/s);
   assert.match(css, /\.rpg-card__resonance--garde \.rpg-card__resonance-onde\s*\{[^}]*border-color:/s);
   assert.match(css, /\.rpg-card__resonance-onde\s*\{[^}]*animation:\s*rpg-resonance-onde 3\.6s/s);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[^]*?\.rpg-card__resonance-onde--3\s*\{[^}]*opacity:/);
   assert.match(css, /\.rpg-battle\.is-reduced \.rpg-card__resonance-onde--3\s*\{[^}]*opacity:/);
+});
+
+
+test('une ombre portée renforcée suit la face rectangulaire indépendamment des filtres de la carte', () => {
+  const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__ombre-garde\s*\{[^}]*z-index:\s*-1;[^}]*background:\s*#211d3b;[^}]*border-radius:\s*inherit;[^}]*drop-shadow\(0 7px 12px rgba\(0, 0, 0, \.85\)\)[^}]*pointer-events:\s*none/s);
 });

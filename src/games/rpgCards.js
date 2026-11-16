@@ -1117,8 +1117,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'jarl-au-marteau-de-guerre',
     furie: 2,
     overkill: true,
-    defenseur: true,
-    text: 'Furie 2. Overkill. Défenseur.',
+    text: 'Furie 2. Overkill.',
     flavor: 'Le vieux chef ne crie pas : il encaisse, puis il avance.',
   },
   {
