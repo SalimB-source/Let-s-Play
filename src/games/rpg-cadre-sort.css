@@ -1,0 +1,18 @@
+/* Cadre SVG fourni par le joueur : au-dessus de l'art, sous les repères.
+   Le calque suit la face, ne capte pas les clics et n'affecte ni le coût ni
+   les effets. Il ne remplace pas les contours de sélection ou de jouabilité. */
+.rpg-cadre-sort {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  background: url('./assets/cadre-sorts.svg') center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* Les présentations de secours n'avaient pas besoin de couche explicite. */
+.moba__card-art > i { z-index: 2; }
+.rpg-atelier__carte-art > .rpg-atelier__cout {
+  position: relative;
+  z-index: 2;
+}
