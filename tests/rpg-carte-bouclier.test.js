@@ -6,10 +6,10 @@
  * face (égide de Bouclier, impact, Furie, Envol, brume, ondes, sang, givre)
  * prennent eux aussi la forme de l'écu, que les Défenseur POSÉS sont 10 % plus
  * grands avec des icônes inchangées et des emplacements plus espacés, que sur
- * le plateau leur pied ATQ/DÉF remonte de quelques pixels SANS agrandissement,
- * que les repères (type, pierres, sonar) ne sont pas touchés, et que MAIN,
- * MULLIGAN, MAIN MOBA et APERÇUS restent des cartes rectangulaires normales
- * avec ATQ à gauche / DÉF à droite.
+ * le plateau leur pied ATQ/DÉF remonte vers le milieu (20cqw) SANS
+ * agrandissement, que les repères (type, pierres, sonar) ne sont pas touchés,
+ * et que MAIN, MULLIGAN, MAIN MOBA et APERÇUS restent des cartes rectangulaires
+ * normales avec ATQ à gauche / DÉF à droite.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -239,8 +239,8 @@ test('les effets pleine face prennent la forme de l’écu sans contour permanen
 test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gabarit', () => {
   // La feuille de l'écusson ne contient AUCUNE règle de taille sur les repères :
   // c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi. La seule exception
-  // est le `translate` de 6 px du pied, testé plus bas : il ne touche à aucun
-  // sélecteur de pastille et ne change aucune mesure.
+  // est le `translate` du pied, testé plus bas : il ne touche à aucun sélecteur
+  // de pastille et ne change aucune mesure.
   for (const selectors of [
     'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
     'rpg-hand__stat', 'rpg-card-icones--colonne',
@@ -256,14 +256,19 @@ test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gab
   assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
 });
 
-test('sur le plateau, ATQ et DÉF remontent de quelques pixels, sans agrandissement', () => {
-  // « juste un décalage de quelques pixels vers le haut, pas d'agrandissement » :
-  // UNE seule règle, UNE seule propriété, sur le pied des seules cartes POSÉES.
+test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement', () => {
+  // « remonte plus vers le milieu de la carte » : 20cqw, soit 20 % de la
+  // LARGEUR de la carte (≈ 16 % de sa hauteur en 4:5). UNE seule règle, UNE
+  // seule propriété, sur le pied des seules cartes POSÉES. La valeur est
+  // proportionnelle : elle suit toutes les tailles de carte sans media query.
   const regles = [...css.matchAll(/\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{([^}]*)\}/g)];
   assert.equal(regles.length, 1, 'une unique règle de remontée du pied');
   const corps = regles[0][1];
-  assert.match(corps, /translate:\s*0 -6px;/, 'décalage de 6 px vers le haut');
-  assert.equal(corps.trim(), 'translate: 0 -6px;', 'rien d’autre que ce décalage');
+  assert.match(corps, /translate:\s*0 -20cqw;/, 'décalage de 20cqw vers le haut');
+  assert.equal(corps.trim(), 'translate: 0 -20cqw;', 'rien d’autre que ce décalage');
+  assert.match(battleCss, /\.rpg-card--img,\s*[\s\S]{0,200}?container-type: inline-size;/,
+    'la carte est bien son propre conteneur : cqw se résout sur sa largeur');
+  assert.doesNotMatch(corps, /\d+px/, 'pas de valeur fixe en px : la mesure suit la carte');
 
   // Aucun agrandissement, aucun déplacement latéral, aucun changement de
   // taille, de police, de marge ou de point d'ancrage.

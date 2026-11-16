@@ -1989,19 +1989,27 @@ héritées par les cinq emplacements via `gap: inherit`) : 12 → 18 px sur bure
 la main, le mulligan, la main MOBA et les aperçus ne portent pas le facteur :
 leur taille et leurs repères restent inchangés.
 
-**Sur le plateau, le pied ATQ/DÉF remonte de 6 px.** Demande du joueur :
+**Sur le plateau, le pied ATQ/DÉF remonte vers le milieu.** Demande du joueur :
 « remonte un peu l'atq et def sur les créatures avec defenseur sur le plateau »,
-précisée en « juste un décalage de quelques pixels vers le haut, pas
-d'agrandissement ». `rpg-bouclier.css` pose donc une seule règle —
-`.rpg-card.rpg-carte-bouclier > .rpg-card__foot { translate: 0 -6px; }` — et
+puis « remonte plus vers le milieu de la carte ». Après un premier décalage de
+6 px, l'amplitude retenue est **20cqw** : la carte est son propre conteneur
+(`container-type: inline-size`), donc 20cqw = 20 % de sa largeur ≈ **16 % de
+sa hauteur** en 4:5 (≈ 34 px sur une carte de 168 px au bureau, ≈ 15 px au
+doigt). Une mesure proportionnelle suit toutes les tailles de carte **sans
+aucune media query** ; une valeur en px aurait été trop grande sur mobile.
+
+`rpg-bouclier.css` pose donc une seule règle —
+`.rpg-card.rpg-carte-bouclier > .rpg-card__foot { translate: 0 -20cqw; }` — et
 rien d'autre : ni `width`, ni `bottom`, ni `font-size`, ni `padding`, ni
 `scale`, ni `zoom`, ni `transform`. Le pied ne contient que les deux pastilles :
 elles gardent **exactement** leur taille, leur écart et leurs places à gauche /
-à droite, et montent ensemble de 6 px. `translate` compose avec le `scale`
-inverse déjà posé sur les enfants directs (il s'applique avant, dans le repère
-de la carte) et laisse intactes les cinématiques `fx-*` qui animent la carte,
-pas le pied. Les `bottom: 4 %` / `3 %` des cartes normales, les grilles
-d'aperçu / mulligan et les gabarits MOBA ne sont pas modifiés.
+à droite, et montent ensemble vers le milieu. **Aucun agrandissement.**
+`translate` compose avec le `scale` inverse déjà posé sur les enfants directs
+(il s'applique avant, dans le repère de la carte) et laisse intactes les
+cinématiques `fx-*` qui animent la carte, pas le pied. Le bandeau de type
+n'étant pas rendu sur les cartes de table, la remontée ne l'écrase pas. Les
+`bottom: 4 %` / `3 %` des cartes normales, les grilles d'aperçu / mulligan et
+les gabarits MOBA ne sont pas modifiés.
 
 **Les effets prennent la forme de l'écu.** L'égide de Bouclier (violette,
 dorée ou colorée) et son impact de rupture, la vignette de Furie, le souffle
