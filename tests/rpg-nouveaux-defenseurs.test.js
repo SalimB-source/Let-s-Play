@@ -35,7 +35,7 @@ test('les cinq gardiens choisis portent Défenseur et gardent leurs capacités',
     assert.equal(pastillesPourCarte(carte).filter(p => p.cle === 'defenseur').length, 1, id);
   }
   assert.equal(cardById('guetteuse-des-marees').arrivee.type, 'exil-temporaire');
-  assert.equal(cardById('guerrier-au-bouclier-rond').arrivee.type, 'bouclier');
+  assert.equal(cardById('guerrier-au-bouclier-rond').arrivee, undefined);
   assert.equal(cardById('amani-des-ksour').aura.def, 1);
   assert.equal(cardById('gardienne-de-la-balance').destruction.type, 'soin');
   assert.equal(cardById('onna-musha-des-cendres').esquive, true);

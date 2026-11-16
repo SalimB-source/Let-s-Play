@@ -212,18 +212,15 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
     'la Bannière grandit chaque Samouraï qui attaque');
 });
 
-test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', () => {
+test('la leçon Neige appelle un Viking, bloque un sort et active la Furie', () => {
   const tutoriel = tutorielParId('serment-des-neuf-hivers');
   assert.ok(tutoriel.steps.some((etape) => etape.id === 'appel-viking'),
     'la leçon nomme la nouvelle arrivée de la Valkyrie');
   const duel = duelDeLecon(tutoriel);
-  // Le Guerrier ne choisit plus tout seul : la table désigne le porteur du
-  // bouclier — lui-même, ou une autre créature alliée.
   const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
   assert.equal(guerrier.ok, true);
-  assert.equal(guerrier.arriveeEnAttente, true, 'le Guerrier attend qu’on désigne le porteur du bouclier');
-  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', guerrier.entite.id).ok, true);
-  assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec une parade');
+  assert.equal(duel.arriveeEnAttente == null, true);
+  assert.equal(guerrier.entite.bouclier ?? 0, 0);
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   const mainAvantValkyrie = duel.joueur.main.length;
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau');
@@ -231,8 +228,8 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
   assert.deepEqual([valkyrie.entite.atk, valkyrie.entite.def, valkyrie.entite.pv], [2, 4, 4]);
   assert.deepEqual(
     [guerrier.entite.atk, guerrier.entite.pv, guerrier.entite.pvMax, guerrier.entite.resonance],
-    [2, 2, 2, 0],
-    'la Valkyrie ne porte plus de Résonance : le Guerrier reste une 2/2',
+    [2, 3, 3, 0],
+    'la Valkyrie ne porte plus de Résonance : le Guerrier reste une 2/3',
   );
   assert.equal(duel.joueur.main.length, mainAvantValkyrie,
     'poser la Valkyrie et piocher son arrivée laisse le même nombre de cartes en main');
@@ -248,8 +245,8 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
   assert.equal(ennemi.bouclierEpuise, true, 'et se marque comme tombée');
   assert.deepEqual(
     [ennemi.atk, ennemi.pv, ennemi.pvMax],
-    [2, 2, 2],
-    'le sort bloqué ne fait aucun dégât : la 2/2 reste intacte',
+    [2, 3, 3],
+    'le sort bloqué ne fait aucun dégât : la 2/3 reste intacte',
   );
   assert.ok(!ennemi.furieDeclenchee, 'le Guerrier n’a plus de Furie');
   assert.equal(duel.joueur.mana.neige, 0, 'les cartes ne demandent pas de mana');
@@ -261,7 +258,7 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
   rpgFinDeTour(duel);
   // Le Guerrier adverse n'était pas gelé : c'est lui qui charge. Sa parade
   // tombée n'encaisse aucun dégât de combat.
-  assert.deepEqual([ennemi.atk, ennemi.def, ennemi.pv], [2, 2, 2]);
+  assert.deepEqual([ennemi.atk, ennemi.def, ennemi.pv], [2, 3, 3]);
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [ennemi.id], { [ennemi.id]: [berserk.id] }, null,
     [ennemi.id], {}, { attaqueDeclaree: true }).ok, true);
   assert.deepEqual(
@@ -269,8 +266,9 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
     [true, 2, 4, 2, 4],
     'le Berserk tombe à 2 PV : sa Furie 2 lui donne +2/+0',
   );
-  assert.equal(duel.sorcier.creatures.includes(ennemi), false,
-    'les 2 dégâts du Berserk détruisent le Guerrier 2/2, malgré sa parade tombée');
+  assert.equal(duel.sorcier.creatures.includes(ennemi), true,
+    'le Guerrier 2/3 survit aux 2 dégâts du Berserk');
+  assert.equal(ennemi.pv, 1);
   assert.equal(duel.joueur.pv, 25, 'aucun dégât ne passe au joueur');
 });
 

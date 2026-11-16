@@ -2,7 +2,7 @@
  * Le Bouclier se voit, veille, puis encaisse.
  * node scripts/rpg-bouclier-check.mjs
  *
- * Les boucliers actuels viennent des arrivées (le Guerrier au bouclier rond,
+ * Les boucliers actuels viennent des arrivées (la Tour de sable,
  * Salem), des sorts (la Parade de verre) et du bouclier de lumière de la Dame
  * aux ailes d'or. Salem n'a plus de lumière : il arrive avec la parade
  * anti-sort, Rapidité et Contre-attaque. La Lance de givre ne donne plus de
@@ -239,7 +239,7 @@ const apercuDom = (html) => {
 {
   const { dom, racine } = apercuDom(apercus.guerrierActif);
   try {
-    assert.ok(racine, 'l’aperçu du Guerrier se rend');
+    assert.ok(racine, 'l’aperçu de la Tour se rend');
     assert.equal(racine.getAttribute('data-effets-epuises'), null, 'rien n’est dépensé hors table');
     assert.equal(racine.querySelector('.is-epuisee'), null, 'aucune grisaille sur une fiche neuve');
   } finally {
@@ -260,14 +260,13 @@ const apercuDom = (html) => {
       'le mot seul reste écrit, sans chiffre : une parade ne se compte pas');
     assert.match(pastille.getAttribute('aria-label') ?? '', /tombé/,
       'la pastille grise annonce elle aussi son état « tombé » aux lecteurs d’écran');
-    // Le Guerrier a perdu sa Furie dans sa révision : plus aucune autre
-    // pastille que le Bouclier ne doit être grisée sur sa fiche.
+    // Seule la pastille Bouclier doit être grisée sur la fiche de la Tour.
     assert.equal(racine.querySelectorAll('.rpg-pastille.is-epuisee').length, 1,
       'seul le Bouclier est grisé');
-    // La description du Guerrier reste écrite : la phrase du bouclier est ce
+    // La description de la Tour reste écrite : la phrase du bouclier est ce
     // que la carte fait (l'état « tombé » grise la pastille et le libellé).
-    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier/,
-      'l’aperçu écrit la règle du Guerrier : le bouclier se donne, à un allié ou à lui-même');
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /une créature alliée ciblée reçoit un bouclier/,
+      'l’aperçu écrit la règle de la Tour : le bouclier se donne à une créature alliée');
   } finally {
     dom.window.close();
   }
@@ -419,4 +418,4 @@ assert.match(iconesCss, /\.rpg-card-icone\.is-epuisee \{[\s\S]*?filter: grayscal
 assert.match(reglesCss, /\.rpg-card-rules__ligne--epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
   'la ligne de règle dépensée se grise entièrement');
 
-console.log('✓ Bouclier animé : Salem arrive avec la parade anti-sort, Rapidité et Contre-attaque ; la Lance de givre donne +1/+0 et Attaque ciblée sans bouclier ; la parade du Guerrier, de la Parade et de Salem bloque un sort adverse, le bouclier de lumière de la Dame aux ailes d’or encaisse un coup, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');
+console.log('✓ Bouclier animé : Salem arrive avec la parade anti-sort, Rapidité et Contre-attaque ; la Lance de givre donne +1/+0 et Attaque ciblée sans bouclier ; la parade de la Tour, de la Parade et de Salem bloque un sort adverse, le bouclier de lumière de la Dame aux ailes d’or encaisse un coup, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');
