@@ -5,7 +5,7 @@
  * EST la silhouette de l'écusson. Arche haute, flancs droits, vraie pointe en
  * V en bas, aplat marine. Aucun coin rectangulaire ne dépasse.
  *
- * Un fin trait rouge souligne la silhouette des Défenseurs sur le plateau,
+ * Un fin trait orange souligne la silhouette des Défenseurs sur le plateau,
  * sans cadre métallique ni liseré de la couleur de l'élément. Une ombre portée
  * suit l'alpha sans faire de rectangle. Les SVG partagent le viewBox
  * `-5 -5 110 137`, qui laisse de la marge autour de la pointe `50 124` et
@@ -21,14 +21,14 @@
  * un anneau de 8 pour leur halo). Leurs
  * `border`, `border-radius` et `box-shadow` rectangulaires sont neutralisés.
  * Les effets actifs gardent leur liseré en forme d'écu ; un calque distinct
- * porte le fin trait rouge permanent de Défenseur sur le plateau.
+ * porte le fin trait orange permanent de Défenseur sur le plateau.
  *
  * Le `mask-image` ne touche PAS aux pastilles ATQ/DÉF, aux pierres d'effets,
  * au badge d'arme, aux compteurs ni aux libellés : ils gardent exactement la
  * taille des autres cartes et débordent librement (`overflow: visible`).
  * Seule exception demandée ensuite : sur le plateau, le pied ATQ/DÉF remonte
  * vers le milieu de la carte (un simple `translate`, aucun agrandissement,
- * voir plus bas). Le sonar rouge `has-garde` reste présent, simplement dessiné
+ * voir plus bas). Le sonar orange `has-garde` reste présent, simplement dessiné
  * dans la forme de l'écu.
  *
  * La main et le mulligan restent rectangulaires. Les aperçus reprennent la
@@ -156,13 +156,25 @@
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .42));
 }
 
+/* Calque indépendant : les animations d'entrée et de combat modifient le
+   filtre de la carte, et ne doivent pas effacer l'ombre de l'écu. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__ombre-garde {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  scale: 1;
+  background: var(--rpg-ecusson-aplat) center / 100% 100% no-repeat;
+  filter: drop-shadow(0 7px 12px rgba(0, 0, 0, .85));
+  pointer-events: none;
+}
+
 /* Pas de cadre sur l'écu, même si un autre gabarit fournit un ::before. */
 .rpg-carte-bouclier::before {
   content: none !important;
   display: none !important;
 }
 
-/* La sélection est temporaire et prime sur le fin liseré rouge au repos.
+/* La sélection est temporaire et prime sur le fin liseré orange au repos.
    Le même tracé en V sert au clic, au blocage et aux sacrifices, en duel
    comme en MOBA, sans contour rectangulaire sur mobile. */
 .rpg-card.rpg-carte-bouclier:is(.is-active, .is-selected, .is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover, .is-sacrifice, .is-ascension-chosen)::before {
@@ -226,7 +238,7 @@
 /* ── LES EFFETS PRENNENT LA FORME DE L'ÉCU ──────────────────────────────────
    Égide de Bouclier (et ses variantes lumière / colorée), impact de rupture,
    vignette de Furie, souffle d'Envol, brume d'Infiltration et sonar / ondes
-   (Résonance, Aura, Malédiction, garde rouge). Tous étaient `inset: 0` avec
+   (Résonance, Aura, Malédiction, garde orange). Tous étaient `inset: 0` avec
    un `border`, un rayon hérité de la carte et une ombre de boîte : sur
    l'écu ils redessinaient un rectangle. On garde leurs dégradés, leurs ondes,
    leurs reflets et leurs animations, mais on les découpe dans l'écu et on
@@ -313,7 +325,7 @@
   position: absolute;
   inset: 0;
   z-index: 5;
-  background-color: #e75a4d;
+  background-color: #ff982f;
   -webkit-mask-image: var(--rpg-ecusson-defenseur-liseret);
   mask-image: var(--rpg-ecusson-defenseur-liseret);
   -webkit-mask-size: 100% 100%;
