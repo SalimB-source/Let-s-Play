@@ -1,4 +1,4 @@
-/* Les dessins proviennent des SVG fournis. Le calque est décoratif,
+/* Le dessin provient du SVG fourni. Le calque est décoratif,
    au-dessus de la peinture et sous les pierres et les commandes de la face. */
 .rpg-cadre-carte {
   position: absolute;
@@ -8,7 +8,7 @@
   background: center / 100% 100% no-repeat;
   pointer-events: none;
 }
-.rpg-cadre-carte--creature { background-image: url('./assets/cadre-creature.svg'); }
+.rpg-cadre-carte--sablier { background-image: url('./assets/cadre-le-sablier.svg'); }
 
 /* Découper uniquement la peinture : les icônes, les indicateurs de sélection
    et leurs zones de clic peuvent toujours déborder. Ces silhouettes suivent
@@ -17,7 +17,7 @@
    pour afficher la peinture. Si la découpe n'est pas prise en charge, le
    navigateur conserve l'illustration entière au lieu de la masquer. Les
    points suivent les courbes des contours fournis. */
-:has(> .rpg-cadre-carte--creature) {
+:has(> .rpg-cadre-carte--sablier) {
   --rpg-cadre-decoupe: polygon(2.23% 1.56%, 97.77% 1.56%, 97.77% 98.44%, 2.23% 98.44%);
 }
 :has(> .rpg-cadre-carte) > img:has(+ .rpg-cadre-carte) {

@@ -8,11 +8,11 @@ import { RPG_ASCENSION_CARDS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 
 const lire = (chemin) => readFileSync(new URL(`../src/games/${chemin}`, import.meta.url), 'utf8');
 
-test('toutes les cartes utilisent le cadre des créatures', async () => {
+test('toutes les cartes utilisent le cadre Le Sablier', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'silent' });
   try {
     const { default: Cadre } = await vite.ssrLoadModule('/src/games/RpgCadreCarte.jsx');
-    const cadre = /class="rpg-cadre-carte rpg-cadre-carte--creature" aria-hidden="true"/;
+    const cadre = /class="rpg-cadre-carte rpg-cadre-carte--sablier" aria-hidden="true"/;
     for (const carte of [...RPG_DUEL_CARDS, ...RPG_ASCENSION_CARDS, ...['magie', 'arme', 'creature', 'hero', 'terrain', 'site'].map(kind => ({ kind }))]) {
       assert.match(renderToStaticMarkup(React.createElement(Cadre, { carte })), cadre, carte.id ?? carte.kind);
     }
@@ -42,20 +42,24 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   // Les illustrations ne doivent plus dépendre d'un SVG externe pour être
   // visibles : chaque découpe reste une forme CSS autonome, avec repli naturel
   // sur l'image entière si le navigateur ne reconnaît pas polygon().
-  assert.match(css, /:has\(> \.rpg-cadre-carte--creature\) \{\s*--rpg-cadre-decoupe: polygon\(/);
+  assert.match(css, /:has\(> \.rpg-cadre-carte--sablier\) \{\s*--rpg-cadre-decoupe: polygon\(/);
   assert.doesNotMatch(css, /decoupes-cartes\.svg|--rpg-cadre-decoupe:\s*url\(/);
-  assert.match(css, /cadre-creature\.svg/);
-  assert.doesNotMatch(css, /cadre-(?:ascension|sorts|arme)\.svg/);
-  assert.match(lire('assets/cadre-creature.svg'), /viewBox="0 0 179\.24 256\.06" preserveAspectRatio="none"/);
+  assert.match(css, /cadre-le-sablier\.svg/);
+  assert.doesNotMatch(css, /cadre-(?:ascension|sorts|arme|creature)\.svg/);
+  assert.match(lire('assets/cadre-le-sablier.svg'), /viewBox="0 0 179\.24 256\.06" preserveAspectRatio="none"/);
 });
 
-test('les SVG utilisés sont les dessins du commit, hormis leur adaptation au ratio des faces', () => {
-  for (const [source, dest] of [['Cadre sorts.svg', 'sorts'], ['Cadre arme.svg', 'arme'], ['Cadre créature.svg', 'creature']]) {
-    const original = readFileSync(new URL(`../public/${source}`, import.meta.url), 'utf8');
-    assert.equal(lire(`assets/cadre-${dest}.svg`), original.replace('viewBox="0 0 179.24 256.06"', 'viewBox="0 0 179.24 256.06" preserveAspectRatio="none"'));
+test('le dessin utilisé est celui du commit, adapté au ratio des faces', () => {
+  const original = readFileSync(new URL('../public/Cadre Le sablier.svg', import.meta.url), 'utf8');
+  assert.equal(lire('assets/cadre-le-sablier.svg'), original.replace('viewBox="0 0 179.24 256.06"', 'viewBox="0 0 179.24 256.06" preserveAspectRatio="none"'));
+});
+
+test('les anciens fichiers de cadres de cartes sont supprimés', async () => {
+  const { existsSync } = await import('node:fs');
+  for (const chemin of ['public/Cadre arme.svg', 'public/Cadre créature.svg', 'public/Cadre créatures Ascension.svg', 'public/Cadre sorts.svg', 'src/games/assets/cadre-arme.svg', 'src/games/assets/cadre-creature.svg', 'src/games/assets/cadre-sorts.svg']) {
+    assert.equal(existsSync(new URL(`../${chemin}`, import.meta.url)), false, chemin);
   }
 });
-
 
 test('les vues de secours de la réserve et du rituel utilisent aussi le cadre', () => {
   const reserve = lire('RpgReserveAscension.jsx');

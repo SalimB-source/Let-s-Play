@@ -32,7 +32,7 @@ try {
       assert.ok(result.coinRogne, `${id} : coins de l’illustration contenus dans le cadre`);
       assert.ok(Number(result.frameZ) < Number(result.iconZ), `${id} : icône au-dessus du cadre`);
       assert.equal(result.frameEvents, 'none', `${id} : cadre non interactif`);
-      assert.equal(await face.locator(':scope > .rpg-cadre-carte--creature').count(), 1, `${id} : cadre des créatures`);
+      assert.equal(await face.locator(':scope > .rpg-cadre-carte--sablier').count(), 1, `${id} : cadre Le Sablier`);
       await face.click({ position: { x: 60, y: 80 } });
       assert.equal(await page.locator('body').getAttribute('data-carte-cliquee'), id, `${id} : clic conservé`);
     }
@@ -48,8 +48,8 @@ try {
       assert.ok(etat.chargee > 0 && etat.opacite > 0, `${surface} ${id} : illustration présente`);
       assert.ok(etat.cadre, `${surface} ${id} : cadre présent`);
       assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
-      const cadre = face.locator(':scope > .rpg-cadre-carte--creature');
-      assert.equal(await cadre.count(), 1, `${surface} ${id} : cadre des créatures`);
+      const cadre = face.locator(':scope > .rpg-cadre-carte--sablier');
+      assert.equal(await cadre.count(), 1, `${surface} ${id} : cadre Le Sablier`);
       assert.equal(await cadre.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
       assert.notEqual(await cadre.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
 
