@@ -1003,6 +1003,18 @@
    par l'appui long d'une seconde), et la rangée tient la largeur utile du volet
    — les cinq faces 4:5 se lisent sans pincer ni faire défiler. L'illustration
    grisée et la lueur rouge d'une carte mise de côté restent visibles. */
+/* Gouttière au doigt : la valeur commune suit `1vh`, qui ne vaut que 3 à 4 px
+   sur un téléphone en paysage (390 px de haut). Les cinq cartes se touchaient
+   presque : on ne distinguait plus deux cadres d'un coup d'œil et la cible au
+   doigt devenait ambiguë. On passe à 14–16 px, largement assez pour respirer.
+   `rpg-battle.css` soustrait déjà quatre fois CETTE variable de la largeur
+   utile de la rangée : les cartes se réduisent d'autant, les cinq restent
+   entières dans le volet, sans défilement et toujours assez grandes au doigt.
+   Scope unique = le mulligan du Duel (`--touch`) : le PC et le MOBA gardent
+   leurs écarts d'origine. */
+.rpg-battle--touch .rpg-mulligan {
+  --rpg-mulligan-gap: clamp(14px, 1.8vw, 16px);
+}
 .rpg-battle--touch .rpg-mulligan__card:not(.is-selected):hover { transform: none; box-shadow: none; }
 .rpg-battle--touch .rpg-mulligan__card:active { transform: scale(.97); }
 .rpg-battle--touch .rpg-mulligan__card { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }

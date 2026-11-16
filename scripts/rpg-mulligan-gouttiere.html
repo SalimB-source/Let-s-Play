@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Sablier — gouttière du mulligan sur mobile</title>
+  <!-- Les VRAIES feuilles du jeu : la scène « après » applique la surcharge
+       tactile telle quelle, sans recopier une seule valeur. -->
+  <link rel="stylesheet" href="../src/games/rpg-battle.css">
+  <link rel="stylesheet" href="../src/games/rpg-mobile.css">
+  <style>
+    html, body { margin: 0; background: #0d0b14; color: #f3e2bb;
+      font: 500 14px/1.5 Georgia, serif; }
+    body { padding: 24px; box-sizing: border-box; }
+    h1 { margin: 0 0 4px; font: 800 22px/1.2 Georgia, serif; }
+    .intro { margin: 0 0 20px; color: #b6a888; font-size: 13px; }
+    .scenes { display: grid; gap: 22px; justify-items: start; }
+    .demo-scene { position: relative; width: 844px; max-width: 100%; }
+    .demo-scene > h2 { margin: 0 0 6px; font: 700 15px/1.2 Georgia, serif; letter-spacing: .04em; }
+    .demo-scene > h2 span { color: #d7ad61; }
+    /* Dans le jeu le volet est `position: fixed` et couvre l'écran. Ici on le
+       rend relatif pour pouvoir en montrer deux l'un sous l'autre. */
+    .demo-scene .rpg-mulligan {
+      position: relative; inset: auto; z-index: auto; padding: 0;
+      height: 300px; place-items: stretch;
+    }
+    .demo-scene .rpg-mulligan__backdrop { border-radius: 12px; }
+    .demo-scene .rpg-mulligan__panel {
+      width: 100%; height: 300px; gap: 6px; padding: 6px 8px;
+      border-radius: 12px;
+    }
+    .demo-scene .rpg-mulligan__head { gap: 1px; }
+    .demo-scene .rpg-mulligan__head h2 { font-size: 17px; }
+    .demo-scene .rpg-mulligan__head p { font-size: 11px; }
+    .demo-scene .rpg-mulligan__eyebrow { font-size: 8px; }
+    .demo-scene .rpg-mulligan__stage { height: 218px; }
+    .demo-scene .rpg-mulligan__actions { min-height: 0; }
+    .demo-scene .rpg-mulligan__actions button { min-height: 0; padding: 4px 10px; font-size: 11px; }
+    .mesure { margin: 7px 0 0; font: 600 12px/1.4 monospace; color: #d8c7a5; }
+    .note { margin-top: 18px; max-width: 844px; color: #b6a888; font-size: 12px; }
+    .note code { color: #f3d28b; }
+  </style>
+</head>
+<body>
+  <h1>Mulligan sur mobile — les cinq cartes respirent</h1>
+  <p class="intro">
+    Même volet, mêmes cinq cartes, même largeur de scène : seule la gouttière
+    <code>--rpg-mulligan-gap</code> change. Les cartes se réduisent d'autant pour
+    que la rangée reste entière, sans défilement.
+  </p>
+
+  <div class="scenes">
+    <div class="demo-scene">
+      <h2>AVANT — <span>4 px</span> entre les cartes (le défaut du PC appliqué au téléphone)</h2>
+      <div class="rpg-battle rpg-battle--touch" data-scene="duel">
+        <div class="rpg-mulligan" data-demo="avant" style="--rpg-mulligan-gap: 4px">
+          <div class="rpg-mulligan__backdrop" aria-hidden="true"></div>
+          <div class="rpg-mulligan__panel">
+            <header class="rpg-mulligan__head">
+              <span class="rpg-mulligan__eyebrow">Mulligan · main de départ</span>
+              <h2>Gardez votre main, ou changez des cartes</h2>
+              <p>Touchez une carte pour la mettre de côté.</p>
+            </header>
+            <div class="rpg-mulligan__stage">
+              <div class="rpg-mulligan__cards">
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/tojiro-le-pourfendeur.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/feriel.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/jitte-d-amayas.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/trait-de-braise.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/ashigaru-des-braises.jpg" alt=""></button>
+              </div>
+            </div>
+            <div class="rpg-mulligan__actions"><button type="button" class="rpg-btn rpg-mulligan__valider">Garder cette main</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="mesure" data-mesure="avant">…</p>
+    </div>
+
+    <div class="demo-scene">
+      <h2>APRÈS — <span>14 à 16 px</span> entre les cartes (surcharge <code>.rpg-battle--touch</code>)</h2>
+      <div class="rpg-battle rpg-battle--touch" data-scene="duel">
+        <div class="rpg-mulligan" data-demo="apres">
+          <div class="rpg-mulligan__backdrop" aria-hidden="true"></div>
+          <div class="rpg-mulligan__panel">
+            <header class="rpg-mulligan__head">
+              <span class="rpg-mulligan__eyebrow">Mulligan · main de départ</span>
+              <h2>Gardez votre main, ou changez des cartes</h2>
+              <p>Touchez une carte pour la mettre de côté.</p>
+            </header>
+            <div class="rpg-mulligan__stage">
+              <div class="rpg-mulligan__cards">
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/tojiro-le-pourfendeur.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/feriel.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/jitte-d-amayas.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/trait-de-braise.jpg" alt=""></button>
+                <button type="button" class="rpg-mulligan__card"><img class="rpg-mulligan__img" src="../cards/ashigaru-des-braises.jpg" alt=""></button>
+              </div>
+            </div>
+            <div class="rpg-mulligan__actions"><button type="button" class="rpg-btn rpg-mulligan__valider">Garder cette main</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="mesure" data-mesure="apres">…</p>
+    </div>
+  </div>
+
+  <p class="note">
+    La surcharge vaut <code>clamp(14px, 1.8vw, 16px)</code> : sur un téléphone en
+    paysage de 844 × 390, cela donne <strong>15,2 px</strong> ; sur cette page de
+    démonstration (fenêtre de bureau) le plafond de 16 px s'applique. Le calcul
+    de largeur soustrait déjà <code>4 × var(--rpg-mulligan-gap)</code>, donc les
+    cartes perdent environ 9 px de large et restent entières. Le PC et le
+    mulligan MOBA ne changent pas.
+  </p>
+
+  <script>
+    // Mesures réelles du navigateur, pour vérifier l'écart et l'absence de
+    // débordement sans rien recopier du CSS du jeu.
+    for (const scene of document.querySelectorAll('.demo-scene')) {
+      const row = scene.querySelector('.rpg-mulligan__cards');
+      const cartes = [...scene.querySelectorAll('.rpg-mulligan__card')];
+      const style = getComputedStyle(row);
+      const ecart = parseFloat(style.columnGap);
+      const largeur = cartes[0].getBoundingClientRect().width;
+      const total = 5 * largeur + 4 * ecart;
+      const scène = row.parentElement.getBoundingClientRect().width;
+      scene.querySelector('[data-mesure]').textContent =
+        `écart mesuré : ${ecart.toFixed(1)} px · carte : ${largeur.toFixed(1)} px · `
+        + `rangée : ${total.toFixed(1)} px / scène ${scène.toFixed(1)} px · `
+        + `débordement : ${total > scène + 1 ? 'OUI' : 'non'} · 5 cartes visibles : ${cartes.length === 5 ? 'oui' : 'non'}`;
+    }
+  </script>
+</body>
+</html>

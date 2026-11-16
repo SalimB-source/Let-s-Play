@@ -5353,6 +5353,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      les gouttières de la rangée. Réservé dans le calcul de la taille d'une
      carte, il ne peut donc jamais la faire déborder. */
   --rpg-mulligan-text: 18px;
+  /* Gouttière de référence, calibrée sur un écran de bureau : `1vh` y vaut
+     ~10 px. Sur un téléphone en paysage, `1vh` tombe sous 4 px et les cinq
+     faces se touchent presque : `rpg-mobile.css` relève cette même variable
+     à 14–16 px au doigt, sans changer le calcul de taille ci-dessous. */
   --rpg-mulligan-gap: clamp(4px, 1vh, 11px);
 }
 .rpg-mulligan__backdrop {
@@ -5428,7 +5432,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      la largeur de la scène si celle-ci est plus contraignante. Le plancher de
      0px garde le calcul valide sur un écran minuscule ; le premier jeu de
      règles sert de repli aux WebView sans requêtes de conteneur. */
-  grid-auto-columns: min(max(0px, calc((100dvh - var(--rpg-mulligan-text)) * .42)), calc((100vw - 90px) / 5));
+  grid-auto-columns: min(max(0px, calc((100dvh - var(--rpg-mulligan-text)) * .42)), calc((100vw - 90px - 4 * var(--rpg-mulligan-gap)) / 5));
   grid-auto-columns: min(max(0px, calc((100cqh - var(--rpg-mulligan-text)) * .8)), calc((100cqw - 4 * var(--rpg-mulligan-gap)) / 5));
   gap: var(--rpg-mulligan-gap);
 }
