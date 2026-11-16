@@ -2047,11 +2047,27 @@ restent des cartes rectangulaires normales, avec ATQ à gauche et DÉF à droite
 écusson.
 
 
-### Mise à jour — faces rectangulaires et statistiques en aperçu
+### Mise à jour — l'écu revient sur le plateau, les aperçus restent rectangulaires
 
-Les descriptions d'écusson ci-dessus documentent l'ancien rendu. Toutes les
-cartes ont maintenant une face rectangulaire et utilisent le cadre Le Sablier,
-y compris les Défenseurs et leurs effets. Leurs repères de priorité restent
-visibles. Les aperçus reprennent la disposition du plateau : ATQ au-dessus de
-DÉF, en bas à gauche, avec les valeurs et couleurs de la créature en jeu ;
-le décalage propre aux Défenseurs posés est conservé.
+La PR #1481 avait rendu **toutes** les faces rectangulaires en supprimant les
+masques d'écu. À la demande du joueur (« je veux juste que les créatures avec
+défenseur aient la forme d'écu **EN JEU** », périmètre confirmé :
+**plateau uniquement**), `rpg-bouclier.css` réintroduit la géométrie de l'écu
+**uniquement sur `.rpg-card.rpg-carte-bouclier`** — les créatures Défenseur
+POSÉES en Duel et en MOBA. Les descriptions d'écusson ci-dessus s'appliquent
+donc de nouveau à ces cartes.
+
+**Restent rectangulaires** : les aperçus (survol, appui long, fiche catalogue),
+la main, le mulligan, la main MOBA et les vignettes du catalogue / atelier /
+guide / boosters-Souk. Ils ne portent pas `.rpg-card` et gardent le cadre
+Le Sablier ainsi que leurs statistiques d'aperçu (ATQ au-dessus de DÉF, en bas
+à gauche, avec les valeurs courantes). `rpg-cadre-carte.css` n'est pas
+modifiée : ses règles `:has(> .rpg-cadre-carte)` continuent de régir ces faces,
+et sont surpassées sur le plateau par une spécificité plus forte.
+
+Les repères de priorité ajoutés depuis #1467 / #1478 sont conservés : liseré
+orange (retracé le long de l'écu sur le plateau, rectangulaire en aperçu),
+ombre renforcée qui suit la pointe de l'écu, aura et sonar orange, pastilles
+ATQ/DÉF, pierres d'effets et icône `i-defenseur`. Aucun `outline` sur la carte,
+aucun `clip-path` global : la silhouette vient des `mask-image` appliqués couche
+par couche. Le décalage `translate: 0 -20cqw` du pied reste en place.
