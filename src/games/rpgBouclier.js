@@ -5,14 +5,14 @@
  * et à sa pierre d'emblème (`i-defenseur`). Sa FACE devient l'ÉCUSSON lui-même
  * (voir `rpg-bouclier.css`) : aplat marine, arche haute, flancs droits, vraie
  * pointe en V, aucun rectangle qui dépasse. Reprenant la « Provocation » de
- * Hearthstone, elle ne porte plus de cadre métallique ni de liseré : seule
- * sa silhouette et son ombre portée restent visibles. La pointe du bas n'est
+ * Hearthstone, elle ne porte plus de cadre métallique : sur le plateau, un
+ * fin liseré rouge souligne sa silhouette. La pointe du bas n'est
  * pas coupée : le viewBox des
  * SVG laisse de la marge sous `50 124`. Les EFFETS pleine face (égide de
  * Bouclier et son impact, Furie, Envol, brume, ondes d'Aura, sang, givre)
  * prennent eux aussi la forme de l'écu : `rpg-bouclier.css` les masque et
- * remplace leur contour de boîte par un liseré d'écu coloré, sauf pour le
- * sonar Défenseur qui ne trace aucun cadre fixe. Le masque ne
+ * remplace leur contour de boîte par un liseré d'écu coloré. Un calque
+ * distinct trace un filet rouge plus fin et permanent pour Défenseur. Le masque ne
  * touche qu'aux calques : ATQ/DÉF, type, pierres, compteurs et badges gardent
  * exactement la taille des autres cartes ; le sonar `has-garde` reste présent,
  * dessiné dans la forme de l'écu. Sur le plateau, le pied ATQ/DÉF remonte de

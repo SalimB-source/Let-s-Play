@@ -1953,20 +1953,20 @@ L’armure séparée retrouve une silhouette ouvragée et des veines de métal i
 
 ## L'écu des créatures Défenseur (novembre 2026)
 
+**État actuel :** sur le plateau, un fin trait rouge suit la silhouette de
+l'écu, et la pierre de l'icône Défenseur est rouge sur toutes les surfaces.
+La sélection et les autres états conservent leurs couleurs propres. Le trait
+est fixe même en mouvement réduit et ne change pas les règles de Défenseur.
+
 Les créatures et les héros qui portent **Défenseur** — imprimé sur la carte ou
 reçu en cours de partie — **deviennent l'écusson** : un aplat marine plein,
 arche haute, flancs droits, vraie pointe en V en bas. Il n'y a **aucun
 rectangle qui dépasse**.
 
-Le look reprend la **Provocation / Taunt de Hearthstone** (capture envoyée par
-le joueur), dans une version **affinée** : un **cadre acier biseauté** plus fin
-— dégradé métal clair en haut à gauche, gorge sombre, filet de lumière et
-reflet sur le dôme. Les deux **ailettes / rectangles d'acier** qui dépassaient
-sur les côtés ont été **retirés** à la demande du joueur. Une fine **bordure de
-`--rpg-frame-color`** (la couleur de l'élément, comme le cadre des autres
-cartes) reste visible en liseré autour de l'acier, et une **ombre portée**
-`filter: drop-shadow()` suit l'alpha de l'écu. Aucun `outline`, aucun
-`box-shadow` de boîte, aucun cadre rectangulaire.
+Le look reprend la forme **Provocation / Taunt de Hearthstone**, sans les
+anciennes ailettes ni cadre d'acier : seul un fin liseré rouge épouse l'écu
+sur le plateau. Une **ombre portée** `filter: drop-shadow()` suit l'alpha de
+l'écu. Aucun `outline`, aucun `box-shadow` de boîte, aucun cadre rectangulaire.
 
 **Une créature Défenseur posée est 10 % plus grande.** `rpg-bouclier.css` pose
 `scale: var(--rpg-defenseur-echelle)` (1.1) sur la `.rpg-card` de la table —
@@ -2010,14 +2010,15 @@ Résonance / Malédiction / garde rouge peignaient chacun un rectangle bordé su
 la face. `rpg-bouclier.css` les découpe désormais avec
 `--rpg-ecusson-effet-masque` — le plein de l'écu **plus** un anneau de 8, pour
 que leur petit halo suive la pointe — et neutralise leurs `border`,
-`border-radius` et `box-shadow` de boîte. L'égide, l'impact et les quatre
-sonars retrouvent un **liseré coloré en forme d'écu** sur `::after`, dessiné
-avec `--rpg-ecusson-effet-liseret` : un filet dédié de 3,2 unités, même
-épaisseur apparente que l'ancien `border: 2px`, et un halo `drop-shadow`.
-Leurs dégradés, reflets, ondes, éclats et animations restent inchangés. Les pastilles ATQ/DÉF, les pierres d'effets, les compteurs, le badge
+`border-radius` et `box-shadow` de boîte. L'égide, l'impact et les sonars
+Résonance, Aura et Malédiction retrouvent un **liseré coloré en forme d'écu**
+sur `::after`, dessiné avec `--rpg-ecusson-effet-liseret` (3,2 unités). Le
+fin liseré rouge de Défenseur utilise un calque séparé de 1,6 unité, au-dessus
+du givre et de l'égide, mais sous la sélection et les repères. Leurs dégradés,
+reflets, ondes, éclats et animations restent inchangés. Les pastilles ATQ/DÉF, les pierres d'effets, les compteurs, le badge
 d'arme et les libellés ne sont pas masqués.
 
-Les six SVG de `rpg-bouclier.css` partagent le viewBox **`-5 -5 110 137`**.
+Les SVG de l'écu dans `rpg-bouclier.css` partagent le viewBox **`-5 -5 110 137`**.
 Ce n'est plus la place des ailettes, mais une marge de respiration : le tracé
 s'arrête à la pointe `50 124` et le trait du cadre descend jusqu'à 128, alors
 que le viewBox va jusqu'à 132 — la **pointe du bas n'est donc pas coupée**, et

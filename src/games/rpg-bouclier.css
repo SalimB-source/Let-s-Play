@@ -5,11 +5,12 @@
  * EST la silhouette de l'écusson. Arche haute, flancs droits, vraie pointe en
  * V en bas, aplat marine. Aucun coin rectangulaire ne dépasse.
  *
- * La silhouette seule reste visible : aucun cadre métallique ni liseré de
- * couleur de l'élément. Une ombre portée suit l'alpha sans faire de rectangle.
- * Les SVG partagent le viewBox `-5 -5 110 137`, qui laisse de la marge autour
- * de la pointe `50 124` et aligne les masques et les effets. La sélection
- * temporaire dessine un filet jaune sur ce même tracé, sans cadre au repos.
+ * Un fin trait rouge souligne la silhouette des Défenseurs sur le plateau,
+ * sans cadre métallique ni liseré de la couleur de l'élément. Une ombre portée
+ * suit l'alpha sans faire de rectangle. Les SVG partagent le viewBox
+ * `-5 -5 110 137`, qui laisse de la marge autour de la pointe `50 124` et
+ * aligne les masques et les effets. La sélection temporaire reste prioritaire
+ * et dessine sa couleur sur ce même tracé.
  *
  * EFFETS EN FORME D'ÉCU (demande du joueur : « l'effet bouclier doit prendre la
  * forme de l'écusson et les autres effets du genre aussi ») : l'égide de
@@ -19,8 +20,8 @@
  * désormais masqués par `--rpg-ecusson-effet-masque` (le plein de l'écu PLUS
  * un anneau de 8 pour leur halo). Leurs
  * `border`, `border-radius` et `box-shadow` rectangulaires sont neutralisés.
- * Les effets actifs gardent leur liseré en forme d'écu, sauf le sonar de
- * Défenseur : il ne dessine pas de cadre permanent autour de la silhouette.
+ * Les effets actifs gardent leur liseré en forme d'écu ; un calque distinct
+ * porte le fin trait rouge permanent de Défenseur sur le plateau.
  *
  * Le `mask-image` ne touche PAS aux pastilles ATQ/DÉF, aux pierres d'effets,
  * au badge d'arme, aux compteurs ni aux libellés : ils gardent exactement la
@@ -78,7 +79,7 @@
    Envol, brume, bandeaux de titre / type / texte et voiles restent à l'échelle
    de la carte, sinon leur masque dessinerait un second écu plus petit. */
 .rpg-card.rpg-carte-bouclier > :is(
-  .rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance,
+  .rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance, .rpg-card__liseret-garde,
   .rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-furie-vignette,
   .rpg-card__envol, .rpg-card__brume,
   .rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set
@@ -124,6 +125,9 @@
   /* Fin filet de 3,2 pour le LISERÉ des effets : même épaisseur apparente que
      l'ancien `border: 2px` de l'égide, mais tracé le long de l'écu. */
   --rpg-ecusson-effet-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='3.2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* Un trait plus fin pour distinguer le Défenseur sans concurrencer les
+     contours temporaires de sélection et de blocage. */
+  --rpg-ecusson-defenseur-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='1.6'%20stroke-linejoin='round'/%3E%3C/svg%3E");
   position: relative;
   /* L'aplat marine SUIT la silhouette : transparent ailleurs, donc aucun
      rectangle peint. Le `background-image: none` des cadres ornés est
@@ -151,15 +155,15 @@
   display: none !important;
 }
 
-/* La sélection est temporaire : elle ne rétablit pas le cadre de l'écu au
-   repos. Le même tracé en V sert au clic, au blocage et aux sacrifices, en
-   duel comme en MOBA, sans contour rectangulaire sur mobile. */
+/* La sélection est temporaire et prime sur le fin liseré rouge au repos.
+   Le même tracé en V sert au clic, au blocage et aux sacrifices, en duel
+   comme en MOBA, sans contour rectangulaire sur mobile. */
 .rpg-card.rpg-carte-bouclier:is(.is-active, .is-selected, .is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover, .is-sacrifice, .is-ascension-chosen)::before {
   content: '' !important;
   display: block !important;
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 6;
   background: #ffdf55;
   -webkit-mask-image: var(--rpg-ecusson-effet-liseret);
   mask-image: var(--rpg-ecusson-effet-liseret);
@@ -278,7 +282,7 @@
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--bouclier-couleur-b) 55%, transparent));
 }
 /* Les autres sonars gardent leur teinte : bleu Résonance, or Aura, violet
-   Malédiction. Le sonar Défenseur garde ses ondes sans cadre fixe. */
+   Malédiction. Le liseré Défenseur vit dans un calque séparé. */
 .rpg-card.rpg-carte-bouclier > .rpg-card__resonance::after {
   background-color: rgba(96, 178, 255, .58);
   filter: drop-shadow(0 0 6px rgba(70, 150, 255, .48));
@@ -294,6 +298,30 @@
 .rpg-card.rpg-carte-bouclier > .rpg-card__resonance--garde::after {
   content: none;
   display: none;
+}
+
+/* Devant l'égide et le givre, mais sous la sélection et les badges : le trait
+   reste lisible quand Défenseur coexiste avec un autre effet. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__liseret-garde {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background-color: #e75a4d;
+  -webkit-mask-image: var(--rpg-ecusson-defenseur-liseret);
+  mask-image: var(--rpg-ecusson-defenseur-liseret);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  pointer-events: none;
+}
+/* Coût et statistiques dépassent de l'écusson : le trait et la sélection ne
+   doivent jamais traverser les chiffres. Ces règles ne changent pas leur taille. */
+.rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card__foot),
+.rpg-card.rpg-carte-bouclier.rpg-card--img .rpg-mana-cost.is-plaque {
+  z-index: 7;
 }
 
 /* L'illustration reste sous les voiles et les pastilles. */
