@@ -33,6 +33,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
   <symbol id="i-traque" viewBox="0 0 24 24"><path d="M2 12C4.5 7.2 8.2 4.6 12 4.5c3.8.1 7.5 2.7 10 7.5-2.5 4.8-6.2 7.4-10 7.5-3.8-.1-7.5-2.7-10-7.5Z"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v1.8M12 13.6v1.8M8.6 12h1.8M13.6 12h1.8"/></symbol>
   <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
+  <symbol id="i-blocage" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M7 13l3 3 7-7"/></symbol>
   <symbol id="i-defenseur" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/><path d="M12 6v2M12 14v2M7 11h2M15 11h2"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
   <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
@@ -114,6 +115,7 @@ export const EFFET_ICONE = {
   traque: 'i-traque',
   traquePirates: 'i-traque',
   defenseur: 'i-defenseur',
+  blocage: 'i-blocage',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
   volDeVie: 'i-vol-de-vie',
@@ -185,7 +187,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'defenseur', 'overkill', 'furie', 'esquive',
+  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'defenseur', 'blocage', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement', 'poison',
@@ -234,6 +236,7 @@ export const EFFET_LIBELLES = {
   traque: 'Traque',
   traquePirates: 'Traque',
   defenseur: 'Défenseur',
+  blocage: 'Blocage',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
   volDeVie: 'Vol de vie',
@@ -315,6 +318,7 @@ export function pastillesPourCarte(carte) {
   if (carte.coupCritique || carte.effet?.coupCritique || carte.donne?.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (estDefenseur(carte)) ajouter('defenseur', 'Défenseur');
+  if (carte.blocage) ajouter('blocage', 'Blocage');
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
   // convoi, et le déclencheur de prise du Négociant.
@@ -511,6 +515,7 @@ const MOTIFS_LIGNE = [
   ['coupRapide', /\battaque ciblée/iu],
   ['coupCritique', /\bcoup critique/iu],
   ['defenseur', /\bd[ée]fenseur/iu],
+  ['blocage', /\bblocage\b/iu],
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
@@ -653,6 +658,7 @@ export const EFFET_DEFINITIONS = {
   coupRapide: 'Peut attaquer une créature adverse ou directement, sauf priorité applicable. Contre une créature, inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater sauf effet contraire ; certaines capacités peuvent riposter.',
   coupCritique: 'En combat, 15 % de chances de multiplier les dégâts contre une créature ou l’adversaire : ×4 pour Kagutsuchi, ×2 pour les autres créatures, les armes et le Serment de la forge.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
+  blocage: 'À chaque attaque adverse qui la cible légalement, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Les bonus se cumulent, même si l’attaque est ensuite annulée ou ratée.',
   defenseur: 'Une attaque adverse sans Infiltration doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
@@ -701,6 +707,7 @@ const LIBELLES_IMPRIMES = [
   ['coupCritique', 'Coup critique'],
   ['traque', 'Traque'],
   ['defenseur', 'D[ée]fenseur'],
+  ['blocage', 'Blocage'],
   ['overkill', 'Overkill'],
   ['envol', 'Envol'],
   ['infiltration', 'Infiltration'],

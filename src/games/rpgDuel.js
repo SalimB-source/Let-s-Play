@@ -520,6 +520,23 @@ export function rpgReglerHasard(duel, rng = Math.random) {
   return duel;
 }
 
+/** Blocage se déclenche à chaque annonce d'attaque légale qui vise cette
+ * créature, même si elle rate ou est annulée ensuite. Le bonus est un renfort
+ * temporaire ordinaire : il augmente aussi les PV et expire au tour actif. */
+export function rpgDeclencherBlocage(duel, cote, cible) {
+  const cfg = cible?.blocage ?? duelCardById(cible?.carteId)?.blocage;
+  if (!duel?.[cote] || !cible || !cfg || !duel[cote].creatures.includes(cible)) return false;
+  const chance = Math.min(1, Math.max(0, Number(cfg.chance) || 0));
+  const bonus = Math.max(0, Number(cfg.def) || 0);
+  if (!bonus || !chance || (hasardParDuel.get(duel) ?? Math.random)() >= chance) return false;
+  cible.pvMax = (cible.pvMax ?? cible.def) + bonus;
+  cible.pv += bonus;
+  cible.def += bonus;
+  (duel[cote].bonusTemporaires ??= []).push({ entiteId: cible.id, atk: 0, def: bonus, pvDelta: bonus, tour: duel.tour });
+  duel.log.push(`Blocage : ${cible.name} gagne +${bonus} DEF jusqu’à la fin du tour.`);
+  return true;
+}
+
 /**
  * Nouveau duel : tables vides, 0 sable, puis chaque camp pioche 5 cartes.
  * `decks` : listes d'identifiants de cartes (créatures pour l'instant).
@@ -1709,6 +1726,7 @@ function creerEntiteCreature(carte, duel) {
     malInvocation: carte.kind !== 'site',
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
+    blocage: carte.blocage ? { ...carte.blocage } : null,
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
     envol: Boolean(carte.envol),
     volDeVie: Boolean(carte.volDeVie),
@@ -7297,6 +7315,7 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   // l'attaquant Samouraï avant les blessures, comme dans `rpgLancerAttaque`.
   appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
+  rpgDeclencherBlocage(duel, autre(cote), cible);
 
   gelerAdversaireDePorteur(duel, attaquant, cible);
   gelerAdversaireDePorteur(duel, cible, attaquant);

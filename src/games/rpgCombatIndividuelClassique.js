@@ -2,7 +2,7 @@ import { estDefenseur } from './rpgDefenseur.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
-import { rpgAppliquerBannieresAttaque, rpgAvecCompteurEntitesIsole, rpgEstProtegee, rpgPeutAttaquer, rpgPeutPayer, rpgReglerHasard, rpgResoudreDestructionCiblee, rpgResoudreEchangeIndividuelClassique, rpgVainqueur } from './rpgDuel.js';
+import { rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgAvecCompteurEntitesIsole, rpgEstProtegee, rpgPeutAttaquer, rpgPeutPayer, rpgReglerHasard, rpgResoudreDestructionCiblee, rpgResoudreEchangeIndividuelClassique, rpgVainqueur } from './rpgDuel.js';
 
 const camps = ['joueur', 'sorcier'];
 const autre = (cote) => cote === 'joueur' ? 'sorcier' : 'joueur';
@@ -60,6 +60,7 @@ export function rpgDeclarerAttaqueIndividuelleClassique(duel, cote, attaquantId,
   const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
   attaquant.attaquee = true;
   duel.log.push(`${attaquant.name} annonce une attaque ${cible ? `contre ${cible.name}` : 'directe contre le sorcier'}.`);
+  rpgDeclencherBlocage(duel, autre(cote), cible);
   duel.phase = 'blocage';
   duel.fenetreReponse = true;
   duel.combatDeclare = {

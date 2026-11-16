@@ -79,7 +79,7 @@ test('la Veuve perçoit son Tribut ; le Gardien attire les Attaques ciblées', (
   const assaillant = poser(protection, 'sorcier', 'chien-du-guet');
   assaillant.ready = true; assaillant.coupRapide = true;
   assert.equal(gardien.defenseur, true);
-  assert.deepEqual(pastillesPourCarte(cardById('gardien-des-sept-sceaux')).map((p) => p.cle), ['defenseur']);
+  assert.deepEqual(pastillesPourCarte(cardById('gardien-des-sept-sceaux')).map((p) => p.cle), ['defenseur', 'blocage']);
   assert.equal(rpgLancerAttaque(protection, 'sorcier', [assaillant.id], null, null, null,
     { [assaillant.id]: autre.id }).raison, 'defenseur');
   assert.equal(rpgLancerAttaque(protection, 'sorcier', [assaillant.id], null, null, null,
