@@ -28,13 +28,14 @@ try {
       });
       assert.ok(result.loaded > 0, `${id} : illustration chargée`);
       assert.ok(result.visible, `${id} : illustration visible au centre (${result.clip})`);
-      if (id !== 'site') {
+      if (!['site', 'ascension'].includes(id)) {
         assert.match(result.clip, /^polygon\(/, `${id} : découpe CSS locale`);
         assert.ok(result.coinRogne, `${id} : coins de l’illustration contenus dans le cadre`);
         assert.ok(Number(result.frameZ) < Number(result.iconZ), `${id} : icône au-dessus du cadre`);
         assert.equal(result.frameEvents, 'none', `${id} : cadre non interactif`);
       } else {
-        assert.equal(result.clip, 'none', 'le site sans cadre garde son illustration');
+        assert.equal(result.frameZ, null, `${id} : aucun cadre`);
+        assert.equal(result.clip, 'none', `${id} : illustration sans découpe de cadre`);
       }
       await face.click({ position: { x: 60, y: 80 } });
       assert.equal(await page.locator('body').getAttribute('data-carte-cliquee'), id, `${id} : clic conservé`);
@@ -48,18 +49,13 @@ try {
       const image = face.locator(':scope > img').first();
       await image.waitFor({ state: 'visible' });
       const etat = await image.evaluate((img) => ({ chargee: img.naturalWidth, clip: getComputedStyle(img).clipPath, opacite: Number(getComputedStyle(img).opacity), cadre: Boolean(img.nextElementSibling?.matches('.rpg-cadre-carte')) }));
-      assert.ok(etat.chargee > 0 && etat.opacite > 0 && etat.cadre, `${surface} ${id} : illustration et cadre présents`);
-      assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
+      assert.ok(etat.chargee > 0 && etat.opacite > 0, `${surface} ${id} : illustration présente`);
       if (['samourai-du-dragon-rouge', 'jarl-du-dernier-rempart'].includes(id)) {
-        const cadre = face.locator(':scope > .rpg-cadre-carte--ascension');
-        assert.equal(await cadre.count(), 1, `${surface} ${id} : cadre Ascension`);
-        assert.equal(await cadre.evaluate((el) => getComputedStyle(el).pointerEvents), 'none');
-        assert.match(await cadre.evaluate((el) => getComputedStyle(el).backgroundImage), /cadre-ascension/);
-        const asset = await cadre.evaluate(async (el) => {
-          const url = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1];
-          return url && (await fetch(url)).ok;
-        });
-        assert.ok(asset, `${surface} ${id} : SVG chargé`);
+        assert.equal(etat.cadre, false, `${surface} ${id} : aucun cadre`);
+        assert.equal(await face.locator(':scope > .rpg-cadre-carte').count(), 0);
+      } else {
+        assert.ok(etat.cadre, `${surface} ${id} : cadre présent`);
+        assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
       }
     }
     assert.equal(requetesDecoupe, 0, 'aucune requête de SVG de découpe externe');
