@@ -35,7 +35,14 @@ test('PvP et MOBA : le joueur choisit ou annule le coût de son invocation', { t
     await click(carte(), 'carte PvP après annulation');
     const options = [...document.querySelectorAll('.rpg-choix-cout__carte')];
     assert.equal(options.length, 2); assert.match(options[1].textContent, /Contresort des abîmes/i);
+    assert.match(document.querySelector('.rpg-choix-cout__description').textContent, /défausser de votre main/);
+    assert.match(options[1].querySelector('img').getAttribute('src'), /cards\/contresort-des-abimes\.jpg/);
+    assert.equal(options[1].getAttribute('aria-pressed'), 'false');
+    assert.equal(document.querySelector('.rpg-choix-cout__confirmer').disabled, true);
     await click(options[1], 'seconde magie');
+    assert.equal(options[1].getAttribute('aria-pressed'), 'true');
+    assert.ok(options[1].classList.contains('is-selected'));
+    assert.equal(document.querySelector('.rpg-choix-cout__confirmer').disabled, false);
     await click(document.querySelector('.rpg-choix-cout__actions button:first-child'), 'confirmer PvP');
     await click(document.querySelector('[data-creature-slot-choix="true"]'), 'emplacement PvP');
     assert.equal(intentions[0]?.choixCoutInvocation, 'contresort-des-abimes');
@@ -59,6 +66,7 @@ test('PvP et MOBA : le joueur choisit ou annule le coût de son invocation', { t
     assert.deepEqual(moba.joueur.cimetiere, ['chien-du-guet', 'momie-de-lin']);
     await click(slot(), 'case MOBA après annulation');
     const choix = [...document.querySelectorAll('.rpg-choix-cout__carte')]; assert.equal(choix.length, 2);
+    assert.match(document.querySelector('.rpg-choix-cout__description').textContent, /exiler de votre cimetière/);
     assert.match(choix[1].textContent, /Momie de lin/i); await click(choix[1], 'seconde créature');
     await click(document.querySelector('.rpg-choix-cout__actions button:first-child'), 'confirmer MOBA');
     assert.deepEqual(moba.joueur.cimetiere, ['chien-du-guet']); assert.deepEqual(moba.joueur.exil, ['momie-de-lin']);

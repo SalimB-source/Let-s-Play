@@ -7,8 +7,10 @@ import { createServer } from 'vite';
 
 const wait = (ms) => act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
 
-for (const scenario of ['vol', 'mouvement système réduit', 'mouvement réduit du jeu', 'source absente']) test(`duel : le sacrifice précède la pose — ${scenario}`, async () => {
+for (const scenario of ['vol', 'deux victimes', 'mouvement système réduit', 'mouvement réduit du jeu', 'source absente']) test(`duel : le sacrifice précède la pose — ${scenario}`, async () => {
   const reduit = scenario.startsWith('mouvement');
+  const deuxVictimes = scenario === 'deux victimes';
+  const carteInvoquee = deuxVictimes ? 'orochi' : 'anqa-des-braises';
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/', pretendToBeVisual: true });
   const previous = {};
   for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT']) previous[key] = Object.getOwnPropertyDescriptor(globalThis, key);
@@ -31,12 +33,19 @@ for (const scenario of ['vol', 'mouvement système réduit', 'mouvement réduit 
     const victime = rpgJouerCreature(duel, 'joueur', 'ashigaru-des-braises', null, { emplacement: 3 });
     assert.equal(victime.ok, true, JSON.stringify(victime));
     duel.joueur.invocationNormaleJouee = false;
-    duel.joueur.main = ['anqa-des-braises'];
+    let secondeVictime = null;
+    if (deuxVictimes) {
+      duel.joueur.main = ['chien-du-guet'];
+      secondeVictime = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 1 });
+      assert.equal(secondeVictime.ok, true);
+      duel.joueur.invocationNormaleJouee = false;
+    }
+    duel.joueur.main = [carteInvoquee];
     const intentions = [];
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Page, { pvp: { vue: duel, seq: 1, onIntention: async i => { intentions.push(i); return { ok: true }; }, onQuitter() {}, onAbandon() {} } })));
     const click = async (el) => { assert.ok(el, 'commande présente'); await act(async () => el.click()); };
-    const main = () => document.querySelector('.rpg-hand__card[data-card-id="anqa-des-braises"]');
+    const main = () => document.querySelector(`.rpg-hand__card[data-card-id="${carteInvoquee}"]`);
     assert.ok(main());
     assert.equal(main().dataset.jouable, 'true', `carte jouable : ${main().outerHTML.slice(0, 400)} ; ${document.body.textContent.slice(-1200)}`);
     await click(main());
@@ -50,7 +59,15 @@ for (const scenario of ['vol', 'mouvement système réduit', 'mouvement réduit 
     victimeEl.getBoundingClientRect = () => rect(400, 200, 100, 125);
     document.querySelector('.card-row--equipe [data-creature-slot="4"]').getBoundingClientRect = () => rect(400, 200, 120, 160);
     await click(victimeEl);
-    assert.ok(document.querySelector('[data-rpg-sacrifice-id]'), 'rituel en cours');
+    if (secondeVictime) {
+      const secondeEl = document.querySelector(`.rpg-card--equipe[data-entity-id="${secondeVictime.entite.id}"]`);
+      secondeEl.getBoundingClientRect = () => rect(200, 200, 100, 125);
+      await click(secondeEl);
+    }
+    assert.equal(document.querySelectorAll('[data-rpg-sacrifice-id]').length, deuxVictimes ? 2 : 1, 'un cercle par victime');
+    for (const id of [victime.entite.id, secondeVictime?.entite.id].filter(Boolean)) {
+      assert.ok(document.querySelector(`.rpg-card--equipe[data-entity-id="${id}"]`).classList.contains('is-sacrifice-animating'), 'victime masquée sous la déchirure');
+    }
     assert.ok(main(), 'la carte reste en main pendant le rituel');
     assert.equal(intentions.length, 0, 'aucun paiement avant la fin du rituel');
     if (scenario === 'source absente') main().removeAttribute('data-card-id');
@@ -66,15 +83,22 @@ for (const scenario of ['vol', 'mouvement système réduit', 'mouvement réduit 
       await wait(1900);
       const vol = document.querySelector('[data-rpg-card-flight="creature"]');
       assert.ok(vol, 'vol après le rituel');
+      assert.equal(document.querySelector('[data-rpg-sacrifice-id]'), null, 'cercle retiré avant le vol');
+      assert.equal(document.querySelector('[data-sacrifice-fx="dechirement"]'), null, 'déchirure retirée avant le vol');
+      for (const id of [victime.entite.id, secondeVictime?.entite.id].filter(Boolean)) {
+        assert.ok(document.querySelector(`.rpg-card--equipe[data-entity-id="${id}"]`).classList.contains('is-sacrifice-animating'), 'la victime ne réapparaît pas pendant le vol');
+      }
       assert.equal(vol.style.getPropertyValue('--rpg-flight-dx'), '390px', 'le vol vise la case de la victime');
       assert.equal(vol.style.getPropertyValue('--rpg-flight-dy'), '-265px');
       assert.equal(intentions.length, 0, 'la pose attend l’atterrissage');
       await wait(800);
       assert.equal(intentions.length, 1);
     }
-    assert.deepEqual(intentions[0].sacrificeIds, [victime.entite.id]);
-    assert.ok(document.querySelector('.rpg-card--equipe[data-card-id="anqa-des-braises"]'), 'créature posée');
-    assert.equal(document.querySelector(`.rpg-card--equipe[data-entity-id="${victime.entite.id}"]`), null);
+    assert.deepEqual(intentions[0].sacrificeIds, [victime.entite.id, secondeVictime?.entite.id].filter(Boolean));
+    assert.ok(document.querySelector(`.rpg-card--equipe[data-card-id="${carteInvoquee}"]`), 'créature posée');
+    for (const id of [victime.entite.id, secondeVictime?.entite.id].filter(Boolean)) {
+      assert.equal(document.querySelector(`.rpg-card--equipe[data-entity-id="${id}"]`), null);
+    }
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();
