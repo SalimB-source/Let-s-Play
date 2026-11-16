@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Sablier — éclatement de l'avatar</title>
+  <style>
+    html, body { margin: 0; min-height: 100%; background: #0d0b14; color: #f3e2bb;
+      font: 500 14px/1.5 Georgia, serif; }
+    body { display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
+    #root { width: min(760px, 100%); }
+    h1 { margin: 0 0 4px; font: 800 22px/1.2 Georgia, serif; letter-spacing: .04em; }
+    .intro { margin: 0 0 18px; color: #b6a888; font-size: 13px; }
+    .scene { position: relative; min-height: 340px; border: 1px solid #4a3a22; border-radius: 12px;
+      background: radial-gradient(ellipse at 50% 40%, #2c2338, #100d18 72%); overflow: hidden; }
+    /* Le gabarit minimal qui donne ses repères aux sélecteurs du jeu. */
+    .scene .rpg-battle { position: relative; min-height: 340px; }
+    .scene .card-table { position: relative; min-height: 340px; }
+    /* La feuille du plateau positionne les plaques sur la table : on fixe ici
+       une simple scène côte à côte, avec une spécificité suffisante. */
+    .scene .rpg-battle[data-scene="duel"] .card-table > .rpg-wizard-plate {
+      position: absolute !important; top: 96px !important; bottom: auto !important;
+      left: auto !important; right: auto !important; transform: none !important;
+      display: block; width: 128px !important; height: 128px !important;
+      padding: 0 !important; border: 0 !important; background: transparent !important; }
+    .scene .rpg-battle[data-scene="duel"] .card-table > .rpg-wizard-plate--ennemi { left: 14% !important; }
+    .scene .rpg-battle[data-scene="duel"] .card-table > .rpg-wizard-plate--joueur { right: 14% !important; }
+    .scene .rpg-wizard-plate__avatar { position: absolute; inset: 0; display: block; }
+    .scene .rpg-wizard-plate__avatar > img { position: absolute; z-index: 1; left: 50%; bottom: 2%;
+      width: calc(82% - 6px); height: calc(82% - 6px); transform: translateX(-50%);
+      border-radius: 50%; object-fit: contain; }
+    .legende { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center;
+      font-size: 12px; letter-spacing: .08em; color: #b6a888; }
+    .legende b { color: #f3d28b; }
+    .commandes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+    button { padding: 9px 16px; border: 1px solid #c9a35a; border-radius: 8px;
+      background: linear-gradient(180deg, #6b4d22, #3a2913); color: #ffe7ae;
+      font: 700 13px Georgia, serif; cursor: pointer; }
+    button:hover { filter: brightness(1.18); }
+    .compteur { color: #b6a888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./rpg-avatar-eclatement-smoke.jsx"></script>
+</body>
+</html>

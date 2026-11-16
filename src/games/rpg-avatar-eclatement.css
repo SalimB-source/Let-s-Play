@@ -1,0 +1,99 @@
+/* ── ÉCLATEMENT DE L'AVATAR EN MILLE MORCEAUX ────────────────────────────────
+   Un seul calque, ~1 016 éclats, zéro image nouvelle : chaque morceau est une
+   tranche du WebP du portrait posée sur un fond doré OPAQUE. La trajectoire
+   de chacun vient de variables CSS individuelles (`--x`, `--y`, `--r`, `--d`,
+   `--duree`, `--teinte`) ; une seule `@keyframes` suffit pour tous.
+
+   `--rpg-eclat-portee` est le diamètre du disque, posé par
+   `rpg-avatars-plateau.css` à partir de la taille de la plaque (PC / tactile).
+   Le conteneur devient son propre conteneur de requête : `cqw` se résout donc
+   sur CE disque, et l'explosion garde la même allure à toute taille d'écran. */
+.rpg-avatar-eclatement {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  z-index: 4;
+  display: block;
+  box-sizing: border-box;
+  width: var(--rpg-eclat-portee, 84px);
+  height: var(--rpg-eclat-portee, 84px);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  container-type: inline-size;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.rpg-avatar-eclatement__eclat {
+  position: absolute;
+  /* 100 / 36 = 2.777778 % : la case dans la grille. Un léger débord évite
+     les jours entre deux éclats au tout premier instant. */
+  left: calc(var(--col) * 2.777778%);
+  top: calc(var(--ligne) * 2.777778%);
+  width: calc(2.777778% + .4px);
+  height: calc(2.777778% + .4px);
+  /* Fond doré PLEIN : jamais de transparence, jamais de PNG. Le portrait
+     (WebP à canal alpha) est découpé en 36 × 36 tranches : `background-size`
+     le rend 36 fois plus grand que l'éclat, et `background-position` choisit
+     la tranche (100 / 35 = 2.857143 %). */
+  background-color: #d7ad61;
+  background-image: var(--rpg-eclat-image);
+  background-repeat: no-repeat;
+  background-size: 3600% 3600%;
+  background-position:
+    calc(var(--col) * 2.857143%) calc(var(--ligne) * 2.857143%);
+  box-shadow: inset 0 0 0 .4px rgba(255, 240, 190, .22);
+  filter: brightness(var(--teinte, 1));
+  backface-visibility: hidden;
+  animation: rpg-avatar-eclat-vol var(--duree) cubic-bezier(.16, .68, .32, 1) var(--d) both;
+}
+
+/* Quatre découpes légèrement différentes : à l'instant 0 le disque paraît
+   déjà fendu, sans laisser de grands trous (chaque polygone couvre ~90 % de
+   sa case). En s'éparpillant, les morceaux tournent et révèlent leurs bords. */
+.rpg-avatar-eclatement__eclat--0 { clip-path: polygon(0 0, 100% 4%, 96% 100%, 4% 96%); }
+.rpg-avatar-eclatement__eclat--1 { clip-path: polygon(4% 0, 100% 0, 100% 96%, 0 100%); }
+.rpg-avatar-eclatement__eclat--2 { clip-path: polygon(0 8%, 98% 0, 100% 100%, 6% 94%); }
+.rpg-avatar-eclatement__eclat--3 { clip-path: polygon(0 0, 96% 0, 100% 92%, 4% 100%); }
+
+/* Le choc initial : un éclair doré, bref, qui ne masque pas les éclats. */
+.rpg-avatar-eclatement__flash {
+  position: absolute;
+  inset: -12%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 214, .9) 0%, rgba(255, 205, 110, .42) 36%, transparent 72%);
+  animation: rpg-avatar-eclat-flash 560ms ease-out both;
+}
+
+@keyframes rpg-avatar-eclat-vol {
+  0%   { translate: 0 0; rotate: 0deg; scale: 1; opacity: 1; }
+  9%   { opacity: 1; }
+  100% { translate: var(--x) var(--y); rotate: var(--r); scale: .32; opacity: 0; }
+}
+@keyframes rpg-avatar-eclat-flash {
+  0%   { opacity: 0; scale: .65; }
+  18%  { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1.55; }
+}
+
+/* L'écran de fin attend la fin de l'éclatement (≈ 1,5 s) avant d'arriver.
+   `visibility: hidden` pendant le délai évite que son voile floute la table
+   ou intercepte un clic pendant que les éclats volent. */
+.rpg-overlay--apres-eclat {
+  visibility: hidden;
+  opacity: 0;
+  animation: rpg-overlay-apres-eclat 380ms ease-out 1420ms both;
+}
+@keyframes rpg-overlay-apres-eclat {
+  from { opacity: 0; visibility: hidden; }
+  to   { opacity: 1; visibility: visible; }
+}
+
+/* Mouvement réduit : aucun éclat, l'écran de fin apparaît immédiatement. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-avatar-eclatement { display: none; }
+  .rpg-overlay--apres-eclat { animation: none; opacity: 1; visibility: visible; }
+}
+.rpg-battle.is-reduced .rpg-avatar-eclatement { display: none; }
+.rpg-battle.is-reduced .rpg-overlay--apres-eclat { animation: none; opacity: 1; visibility: visible; }
