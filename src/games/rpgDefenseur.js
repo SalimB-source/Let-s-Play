@@ -9,9 +9,10 @@ import { duelCardById } from './rpgCards.js';
 // représente désormais Défenseur, sans conserver ses anciennes règles.
 export function estDefenseur(entite) {
   // Les anciennes parties ont enregistré les mots-clés imprimés directement
-  // sur l'entité. Le Berserk ne possède plus Défenseur ni son ancien marqueur
-  // de Provocation, mais peut toujours recevoir Défenseur par un autre effet.
-  if (entite?.carteId === 'berserk-des-trois-hivers') {
+  // sur l'entité. Le Berserk et le Jarl au marteau ne possèdent plus leur
+  // Défenseur imprimé ni l'ancien marqueur de Provocation : ils peuvent
+  // toutefois recevoir Défenseur par un effet distinct.
+  if (['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'].includes(entite?.carteId ?? entite?.id)) {
     return Boolean(entite.defenseurAccorde || entite.prioriteAttaqueRapide);
   }
   return Boolean(entite?.defenseur || entite?.defenseurAccorde || entite?.prioriteAttaqueRapide || entite?.provocation

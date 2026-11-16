@@ -92,7 +92,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Invocation spéciale', 'Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
     'le Scorpion affiche Poison, sans l’ancien effet de mort');
-  assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Défenseur', 'Overkill', 'Furie 2']);
+  assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Overkill', 'Furie 2']);
   assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Overkill', 'Furie 2'],
     'le Berserk conserve Overkill et Furie 2 sans Défenseur');
   assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque', 'Compagnie viking'],
@@ -302,7 +302,7 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
     'une pastille qui ne nomme pas la phrase ne la cache pas');
 
   const jarl = effetsDetailles(cardById('jarl-au-marteau-de-guerre'));
-  assert.deepEqual(jarl.pastilles.map((pastille) => pastille.cle), ['defenseur', 'overkill', 'furie']);
+  assert.deepEqual(jarl.pastilles.map((pastille) => pastille.cle), ['overkill', 'furie']);
   assert.equal(jarl.pastilles.find((pastille) => pastille.cle === 'furie').description,
     'Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +2/+0.',
     'la fiche dit seulement « Furie 2. » : la pastille explique l’état, en une phrase');

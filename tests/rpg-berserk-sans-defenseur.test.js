@@ -43,7 +43,7 @@ test('les anciennes sauvegardes perdent le Défenseur imprimé, pas celui donné
   const ancien = { carteId: ID, defenseur: true, provocation: true };
   assert.equal(estDefenseur(ancien), false);
   assert.equal(estDefenseur({ ...ancien, defenseurAccorde: true }), true);
-  assert.equal(estDefenseur({ carteId: 'jarl-au-marteau-de-guerre', defenseur: true }), true);
+  assert.equal(estDefenseur({ carteId: 'jarl-au-marteau-de-guerre', defenseur: true }), false);
 });
 test('la Veilleuse des citernes peut accorder Défenseur au Berserk', () => {
   const d = partie(false);
