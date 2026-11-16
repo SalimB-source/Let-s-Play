@@ -1,4 +1,4 @@
-/* Les trois dessins proviennent des SVG fournis. Le calque est décoratif,
+/* Les dessins proviennent des SVG fournis. Le calque est décoratif,
    au-dessus de la peinture et sous les pierres et les commandes de la face. */
 .rpg-cadre-carte {
   position: absolute;
@@ -8,16 +8,18 @@
   background: center / 100% 100% no-repeat;
   pointer-events: none;
 }
-.rpg-cadre-carte--magie { background-image: url('./assets/cadre-sorts.svg'); }
-.rpg-cadre-carte--arme { background-image: url('./assets/cadre-arme.svg'); }
 .rpg-cadre-carte--creature { background-image: url('./assets/cadre-creature.svg'); }
 
 /* Découper uniquement la peinture : les icônes, les indicateurs de sélection
    et leurs zones de clic peuvent toujours déborder. Ces silhouettes suivent
-   le contour extérieur de chaque SVG (viewBox 179,24 × 256,06). */
-:has(> .rpg-cadre-carte--creature) { --rpg-cadre-decoupe: url('./assets/decoupes-cartes.svg#creature'); }
-:has(> .rpg-cadre-carte--arme) { --rpg-cadre-decoupe: url('./assets/decoupes-cartes.svg#arme'); }
-:has(> .rpg-cadre-carte--magie) { --rpg-cadre-decoupe: url('./assets/decoupes-cartes.svg#magie'); }
+   le contour extérieur de chaque SVG. */
+/* Découpes CSS autonomes : aucun fichier SVG externe ni fragment à charger
+   pour afficher la peinture. Si la découpe n'est pas prise en charge, le
+   navigateur conserve l'illustration entière au lieu de la masquer. Les
+   points suivent les courbes des contours fournis. */
+:has(> .rpg-cadre-carte--creature) {
+  --rpg-cadre-decoupe: polygon(2.23% 1.56%, 97.77% 1.56%, 97.77% 98.44%, 2.23% 98.44%);
+}
 :has(> .rpg-cadre-carte) > img:has(+ .rpg-cadre-carte) {
   clip-path: var(--rpg-cadre-decoupe);
 }
@@ -54,3 +56,10 @@
 .moba__card-art > i { z-index: 2; }
 .moba__slot:has(> .rpg-cadre-carte) > :is(.moba__slot-label, .moba__slot-tag) { z-index: 2; }
 .rpg-atelier__carte-art > .rpg-atelier__cout { position: relative; z-index: 2; }
+
+/* Les éléments de lecture restent au-dessus du cadre. */
+.rpg-terrain-stack__count, .rpg-terrain-stack__engagement,
+.rpg-ascension-card-fallback-stats,
+.moba__mulligan-overlay .moba__mulligan-card > :is(b, small) { z-index: 2; }
+.rpg-cadre-vignette { position: relative; display: block; }
+.rpg-cadre-vignette > img { display: block; width: 100%; }

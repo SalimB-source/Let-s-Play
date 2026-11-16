@@ -13712,7 +13712,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <p id="rpg-renfort-choix-consigne">{duel.renfortChoixEnAttente.recherche ? 'Choisissez une Magie Rapide ou une Sorcellerie dans votre deck pour l’ajouter à votre main.' : source?.id === 'appel-des-marees' ? 'Voici les trois cartes du dessus. Choisissez une créature Eau de coût 3 ou moins ; les autres vont sous le deck.' : source?.id === 'ralliement-des-neiges' ? 'Choisissez une créature de coût 5 dans votre main.' : source?.id === 'veilleur-des-cendres' ? 'Choisissez une créature Ténèbres ou Neige de coût 3 ou moins dans votre cimetière. Elle sera détruite à la fin du tour.' : ['reanimation', 'reveil-de-la-horde', 'passeur-au-masque-de-chacal', 'retour-des-ensevelis'].includes(source?.id) ? 'Choisissez une créature admissible dans votre cimetière.' : source?.id === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : source?.id === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : source?.id === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez une créature Braise de coût 3 dans votre main. Elle sera détruite à la fin du tour.'}</p>
             </header>
             <div className="rpg-renfort-choix__cartes" role="region" aria-label="Cartes proposées" tabIndex={cartes.length ? 0 : undefined}>{cartes.map((c) => <button key={c.index} type="button" className="rpg-renfort-choix__carte" autoFocus={c.index === disponibles[0]?.index} disabled={!c.admissible} onClick={() => choisir(c.index)}>
-              <img src={cardArt(c.id)} alt="" /><strong>{cardById(c.id)?.name}</strong>{(cardById(c.id)?.cost != null || !c.admissible) && <small>{cardById(c.id)?.cost != null ? `Coût ${cardById(c.id).cost}` : ''}{c.admissible ? '' : `${cardById(c.id)?.cost != null ? ' · ' : ''}Non admissible`}</small>}
+              <span className="rpg-cadre-vignette"><img src={cardArt(c.id)} alt="" /><RpgCadreCarte carte={cardById(c.id)} /></span><strong>{cardById(c.id)?.name}</strong>{(cardById(c.id)?.cost != null || !c.admissible) && <small>{cardById(c.id)?.cost != null ? `Coût ${cardById(c.id).cost}` : ''}{c.admissible ? '' : `${cardById(c.id)?.cost != null ? ' · ' : ''}Non admissible`}</small>}
             </button>)}</div>
             {(!disponibles.length || source?.id === 'colosse-du-verre-ardent') && <footer className="rpg-renfort-choix__footer">
               {!disponibles.length && <button type="button" autoFocus className="rpg-btn rpg-btn--primary" onClick={() => choisir(null)}>Aucune invocation possible · Continuer</button>}
@@ -14112,6 +14112,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onMouseLeave={quitterCarteSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
+                <RpgCadreCarte carte={carte} />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
                 {groupe.count > 1 && groupe.tapped > 0 && (
                   <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
@@ -14531,6 +14532,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onBlur={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
+                <RpgCadreCarte carte={carte} />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
                 {groupe.count > 1 && groupe.tapped > 0 && (
                   <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>

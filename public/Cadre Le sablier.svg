@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="OBJECTS" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 179.24 256.06">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #ffd60b;
+      }
+
+      .cls-2 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2, .cls-3 {
+        fill: none;
+        stroke: #ffd60b;
+      }
+
+      .cls-3 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.01px;
+      }
+    </style>
+  </defs>
+  <g>
+    <line class="cls-2" x1="4" y1="226.16" x2="4" y2="29.9"/>
+    <line class="cls-2" x1="145.8" y1="252.06" x2="33.35" y2="252.06"/>
+    <line class="cls-2" x1="175.15" y1="29.9" x2="175.15" y2="226.16"/>
+    <line class="cls-3" x1="33.35" y1="4" x2="145.8" y2="4"/>
+  </g>
+  <g>
+    <polygon class="cls-1" points="25.11 4 9.83 6.9 14.48 13.24 7.28 9.14 4 22.63 4 4 25.11 4"/>
+    <polygon class="cls-1" points="154.14 4 169.42 6.9 164.77 13.24 171.96 9.14 175.24 22.63 175.24 4 154.14 4"/>
+    <polygon class="cls-1" points="25.11 252.06 9.83 249.17 14.48 242.82 7.28 246.92 4 233.44 4 252.06 25.11 252.06"/>
+    <polygon class="cls-1" points="154.14 252.06 169.42 249.17 164.77 242.82 171.96 246.92 175.24 233.44 175.24 252.06 154.14 252.06"/>
+  </g>
+</svg>
