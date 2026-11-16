@@ -18,7 +18,7 @@ export function rpgMobaCombatFeedback(resume, entities, token) {
   }
   for (const critical of resume?.critiques ?? []) {
     const entity = byId.get(critical.entiteId);
-    if (critical.carteId === 'kagutsuchi-flamme-originelle') critiques[critical.entiteId] = { token, fois: critical.fois ?? 4 };
+    if (critical.entiteId) critiques[critical.entiteId] = { token, fois: critical.fois ?? 2 };
     if (entity) phrases.push(`${entity.name} : coup critique ×${critical.fois ?? 2}`);
   }
   return { miss, critiques, annonce: phrases.join(' ; ') };

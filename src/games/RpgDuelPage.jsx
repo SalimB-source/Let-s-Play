@@ -173,6 +173,7 @@ import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
 import RpgMobaBoard from './RpgMobaBoard.jsx';
+import RpgCritiqueVisuel from './RpgCritiqueVisuel.jsx';
 import { RpgMiseAJourCarte } from './RpgMiseAJour.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
@@ -381,9 +382,6 @@ function GlyphePierreElement({ element }) {
   if (element === 'neige') return <ElementEmblem element="neige" />;
   return ELEMENT_GLYPHS[element] ?? '◇';
 }
-/** Kagutsuchi est la seule créature dont le coup critique multiplie par
- *  quatre : son « ×4 » enflammé a droit à sa cinématique de table. */
-const KAGUTSUCHI_ID = 'kagutsuchi-flamme-originelle';
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
 /**
@@ -3249,9 +3247,7 @@ export function TableCard({
           </span>
         )}
         {critiqueFx && (
-          <span key={critiqueFx.token} className="rpg-card__critique" aria-hidden="true">
-            ×{critiqueFx.fois}
-          </span>
+          <RpgCritiqueVisuel key={critiqueFx.token} fois={critiqueFx.fois} />
         )}
       </button>
   );
@@ -7599,8 +7595,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sequenceSlashContreAttaqueRef = useRef(0);
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
-  // Les « ×4 » enflammés de Kagutsuchi : `{ [entityId]: { fois, token } }` le
-  // temps de la cinématique, nourris par `resume.critiques` à chaque combat.
+  // Un jeton et une position par coup, même si sa créature quitte le plateau.
   const [critiquesVisibles, setCritiquesVisibles] = useState({});
   const sequenceCritiqueRef = useRef(0);
   // Les chocs de bouclier en cours : `{ [entityId]: { montant, restant,
@@ -9914,12 +9909,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ?? (deployee ? null : pile.entites
       .map((membre) => missVisibles[membre.id])
       .find(Boolean) ?? null);
-  // Le « ×4 » enflammé de Kagutsuchi suit la même relève que le MISS : la tête
-  // d’une pile repliée porte la cinématique de l’exemplaire caché qui critique.
-  const critiqueDeCarte = (entite, pile, deployee) => critiquesVisibles[entite.id]
-    ?? (deployee ? null : pile.entites
-      .map((membre) => critiquesVisibles[membre.id])
-      .find(Boolean) ?? null);
+  // Une pile repliée porte aussi la cinématique de son exemplaire caché.
+  const critiqueDeCarte = (entite, pile, deployee) => deployee
+    ? critiquesVisibles[entite.id] ?? null
+    : pile.entites.map((membre) => critiquesVisibles[membre.id]).filter(Boolean)
+      .reduce((recent, effet) => !recent || effet.token > recent.token ? effet : recent, null);
   // Même relève pour le choc d'un bouclier : la tête d'une pile repliée
   // porte l'impact de l'exemplaire caché qui vient d'encaisser.
   const bouclierDeCarte = (entite, pile, deployee) => boucliersVisibles[entite.id]
@@ -10322,19 +10316,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, duree);
   };
 
-  /** Allume le « ×4 » enflammé au-dessus de Kagutsuchi quand son coup
-   *  critique part. Seule sa fiche multiplie par quatre (`fois: 4`) : les
-   *  critiques ×2 des autres créatures restent dans le journal, sans
-   *  cinématique dédiée. Le token fait rejouer l’embrasement à chaque coup. */
-  const declencherCritiques = (entrees = [], duree = 1500) => {
-    const cibles = (entrees ?? [])
-      .filter((entree) => entree?.entiteId && entree.carteId === KAGUTSUCHI_ID);
+  /** Relance chaque coup confirmé, avec la position avant disparition. */
+  const declencherCritiques = (entrees = [], positions = [], duree = 1500) => {
+    const cibles = (entrees ?? []).filter((entree) => entree?.entiteId);
     if (!cibles.length) return;
     const token = ++sequenceCritiqueRef.current;
     setCritiquesVisibles((courant) => ({
       ...courant,
       ...Object.fromEntries(cibles.map((entree) => [entree.entiteId, {
-        fois: entree.fois ?? 4,
+        fois: entree.fois ?? 2,
+        position: positions.find((position) => position.entityId === entree.entiteId),
         token,
       }])),
     }));
@@ -10346,7 +10337,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         });
         return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
       });
-    }, duree);
+    }, dureeAnimation(duree));
   };
 
   /** Allume le choc des boucliers qui viennent de tomber (`ImpactBouclier`) :
@@ -10680,6 +10671,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const mouvementReduit = animationsReduites();
     const animationsCombatNouvelles = (duel.combatAnimations ?? [])
       .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
+    declencherCritiques(animationsCombatNouvelles.filter((animation) => animation.type === 'coup-critique'), avant);
     if (!mouvementReduit && animationsCombatNouvelles.some((a) => a.type === 'projectile-combat')) {
       // Attendre le rendu pour mesurer une source qui vient d’arriver. Les
       // victimes et les morts gardent leur emplacement d’avant l’action.
@@ -12741,7 +12733,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animerModificationsChamp(champAvant, res.annule ? [] : [id], debutJournal);
     for (const son of rpgSonsResolutionCombat(res.resume)) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran(cote === 'joueur' ? 'dealt' : 'received');
-    if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     setCombatEntrant(null); setCibleEnCours(null); setBloqueurSelectionne(null);
     if (!res.annule) signalerTutoriel(cote === 'joueur' ? 'attaque-confirmee' : 'combat-adverse-resolu', { entites: [id], attaquants: [id] });
     if (cote === 'joueur' && res.choisirNouvelleCible) {
@@ -12816,7 +12807,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((coup) => coup.rate)
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
-    if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
@@ -12921,7 +12911,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((coup) => coup.rate)
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
-    if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) {
@@ -14010,6 +13999,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         )}
         {sorcierReflechit && <span className="sr-only" role="status" aria-live="polite">Le sorcier réfléchit à son prochain coup.</span>}
+        <p className="sr-only" aria-live="polite">{Object.values(critiquesVisibles).map((effet) => `${effet.position?.name ?? 'Créature'} : coup critique ×${effet.fois}`).join(' ; ')}</p>
 
         {/* Soins : quand VOS PV remontent, les bords de la table s'éclairent
             d'un vert doux — le pendant du voile rouge des coups reçus. La zone
@@ -14355,6 +14345,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <i className="rpg-counterattack-slashes__slash rpg-counterattack-slashes__slash--b" />
           </span>
         ))}
+
+        {Object.entries(critiquesVisibles).map(([id, effet]) => {
+          const encorePresent = [...duel.joueur.creatures, ...duel.sorcier.creatures].some((entite) => entite.id === id);
+          const position = effet.position;
+          if (encorePresent || !position) return null;
+          return <span className="rpg-critique-disparue" key={`${id}-${effet.token}`} style={{ left: position.left, top: position.top, width: position.width, height: position.height }}><RpgCritiqueVisuel fois={effet.fois} /></span>;
+        })}
 
         {cartesEnDestruction.map((effet) => (
           <FantomeCarteDetruite
