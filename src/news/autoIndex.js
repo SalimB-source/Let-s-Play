@@ -1,7 +1,39 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-11-15T12:11:37.484Z — 22 article(s).
+// Dernière génération : 2026-11-16T13:04:21.322Z — 23 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
+  "qssr-marvel-s-spider-man-2-se-fait-plus-beau-sur-ps5-control": {
+    "slug": "qssr-marvel-s-spider-man-2-se-fait-plus-beau-sur-ps5-control",
+    "date": "16.11.2026",
+    "category": "PLAYSTATION · GAMEKULT",
+    "image": "news-auto/qssr-marvel-s-spider-man-2-se-fait-plus-beau-sur-ps5-control-official.jpg",
+    "imageAlt": "QSSR : Marvel's Spider-Man 2 se fait plus beau sur PS5, Control Resonant et d'autres jeux vont suivre — visuel éditorial Let’s Play",
+    "cover": "PS5",
+    "title": "QSSR : MARVEL'S",
+    "accent": "SPIDER-MAN 2 SE FAIT.",
+    "dek": "Comme annoncé en octobre, Sony Interactive Entertainment a étendu sa technologie d'upscaling assisté par l'intelligence artificielle, connue sous le nom de PSSR sur PS5 Pro, aux PS5 traditionnelles.",
+    "lead": "Inaugurée sur Marvel's Wolverine et Ghost of Yōtei, cette technologie est désormais prise en charge sur Marvel's Spider-Man 2. Et quatre autres titres vont suivre dans les prochaines semaines.",
+    "intro": "Sans pousser le concept aussi loin que le PSSR de la PS5 Pro, la technologie QSSR, pour Quick Spectral Super Resolution, est censée apporter des améliorations notables aux jeux concernés, aussi bien en matière de niveau de détail et de netteté que de stabilité de l'image.",
+    "h2": "LES FAITS",
+    "p1": "Fruit des recherches du Project Amethyst, la collaboration à long terme entre les ingénieurs de Sony Interactive Entertainment et ceux d'AMD, le QSSR est donc désormais pris en charge par Marvel's Spider-Man 2, à la fois dans les modes Fidélité et Performance. Déjà aux avant-postes du PSSR, Remedy répondra présent en décembre avec Control Resonant.",
+    "quote": "En tout cas, la propagation du QSSR reste bonne à prendre à l'heure où mettre la main sur une PS5 Pro à prix acceptable est devenu un défi.",
+    "quoteBy": "L’ANALYSE LET’S PLAY",
+    "h2b": "LE CONTEXTE",
+    "p2": "Selon le technicien Erik Jansson, le QSSR permettra à Control Resonant de proposer une image bien plus stable et détaillée. Embark Studios sera également de la partie avec ARC Raiders et The Finals, tout comme Hello Games avec No Man's Sky et Expression Games avec Hell Let Loose. Il faudra toutefois attendre quelques semaines avant que les mises à jour de ces titres ne soient disponibles.",
+    "p3": "Inaugurée...",
+    "p4": "Cet article a été préparé automatiquement par la rédaction Let’s Play à partir de la source citée ci-dessous. Les prochaines communications officielles préciseront la suite. De votre côté, quel élément mérite d’être surveillé en premier ? Dites-le dans les commentaires.",
+    "take": "À RETENIR",
+    "takeText": "",
+    "source": "D’après Gamekult, article consulté le 16.11.2026.",
+    "sourceUrl": "https://www.gamekult.com/actualite/qssr-marvel-s-spider-man-2-se-fait-plus-beau-sur-ps5-control-resonant-et-d-autres-jeux-vont-suivre-3050873003.html",
+    "sourceDetail": "Lire l’article source",
+    "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
+    "sentiment": "mixed",
+    "thumbnail": "news-auto/qssr-marvel-s-spider-man-2-se-fait-plus-beau-sur-ps5-control-official.jpg",
+    "officialThumbnailUrl": "https://cdn.gamekult.com/optim/images/news/30/3050873003/qssr-marvel-s-spider-man-2-se-fait-plus-beau-sur-ps5-control-resonant-et-d-autres-jeux-vont-suivre-8ec63b51__1920_1080__0-926-3840-2160.jpg",
+    "auto": true,
+    "sourceName": "Gamekult"
+  },
   "situation-compliquee-pour-nintendo-zelda-ocarina-of-time-dej": {
     "slug": "situation-compliquee-pour-nintendo-zelda-ocarina-of-time-dej",
     "date": "15.11.2026",
