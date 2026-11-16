@@ -27,9 +27,9 @@
  * au badge d'arme, aux compteurs ni aux libellés : ils gardent exactement la
  * taille des autres cartes et débordent librement (`overflow: visible`).
  * Seule exception demandée ensuite : sur le plateau, le pied ATQ/DÉF remonte
- * de 6 px (un simple `translate`, aucun agrandissement, voir plus bas). Le
- * sonar rouge `has-garde` reste présent, simplement dessiné dans la forme de
- * l'écu.
+ * vers le milieu de la carte (un simple `translate`, aucun agrandissement,
+ * voir plus bas). Le sonar rouge `has-garde` reste présent, simplement dessiné
+ * dans la forme de l'écu.
  *
  * Le joueur a demandé que la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
  * (survol + fiche catalogue) restent des cartes RECTANGULAIRES NORMALES, avec
@@ -40,8 +40,9 @@
  * Enfin, une créature Défenseur posée sur la table est **10 % plus grande** que
  * ses voisines (voir `--rpg-defenseur-echelle` plus bas), avec un peu plus
  * d'espacement entre les emplacements. Les icônes, elles, ne grandissent pas.
- * Et son pied ATQ/DÉF **remonte de 6 px** — « juste un décalage de quelques
- * pixels vers le haut, pas d'agrandissement » — sans qu'aucune taille change.
+ * Et son pied ATQ/DÉF **remonte vers le milieu** (`translate: 0 -20cqw`,
+ * ≈ 16 % de la hauteur de carte) — toujours un simple décalage, jamais
+ * d'agrandissement — sans qu'aucune taille change.
  */
 
 /* TAILLE : une créature Défenseur posée sur la table est « un petit peu plus
@@ -92,24 +93,32 @@
   scale: calc(1 / var(--rpg-defenseur-echelle, 1));
 }
 
-/* ATQ / DÉF REMONTÉS de quelques pixels (demande du joueur : « remonte un peu
-   l'atq et def sur les créatures avec defenseur sur le plateau », précisé en
-   « juste un décalage de quelques pixels vers le haut, pas d'agrandissement »).
-   Le pied de carte ne contient que ces deux pastilles : on le décale de 6 px
-   avec la propriété `translate`, et RIEN d'autre. Pas de `width`, `bottom`,
-   `font-size`, `padding`, `scale`, `zoom` ni `transform` : les pastilles gardent
-   exactement leur taille, leur écart et leurs places à gauche / à droite,
-   seules leurs deux boîtes montent de 6 px dans la carte. `translate` compose
-   avec le `scale` inverse déjà posé sur les enfants directs (il s'applique
-   avant, dans le repère de la carte), et laisse intactes les cinématiques
-   `fx-*` qui animent la carte, pas le pied.
+/* ATQ / DÉF REMONTÉS VERS LE MILIEU (demande du joueur : « remonte un peu
+   l'atq et def sur les créatures avec defenseur sur le plateau », puis
+   « remonte plus vers le milieu de la carte » ; amplitude choisie : 20cqw).
+   Le pied de carte ne contient que ces deux pastilles : on le décale de
+   `20cqw` avec la propriété `translate`, et RIEN d'autre. La carte est son
+   propre conteneur (`container-type: inline-size`), donc 20cqw = 20 % de sa
+   largeur ; avec le rapport 4:5, cela fait ≈ 16 % de sa hauteur : ≈ 34 px
+   sur une carte de 168 px au bureau, ≈ 15 px au doigt. La mesure suit donc
+   TOUTES les tailles de carte sans une seule media query — contrairement à
+   une valeur en px, qui aurait été trop grande sur mobile.
+
+   Pas de `width`, `bottom`, `font-size`, `padding`, `scale`, `zoom` ni
+   `transform` : les pastilles gardent exactement leur taille, leur écart et
+   leurs places à gauche / à droite, seules leurs deux boîtes montent dans la
+   carte. Aucun agrandissement. `translate` compose avec le `scale` inverse
+   déjà posé sur les enfants directs (il s'applique avant, dans le repère de
+   la carte), et laisse intactes les cinématiques `fx-*` qui animent la carte,
+   pas le pied. Le bandeau de type n'est pas rendu sur les cartes de table
+   (voir `scripts/rpg-battle-smoke.jsx`), donc la remontée ne l'écrase pas.
 
    Sélecteur volontairement étroit : `.rpg-card` = une carte POSÉE, et
    `.rpg-carte-bouclier` = un Défenseur. La main, le mulligan, la main MOBA,
    les aperçus et les vignettes du catalogue / atelier / guide / Souk ne
    portent pas la classe et gardent donc leur pied à sa hauteur d'origine. */
 .rpg-card.rpg-carte-bouclier > .rpg-card__foot {
-  translate: 0 -6px;
+  translate: 0 -20cqw;
 }
 
 .rpg-carte-bouclier {

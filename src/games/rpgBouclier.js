@@ -15,8 +15,9 @@
  * distinct trace un filet rouge plus fin et permanent pour Défenseur. Le masque ne
  * touche qu'aux calques : ATQ/DÉF, type, pierres, compteurs et badges gardent
  * exactement la taille des autres cartes ; le sonar `has-garde` reste présent,
- * dessiné dans la forme de l'écu. Sur le plateau, le pied ATQ/DÉF remonte de
- * 6 px (`translate: 0 -6px`), un simple décalage sans agrandissement.
+ * dessiné dans la forme de l'écu. Sur le plateau, le pied ATQ/DÉF remonte vers
+ * le milieu (`translate: 0 -20cqw`, ≈ 16 % de la hauteur de carte), un simple
+ * décalage proportionnel sans agrandissement.
  *
  * Une créature Défenseur POSÉE sur la table est aussi **10 % plus grande** que
  * ses voisines (`scale` sur `.rpg-card` dans `rpg-bouclier.css`), avec un peu
