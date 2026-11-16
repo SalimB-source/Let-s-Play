@@ -8070,7 +8070,7 @@ export function rpgLancerAttaque(
       const ciblesLegales = duel[adv].creatures.filter((entite) =>
         (!duel.moba || attaquant.mobaLane === 'center' || entite.mobaLane === attaquant.mobaLane)
         && !rpgEstProtegee(entite, cardColors(duelCardById(attaquant.carteId))));
-      if (!ciblesDefenseur(ciblesLegales).some((entite) => entite.id === cible.id)) {
+      if (!ciblesDefenseur(ciblesLegales, attaquant).some((entite) => entite.id === cible.id)) {
         return { ok: false, raison: 'defenseur' };
       }
     }

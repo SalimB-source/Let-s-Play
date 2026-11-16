@@ -21,7 +21,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = (duel[autre(cote)]?.creatures ?? []).filter((e) => accessible(attaquant, e, ciblee));
-  const prioritaires = possibles.filter(estDefenseur);
+  const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),

@@ -762,7 +762,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
 
   const candidats = attaquants.map((attaquant) => ({
     attaquant,
-    cibles: ciblesDefenseur(ciblesLegales(duel, cote, duelCardById(attaquant.carteId), 'combat')),
+    cibles: ciblesDefenseur(ciblesLegales(duel, cote, duelCardById(attaquant.carteId), 'combat'), attaquant),
   }));
   const attribution = {};
   let meilleureAttribution = {};

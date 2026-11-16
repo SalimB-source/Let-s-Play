@@ -145,13 +145,23 @@ for (const side of ['joueur', 'sorcier']) {
   }
 }
 
-test('Infiltration peut choisir la voie même face aux créatures, sans ignorer les priorités MOBA', () => {
+test('Infiltration contourne les priorités MOBA', () => {
   const d = position({ infiltration: true }, [entite('sol', 'left'), entite('vol', 'left', { envol: true })]);
   assert.deepEqual(choix(d), { cibles: ['sol'], directe: true });
   d.joueur.creatures[0].envol = true;
   assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: true }, 'Infiltration reste efficace contre un volant');
   d.sorcier.creatures[0].defenseur = true;
-  assert.deepEqual(choix(d), { cibles: ['sol'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: true });
   d.sorcier.creatures[0].defenseur = false; d.sorcier.creatures[1].provocation = true;
-  assert.deepEqual(choix(d), { cibles: ['vol'], directe: false });
+  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: true });
+});
+
+
+test('Infiltration avec Attaque ciblée ignore les Défenseurs sans ignorer voies ou protections', () => {
+  const d = position({ infiltration: true }, [entite('garde', 'left', { defenseur: true }), entite('sol', 'left'), entite('vol', 'left', { envol: true }), entite('cache', 'left', { infiltration: true }), entite('loin', 'right'), entite('site', 'left', { carteId: 'source-de-bimini' })]);
+  assert.deepEqual(choix(d), { cibles: ['garde', 'sol'], directe: true });
+  d.joueur.creatures[0].coupRapide = true;
+  assert.deepEqual(choix(d), { cibles: ['garde', 'sol', 'vol', 'cache', 'loin'], directe: true });
+  d.joueur.creatures[0].infiltration = false;
+  assert.deepEqual(choix(d), { cibles: ['garde'], directe: false });
 });

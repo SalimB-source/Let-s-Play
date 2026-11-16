@@ -42,9 +42,9 @@ export function rpgMobaNotesCarte(carte) {
 
   if (MOBA_EMBUSCADES_IMPRIMEES[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_EMBUSCADES_IMPRIMEES[carte.id].texte} Invocation spéciale sans sacrifice, sans quota et sans consommer l’invocation normale.`);
   if (MOBA_EMBUSCADES_CONDITIONS[carte.id]) notes.push(`Invocation spéciale pendant votre phase principale — ${MOBA_EMBUSCADES_CONDITIONS[carte.id]} Invocation spéciale sans sacrifice et sans consommer l’invocation normale. Sinon, invocation normale pendant votre tour.`);
-  if (estDefenseur(carte)) notes.push('Défenseur : les attaques venant de sa voie doivent la viser en priorité si elle est accessible.');
+  if (estDefenseur(carte)) notes.push('Défenseur : les attaques sans Infiltration venant de sa voie doivent la viser en priorité si elle est accessible.');
   if (carte.envol || carte.furieGains?.envol) notes.push('Envol : peut viser les créatures accessibles au sol ou en vol ; sans ennemi volant accessible, peut aussi attaquer directement.');
-  if (carte.infiltration) notes.push('Infiltration : peut attaquer directement sauf priorité accessible ; ne peut pas être visée par une attaque normale, mais peut être visée par une Attaque ciblée.');
+  if (carte.infiltration) notes.push('Infiltration : ignore la priorité des Défenseurs et peut attaquer directement ; ne peut pas être visée par une attaque normale, mais peut être visée par une Attaque ciblée.');
   if (carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide) notes.push('Attaque ciblée : peut viser une créature sur tout le plateau ou attaquer directement, sauf priorité accessible ; risque d’échec contre une créature.');
   if (carte.honneur) notes.push('Harakiri : à sa mort, frappe une créature adverse au hasard dans sa voie ; à défaut, frappe la voie adverse. Le centre conquis partage les deux flancs actifs.');
   if (carte.overkill || carte.furieGains?.overkill || carte.donne?.overkill || carte.effet?.overkill) notes.push('Overkill : les dégâts qui dépassent la défense de la créature touchée atteignent la voie adverse.');
