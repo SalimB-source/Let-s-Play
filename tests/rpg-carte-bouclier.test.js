@@ -5,8 +5,9 @@
  * intacte sans cadre métallique ni liseré permanent, que les effets pleine
  * face (égide de Bouclier, impact, Furie, Envol, brume, ondes, sang, givre)
  * prennent eux aussi la forme de l'écu, que les Défenseur POSÉS sont 10 % plus
- * grands avec des icônes inchangées et des emplacements plus espacés, que les
- * repères (ATQ/DÉF, type, pierres, sonar) ne sont pas touchés, et que MAIN,
+ * grands avec des icônes inchangées et des emplacements plus espacés, que sur
+ * le plateau leur pied ATQ/DÉF remonte de quelques pixels SANS agrandissement,
+ * que les repères (type, pierres, sonar) ne sont pas touchés, et que MAIN,
  * MULLIGAN, MAIN MOBA et APERÇUS restent des cartes rectangulaires normales
  * avec ATQ à gauche / DÉF à droite.
  */
@@ -235,11 +236,13 @@ test('les effets pleine face prennent la forme de l’écu sans contour permanen
   assert.doesNotMatch(css, /clip-path\s*:/, 'toujours mask-image, jamais clip-path global');
 });
 
-test('ATQ/DÉF et les autres repères restent exactement comme sur les autres cartes', () => {
-  // La feuille de l'écusson ne contient aucune règle de position / de taille
-  // sur les repères : c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi.
+test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gabarit', () => {
+  // La feuille de l'écusson ne contient AUCUNE règle de taille sur les repères :
+  // c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi. La seule exception
+  // est le `translate` de 6 px du pied, testé plus bas : il ne touche à aucun
+  // sélecteur de pastille et ne change aucune mesure.
   for (const selectors of [
-    'rpg-card__foot', 'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
+    'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
     'rpg-hand__stat', 'rpg-card-icones--colonne',
   ]) {
     assert.doesNotMatch(css, new RegExp(selectors), `${selectors} n'est pas touché`);
@@ -251,6 +254,52 @@ test('ATQ/DÉF et les autres repères restent exactement comme sur les autres ca
   assert.match(battleCss, /\.rpg-card--img \.rpg-card__pt/, 'gabarit normal de la DÉF');
   assert.match(mobileCss, /\.rpg-card--img \.rpg-card__foot/, 'gabarit mobile inchangé');
   assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar rouge toujours présent');
+});
+
+test('sur le plateau, ATQ et DÉF remontent de quelques pixels, sans agrandissement', () => {
+  // « juste un décalage de quelques pixels vers le haut, pas d'agrandissement » :
+  // UNE seule règle, UNE seule propriété, sur le pied des seules cartes POSÉES.
+  const regles = [...css.matchAll(/\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{([^}]*)\}/g)];
+  assert.equal(regles.length, 1, 'une unique règle de remontée du pied');
+  const corps = regles[0][1];
+  assert.match(corps, /translate:\s*0 -6px;/, 'décalage de 6 px vers le haut');
+  assert.equal(corps.trim(), 'translate: 0 -6px;', 'rien d’autre que ce décalage');
+
+  // Aucun agrandissement, aucun déplacement latéral, aucun changement de
+  // taille, de police, de marge ou de point d'ancrage.
+  for (const interdit of [
+    /\bwidth\s*:/, /\bheight\s*:/, /\bmax-width\s*:/, /\bmin-width\s*:/,
+    /\bbottom\s*:/, /\btop\s*:/, /\bleft\s*:/, /\bright\s*:/, /\bmargin\s*:/,
+    /\bfont-size\s*:/, /\bpadding\s*:/, /\bgap\s*:/,
+    /\bscale\s*:/, /\bzoom\s*:/, /\btransform\s*:/, /!important/,
+    /--rpg-defenseur-echelle/,
+  ]) assert.doesNotMatch(corps, interdit, `ni ${interdit} dans la remontée`);
+
+  // Le `scale` visuel de la carte et le `scale` inverse des enfants restent
+  // exactement tels quels : la demande ne porte que sur la hauteur du pied.
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*--rpg-defenseur-echelle: 1\.1;[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
+    'l’échelle 1.1 de la carte n’est pas modifiée');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \* \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
+    'les icônes restent ramenées à l’échelle 1');
+
+  // Ciblage étroit : pas de main, mulligan, aperçu, vignette ni variante mobile.
+  for (const exclu of [
+    'rpg-hand__card', 'rpg-mulligan__card', 'rpg-hover-card-preview__face',
+    'rpg-card-catalogue__art', 'rpg-atelier__carte-art', 'rpg-card-guide__example',
+    'rpg-souk__carte', '.card-row', '.moba__',
+  ]) assert.doesNotMatch(regles[0][0], new RegExp(exclu.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `${exclu} n’est pas visé`);
+  assert.doesNotMatch(css, /@media[^{]*\{[^}]*rpg-card__foot/, 'aucune variante par écran');
+
+  // Les gabarits d'origine des autres feuilles restent intacts : le pied d'une
+  // carte normale (et celui des aperçus / mulligan) ne bouge pas d'un pixel.
+  assert.match(battleCss, /\.rpg-card--img \.rpg-card__foot \{[\s\S]{0,300}?bottom: 4%;/,
+    'bottom: 4 % des cartes normales inchangé');
+  assert.match(mobileCss, /bottom: var\(--rpg-field-foot, 3%\)/, 'bottom du tactile inchangé');
+  for (const [nom, source] of [
+    ['rpg-battle.css', battleCss], ['rpg-mobile.css', mobileCss], ['rpg-moba.css', lire('rpg-moba.css')],
+  ]) assert.doesNotMatch(source, /rpg-card__foot[^{]*\{[^}]*translate\s*:/s,
+    `${nom} ne remonte pas le pied des autres cartes`);
 });
 
 test('main, mulligan, main MOBA et aperçus restent des cartes rectangulaires', () => {

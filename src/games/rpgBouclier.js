@@ -14,8 +14,9 @@
  * remplace leur contour de boîte par un liseré d'écu coloré, sauf pour le
  * sonar Défenseur qui ne trace aucun cadre fixe. Le masque ne
  * touche qu'aux calques : ATQ/DÉF, type, pierres, compteurs et badges gardent
- * exactement la place et la taille des autres cartes ; le sonar `has-garde`
- * reste présent, dessiné dans la forme de l'écu.
+ * exactement la taille des autres cartes ; le sonar `has-garde` reste présent,
+ * dessiné dans la forme de l'écu. Sur le plateau, le pied ATQ/DÉF remonte de
+ * 6 px (`translate: 0 -6px`), un simple décalage sans agrandissement.
  *
  * Une créature Défenseur POSÉE sur la table est aussi **10 % plus grande** que
  * ses voisines (`scale` sur `.rpg-card` dans `rpg-bouclier.css`), avec un peu

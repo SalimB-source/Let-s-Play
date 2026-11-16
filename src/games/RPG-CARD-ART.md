@@ -1989,6 +1989,20 @@ héritées par les cinq emplacements via `gap: inherit`) : 12 → 18 px sur bure
 la main, le mulligan, la main MOBA et les aperçus ne portent pas le facteur :
 leur taille et leurs repères restent inchangés.
 
+**Sur le plateau, le pied ATQ/DÉF remonte de 6 px.** Demande du joueur :
+« remonte un peu l'atq et def sur les créatures avec defenseur sur le plateau »,
+précisée en « juste un décalage de quelques pixels vers le haut, pas
+d'agrandissement ». `rpg-bouclier.css` pose donc une seule règle —
+`.rpg-card.rpg-carte-bouclier > .rpg-card__foot { translate: 0 -6px; }` — et
+rien d'autre : ni `width`, ni `bottom`, ni `font-size`, ni `padding`, ni
+`scale`, ni `zoom`, ni `transform`. Le pied ne contient que les deux pastilles :
+elles gardent **exactement** leur taille, leur écart et leurs places à gauche /
+à droite, et montent ensemble de 6 px. `translate` compose avec le `scale`
+inverse déjà posé sur les enfants directs (il s'applique avant, dans le repère
+de la carte) et laisse intactes les cinématiques `fx-*` qui animent la carte,
+pas le pied. Les `bottom: 4 %` / `3 %` des cartes normales, les grilles
+d'aperçu / mulligan et les gabarits MOBA ne sont pas modifiés.
+
 **Les effets prennent la forme de l'écu.** L'égide de Bouclier (violette,
 dorée ou colorée) et son impact de rupture, la vignette de Furie, le souffle
 d'Envol, la brume d'Infiltration, le sang, le givre et les ondes d'Aura /

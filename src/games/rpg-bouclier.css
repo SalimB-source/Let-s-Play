@@ -24,9 +24,11 @@
  *
  * Le `mask-image` ne touche PAS aux pastilles ATQ/DÉF, aux pierres d'effets,
  * au badge d'arme, aux compteurs ni aux libellés : ils gardent exactement la
- * place et la taille des autres cartes et débordent librement
- * (`overflow: visible`). Le sonar rouge `has-garde` reste présent, simplement
- * dessiné dans la forme de l'écu.
+ * taille des autres cartes et débordent librement (`overflow: visible`).
+ * Seule exception demandée ensuite : sur le plateau, le pied ATQ/DÉF remonte
+ * de 6 px (un simple `translate`, aucun agrandissement, voir plus bas). Le
+ * sonar rouge `has-garde` reste présent, simplement dessiné dans la forme de
+ * l'écu.
  *
  * Le joueur a demandé que la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
  * (survol + fiche catalogue) restent des cartes RECTANGULAIRES NORMALES, avec
@@ -37,6 +39,8 @@
  * Enfin, une créature Défenseur posée sur la table est **10 % plus grande** que
  * ses voisines (voir `--rpg-defenseur-echelle` plus bas), avec un peu plus
  * d'espacement entre les emplacements. Les icônes, elles, ne grandissent pas.
+ * Et son pied ATQ/DÉF **remonte de 6 px** — « juste un décalage de quelques
+ * pixels vers le haut, pas d'agrandissement » — sans qu'aucune taille change.
  */
 
 /* TAILLE : une créature Défenseur posée sur la table est « un petit peu plus
@@ -85,6 +89,26 @@
    la carte) : on les ramène, comme les autres repères, à leur taille d'origine. */
 .rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card-element-badge) {
   scale: calc(1 / var(--rpg-defenseur-echelle, 1));
+}
+
+/* ATQ / DÉF REMONTÉS de quelques pixels (demande du joueur : « remonte un peu
+   l'atq et def sur les créatures avec defenseur sur le plateau », précisé en
+   « juste un décalage de quelques pixels vers le haut, pas d'agrandissement »).
+   Le pied de carte ne contient que ces deux pastilles : on le décale de 6 px
+   avec la propriété `translate`, et RIEN d'autre. Pas de `width`, `bottom`,
+   `font-size`, `padding`, `scale`, `zoom` ni `transform` : les pastilles gardent
+   exactement leur taille, leur écart et leurs places à gauche / à droite,
+   seules leurs deux boîtes montent de 6 px dans la carte. `translate` compose
+   avec le `scale` inverse déjà posé sur les enfants directs (il s'applique
+   avant, dans le repère de la carte), et laisse intactes les cinématiques
+   `fx-*` qui animent la carte, pas le pied.
+
+   Sélecteur volontairement étroit : `.rpg-card` = une carte POSÉE, et
+   `.rpg-carte-bouclier` = un Défenseur. La main, le mulligan, la main MOBA,
+   les aperçus et les vignettes du catalogue / atelier / guide / Souk ne
+   portent pas la classe et gardent donc leur pied à sa hauteur d'origine. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__foot {
+  translate: 0 -6px;
 }
 
 .rpg-carte-bouclier {
