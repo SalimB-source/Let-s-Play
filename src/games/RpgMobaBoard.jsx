@@ -364,7 +364,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     source?.setAttribute('data-apercu-source', '');
     focusApercu.current = source?.contains(document.activeElement) ? document.activeElement : (source?.querySelector('.moba__inspect, button:not(:disabled)') ?? source);
     const face = source?.matches('[data-card-id]') ? source : source?.querySelector('.rpg-card[data-card-id]');
-    setApercu({ carteId, entity, dansMain: Boolean(source?.closest('.moba__hand')), armes: (face?.dataset.armes ?? '').split(' ').filter(Boolean), effetsEpuises: (face?.dataset.effetsEpuises ?? '').split(' ').filter(Boolean) });
+    let entiteVisuelle = null;
+    try { entiteVisuelle = face?.dataset.apercuEntite ? JSON.parse(face.dataset.apercuEntite) : null; } catch { /* Aucune face de table. */ }
+    setApercu({ carteId, entity, entiteVisuelle, dansMain: Boolean(source?.closest('.moba__hand')), armes: (face?.dataset.armes ?? '').split(' ').filter(Boolean), effetsEpuises: (face?.dataset.effetsEpuises ?? '').split(' ').filter(Boolean) });
   };
   const fermerApercu = () => {
     sourceApercu.current?.removeAttribute('data-apercu-source');
@@ -1711,7 +1713,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         if (premier && event.shiftKey && document.activeElement === premier) { event.preventDefault(); dernier.focus(); }
         else if (dernier && !event.shiftKey && document.activeElement === dernier) { event.preventDefault(); premier.focus(); }
       }
-    }}><rendu.ApercuCarteAppuiLong carte={rpgMobaCartePourApercu(cardById(apercu.carteId))} notesMoba={rpgMobaNotesCarte(cardById(apercu.carteId))} armes={apercu.armes.map(cardById).filter(Boolean)} furieDeclenchee={Boolean(apercu.entity?.furieDeclenchee)} statsFurie={apercu.entity?.furieDeclenchee ? { atk: apercu.entity.atk, def: apercu.entity.pv } : null} effetsEpuises={apercu.effetsEpuises} onFermer={fermerApercu} /></div>}
+    }}><rendu.ApercuCarteAppuiLong carte={rpgMobaCartePourApercu(cardById(apercu.carteId))} notesMoba={rpgMobaNotesCarte(cardById(apercu.carteId))} armes={apercu.armes.map(cardById).filter(Boolean)} furieDeclenchee={Boolean(apercu.entity?.furieDeclenchee)} statsFurie={apercu.entity?.furieDeclenchee ? { atk: apercu.entity.atk, def: apercu.entity.pv } : null} entite={apercu.entiteVisuelle} effetsEpuises={apercu.effetsEpuises} onFermer={fermerApercu} /></div>}
     {etape === 'choix' && !edition && !annoncePremier && <div className="moba__overlay moba__setup-overlay" role="dialog" aria-modal="true" aria-label="Choix des decks">
       <div className="moba__modal moba__setup">
         <div className="moba__setup-kicker"><span>LE SABLIER</span><i aria-hidden="true">✦</i><span>DUEL SOLO</span></div>

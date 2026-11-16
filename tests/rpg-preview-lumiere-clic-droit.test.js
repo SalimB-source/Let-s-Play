@@ -105,9 +105,8 @@ test('Rendu React + JSDOM : les aperçus restent statiques, y compris au clic dr
       });
       const face = host.querySelector('.rpg-hover-card-preview__face');
       if (!variante) {
-        assert.ok(host.querySelector('.rpg-hover-card-preview--texte-seul'));
-        assert.equal(face, null, 'le survol rapide reste textuel');
-        continue;
+        assert.equal(host.querySelector('.rpg-hover-card-preview--texte-seul'), null);
+        assert.ok(face, 'le survol rapide d’une créature montre sa face');
       }
       assert.ok(face, `${variante} : illustration conservée`);
       assert.equal(host.querySelector('[data-preview-lumiere]'), null);

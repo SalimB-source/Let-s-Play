@@ -31,11 +31,9 @@
  * voir plus bas). Le sonar rouge `has-garde` reste présent, simplement dessiné
  * dans la forme de l'écu.
  *
- * Le joueur a demandé que la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
- * (survol + fiche catalogue) restent des cartes RECTANGULAIRES NORMALES, avec
- * ATQ à gauche et DÉF à droite : ces composants ne posent plus la classe. Voir
- * `rpgBouclier.js` et les composants qui la posent encore (table, catalogue,
- * atelier, guide, boosters).
+ * La main et le mulligan restent rectangulaires. Les aperçus reprennent la
+ * silhouette de leur source : un Défenseur sur table s’y affiche en écusson,
+ * tandis qu’une carte consultée en main reste rectangulaire.
  *
  * Enfin, une créature Défenseur posée sur la table est **10 % plus grande** que
  * ses voisines (voir `--rpg-defenseur-echelle` plus bas), avec un peu plus
@@ -115,8 +113,8 @@
 
    Sélecteur volontairement étroit : `.rpg-card` = une carte POSÉE, et
    `.rpg-carte-bouclier` = un Défenseur. La main, le mulligan, la main MOBA,
-   les aperçus et les vignettes du catalogue / atelier / guide / Souk ne
-   portent pas la classe et gardent donc leur pied à sa hauteur d'origine. */
+   les vignettes du catalogue / atelier / guide / Souk gardent leur pied à sa
+   hauteur d’origine. Les aperçus de table ont leur propre règle équivalente. */
 .rpg-card.rpg-carte-bouclier > .rpg-card__foot {
   translate: 0 -20cqw;
 }

@@ -22,7 +22,8 @@
 .rpg-ascension-zone:hover { border-color: #ffe2a1; transform: translateY(-2px); }
 .rpg-ascension-zone:focus-visible,
 .rpg-ascension-popover button:focus-visible,
-.rpg-ascension-ritual button:focus-visible { outline: 2px solid #ffdfa0; outline-offset: 4px; }
+.rpg-ascension-ritual button:focus-visible,
+.rpg-ascension-ritual :is(.rpg-ascension-board-link, .rpg-ascension-total):focus-visible { outline: 2px solid #ffdfa0; outline-offset: 2px; }
 .rpg-ascension-zone__seal { display: block; width: 27px; height: 34px; flex: 0 0 27px; }
 .rpg-ascension-zone__seal svg { width: 100%; height: 100%; }
 .rpg-ascension-zone__label { display: grid; gap: 4px; }
@@ -92,33 +93,35 @@
   width: 176px;
   max-width: calc(100vw - 16px);
   padding: 0;
-  border: 1px solid #a48a57;
-  border-radius: 6px;
-  color: #ebddbf;
-  background: linear-gradient(160deg, #292117f5, #10100df7);
-  box-shadow: 0 10px 26px #0008, inset 0 0 0 3px #d4b27109;
+  border: 1px solid #b19566;
+  border-radius: 8px;
+  color: #f2e6d1;
+  background: linear-gradient(155deg, #30252a, #17141a 75%);
+  box-shadow: 0 12px 28px #000a, inset 0 0 0 1px #f6d99d18;
   font: 11px/1.35 system-ui, sans-serif;
   text-align: left;
   box-sizing: border-box;
   isolation: isolate;
 }
-.rpg-ascension-popover::after { content: ''; position: absolute; bottom: -5px; left: calc(var(--ascension-arrow-x, 50%) - 4px); width: 8px; height: 8px; background: #16130f; border-right: 1px solid #a48a57; border-bottom: 1px solid #a48a57; rotate: 45deg; pointer-events: none; }
-.rpg-ascension-popover[data-placement="below"]::after { top: -5px; bottom: auto; border: 0; border-left: 1px solid #a48a57; border-top: 1px solid #a48a57; background: #282015; }
-.rpg-ascension-popover > header { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; min-height: 44px; padding-left: 10px; border-bottom: 1px solid #b4975d30; }
-.rpg-ascension-popover h2 { margin: 0 0 2px; color: #f0d9aa; font: 400 15px/1.1 Georgia, serif; }
-.rpg-ascension-popover header small { display: block; color: #9f8d6e; font: 8px/1.3 system-ui, sans-serif; }
-.rpg-ascension-popover .rpg-ascension-close { display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0 5px 0 0; background: transparent; color: #c1a36d; font: 22px/1 system-ui, sans-serif; cursor: pointer; }
-.rpg-ascension-popover .rpg-ascension-close:hover { color: #ffe2a9; background: #d8b7790a; }
-.rpg-ascension-reserve-cards { display: flex; flex-direction: column; align-items: center; gap: 14px; min-height: 0; padding: 11px 10px 12px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #80643d #16130f; }
-.rpg-ascension-reserve-item { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; gap: 6px; width: 100%; min-width: 0; text-align: center; }
+.rpg-ascension-popover::after { content: ''; position: absolute; bottom: -5px; left: calc(var(--ascension-arrow-x, 50%) - 4px); width: 8px; height: 8px; background: #19151b; border-right: 1px solid #b19566; border-bottom: 1px solid #b19566; rotate: 45deg; pointer-events: none; }
+.rpg-ascension-popover[data-placement="below"]::after { top: -5px; bottom: auto; border: 0; border-left: 1px solid #b19566; border-top: 1px solid #b19566; background: #30252a; }
+.rpg-ascension-popover > header { display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; min-height: 48px; padding-left: 10px; border-bottom: 1px solid #d2ab6b4d; }
+.rpg-ascension-popover h2 { margin: 0 0 3px; color: #ffe9c5; font: 700 15px/1.1 Georgia, serif; }
+.rpg-ascension-popover header small { display: block; color: #d0bd9f; font: 10px/1.3 system-ui, sans-serif; }
+.rpg-ascension-popover .rpg-ascension-close { display: grid; place-items: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0 7px 0 0; background: transparent; color: #e6c997; font: 22px/1 system-ui, sans-serif; cursor: pointer; }
+.rpg-ascension-popover .rpg-ascension-close:hover { color: #ffe2a9; background: #d8b7791c; }
+.rpg-ascension-reserve-cards { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; padding: 8px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #a88758 #211a20; }
+.rpg-ascension-reserve-item { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; gap: 7px; box-sizing: border-box; width: 100%; min-width: 0; padding: 7px; border: 1px solid #65554c; border-radius: 7px; background: #282027; text-align: center; }
+.rpg-ascension-reserve-item.is-ready { border-color: #c59c63; background: #35262a; }
 :is(.rpg-battle, .moba) .rpg-ascension-popover .rpg-card,
 .rpg-ascension-card-fallback { width: var(--reserve-card-width); flex: none; aspect-ratio: 4 / 5; min-width: 0; min-height: 0; height: auto; margin: 0; transform: none; rotate: none; translate: none; cursor: pointer; animation: none; }
 :is(.rpg-battle, .moba) .rpg-ascension-popover .rpg-card:hover { transform: none; translate: none; }
 .rpg-ascension-reserve-item.is-ready .rpg-card { outline: 1px solid #e6bf75; outline-offset: 2px; box-shadow: 0 0 14px #edb75228; }
-.rpg-ascension-reserve-name { color: #d7c39d; font: 10px/1.25 Georgia, serif; }
-.rpg-ascension-reserve-status { color: #8e836f; font: 8px/1.2 system-ui, sans-serif; }
-.rpg-ascension-reserve-item.is-ready .rpg-ascension-reserve-status { color: #e3c389; }
-.rpg-ascension-empty { margin: 10px 0; color: #b5a58a; font-size: 11px; text-align: center; }
+.rpg-ascension-reserve-info { display: grid; justify-items: center; gap: 5px; min-width: 0; }
+.rpg-ascension-reserve-name { color: #f4e5cc; font: 700 11px/1.25 system-ui, sans-serif; overflow-wrap: anywhere; }
+.rpg-ascension-reserve-status { color: #d2c2ae; font: 10px/1.25 system-ui, sans-serif; }
+.rpg-ascension-reserve-item.is-ready .rpg-ascension-reserve-status { color: #ffdc98; font-weight: 700; }
+.rpg-ascension-empty { width: 100%; box-sizing: border-box; margin: 0; padding: 16px 8px; border: 1px dashed #796555; border-radius: 6px; color: #d4c6b1; font-size: 11px; text-align: center; }
 .rpg-ascension-card-fallback { position: relative; overflow: hidden; padding: 0; border: 1px solid #977342; border-radius: 6px; background: #100d0a; color: #efd6a6; }
 .rpg-ascension-card-fallback img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rpg-ascension-card-fallback span { position: absolute; inset: auto 0 0; padding: 5px; background: #0a0806d9; }
@@ -155,31 +158,39 @@
   width: min(760px, calc(100% - 24px));
   min-height: 82px;
   padding: 10px;
-  border: 1px solid #a88a52;
-  border-radius: 6px;
-  color: #e2ceaa;
-  background: linear-gradient(110deg, #211b13f5, #11100ef5);
-  box-shadow: 0 6px 25px #0008;
+  border: 1px solid #ae8f5d;
+  border-radius: 8px;
+  color: #f0e0c8;
+  background: linear-gradient(115deg, #30242af7, #17141af7 75%);
+  box-shadow: 0 8px 28px #000a, inset 0 0 0 1px #f6d99d14;
   font-family: system-ui, sans-serif;
   box-sizing: border-box;
 }
 .rpg-ascension-ritual button { min-height: 44px; }
 .rpg-ascension-ritual-art { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 55px; padding: 0; overflow: hidden; border: 1px solid #9f793f; border-radius: 4px; background: #1d160e; cursor: pointer; }
 .rpg-ascension-ritual-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.rpg-ascension-ritual .rpg-ascension-board-link { display: flex; flex-direction: column; justify-content: center; flex: 1; gap: 4px; min-width: 0; padding: 3px 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
-.rpg-ascension-board-link > small { color: #b8965e; font: 8px/1.3 system-ui, sans-serif; letter-spacing: .05em; }
-.rpg-ascension-board-link > strong { display: block; color: #f1dfbb; font: 400 17px/1.15 Georgia, serif; }
-.rpg-ascension-board-link > span { color: #aa9b7f; font: 9px/1.25 system-ui, sans-serif; }
-.rpg-ascension-total { display: grid; gap: 5px; flex: 0 0 132px; min-width: 0; padding: 6px 0; text-align: center; }
-.rpg-ascension-total > strong { display: block; color: #d7c49f; font: 400 22px/1.2 Georgia, serif; white-space: nowrap; }
-.rpg-ascension-total strong small { color: #85755a; font-size: 14px; }
-.rpg-ascension-total > span { color: #aa997a; font: 9px/1.3 system-ui, sans-serif; }
-.rpg-ascension-total.is-exact > strong { color: #f1d197; }
-.rpg-ascension-total.is-exact > span { color: #bacc9d; }
-.rpg-ascension-total.is-invalid > strong, .rpg-ascension-total.is-invalid > span { color: #df9c85; }
-.rpg-ascension-ritual .rpg-ascension-invoke { flex: 0 0 164px; padding: 10px 9px; border: 1px solid #d8b777; border-radius: 3px; background: linear-gradient(110deg, #c2a064, #e6ca90); color: #21180b; font: 600 11px/1.4 system-ui, sans-serif; cursor: pointer; }
-.rpg-ascension-ritual .rpg-ascension-invoke:disabled { border-color: #625037; background: #3b3124; color: #9a886b; cursor: not-allowed; }
-.rpg-ascension-ritual .rpg-ascension-cancel { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid #8c744a50; border-radius: 4px; background: #d5b57608; color: #c0a575; font: 23px/1 system-ui, sans-serif; cursor: pointer; }
+.rpg-ascension-board-wrap { position: relative; flex: 1; min-width: 0; }
+.rpg-ascension-total-wrap { position: relative; flex: 0 0 168px; min-width: 0; }
+.rpg-ascension-scroll-hint { display: none; }
+.rpg-ascension-ritual .rpg-ascension-board-link { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; padding: 3px 0; border: 0; background: transparent; text-align: left; }
+.rpg-ascension-board-link > small { color: #ddc29a; font: 10px/1.3 system-ui, sans-serif; overflow-wrap: anywhere; }
+.rpg-ascension-board-link > strong { display: block; color: #fff0d6; font: 700 17px/1.15 Georgia, serif; overflow-wrap: anywhere; }
+.rpg-ascension-board-link > span { color: #d3c3ae; font: 10px/1.25 system-ui, sans-serif; }
+.rpg-ascension-total { display: grid; gap: 4px; box-sizing: border-box; width: 100%; min-width: 0; padding: 6px 8px; border: 1px solid #8e7453; border-radius: 6px; background: #211b20; text-align: center; }
+.rpg-ascension-total > strong { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; column-gap: 3px; color: #e9d5b1; font: 700 20px/1.15 Georgia, serif; }
+.rpg-ascension-total > strong > span { white-space: nowrap; }
+.rpg-ascension-total strong small { color: #c6b390; font-size: 13px; white-space: nowrap; }
+.rpg-ascension-total > span { color: #dacbb8; font: 10px/1.3 system-ui, sans-serif; overflow-wrap: anywhere; }
+.rpg-ascension-total.is-exact { border-color: #9a9060; }
+.rpg-ascension-total.is-exact > strong { color: #ffe1a5; }
+.rpg-ascension-total.is-exact > span { color: #d5e2be; }
+.rpg-ascension-total.is-invalid { border-color: #a5685c; }
+.rpg-ascension-total.is-invalid > strong, .rpg-ascension-total.is-invalid > span { color: #ffbda9; }
+.rpg-ascension-ritual .rpg-ascension-invoke { flex: 0 0 164px; padding: 10px 9px; border: 1px solid #ecd099; border-radius: 5px; background: linear-gradient(110deg, #c9a96c, #efd59d); color: #21180b; font: 700 11px/1.4 system-ui, sans-serif; cursor: pointer; }
+.rpg-ascension-ritual .rpg-ascension-invoke:hover:not(:disabled) { background: #f4dba9; }
+.rpg-ascension-ritual .rpg-ascension-invoke:disabled { border-color: #71634f; background: #403832; color: #c2b5a2; cursor: not-allowed; }
+.rpg-ascension-ritual .rpg-ascension-cancel { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid #967f64; border-radius: 5px; background: #30252b; color: #f0d2a4; font: 23px/1 system-ui, sans-serif; cursor: pointer; }
+.rpg-ascension-ritual .rpg-ascension-cancel:hover { background: #493238; color: #fff0d5; }
 .rpg-battle.is-ascension-selecting .rpg-hand-dock, .moba.is-ascension-selecting .moba__hand { visibility: hidden; }
 
 /* Les vrais corps du champ sont les seuls boutons de sélection. */
@@ -193,22 +204,45 @@
 .rpg-battle.is-ascension-selecting .rpg-card__activation { display: none; }
 
 @media (max-height: 520px), (max-width: 900px) {
-  .rpg-ascension-popover { --reserve-card-width: 72px; width: 132px; }
+  /* En paysage, la face reste une vraie cible de 44 px et le nom ne
+     disparaît plus : il tient à côté de la carte dans le même petit volet. */
+  .rpg-ascension-popover { --reserve-card-width: 56px; width: 176px; }
   .rpg-ascension-popover h2 { font-size: 14px; }
-  .rpg-ascension-reserve-cards { gap: 10px; padding: 7px 7px 8px; }
-  .rpg-ascension-reserve-item { gap: 5px; }
-  .rpg-ascension-reserve-name { display: none; }
+  .rpg-ascension-reserve-cards { gap: 6px; padding: 6px; }
+  .rpg-ascension-reserve-item { flex-direction: row; gap: 7px; padding: 5px; text-align: left; }
+  .rpg-ascension-reserve-info { justify-items: start; gap: 4px; }
+  .rpg-ascension-reserve-name { font-size: 10px; }
+  .rpg-ascension-reserve-status { font-size: 10px; }
   .rpg-ascension-ritual { bottom: max(6px, env(safe-area-inset-bottom)); min-height: 70px; width: calc(100% - 16px); padding: 6px; gap: 7px; }
-  .rpg-ascension-board-link > small { font-size: 7px; }
-  .rpg-ascension-board-link > strong { font-size: 12px; }
-  .rpg-ascension-board-link > span { font-size: 8px; }
-  .rpg-ascension-total { flex-basis: 91px; gap: 4px; }
-  .rpg-ascension-total > strong { font-size: 18px; }
+  .rpg-ascension-board-link > small { font-size: 9px; }
+  .rpg-ascension-board-link > strong { font-size: 13px; }
+  .rpg-ascension-board-link > span { font-size: 9px; }
+  .rpg-ascension-total-wrap { flex-basis: clamp(112px, 24vw, 145px); }
+  .rpg-ascension-total { gap: 3px; padding: 5px; }
+  .rpg-ascension-total > strong { font-size: 16px; }
   .rpg-ascension-total strong small { font-size: 11px; }
-  .rpg-ascension-total > span { font-size: 8px; }
-  .rpg-ascension-ritual .rpg-ascension-invoke { flex-basis: 132px; font-size: 10px; }
+  .rpg-ascension-total > span { font-size: 9px; }
+  .rpg-ascension-ritual .rpg-ascension-invoke { flex-basis: 118px; font-size: 10px; }
   .rpg-ascension-material-mark { min-height: 18px; padding: 2px 3px; font-size: 7px; }
   .rpg-ascension-material-mark > b { width: 14px; height: 14px; font-size: 10px; }
   .rpg-ascension-material-mark strong { font-size: 9px; }
+}
+/* En portrait étroit, les commandes ne peuvent pas tenir côte à côte. */
+@media (max-width: 500px) and (orientation: portrait) {
+  .rpg-ascension-ritual { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; }
+  .rpg-ascension-board-wrap { grid-column: 2; }
+  .rpg-ascension-total-wrap { grid-column: 1 / -1; }
+  .rpg-ascension-ritual .rpg-ascension-invoke { grid-column: 1 / -1; }
+  .rpg-ascension-ritual .rpg-ascension-cancel { grid-column: 3; grid-row: 1; }
+}
+/* En paysage, les recettes longues ne doivent pas faire monter le bandeau
+   sur les créatures : chaque texte reste lisible par défilement, au doigt ou
+   au clavier, au lieu de rogner les noms ou les coûts. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .rpg-ascension-ritual { max-height: 82px; }
+  .rpg-ascension-ritual .rpg-ascension-board-link,
+  .rpg-ascension-ritual .rpg-ascension-total { max-height: 68px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #c3a477 #282027; }
+  .rpg-ascension-ritual .rpg-ascension-board-link { justify-content: flex-start; }
+  .rpg-ascension-scroll-hint { position: absolute; right: 3px; bottom: 2px; display: block; padding: 1px 3px; border-radius: 3px; background: #171218ed; color: #f3d49b; font: 700 9px/1.15 system-ui, sans-serif; pointer-events: none; }
 }
 @media (prefers-reduced-motion: reduce) { .rpg-ascension-zone { transition: none; } }

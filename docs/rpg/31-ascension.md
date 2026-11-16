@@ -128,7 +128,7 @@ pas une garantie d’équilibrage compétitif.
    et à l’espace réellement disponible.
 3. **Cliquer une face ouvre l’aperçu standard** ; consulter ne sélectionne et
    ne paie rien. La réserve adverse est uniquement consultable.
-4. **« Préparer l’Ascension »** ferme la fenêtre et ouvre le bandeau du bas. La recette est vérifiée puis les présences les plus faibles parmi les combinaisons légales sont proposées automatiquement.
+4. **« Préparer l’Ascension »** ferme la fenêtre et ouvre le bandeau du bas. La recette est vérifiée puis les présences les plus faibles parmi les combinaisons légales sont proposées automatiquement. Le total imprimé et les noms des sacrifices sont regroupés dans un encart distinct. En paysage peu haut, la recette et les sacrifices longs défilent séparément au doigt ou au clavier ; un repère indique la suite, sans faire monter le bandeau sur le champ.
 5. **« Sacrifier et invoquer »** confirme en Duel. En MOBA, **« Choisir l’emplacement »** permet de choisir la case, puis l’annonce ouvre la fenêtre de réponse existante.
 
 **Échap** et le **Retour Android** ferment d’abord la fiche puis la réserve
@@ -137,7 +137,11 @@ zone. Un clic extérieur replie la consultation sans voler le focus d’une
 saisie. La petite fenêtre n’a pas de piège de tabulation ; la fiche garde sa
 navigation modale habituelle. Le rituel accepte Entrée/Espace ; attaques, main et fin de tour y sont neutralisées jusqu’à confirmation ou annulation.
 
-Sur téléphone paysage, la fenêtre reste étroite (132 px, 176 px sur PC).
+Sur téléphone paysage, la fenêtre reste compacte (176 px au maximum, comme sur PC).
+Les cartes y sont disposées à côté de leur nom et de leur état (« Invocable »,
+« Conditions à réunir » ou consultation), qui restent lisibles sans ouvrir la fiche.
+La liste défile indépendamment de l’en-tête et de son bouton de fermeture ; chaque
+face reste une cible tactile d’au moins 44 px.
 Si le bouton adverse est trop près du haut, sa fenêtre se déplie exceptionnellement
 sous lui. La réserve du joueur reste au-dessus dans tous les formats vérifiés.
 La fiche, son titre, ses statistiques et ses bulles restent accessibles sur

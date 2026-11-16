@@ -307,25 +307,26 @@ test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement'
     'bottom: 4 % des cartes normales inchangé');
   assert.match(mobileCss, /bottom: var\(--rpg-field-foot, 3%\)/, 'bottom du tactile inchangé');
   for (const [nom, source] of [
-    ['rpg-battle.css', battleCss], ['rpg-mobile.css', mobileCss], ['rpg-moba.css', lire('rpg-moba.css')],
+    ['rpg-battle.css', battleCss.replace(/\.rpg-hover-card-preview__face\.rpg-carte-bouclier > \.rpg-card__foot \{[^}]*\}/, '')], ['rpg-mobile.css', mobileCss], ['rpg-moba.css', lire('rpg-moba.css')],
   ]) assert.doesNotMatch(source, /rpg-card__foot[^{]*\{[^}]*translate\s*:/s,
     `${nom} ne remonte pas le pied des autres cartes`);
 });
 
-test('main, mulligan, main MOBA et aperçus restent des cartes rectangulaires', () => {
+test('main et mulligan restent rectangulaires ; l’aperçu reprend la silhouette de sa source', () => {
   // Aucun de ces composants ne pose la classe : ce sont les gabarits normaux.
   assert.doesNotMatch(blocApres(duel, "'rpg-mulligan__card'"), /classeBouclier/);
   assert.doesNotMatch(blocApres(duel, "'rpg-hand__card rpg-hand__card--img'"), /classeBouclier/);
   assert.doesNotMatch(lire('RpgMobaBoard.jsx'), /classeBouclier/);
   const ligneApercu = duel.split('\n').find((l) => l.includes('className={`rpg-hover-card-preview__face'));
   assert.ok(ligneApercu);
-  assert.doesNotMatch(ligneApercu, /classeBouclier/, 'pas d’écusson sur l’aperçu');
+  assert.match(ligneApercu, /entite\?\.bouclierVisuel/, 'la silhouette suit la créature posée, pas la carte en main');
+  assert.match(battleCss, /\.rpg-hover-card-preview__face\.rpg-carte-bouclier > \.rpg-card__foot \{[^}]*translate:\s*0 -20cqw;/s, 'le pied suit celui de la carte posée');
   // La main garde son cadre rectangulaire et ses rayons habituels.
   assert.match(battleCss, /\.rpg-hand__card\s*\{[^}]*border-radius:\s*8px;/s, 'la main garde ses coins de carte');
   assert.match(battleCss, /\.rpg-hand__stats/, 'le gabarit des stats de la main est intact');
   // Le pied de l'aperçu garde sa grille deux colonnes : ATQ à gauche, DÉF à droite.
   assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__foot,[\s\S]{0,400}?grid-template-columns:\s*repeat\(2,/, 'ATQ à gauche, DÉF à droite');
-  assert.match(duel, /rpg-hover-card-preview__face[\s\S]{0,1200}?rpg-card__foot/, 'les statistiques restent sur la face d’aperçu');
+  assert.match(duel, /rpg-hover-card-preview__face[\s\S]{0,4500}?rpg-card__foot/, 'les statistiques restent sur la face d’aperçu');
 });
 
 test('les Défenseur posés sont 10 % plus grands, icônes inchangées, emplacements espacés', () => {

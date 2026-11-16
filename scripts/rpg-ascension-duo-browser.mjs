@@ -18,6 +18,7 @@ export async function verifierDuoBrowser(browser, port, dossier) {
     const materiau = id => page.locator(`[data-ascension-material="${id}"]`);
     try {
       await page.goto(`http://127.0.0.1:${port}/?mode=${mode}&scene=${scene}`, { waitUntil: 'networkidle' });
+      await page.waitForFunction(() => Boolean(window.__ASCENSION_TEST_DUEL__));
       await page.waitForFunction(() => [...document.querySelectorAll('.rpg-card[data-entity-id] .rpg-card__img')].every(n => n.complete && n.naturalWidth > 0));
       const avant = await lire(); const ids = [];
       for (const id of carte.materiaux) ids.push(avant.joueur.creatures.find(e => e.carteId === id && !ids.includes(e.id)).id);
@@ -41,6 +42,27 @@ export async function verifierDuoBrowser(browser, port, dossier) {
       assert.equal(await page.locator('[data-ascension-material]').count(), 0, 'sélection automatique');
       assert.equal(await page.locator('.rpg-ascension-total.is-exact').count(), 1);
       assert.equal(await page.locator('.rpg-ascension-invoke').isEnabled(), true);
+      const lecture = await page.locator('.rpg-ascension-ritual').evaluate(n => {
+        const r = n.getBoundingClientRect(), somme = n.querySelector('.rpg-ascension-total > strong');
+        const rect = somme.getBoundingClientRect();
+        return { dansEcran: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+          hauteur: r.height, sommeVisible: somme.scrollWidth <= somme.clientWidth && [...somme.children].every(e => {
+            const c = e.getBoundingClientRect(); return c.left >= rect.left - 1 && c.right <= rect.right + 1;
+          }) };
+      });
+      assert.ok(lecture.dansEcran && lecture.sommeVisible, 'la somme et le coût total restent dans le bandeau');
+      if (tactile) assert.ok(lecture.hauteur <= 82, 'le bandeau ne monte pas sur le champ pour une longue recette');
+      for (const zone of ['.rpg-ascension-board-link', '.rpg-ascension-total']) {
+        const texte = page.locator(zone);
+        assert.equal(await texte.getAttribute('tabindex'), '0', 'lecture défilable accessible au clavier');
+        if (tactile && await texte.evaluate(n => n.scrollHeight > n.clientHeight + 1)) {
+          const hint = texte.locator('..').locator('.rpg-ascension-scroll-hint');
+          assert.equal(await hint.isVisible(), true, 'la suite est signalée');
+          await texte.focus(); await texte.press('End');
+          await page.waitForFunction((selector) => { const n = document.querySelector(selector); return n.scrollTop + n.clientHeight >= n.scrollHeight - 1; }, zone);
+          await hint.waitFor({ state: 'detached' });
+        }
+      }
       const commandes = await page.locator('.rpg-ascension-invoke, .rpg-ascension-cancel').evaluateAll(ns => ns.every(n => {
         const r = n.getBoundingClientRect(); return r.x >= 0 && r.y >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && r.height >= 44 && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('button') === n;
       }));
@@ -59,6 +81,19 @@ export async function verifierDuoBrowser(browser, port, dossier) {
         await panneau.waitFor();
         assert.match(await panneau.textContent(), /Djinn/);
         assert.ok((await panneau.getByRole('button', { name: /Djinn de la première étincelle/ }).count()) > 0);
+        if (mode === 'duel') {
+          const fin = panneau.getByRole('button', { name: /Terminer sans invoquer davantage/ });
+          const disposition = await panneau.evaluate(n => {
+            const rect = n.getBoundingClientRect(), liste = n.querySelector('.rpg-renfort-choix__cartes'), action = n.querySelector('.rpg-renfort-choix__footer button');
+            const a = action.getBoundingClientRect();
+            return { dansEcran: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
+              horizontal: liste.scrollWidth > liste.clientWidth, actionVisible: a.top >= rect.top && a.bottom <= rect.bottom && a.height >= 44 && document.elementFromPoint(a.x + a.width / 2, a.y + a.height / 2)?.closest('button') === action,
+              focusCarte: document.activeElement?.matches('.rpg-renfort-choix__carte:not(:disabled)') };
+          });
+          assert.ok(disposition.dansEcran && !disposition.horizontal && disposition.actionVisible, 'choix et action visibles dans le panneau, même en paysage');
+          assert.equal(disposition.focusCarte, true, 'la première carte admissible reçoit le focus');
+          assert.equal(await fin.isVisible(), true);
+        }
         await choisir(panneau.getByRole('button', { name: /Terminer sans invoquer davantage/ }));
       }
       const apres = await lire(); const e = apres.joueur.creatures.find(e => e.carteId === carte.id);

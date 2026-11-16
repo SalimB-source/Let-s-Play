@@ -135,10 +135,9 @@ try {
     'la lecture accessible suit le même visuel');
 
   const rapideNormal = cas('normal-rapide').querySelector('.rpg-hover-card-preview');
-  assert.ok(rapideNormal.classList.contains('rpg-hover-card-preview--texte-seul'),
-    'l’aperçu rapide d’une carte intacte reste texte seul');
-  assert.equal(rapideNormal.querySelector('.rpg-hover-card-preview__face'), null,
-    'sans illustration, comme avant');
+  assert.equal(rapideNormal.classList.contains('rpg-hover-card-preview--texte-seul'), false,
+    'l’aperçu rapide d’une créature montre aussi sa face');
+  assert.ok(rapideNormal.querySelector('.rpg-hover-card-preview__face'));
 
   for (const nom of ['furie-rapide', 'furie-appui-long']) {
     const rapideFurie = cas(nom).querySelector('.rpg-hover-card-preview');
@@ -269,7 +268,7 @@ assert.equal([...page.matchAll(/statsFurie=\{apercuAppuiFurie\}/g)].length, 3,
   'les trois rendus de l’appui long branchent la Furie');
 assert.equal([...page.matchAll(/statsFurie=\{apercuCatalogueFurie\}/g)].length, 3,
   'et les trois rendus de la fiche');
-assert.match(page, /src=\{estEnFurie \? cardArtFurie\(carte\) : cardArt\(carte\)\}/,
+assert.match(page, /src=\{estEnFurie \? cardArtFurie\(carte\) : \(entite\?\.art \?\? cardArt\(carte\)\)\}/,
   'la face de l’aperçu choisit la peinture selon l’état, comme la table');
 assert.match(css, /\.rpg-hover-card-preview__face\.is-furie\s*\{\s*border-width:\s*0;\s*background-image:\s*none;\s*\}/,
   'la feuille retire tout anneau à la face Furie de la preview');
