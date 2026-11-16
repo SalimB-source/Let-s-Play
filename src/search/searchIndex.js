@@ -1,3 +1,4 @@
+import { dailyNewsListing as news20261116 } from '../news/daily/2026-11-16';
 import { dailyNewsListing as news20261115 } from '../news/daily/2026-11-15';
 import { dailyNewsListing as news20261114 } from '../news/daily/2026-11-14';
 import { dailyNewsListing as news20261113 } from '../news/daily/2026-11-13';
@@ -28,6 +29,7 @@ import { dailyNewsListing as dailyNewsListing20261016 } from '../news/daily/2026
 import { dailyNewsListing as dailyNewsListing20261017 } from '../news/daily/2026-10-17';
 
 const news = [
+  ...news20261116.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...news20261115.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...news20261114.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...news20261113.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),

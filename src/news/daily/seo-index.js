@@ -599,5 +599,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-15",
     "section": "Actualités tech"
+  },
+  "/news/doom-dark-ages-revelations-slaughter-mode-16-novembre": {
+    "title": "DOOM: THE DARK AGES LA SURVIE N’A PLUS DE FIN. — Let’s Play",
+    "description": "Slaughter Mode est annoncé pour ce 16 novembre dans DOOM: The Dark Ages | Revelations. Ce défi de survie enchaîne les vagues aléatoires et les récompenses à risquer, sans supplément pour les détenteurs des contenus éligibles.",
+    "image": "https://i.ytimg.com/vi/RwtRHiZ8zkE/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-16",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/steps-netflix-sortie-20-novembre": {
+    "title": "STEPS LES SŒURS CHANGENT LE CONTE. — Let’s Play",
+    "description": "À surveiller cette semaine : Steps revisite Cendrillon du point de vue de ses demi-sœurs. Netflix annonce le film animé pour le 20 novembre, avec Ali Wong, Stephanie Hsu et Amanda Seyfried au casting vocal original.",
+    "image": "https://i.ytimg.com/vi/tNV4i3BqUGY/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-16",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/app-store-connect-descripteurs-age-16-novembre": {
+    "title": "APP STORE CONNECT L’ÂGE SE PRÉCISE. — Let’s Play",
+    "description": "À partir du 16 novembre, Apple annonce deux nouveaux descripteurs de classification dans App Store Connect : partage de localisation et rencontres/relations. Toutes les apps doivent avoir complété ces déclarations avant le 12 janvier 2027.",
+    "image": "https://developer.apple.com/app-store-connect/images/hero-large_2x.png",
+    "type": "article",
+    "published": "2026-11-16",
+    "section": "Actualités tech"
   }
 };

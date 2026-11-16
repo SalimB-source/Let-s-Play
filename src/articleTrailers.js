@@ -111,6 +111,43 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"doom-dark-ages-revelations-slaughter-mode-16-novembre": {
+  "label": "DOOM: THE DARK AGES",
+  "meta": "BETHESDA · SLAYERS CLUB",
+  "items": [
+    {
+      "id": "RwtRHiZ8zkE",
+      "kind": "trailer",
+      "title": "DOOM: The Dark Ages | Revelations - Slaughter Mode Official Trailer | Available November 16",
+      "channel": "Bethesda Softworks",
+      "note": "Trailer officiel publié le 12 novembre 2026 pour le mode annoncé le 16 novembre. Contenu violent : une connexion YouTube ou une vérification d’âge peut être nécessaire. Ce n’est pas une vidéo nouvellement publiée le 16.",
+      "verified": "16.11.2026"
+    }
+  ],
+  "credit": "Miniature du trailer officiel Slaughter Mode publié par Bethesda Softworks le 12 novembre 2026. © Bethesda Softworks / id Software."
+},
+"cinema/steps-netflix-sortie-20-novembre": {
+  "label": "STEPS",
+  "meta": "NETFLIX TUDUM",
+  "items": [
+    {
+      "id": "tNV4i3BqUGY",
+      "kind": "trailer",
+      "title": "STEPS | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "note": "Bande-annonce officielle publiée le 15 octobre 2026. Illustration de notre sélection du 16 novembre avant la sortie annoncée le 20 ; ce n’est pas un nouveau trailer du jour. Contient des péripéties du film.",
+      "verified": "16.11.2026"
+    }
+  ],
+  "credit": "Miniature et trailer officiels Netflix publiés le 15 octobre 2026. Visuel d’illustration pour la sortie de Steps annoncée le 20 novembre, pas une nouvelle image du 16 novembre."
+},
+"tech/app-store-connect-descripteurs-age-16-novembre": {
+  "label": "APP STORE CONNECT",
+  "meta": "APPLE DEVELOPER",
+  "items": [],
+  "credit": "Illustration officielle de présentation d’App Store Connect sur Apple Developer. Visuel général du service, pas une capture des nouveaux champs de classification. © Apple.",
+  "pending": "Aucune vidéo officielle dédiée à cette évolution n’a été vérifiée. L’illustration générale officielle d’App Store Connect ne représente pas les nouveaux champs du questionnaire ; aucune vidéo générique n’est substituée."
+},
 "fable-deepwood-gameplay-podcast-xbox": {
   "label": "FABLE",
   "meta": "XBOX WIRE",
