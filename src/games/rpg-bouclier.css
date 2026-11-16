@@ -1,38 +1,88 @@
-/* Les Défenseurs gardent leur taille, leurs repères et leur liseré orange,
-   mais leur face, leur cadre et tous leurs effets sont rectangulaires comme
-   ceux des autres cartes. La classe décrit le statut, pas une découpe. */
+/* DÉFENSEUR EN JEU : seules les cartes POSÉES reprennent la forme d'écu.
+
+   Périmètre voulu par le joueur (« je veux juste que les créatures avec
+   défenseur aient la forme d'écu EN JEU »), après clarification : PLATEAU
+   UNIQUEMENT, en Duel comme en MOBA. TOUS les sélecteurs de silhouette
+   portent `.rpg-card` (une carte posée) ET `.rpg-carte-bouclier`. Les aperçus
+   (survol, appui long, fiche catalogue), la main, le mulligan, la main MOBA
+   et les vignettes du catalogue / atelier / guide / Souk ne portent pas
+   `.rpg-card` : ils restent des cartes RECTANGULAIRES avec le cadre Le
+   Sablier, exactement comme après la PR #1481.
+
+   La PR #1481 avait supprimé 273 lignes de masques pour rendre toutes les
+   faces rectangulaires. On réintroduit ici la géométrie de l'écu sur le
+   plateau seulement. `rpg-cadre-carte.css` n'est PAS modifiée : ses règles
+   `:has(> .rpg-cadre-carte)` continuent de s'appliquer aux autres faces, et
+   sont simplement surpassées ici par une spécificité plus forte (deux
+   classes sur la carte) et des `!important` là où elle en posait.
+
+   Les repères de priorité ajoutés depuis #1467 / #1478 sont CONSERVÉS :
+   liseré orange, ombre renforcée, aura et sonar orange, pastilles ATQ/DÉF,
+   pierres d'effets, icône `i-defenseur`. Seuls ceux qui peignaient un
+   rectangle sont redessinés le long de la silhouette. Aucun `outline` sur la
+   carte, aucun `clip-path` global : la découpe vient des `mask-image` de
+   l'écu, appliqués couche par couche. */
 
 /* TAILLE : une créature Défenseur posée sur la table est « un petit peu plus
    grande » (+10 %). On agrandit la carte à l'ÉCRAN avec la propriété `scale`,
    PAS en changeant sa largeur de mise en page : c'est le point clé pour les
    icônes. La boîte de la carte garde exactement la même taille, donc :
-     - les mesures en `cqw` (résolues sur le conteneur de la carte) et toutes
-       les polices / bordures en px des repères restent IDENTIQUES à celles
-       d'une carte normale — aucune compensation à écrire dans les autres
-       feuilles, aucun gabarit de main / mulligan / catalogue à retoucher ;
-     - `scale` composant avec `transform`, les cinématiques `fx-*` et l'ombre
-       `drop-shadow` restent libres ;
+     - les mesures en `cqw` et toutes les polices / bordures en px des repères
+       restent IDENTIQUES à celles d'une carte normale ;
+     - `scale` composant avec `transform`, les cinématiques `fx-*` restent
+       libres ;
      - comme la boîte ne bouge pas, on élargit simplement les gouttières des
-       rangées (`.card-row`, héritées par les cinq emplacements) pour laisser
-       respirer les cartes qui débordent de 5 % de chaque côté.
-
-   Seules les `.rpg-card` de la TABLE portent le facteur : les vignettes du
-   catalogue / atelier / guide / Souk, la main, le mulligan et les aperçus ne
-   sont pas des créatures posées, leur taille et leurs repères sont inchangés. */
+       rangées pour laisser respirer les cartes qui débordent de 5 %.
+   Seules les `.rpg-card` de la TABLE portent le facteur. */
 .rpg-card.rpg-carte-bouclier {
   --rpg-defenseur-echelle: 1.1;
   scale: var(--rpg-defenseur-echelle);
+
+  /* ── GÉOMÉTRIE DE L'ÉCU ────────────────────────────────────────────────
+     Cinq URI autonomes, toutes sur le même tracé : `M1 8 … 50 124 … Z`,
+     viewBox `-5 -5 110 137`. La pointe basse (50 124) reste visible, et le
+     cadre ne rogne rien. La couleur marine est écrite en dur dans les URI
+     encodées, qui ne peuvent pas lire une variable CSS. */
+  --rpg-ecusson-fond: #211d3b;
+  --rpg-ecusson-aplat: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%2833,29,59%29'/%3E%3C/svg%3E");
+  --rpg-ecusson-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3C/svg%3E");
+  --rpg-ecusson-effet-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='8'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  --rpg-ecusson-effet-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='3.2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+  --rpg-ecusson-defenseur-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='1.6'%20stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  /* L'aplat marine SUIT la silhouette : transparent ailleurs, donc AUCUN
+     rectangle peint derrière l'illustration. `background-image` reprend la
+     main sur le `none !important` de `rpg-cadre-carte.css` (deux classes
+     contre une), sans modifier cette feuille ni les autres faces. */
+  background-color: transparent !important;
+  background-image: var(--rpg-ecusson-aplat) !important;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  isolation: isolate;
+}
+
+/* Au repos, plus d'ombre de boîte rectangulaire : l'ombre suit l'écu via le
+   calque `.rpg-card__ombre-garde`. Les états de sélection / blocage gardent
+   LEURS propres contours et halo (ils ne sont pas dans ce `:not()`). */
+.rpg-card.rpg-carte-bouclier:not(.is-active, .is-selected, .is-blocking, .is-blocker-assigned, .is-blocker-target-hover, .is-blocker-selected, .is-sacrifice, .is-ascension-chosen, .is-attacking, .is-target) {
+  box-shadow: none;
 }
 
 /* Les ICÔNES ne grandissent PAS. Tous les enfants directs sont ramenés à
    l'échelle 1 : pastilles ATQ/DÉF, pierres d'effets, losanges de compteurs,
    pastille d'arme, bouton d'activation, libellés, badge d'ascension… Leurs
-   centres suivent l'agrandissement (ils restent aux coins de la grande carte),
-   mais leur taille affichée est exactement celle d'une carte normale. */
+   centres suivent l'agrandissement, mais leur taille affichée est exactement
+   celle d'une carte normale. */
 .rpg-card.rpg-carte-bouclier > * {
   scale: calc(1 / var(--rpg-defenseur-echelle, 1));
 }
-/* Les calques pleine face et le cadre suivent la taille de la carte. */
+/* Les calques pleine face et le cadre suivent la taille de la carte : eux ne
+   doivent PAS être réduits, sinon leur masque d'écu serait plus petit que
+   l'aplat de la carte. */
 .rpg-card.rpg-carte-bouclier > :is(
   .rpg-cadre-carte, .rpg-card__img, .rpg-card__ombre-garde, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance, .rpg-card__liseret-garde,
   .rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-furie-vignette,
@@ -47,36 +97,117 @@
   scale: calc(1 / var(--rpg-defenseur-echelle, 1));
 }
 
-/* ATQ / DÉF REMONTÉS VERS LE MILIEU (demande du joueur : « remonte un peu
-   l'atq et def sur les créatures avec defenseur sur le plateau », puis
-   « remonte plus vers le milieu de la carte » ; amplitude choisie : 20cqw).
-   Le pied de carte ne contient que ces deux pastilles : on le décale de
-   `20cqw` avec la propriété `translate`, et RIEN d'autre. La carte est son
-   propre conteneur (`container-type: inline-size`), donc 20cqw = 20 % de sa
-   largeur ; avec le rapport 4:5, cela fait ≈ 16 % de sa hauteur : ≈ 34 px
-   sur une carte de 168 px au bureau, ≈ 15 px au doigt. La mesure suit donc
-   TOUTES les tailles de carte sans une seule media query — contrairement à
-   une valeur en px, qui aurait été trop grande sur mobile.
-
-   Pas de `width`, `bottom`, `font-size`, `padding`, `scale`, `zoom` ni
-   `transform` : les pastilles gardent exactement leur taille, leur écart et
-   leur placement, seules leurs deux boîtes montent dans la
-   carte. Aucun agrandissement. `translate` compose avec le `scale` inverse
-   déjà posé sur les enfants directs (il s'applique avant, dans le repère de
-   la carte), et laisse intactes les cinématiques `fx-*` qui animent la carte,
-   pas le pied. Le bandeau de type n'est pas rendu sur les cartes de table
-   (voir `scripts/rpg-battle-smoke.jsx`), donc la remontée ne l'écrase pas.
-
-   Sélecteur volontairement étroit : `.rpg-card` = une carte POSÉE, et
-   `.rpg-carte-bouclier` = un Défenseur. La main, le mulligan, la main MOBA,
-   les vignettes du catalogue / atelier / guide / Souk gardent leur pied à sa
-   hauteur d’origine. Les aperçus de table ont leur propre règle équivalente. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__foot {
-  translate: 0 -20cqw;
+/* ── LA SILHOUETTE ─────────────────────────────────────────────────────────
+   Illustration, cadre Le Sablier, calques de sang/givre, bandeaux et voile
+   `::after` : tous découpés dans l'écu. `clip-path: none` annule la découpe
+   rectangulaire que `rpg-cadre-carte.css` pose sur l'image et le `::after` ;
+   la spécificité de ce sélecteur (deux classes + `:is()`) est plus forte.
+   Les pastilles ATQ/DÉF et les pierres d'effets ne sont PAS dans la liste :
+   elles débordent librement, à leur place habituelle. */
+.rpg-card.rpg-carte-bouclier > :is(
+  img, .rpg-card__img, .rpg-card__blood, .rpg-card__frost,
+  .rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set
+),
+.rpg-card.rpg-carte-bouclier > .rpg-cadre-carte,
+.rpg-card.rpg-carte-bouclier::after {
+  -webkit-mask-image: var(--rpg-ecusson-masque);
+  mask-image: var(--rpg-ecusson-masque);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  clip-path: none;
+  border-radius: 0 !important;
 }
 
-/* Trait de priorité au-dessus des effets, sans intercepter la sélection. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__liseret-garde,
+/* ── LES EFFETS PRENNENT LA FORME DE L'ÉCU ─────────────────────────────────
+   Égide de Bouclier, impact de rupture, vignette de Furie, souffle d'Envol,
+   brume d'Infiltration et sonars (Résonance, Aura, Malédiction, garde). On
+   garde leurs dégradés, ondes et animations, mais on neutralise tout ce qui
+   redessinait un rectangle. Le masque « plein + anneau 8 » laisse vivre le
+   petit halo extérieur. */
+.rpg-card.rpg-carte-bouclier > :is(
+  .rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-furie-vignette,
+  .rpg-card__envol, .rpg-card__brume, .rpg-card__resonance
+) {
+  -webkit-mask-image: var(--rpg-ecusson-effet-masque);
+  mask-image: var(--rpg-ecusson-effet-masque);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Le LISERÉ des effets : un fin filet coloré sur `::after`, tracé le long de
+   l'écu (3,2 unités). Il remplace le `border` rectangulaire de l'égide, de
+   l'impact et du sonar, et suit la pointe `50 124`. */
+.rpg-card.rpg-carte-bouclier > :is(.rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-card__resonance)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background-color: rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .62);
+  -webkit-mask-image: var(--rpg-ecusson-effet-liseret);
+  mask-image: var(--rpg-ecusson-effet-liseret);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  filter: drop-shadow(0 0 6px rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .55));
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  pointer-events: none;
+}
+.rpg-card.rpg-carte-bouclier > .rpg-bouclier-impact::after {
+  background-color: rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .88);
+}
+.rpg-card.rpg-carte-bouclier > .rpg-bouclier-egide--colore::after {
+  background-color: color-mix(in srgb, var(--bouclier-couleur-a) 74%, transparent);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--bouclier-couleur-b) 55%, transparent));
+}
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance::after { background-color: rgba(96, 178, 255, .58); }
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--aura::after { background-color: rgba(250, 205, 90, .58); }
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--malediction::after { background-color: rgba(178, 146, 245, .58); }
+/* Le sonar orange de Provocation garde ses ondes : pas de filet supplémentaire. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--garde::after {
+  content: none;
+  display: none;
+}
+
+/* ── REPÈRES DE PRIORITÉ (PR #1467 / #1478) ────────────────────────────────
+   Sur le PLATEAU, le liseré orange suit l'écu : on garde `border: 1px solid
+   #ff982f` pour la couleur calculée, mais le masque ne laisse passer que le
+   filet de l'écu (le fond orange est peint derrière ce même masque). Les
+   APERÇUS gardent leur contour rectangulaire d'origine, inchangé. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__liseret-garde {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 1px solid #ff982f;
+  border-radius: 0;
+  background-color: #ff982f;
+  -webkit-mask-image: var(--rpg-ecusson-defenseur-liseret);
+  mask-image: var(--rpg-ecusson-defenseur-liseret);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  pointer-events: none;
+}
 .rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__liseret-garde {
   position: absolute;
   inset: 0;
@@ -85,15 +216,39 @@
   border-radius: inherit;
   pointer-events: none;
 }
+/* Coût et statistiques dépassent de l'écusson : le trait ne traverse jamais
+   les chiffres. Ces règles ne changent aucune taille. */
 .rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card__foot) { z-index: 7; }
 
-/* L'ombre reste indépendante des animations, mais suit la face rectangulaire. */
+/* L'ombre renforcée suit l'écu : l'aplat est transparent hors de la
+   silhouette, donc `drop-shadow` épouse la pointe au lieu d'un rectangle.
+   Le filtre et le z-index sont exactement ceux vérifiés par les scripts. */
 .rpg-card.rpg-carte-bouclier > .rpg-card__ombre-garde {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: #211d3b;
-  border-radius: inherit;
+  background: var(--rpg-ecusson-aplat) center / 100% 100% no-repeat;
+  border-radius: 0;
   filter: drop-shadow(0 7px 12px rgba(0, 0, 0, .85));
   pointer-events: none;
+}
+
+/* ATQ / DÉF REMONTÉS VERS LE MILIEU (20cqw ≈ 16 % de la hauteur de carte).
+   Le pied de carte ne contient que ces deux pastilles : on le décale de
+   `20cqw` avec la propriété `translate`, et RIEN d'autre. La carte est son
+   propre conteneur (`container-type: inline-size`), la mesure suit donc
+   TOUTES les tailles de carte sans media query. Pas de `width`, `bottom`,
+   `font-size`, `padding`, `scale`, `zoom` ni `transform` : les pastilles
+   gardent exactement leur taille, leur écart et leurs places à gauche / à
+   droite. Aucun agrandissement. `translate` compose avec le `scale` inverse
+   déjà posé sur les enfants directs et laisse intactes les cinématiques
+   `fx-*`, qui animent la carte, pas le pied. Le bandeau de type n'est pas
+   rendu sur les cartes de table, donc la remontée ne l'écrase pas.
+
+   Sélecteur étroit : `.rpg-card` = une carte POSÉE, `.rpg-carte-bouclier` =
+   un Défenseur. La main, le mulligan, la main MOBA et les vignettes gardent
+   leur pied à sa hauteur d'origine ; les aperçus ont leur règle équivalente
+   dans `rpg-battle.css`. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__foot {
+  translate: 0 -20cqw;
 }
