@@ -650,7 +650,10 @@
   display: flex;
   justify-content: space-evenly;
   align-items: flex-end;
-  gap: 12px;
+  /* Un peu plus d’air entre les emplacements : les créatures Défenseur sont
+     10 % plus grandes à l’écran (voir `rpg-bouclier.css`). La grille des cinq
+     cases hérite de cette gouttière (`rpg-creature-slots { gap: inherit; }`). */
+  gap: 18px;
   padding: 0 2%;
 }
 
@@ -1613,7 +1616,7 @@
 .rpg-draft__row .rpg-hand__card:hover { transform: translateY(-10px) scale(1.03); }
 
 @media (max-width: 900px) {
-  .card-row { gap: 8px; }
+  .card-row { gap: 12px; }
   .rpg-card, .rpg-card-prison { width: clamp(104px, 20vw, 140px); }
   .card-row--equipe { bottom: 44%; }
   .rpg-card__text { font-size: 8px; }
@@ -2763,7 +2766,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 @media (max-width: 540px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
-  .card-row { gap: 4px; }
+  .card-row { gap: 6px; }
   .rpg-card, .rpg-card-prison { width: clamp(72px, 19vw, 100px); border-width: 3px; border-radius: 8px; }
   .rpg-card--img .rpg-card__title strong { font-size: 7px; }
   .rpg-card--img .rpg-card__type { font-size: 5.4px; min-height: 9px; padding: 1px 3px; }
@@ -3448,7 +3451,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   height: 21%;
   justify-content: center;
   align-items: center;
-  gap: clamp(7px, 1vw, 14px);
+  gap: clamp(10px, 1.4vw, 19px);
   overflow: visible;
   padding: 6px 8px;
 }
@@ -3644,7 +3647,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-wizard-plate__identity small { display: none; }
   .rpg-wizard-plate__pv { font-size: 12px; }
   .rpg-wizard-plate__zones { font-size: 7px; }
-  .card-row { left: 4%; right: 4%; height: 20%; gap: 3px; padding: 2px; }
+  .card-row { left: 4%; right: 4%; height: 20%; gap: 5px; padding: 2px; }
   .card-row--ennemi { top: 23%; }
   .card-row--equipe { top: 49%; }
   .rpg-card, .rpg-card-prison { width: clamp(68px, 18vw, 96px); border-width: 3px; border-radius: 7px; }

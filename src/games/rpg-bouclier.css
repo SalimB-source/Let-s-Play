@@ -47,7 +47,59 @@
  * ATQ à gauche et DÉF à droite : ces composants ne posent plus la classe. Voir
  * `rpgBouclier.js` et les composants qui la posent encore (table, catalogue,
  * atelier, guide, boosters).
+ *
+ * Enfin, une créature Défenseur posée sur la table est **10 % plus grande** que
+ * ses voisines (voir `--rpg-defenseur-echelle` plus bas), avec un peu plus
+ * d'espacement entre les emplacements. Les icônes, elles, ne grandissent pas.
  */
+
+/* TAILLE : une créature Défenseur posée sur la table est « un petit peu plus
+   grande » (+10 %). On agrandit la carte à l'ÉCRAN avec la propriété `scale`,
+   PAS en changeant sa largeur de mise en page : c'est le point clé pour les
+   icônes. La boîte de la carte garde exactement la même taille, donc :
+     - les mesures en `cqw` (résolues sur le conteneur de la carte) et toutes
+       les polices / bordures en px des repères restent IDENTIQUES à celles
+       d'une carte normale — aucune compensation à écrire dans les autres
+       feuilles, aucun gabarit de main / mulligan / catalogue à retoucher ;
+     - `scale` composant avec `transform`, les cinématiques `fx-*` et l'ombre
+       `drop-shadow` restent libres ;
+     - comme la boîte ne bouge pas, on élargit simplement les gouttières des
+       rangées (`.card-row`, héritées par les cinq emplacements) pour laisser
+       respirer les écus qui débordent de 5 % de chaque côté.
+
+   Seules les `.rpg-card` de la TABLE portent le facteur : les vignettes du
+   catalogue / atelier / guide / Souk, la main, le mulligan et les aperçus ne
+   sont pas des créatures posées, leur taille et leurs repères sont inchangés. */
+.rpg-card.rpg-carte-bouclier {
+  --rpg-defenseur-echelle: 1.1;
+  scale: var(--rpg-defenseur-echelle);
+}
+
+/* Les ICÔNES ne grandissent PAS. Tous les enfants directs sont ramenés à
+   l'échelle 1 : pastilles ATQ/DÉF, pierres d'effets, losanges de compteurs,
+   pastille d'arme, bouton d'activation, libellés, badge d'ascension… Leurs
+   centres suivent l'agrandissement (ils restent aux coins de la grande carte),
+   mais leur taille affichée est exactement celle d'une carte normale. */
+.rpg-card.rpg-carte-bouclier > * {
+  scale: calc(1 / var(--rpg-defenseur-echelle, 1));
+}
+/* Exception : les calques PLEINE FACE doivent, eux, suivre le cadre d'acier et
+   le masque de l'écu. Illustration, sang, givre, sonars, égide, impact, Furie,
+   Envol, brume, bandeaux de titre / type / texte et voiles restent à l'échelle
+   de la carte, sinon leur masque dessinerait un second écu plus petit. */
+.rpg-card.rpg-carte-bouclier > :is(
+  .rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance,
+  .rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-furie-vignette,
+  .rpg-card__envol, .rpg-card__brume,
+  .rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set
+) {
+  scale: 1;
+}
+/* Le coût et la pastille de couleur vivent dans le bandeau de titre (qui suit
+   la carte) : on les ramène, comme les autres repères, à leur taille d'origine. */
+.rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card-element-badge) {
+  scale: calc(1 / var(--rpg-defenseur-echelle, 1));
+}
 
 .rpg-carte-bouclier {
   /* Les URI encodées ne peuvent pas lire une variable CSS : la couleur marine
