@@ -1,4 +1,5 @@
 import RpgCadreCarte from './RpgCadreCarte.jsx';
+import RpgCritiqueVisuel from './RpgCritiqueVisuel.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import { rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
@@ -1221,6 +1222,12 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     const lumieresBrisees = lumieresAvant.filter((entity) => !entity.bouclierLumiere);
     afficherSortFx(Object.fromEntries(lumieresBrisees.map((entity) => [entity.id, { bouclier: { montant: 1, token, lumiere: true } }])));
     const feedback = rpgMobaCombatFeedback(res.resume, combattants, token);
+    // Garder l'emplacement du combattant disparu, indépendamment du fantôme.
+    for (const [id, effet] of Object.entries(feedback.critiques)) {
+      if (!['joueur', 'sorcier'].some((side) => duel[side].creatures.some((entity) => entity.id === id))) {
+        effet.position = avantDestructions.cartes.find((carte) => carte.entityId === id);
+      }
+    }
     if (feedback.annonce || Object.keys(feedback.miss).length || Object.keys(feedback.critiques).length) {
       ajouterRetourCombat({ [token]: feedback });
     }
@@ -1629,6 +1636,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
               && !rpgMobaSortieRemplacee(item, retoursExil));
             const tourbillons = sortiesCase.length > 0 && <div className="moba__departure-zone" aria-hidden="true">{sortiesCase.map((effet) => <TourbillonEau key={effet.effectId} effet={effet} />)}</div>;
             const fantomesCase = rendu?.FantomeCarteDetruite ? fantomes.filter((item) => item.laneId === lane.id && item.side === side && item.slot === i) : [];
+            const critiquesDisparues = Object.entries(combatFeedback?.critiques ?? {}).filter(([, effet]) => effet.position?.laneId === lane.id && effet.position?.side === side && effet.position?.slot === i)
+              .map(([critiqueId, effet]) => <span className="moba__critique-disparue" key={`${critiqueId}-${effet.token}`}><RpgCritiqueVisuel fois={effet.fois} /></span>);
             const adieux = fantomesCase.map((effet) => <rendu.FantomeCarteDetruite key={effet.effectId} effet={effet} onTermine={(effectId) => setFantomes((old) => old.filter((item) => item.effectId !== effectId))} />);
             const invocationEnCours = Boolean(entity && cerclesSacrifice.some((effet) => effet.entiteArriveeId === id || (rituelSacrificeRef.current && effet.entityId === id)));
             const soutien = entity && <>
@@ -1650,6 +1659,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
                 <TableCard ascensionSelection={ascensionSelection} key={`${entity.id}-${invocationEnCours ? 'rituel' : 'pose'}`} entite={entity} cote={side === 'joueur' ? 'joueur' : 'ennemi'} playerTurn={side === actif && etape === 'tour'} actionFx={sortFx[entity.id]?.action ?? combatFx[entity.id] ?? null} miss={combatFeedback?.miss[entity.id]} critiqueFx={combatFeedback?.critiques[entity.id]} soin={soinsCreatures[entity.id] ?? null} bouclierFx={paradesVisuelles[entity.id] ?? null} selected={Boolean(isAttacker)} blocking={Boolean(isBlocked)} declaredAttacker={Boolean(duel.combatDeclare?.attaquants?.includes(id))} canTarget={Boolean(destruction ? mayDeathTarget : site ? maySiteTarget : (maySacrifice || mayPlace || maySpellTarget || mayArrivalTarget || mayBlock || mayTarget || mayTargetRapide))} onClick={action} moba={{ className: `moba__slot has-creature${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id) ? ' is-target' : ''}${sacrificeCible ? ' is-sacrifice' : ''}${combatFeedback?.critiques[id] ? ' is-moba-critique' : ''}`, disabled: destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur), ariaLabel: label, draggable: Boolean(!destruction && peutGlisserBloqueur), onPointerDown: !destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined, onDragStart: !destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined, onDragEnd: finGlissement }} />
                 {adieux.length > 0 && <div className="moba__ghost-zone" aria-hidden="true">{adieux}</div>}
                 {sacrifice}
+                {critiquesDisparues}
                 {soutien}
                 {tourbillons}
               </div>;
@@ -1662,8 +1672,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
                     : carteSite ? ['INSTALLER', 'SITE'] : ['INVOQUER', 'POSER'];
             const slot = <button type="button" data-ascension-material={ascensionSelection?.eligible ? entity.id : undefined} data-ascension-order={ascensionSelection?.numero || undefined} aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : undefined} aria-label={ascensionSelection?.label ?? label} title={entity ? cardById(entity.carteId)?.text || entity.name : undefined} className={`moba__slot${entity ? ' has-creature' : ' is-empty'}${rpgSouffreMalInvocation(entity) ? ' is-summoning-sick' : ''}${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${(cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id)) && id ? ' is-target' : ''}`} disabled={selectionAscension.rituel ? !ascensionSelection?.cliquable : destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur)} draggable={Boolean(!destruction && peutGlisserBloqueur)} onPointerDown={!destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined} onDragStart={!destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined} onDragEnd={finGlissement} onClick={action}>
               {entity ? <><img src={cardArtEntite(entity)} alt="" /><RpgCadreCarte carte={cardById(entity.carteId)} /><span className="moba__slot-label"><b>{entity.name}</b><small><em>⚔ {entity.atk}</em><em>◆ {entity.pv}/{entity.pvMax}</em></small>{etats.length > 0 && <span className="moba__slot-states">{etats.join(' · ')}</span>}</span>{isAttacker && <span className="moba__slot-tag">ATTAQUE</span>}{isBlocked && <span className="moba__slot-tag">BLOQUE</span>}{isRapidTarget && <span className="moba__slot-tag">CIBLÉE</span>}</> : <span className="moba__empty-label" aria-hidden="true"><i>{mayPlace ? '+' : '◇'}</i><span className="moba__empty-label-long">{libelleCase[0]}</span><span className="moba__empty-label-short">{libelleCase[1]}</span></span>}
+              {entity && combatFeedback?.critiques[id] && <RpgCritiqueVisuel key={combatFeedback.critiques[id].token} fois={combatFeedback.critiques[id].fois} />}
             </button>;
-            return adieux.length ? <div className={`moba__ghost-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}<div className="moba__ghost-zone moba__ghost-zone--empty" aria-hidden="true">{adieux}</div>{sacrifice}{soutien}{tourbillons}</div> : <div className={`moba__plain-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}{sacrifice}{soutien}{tourbillons}</div>;
+            return adieux.length ? <div className={`moba__ghost-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}<div className="moba__ghost-zone moba__ghost-zone--empty" aria-hidden="true">{adieux}</div>{sacrifice}{critiquesDisparues}{soutien}{tourbillons}</div> : <div className={`moba__plain-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}{sacrifice}{critiquesDisparues}{soutien}{tourbillons}</div>;
           })}</div>
         </div>)}
       </section>)}

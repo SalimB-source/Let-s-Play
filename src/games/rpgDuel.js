@@ -8519,13 +8519,14 @@ export function rpgLancerAttaque(
     attaquantsBloques: [...attaquantsDejaBloques],
     attaquantsLiberes: [],
     // Chaque coup critique porté pendant le combat : `{ entiteId, fois }`.
-    // La table y lit ses cinématiques (le « ×4 » enflammé de Kagutsuchi),
+    // La table y lit ses cinématiques de coups critiques,
     // frappes ciblées, combats bloqués et attaques directes confondus.
     critiques: [],
   };
   const enregistrerCritique = (entite, fois) => {
     if (!entite || !fois) return;
     resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois });
+    journaliserAnimationCombat(duel, { type: 'coup-critique', entiteId: entite.id, carteId: entite.carteId, fois });
   };
   // Les critiques des Attaques ciblées sont déjà dans les frappes rapides.
   for (const frappe of frappesRapides) {
@@ -9008,7 +9009,10 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
   const calculForce = (entite, bonus = 0) => {
     const base = estGelee(entite) ? 0 : Math.max(0, Number(entite.atk) || 0) + bonus;
     const resultat = tirerCoupCritique(entite, base, rng);
-    if (resultat.critique) resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois: resultat.fois });
+    if (resultat.critique) {
+      resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois: resultat.fois });
+      journaliserAnimationCombat(duel, { type: 'coup-critique', entiteId: entite.id, carteId: entite.carteId, fois: resultat.fois });
+    }
     return resultat.force;
   };
   const armeId = attaquant.arme?.carteId ?? null;

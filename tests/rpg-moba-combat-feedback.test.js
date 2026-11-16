@@ -14,7 +14,7 @@ test('combat feedback reads resolved outcomes, not declarations', () => {
   ] };
   const result = rpgMobaCombatFeedback(summary, entities, 17);
   assert.deepEqual(result.miss, { archer: { token: 17 } });
-  assert.deepEqual(result.critiques, { k: { token: 17, fois: 4 } });
+  assert.deepEqual(result.critiques, { k: { token: 17, fois: 4 }, g: { token: 17, fois: 2 } });
   assert.match(result.annonce, /Archère : attaque ciblée manquée/);
   assert.match(result.annonce, /Aigle : attaque ciblée annulée, cible absente/);
   assert.match(result.annonce, /Kagutsuchi : coup critique ×4/);

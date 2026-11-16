@@ -277,3 +277,52 @@ test('deux répliques successives conservent leurs X indépendamment', () => pla
   await wait(1800);
   assert.equal(document.querySelectorAll('[data-moba-counterattack]').length, 0);
 }));
+
+for (const reduit of [false, true]) test(`critique standard ×2 sur la carte, même en mouvement ${reduit ? 'réduit' : 'normal'}`, () => plateau(async ({ duel, engine, core, render, click }) => {
+  duel.joueur.manaChoixEnAttente = null;
+  duel.joueur.main = ['ashigaru-des-braises']; duel.joueur.mana.braise = 30;
+  const critique = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  critique.coupCritique = { chance: 1, fois: 2 }; critique.atk = 1;
+  critique.ready = true; critique.malInvocation = false; duel.sorcier.main = [];
+  core.rpgReglerHasard(duel, () => 0);
+  await render();
+  await click(document.querySelector(`[data-entity-id="${critique.id}"]`));
+  await wait(550);
+  const fx = document.querySelector(`[data-entity-id="${critique.id}"] .rpg-critique-fx`);
+  assert.ok(fx); assert.equal(fx.querySelector('.rpg-card__critique').textContent, '×2');
+  assert.equal(fx.getAttribute('aria-hidden'), 'true');
+  assert.ok(fx.querySelector('.rpg-critique-fx__anneau'));
+  assert.match(document.querySelector('.moba__combat-result').textContent, /coup critique ×2/);
+}, { reduit, renduReel: true }));
+
+for (const reduit of [false, true]) test(`les deux critiques restent visibles sur les cases après destruction, mouvement ${reduit ? 'réduit' : 'normal'}`, () => plateau(async ({ duel, engine, core, render, click }) => {
+  duel.joueur.manaChoixEnAttente = null; duel.sorcier.manaChoixEnAttente = null;
+  core.rpgFinDeTour(duel);
+  duel.sorcier.manaChoixEnAttente = null; duel.sorcier.main = ['ashigaru-des-braises']; duel.sorcier.mana.braise = 30;
+  const defenseur = engine.rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  core.rpgFinDeTour(duel);
+  duel.joueur.manaChoixEnAttente = null; duel.joueur.main = ['ashigaru-des-braises']; duel.joueur.mana.braise = 30;
+  const attaquant = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  for (const e of [attaquant, defenseur]) { e.coupCritique = { chance: 1, fois: 2 }; e.atk = 3; e.pv = e.def = e.pvMax = 1; e.ready = true; e.malInvocation = false; }
+  duel.sorcier.main = []; core.rpgReglerHasard(duel, () => 0);
+  await render();
+  await click(document.querySelector(`[data-entity-id="${attaquant.id}"]`));
+  await click(document.querySelector(`[data-entity-id="${defenseur.id}"]`));
+  await wait(550);
+  assert.equal(duel.joueur.creatures.some(e => e.id === attaquant.id), false);
+  assert.equal(duel.sorcier.creatures.some(e => e.id === defenseur.id), false);
+  const fx = document.querySelectorAll('.moba__critique-disparue .rpg-card__critique');
+  assert.equal(fx.length, 2); assert.deepEqual([...fx].map(e => e.textContent), ['×2', '×2']);
+  assert.match(document.querySelector('.moba__combat-result').textContent, /coup critique ×2/);
+}, { reduit, renduReel: true }));
+
+test('le multiplicateur ×4 reste distinct du critique standard', () => plateau(async ({ duel, engine, core, render, click }) => {
+  duel.joueur.manaChoixEnAttente = null; duel.joueur.main = ['ashigaru-des-braises']; duel.joueur.mana.braise = 30;
+  const critique = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  critique.carteId = 'kagutsuchi-flamme-originelle'; critique.name = 'Kagutsuchi';
+  critique.coupCritique = { chance: 1, fois: 4 }; critique.atk = 1; critique.ready = true; critique.malInvocation = false;
+  duel.sorcier.main = []; core.rpgReglerHasard(duel, () => 0);
+  await render(); await click(document.querySelector(`[data-entity-id="${critique.id}"]`)); await wait(550);
+  assert.equal(document.querySelector(`[data-entity-id="${critique.id}"] .rpg-card__critique`)?.textContent, '×4');
+  assert.match(document.querySelector('.moba__combat-result').textContent, /Kagutsuchi : coup critique ×4/);
+}, { renduReel: true }));
