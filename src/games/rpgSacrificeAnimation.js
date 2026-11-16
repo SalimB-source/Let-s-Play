@@ -9,7 +9,7 @@ export const SACRIFICE_ANIMATION = Object.freeze({
 });
 
 /** Retrouve les victimes d'une invocation MOBA dans l'instantané pris avant
- * la résolution : le moteur a déjà retiré leurs cartes de leurs cases. */
+ * la résolution pour dessiner leurs cercles dans leurs cases. */
 export function victimesSacrificeSurVoies(avant, ids = []) {
   const victimes = new Set(ids);
   return (avant?.cartes ?? []).filter((entite) => victimes.has(entite.entityId));

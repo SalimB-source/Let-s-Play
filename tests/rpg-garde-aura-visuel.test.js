@@ -64,7 +64,7 @@ test('le sonar orange conserve le débordement, la cadence et le mouvement rédu
 });
 
 
-test('une ombre portée renforcée suit l’écu indépendamment des filtres de la carte', () => {
+test('une ombre portée renforcée suit la face rectangulaire indépendamment des filtres de la carte', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__ombre-garde\s*\{[^}]*z-index:\s*-1;[^}]*background:\s*var\(--rpg-ecusson-aplat\)[^}]*drop-shadow\(0 7px 12px rgba\(0, 0, 0, \.85\)\)[^}]*pointer-events:\s*none/s);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__ombre-garde\s*\{[^}]*z-index:\s*-1;[^}]*background:\s*#211d3b;[^}]*border-radius:\s*inherit;[^}]*drop-shadow\(0 7px 12px rgba\(0, 0, 0, \.85\)\)[^}]*pointer-events:\s*none/s);
 });

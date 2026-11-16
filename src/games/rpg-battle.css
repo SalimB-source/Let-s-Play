@@ -4825,11 +4825,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-width: 0;
   background-image: none;
 }
-/* Les statistiques sont imprimées sur la face comme sur une carte posée :
-   mêmes pastilles dorée/acier et mêmes icônes vectorielles que le plateau.
-   Même bande aussi : deux rectangles côte à côte qui prennent toute la
-   largeur de la carte — ATQ à gauche, DÉF à droite — exactement comme
-   les cartes en jeu sur le plateau (`rpg-mobile.css`). */
+/* Base commune des pastilles de l'aperçu et du mulligan. La disposition de
+   l'aperçu suit celle de la table (ATQ puis DÉF empilées, voir fin du fichier). */
 .rpg-hover-card-preview__face .rpg-card__foot,
 .rpg-mulligan__card .rpg-card__foot,
 .rpg-mulligan__stats {
@@ -16247,29 +16244,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (prefers-reduced-motion: reduce) { .rpg-renfort-choix__carte { transition: none; } }
 
-/* L'aperçu d'une créature posée reprend sa silhouette de Défenseur et son
-   pied remonté. Une carte consultée en main reste, elle, rectangulaire. */
-.rpg-hover-card-preview__face.rpg-carte-bouclier {
-  container-type: inline-size;
-  background-size: 100% 100% !important;
-}
-.rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__foot {
-  translate: 0 -20cqw;
-  z-index: 7;
-}
-.rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__liseret-garde {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  background-color: #e75a4d;
-  -webkit-mask: var(--rpg-ecusson-defenseur-liseret) center / 100% 100% no-repeat;
-  mask: var(--rpg-ecusson-defenseur-liseret) center / 100% 100% no-repeat;
-  pointer-events: none;
-}
-.rpg-hover-card-preview__face.rpg-carte-bouclier > :is(.rpg-card__blood, .rpg-card__frost, .rpg-bouclier-egide, .rpg-furie-vignette) {
-  -webkit-mask: var(--rpg-ecusson-effet-masque) center / 100% 100% no-repeat;
-  mask: var(--rpg-ecusson-effet-masque) center / 100% 100% no-repeat;
-}
 .rpg-hover-card-preview__face .rpg-card__foot > .is-wounded {
   border-color: #8c2027;
   background: linear-gradient(180deg, #e58a82, #8f1e28);
@@ -16291,9 +16265,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #fff7ed;
   text-shadow: 0 1px 2px #450a0a;
 }
-.rpg-hover-card-preview__face.rpg-carte-bouclier > :is(.rpg-card__envol, .rpg-card__brume, .rpg-card__resonance) {
-  -webkit-mask: var(--rpg-ecusson-effet-masque) center / 100% 100% no-repeat;
-  mask: var(--rpg-ecusson-effet-masque) center / 100% 100% no-repeat;
-  border: 0;
-  box-shadow: none;
+
+/* Les statistiques des aperçus reprennent la disposition du plateau :
+   attaque puis défense empilées en bas à gauche, à l'échelle de la face.
+   Valable aussi pour les fiches, annonces, cimetière et le MOBA. */
+.rpg-hover-card-preview .rpg-hover-card-preview__face { container-type: inline-size; }
+.rpg-hover-card-preview .rpg-hover-card-preview__face > .rpg-card__foot {
+  left: 5%; right: auto; bottom: 4%; width: max-content;
+  grid-template-columns: max-content; grid-template-rows: auto auto;
+  grid-auto-flow: row; justify-items: start; align-content: end; gap: 1px;
+}
+.rpg-hover-card-preview .rpg-hover-card-preview__face > .rpg-card__foot > :is(.rpg-card__stat--atk, .rpg-card__pt) {
+  min-width: 0; padding: 2cqw 3cqw; gap: 1cqw;
+  border-width: 1px; border-radius: 5px;
+  font-size: 16cqw; line-height: 1.2; letter-spacing: 0;
+}
+.rpg-hover-card-preview .rpg-hover-card-preview__face .rpg-card__foot .rpg-stat-icon {
+  width: .85em; height: .85em; flex-basis: .85em;
+}
+/* En jeu les Défenseurs gardent leurs repères remontés : idem en aperçu. */
+.rpg-hover-card-preview .rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__foot {
+  translate: 0 -20cqw; z-index: 7;
 }

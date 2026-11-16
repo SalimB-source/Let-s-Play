@@ -2045,3 +2045,13 @@ restent des cartes rectangulaires normales, avec ATQ à gauche et DÉF à droite
 `rpgBouclier.js` pose donc la classe sur la table et les vignettes du catalogue
 / atelier / guide / boosters. Les sites, terrains, armes et sorts restent sans
 écusson.
+
+
+### Mise à jour — faces rectangulaires et statistiques en aperçu
+
+Les descriptions d'écusson ci-dessus documentent l'ancien rendu. Toutes les
+cartes ont maintenant une face rectangulaire et utilisent le cadre Le Sablier,
+y compris les Défenseurs et leurs effets. Leurs repères de priorité restent
+visibles. Les aperçus reprennent la disposition du plateau : ATQ au-dessus de
+DÉF, en bas à gauche, avec les valeurs et couleurs de la créature en jeu ;
+le décalage propre aux Défenseurs posés est conservé.

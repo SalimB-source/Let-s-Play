@@ -9740,8 +9740,19 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
   return null;
 }
 
+/** Prépare les victimes sans résoudre l'annonce ni déclencher ses effets. */
+export function rpgSacrificesAnnonceSorcier(duel) {
+  const annonce = duel?.annonce;
+  const creature = annonce && duelCardById(annonce.carteId);
+  const etatPrepare = { ...duel, annonce: null, fenetreReponse: false };
+  if (!creature || !sacrificesInvocation(creature, etatPrepare, 'sorcier')) return null;
+  // La recherche IA simule la pose comme à la résolution : l'annonce et la
+  // fenêtre de réponse sont fermées, sans modifier le duel affiché.
+  return choisirSacrificesInvocationIA(etatPrepare, 'sorcier', creature, annonce.cibleId);
+}
+
 /** Laisser passer : résout la carte annoncée (paiement et effet). */
-export function rpgSorcierResoudreAnnonce(duel) {
+export function rpgSorcierResoudreAnnonce(duel, { sacrificesPrepares = undefined } = {}) {
   const annonce = duel.annonce;
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };
   duel.annonce = null;
@@ -9750,7 +9761,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
   // sacrifier plutôt que payer aveuglément avec une créature devenue précieuse.
   const creature = duelCardById(annonce.carteId);
   const sacrifices = creature && sacrificesInvocation(creature, duel, 'sorcier')
-    ? choisirSacrificesInvocationIA(duel, 'sorcier', creature, annonce.cibleId) : null;
+    ? (sacrificesPrepares === undefined ? choisirSacrificesInvocationIA(duel, 'sorcier', creature, annonce.cibleId) : sacrificesPrepares) : null;
   if (creature && sacrificesInvocation(creature, duel, 'sorcier') && sacrifices === null) {
     duel.log.push(`Le sorcier renonce à invoquer ${creature.name} : aucun sacrifice avantageux.`);
     return { ok: false, raison: 'sacrifice-inutile', carteId: annonce.carteId };

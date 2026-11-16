@@ -17,10 +17,10 @@ try {
         const trait = el.querySelector('.rpg-card__liseret-garde');
         const aura = el.querySelector('.rpg-card__resonance--garde');
         const ombre = el.querySelector('.rpg-card__ombre-garde');
-        return { filter: getComputedStyle(ombre).filter, ombreEvents: getComputedStyle(ombre).pointerEvents, ombreZ: getComputedStyle(ombre).zIndex, couleur: getComputedStyle(trait).backgroundColor,
+        return { filter: getComputedStyle(ombre).filter, ombreEvents: getComputedStyle(ombre).pointerEvents, ombreZ: getComputedStyle(ombre).zIndex, couleur: getComputedStyle(trait).borderTopColor,
           traitZ: getComputedStyle(trait).zIndex, traitEvents: getComputedStyle(trait).pointerEvents,
           aura: getComputedStyle(aura).backgroundImage, onde: getComputedStyle(aura.querySelector('.rpg-card__resonance-onde')).borderColor,
-          priorite: getComputedStyle(el, '::before').backgroundColor };
+          outline: getComputedStyle(el).outlineColor, outlineStyle: getComputedStyle(el).outlineStyle, boxShadow: getComputedStyle(el).boxShadow };
       });
       assert.match(etat.filter, /drop-shadow\(rgba\(0, 0, 0, 0\.85\) 0px 7px 12px\)/, `${id}: ombre renforcée`);
       assert.equal(etat.couleur, 'rgb(255, 152, 47)', `${id}: contour orange`);
@@ -30,7 +30,10 @@ try {
       assert.equal(etat.ombreZ, '-1');
       assert.equal(etat.traitEvents, 'none');
       assert.equal(etat.traitZ, '5');
-      if (id === 'selection') assert.equal(etat.priorite, touch ? 'rgb(255, 224, 130)' : 'rgb(255, 107, 94)', 'sélection prioritaire');
+      if (id === 'selection') {
+        if (touch) { assert.equal(etat.outline, 'rgb(255, 224, 130)'); assert.equal(etat.outlineStyle, 'solid'); }
+        else assert.match(etat.boxShadow, /255, 107, 94/, 'sélection visible');
+      }
     }
     assert.equal(await page.locator('#normal .rpg-card__liseret-garde').count(), 0);
     await page.locator('#provocation .rpg-card').click();

@@ -1244,6 +1244,10 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     assert.ok(previewFace.classList.contains('rpg-carte-bouclier'), 'la fiche reprend le Défenseur acquis');
     assert.equal(previewFace.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, '9');
     assert.equal(previewFace.querySelector('.rpg-card__pt .rpg-stat-value').textContent, '1');
+    Object.assign(duel.joueur.creatures[0], { atk: 6, pv: 0 });
+    await act(async () => root.render(React.createElement(Board, { onQuitter: () => {}, initialiser, rendu: RPG_RENDU_MOBA })));
+    assert.equal(document.querySelector('.moba__preview-layer .rpg-card__stat--atk .rpg-stat-value').textContent, '6', 'un aperçu ouvert suit le bonus courant');
+    assert.equal(document.querySelector('.moba__preview-layer .rpg-card__pt .rpg-stat-value').textContent, '0', 'zéro reste une valeur affichée');
     assert.equal(duel.joueur.creatures.length, 1, 'previewing a placed creature does not act');
     await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     placed.focus();

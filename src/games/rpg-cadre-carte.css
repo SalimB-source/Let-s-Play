@@ -23,13 +23,12 @@
 :has(> .rpg-cadre-carte) > img:has(+ .rpg-cadre-carte) {
   clip-path: var(--rpg-cadre-decoupe);
 }
-/* Sans fond rectangulaire derrière les coins découpés. L'écusson Défenseur
-   garde son aplat et son masque propres, ainsi que son contour de sélection. */
-:has(> .rpg-cadre-carte):not(.rpg-carte-bouclier) {
+/* Toutes les faces, y compris Défenseur, utilisent le même cadre rectangulaire. */
+:has(> .rpg-cadre-carte) {
   background-image: none !important;
   background-color: transparent !important;
 }
-:has(> .rpg-cadre-carte):not(.rpg-carte-bouclier)::after { clip-path: var(--rpg-cadre-decoupe); }
+:has(> .rpg-cadre-carte)::after { clip-path: var(--rpg-cadre-decoupe); }
 
 /* Le flottement d’image ne doit pas décaler sa découpe hors du cadre. */
 @media (hover: hover) and (pointer: fine) {
@@ -40,16 +39,6 @@
 @keyframes rpg-cadre-peinture-flottante {
   0%, 100% { object-position: 49% 50%; }
   50% { object-position: 51% 49%; }
-}
-
-/* Sur une créature Défenseur, le cadre suit l'écusson existant et sa taille,
-   sans rogner les icônes ni remplacer le liseré d'état. */
-.rpg-card.rpg-carte-bouclier > .rpg-cadre-carte { scale: 1; }
-.rpg-carte-bouclier > .rpg-cadre-carte,
-.rpg-carte-bouclier .rpg-card-guide__art > .rpg-cadre-carte,
-.rpg-carte-bouclier .rpg-souk__carte-art > .rpg-cadre-carte {
-  -webkit-mask: var(--rpg-ecusson-masque) center / 100% 100% no-repeat;
-  mask: var(--rpg-ecusson-masque) center / 100% 100% no-repeat;
 }
 
 /* Les présentations de secours n'avaient pas besoin de couche explicite. */
