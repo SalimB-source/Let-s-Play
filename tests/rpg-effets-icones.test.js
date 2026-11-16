@@ -41,11 +41,11 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 41 symboles validés, un par effet', () => {
+test('le sprite porte les 42 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 41);
+  assert.equal(symboles.length, 42);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -104,7 +104,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
     'Envol et protection contre tous les sorts, sans Résonance');
   assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol', 'Furie 2'],
     'la Valkyrie au corbeau porte Envol et Furie 2, sans Résonance');
-  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Défenseur', 'Esquive', 'Harakiri'],
+  assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Défenseur', 'Blocage', 'Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],

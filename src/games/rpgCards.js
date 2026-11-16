@@ -439,7 +439,8 @@ export const RPG_CREATURE_CARDS = [
     id: 'gardienne-des-portes-de-sable', name: 'Gardienne des portes de sable',
     element: 'sable', cost: 2, atk: 1, def: 4, rarity: 'commune',
     typeLine: 'Créature — Humaine · Gardienne', defenseur: true,
-    text: 'Défenseur.',
+    blocage: { chance: 0.15, def: 2 },
+    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'La tempête tombe ; son bouclier demeure.',
   },
   {

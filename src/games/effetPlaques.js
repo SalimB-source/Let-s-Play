@@ -86,7 +86,7 @@ const CLES_PAR_FAMILLE = Object.freeze({
   ]),
   garde: Object.freeze([
     'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'bouclier-lumiere',
-    'tenacite', 'defenseur', 'aura', 'banniere', 'buff', 'resonance', 'compagnie',
+    'tenacite', 'defenseur', 'blocage', 'aura', 'banniere', 'buff', 'resonance', 'compagnie',
   ]),
   ombre: Object.freeze([
     'malediction', 'poison', 'poisonActif', 'volDeVie', 'furtif', 'infiltration', 'exil', 'reanimation', 'renfort-ascension', 'contresort',
@@ -129,6 +129,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
   'i-bouclier': 'garde',
   'i-tenacite': 'garde',
   'i-defenseur': 'garde',
+  'i-blocage': 'garde',
   'i-aura': 'garde',
   'i-resonance': 'garde',
   'i-malediction': 'ombre',

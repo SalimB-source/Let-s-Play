@@ -209,8 +209,9 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'gardien-des-sept-sceaux', name: 'Gardien des sept sceaux',
     cost: 4, atk: 3, def: 4, rarity: 'commune',
     defenseur: true,
+    blocage: { chance: 0.15, def: 2 },
     typeLine: 'Créature — Humain · Gardien',
-    text: 'Défenseur.',
+    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'La porte n’a plus besoin de clé tant qu’il veille.',
   }),
   carte({

@@ -8,7 +8,7 @@ import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale } from
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import { candidatsRenfortChoisi } from './rpgRenforts.js';
 import {
-  rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
+  rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgResoudreEchangeIndividuelMoba, rpgRessacMobaArrivee, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgPresenterRechercheMoba,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
@@ -843,6 +843,7 @@ export function rpgMobaDeclarerAttaqueIndividuelle(duel, side, attackerId, cible
   const ciblee = Boolean(attaquant.coupRapide);
   attaquant.attaquee = true;
   duel.log.push(`${attaquant.name} annonce une attaque${cibleId ? ` contre ${duel[side === 'joueur' ? 'sorcier' : 'joueur'].creatures.find((e) => e.id === cibleId)?.name ?? 'une créature'}` : ' directe sur sa voie'}.`);
+  rpgDeclencherBlocage(duel, side === 'joueur' ? 'sorcier' : 'joueur', cible);
   duel.phase = 'blocage'; // Réutilisation des fenêtres de réponse, pas de blocage.
   duel.fenetreReponse = true;
   duel.combatDeclare = { cote: side, attaquants: [attackerId], ciblesAttaque: ciblee && cibleId ? { [attackerId]: cibleId } : {},
