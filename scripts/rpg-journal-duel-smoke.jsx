@@ -89,11 +89,26 @@ export async function rendreJournal() {
   // Un fait nouveau arrive après lecture : seul lui rallume le badge.
   await rendre([...evenements, priseEnCale]);
   const nouveau = etat();
+  // Deux sources et une prise sans source : leurs noms et issues restent
+  // présents, même lorsque l'interface les dispose sur plusieurs lignes.
+  await rendre([
+    { ...evenements[0], id: 'double', killers: [evenements[0].killers[0], evenements[1].killers[0]] },
+    { ...priseEnCale, id: 'sans-source', killers: [] },
+    evenements[1],
+  ]);
+  await cliquer('.rpg-combat-feed__toggle');
+  const lignes = [...conteneur.querySelectorAll('.rpg-combat-feed__event')];
+  const lisibilite = lignes.map((ligne) => ({
+    texte: ligne.textContent,
+    issue: ligne.querySelector('[role="img"]')?.getAttribute('aria-label'),
+    icone: Boolean(ligne.querySelector('.rpg-combat-feed__skull svg')),
+    sources: ligne.querySelectorAll('.rpg-combat-feed__card:not(.rpg-combat-feed__card--victim)').length,
+  }));
   // Sans fait à raconter, le journal n'existe pas : la table reste nue.
   await rendre([]);
   const vide = etat();
 
   await act(async () => { racine.unmount(); });
   conteneur.remove();
-  return { ferme, ouvert, referme, hors, echap, nouveau, vide };
+  return { ferme, ouvert, referme, hors, echap, nouveau, lisibilite, vide };
 }
