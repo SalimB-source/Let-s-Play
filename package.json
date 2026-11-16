@@ -211,6 +211,7 @@
     "check:city-rush-performance": "node --test tests/city-rush-performance.test.js",
     "check:vice-city-portrait": "node --test tests/vice-city-portrait.test.js",
     "check:rpg-mal-invocation": "node --test tests/rpg-invocation-speciale-tour.test.js tests/rpg-moba-attaque-immediate.test.js tests/rpg-mal-invocation-ui.test.js tests/rpg-embuscade-commune.test.js tests/rpg-moba-embuscade-reponse-sans-mana.test.js tests/rpg-classique-combat-individuel.test.js tests/rpg-moba-ia-conquete.test.js tests/rpg-effets-icones.test.js tests/rpg-tutorial.test.js",
+    "check:rpg-cadres-illustrations": "node scripts/rpg-cadres-illustrations-check.mjs",
     "check:rpg-moba-plateau-visuel": "node scripts/rpg-moba-plateau-visuel-check.mjs",
     "check:rpg-ia-decisions": "node --test tests/rpg-classique-ia-volva.test.js tests/rpg-classique-ia-attaque.test.js tests/rpg-classique-ia-riposte.test.js tests/rpg-classique-ia-brouillard.test.js tests/rpg-classique-ia-victoire.test.js tests/rpg-classique-ia-furtivite.test.js tests/rpg-moba-ia-recherche.test.js tests/rpg-moba-ia-soin.test.js tests/rpg-moba-ia-site.test.js tests/rpg-moba-ia-arrivee-victoire.test.js tests/rpg-moba-ia-arrivee-cible.test.js tests/rpg-moba-ia-destruction.test.js tests/rpg-moba-ia-simulations.test.js tests/rpg-ia-defausse-preference.test.js"
   },

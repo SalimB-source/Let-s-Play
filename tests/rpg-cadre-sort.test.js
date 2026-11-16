@@ -40,10 +40,13 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   assert.match(css, /rpg-card\.rpg-carte-bouclier > \.rpg-cadre-carte \{ scale: 1/);
   assert.match(css, /pointer-events:\s*none/);
   assert.match(css, /mask:\s*var\(--rpg-ecusson-masque\)/);
+  // Les illustrations ne doivent plus dépendre d'un SVG externe pour être
+  // visibles : chaque découpe reste une forme CSS autonome, avec repli naturel
+  // sur l'image entière si le navigateur ne reconnaît pas polygon().
   for (const type of ['magie', 'arme', 'creature']) {
-    assert.match(css, new RegExp(`decoupes-cartes\\.svg#${type}`));
-    assert.match(lire('assets/decoupes-cartes.svg'), new RegExp(`<clipPath id=\"${type}\" clipPathUnits=\"objectBoundingBox\"`));
+    assert.match(css, new RegExp(`:has\\(> \\.rpg-cadre-carte--${type}\\) \\{\\s*--rpg-cadre-decoupe: polygon\\(`));
   }
+  assert.doesNotMatch(css, /decoupes-cartes\.svg|--rpg-cadre-decoupe:\s*url\(/);
   for (const type of ['sorts', 'arme', 'creature']) {
     assert.match(css, new RegExp(`cadre-${type}\\.svg`));
     assert.match(lire(`assets/cadre-${type}.svg`), /viewBox="0 0 179\.24 256\.06" preserveAspectRatio="none"/);
