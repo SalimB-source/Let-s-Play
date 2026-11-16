@@ -458,7 +458,7 @@ test('moteur : deux « Nom effacé » cumulent leurs défausses pour le joueur',
 test('Ténèbres : Tribut reste minoritaire et les quatre rôles révisés sont distincts', () => {
   const creatures = RPG_TENEBRES_CREATURES.filter((c) => c.element === 'tenebres');
   assert.equal(creatures.length, 18);
-  assert.deepEqual(creatures.filter((c) => c.tribut).map((c) => c.id), ['chacal-du-seuil', 'celui-qui-juge', 'veuve-des-urnes']);
+  assert.deepEqual(creatures.filter((c) => c.tribut).map((c) => c.id), ['chacal-du-seuil', 'ibis-des-comptes', 'celui-qui-juge', 'veuve-des-urnes']);
   for (const id of ['ureus-du-seuil', 'celle-qui-pese', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes']) {
     const carte = cardById(id);
     assert.equal(carte.tribut, undefined);

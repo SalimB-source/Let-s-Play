@@ -39,7 +39,7 @@ export const RPG_TENEBRES_JETONS = [{
   flavor: 'Il fait le travail que les morts n’ont plus les mains pour faire.',
 }];
 
-// Tribut reste sur le petit collecteur, la Veuve et la finition ; les autres créatures
+// Tribut est porté par le petit collecteur, l’Ibis, la Veuve et la finition ; les autres créatures
 // servent le combat, la défausse, la pioche ou le cimetière.
 export const RPG_TENEBRES_CREATURES = [
   carte({
@@ -125,13 +125,15 @@ export const RPG_TENEBRES_CREATURES = [
     def: 4,
     rarity: 'commune',
     destruction: { type: 'jetons', jeton: 'shabti', nombre: 1 },
+    defenseur: true, blocage: { chance: 0.15, def: 2 },
     typeLine: 'Créature — Momie',
-    text: 'Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1.',
+    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1.',
     flavor: 'Le lin tient ce que les os ne tiennent plus.',
   }),
   carte({
     id: 'ibis-des-comptes',
     name: 'Ibis des comptes',
+    tribut: 1,
     cost: 3,
     atk: 2,
     def: 2,
@@ -139,7 +141,7 @@ export const RPG_TENEBRES_CREATURES = [
     envol: true,
     arrivee: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
     typeLine: 'Créature — Oiseau · Ibis',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tribut 1 — Quand il touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
     flavor: 'Il compte les feuillets comme on compte les jours : sans jamais en garder.',
   }),
   carte({
@@ -185,8 +187,9 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'porteur-de-la-plume', name: 'Porteur de la plume',
     cost: 1, atk: 1, def: 2, rarity: 'commune',
     destruction: { type: 'soin', amount: 1 },
+    arrivee: { type: 'choix-zone', zone: 'deck', destination: 'cimetiere', couts: [2, 3] },
     typeLine: 'Créature — Humain · Serviteur',
-    text: 'Quand le Porteur de la plume meurt, vous gagnez 1 PV.',
+    text: 'À son arrivée : choisissez une créature de coût imprimé 2 ou 3 dans votre deck et mettez-la dans votre cimetière. Quand le Porteur de la plume meurt, vous gagnez 1 PV.',
     flavor: 'Il tient la plume droite jusqu’au dernier souffle.',
   }),
   carte({
@@ -201,8 +204,9 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'veuve-des-urnes', name: 'Veuve des urnes',
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
     tribut: 1,
+    arrivee: { type: 'payer-vie-pioche', amount: 2, pioche: 1 },
     typeLine: 'Créature — Humaine · Veuve',
-    text: 'Tribut 1 — Quand elle touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    text: 'Tribut 1 — Quand elle touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. À son arrivée : payez 2 PV, puis piochez une carte.',
     flavor: 'Elle ne réclame que ce qu’on lui a promis.',
   }),
   carte({
@@ -232,8 +236,9 @@ export const RPG_TENEBRES_CREATURES = [
     def: 5,
     rarity: 'mythique',
     arrivee: { type: 'reanimation' },
+    malediction: { atk: 1, def: 0 },
     typeLine: 'Créature légendaire — Passeur du seuil',
-    text: 'À son arrivée : choisissez une créature de votre cimetière et invoquez-la spécialement.',
+    text: 'Malédiction 1 — Les créatures adverses perdent 1 ATK tant que le Passeur est en jeu. À son arrivée : choisissez une créature de votre cimetière et invoquez-la spécialement.',
     flavor: 'Il connaît le poids de chaque cœur avant même que l’aiguille ne bouge.',
   }),
   carte({
@@ -295,10 +300,12 @@ export const RPG_TENEBRES_CREATURES = [
     def: 5,
     rarity: 'mythique',
     envol: true,
+    volDeVie: true,
+    coupRapide: true,
     arrivee: { type: 'bouclier-lumiere' },
     destruction: { type: 'soin', amount: 5 },
     typeLine: 'Créature légendaire — Souveraine ailée',
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand La Dame aux ailes d’or arrive : elle reçoit un bouclier de lumière. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, elle ne peut pas subir de dégâts. Quand elle meurt, vous gagnez 5 PV.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Vol de vie. Attaque ciblée. Quand La Dame aux ailes d’or arrive : elle reçoit un Bouclier parfait. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, elle ne peut pas subir de dégâts. Quand elle meurt, vous gagnez 5 PV.',
     flavor: 'Ses deux ailes refermées sur le trône suffisent à retenir le souffle qui s’en va.',
   }),
   carte({

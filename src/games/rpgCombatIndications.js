@@ -25,7 +25,7 @@ export function rpgApercuBlocages(duel, combat) {
     const alertes = [];
     if ([attaquant, ...bloqueurs].some((e) => e.esquive)) alertes.push('Esquive possible');
     if ([attaquant, ...bloqueurs].some((e) => e.coupCritique)) alertes.push('critique possible');
-    if ([attaquant, ...bloqueurs].some((e) => e.bouclierLumiere)) alertes.push('bouclier de lumière');
+    if ([attaquant, ...bloqueurs].some((e) => e.bouclierLumiere)) alertes.push('bouclier parfait');
     if ([attaquant, ...bloqueurs].some((e) => e.contreAttaque)) alertes.push('Contre-attaque possible');
     if (attaquant.overkill) alertes.push('Overkill possible');
     const force = Math.max(0, Number(attaquant.atk) || 0);
@@ -36,7 +36,7 @@ export function rpgApercuBlocages(duel, combat) {
       repartition: bloqueurs.length === 1 ? force : prioriteValide ? (e.id === prioritaire ? force : 0)
         : Number.isFinite(Number(repartition[e.id])) ? Math.max(0, Number(repartition[e.id])) : null }));
     // Comparaison brute, pas une simulation : effets, esquive, capacités,
-    // bouclier de lumière et critique peuvent modifier ou annuler ces dégâts.
+    // bouclier parfait et critique peuvent modifier ou annuler ces dégâts.
     const risques = [];
     if (Number(attaquant.pv) > 0 && attaquesBloqueurs.reduce((a, b) => a + b, 0) >= Number(attaquant.pv)) risques.push(attaquant.name);
     for (const cible of adversaires) {

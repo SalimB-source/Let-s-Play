@@ -1343,6 +1343,8 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
   // Le Prix en PV (set Ténèbres) : sous le seuil, la carte est injouable —
   // le moteur la refuserait de toute façon (`rpgPeutPayer`).
   if ((carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return { score: 0, cibleId: null };
+  // L'arrivée est légale mais mortelle : l'IA classique évite de perdre.
+  if (!duel.moba && carte.arrivee?.type === 'payer-vie-pioche' && camp.pv <= carte.arrivee.amount) return { score: 0, cibleId: null };
   // Les sorts et armes ne coûtent plus de mana. Pour les créatures, le coût
   // imprimé garde de l'importance car il détermine les sacrifices.
   const cout = (['creature', 'hero'].includes(carte.kind) ? Math.max(0, carte.cost ?? 0) : 0)
@@ -1792,6 +1794,9 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
         score += 2 + (camp.main.length <= 3 ? 2 : 0);
       }
     }
+    if (arrivee.type === 'payer-vie-pioche') {
+      score += (camp.deck.length ? 2 + (camp.main.length <= 3 ? 2 : 0) : 0) - (arrivee.amount ?? 0) * 0.6;
+    }
     if (arrivee.type === 'pioche-defausse') {
       const net = Math.max(0, (arrivee.pioche ?? 0) - (arrivee.defausse ?? 0));
       score += 1 + net * 1.5 + (camp.main.length <= 3 ? 2 : 0);
@@ -2021,7 +2026,8 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       // le sorcier adverse et pioche — ça vaut un petit bonus, pas plus.
       score += 1 + Math.max(0, Number(arrivee.compteurs) || 0) * 0.3;
     }
-    if (arrivee.type === 'recyclage') score += 1.5 + (camp.main.length <= 3 ? 1 : 0);
+    if (arrivee.type === 'recyclage' || (arrivee.type === 'choix-zone' && arrivee.destination === 'main')) score += 1.5 + (camp.main.length <= 3 ? 1 : 0);
+    if (arrivee.type === 'choix-zone' && arrivee.destination === 'cimetiere') score += 1;
     if (arrivee.type === 'defausse-adverse') score += duel[adv].main.length ? 1.2 : 0;
     if (arrivee.type === 'reanimation') {
       const derniere = [...camp.cimetiere].reverse().find((id) => {

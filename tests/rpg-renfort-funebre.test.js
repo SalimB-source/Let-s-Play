@@ -71,9 +71,9 @@ for (const moba of [false, true]) for (const side of ['joueur','sorcier']) {
     assert.deepEqual(d[side].creatures.map(c => c.carteId), ['ureus-du-seuil']);
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
-  test(`Convoi : dernière créature Sable, Eau ou Ténèbres de coût 3 ou moins (${mode})`, () => {
+  test(`Convoi : choix parmi les créatures Braise, Sable ou Ténèbres (${mode})`, () => {
     const d = partie(moba, side); d[side].cimetiere = ['chien-du-guet', 'ureus-du-seuil', 'viking-des-neiges', 'dune-marchante', 'papyrus'];
-    const e = poser(d, side, 'convoi-des-dunes'); assert.ok(e);
+    const e = poser(d, side, 'convoi-des-dunes'); assert.ok(e); choisir(d, side, 'ureus-du-seuil');
     assert.deepEqual(d[side].main, ['ureus-du-seuil']);
     assert.deepEqual(d[side].cimetiere, ['chien-du-guet', 'viking-des-neiges', 'dune-marchante', 'papyrus']);
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
@@ -82,19 +82,20 @@ for (const moba of [false, true]) for (const side of ['joueur','sorcier']) {
 
 for (const moba of [false, true]) for (const id of ['chien-du-guet', 'cotre-de-course', 'ureus-du-seuil']) {
   test(`Convoi récupère ${id} (${moba ? 'MOBA' : 'Duel'})`, () => {
-    const d = partie(moba); d.joueur.cimetiere = [id]; poser(d, 'joueur', 'convoi-des-dunes');
+    const d = partie(moba); d.joueur.cimetiere = [id]; poser(d, 'joueur', 'convoi-des-dunes'); choisir(d, 'joueur', id);
     assert.deepEqual(d.joueur.main, [id]); assert.deepEqual(d.joueur.cimetiere, []);
   });
 }
-for (const moba of [false, true]) test(`Le plafond par nom demeure actif malgré le texte raccourci (${moba ? 'MOBA' : 'Duel'})`, () => {
+for (const moba of [false, true]) test(`Chaque Convoi déclenche son choix à l'arrivée (${moba ? 'MOBA' : 'Duel'})`, () => {
   const d = partie(moba); d.joueur.cimetiere = ['chien-du-guet', 'ureus-du-seuil'];
-  poser(d, 'joueur', 'convoi-des-dunes', 0); poser(d, 'joueur', 'convoi-des-dunes', 1);
-  assert.deepEqual(d.joueur.main, ['ureus-du-seuil']); assert.deepEqual(d.joueur.cimetiere, ['chien-du-guet']);
+  poser(d, 'joueur', 'convoi-des-dunes', 0); choisir(d, 'joueur', 'ureus-du-seuil');
+  poser(d, 'joueur', 'convoi-des-dunes', 1); choisir(d, 'joueur', 'chien-du-guet');
+  assert.deepEqual(d.joueur.main, ['ureus-du-seuil', 'chien-du-guet']); assert.deepEqual(d.joueur.cimetiere, []);
 });
 
 for (const moba of [false, true]) {
   test(`Convoi peut récupérer une autre copie de lui-même (${moba ? 'MOBA' : 'Duel'})`, () => {
-    const d = partie(moba); d.joueur.cimetiere = ['convoi-des-dunes']; poser(d, 'joueur', 'convoi-des-dunes');
+    const d = partie(moba); d.joueur.cimetiere = ['convoi-des-dunes']; poser(d, 'joueur', 'convoi-des-dunes'); choisir(d, 'joueur', 'convoi-des-dunes');
     assert.deepEqual(d.joueur.main, ['convoi-des-dunes']); assert.deepEqual(d.joueur.cimetiere, []);
   });
   test(`Veilleur mourant à la fin du tour détruit aussi son renfort (${moba ? 'MOBA' : 'Duel'})`, () => {

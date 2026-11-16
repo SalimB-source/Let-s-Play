@@ -8,7 +8,7 @@ import { rpgMobaChoisirAttaqueIndividuelleIA } from '../src/games/rpgMobaAI.js';
 import { rpgPvpAppliquer, rpgPvpBrancherHasard } from '../src/games/rpgPvp.js';
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 
-const ids = ['gardienne-des-portes-de-sable', 'gardien-des-sept-sceaux', 'onna-musha-des-cendres'];
+const ids = ['gardienne-des-portes-de-sable', 'gardien-des-sept-sceaux', 'onna-musha-des-cendres', 'guerrier-au-bouclier-rond'];
 const mana = () => Object.fromEntries(RPG_ELEMENTS.map(e => [e, 40]));
 function classique(id = ids[0], side = 'joueur') {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => .5 });
@@ -73,8 +73,9 @@ test('un refus ou une attaque directe ne jette pas Blocage ; une annulation ultÃ
   rpgReglerHasard(autre.d, () => { jets++; return 0; });
   assert.ok(declarer(autre.d, autre.side, autre.a.id, null).ok); assert.equal(jets, 1);
 });
-for (const side of ['joueur', 'sorcier']) test(`PvP ${side} : hasard rejouable et annonce atomique`, () => {
-  const { d, a, cible, enemy } = classique(ids[0], side);
+for (const id of [ids[0], 'guerrier-au-bouclier-rond']) for (const side of ['joueur', 'sorcier']) test(`PvP ${id} ${side} : hasard rejouable et annonce atomique`, () => {
+  const { d, a, cible, enemy } = classique(id, side);
+  const defenseInitiale = cible.pv;
   d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
   rpgPvpBrancherHasard(d, 4);
   const copie = structuredClone(d); rpgPvpBrancherHasard(copie);
@@ -84,7 +85,7 @@ for (const side of ['joueur', 'sorcier']) test(`PvP ${side} : hasard rejouable e
   assert.ok(rpgPvpAppliquer(d, side, action).ok);
   assert.ok(rpgPvpAppliquer(copie, side, action).ok);
   assert.equal(d.hasard.compteur, 1); assert.deepEqual(d.hasard, copie.hasard);
-  assert.equal(d[enemy].creatures[0].pv, 6);
+  assert.equal(d[enemy].creatures[0].pv, defenseInitiale + 2);
   assert.equal(d[enemy].creatures[0].pv, copie[enemy].creatures[0].pv);
   assert.ok(rpgPvpAppliquer(d, enemy, { type: 'bloquer', blocages: {} }).ok);
 });

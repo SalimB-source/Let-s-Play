@@ -9,12 +9,13 @@ import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaResoudreArrivee, MOBA_
 const ID = 'guerrier-au-bouclier-rond';
 const deck = Array(30).fill('ashigaru-des-braises');
 
-test('la fiche est 2/3 Défenseur, sans Bouclier ni arrivée', () => {
+test('la fiche est 2/3 Défenseur avec Blocage, sans Bouclier ni arrivée', () => {
   const c = cardById(ID);
   assert.deepEqual([c.atk, c.def, c.cost, c.defenseur], [2, 3, 2, true]);
+  assert.deepEqual(c.blocage, { chance: 0.15, def: 2 });
   assert.equal(c.arrivee, undefined);
-  assert.equal(c.text, 'Défenseur.');
-  assert.deepEqual(pastillesPourCarte(c).map(p => p.cle), ['defenseur']);
+  assert.match(c.text, /Défenseur.*Blocage.*15 %.*\+2 DEF.*fin du tour/);
+  assert.deepEqual(pastillesPourCarte(c).map(p => p.cle), ['defenseur', 'blocage']);
   assert.equal(MOBA_ARRIVEES_ALLIEES.includes(ID), false);
 });
 for (const moba of [false, true]) for (const cote of ['joueur', 'sorcier']) {

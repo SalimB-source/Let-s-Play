@@ -102,3 +102,43 @@ for (const camp of ['joueur', 'sorcier']) test(`PvP : le camp ${camp} choisit av
     globalThis.window=oldWindow;globalThis.document=oldDocument;delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('MOBA : le Porteur et le Convoi montrent leurs choix et destinations respectives', async () => {
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'silent' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await vite.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await vite.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { RPG_RENDU_MOBA } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    let duel;
+    const props = { initialiser: () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), rng: () => .5 })), onQuitter: () => {}, rendu: { TableCard: RPG_RENDU_MOBA.TableCard } };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    await act(async () => document.querySelector('.moba__mulligan .moba__primary').click());
+    duel.joueur.main = ['porteur-de-la-plume']; duel.joueur.deck = ['chien-du-guet', 'ureus-du-seuil', 'viking-des-neiges'];
+    assert.ok(rpgMobaJouerCreature(duel, 'joueur', 'porteur-de-la-plume', 'left', 0).ok);
+    await act(async () => root.render(React.createElement(Board, props)));
+    let modal = document.querySelector('[aria-label="Choix de carte"]');
+    assert.ok(modal); assert.match(modal.textContent, /coût 2 ou 3 dans votre deck.*cimetière/);
+    assert.equal(modal.querySelectorAll('.moba__mulligan-card').length, 2);
+    const ureus = [...modal.querySelectorAll('.moba__mulligan-card')].find(b => /Uræus du seuil/.test(b.textContent));
+    await act(async () => ureus.click());
+    assert.ok(duel.joueur.cimetiere.includes('ureus-du-seuil'));
+    duel.moba.creaturesJouees.joueur = false; duel.joueur.invocationNormaleJouee = false;
+    duel.joueur.main = ['convoi-des-dunes'];
+    assert.ok(rpgMobaJouerCreature(duel, 'joueur', 'convoi-des-dunes', 'left', 1).ok);
+    await act(async () => root.render(React.createElement(Board, props)));
+    modal = document.querySelector('[aria-label="Choix de carte"]');
+    assert.ok(modal); assert.match(modal.textContent, /Braise, Sable ou Ténèbres dans votre cimetière.*en main/);
+    const choix = [...modal.querySelectorAll('.moba__mulligan-card')].find(b => /Uræus du seuil/.test(b.textContent));
+    await act(async () => choix.click());
+    assert.ok(duel.joueur.main.includes('ureus-du-seuil'));
+    assert.equal(document.querySelector('[aria-label="Choix de carte"]'), null);
+  } finally {
+    if (root) await act(async () => root.unmount()); await vite.close(); dom.window.close();
+    globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

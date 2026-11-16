@@ -1,7 +1,6 @@
 /** Soutiens ordinaires du premier duo d’Ascensions. Contrairement aux
  * Ascensions, ces cartes entrent dans les paquets, la main et la collection.
- * Les choix automatiques sont annoncés explicitement : ordre de la main,
- * dernière carte admissible du cimetière, première depuis le dessus du deck. */
+ * Chaque effet précise les modalités de son choix et sa zone. */
 export const RPG_ASCENSION_SUPPORT_CREATURES = Object.freeze([
   Object.freeze({
     id: 'gardienne-des-sables-ensevelis', name: 'Gardienne des sables ensevelis', kind: 'creature',
@@ -17,8 +16,8 @@ export const RPG_ASCENSION_SUPPORT_CREATURES = Object.freeze([
     element: 'sable', set: 'ascension-soutiens', art: 'convoi-des-dunes',
     cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain · Éclaireur',
-    arrivee: { type: 'recyclage', cible: 'creature-cimetiere', elements: ['sable', 'eau', 'tenebres'], coutMax: 3, renfortUneFois: true },
-    text: 'À son arrivée : renvoyez dans votre main la dernière créature Sable, Eau ou Ténèbres de coût imprimé 3 ou moins de votre cimetière.',
+    arrivee: { type: 'choix-zone', zone: 'cimetiere', destination: 'main', elements: ['braise', 'sable', 'tenebres'] },
+    text: 'À son arrivée : choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière et renvoyez-la dans votre main.',
     flavor: 'Il connaît les chemins que les scorpions empruntent sous le sable.',
   }),
 ]);

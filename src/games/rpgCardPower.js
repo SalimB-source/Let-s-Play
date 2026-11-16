@@ -88,6 +88,8 @@ function valeurEffet(effet = {}) {
       // dans le deck : elle vaut davantage qu'une pioche aveugle, sans valoir
       // un choix libre dans tout le paquet.
       return montant * (effet.tribu ? 2.1 : 1.5);
+    case 'payer-vie-pioche':
+      return (Number(effet.pioche) || 0) * 1.5 - (Number(effet.amount) || 0) * 0.6;
     case 'pioche-defausse':
       return (Number(effet.pioche) || 0) * 1.2 - (Number(effet.defausse) || 0) * 0.4;
     case 'bouclier':
@@ -150,6 +152,8 @@ function valeurEffet(effet = {}) {
       const bonus = (Number(effet.atk) || 0) * 0.8 + (Number(effet.def) || 0) * 0.6;
       return bonus + 2;
     }
+    case 'choix-zone':
+      return effet.destination === 'main' ? 1.5 : 1;
     case 'recyclage':
       // Cimetière → main : la carte recyclée vaut un peu moins qu'une pioche
       // (elle est connue), le choix libre — toute la Liste — un cran au-dessus.

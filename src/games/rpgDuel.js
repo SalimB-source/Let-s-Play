@@ -3707,6 +3707,18 @@ function placeChoixRenfort(duel, cote, attente) {
   return { voie, slot, emplacement: { left: 0, center: 2, right: 3 }[laneId] + slot };
 }
 
+/** Choix d'une carte de créature, sans exigence de case libre : ces effets
+ * déplacent une carte entre zones et ne sont pas des invocations. */
+function candidatsChoixZone(camp, effet) {
+  return (camp?.[effet.zone] ?? []).flatMap((id, index) => {
+    const carte = cardById(id);
+    const valide = carte && ['creature', 'hero'].includes(carte.kind) && !carte.jeton
+      && (!effet.couts || effet.couts.includes(carte.cost))
+      && (!effet.elements || effet.elements.some(element => cardColors(carte).includes(element)));
+    return valide ? [{ id, index, admissible: true }] : [];
+  });
+}
+
 /** Les cartes regardées et les choix légaux ne sortent que pour leur propriétaire. */
 export function rpgCartesRenfortChoisi(duel, cote) {
   const attente = duel?.renfortChoixEnAttente ?? (duel?.mobaRechercheEnAttente?.renfort ? duel.mobaRechercheEnAttente : null);
@@ -3715,6 +3727,7 @@ export function rpgCartesRenfortChoisi(duel, cote) {
   const effet = effetPourChoixRenfort(source, attente.origine);
   const camp = duel[cote];
   if (!effet || !camp) return [];
+  if (effet.type === 'choix-zone') return candidatsChoixZone(camp, effet);
   if (attente.recherche) return camp.deck.flatMap((id, index) =>
     effet.categories?.some(categorie => (cardById(id)?.typeLine ?? '').includes(categorie))
       ? [{ id, index, admissible: true }] : []);
@@ -3733,6 +3746,26 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
   const carteSource = cardById(attente.sourceCarteId);
   const effet = effetPourChoixRenfort(carteSource, attente.origine);
   const camp = duel[cote];
+  if (effet?.type === 'choix-zone' && camp) {
+    const candidats = candidatsChoixZone(camp, effet);
+    const choix = candidats.find(c => c.index === index);
+    if ((!choix && candidats.length) || (!candidats.length && index !== null)) return { ok: false, raison: 'cible' };
+    if (choix) {
+      const [id] = camp[effet.zone].splice(choix.index, 1);
+      if (effet.destination === 'main') {
+        ajouterCarteEnMainOuReserve(camp, id);
+        if (!estCarteAscension(id)) noterSortieCimetiere(duel, cote, id, 'main');
+      } else camp.cimetiere.push(id);
+      const destination = effet.destination === 'main' && estCarteAscension(id) ? 'la réserve d’Ascension'
+        : effet.destination === 'main' ? 'la main' : 'le cimetière';
+      duel.log.push(`${carteSource.name} : ${cardById(id)?.name ?? id} rejoint ${destination}.`);
+    } else duel.log.push(`${carteSource.name} : aucune créature admissible.`);
+    if (duel.moba) duel.mobaRechercheEnAttente = null;
+    else duel.renfortChoixEnAttente = null;
+    activerProchainRenfortChoisi(duel);
+    if (duel.moba || cote !== 'sorcier' || duel.pvp) reprendreTransitionRetours(duel);
+    return { ok: true };
+  }
   if (attente.recherche && effet?.type === 'recherche-deck-categories' && camp) {
     const choix = rpgCartesRenfortChoisi(duel, cote).find(c => c.index === index);
     if (!choix) return { ok: false, raison: 'cible' };
@@ -3812,7 +3845,7 @@ function activerProchainRenfortChoisi(duel) {
 function preparerRenfortChoisi(duel, cote, sourceCarteId, origine = 'arrivee', emplacementMoba = null, voiePreferee = null) {
   const source = cardById(sourceCarteId);
   const effet = effetPourChoixRenfort(source, origine);
-  const attente = { cote, sourceCarteId, renfort: true, ...(emplacementMoba ? { emplacementMoba } : {}), ...(voiePreferee ? { voiePreferee } : {}), ...(effet?.type === 'recherche-deck-categories' ? { recherche: true } : {}), ...(origine === 'destruction' ? { origine } : {}), restant: Math.max(1, Number(effet?.nombre) || 1) };
+  const attente = { cote, sourceCarteId, renfort: true, ...(emplacementMoba ? { emplacementMoba } : {}), ...(voiePreferee ? { voiePreferee } : {}), ...(['recherche-deck-categories', 'choix-zone'].includes(effet?.type) ? { recherche: true } : {}), ...(origine === 'destruction' ? { origine } : {}), restant: Math.max(1, Number(effet?.nombre) || 1) };
   (duel.renfortsChoixFiles ??= []).push(attente);
   activerProchainRenfortChoisi(duel);
 }
@@ -4128,6 +4161,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // à celle du porteur, elle ne la remplace pas.
       if (cardById(sourceCarteId)?.donne?.esquive) recalculerEsquive(porteur);
       duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : ${effet.atk >= 0 ? '+' : ''}${effet.atk}/${effet.def},${effet.coupCritique ? ' Coup critique.' : ''}`);
+      return;
+    }
+    case 'payer-vie-pioche': {
+      // Effet obligatoire d'arrivée, distinct du Prix : il peut être mortel.
+      const montant = Math.max(0, Number(effet.amount) || 0);
+      if (duel.moba) {
+        const laneId = options?.mobaLane ?? duel[cote].creatures.find((entite) => entite.id === sauf)?.mobaLane;
+        // Le centre rallié compte pour chacune de ses voies latérales ;
+        // calculer les voies du payeur avant toute conquête.
+        for (const voie of mobaVoiesCombat(duel.moba, laneId)) {
+          if (duel.moba.winner) break;
+          mobaPerdreVieAdverse(duel, autre(cote), voie, montant);
+        }
+      } else {
+        duel[cote].pv = Math.max(0, duel[cote].pv - montant);
+      }
+      duel.log.push(`${cardById(sourceCarteId)?.name ?? 'La créature'} : ${cote === 'joueur' ? 'vous payez' : 'le sorcier paie'} ${montant} PV.`);
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
       return;
     }
     case 'transfert': {
@@ -5057,6 +5108,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       ajouterCarteEnMainOuReserve(camp, carteRenvoyee);
       if (!estCarteAscension(carteRenvoyee)) noterSortieCimetiere(duel, cote, carteRenvoyee, 'main');
       duel.log.push(`${nomSource} renvoie ${cardById(carteRenvoyee)?.name ?? carteRenvoyee} du cimetière ${estCarteAscension(carteRenvoyee) ? 'à la réserve d’Ascension' : 'en main'}.`);
+      return;
+    }
+    case 'choix-zone': {
+      // Sans cible, l'arrivée se dissipe sans ouvrir de dialogue vide.
+      if (!candidatsChoixZone(duel[cote], effet).length) {
+        duel.log.push(`${cardById(sourceCarteId)?.name ?? 'La capacité'} : aucune créature admissible.`);
+        return;
+      }
+      preparerRenfortChoisi(duel, cote, sourceCarteId);
       return;
     }
     case 'renfort-choisi': {
@@ -6029,6 +6089,7 @@ export function arriveeConsulteDeck(carte) {
   const type = String(arrivee.type ?? '');
   return type.startsWith('pioche')
     || type.startsWith('recherche')
+    || (type === 'choix-zone' && arrivee.zone === 'deck')
     || type === 'tuteur'
     // La mue du Serpent du monde vide les deux mains et repioche : le paquet
     // est consulté dès la pose, l'action n'est plus annulable.

@@ -1291,9 +1291,13 @@ test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', ()
     'amayas-du-hoggar',
     'chercheuse-des-armes-ensevelies',
     'djinn-de-la-flamme-mourante',
+    'dune-marchante',
+    'lecteur-du-dernier-nom',
     'ibis-des-comptes',
     'maitre-des-hieroglyphes',
     'pilote-de-la-carreira',
+    'porteur-de-la-plume',
+    'veuve-des-urnes',
     'sahir-des-braises',
     'scalde-des-runes',
     'valkyrie-au-corbeau',
@@ -1321,7 +1325,7 @@ test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', ()
   const finaliser = page.slice(debutFinaliser, debutFinaliser + 2200);
   assert.match(
     finaliser,
-    /if \(arriveeConsulteDeck\(carte\) && !res\.arriveeEnAttente\) invaliderAnnulation\(\);\s+else conserverAnnulation\(etatAvantAction\);/,
+    /if \(\(!modePvp && duel\.tour !== .joueur.\) \|\| \(arriveeConsulteDeck\(carte\) && !res\.arriveeEnAttente\)\) invaliderAnnulation\(\);\s+else conserverAnnulation\(etatAvantAction\);/,
     'la table retire « Annuler la dernière action » dès qu’une arrivée a consulté le deck',
   );
   assert.match(
