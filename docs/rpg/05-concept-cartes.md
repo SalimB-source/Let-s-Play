@@ -264,12 +264,9 @@ valkyries n'émettent plus de Résonance viking.
   dans son deck. Le type imprimé décide : un Loup des neiges (type Loup) et
   les sorts Neige ne sont pas éligibles. S'il ne reste aucun Viking dans le
   deck, l'arrivée ne fait pas piocher de carte de remplacement.
-- **Défenseur** (Berserk des trois hivers, 3 mana, 2/4, Furie 2) — les
-  attaques individuelles adverses doivent le viser en priorité s'il est
-  accessible ; en combat collectif, cette capacité ne force pas à bloquer.
-  En MOBA, la priorité s'applique aux attaques venant de sa voie.
+- **Berserk des trois hivers** (3 mana, 2/4) — Furie 2 et Overkill, sans Défenseur.
 
-Les créatures du Nord gardent leurs capacités propres (Défenseur du
+Les créatures du Nord gardent leurs capacités propres (Furie et Overkill du
 Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, vent froid
 d'arrivée de la Valkyrie des glaces).
 
