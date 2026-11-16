@@ -93,7 +93,7 @@ for (const moba of [false, true]) {
   });
 }
 
-test('le Griffon posé affiche son écu, ses ailes et ses trois pastilles en duel et en MOBA', async () => {
+test('le Griffon posé affiche son repère Défenseur, ses ailes et ses trois pastilles en duel et en MOBA', async () => {
   const [{ createServer }, React, { renderToStaticMarkup }, { JSDOM }] = await Promise.all([
     import('vite'), import('react'), import('react-dom/server'), import('jsdom'),
   ]);

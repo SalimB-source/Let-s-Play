@@ -1650,7 +1650,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__card-flight--recherche .moba__card-flight-face { border-color: #b6eced; box-shadow: 0 3px 15px #000d, 0 0 16px #93dce4bb; }
 
 /* Même disposition sur PC et mobile : attaque au-dessus de défense, pour
-   le champ et les cartes de créature en main. Les aperçus restent en grille. */
+   le champ et les cartes de créature en main ; les aperçus suivent la même disposition. */
 .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stats,
 .rpg-battle[data-scene="duel"] .card-table > .card-row .rpg-card--img .rpg-card__foot,
 .rpg-battle.rpg-battle--moba .moba .moba__real-slot .rpg-card--img .rpg-card__foot,

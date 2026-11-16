@@ -33,7 +33,7 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
     const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     let duel;
     const initialiser = () => {
-      duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 });
+      duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], rng: () => .5 });
       return duel;
     };
     const FantomeCarteDetruite = ({ effet }) => React.createElement('div', { 'data-ghost-id': effet.entityId });
@@ -45,8 +45,11 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
       await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
     };
     await click(document.querySelector('.moba__mulligan .moba__primary'));
+    duel.joueur.main = ['ashigaru-des-braises'];
+    const cible = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+    assert.ok(cible); cible.pv = cible.pvMax = 4; const pvAvant = cible.pv;
     rpgFinDeTour(duel);
-    duel.sorcier.mana.braise = 30;
+    duel.sorcier.mana.braise = 30; duel.sorcier.mana.neige = 30;
     duel.sorcier.main = ['ashigaru-des-braises'];
     const victim = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
     assert.ok(victim);
@@ -54,13 +57,17 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
     // sacrifice et ne consomme pas l'invocation normale de ce tour.
     victim.atk = 0; victim.nePeutPasAttaquer = true;
     duel.moba.creaturesJouees.sorcier = false;
-    duel.sorcier.main = ['anqa-des-braises'];
+    duel.sorcier.main = ['geant-des-banquises'];
     await act(async () => root.render(React.createElement(Board, props)));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
     assert.equal(duel.mobaCreatureEnAttente?.cote, 'sorcier');
     assert.deepEqual(duel.mobaCreatureEnAttente?.sacrificeIds, [victim.id]);
     assert.equal(document.querySelector('[data-rpg-sacrifice-id]'), null, 'rien avant la résolution');
     await click([...document.querySelectorAll('.moba__primary')].find((button) => button.textContent.includes('laisser entrer')));
+    assert.equal(cible.pv, pvAvant, 'les dégâts attendent la pose');
+    assert.ok(!(cible.gelToursRestants > 0), 'le gel attend la pose');
+    assert.ok(duel.sorcier.creatures.some((entite) => entite.id === victim.id), 'le sacrifice reste en attente pendant le cercle');
+    assert.equal(duel.sorcier.creatures.some((entite) => entite.carteId === 'geant-des-banquises'), false);
     const circle = document.querySelector(`.moba__side--sorcier [data-rpg-sacrifice-id="${victim.id}"]`);
     assert.ok(circle, 'le cercle est visible sur le camp adverse');
     assert.ok(circle.closest('.moba__sacrifice-zone'), 'le style violet cible bien le cercle du plateau');
@@ -68,11 +75,14 @@ test('le sacrifice de l’IA affiche le cercle sur sa victime après la réponse
     assert.ok(circle.querySelector('.rpg-invocation-sceau__orbite'), 'les runes du véritable cercle sont rendues');
     assert.equal(circle.closest('[data-moba-lane]').dataset.mobaLane, 'left');
     assert.equal(circle.closest('[data-moba-slot]').dataset.mobaSlot, '0');
-    assert.ok(document.querySelector('.moba__side--sorcier .moba__slot.is-invoking'), 'la nouvelle créature attend la fin du rituel');
+    assert.ok(document.querySelector('.moba__side--sorcier .moba__slot.is-invoking'), 'la victime réelle est masquée pendant son rituel');
     assert.equal(document.querySelector(`[data-ghost-id="${victim.id}"]`), null, 'pas de fantôme de mort en double');
     await act(async () => new Promise((resolve) => setTimeout(resolve, 700)));
     await act(async () => circle.dispatchEvent(new dom.window.Event('animationend', { bubbles: true })));
     assert.equal(document.querySelector(`[data-rpg-sacrifice-id="${victim.id}"]`), null, 'le cercle disparaît à la fin');
+    assert.equal(cible.pv, pvAvant - 1, 'les dégâts se produisent à la pose');
+    assert.ok(cible.gelToursRestants > 0, 'le gel se produit à la pose');
+    assert.ok(duel.sorcier.creatures.some((entite) => entite.carteId === 'geant-des-banquises'));
     assert.equal(document.querySelector('.moba__slot.is-invoking'), null, 'la créature apparaît après le cercle');
     assert.ok(document.querySelector('.moba__side--sorcier .moba__real-slot .rpg-card.fx-enter'), 'la vraie carte rejoue son entrée après le rituel');
   } finally {

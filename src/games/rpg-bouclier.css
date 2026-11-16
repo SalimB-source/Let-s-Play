@@ -1,47 +1,6 @@
-/*
- * L'écusson des créatures Défenseur — src/games/rpg-bouclier.css
- * ---------------------------------------------------------------
- * La carte Défenseur n'est PLUS un rectangle avec un dessin par-dessus : elle
- * EST la silhouette de l'écusson. Arche haute, flancs droits, vraie pointe en
- * V en bas, aplat marine. Aucun coin rectangulaire ne dépasse.
- *
- * Un fin trait rouge souligne la silhouette des Défenseurs sur le plateau,
- * sans cadre métallique ni liseré de la couleur de l'élément. Une ombre portée
- * suit l'alpha sans faire de rectangle. Les SVG partagent le viewBox
- * `-5 -5 110 137`, qui laisse de la marge autour de la pointe `50 124` et
- * aligne les masques et les effets. La sélection temporaire reste prioritaire
- * et dessine sa couleur sur ce même tracé.
- *
- * EFFETS EN FORME D'ÉCU (demande du joueur : « l'effet bouclier doit prendre la
- * forme de l'écusson et les autres effets du genre aussi ») : l'égide de
- * Bouclier (violette, dorée, colorée) et son impact, la vignette de Furie, le
- * souffle d'Envol, la brume d'Infiltration, le sonar / les ondes d'Aura, le
- * sang et le givre. Tous ces calques peignaient un rectangle bordé : ils sont
- * désormais masqués par `--rpg-ecusson-effet-masque` (le plein de l'écu PLUS
- * un anneau de 8 pour leur halo). Leurs
- * `border`, `border-radius` et `box-shadow` rectangulaires sont neutralisés.
- * Les effets actifs gardent leur liseré en forme d'écu ; un calque distinct
- * porte le fin trait rouge permanent de Défenseur sur le plateau.
- *
- * Le `mask-image` ne touche PAS aux pastilles ATQ/DÉF, aux pierres d'effets,
- * au badge d'arme, aux compteurs ni aux libellés : ils gardent exactement la
- * taille des autres cartes et débordent librement (`overflow: visible`).
- * Seule exception demandée ensuite : sur le plateau, le pied ATQ/DÉF remonte
- * vers le milieu de la carte (un simple `translate`, aucun agrandissement,
- * voir plus bas). Le sonar rouge `has-garde` reste présent, simplement dessiné
- * dans la forme de l'écu.
- *
- * La main et le mulligan restent rectangulaires. Les aperçus reprennent la
- * silhouette de leur source : un Défenseur sur table s’y affiche en écusson,
- * tandis qu’une carte consultée en main reste rectangulaire.
- *
- * Enfin, une créature Défenseur posée sur la table est **10 % plus grande** que
- * ses voisines (voir `--rpg-defenseur-echelle` plus bas), avec un peu plus
- * d'espacement entre les emplacements. Les icônes, elles, ne grandissent pas.
- * Et son pied ATQ/DÉF **remonte vers le milieu** (`translate: 0 -20cqw`,
- * ≈ 16 % de la hauteur de carte) — toujours un simple décalage, jamais
- * d'agrandissement — sans qu'aucune taille change.
- */
+/* Les Défenseurs gardent leur taille, leurs repères et leur liseré rouge,
+   mais leur face, leur cadre et tous leurs effets sont rectangulaires comme
+   ceux des autres cartes. La classe décrit le statut, pas une découpe. */
 
 /* TAILLE : une créature Défenseur posée sur la table est « un petit peu plus
    grande » (+10 %). On agrandit la carte à l'ÉCRAN avec la propriété `scale`,
@@ -55,7 +14,7 @@
        `drop-shadow` restent libres ;
      - comme la boîte ne bouge pas, on élargit simplement les gouttières des
        rangées (`.card-row`, héritées par les cinq emplacements) pour laisser
-       respirer les écus qui débordent de 5 % de chaque côté.
+       respirer les cartes qui débordent de 5 % de chaque côté.
 
    Seules les `.rpg-card` de la TABLE portent le facteur : les vignettes du
    catalogue / atelier / guide / Souk, la main, le mulligan et les aperçus ne
@@ -73,12 +32,9 @@
 .rpg-card.rpg-carte-bouclier > * {
   scale: calc(1 / var(--rpg-defenseur-echelle, 1));
 }
-/* Exception : les calques PLEINE FACE doivent, eux, suivre la silhouette et
-   le masque de l'écu. Illustration, sang, givre, sonars, égide, impact, Furie,
-   Envol, brume, bandeaux de titre / type / texte et voiles restent à l'échelle
-   de la carte, sinon leur masque dessinerait un second écu plus petit. */
+/* Les calques pleine face et le cadre suivent la taille de la carte. */
 .rpg-card.rpg-carte-bouclier > :is(
-  .rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance, .rpg-card__liseret-garde,
+  .rpg-cadre-carte, .rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__resonance, .rpg-card__liseret-garde,
   .rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-furie-vignette,
   .rpg-card__envol, .rpg-card__brume,
   .rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set
@@ -104,7 +60,7 @@
 
    Pas de `width`, `bottom`, `font-size`, `padding`, `scale`, `zoom` ni
    `transform` : les pastilles gardent exactement leur taille, leur écart et
-   leurs places à gauche / à droite, seules leurs deux boîtes montent dans la
+   leur placement, seules leurs deux boîtes montent dans la
    carte. Aucun agrandissement. `translate` compose avec le `scale` inverse
    déjà posé sur les enfants directs (il s'applique avant, dans le repère de
    la carte), et laisse intactes les cinématiques `fx-*` qui animent la carte,
@@ -119,230 +75,14 @@
   translate: 0 -20cqw;
 }
 
-.rpg-carte-bouclier {
-  /* Les URI encodées ne peuvent pas lire une variable CSS : la couleur marine
-     y est écrite en dur, en accord avec `--rpg-ecusson-fond`. */
-  --rpg-ecusson-fond: #211d3b;
-  --rpg-ecusson-aplat: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%2833,29,59%29'/%3E%3C/svg%3E");
-  --rpg-ecusson-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3C/svg%3E");
-  /* Masque des EFFETS : le plein de l'écu + un anneau de 8 tout autour. Le
-     plein découpe le calque, l'anneau laisse vivre son petit halo (l'ancien
-     `box-shadow` externe) sans jamais redessiner un rectangle. */
-  --rpg-ecusson-effet-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='8'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-  /* Fin filet de 3,2 pour le LISERÉ des effets : même épaisseur apparente que
-     l'ancien `border: 2px` de l'égide, mais tracé le long de l'écu. */
-  --rpg-ecusson-effet-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='3.2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-  /* Un trait plus fin pour distinguer le Défenseur sans concurrencer les
-     contours temporaires de sélection et de blocage. */
-  --rpg-ecusson-defenseur-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='1.6'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-  position: relative;
-  /* L'aplat marine SUIT la silhouette : transparent ailleurs, donc aucun
-     rectangle peint. Le `background-image: none` des cadres ornés est
-     remplacé, pas simplement neutralisé. */
-  background: transparent !important;
-  background-image: var(--rpg-ecusson-aplat) !important;
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  /* Jamais de rectangle : ni cadre, ni rayon, ni ombre de boîte, ni outline. */
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
-  overflow: visible !important;
-  isolation: isolate;
-  /* Ombre portée discrète : `drop-shadow` épouse l'alpha de l'écusson,
-     contrairement à `box-shadow` qui suivrait le rectangle. */
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .42));
-}
-
-/* Pas de cadre sur l'écu, même si un autre gabarit fournit un ::before. */
-.rpg-carte-bouclier::before {
-  content: none !important;
-  display: none !important;
-}
-
-/* La sélection est temporaire et prime sur le fin liseré rouge au repos.
-   Le même tracé en V sert au clic, au blocage et aux sacrifices, en duel
-   comme en MOBA, sans contour rectangulaire sur mobile. */
-.rpg-card.rpg-carte-bouclier:is(.is-active, .is-selected, .is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover, .is-sacrifice, .is-ascension-chosen)::before {
-  content: '' !important;
-  display: block !important;
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  background: #ffdf55;
-  -webkit-mask-image: var(--rpg-ecusson-effet-liseret);
-  mask-image: var(--rpg-ecusson-effet-liseret);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  pointer-events: none;
-}
-/* Les autres couleurs restent celles des états d'origine : sur ordinateur,
-   une sélection simple est rouge ; sur tactile elle devient jaune. */
-.rpg-card.rpg-carte-bouclier.is-selected::before { background: #ff6b5e; }
-.rpg-battle--touch .card-row .rpg-card.rpg-carte-bouclier.is-selected::before { background: #ffe082; }
-.rpg-card.rpg-carte-bouclier:is(.is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover)::before,
-.rpg-battle--touch .card-row .rpg-card.rpg-carte-bouclier:is(.is-blocker-selected, .is-blocker-assigned, .is-blocker-target-hover)::before { background: #ffdf55; }
-.rpg-card.rpg-carte-bouclier.is-declared-attacker::before,
-.rpg-battle--touch .card-row .rpg-card.rpg-carte-bouclier.is-declared-attacker::before { background: #ff534c; }
-/* En MOBA, attaque et blocage/cible ont leurs couleurs propres ; le sacrifice
-   choisi a priorité, comme son outline dans la feuille MOBA. */
-.moba .rpg-card.rpg-carte-bouclier.is-attacking::before { background: #f39a62; }
-.moba .rpg-card.rpg-carte-bouclier:is(.is-blocking, .is-target)::before { background: #9edcf3; }
-.moba .rpg-card.rpg-carte-bouclier.is-sacrifice::before { background: #e5aa5a; }
-.rpg-card.rpg-carte-bouclier.is-ascension-chosen::before,
-.rpg-battle--touch .card-row .rpg-card.rpg-carte-bouclier.is-ascension-chosen::before { background: #ffdf95; }
-
-/* Tout ce qui peignait un fond rectangulaire sur la face suit le même masque :
-   illustration, calques de sang/givre, bandeaux de titre/type/texte, sonar,
-   reflets et voiles `::after`. Les pastilles et les pierres, elles, ne sont
-   PAS dans cette liste : elles restent à leur place habituelle. */
-.rpg-carte-bouclier > img,
-.rpg-card.rpg-carte-bouclier > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost),
-.rpg-carte-bouclier > :is(.rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set),
-.rpg-card-catalogue__art.rpg-carte-bouclier > img,
-.rpg-atelier__carte-art.rpg-carte-bouclier > img,
-.rpg-card-guide__example.rpg-carte-bouclier .rpg-card-guide__art img,
-.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-art img,
-.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-reflet,
-.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-tampon,
-.rpg-carte-bouclier::after {
-  -webkit-mask-image: var(--rpg-ecusson-masque);
-  mask-image: var(--rpg-ecusson-masque);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  border-radius: 0 !important;
-}
-
-/* ── LES EFFETS PRENNENT LA FORME DE L'ÉCU ──────────────────────────────────
-   Égide de Bouclier (et ses variantes lumière / colorée), impact de rupture,
-   vignette de Furie, souffle d'Envol, brume d'Infiltration et sonar / ondes
-   (Résonance, Aura, Malédiction, garde rouge). Tous étaient `inset: 0` avec
-   un `border`, un rayon hérité de la carte et une ombre de boîte : sur
-   l'écu ils redessinaient un rectangle. On garde leurs dégradés, leurs ondes,
-   leurs reflets et leurs animations, mais on les découpe dans l'écu et on
-   neutralise tout ce qui traçait le rectangle. */
-.rpg-card.rpg-carte-bouclier > :is(
-  .rpg-bouclier-egide,
-  .rpg-bouclier-impact,
-  .rpg-furie-vignette,
-  .rpg-card__envol,
-  .rpg-card__brume,
-  .rpg-card__resonance
-) {
-  -webkit-mask-image: var(--rpg-ecusson-effet-masque);
-  mask-image: var(--rpg-ecusson-effet-masque);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Le LISERÉ des effets : un fin filet coloré, dessiné sur `::after` avec le
-   tracé de l'écu (`--rpg-ecusson-effet-liseret`, 3,2 unités). Il remplace le
-   `border` rectangulaire de l'égide / de l'impact / du sonar, et suit la
-   pointe `50 124`. `drop-shadow` donne le halo qu'apportait l'ancien
-   `box-shadow` externe. */
-.rpg-card.rpg-carte-bouclier > :is(.rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-card__resonance)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  background-color: rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .62);
-  -webkit-mask-image: var(--rpg-ecusson-effet-liseret);
-  mask-image: var(--rpg-ecusson-effet-liseret);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  filter: drop-shadow(0 0 6px rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .55));
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
-  pointer-events: none;
-}
-/* L'impact frappe plus fort que l'égide qui veille. */
-.rpg-card.rpg-carte-bouclier > .rpg-bouclier-impact::after {
-  background-color: rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .88);
-}
-/* Égide de Protection : deux couleurs d'éléments au lieu du violet. */
-.rpg-card.rpg-carte-bouclier > .rpg-bouclier-egide--colore::after {
-  background-color: color-mix(in srgb, var(--bouclier-couleur-a) 74%, transparent);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--bouclier-couleur-b) 55%, transparent));
-}
-/* Les autres sonars gardent leur teinte : bleu Résonance, or Aura, violet
-   Malédiction. Le liseré Défenseur vit dans un calque séparé. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance::after {
-  background-color: rgba(96, 178, 255, .58);
-  filter: drop-shadow(0 0 6px rgba(70, 150, 255, .48));
-}
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--aura::after {
-  background-color: rgba(250, 205, 90, .58);
-  filter: drop-shadow(0 0 6px rgba(226, 172, 30, .48));
-}
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--malediction::after {
-  background-color: rgba(178, 146, 245, .58);
-  filter: drop-shadow(0 0 6px rgba(122, 74, 208, .48));
-}
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--garde::after {
-  content: none;
-  display: none;
-}
-
-/* Devant l'égide et le givre, mais sous la sélection et les badges : le trait
-   reste lisible quand Défenseur coexiste avec un autre effet. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__liseret-garde {
+/* Trait de priorité au-dessus des effets, sans intercepter la sélection. */
+.rpg-card.rpg-carte-bouclier > .rpg-card__liseret-garde,
+.rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__liseret-garde {
   position: absolute;
   inset: 0;
   z-index: 5;
-  background-color: #e75a4d;
-  -webkit-mask-image: var(--rpg-ecusson-defenseur-liseret);
-  mask-image: var(--rpg-ecusson-defenseur-liseret);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
+  border: 1px solid #e75a4d;
+  border-radius: inherit;
   pointer-events: none;
 }
-/* Coût et statistiques dépassent de l'écusson : le trait et la sélection ne
-   doivent jamais traverser les chiffres. Ces règles ne changent pas leur taille. */
-.rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card__foot),
-.rpg-card.rpg-carte-bouclier.rpg-card--img .rpg-mana-cost.is-plaque {
-  z-index: 7;
-}
-
-/* L'illustration reste sous les voiles et les pastilles. */
-.rpg-carte-bouclier > img,
-.rpg-card.rpg-carte-bouclier > .rpg-card__img {
-  z-index: 0;
-}
-.rpg-carte-bouclier::after { z-index: 1; }
-
-/* Le booster ouvre une scène 3D : son volume peignait un rectangle. On lui
-   retire fond, bordure et ombre de boîte ; l'art et le reflet sont déjà
-   masqués, et l'ombre d'écu vient du `drop-shadow` de la carte. */
-.rpg-souk__carte.rpg-carte-bouclier .rpg-souk__carte-volume {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
+.rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card__foot) { z-index: 7; }

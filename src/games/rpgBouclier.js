@@ -1,57 +1,17 @@
-/**
- * La face en bouclier des créatures Défenseur — src/games/rpgBouclier.js
- * ----------------------------------------------------------------------
- * Un Défenseur se repère déjà à son sonar rouge (`rpg-card__resonance--garde`)
- * et à sa pierre d'emblème (`i-defenseur`). Sa FACE devient l'ÉCUSSON lui-même
- * (voir `rpg-bouclier.css`) : aplat marine, arche haute, flancs droits, vraie
- * pointe en V, aucun rectangle qui dépasse. Reprenant la « Provocation » de
- * Hearthstone, elle ne porte plus de cadre métallique : sur le plateau, un
- * fin liseré rouge souligne sa silhouette. La pointe du bas n'est
- * pas coupée : le viewBox des
- * SVG laisse de la marge sous `50 124`. Les EFFETS pleine face (égide de
- * Bouclier et son impact, Furie, Envol, brume, ondes d'Aura, sang, givre)
- * prennent eux aussi la forme de l'écu : `rpg-bouclier.css` les masque et
- * remplace leur contour de boîte par un liseré d'écu coloré. Un calque
- * distinct trace un filet rouge plus fin et permanent pour Défenseur. Le masque ne
- * touche qu'aux calques : ATQ/DÉF, type, pierres, compteurs et badges gardent
- * exactement la taille des autres cartes ; le sonar `has-garde` reste présent,
- * dessiné dans la forme de l'écu. Sur le plateau, le pied ATQ/DÉF remonte vers
- * le milieu (`translate: 0 -20cqw`, ≈ 16 % de la hauteur de carte), un simple
- * décalage proportionnel sans agrandissement.
- *
- * Une créature Défenseur POSÉE sur la table est aussi **10 % plus grande** que
- * ses voisines (`scale` sur `.rpg-card` dans `rpg-bouclier.css`), avec un peu
- * plus d'espacement entre les emplacements. L'agrandissement est visuel : la
- * boîte de mise en page ne change pas, donc les `cqw` et les tailles en px
- * restent identiques, et les seules icônes sont ramenées à l'échelle 1.
- *
- * La main et le mulligan restent rectangulaires. Un aperçu reprend la
- * silhouette de sa source : rectangle en main ou hors partie, écusson si la
- * créature consultée est posée avec Défenseur. Les vignettes du catalogue /
- * atelier / guide / boosters portent aussi la classe selon leur propre gabarit.
- *
- * Deux sources pour le mot-clé :
- *   - la carte imprimée (`defenseur: true`, ou les anciens marqueurs
- *     `provocation` / `prioriteAttaqueRapide`) ;
- *   - l'entité en jeu, qui peut AVOIR REÇU Défenseur pendant la partie
- *     (sort, équipement, arrivée) sans que sa carte l'imprime.
- *
- * `estDefenseur` reste l'unique autorité : ce module ne réécrit aucune règle,
- * il décide seulement si une face doit être dessinée en bouclier. Les sites,
- * les terrains, les armes et les sorts sont exclus, même s'ils portent par
- * erreur un marqueur de Défenseur.
- */
+/** Repérage visuel des créatures Défenseur, imprimées ou acquises en jeu.
+ * La classe conserve les repères propres au statut ; toutes les faces restent
+ * rectangulaires. Les règles de jeu restent dans rpgDefenseur.js. */
 
 import { estDefenseur } from './rpgDefenseur.js';
 
 /** La classe posée sur les faces des créatures Défenseur. */
 export const CLASSE_BOUCLIER = 'rpg-carte-bouclier';
 
-/** Seuls les créatures et les héros deviennent des écus. */
+/** Seuls les créatures et les héros portent ce repère. */
 const TYPES_BOUCLIER = new Set(['creature', 'hero']);
 
 /**
- * Vrai quand cette carte doit être dessinée en bouclier.
+ * Vrai quand cette carte porte le repère Défenseur.
  * `carte` est la définition du catalogue, `entite` l'état courant sur la table
  * (facultatif : main, catalogue, aperçu n'en ont pas). Une définition brute
  * sans `kind` est encore une créature — le catalogue normalise ce champ.

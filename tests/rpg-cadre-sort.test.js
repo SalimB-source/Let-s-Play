@@ -36,9 +36,9 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   const css = lire('rpg-cadre-carte.css');
   assert.match(css, /z-index:\s*1/);
   assert.match(css, /> img:has\(\+ \.rpg-cadre-carte\)\s*\{\s*clip-path:\s*var\(--rpg-cadre-decoupe\)/);
-  assert.match(css, /rpg-card\.rpg-carte-bouclier > \.rpg-cadre-carte \{ scale: 1/);
+  assert.match(lire('rpg-bouclier.css'), /\.rpg-cadre-carte, \.rpg-card__img/);
   assert.match(css, /pointer-events:\s*none/);
-  assert.match(css, /mask:\s*var\(--rpg-ecusson-masque\)/);
+  assert.doesNotMatch(css, /--rpg-ecusson-masque/);
   // Les illustrations ne doivent plus dépendre d'un SVG externe pour être
   // visibles : chaque découpe reste une forme CSS autonome, avec repli naturel
   // sur l'image entière si le navigateur ne reconnaît pas polygon().

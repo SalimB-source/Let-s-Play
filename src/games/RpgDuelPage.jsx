@@ -19,6 +19,7 @@ import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
+import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
 import { convertirDeckSansTerrain } from './rpgCards.js';
 /**
  * Le Sablier — duel de cartes tactique.
@@ -310,6 +311,7 @@ import {
   rpgSorcierAnnonceSuivante,
   rpgSorcierPrepareTerrain,
   rpgSorcierResoudreAnnonce,
+  rpgSacrificesAnnonceSorcier,
   rpgSyncCompteurEntites,
   rpgVainqueur,
 } from './rpgDuel.js';
@@ -2986,7 +2988,7 @@ export function TableCard({
         cote === 'ennemi' ? 'rpg-card--ennemi' : 'rpg-card--equipe',
         entite.furieDeclenchee ? '' : cardFrameClass(carte),
         cardMotifClass(carte),
-        // Défenseur imprimé ou reçu en cours de partie : la face devient un écu.
+        // Défenseur imprimé ou reçu en cours de partie : repère de priorité.
         classeBouclier(carte, entite),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         !estSite && cardRarityInfo(carte).key === 'mythique' ? 'is-mythique-creature' : '',
@@ -3617,7 +3619,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   );
   // L'Abordage se lit dans les détails : la créature captive est montrée en
   // vignette, comme une arme portée, sans doubler la face principale.
-  // Une carte posée reprend son état et sa silhouette ; la main reste rectangulaire.
+  // Une carte posée reprend son état ; toutes les faces restent rectangulaires.
   const face = (
     <div className="rpg-hover-card-preview__empile">
     <div
@@ -9985,7 +9987,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const nbDeckAdverse = duel.sorcier.deckCount ?? duel.sorcier.deck.length;
   const nbDeckJoueur = duel.joueur.deckCount ?? duel.joueur.deck.length;
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
-  const fenetreSort = Boolean(duel.annonce && !vainqueur);
+  const fenetreSort = Boolean(duel.annonce && !vainqueur && !sacrificeFx);
   const fenetreEffetCreature = Boolean(duel.effetCreatureEnAttente?.cote === 'sorcier' && !vainqueur && !sacrificeFx);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
   const repondreAnnonceDesactive = Boolean(tutorielActif && etapeTutoriel?.on === 'annonce-passee');
@@ -10363,7 +10365,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, duree);
   };
 
-  const demarrerVolCarte = (carte, handIndex, resoudreAction, emplacement = null) => {
+  const demarrerVolCarte = (carte, handIndex, resoudreAction, emplacement = null, { voixALaPose = false } = {}) => {
     if (!carte || !resoudreAction) return;
     const origine = carteOrigineVolRef.current;
     const source = [...(tableRef.current?.querySelectorAll('.rpg-hand__card') ?? [])]
@@ -10377,7 +10379,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // (720 ms), et elle parle déjà — c'est le geste qui l'annonce, pas sa
     // pose. Une disposition réduite saute le vol : la voix, elle, précède
     // toujours le rendu qui peint la créature.
-    annoncerVoixArrivee(carte.id);
+    if (!voixALaPose) annoncerVoixArrivee(carte.id);
     if (!Number.isInteger(index) || index < 0 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       resoudreAction();
       return;
@@ -11650,11 +11652,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sacrificeEnCoursRef.current = null;
     if (enCours.cote === 'sorcier') {
       setSacrificeFx(null);
-      // La résolution du moteur a déjà payé les victimes : la nouvelle carte
-      // n'apparaît qu'après leurs cercles et l'IA attend la fin du rituel.
-      force();
-      if (enCours.arriveeEnAttente) repriseSorcierRef.current = annoncerSuivantSorcier;
-      else later(annoncerSuivantSorcier, delaiReflexionSorcier());
+      // Le paiement, la pose et tous leurs effets arrivent ensemble, après le
+      // dernier cercle : aucune cible ne change pendant le rituel.
+      enCours.resoudre();
       return;
     }
     // Le moteur ne paie le sacrifice qu'à l'atterrissage. Retirer les effets
@@ -11677,7 +11677,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? rpgEmplacementsChamp(duel.joueur).findIndex((entite) => entite?.id === enCours.sacrificeIds[0])
       : -1;
     if (carte && source && Number.isInteger(index) && index >= 0 && !animationsReduites()) {
-      demarrerVolCarte(carte, index, poserApresRituel, caseVictime >= 0 ? caseVictime : null);
+      demarrerVolCarte(carte, index, poserApresRituel, caseVictime >= 0 ? caseVictime : null, { voixALaPose: true });
     } else {
       poserApresRituel();
     }
@@ -13229,7 +13229,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
-    if (duel.arriveeEnAttente) return;
+    if (duel.arriveeEnAttente || sacrificeEnCoursRef.current) return;
     if (!duel.annonce) { jouerSfx('erreur'); return; }
     if (tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee') {
       jouerSfx('erreur');
@@ -13242,16 +13242,35 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     );
     setApercuSurvol(null);
     jouerSfx('pass');
-    // La créature annoncée parle **avant** sa résolution : le clic qui la
-    // laisse passer est le geste qui l'annonce, pas l'instant où elle touche
-    // le plateau. Une magie ou une arme n'a pas de voix : rien ne sonne ici.
+    const annonceCourante = duel.annonce;
+    const sacrifices = rpgSacrificesAnnonceSorcier(duel);
+    const champ = prendreInstantaneChamp();
+    const victimes = (sacrifices ?? []).map((id) => champ.find((entite) => entite.entityId === id)).filter(Boolean);
+    if (victimes.length && victimes.length === sacrifices.length) {
+      const token = ++sequenceAnimationRef.current;
+      const effets = victimes.map((entite) => ({ ...entite, effectId: `invocation-${token}-${entite.entityId}` }));
+      sacrificeEnCoursRef.current = { cote: 'sorcier', token, attendus: effets.map((v) => v.effectId),
+        termines: new Set(), finPlanifiee: false,
+        resoudre: () => {
+          if (duel.annonce === annonceCourante) resoudreAnnonceSorcier(carteAnnoncee, cibleAnnoncee, sacrifices, true);
+        } };
+      setSacrificeFx({ victimes: effets, token });
+      jouerSfx('destruction');
+      const duree = animationsReduites() ? SACRIFICE_ANIMATION.reduit
+        : dureeAnimation(SACRIFICE_ANIMATION.cercle + SACRIFICE_ANIMATION.pause + SACRIFICE_ANIMATION.secours);
+      later(() => terminerPoseSacrifice(token), duree);
+      return;
+    }
+    resoudreAnnonceSorcier(carteAnnoncee, cibleAnnoncee, sacrifices);
+  };
+
+  const resoudreAnnonceSorcier = (carteAnnoncee, cibleAnnoncee, sacrificesPrepares = undefined, sacrificesDejaAnimes = false) => {
+    // La voix et tous les effets d'arrivée accompagnent la pose, pas le rituel.
     annoncerVoixArrivee(carteAnnoncee?.id);
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
-    const res = rpgSorcierResoudreAnnonce(duel);
-    // La carte n'a pas pu se résoudre (mana envolé, cible disparue) : rien
-    // n'entre en jeu, la voix déjà partie se tait.
+    const res = rpgSorcierResoudreAnnonce(duel, { sacrificesPrepares });
     if (!res.ok) retirerVoixArrivee(carteAnnoncee?.id);
     if (res.ok) {
       const sonEffetBraise = res.renvoiMain
@@ -13261,46 +13280,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
     }
-    if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) {
-      declencherImpactEcran('received');
-    }
+    if (res.ok && joueurToucheDepuis(degatsJoueurAvantResolution)) declencherImpactEcran('received');
     if (res.ok) signalerTutoriel('annonce-passee', { cardId: carteAnnoncee?.id });
-    // Une magie annoncée qui se résout se lit au-dessus des piles du sorcier.
-    // Une créature ou une arme annoncée, elle, reste une carte posée : rien à
-    // annoncer dans la zone des sorts.
     if (res.ok && carteAnnoncee?.kind === 'magie') annoncerMagieSorcier(carteAnnoncee, cibleAnnoncee);
-    if (res.ok && carteAnnoncee?.kind !== 'magie') {
-      declencherGelMasse(carteAnnoncee, 'sorcier');
-    }
-    // Le moteur a bien payé l'invocation de l'IA. Montrer ses victimes dans
-    // les mêmes cercles et déchirures que celles du joueur, plutôt que de les
-    // faire disparaître sous un fantôme de destruction ordinaire. La créature
-    // invoquée attend la fin du rituel avant de devenir visible.
-    const prisesSacrifice = res.ok ? (res.sacrificeIds ?? [])
-      .map(id => champAvant.find(entite => entite.entityId === id)).filter(Boolean) : [];
-    const tokenSacrifice = prisesSacrifice.length ? ++sequenceAnimationRef.current : null;
-    const victimesSacrifice = prisesSacrifice.map(entite => ({
-      ...entite, effectId: `invocation-${tokenSacrifice}-${entite.entityId}`,
-    }));
-    if (victimesSacrifice.length) {
-      sacrificeEnCoursRef.current = {
-        cote: 'sorcier', token: tokenSacrifice,
-        attendus: victimesSacrifice.map(v => v.effectId),
-        termines: new Set(), finPlanifiee: false,
-        arriveeEnAttente: Boolean(duel.effetCreatureEnAttente),
-      };
-      setSacrificeFx({ victimes: victimesSacrifice, token: tokenSacrifice, entiteArriveeId: res.entite?.id });
-      jouerSfx('destruction');
-    }
+    if (res.ok && carteAnnoncee?.kind !== 'magie') declencherGelMasse(carteAnnoncee, 'sorcier');
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
-      [res.renvoiEntityId], victimesSacrifice.map(v => v.entityId));
+      [res.renvoiEntityId], sacrificesDejaAnimes ? sacrificesPrepares : []);
     force();
-    if (victimesSacrifice.length) {
-      const duree = animationsReduites() ? SACRIFICE_ANIMATION.reduit
-        : dureeAnimation(SACRIFICE_ANIMATION.cercle + SACRIFICE_ANIMATION.pause + SACRIFICE_ANIMATION.secours);
-      later(() => terminerPoseSacrifice(tokenSacrifice), duree);
-      return;
-    }
     if (duel.effetCreatureEnAttente) repriseSorcierRef.current = annoncerSuivantSorcier;
     else later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
@@ -13741,7 +13727,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
       <div
         ref={tableRef}
-        inert={viewport.portrait || mulliganOuvert || selectionAscension.apercuId || duel.renfortChoixEnAttente?.cote === 'joueur' ? true : undefined}
+        inert={viewport.portrait || mulliganOuvert || sacrificeFx || selectionAscension.apercuId || duel.renfortChoixEnAttente?.cote === 'joueur' ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -14152,7 +14138,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       cote="ennemi"
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
-                      sacrificeEnAnimation={sacrificeFx?.entiteArriveeId === entite.id}
+                      sacrificeEnAnimation={sacrificeFx?.entiteArriveeId === entite.id || Boolean(sacrificeFx?.victimes.some(v => v.entityId === entite.id))}
                       entreeDifferee={sacrificeFx?.entiteArriveeId === entite.id}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
@@ -15115,7 +15101,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             lienActif={lienAllumeDansLApercu(cardById(apercuSurvol.carteId))}
             armes={cartesDesIds(apercuSurvol.armesIds)}
             furieDeclenchee={Boolean(apercuSurvol.furie)}
-            statsFurie={apercuSurvol.furie} entite={apercuSurvol.entite}
+            statsFurie={apercuSurvol.furie} entite={actualiserStatsApercu(apercuSurvol.entite, duel)}
             effetsEpuises={apercuSurvol.effetsEpuises ?? []}
             style={apercuSurvol.style}
             panelRef={panelRef}
@@ -15369,7 +15355,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onChoose={cimetiereOuvert.carteId ? (armeId) => { const { carteId, porteurId } = cimetiereOuvert; fermerCimetiere(); lancerMagie(carteId, porteurId, armeId); } : null}
         />
       )}
-      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} entite={apercuAppuiEntite} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
+      {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} entite={actualiserStatsApercu(apercuAppuiEntite, duel)} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
       {/* La même fiche que le catalogue : le clic droit l'ouvre sur la table,
           en main, sur les terrains ou sur une pile — sans rien jouer. La
           vitrine de l'illustration alternative y est **coupée** : on lit une
@@ -15381,7 +15367,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           armes={cartesDesIds(apercuCatalogueArmes)}
           prisonniere={apercuCataloguePrisonniere ? cardById(apercuCataloguePrisonniere) : null}
           furieDeclenchee={Boolean(apercuCatalogueFurie)}
-          statsFurie={apercuCatalogueFurie} entite={apercuCatalogueEntite}
+          statsFurie={apercuCatalogueFurie} entite={actualiserStatsApercu(apercuCatalogueEntite, duel)}
           effetsEpuises={apercuCatalogueEffetsEpuises}
           surface={apercuCatalogueSurface}
           niveau={niveauDuJoueur}

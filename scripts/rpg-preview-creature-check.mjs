@@ -40,8 +40,8 @@ assert.equal(rendre(apercuSort()).querySelector('.rpg-hover-card-preview__face')
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 assert.match(page, /setApercuAppuiEntite\(entiteDeLaCarte\)/);
 assert.match(page, /entite: arme \? null : entiteApercuDepuisHote\(hote\)/);
-assert.match(page, /entite=\{apercuSurvol.entite\}/);
+assert.match(page, /entite=\{actualiserStatsApercu\(apercuSurvol.entite, duel\)\}/);
 const moba = readFileSync(new URL('../src/games/RpgMobaBoard.jsx', import.meta.url), 'utf8');
-assert.match(moba, /entite=\{apercu.entiteVisuelle\}/);
+assert.match(moba, /entite=\{actualiserStatsApercu\(apercu.entiteVisuelle \?\? apercu.entity, duel\)\}/);
 dom.window.close();
 console.log('✓ Aperçus de créatures : main et plateau, états courants, Défenseur acquis, survol, appui long et fiche.');
