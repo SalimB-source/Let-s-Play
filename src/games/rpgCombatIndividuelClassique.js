@@ -21,7 +21,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = (duel[autre(cote)]?.creatures ?? []).filter((e) => accessible(attaquant, e, ciblee));
-  const prioritaires = possibles.filter(estDefenseur);
+  const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
@@ -171,13 +171,15 @@ function renvoiSansGain(duel, cote, attaquant, cible) {
 }
 
 /** Seule face à un Défenseur intact avec Contre-attaque, Tislit ne doit pas
- * se perdre pour une unique blessure. Vérifier l'échange et le raté réels ;
+ * se perdre pour une ou deux blessures. Vérifier le raté et les deux issues
+ * de son critique imprimé avec le vrai moteur ;
  * conserver le candidat s'il existe d'autres créatures, un équipement ou le
  * moindre effet supplémentaire qui pourrait rendre le sacrifice utile. */
 function sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible) {
   const adv = autre(cote);
   if (attaquant.carteId !== 'tislit-des-aures' || !attaquant.coupRapide || attaquant.arme
-    || attaquant.coupCritique || attaquant.atk !== 1 || attaquant.pv !== 1
+    || (attaquant.coupCritique && (attaquant.coupCritique.chance !== .15 || attaquant.coupCritique.fois !== 2))
+    || attaquant.atk !== 1 || attaquant.pv !== 1
     || !estDefenseur(cible) || !cible.contreAttaque
     || cible.pv !== cible.pvMax || cible.pv < 4
     || duel[cote].creatures.length !== 1 || duel[adv].creatures.length !== 1) return false;
@@ -197,17 +199,22 @@ function sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible) {
     return JSON.stringify(visible);
   };
   try {
-    return rpgAvecCompteurEntitesIsole(() => [0.01, 0.5].every((jet) => {
+    const scenarios = [
+      { tirages: [.01], degats: 0 },
+      { tirages: [.5, .5], degats: 1 },
+      ...(attaquant.coupCritique ? [{ tirages: [.5, .01], degats: 2 }] : []),
+    ];
+    return rpgAvecCompteurEntitesIsole(() => scenarios.every(({ tirages, degats }) => {
       const probe = typeof structuredClone === 'function' ? structuredClone(duel) : JSON.parse(JSON.stringify(duel));
       let jets = 0;
-      rpgReglerHasard(probe, () => { jets += 1; return jet; });
+      rpgReglerHasard(probe, () => tirages[jets++] ?? .5);
       if (!rpgDeclarerAttaqueIndividuelleClassique(probe, cote, attaquant.id, cible.id).ok
-        || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets !== 1
+        || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets !== (degats && attaquant.coupCritique ? 2 : 1)
         || rpgVainqueur(probe) || vueDuel(probe) !== vueDuel(duel)) return false;
-      const touche = jet === 0.5;
+      const touche = degats > 0;
       const cibleApres = probe[adv].creatures.find((e) => e.id === cible.id);
-      if (!cibleApres || cibleApres.pv !== cible.pv - (touche ? 1 : 0)
-        || cibleApres.def !== (touche ? Math.min(cible.def, cible.pv - 1) : cible.def)) return false;
+      if (!cibleApres || cibleApres.pv !== cible.pv - degats
+        || cibleApres.def !== (touche ? Math.min(cible.def, cible.pv - degats) : cible.def)) return false;
       if (touche === probe[cote].creatures.some((e) => e.id === attaquant.id)) return false;
       const avant = vueCamp(duel[cote], touche ? 'retire' : null, false, touche);
       const apres = vueCamp(probe[cote], touche ? null : 'pret', false);
@@ -474,7 +481,7 @@ function ordreFurtifPlusUtile(duel, cote, cible, furtif, durable) {
 
 /** Départage limité à la Flèche et au Ghul : à score égal, privilégier une
  * autre cible si le Ghul permet au joueur de tuer une alliée durable et que le
- * moteur confirme que les deux tirs touchés n'ont pas d'autres effets visibles.
+ * moteur confirme que les tirs touchés, critiques ou non, n'ont pas d'autres effets visibles.
  * Ce n'est pas une preuve d'équivalence stratégique des créatures restantes.
  * La branche de raté est identique pour ces tirs simples ; les simulations ne
  * consomment ni choix réel ni hasard réel. */
@@ -488,7 +495,8 @@ function tirSimpleEvitePerte(duel, cote, attaquant, dangereuse, alternative) {
   // Ce départage ne traite que la Flèche contre le Ghul et un tir simple,
   // sans équipements autres que les Sandales (qui tombent au cimetière).
   if (adv !== 'joueur' || attaquant.carteId !== 'djinn-de-la-fleche-ardente'
-    || !attaquant.detruireFinDuTour || !attaquant.coupRapide || attaquant.arme || attaquant.armes?.length || attaquant.coupCritique
+    || !attaquant.detruireFinDuTour || !attaquant.coupRapide || attaquant.arme || attaquant.armes?.length
+    || (attaquant.coupCritique && (attaquant.coupCritique.chance !== .15 || attaquant.coupCritique.fois !== 2))
     || dangereuse.carteId !== 'ghul-des-cendres' || effet?.type !== 'degats' || effet.cible !== 'creature' || !(effet.amount > 0)
     || dangereuse.esquive || dangereuse.contreAttaque || dangereuse.provocation || dangereuse.tenaciteDisponible
     || dangereuse.enCale || dangereuse.cargaison || dangereuse.armes?.length
@@ -511,13 +519,13 @@ function tirSimpleEvitePerte(duel, cote, attaquant, dangereuse, alternative) {
     return visible;
   };
   try {
-    return rpgAvecCompteurEntitesIsole(() => {
+    return rpgAvecCompteurEntitesIsole(() => (attaquant.coupCritique ? [.5, .01] : [.5]).every((jetCritique) => {
       const essayer = (cible) => {
         const probe = typeof structuredClone === 'function' ? structuredClone(duel) : JSON.parse(JSON.stringify(duel));
         let jets = 0;
-        rpgReglerHasard(probe, () => { jets += 1; return 0.5; });
+        rpgReglerHasard(probe, () => (++jets === 2 ? jetCritique : .5));
         if (!rpgDeclarerAttaqueIndividuelleClassique(probe, cote, attaquant.id, cible.id).ok
-          || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets !== 1
+          || !rpgResoudreAttaqueIndividuelleClassique(probe, cote).ok || jets !== (attaquant.coupCritique ? 2 : 1)
           || rpgVainqueur(probe) || probe[adv].creatures.some((e) => e.id === cible.id)) return null;
         return probe;
       };
@@ -554,7 +562,7 @@ function tirSimpleEvitePerte(duel, cote, attaquant, dangereuse, alternative) {
           && JSON.stringify(vueCamp(risque[adv])) === JSON.stringify(vueCamp(probe[adv]))
           && JSON.stringify(vueDuel(risque)) === JSON.stringify(vueDuel(probe));
       });
-    });
+    }));
   } catch {
     return false;
   }

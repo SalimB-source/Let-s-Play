@@ -95,7 +95,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Overkill', 'Furie 2']);
   assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Overkill', 'Furie 2'],
     'le Berserk conserve Overkill et Furie 2 sans Défenseur');
-  assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque', 'Compagnie viking'],
+  assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Coup critique', 'Contre-attaque', 'Compagnie viking'],
     'Eirik affiche sa Contre-attaque et la Compagnie qui le fait grandir');
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
     'le Maître ne porte que Furie 3 et Tenacité : Overkill et Envol sont prêtés par la Furie');
@@ -424,7 +424,7 @@ test('les cartes qui modifient les statistiques affichent leur chiffre', () => {
     'l’Embuscade rabote toute la table adverse de -2/-2');
   assert.deepEqual(pastillesDe('vipere-de-verre'), ['Affaiblissement -2/0'],
     'la vipère ne retire que de l’attaque : la défense reste à 0');
-  assert.deepEqual(pastillesDe('serment-de-la-forge'), ['Renfort +2/+1'],
+  assert.deepEqual(pastillesDe('serment-de-la-forge'), ['Coup critique', 'Renfort +2/+1'],
     'une arrivée qui renforce s’écrit en positif');
   assert.deepEqual(pastillesDe('lame-de-mer').length, pastillesPourCarte(cardById('lame-de-mer')).length,
     'une seule pastille par carte');
@@ -449,7 +449,7 @@ test('la pastille chiffrée explique le malus, statistique par statistique', () 
   assert.equal(lire('vipere-de-verre'),
     'La cible perd 2 en attaque. Si sa défense tombe à 0, elle est détruite.',
     'la vipère ne dit pas qu’elle retire de la défense');
-  assert.equal(lire('serment-de-la-forge'), 'La cible gagne 2 en attaque et 1 en défense.');
+  assert.equal(definitionPastille(pastillesPourCarte(cardById('serment-de-la-forge')).find(p => p.cle === 'buff')), 'La cible gagne 2 en attaque et 1 en défense.');
 });
 
 test('le chiffre de la carte se lit aussi hors des pastilles', () => {

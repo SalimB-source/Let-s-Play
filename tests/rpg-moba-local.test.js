@@ -1838,23 +1838,15 @@ test('Ifrit al-Ahmar resonates with Djinns of both camps across lanes, not itsel
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('Serment de la forge gives same-lane targeted attacks and expires at end of turn', () => {
-  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 10;
-  const enemy = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
-  rpgFinDeTour(duel); duel.joueur.mana.braise = 20;
-  const a = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
-  const b = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
-  a.ready = true; b.ready = true;
-  duel.joueur.main.push('serment-de-la-forge');
-  const result = rpgMobaLancerMagie(duel, 'joueur', 'serment-de-la-forge');
-  assert.equal(result.ok, true, JSON.stringify(result)); assert.equal(a.atk, 3); assert.equal(b.atk, 3);
-  assert.equal(a.coupRapide, true); assert.equal(b.coupRapide, true);
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [a.id]).raison, 'cible-obligatoire');
-  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [a.id, b.id], { [a.id]: enemy.id }).ok, true);
-  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [a.id, b.id], {}, { declaree: true }).ok, true);
-  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 7);
-  rpgFinDeTour(duel); assert.equal(a.coupRapide, false); assert.equal(b.coupRapide, false);
-  assert.equal(a.atk, 1); assert.equal(b.atk, 1);
+test('Serment de la forge accorde Coup critique sans Attaque ciblée puis expire', () => {
+  const duel = partie(); duel.joueur.main = ['gardienne-des-portes-de-sable', 'serment-de-la-forge'];
+  duel.joueur.mana.sable = 20; duel.joueur.mana.braise = 20;
+  const a = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'serment-de-la-forge', null, 'left');
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(a.atk, 3); assert.equal(a.coupRapide, false);
+  assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+  rpgFinDeTour(duel); assert.equal(a.coupCritique, null); assert.equal(a.atk, 1);
 });
 
 test('Gardien provokes only blockers in its lane and retaliates against targeted attacks', () => {
@@ -4833,14 +4825,15 @@ for (const spell of ['mur-de-boucliers', 'serment-de-la-forge', 'rempart-de-dune
     assert.equal(second.atk, before[0] + ({ 'mur-de-boucliers': 2, 'serment-de-la-forge': 2, 'rempart-de-dunes': 0, 'offrande-de-lin': 1 })[spell]);
     assert.equal(second.pv, before[1] + ({ 'mur-de-boucliers': 0, 'serment-de-la-forge': 1, 'rempart-de-dunes': 3, 'offrande-de-lin': 0 })[spell]);
     assert.equal(Boolean(second.overkill), spell === 'mur-de-boucliers');
-    assert.equal(Boolean(second.coupRapide), spell === 'serment-de-la-forge');
+    assert.equal(Boolean(second.coupRapide), false);
+    assert.equal(Boolean(second.coupCritique), spell === 'serment-de-la-forge');
     assert.equal(second.tribut || 0, spell === 'offrande-de-lin' ? 1 : 0);
     assert.equal(first.atk, 1); assert.equal(enemy.atk, 1); assert.equal(enemy.pv, 4);
     assert.equal(JSON.stringify(duel[caster].mana), paid); assert.equal(duel[caster].cimetiere.filter(id => id === spell).length, 1);
     assert.equal(duel.mobaSortEnAttente, null); assert.equal(rpgMobaPlacementCoherent(duel), true);
     assert.equal(terminerEtPasser(duel, caster).ok, true);
     assert.deepEqual([second.atk, second.pv, second.pvMax], before); assert.equal(second.tribut || 0, 0);
-    assert.equal(Boolean(second.overkill), false); assert.equal(Boolean(second.coupRapide), false);
+    assert.equal(Boolean(second.overkill), false); assert.equal(Boolean(second.coupRapide), false); assert.equal(second.coupCritique, null);
   });
 }
 
@@ -4873,7 +4866,7 @@ test('Serment reads Daimyō at resolution after the defender removes its anchor'
     assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'serment-de-la-forge', null, null, null, { ouvrirReponse: true }).sortEnAttente, true);
     if (removeAnchor) assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'ressac', anchor.id).renvoiMain, true);
     assert.equal(rpgMobaPasserSort(duel, 'sorcier').ok, true);
-    assert.equal(ally.atk, removeAnchor ? 3 : 4); assert.equal(ally.coupRapide, true);
+    assert.equal(ally.atk, removeAnchor ? 3 : 4); assert.equal(ally.coupRapide, false); assert.deepEqual(ally.coupCritique, { chance: .15, fois: 2 });
   }
 });
 
@@ -7569,13 +7562,13 @@ test('Javelot MOBA : une capture détache l’arme et la garde au cimetière du 
   assert.equal(rpgMobaResoudreArrivee(duel,'sorcier',porteur.id).ok,true);assert.equal(rousse.enCale.entite.arme,null);assert.ok(duel.joueur.cimetiere.includes('javelot-du-beffroi'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Javelot MOBA : sa rupture conserve Attaque ciblée imprimée ou accordée pour le tour', () => {
+test('Javelot MOBA : sa rupture conserve Attaque ciblée imprimée et le critique du Serment', () => {
   for (const id of ['gardienne-des-portes-de-sable','tislit-des-aures']) {
     const duel=partie();duel.joueur.main=[id,'javelot-du-beffroi','serment-de-la-forge'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;const porteur=rpgMobaJouerCreature(duel,'joueur',id,'left',0).entite;
     assert.equal(rpgMobaJouerArme(duel,'joueur','javelot-du-beffroi',porteur.id).ok,true);
-    if(id==='gardienne-des-portes-de-sable')assert.equal(rpgMobaLancerMagie(duel,'joueur','serment-de-la-forge').ok,true);
+    if(id==='gardienne-des-portes-de-sable')assert.equal(rpgMobaLancerMagie(duel,'joueur','serment-de-la-forge',null,'left').ok,true);
     porteur.ready=true;assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);assert.equal(rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true}).ok,true);
-    assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,true,`l’autre source demeure : ${id}`);rpgFinDeTour(duel);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.equal(rpgMobaPlacementCoherent(duel),true);
+    assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.deepEqual(porteur.coupCritique,{chance:.15,fois:2});rpgFinDeTour(duel);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.deepEqual(porteur.coupCritique,id==='tislit-des-aures'?{chance:.15,fois:2}:null);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
 
@@ -7767,8 +7760,9 @@ test('Masque MOBA : Butin et équipement cumulent les pioches et les choix de d�
 test('Masque MOBA : bloqué ou touchant une créature ne pioche pas', () => {
   for(const mode of ['blocage','ciblee']) {
     const duel=partie();rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;const cible=rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','left',0).entite;rpgFinDeTour(duel);
-    duel.joueur.main=['gardienne-des-portes-de-sable','masque-du-guetteur',...(mode==='ciblee'?['serment-de-la-forge']:[])];duel.joueur.deck=['mousse-des-galiotes'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;const p=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;assert.equal(rpgMobaJouerArme(duel,'joueur','masque-du-guetteur',p.id).ok,true);
-    if(mode==='ciblee')assert.equal(rpgMobaLancerMagie(duel,'joueur','serment-de-la-forge').ok,true);p.ready=true;const targets=mode==='ciblee'?{[p.id]:cible.id}:{};
+    const source = mode==='ciblee' ? 'tislit-des-aures' : 'gardienne-des-portes-de-sable';
+    duel.joueur.main=[source,'masque-du-guetteur'];duel.joueur.deck=['mousse-des-galiotes'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;const p=rpgMobaJouerCreature(duel,'joueur',source,'left',0).entite;assert.equal(rpgMobaJouerArme(duel,'joueur','masque-du-guetteur',p.id).ok,true);
+    p.ready=true;const targets=mode==='ciblee'?{[p.id]:cible.id}:{};
     assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[p.id],targets).ok,true);const result=rpgMobaLancerAttaque(duel,'joueur',[p.id],mode==='blocage'?{[p.id]:[cible.id]}:{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));assert.equal(duel.joueur.deck.length,1);assert.equal(duel.defausseEnAttente,null);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
@@ -7826,7 +7820,7 @@ test('Lance de la lune MOBA : ciblage dans la voie, immanquable et critique à 1
   }
 });
 
-test('Lance de la lune MOBA : pas de critique propre contre une voie vide, les autres sources subsistent', () => {
+test('Lance de la lune MOBA : le critique fonctionne contre une voie, seul ou cumulé', () => {
   for (const sabre of [false,true]) {
     const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','lance-de-la-lune-givree',...(sabre?['sabre-maudit']:[])];duel.joueur.mana.sable=30;duel.joueur.mana.neige=30;duel.joueur.mana.tenebres=30;duel.joueur.mana.braise=30;
     const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;
@@ -7835,7 +7829,7 @@ test('Lance de la lune MOBA : pas de critique propre contre une voie vide, les a
     rpgFinDeTour(duel);rpgFinDeTour(duel);rpgReglerHasard(duel,()=>0);
     assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);
     const result=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));
-    assert.equal(mobaVoie(duel.moba,'left').hp.sorcier,sabre?2:8);
+    assert.equal(mobaVoie(duel.moba,'left').hp.sorcier,sabre?2:6);
     assert.equal(porteur.arme,null);assert.deepEqual(porteur.coupCritique,sabre?{chance:.15,fois:2}:null);
     assert.equal(rpgMobaPlacementCoherent(duel),true);
   }

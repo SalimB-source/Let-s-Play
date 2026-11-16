@@ -167,13 +167,14 @@ test('le Lien d’un sort remplace les champs de l’effet, sans toucher au rest
   const ventRouge = cardById('vent-rouge');
   assert.deepEqual(effetLie(ventRouge, false), { type: 'degats', amount: 2, cible: 'toutes-creatures' });
   assert.deepEqual(effetLie(ventRouge, true), { type: 'degats', amount: 3, cible: 'toutes-creatures' });
-  // Le Serment de la forge garde sa durée et son Attaque ciblée.
+  // Le Serment de la forge garde sa durée et son Coup critique.
   const serment = cardById('serment-de-la-forge');
   const lie = effetLie(serment, true);
   assert.equal(lie.atk, 3);
   assert.equal(lie.def, 1);
   assert.equal(lie.tours, 1);
-  assert.equal(lie.coupRapide, true);
+  assert.equal(lie.coupRapide, undefined);
+  assert.equal(lie.coupCritique, .15);
 });
 
 // ── Le moteur : les sorts ───────────────────────────────────────────────────

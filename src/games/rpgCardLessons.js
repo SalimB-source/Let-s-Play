@@ -161,15 +161,15 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'infiltration',
     section: 'Capacités des créatures',
     cardIds: ['takouba-des-pistes'],
-    title: 'Infiltration : le porteur est inbloquable',
-    text: 'Le Takouba des pistes rend son porteur inbloquable : quand il attaque le sorcier, aucune créature ne peut se mettre en travers — ni au sol, ni en vol. Ses dégâts passent toujours (un bouclier coloré ne bloque pas les attaques). Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
+    title: 'Infiltration contourne les Défenseurs',
+    text: 'Le Takouba des pistes confère Infiltration : son porteur peut attaquer directement même en présence d’un Défenseur. Une attaque normale ne peut pas le viser, mais une Attaque ciblée le peut. Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
   },
   {
     id: 'infiltration-tin-hinan',
     section: 'Capacités des créatures',
     cardIds: ['tin-hinan'],
     title: 'Infiltration frappe sans être bloquée',
-    text: 'Quand Tin Hinan arrive, toutes vos créatures gagnent +2/+0 et l’Infiltration : jusqu’à la fin du tour, aucune d’elles ne peut être bloquée, même si l’adversaire a des défenseurs — les attaques passent donc au sorcier. À la fin du tour, l’Infiltration disparaît ; les statistiques gagnées, elles, restent acquises.',
+    text: 'Quand Tin Hinan arrive, vos autres créatures gagnent Infiltration jusqu’à la fin du tour : elles peuvent attaquer directement même si l’adversaire a des Défenseurs. À la fin du tour, l’Infiltration temporaire disparaît.',
   },
   {
     id: 'capacite-active',

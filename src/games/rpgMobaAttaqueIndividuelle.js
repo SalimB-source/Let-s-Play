@@ -31,7 +31,7 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId, voieAttaque =
   if (!voie) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const possibles = duel[autre(side)].creatures.filter((e) => cibleAccessible(duel, attaquant, e, ciblee, voie));
-  const prioritaires = possibles.filter((e) => mobaPartageVoie(duel.moba, e.mobaLane, voie) && estDefenseur(e));
+  const prioritaires = attaquant.infiltration ? [] : possibles.filter((e) => mobaPartageVoie(duel.moba, e.mobaLane, voie) && estDefenseur(e));
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),

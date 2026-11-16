@@ -14,8 +14,9 @@ for (const side of ['joueur', 'sorcier']) {
     d[side].main = ['danseuse-des-ombres-de-dune'];
     const danseuse = rpgMobaJouerCreature(d, side, 'danseuse-des-ombres-de-dune', 'left', 0).entite;
     assert.ok(danseuse?.infiltration);
-    rpgFinDeTour(d); d[enemy].main = ['ashigaru-des-braises'];
-    const gardien = rpgMobaJouerCreature(d, enemy, 'ashigaru-des-braises', 'left', 0).entite;
+    rpgFinDeTour(d); d[enemy].main = ['gardien-de-la-porte-ardente'];
+    const gardien = rpgMobaJouerCreature(d, enemy, 'gardien-de-la-porte-ardente', 'left', 0).entite;
+    assert.ok(gardien?.defenseur);
     rpgFinDeTour(d); danseuse.ready = true;
     const avant = JSON.stringify(d); let hasard = 0; rpgReglerHasard(d, () => { hasard++; return .5; });
     const coup = rpgMobaChoisirAttaqueIndividuelleIA(d, side);
@@ -27,5 +28,31 @@ for (const side of ['joueur', 'sorcier']) {
     const result = rpgMobaResoudreAttaqueIndividuelle(d, side);
     assert.ok(result.ok, JSON.stringify(result)); assert.equal(d.moba.lanes.find(l => l.id === 'left').hp[enemy], 18);
     assert.ok(d[enemy].creatures.some(e => e.id === gardien.id)); assert.ok(rpgMobaPlacementCoherent(d));
+  });
+}
+
+for (const side of ['joueur', 'sorcier']) {
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  test(`${side} : Infiltration et Attaque ciblée peuvent viser une autre créature que le Défenseur`, () => {
+    const deck = Array(30).fill('ashigaru-des-braises');
+    const d = rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
+    assert.ok(rpgMulligan(d, 'joueur', []).ok && rpgMulligan(d, 'sorcier', []).ok && rpgDemarrerManaEssai(d).ok);
+    if (d.tour !== enemy) rpgFinDeTour(d);
+    d[enemy].main = ['gardien-de-la-porte-ardente'];
+    const garde = rpgMobaJouerCreature(d, enemy, 'gardien-de-la-porte-ardente', 'left', 0).entite;
+    rpgFinDeTour(d); rpgFinDeTour(d);
+    d[enemy].main = ['ashigaru-des-braises'];
+    const cible = rpgMobaJouerCreature(d, enemy, 'ashigaru-des-braises', 'left', 1).entite;
+    rpgFinDeTour(d);
+    d[side].main = ['danseuse-des-ombres-de-dune'];
+    const attaquant = rpgMobaJouerCreature(d, side, 'danseuse-des-ombres-de-dune', 'left', 0).entite;
+    assert.ok(garde?.defenseur && cible && attaquant?.infiltration);
+    attaquant.ready = true; attaquant.malInvocation = false; attaquant.coupRapide = true;
+    rpgReglerHasard(d, () => .5);
+    const pv = cible.pv;
+    assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, side, attaquant.id, cible.id, 'left').ok);
+    assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, side).ok);
+    assert.ok((d[enemy].creatures.find(e => e.id === cible.id)?.pv ?? 0) < pv);
+    assert.ok(d[enemy].creatures.some(e => e.id === garde.id));
   });
 }

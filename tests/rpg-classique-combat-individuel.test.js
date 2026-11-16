@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgLancerMagie, rpgResoudreArriveeCiblee, rpgReglerHasard, rpgRenvoisEnMain, rpgEmplacementsChamp } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgConditionEmbuscadeRemplie, rpgBlesserCreature, rpgFinDeTour, rpgOuvrirFinDeTour, rpgPeutRepondre, rpgSorcierMagieRapide, rpgLancerMagie, rpgResoudreArriveeCiblee, rpgReglerHasard, rpgRenvoisEnMain, rpgEmplacementsChamp } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique, rpgCibleIndividuelleClassiqueEncoreLegale, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from '../src/games/rpgCombatIndividuelClassique.js';
 
 function partie() {
@@ -444,4 +444,63 @@ test('une créature ordinaire frappe le sorcier même si une créature adverse e
   assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
   assert.equal(d.sorcier.pv, pv - a.atk);
   assert.ok(d.sorcier.creatures.includes(cible));
+});
+
+for (const cote of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
+  const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+  test(`${cote} ${pvp ? 'PvP' : 'duel'} : Infiltration contourne les Défenseurs pour une attaque directe`, () => {
+    const d = partie(); d.pvp = pvp; d.tour = cote;
+    const a = poser(d, cote, 'danseuse-des-ombres-de-dune');
+    const garde = poser(d, adv, 'gardien-de-la-porte-ardente');
+    const autre = poser(d, adv);
+    assert.equal(a.infiltration, true);
+    assert.deepEqual(rpgCiblesIndividuellesClassique(d, cote, a.id), { cibles: [garde.id, autre.id], directe: true });
+    const pv = d[adv].pv;
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, cote, a.id, null).ok);
+    assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, cote).ok);
+    assert.equal(d[adv].pv, pv - a.atk);
+    assert.equal(d[adv].creatures.find((e) => e.id === garde.id).pv, garde.pvMax);
+  });
+}
+
+test('Infiltration et Attaque ciblée contournent la priorité sans ignorer les autres restrictions', () => {
+  const d = partie(), a = poser(d, 'joueur'), garde = poser(d, 'sorcier', 'gardien-de-la-porte-ardente'), cible = poser(d, 'sorcier');
+  a.coupRapide = true;
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [garde.id], directe: false });
+  assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, cible.id).raison, 'cible');
+  a.infiltration = true;
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [garde.id, cible.id], directe: true });
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, cible.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+});
+
+test('Infiltration temporaire ne contourne plus Défenseur après sa disparition', () => {
+  const d = partie(), a = poser(d, 'joueur'), garde = poser(d, 'sorcier', 'gardien-de-la-porte-ardente');
+  a.infiltration = true; a.infiltrationTour = true;
+  assert.equal(rpgCiblesIndividuellesClassique(d, 'joueur', a.id).directe, true);
+  rpgFinDeTour(d);
+  assert.equal(a.infiltration, false);
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [garde.id], directe: false });
+});
+
+
+test('une arme donnant Infiltration ouvre la route puis la priorité revient quand elle est remplacée', () => {
+  const d = partie(), a = poser(d, 'joueur'), garde = poser(d, 'sorcier', 'gardien-de-la-porte-ardente');
+  d.joueur.main.push('takouba-des-pistes');
+  assert.ok(rpgJouerArme(d, 'joueur', 'takouba-des-pistes', a.id).ok);
+  assert.equal(a.infiltration, true);
+  assert.equal(rpgCiblesIndividuellesClassique(d, 'joueur', a.id).directe, true);
+  d.joueur.main.push('cuirasse-de-sel');
+  assert.ok(rpgJouerArme(d, 'joueur', 'cuirasse-de-sel', a.id).ok);
+  assert.equal(a.infiltration, false);
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [garde.id], directe: false });
+});
+
+test('l’IA classique peut choisir la frappe directe létale derrière un Défenseur', () => {
+  const d = partie(), a = poser(d, 'sorcier', 'danseuse-des-ombres-de-dune');
+  poser(d, 'joueur', 'gardien-de-la-porte-ardente');
+  d.tour = 'sorcier'; d.joueur.pv = 1;
+  const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(d);
+  assert.equal(choix?.attaquantId, a.id);
+  assert.equal(choix?.cibleId, null);
 });

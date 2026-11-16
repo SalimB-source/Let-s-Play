@@ -40,8 +40,12 @@ for (const complet of [false, true]) for (const capacite of ['envol', 'infiltrat
       assert.equal(document.querySelectorAll('.moba__attack-direct').length, 1, 'seule la voie accessible est proposée');
       assert.equal(document.querySelector(`[data-moba-entity="${ennemi.id}"] button`).disabled, false, 'la cible créature reste possible');
       ennemi.defenseur = true; await render();
-      assert.equal(health.querySelector('.moba__attack-direct'), null, 'un Défenseur accessible reste prioritaire');
-      ennemi.defenseur = false;
+      if (capacite === 'infiltration') {
+        assert.ok(health.querySelector('.moba__attack-direct'), 'Infiltration contourne le Défenseur');
+      } else {
+        assert.equal(health.querySelector('.moba__attack-direct'), null, 'un Défenseur accessible reste prioritaire');
+        ennemi.defenseur = false;
+      }
       if (capacite === 'envol') {
         ennemi.envol = true; await render();
         assert.equal(health.querySelector('.moba__attack-direct'), null, 'un ennemi volant bloque la frappe directe');

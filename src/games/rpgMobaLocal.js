@@ -731,7 +731,8 @@ export function rpgMobaPasserSort(duel, side) {
   const degatsVoie = attente.cibleId === 'sorcier';
   const soinVoie = attente.cibleId === null && MOBA_MAGIES_SOINS.includes(attente.carteId);
   const transfertVoie = MOBA_MAGIES_TRANSFERT.includes(attente.carteId) && (attente.cibleId === null || attente.carteId === 'le-poids');
-  const cibleVoie = degatsVoie || soinVoie || transfertVoie;
+  const sermentVoie = attente.carteId === 'serment-de-la-forge';
+  const cibleVoie = degatsVoie || soinVoie || transfertVoie || sermentVoie;
   const voie = cibleVoie ? mobaVoie(duel.moba, attente.laneId) : null;
   if (cibleVoie && ((degatsVoie && !MOBA_MAGIES_VOIES.includes(attente.carteId)) || !voie)) return fail('etat-incoherent');
   const damageEvents = [];
@@ -1043,7 +1044,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     ...(cardId === 'feux-de-kitsune' && cibleSecondaireId ? { ciblesIndependantesMoba: true } : {}),
     ...(contre ? (contreCreature ? { contrerCreatureMoba: true } : { contrerSortMoba: true }) : {}),
     ...(ouvrirReponse && !reaction && !duel.fenetreReponse && MOBA_SORTS_REPONSE.includes(cardId)
-      && (reanimation ? cibleId === null && !!laneId : renfort || (prix && (MOBA_MAGIES_ZONE_REPONSE.includes(cardId) || MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId))) ? cibleId === null && (prix ? (prixLaneId ?? laneId) !== null : laneId === null)
+      && (reanimation ? cibleId === null && !!laneId : cardId === 'serment-de-la-forge' ? cibleId === null && !!laneId : renfort || (prix && (MOBA_MAGIES_ZONE_REPONSE.includes(cardId) || MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId))) ? cibleId === null && (prix ? (prixLaneId ?? laneId) !== null : laneId === null)
         : MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId) || MOBA_MAGIES_MAIN_REPONSE.includes(cardId) || spatial ? cibleId === null && (spatial ? !!laneId : laneId === null)
         : soin || transfert ? !!laneId && (cibleId === null || cardId === 'le-poids')
         : cibleId === 'sorcier' ? MOBA_MAGIES_VOIES.includes(cardId)

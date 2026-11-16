@@ -312,7 +312,7 @@ export function pastillesPourCarte(carte) {
   if (carte.volDeVie || carte.donne?.volDeVie || carte.effet?.volDeVie) ajouter('volDeVie', 'Vol de vie');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
-  if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
+  if (carte.coupCritique || carte.effet?.coupCritique || carte.donne?.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (estDefenseur(carte)) ajouter('defenseur', 'Défenseur');
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
@@ -646,14 +646,14 @@ export function iconePourLigne(carte, ligne = '') {
 export const EFFET_DEFINITIONS = {
   reactionTourAdverse: 'Si sa condition est remplie, vous pouvez jouer cette carte pendant votre phase principale, sans sacrifice ni invocation normale. Sinon, vous pouvez l’invoquer normalement pendant votre tour.',
   envol: 'Peut attaquer une créature accessible au sol ou en vol. Une attaque normale au sol ne peut pas la viser. Sans créature volante adverse accessible, elle peut aussi attaquer directement, sauf priorité applicable.',
-  infiltration: 'Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
+  infiltration: 'Ignore la priorité des Défenseurs en attaque et peut attaquer directement malgré eux. Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   furtif: 'Cette créature est détruite à la fin du tour où elle arrive en jeu.',
   coupRapide: 'Peut attaquer une créature adverse ou directement, sauf priorité applicable. Contre une créature, inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater sauf effet contraire ; certaines capacités peuvent riposter.',
-  coupCritique: 'En combat, 15 % de chances de frapper 4 fois la créature adverse.',
+  coupCritique: 'En combat, 15 % de chances de multiplier les dégâts contre une créature ou l’adversaire : ×4 pour Kagutsuchi, ×2 pour les autres créatures, les armes et le Serment de la forge.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
-  defenseur: 'Une attaque adverse doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
+  defenseur: 'Une attaque adverse sans Infiltration doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
   esquive: () => '15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Les effets alliés ne sont pas esquivés.',

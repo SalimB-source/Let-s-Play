@@ -1389,3 +1389,14 @@ test('classique : le plan Fléau est refusé si sa Résonance renforce trop de V
   assert.ok(rpgJouerCreature(duel, 'sorcier', 'fleau-de-la-lune-noire', null, { sacrificeIds: [allie.id, djinn.id] }).ok);
   assert.deepEqual(adversaires.map(e => [e.atk, e.pv]), [[2, 2], [2, 2], [3, 3]]);
 });
+
+test('classique : la Flèche ne suppose pas les coups critique et ordinaire équivalents', () => {
+  const { duel, ghul, chien, djinn } = deuxCiblesFleche();
+  // Seul le critique tuerait le Chien : ce n'est plus un départage entre
+  // deux destructions garanties, même si le critique peut y parvenir.
+  chien.pv = chien.def = chien.pvMax = 4;
+  const avant = JSON.stringify(duel); let jets = 0;
+  rpgReglerHasard(duel, () => { jets++; return .5; });
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel, 'sorcier', djinn.id), { attaquantId: djinn.id, cibleId: ghul.id });
+  assert.equal(JSON.stringify(duel), avant); assert.equal(jets, 0);
+});

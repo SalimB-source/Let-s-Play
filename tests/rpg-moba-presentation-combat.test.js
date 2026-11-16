@@ -18,9 +18,9 @@ test('le Traqueur perd visuellement l’Embuscade en MOBA sans modifier la carte
 test('les notes de combat expliquent les priorités et restrictions MOBA', () => {
   assert.match(rpgMobaNotesCarte(cardById('appat-de-la-meute')).join(' '), /Injouable/);
   assert.match(rpgMobaNotesCarte(cardById('gardien-de-la-porte-ardente')).join(' '), /priorité/);
-  assert.match(rpgMobaNotesCarte(cardById('gardienne-des-portes-de-sable')).join(' '), /attaques venant de sa voie/);
+  assert.match(rpgMobaNotesCarte(cardById('gardienne-des-portes-de-sable')).join(' '), /attaques sans Infiltration venant de sa voie/);
   assert.match(rpgMobaNotesCarte(cardById('feriel')).join(' '), /tout le plateau/);
-  assert.match(rpgMobaNotesCarte(cardById('danseuse-des-ombres-de-dune')).join(' '), /Infiltration : peut attaquer directement sauf priorité accessible/);
+  assert.match(rpgMobaNotesCarte(cardById('danseuse-des-ombres-de-dune')).join(' '), /Infiltration : ignore la priorité des Défenseurs et peut attaquer directement/);
   assert.match(rpgMobaNotesCarte(cardById('vampire-des-braises')).join(' '), /juste avant les blessures ordinaires/);
   assert.match(rpgMobaNotesCarte(cardById('tour-des-flots')).join(' '), /après les blessures garde ce timing/);
 });
@@ -32,4 +32,8 @@ test('les nouveaux indicateurs dirigent aussi les attaques ciblées hors de la v
   const duel = { moba, joueur: { creatures: [{ id: 'a', carteId: 'feriel', name: 'Fériel', mobaLane: 'left' }] }, sorcier: { creatures: [{ id: 'c', carteId: 'ashigaru-des-braises', name: 'Ashigaru', mobaLane: 'right' }] } };
   const arrows = rpgMobaCombatIndicators(duel, 'joueur', ['a'], { a: 'c' }, {}, { individuel: true });
   assert.deepEqual(arrows.attackArrows, { c: ['a'] });
+});
+
+test('la note Infiltration explique le contournement des Défenseurs', () => {
+  assert.match(rpgMobaNotesCarte(cardById('danseuse-des-ombres-de-dune')).join(' '), /ignore la priorité des Défenseurs/);
 });
