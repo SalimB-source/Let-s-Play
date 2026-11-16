@@ -1725,6 +1725,7 @@ function creerEntiteCreature(carte, duel) {
     overkill: Boolean(carte.overkill),
     overkillTemporaire: 0,
     coupRapideTemporaire: 0,
+    coupCritiqueTemporaire: 0,
     // Protection contre les magies rapides et les sorcelleries (le Serpent du
     // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
     // armes et attaques passent normalement.
@@ -1813,9 +1814,8 @@ function armeCarteDe(entite) {
 /**
  * LE COUP CRITIQUE CUMULABLE.
  *
- * Trois sources peuvent en donner un : la fiche imprimée d'une créature
- * (Kagutsuchi, 15 % ×4), les armes-sorts (Sabre maudit) et les armes
- * ordinaires (`donne.coupCritique`, dont Braise et sable). Elles
+ * Les sources sont la fiche imprimée, les armes-sorts (Sabre maudit),
+ * les armes ordinaires et les bonus temporaires du Serment de la forge. Elles
  * s'**additionnent** — 15 % + 15 % = 30 %
  * — et le multiplicateur retenu est le plus fort (×4).
  *
@@ -1825,7 +1825,7 @@ function armeCarteDe(entite) {
  * changement d'équipement (attachement, bris d'arme, retrait) : une arme
  * détruite rend sa part de chance, pas celle de ses voisines.
  */
-function calculerCoupCritique(entite, { exclureLanceContreVoie = false } = {}) {
+function calculerCoupCritique(entite) {
   const fiche = duelCardById(entite?.carteId)?.coupCritique ?? null;
   let chance = 0;
   let fois = 0;
@@ -1836,16 +1836,27 @@ function calculerCoupCritique(entite, { exclureLanceContreVoie = false } = {}) {
     fois = Math.max(fois, Number(foisSource) || 2);
   };
   if (fiche) ajouter(fiche.chance ?? RPG_COUP_CRITIQUE_CHANCE, fiche.fois ?? RPG_COUP_CRITIQUE_FOIS);
+  ajouter(entite?.coupCritiqueTemporaire, 2);
   for (const id of entite?.armes ?? []) {
     const arme = magieById(id);
     if (arme?.effet?.type === 'arme' && arme.effet.coupCritique) ajouter(arme.effet.coupCritique, 2);
   }
   // Les armes du prototype contribuent elles aussi au cumul des critiques.
   const prototype = armeCarteDe(entite);
-  if (prototype?.donne?.coupCritique && !(exclureLanceContreVoie && prototype.id === 'lance-de-la-lune-givree')) ajouter(prototype.donne.coupCritique, 2);
+  if (prototype?.donne?.coupCritique) ajouter(prototype.donne.coupCritique, 2);
   if (!chance) return null;
   // Évite 0,15 + 0,15 + 0,15 = 0,449999… au seuil du tirage.
   return { chance: Math.min(1, Math.round(chance * 1e12) / 1e12), fois };
+}
+
+/** Une seule chance par frappe, que la cible soit une créature ou l'adversaire. */
+function tirerCoupCritique(entite, base, rng) {
+  const cfg = entite?.coupCritique;
+  if (!base || !cfg || rng() >= (cfg.chance ?? RPG_COUP_CRITIQUE_CHANCE)) {
+    return { force: base, critique: false, fois: 1 };
+  }
+  const fois = cfg.fois ?? RPG_COUP_CRITIQUE_FOIS;
+  return { force: base * fois, critique: true, fois };
 }
 
 function recalculerCoupCritique(entite) {
@@ -3170,6 +3181,12 @@ function annulerBonusTemporaires(duel, tourFerme) {
         entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide)
           || Boolean(armeCarteDe(entite)?.donne?.coupRapide)
           || entite.coupRapideTemporaire > 0;
+      }
+      if (entry.coupCritique) {
+        entite.coupCritiqueTemporaire = Math.max(0, Math.round(
+          ((entite.coupCritiqueTemporaire ?? entry.coupCritique) - entry.coupCritique) * 1e12,
+        ) / 1e12);
+        recalculerCoupCritique(entite);
       }
       // Le bouclier prêté par le Rempart repart avec le tour — s'il n'a pas
       // été consommé. Celui d'une arme encore tenue reste : il ne vient pas
@@ -4536,6 +4553,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
       const bonusOverkill = effet.overkill ? 1 : 0;
       const bonusCoupRapide = effet.coupRapide ? 1 : 0;
+      const bonusCoupCritique = temporaire ? Math.max(0, Number(effet.coupCritique) || 0) : 0;
       // `bouclier` (le Rempart de dunes sous les Ailes d'or) : le sort pose la
       // parade anti-sort sur chaque créature touchée, comme le ferait une arme.
       // Le bouclier est binaire dans ce jeu ; il ne s'empile pas.
@@ -4559,13 +4577,18 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.coupRapide = true;
           if (temporaire) entite.coupRapideTemporaire = (entite.coupRapideTemporaire ?? 0) + bonusCoupRapide;
         }
+        if (bonusCoupCritique) {
+          entite.coupCritiqueTemporaire = (entite.coupCritiqueTemporaire ?? 0) + bonusCoupCritique;
+          recalculerCoupCritique(entite);
+        }
         if (bonusBouclier && !(entite.bouclier > 0)) {
           entite.bouclier = 1;
           entite.bouclierEpuise = false;
           entite.bouclierDuSort = true;
         }
         if (temporaire) carnet.push({ entiteId: entite.id, atk: entite.atk - atkAvant, def: entite.pvMax - pvMaxAvant,
-          pvDelta: entite.pv - pvAvant, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, bouclier: bonusBouclier,
+          pvDelta: entite.pv - pvAvant, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide,
+          coupCritique: bonusCoupCritique, bouclier: bonusBouclier,
           tour: duel.moba && sourceCarteId === 'porte-etendard-de-leclipse' ? autre(cote) : duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
@@ -8212,18 +8235,7 @@ export function rpgLancerAttaque(
   // s'arrête là, il n'est ni bloqué, ni échangé, et ne touche pas le sorcier
   // (`attaquantsArretes`).
   const rngCombat = hasardParDuel.get(duel) ?? Math.random;
-  const forceCombatAvecCritique = (entite, contreCreature = true) => {
-    const base = forceCombat(entite);
-    // La Lance ne critique que contre une créature. Les autres sources de
-    // critique restent actives quand son porteur frappe directement.
-    const cfg = !contreCreature && armeCarteDe(entite)?.id === 'lance-de-la-lune-givree'
-      ? calculerCoupCritique(entite, { exclureLanceContreVoie: true }) : entite.coupCritique;
-    if (!base || !cfg) return { force: base, critique: false, fois: 1 };
-    const chance = cfg?.chance ?? RPG_COUP_CRITIQUE_CHANCE;
-    const fois = cfg?.fois ?? RPG_COUP_CRITIQUE_FOIS;
-    if (rngCombat() < chance) return { force: base * fois, critique: true, fois };
-    return { force: base, critique: false, fois: 1 };
-  };
+  const forceCombatAvecCritique = (entite) => tirerCoupCritique(entite, forceCombat(entite), rngCombat);
   const frappesRapides = [];
   for (const attaquant of attaquants) {
     const cibleRapideId = ciblesRapides[attaquant.id];
@@ -8353,7 +8365,7 @@ export function rpgLancerAttaque(
   const forcesAttaquant = new Map();
   const critiquesAttaquant = new Map();
   for (const attaquant of attaquantsApresCapacites) {
-    const res = forceCombatAvecCritique(attaquant, Boolean((blocagesApresCapacites[attaquant.id] ?? []).length));
+    const res = forceCombatAvecCritique(attaquant);
     forcesAttaquant.set(attaquant.id, res.force);
     if (res.critique) critiquesAttaquant.set(attaquant.id, res);
   }
@@ -8913,16 +8925,11 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
   if (!attaquant || (cibleId !== null && !cible)) return { ok: false, raison: 'cible' };
   const resume = { frappeSorcier: 0, furies: [], paires: [], coupsRapides: [], blocages: {}, repartitions: {}, attaquantsBloques: [], attaquantsLiberes: [], critiques: [], blessures: [] };
   const rng = hasardParDuel.get(duel) ?? Math.random;
-  const calculForce = (entite, contreCreature, bonus = 0) => {
+  const calculForce = (entite, bonus = 0) => {
     const base = estGelee(entite) ? 0 : Math.max(0, Number(entite.atk) || 0) + bonus;
-    const cfg = !contreCreature && armeCarteDe(entite)?.id === 'lance-de-la-lune-givree'
-      ? calculerCoupCritique(entite, { exclureLanceContreVoie: true }) : entite.coupCritique;
-    if (base && cfg && rng() < (cfg.chance ?? RPG_COUP_CRITIQUE_CHANCE)) {
-      const fois = cfg.fois ?? RPG_COUP_CRITIQUE_FOIS;
-      resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois });
-      return base * fois;
-    }
-    return base;
+    const resultat = tirerCoupCritique(entite, base, rng);
+    if (resultat.critique) resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois: resultat.fois });
+    return resultat.force;
   };
   const armeId = attaquant.arme?.carteId ?? null;
   const lane = voieAttaque ?? attaquant.mobaLane;
@@ -8980,7 +8987,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       // Le gel se résout avant les blessures des deux côtés, sans favoriser
       // l'attaquant ; les deux forces sont ensuite déterminées avant l'échange.
       const traque = estGelee(attaquant) ? 0 : bonusTraquePirates(attaquant, cible);
-      const force = rate ? 0 : calculForce(attaquant, true, traque);
+      const force = rate ? 0 : calculForce(attaquant, traque);
       if (ciblee) resume.coupsRapides.push({ attaquantId, attaquant: attaquant.name, cibleId, cible: cible.name, degats: force, ...(rate ? { rate: true } : {}) });
       else resume.paires.push([attaquant.name, cible.name]);
       if (!rate) {
@@ -8989,7 +8996,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
         const coup = { cote: adv, entiteId: cible.id, amount: force - exces,
           sourceElement: cardColors(duelCardById(attaquant.carteId)), sourceType: 'attaque', sourceCote: cote, sourceId: attaquant.id, voieCombat: lane, rapide: ciblee };
         const coups = [coup];
-        if (!ciblee) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, true),
+        if (!ciblee) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible),
           sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id, voieCombat: lane });
         let touche = false;
         const esquives = appliquerDegatsDeCombatSimultanes(duel, coups, {
@@ -9021,7 +9028,9 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
     }
   } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {
-    const force = calculForce(attaquant, false);
+    const force = calculForce(attaquant);
+    const critique = resume.critiques.find((coup) => coup.entiteId === attaquantId);
+    if (critique) duel.log.push(`Coup critique : ${attaquant.name} frappe ${critique.fois} fois !`);
     const frappe = resoudreDegatsDirects(force);
     degatsVoie = frappe?.recus ?? 0;
     sourceExileeParConquete = frappe?.sourceExileeParConquete ? sourceAuContact : null;
@@ -9103,10 +9112,12 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     // Le Grand Voile blanc : le coup s'égare, le sorcier ne prend rien.
     duel.log.push(`${attaquant.name} frappe dans le grand voile blanc : le sorcier ne prend rien.`);
   } else {
-    frappeSorcier = attaquant.atk;
-    const blessureSorcier = rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
+    const coup = tirerCoupCritique(attaquant, Math.max(0, Number(attaquant.atk) || 0), hasardParDuel.get(duel) ?? Math.random);
+    frappeSorcier = coup.force;
+    const blessureSorcier = rpgInfligerSorcier(duel, autre(cote), frappeSorcier);
     if (attaquant.volDeVie) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(blessureSorcier.recus / 2));
-    duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
+    if (coup.critique) duel.log.push(`Coup critique : ${attaquant.name} frappe ${coup.fois} fois !`);
+    duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${frappeSorcier}).`);
   }
   // L'arme du Sable emporte ses déclencheurs : « attaque » et « blesse le
   // sorcier » (l’Attaque ciblée, plus haut, est passée par `rpgLancerAttaque`,

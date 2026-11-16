@@ -814,7 +814,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     const entitySecondaire = cibleSecondaireId && duel[id === 'defi-du-jarl' ? caster : autre(caster)].creatures.find((entity) => entity.id === cibleSecondaireId);
     const cibleAnnonce = entityCible
       ? { nom: id === 'le-poids' && laneId ? `${entityCible.name} + ${voies[laneId]}` : entitySecondaire ? `${entityCible.name} + ${entitySecondaire.name}` : entityCible.name, illustrationId: entityCible.carteId }
-      : MOBA_MAGIES_RENFORT_REPONSE.includes(id) ? { nom: `Créatures · ${noms[caster]}` }
+      : MOBA_MAGIES_RENFORT_REPONSE.includes(id) ? { nom: `Créatures${laneId ? ` · ${voies[laneId]}` : ''} · ${noms[caster]}` }
       : MOBA_MAGIES_ZONE_REPONSE.includes(id) ? { nom: `Créatures · ${noms[MOBA_MAGIES_ZONE_TOTALE_REPONSE.includes(id) ? 'tous' : autre(caster)]}` }
       : MOBA_CONTRESORTS.includes(id) ? { nom: cardById((duel.mobaSortEnAttente ?? duel.mobaCreatureEnAttente)?.carteId)?.name ?? 'Carte annoncée' }
       : id === 'nom-efface' ? { nom: `Main · ${noms[autre(caster)]}` }

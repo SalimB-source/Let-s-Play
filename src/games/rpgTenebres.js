@@ -112,8 +112,9 @@ export const RPG_TENEBRES_CREATURES = [
     def: 1,
     rarity: 'inhabituelle',
     coupRapide: true,
+    coupCritique: { chance: 0.15, fois: 2 },
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — 15 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -275,12 +276,13 @@ export const RPG_TENEBRES_CREATURES = [
     def: 4,
     rarity: 'mythique',
     rapidite: true,
+    coupCritique: { chance: 0.15, fois: 2 },
     // Un seul bouclier bicolore bloque un sort adverse d'Eau ou de Neige.
     protection: { contre: ['eau', 'neige'] },
     // Son souffle ne balaie plus la plaine : il désigne une seule proie.
     arrivee: { type: 'degats', amount: 4, cible: 'creature' },
     typeLine: 'Créature légendaire — Lionne solaire',
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Bouclier d’Eau et de Neige — Bloque le prochain sort adverse d’Eau ou de Neige, puis se brise. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Bouclier d’Eau et de Neige — Bloque le prochain sort adverse d’Eau ou de Neige, puis se brise. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({

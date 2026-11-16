@@ -72,7 +72,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
   assert.match(texte('lame-de-mer'), /^Cible : une créature\. Si sa défense.*Avec Le Seigneur des mâchoires en jeu : -4\/-4/u,
     'le chiffre de base passe dans la pastille, mais l’exil et le Lien restent');
   assert.equal(texte('ecueil'), 'Cible : une créature adverse.', 'le Contresort explique déjà l’annulation');
-  assert.match(texte('serment-de-la-forge'), /^Vos créatures gagnent aussi Attaque ciblée/u,
+  assert.match(texte('serment-de-la-forge'), /^Vos créatures gagnent aussi Coup critique/u,
     'le Renfort chiffré n’est pas écrit deux fois, le mot-clé supplémentaire reste');
   assert.equal(texte('mur-de-boucliers'), 'Jusqu’à la fin du tour, ces effets s’appliquent à vos créatures.',
     'la portée et la durée restent, les nombres et Overkill sont dans les deux pastilles');

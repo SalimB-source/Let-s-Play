@@ -405,6 +405,7 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
     if (entite.volDeVie) ajouter('volDeVie', 'Vol de vie');
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
     if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
+    if (entite.coupCritique && !carte?.coupCritique) ajouter('coupCritique', 'Coup critique');
     if (estDefenseur(entite)) ajouter('defenseur', 'Défenseur');
     if (entite.rapidite && !carte?.rapidite) ajouter('rapidite', 'Rapidité');
     if (entite.overkill) ajouter('overkill', 'Overkill');

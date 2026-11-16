@@ -3492,7 +3492,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie || arme.effet?.volDeVie);
   const conditionEmbuscade = conditionEmbuscadeCourtePourApercu(carte);
-  const lectureBrute = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
+  const carteLecture = {
+    ...carte,
+    ...(volDeVieAccorde ? { volDeVie: true } : {}),
+    ...(entite?.coupCritique ? { coupCritique: entite.coupCritique } : {}),
+  };
+  const lectureBrute = effetsDetailles(carteLecture);
   // La pastille explique la mécanique ; le cadre doré est le seul endroit
   // où lire la condition propre à cette carte, sans répéter la même phrase.
   const lecture = conditionEmbuscade ? {

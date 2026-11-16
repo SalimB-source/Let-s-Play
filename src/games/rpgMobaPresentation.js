@@ -10,6 +10,7 @@ export function rpgMobaCartePourApercu(carte) {
   // Les fiches doivent conserver le timing propre au MOBA pour les renvois.
   carte = { ...carte, presentationCombatMoba: true };
   if (carte.id === 'embuscade') return { ...carte, text: 'Sorcellerie — Dans la voie choisie, les créatures adverses gagnent -2/-2 jusqu’à la fin du tour, sans descendre sous 1/1. Les voies partagées du centre conquis comptent aussi.' };
+  if (carte.id === 'serment-de-la-forge') return { ...carte, text: carte.text.replace('Vos créatures gagnent', 'Vos créatures dans la voie choisie gagnent') };
   if (carte.id === 'sandales-de-tislit') return { ...carte, donne: { ...carte.donne, rapidite: false },
     bonus: { ...carte.bonus, atk: 1, def: 1 },
     text: 'Arme — Le porteur gagne +1/+1 en MOBA. Se joue uniquement pendant votre tour.' };

@@ -713,7 +713,8 @@ export const RPG_CREATURE_CARDS = [
     // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
     // ciblée — elle désigne une créature adverse avant le combat.
     coupRapide: true,
-    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    coupCritique: { chance: 0.15, fois: 2 },
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier. Coup critique — 15 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -905,8 +906,8 @@ export const RPG_CREATURE_CARDS = [
     name: 'Djinn de la flèche ardente',
     element: 'braise', cost: 3, atk: 3, def: 1, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-de-la-fleche-ardente',
-    rapidite: true, coupRapide: true, furtif: true, ephemere: true,
-    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 15 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour.',
+    rapidite: true, coupRapide: true, coupCritique: { chance: 0.15, fois: 2 }, furtif: true, ephemere: true,
+    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 15 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Une flèche de feu, puis le silence.',
   },
   {
@@ -986,7 +987,8 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,
-    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
+    coupCritique: { chance: 0.15, fois: 2 },
+    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Coup critique — 15 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
     flavor: 'Ses flèches portent le froid des longs hivers.',
   },
   {
@@ -1000,6 +1002,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature légendaire — Guerrier viking',
     art: 'eirik-du-premier-serment',
     contreAttaque: true,
+    coupCritique: { chance: 0.15, fois: 2 },
     // Compagnie viking — un effet de présence, du même genre que les auras :
     // +1/+1 par créature viking de SON camp en jeu, lui exclu. Seul sur la
     // table, Eirik reste donc le 1/1 imprimé ; chaque frère d'armes le fait
@@ -1007,7 +1010,7 @@ export const RPG_CREATURE_CARDS = [
     // Le type se lit sur la ligne de type imprimée, comme la Résonance — un
     // Viking adverse ne le nourrit pas.
     compagnie: { tribu: 'viking', atk: 1, def: 1 },
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp.',
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
   },
   {
@@ -1293,7 +1296,8 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
     arrivee: { type: 'degats', amount: 1, amountSiBlessee: 2, cible: 'toutes-creatures' },
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins deux créatures blessées. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
+    coupCritique: { chance: 0.15, fois: 2 },
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins deux créatures blessées. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {
@@ -1432,8 +1436,9 @@ export const RPG_CREATURE_CARDS = [
     cost: 5, atk: 4, def: 3, rarity: 'rare',
     typeLine: 'Créature — Cavalier · Spectre',
     rapidite: true,
+    coupCritique: { chance: 0.15, fois: 2 },
     destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Le cavalier du bûcher meurt : le bûcher s’embrase et inflige 2 dégâts à chaque créature adverse.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Le cavalier du bûcher meurt : le bûcher s’embrase et inflige 2 dégâts à chaque créature adverse. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'On l’abat, et la nuit prend feu.',
   },
 ];
@@ -1781,8 +1786,9 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
+    coupCritique: { chance: 0.15, fois: 2 },
     resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
-    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu.',
+    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -2812,7 +2818,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'],
     kind: 'arme', typeLine: 'Arme — Lance',  rarity: 'inhabituelle',
     bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.15 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 15 % de chances de doubler ses dégâts contre une créature.',
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 15 % de chances de doubler ses dégâts contre une créature ou l’adversaire.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 

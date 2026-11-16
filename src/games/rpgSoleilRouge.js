@@ -127,7 +127,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
     coupCritique: { chance: 0.15, fois: 4 },
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — En combat, 15 % de chances de frapper 4 fois la créature adverse.',
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — En combat, 15 % de chances de frapper 4 fois la créature ou l’adversaire.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -136,7 +136,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 2, atk: 2, def: 2, rarity: 'commune',
     typeLine: 'Créature — Humain · Samouraï',
     defenseur: true,
-    text: 'Défenseur.',
+    coupCritique: { chance: 0.15, fois: 2 },
+    text: 'Défenseur. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Il marche derrière son seigneur, et devant la mort.',
   }),
   carte({
@@ -164,7 +165,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     conditionEmbuscade: 'djinn-adverse',
     esquive: true,
     contreAttaque: true,
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle un Djinn et vous contrôlez une créature blessée. Esquive — 15 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque, un sort ou une capacité, il contre-attaque quand même. Il riposte aussi si le coup le détruit.',
+    coupCritique: { chance: 0.15, fois: 2 },
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle un Djinn et vous contrôlez une créature blessée. Esquive — 15 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque, un sort ou une capacité, il contre-attaque quand même. Il riposte aussi si le coup le détruit. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
     flavor: 'Ses trois lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({
@@ -237,9 +239,9 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie',  rarity: 'mythique',
     typeLine: 'Sorcellerie — Serment · Braise',
     cibles: ['soi'],
-    effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
+    effet: { type: 'buff', atk: 2, def: 1, coupCritique: 0.15, tours: 1 },
     lien: { ancre: 'daimyo-du-soleil-rouge', effet: { atk: 3, def: 1 } },
-    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (15 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Avec Daimyō du Soleil rouge en jeu : +3/+1 au lieu de +2/+1.',
+    text: 'Vos créatures gagnent +2/+1 et Coup critique (15 % de chances de doubler les dégâts en combat) jusqu’à la fin du tour. Les chances de Coup critique se cumulent avec celles déjà possédées. Avec Daimyō du Soleil rouge en jeu : +3/+1 au lieu de +2/+1.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];
