@@ -16,12 +16,12 @@ Le coût est indiqué en mana. ATQ/DEF désigne l’attaque et la défense de ba
 | **Scribe des feuillets** | 2 | 2/1 | commune | Quand Scribe des feuillets meurt, la carte du dessus du paquet adverse part au cimetière. |
 | **Prêtre de la bouche** | 2 | 2/2 | inhabituelle | Quand Prêtre de la bouche arrive : le sorcier adverse perd 1 PV et vous en gagnez 1. |
 | **Uræus du seuil** | 3 | 2/1 | inhabituelle | Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater ; 100 % de chances de toucher le sorcier adverse) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. |
-| **Momie de lin** | 3 | 2/4 | commune | Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1. |
-| **Ibis des comptes** | 3 | 2/2 | inhabituelle | Envol — Ne peut être bloqué que par une créature avec Envol. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte. |
+| **Momie de lin** | 3 | 2/4 | commune | Défenseur. Blocage : 15 % de chances de gagner +2 DEF jusqu’à la fin du tour quand une attaque la cible. À sa mort : créez un Shabti 1/1. |
+| **Ibis des comptes** | 3 | 2/2 | inhabituelle | Envol, Tribut 1. À son arrivée : piochez une carte puis défaussez une carte. |
 | **Celle qui pèse** | 4 | 3/3 | rare | Quand Celle qui pèse arrive : l’adversaire défausse une carte. |
 | **La Dévoreuse** | 6 | 4/5 | mythique | Quand La Dévoreuse arrive : retirez de la partie une créature adverse ciblée. |
 | **Celui qui juge** | 6 | 3/5 | rare | Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Arrivée : détruit toutes les créatures qui coûtent 3 mana ou moins. |
-| **Le Passeur au masque de chacal** | 6 | 5/5 | mythique | Quand Le Passeur au masque de chacal arrive : choisissez une créature de votre cimetière qui revient en jeu. |
+| **Le Passeur au masque de chacal** | 6 | 5/5 | mythique | Malédiction 1 ; à son arrivée, choisissez une créature de votre cimetière qui revient en jeu. |
 | **Le Maître des hiéroglyphes** | 5 | 3/5 | mythique | Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater ; 100 % de chances de toucher le sorcier adverse) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes. |
 
 ## Magies
@@ -68,7 +68,7 @@ Ce jeton est créé par des effets : ce n’est pas une carte à ajouter au deck
 
 - **Uræus du seuil :** 2/1 pour 3 mana, avec Attaque ciblée à la place de Tribut.
 - **Celle qui pèse :** défausse adverse à l’arrivée à la place de Tribut.
-- **Le Passeur au masque de chacal :** conserve la réanimation, sans Tribut.
+- **Le Passeur au masque de chacal :** conserve la réanimation, sans Tribut, et gagne Malédiction 1.
 - **Le Maître des hiéroglyphes :** gagne Envol et Attaque ciblée et conserve la pioche de deux cartes, sans Tribut.
 - **Tribut** reste sur le Chacal du seuil et Celui qui juge ; le Khopesh d’or peut aussi le donner à son porteur.
 

@@ -10,9 +10,9 @@ sixième — est rejoint depuis par le **deck de collection** de l'étagère
 terrains (le Portail scellé) reste en phase 2.
 
 **Extension du catalogue** — cinq créatures mono-Ténèbres complètent désormais
-les coûts de 1 à 5 : Porteur de la plume (1/2, soin à la mort), Scarabée du
-natron (1/2, Shabti à la mort), Veuve des urnes (2/3, Tribut 1), Gardien des
-sept sceaux (3/4, Défenseur) et Lecteur du dernier nom (3/4, pioche 2 puis
+les coûts de 1 à 5 : Porteur de la plume (1/2, créature de coût 2 ou 3 du deck au cimetière à l’arrivée, soin à la mort), Scarabée du
+natron (1/2, Shabti à la mort), Veuve des urnes (2/3, Tribut 1 ; arrivée : payer 2 PV et piocher), Gardien des
+sept sceaux (3/4, Défenseur et Blocage) et Lecteur du dernier nom (3/4, pioche 2 puis
 défausse 1). Elles se découvrent aux étages 1 à 3 de la Nécropole et sont
 vendues au Souk ; elles ne sont pas offertes dans la dotation initiale.
 La liste de trente cartes plus bas documente le deck d'essai d'origine,
@@ -138,8 +138,8 @@ exception demandée).
 | Nom effacé _(sorcellerie)_ | 2 | — | inhabituelle | 2 | l'adversaire défausse 1 carte |
 | Offrande de lin _(sorcellerie)_ | 2 | — | commune | 2 | +1/+0 à toutes vos créatures jusqu'à la fin du tour |
 | Uræus du seuil | 3 | 2/1 | inhabituelle | 2 | **Attaque ciblée** — contrôle des créatures |
-| Momie de lin | 3 | 2/4 | commune | 2 | à sa mort : crée 1 Shabti 1/1 |
-| Ibis des comptes | 3 | 2/2 | inhabituelle | 2 | **Envol** ; à l'arrivée : piochez 1 puis défaussez 1 |
+| Momie de lin | 3 | 2/4 | commune | 2 | Défenseur, Blocage ; à sa mort : crée 1 Shabti 1/1 |
+| Ibis des comptes | 3 | 2/2 | inhabituelle | 2 | **Envol, Tribut 1** ; à l'arrivée : piochez 1 puis défaussez 1 |
 | Khopesh d'or _(arme)_ | 3 | +2/+1 | rare | 1 | le porteur gagne **Tribut 1** ; à sa mort, revient avec 1 DEF |
 | Le Poids _(magie rapide)_ | 3 | — | commune | 2 | transfert 2 |
 | Celle qui pèse | 4 | 3/3 | rare | 1 | Arrivée : l’adversaire défausse une carte |
@@ -238,17 +238,18 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'momie-de-lin', name: 'Momie de lin',
     cost: 3, atk: 2, def: 4, rarity: 'commune',
     destruction: { type: 'jetons', jeton: 'shabti', nombre: 1 },
+    defenseur: true, blocage: { chance: 0.15, def: 2 },
     typeLine: 'Créature — Momie',
-    text: 'Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1.',
+    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1.',
     flavor: 'Le lin tient ce que les os ne tiennent plus.',
   }),
   carte({
     id: 'ibis-des-comptes', name: 'Ibis des comptes',
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
-    envol: true,
+    envol: true, tribut: 1,
     arrivee: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
     typeLine: 'Créature — Oiseau · Ibis',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
+    text: 'Envol. Tribut 1 — Quand il touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Quand Ibis des comptes arrive : piochez une carte puis défaussez une carte.',
     flavor: 'Il compte les feuillets comme on compte les jours : sans jamais en garder.',
   }),
   carte({
@@ -482,11 +483,11 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 
 | Carte | Identifiant | Couleur(s) | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|---|
-| **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime une créature choisie de votre cimetière |
+| **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | **Malédiction 1** ; arrivée : réanime une créature choisie de votre cimetière |
 | **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Attaque ciblée** (15 % de chances de rater une créature, 100 % de chances de toucher le sorcier) ; arrivée : piochez 2 cartes |
 | **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Attaque ciblée** (15 % de chances de rater une créature, 100 % de chances de toucher le sorcier), **Tribut 1**, **Protection Ténèbres** (permanente) |
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
-| **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
+| **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol**, **Vol de vie**, **Attaque ciblée** ; arrivée : Bouclier parfait ; mort : vous gagnez 5 PV |
 | **Le Seigneur des mâchoires** _(Sobek / Sabek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** — type « Souverain crocodile du Nil » ; sa peinture le montre en figure du fleuve (couronne au disque solaire et aux uraeus, sceptre ousekh, second crocodile à ses côtés), voir `RPG-CARD-ART.md` |
 
 ## Le deck du catalogue (étagère, onglet Deck)
@@ -546,7 +547,7 @@ passe de 3/2 à 2/1 ; les autres statistiques restent inchangées.
   choisie par la victime. Sans carte en main adverse, cet effet ne fait rien.
 - **Le Passeur au masque de chacal** perd Tribut 2 et conserve la réanimation
   à l’arrivée : une créature choisie du cimetière revient, si le champ a une
-  place libre. Il reste une menace de reconstruction plutôt qu’un finisseur
+  place libre. Il gagne Malédiction 1 (−1 ATK aux créatures adverses). Il reste une menace de reconstruction plutôt qu’un finisseur
   supplémentaire par transfert de vie.
 - **Le Maître des hiéroglyphes** perd Tribut 1, gagne Envol et Attaque ciblée et conserve
   la pioche de deux cartes à l’arrivée : son rôle est de renouveler la main.

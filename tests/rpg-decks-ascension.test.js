@@ -54,7 +54,7 @@ test('Jarl : Berserk et Jarl nommés en deux exemplaires, soutenus par Ralliemen
 });
 test('Scorpion : Convoi peut récupérer les matériaux depuis le cimetière', () => {
   const d = deck('ascension-eclipse'), effet = cardById('convoi-des-dunes').arrivee;
-  assert.deepEqual(effet.elements, ['sable', 'eau', 'tenebres']); assert.equal(effet.coutMax, 3);
+  assert.deepEqual(effet.elements, ['braise', 'sable', 'tenebres']); assert.equal(effet.coutMax, undefined);
   for (const id of ['scorpion-du-seuil', 'ureus-du-seuil', 'momie-de-lin']) assert.ok(compte(d, id) >= 2);
   assert.equal(compte(d, 'rapport-du-greffier'), 2); assert.equal(compte(d, 'javelot-du-beffroi'), 1);
 });

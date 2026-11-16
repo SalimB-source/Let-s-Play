@@ -279,7 +279,7 @@ export const EFFET_LIBELLES = {
   'mue-mondiale': 'Mue mondiale',
   // Les effets qui n'avaient pas encore de nom lisible : la planche de revue
   // les affichait par leur clé de code, ce qui n'est pas un libellé de carte.
-  'bouclier-lumiere': 'Bouclier de lumière',
+  'bouclier-lumiere': 'Bouclier parfait',
   compagnie: 'Compagnie',
   'pioche-defausse': 'Pioche et défausse',
   'soin-creatures': 'Soin des créatures',
@@ -380,7 +380,7 @@ export function pastillesPourCarte(carte) {
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
   // La Malédiction (La Barbe Noire) : -2/-0 à toutes les créatures adverses
   // tant que la source reste en jeu — sans adjacence, contrairement à l'Aura.
-  if (carte.malediction) ajouter('malediction', 'Malédiction');
+  if (carte.malediction) ajouter('malediction', 'Malédiction', Number(carte.malediction.atk) || null);
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
   if (carte.declenchePrise) ajouter('prise', 'Prise', Number(carte.declenchePrise) || null);
   // L'Ifrit furtif : sa présence s'éteint à la fin du tour — la pastille
@@ -428,6 +428,7 @@ export function pastillesPourCarte(carte) {
     'mue-mondiale': ['mue-mondiale', 'Mue mondiale'],
   }[typeEffet];
   if (pastilleEffet) ajouter(...pastilleEffet);
+  if (typeEffet === 'bouclier-lumiere') ajouter('bouclier', 'Bouclier parfait', null, { parfait: true });
   if (typeEffet === 'bouclier') {
     ajouter('bouclier', 'Bouclier', Number(carte.effet?.amount ?? carte.arrivee?.amount) || null, { valeurMasquee: true });
   }
@@ -662,7 +663,7 @@ export const EFFET_DEFINITIONS = {
   defenseur: 'Une attaque adverse sans Infiltration doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
-  esquive: () => '15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
+  esquive: () => '15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Elle peut aussi esquiver la réplique lorsqu’elle attaque. Les effets alliés ne sont pas esquivés.',
   contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent le bonus indiqué sur la carte.',
@@ -678,7 +679,7 @@ export const EFFET_DEFINITIONS = {
   abordage: (n) => `${n == null
     ? 'L’Abordage met une créature adverse éligible en cale, selon le seuil et le moment indiqués sur la carte.'
     : `À son arrivée, cette créature prend en cale une créature adverse éligible de coût ${n} ou moins.`} La prise ne déclenche pas de mort et ne peut pas être rachetée. Si le capteur meurt, elle revient en jeu avec ses statistiques de prise, sans effet d’arrivée ; s’il est renvoyé ou exilé, elle revient en main.`,
-  malediction: () => 'Tant qu’elle est en jeu, TOUTES les créatures du camp adverse perdent 2 points d’attaque (et aucun de défense). Aucune adjacence : une créature qui arrive après elle est maudite aussi. Le malus se lève si la dernière source quitte la table, et deux sources cumulent leurs malédictions.',
+  malediction: (n) => `Tant qu’elle est en jeu, les créatures du camp adverse perdent ${n ?? 'N'} point${n > 1 ? 's' : ''} d’attaque (et aucun de défense). Aucune adjacence en duel ; en MOBA, seules les voies partagées sont touchées. Les créatures arrivées ensuite sont aussi maudites ; les sources se cumulent et leur malus disparaît lorsqu’elles quittent le jeu.`,
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
   prise: (n) => `Chaque fois qu’une créature est prise en cale, vous piochez ${n ?? 1} carte${n > 1 ? 's' : ''} : la commission du négociant.`,
   cale: 'La créature détenue par ce capteur. Elle ne se rachète pas : il faut détruire le capteur (elle revient alors en jeu avec ses statistiques de prise, sans effet d’arrivée), ou l’exiler, ou le renvoyer en main (elle revient en main).',
@@ -836,6 +837,7 @@ export function texteCombatIndividuel(carte) {
 
 /** La définition générique d’une pastille (valeur et couleur comprises). */
 export function definitionPastille(pastille) {
+  if (pastille?.cle === 'bouclier' && pastille.parfait) return 'Bloque la première attaque ou magie ennemie qui touche cette créature, puis se brise. En MOBA, il prévient aussi les dégâts de capacités sans se briser.';
   if (pastille.cle === 'debuff' || pastille.cle === 'buff') {
     // Un malus se lit par ce qu'il retire, statistique par statistique : la
     // vipère (-2/0) ne touche pas la défense, et la bulle ne doit pas le dire.

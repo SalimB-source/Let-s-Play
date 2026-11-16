@@ -590,7 +590,8 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 2,
     rarity: 'commune',
-    typeLine: 'Créature — Chien', butin: true, text: 'Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+    blocage: { chance: 0.15, def: 2 },
+    typeLine: 'Créature — Chien', butin: true, text: 'Blocage — Quand elle est ciblée par une attaque, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Il n’aboie pas. Il compte.',
   },
   {
@@ -1034,7 +1035,8 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
     defenseur: true,
-    text: 'Défenseur.',
+    blocage: { chance: 0.15, def: 2 },
+    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {

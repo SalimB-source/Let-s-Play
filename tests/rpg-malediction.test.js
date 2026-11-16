@@ -66,7 +66,7 @@ test('La Barbe Noire est un 4/5 fixe qui imprime Malédiction -2/-0', () => {
 
 test('le mot-clé Malédiction remplace Deux Visages dans les pastilles et le glossaire', () => {
   const noire = cardById('la-barbe-noire');
-  assert.deepEqual(libelles(), ['Défenseur', 'Abordage 4', 'Malédiction']);
+  assert.deepEqual(libelles(), ['Défenseur', 'Abordage 4', 'Malédiction 2']);
   assert.equal(iconePourLigne(noire,
     'Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0.'),
     'malediction');

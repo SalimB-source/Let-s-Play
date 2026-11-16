@@ -74,11 +74,12 @@ const poserMoba = (duel, id, voie, slot, side = 'joueur') => {
 };
 const paireMoba = (duel) => [poserMoba(duel, 'ronin-du-soleil-rouge', 'left', 0), poserMoba(duel, 'onna-musha-des-cendres', 'right', 1)];
 
-test('Ascension : un Dragon Samouraï 7/7 avec Contre-attaque, Esquive et Défenseur, hors pioche', () => {
+test('Ascension : un Dragon Samouraï 7/7 avec Contre-attaque, Esquive, Défenseur et Coup critique, hors pioche', () => {
   assert.equal(RPG_ASCENSION_CARDS.length, 7);
   assert.equal(duelCardById(DRAGON), fiche);
   assert.equal(fiche.atk, 7); assert.equal(fiche.def, 7); assert.equal(fiche.contreAttaque, true); assert.ok(!fiche.overkill);
   assert.equal(fiche.esquive, true); assert.equal(fiche.defenseur, true);
+  assert.deepEqual(fiche.coupCritique, { chance: 0.15, fois: 2 });
   assert.equal(fiche.typeLine, 'Créature d’Ascension — Dragon · Samouraï');
   assert.deepEqual(fiche.ascension.materiaux.map(r => r.carteId), ['ronin-du-soleil-rouge', 'onna-musha-des-cendres']);
   assert.equal(fiche.ascension.coutTotal, fiche.cost);
@@ -109,9 +110,9 @@ test('les Ascensions présentent une recette concise dans tous les aperçus', ()
   }
 });
 
-test('Dragon : la fiche expose les trois capacités et la nouvelle illustration casse le cache', () => {
+test('Dragon : la fiche expose ses capacités et la nouvelle illustration casse le cache', () => {
   const { pastilles } = effetsDetailles(fiche);
-  for (const cle of ['contreAttaque', 'esquive', 'defenseur']) {
+  for (const cle of ['contreAttaque', 'esquive', 'defenseur', 'coupCritique']) {
     assert.ok(pastilles.some((p) => p.cle === cle), cle);
   }
   assert.match(pastilles.find((p) => p.cle === 'esquive').description, /15 %/);

@@ -32,7 +32,7 @@ test('Retour des ensevelis : les conditions et le choix restent lisibles', () =>
 test('Chaque soutien conserve sa source, sa sélection et ses contraintes essentielles', () => {
   const motifs = {
     'gardienne-des-sables-ensevelis': /choisissez dans votre cimetière.*coût imprimé 3 ou moins.*spécialement.*bouclier avant son effet d’arrivée/,
-    'convoi-des-dunes': /main la dernière créature Sable, Eau ou Ténèbres de coût imprimé 3 ou moins de votre cimetière/,
+    'convoi-des-dunes': /choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière.*dans votre main/,
     'confluence-des-etincelles': /depuis votre main jusqu’à deux Djinns Braise : le premier de coût imprimé 1, puis le premier de coût 3/,
     'eveil-des-dunes': /premier Élémental Sable de coût imprimé 4 depuis le dessus de votre pioche/,
   };
@@ -43,12 +43,13 @@ test('Chaque soutien conserve sa source, sa sélection et ses contraintes essent
 
 test('Ascensions : recettes et effets propres lisibles, définitions détaillées dans les pastilles', () => {
   const effets = {
-    'samourai-du-dragon-rouge': ['contreAttaque', 'esquive', 'defenseur'],
+    'samourai-du-dragon-rouge': ['contreAttaque', 'esquive', 'defenseur', 'coupCritique'],
     'jarl-du-dernier-rempart': ['overkill', 'bouclier', 'furie'],
     'scorpion-de-l-eclipse': ['defenseur', 'poison'],
     'colosse-du-verre-ardent': ['bouclier', 'defenseur'],
     'valkyrie-de-la-derniere-aurore': ['envol', 'volDeVie'],
     'amiral-des-abysses': ['bouclier', 'butin', 'abordage'],
+    'serpent-des-deux-rivages': ['envol', 'rapidite', 'bouclier'],
   };
   for (const carte of RPG_ASCENSION_CARDS) for (const vue of [carte, rpgMobaCartePourApercu(carte)]) {
     assert.equal(texteCombatIndividuel(vue), vue.text, carte.id);

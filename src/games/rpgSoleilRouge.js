@@ -53,8 +53,9 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'susanoo', name: 'Susanoo',
     cost: 6, atk: 5, def: 3, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Tempête',
+    esquive: true,
     arrivee: { type: 'exil', cible: 'creature', coutMin: 5 },
-    text: 'Quand Susanoo arrive en jeu, retirez de la partie une créature de coût 5 ou plus de votre choix.',
+    text: 'Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Quand Susanoo arrive en jeu, retirez de la partie une créature de coût 5 ou plus de votre choix.',
     flavor: 'Sa tempête emporte jusqu’au souvenir de ses adversaires.',
   }),
   carte({
@@ -67,9 +68,9 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'cavalier-des-deux-sabres', name: 'Cavalier des deux sabres',
-    cost: 6, atk: 5, def: 4, rarity: 'mythique', rapidite: true, overkill: true,
+    cost: 6, atk: 5, def: 4, rarity: 'mythique', rapidite: true, coupCritique: { chance: 0.15, fois: 2 },
     typeLine: 'Créature légendaire — Humain · Samouraï',
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Coup critique — 15 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire.',
     flavor: 'Sans armure, sans hésitation : les cimes ne sont qu’un autre chemin.',
   }),
   carte({

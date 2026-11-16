@@ -137,8 +137,8 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
     if (!['susanoo', 'daimyo-du-soleil-rouge', 'oni-de-la-fournaise'].includes(carte.id)) assert.equal(carte.arrivee, undefined);
     if (carte.id !== 'orochi') assert.equal(carte.destruction, undefined);
     assert.equal(carte.combat, undefined);
-    // Deux Esquives assumées : l'Onna-musha et Tojiro, le pourfendeur.
-    assert.equal(carte.esquive, ['onna-musha-des-cendres', 'tojiro-le-pourfendeur'].includes(carte.id) ? true : undefined, carte.id);
+    // Esquive : Susanoo, l’Onna-musha et Tojiro, le pourfendeur.
+    assert.equal(carte.esquive, ['susanoo', 'onna-musha-des-cendres', 'tojiro-le-pourfendeur'].includes(carte.id) ? true : undefined, carte.id);
     assert.equal(carte.contreAttaque, carte.id === 'tojiro-le-pourfendeur' ? true : undefined, carte.id);
   }
   assert.equal(cardById('tengu-du-mont-ardent').resonance, 1);

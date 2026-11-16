@@ -38,7 +38,7 @@ créature du même type ou de même coût ne la remplace pas.
 | Amiral des abysses | Eau | 6 | **4 / 4** | Raïs de la galiote (2) + La légende du Hollandais volant (4) |
 | Serpent des deux rivages | Sable / Eau | 7 | **6 / 6** | Cotre de course (3) + La légende du Hollandais volant (4) |
 
-Le Dragon possède Contre-attaque, Esquive 15 % et Défenseur. Le Jarl possède
+Le Dragon possède Contre-attaque, Esquive 15 %, Défenseur et Coup critique (15 % de chances de doubler ses dégâts de combat). Le Jarl possède
 Overkill, Bouclier et Furie 4. Le Scorpion possède Défenseur et Poison : à son
 arrivée, il détruit toutes les créatures blessées des deux camps ; en MOBA,
 cette vague reste limitée à sa voie. Il n’a plus Vol de vie.
@@ -52,21 +52,22 @@ La Valkyrie possède Envol et Vol de vie, mais pas Rapidité. À sa mort, son
 contrôleur choisit une créature Viking de son cimetière à invoquer spécialement,
 y compris une carte d’Ascension. L’Amiral conserve Butin et possède Bouclier et Abordage 5 ; à son
 arrivée il fait piocher une carte et ne renvoie plus de créature en main. Le
-Serpent donne à une créature alliée choisie un bouclier, +2 ATQ si elle est Sable
-et +2 DEF si elle est Eau ; les deux bonus se cumulent si elle est Sable et Eau.
+Serpent possède Envol et Rapidité. Il donne à une créature alliée choisie un
+bouclier, +2 ATQ si elle est Sable et +2 DEF si elle est Eau ; les deux bonus
+se cumulent si elle est Sable et Eau.
 
 ## Quatre soutiens ordinaires
 
 Ce sont des cartes **de deck et de collection**, pas des Ascensions. Leurs
 effets produisent des **invocations spéciales**, sans accorder universellement
 une deuxième invocation normale. Chaque effet est limité à **une fois par
-nom et par tour**, toutes les copies de ce nom confondues.
+nom et par tour**, toutes les copies de ce nom confondues, sauf le Convoi des dunes dont le choix se déclenche à chaque arrivée.
 Les cartes indiquent leurs conditions propres sans répéter ces règles générales ;
 les mots-clés des Ascensions sont expliqués par leurs pastilles dans l’aperçu.
 
 | Soutien | Carte | Effet |
 | --- | --- | --- |
-| **Convoi des dunes** | Créature Sable 2, 1/2, Humain · Éclaireur, inhabituelle | À l’arrivée : la **dernière** créature Sable, Eau ou Ténèbres de coût imprimé **≤ 3** du cimetière rejoint la main |
+| **Convoi des dunes** | Créature Sable 2, 1/2, Humain · Éclaireur, inhabituelle | À l’arrivée : choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière et renvoyez-la dans votre main, sans limite de coût |
 | **Retour des ensevelis** | Sorcellerie Ténèbres, inhabituelle | Une **créature choisie** Ténèbres **≤ 3** du cimetière ; **exclut les Ascensions** |
 | **Confluence des étincelles** | Sorcellerie Braise, rare | Le **premier Djinn Braise 1**, puis le **premier Djinn Braise 3** de votre main, selon présence et place disponible |
 | **Éveil des dunes** | Sorcellerie Sable, rare | Le **premier Élémental Sable 4 depuis le dessus de la pioche** ; les autres cartes gardent leur ordre |
