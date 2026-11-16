@@ -13,6 +13,7 @@ const cartes = [
   ['hero', 'hero', 'amani-des-ksour.jpg'],
   ['defenseur', 'creature', 'amani-des-ksour.jpg'],
   ['site', 'site', 'amani-des-ksour.jpg'],
+  ['ascension', 'creature', 'samourai-du-dragon-rouge.jpg'],
 ];
 function App() {
   return <main className="cartes-test">{cartes.map(([id, kind, fichier]) => <button
@@ -20,7 +21,7 @@ function App() {
     onClick={() => { document.body.dataset.carteCliquee = id; }}
   >
     <img src={`${import.meta.env.BASE_URL}cards/${fichier}`} alt="" />
-    <RpgCadreCarte carte={{ kind }} />
+    <RpgCadreCarte carte={id === 'ascension' ? cardById('samourai-du-dragon-rouge') : { kind }} />
     <span className="icone-test" aria-hidden="true">✦</span>
   </button>)}</main>;
 }
