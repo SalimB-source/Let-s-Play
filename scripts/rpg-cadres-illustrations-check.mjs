@@ -14,7 +14,7 @@ try {
     let requetesDecoupe = 0;
     await page.route('**/*decoupes-cartes*.svg*', (route) => { requetesDecoupe += 1; return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="magie"/><clipPath id="arme"/><clipPath id="creature"/></defs></svg>' }); });
     await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html`, { waitUntil: 'networkidle' });
-    for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site', 'terrain', 'ascension']) {
+    for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site', 'terrain', 'ascension', 'braise', 'eau', 'sable', 'neige', 'tenebres', 'hybride']) {
       const face = page.locator(`#${id}`);
       await face.scrollIntoViewIfNeeded();
       const result = await face.evaluate((el) => {
@@ -35,6 +35,25 @@ try {
       assert.equal(await face.locator(':scope > .rpg-cadre-carte--sablier').count(), 1, `${id} : cadre Le Sablier`);
       await face.click({ position: { x: 60, y: 80 } });
       assert.equal(await page.locator('body').getAttribute('data-carte-cliquee'), id, `${id} : clic conservé`);
+    }
+    // Décoder le SVG coloré et vérifier ses coins effectivement peints : cela
+    // détecte notamment un dégradé SVG non résolu dans une image data URL.
+    for (const [id, debut, fin] of [
+      ['braise', [224, 65, 42], [224, 65, 42]], ['eau', [63, 159, 232], [63, 159, 232]],
+      ['sable', [216, 188, 134], [216, 188, 134]], ['neige', [169, 224, 245], [169, 224, 245]],
+      ['tenebres', [75, 46, 131], [75, 46, 131]], ['hybride', [224, 65, 42], [63, 159, 232]],
+    ]) {
+      const pixels = await page.locator(`#${id} .rpg-cadre-carte`).evaluate(async el => {
+        const url = getComputedStyle(el).backgroundImage.slice(5, -2);
+        const image = new Image(); image.src = url; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = 179; canvas.height = 256;
+        const ctx = canvas.getContext('2d'); ctx.drawImage(image, 0, 0, 179, 256);
+        return [[6, 6], [173, 249]].map(([x, y]) => Array.from(ctx.getImageData(x, y, 1, 1).data));
+      });
+      for (const [pixel, attendu] of [[pixels[0], debut], [pixels[1], fin]]) {
+        assert.deepEqual(pixel.slice(0, 3), attendu, `${id} : couleur réellement peinte`);
+        assert.ok(pixel[3] > 240, `${id} : coin opaque`);
+      }
     }
     // Les composants de production sont aussi exercés avec leurs feuilles
     // complètes : annonces de sorts, armes, créatures et table Défenseur.
