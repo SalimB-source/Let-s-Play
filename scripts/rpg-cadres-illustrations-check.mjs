@@ -14,7 +14,7 @@ try {
     let requetesDecoupe = 0;
     await page.route('**/*decoupes-cartes*.svg*', (route) => { requetesDecoupe += 1; return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="magie"/><clipPath id="arme"/><clipPath id="creature"/></defs></svg>' }); });
     await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html`, { waitUntil: 'networkidle' });
-    for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site']) {
+    for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site', 'ascension']) {
       const face = page.locator(`#${id}`);
       await face.scrollIntoViewIfNeeded();
       const result = await face.evaluate((el) => {
@@ -41,7 +41,7 @@ try {
     }
     // Les composants de production sont aussi exercés avec leurs feuilles
     // complètes : annonces de sorts, armes, créatures et table Défenseur.
-    for (const [surface, id] of [['apercu', 'appel-des-marees'], ['apercu', 'sabre-maudit'], ['apercu', 'amani-des-ksour'], ['table', 'amani-des-ksour'], ['table', 'guerrier-au-bouclier-rond']]) {
+    for (const [surface, id] of [['apercu', 'appel-des-marees'], ['apercu', 'sabre-maudit'], ['apercu', 'amani-des-ksour'], ['table', 'amani-des-ksour'], ['table', 'guerrier-au-bouclier-rond'], ['apercu', 'samourai-du-dragon-rouge'], ['table', 'samourai-du-dragon-rouge'], ['apercu', 'jarl-du-dernier-rempart'], ['table', 'jarl-du-dernier-rempart']]) {
       await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html?${surface}=${id}`, { waitUntil: 'networkidle' });
       const face = page.locator(surface === 'table' ? '.rpg-card--img' : '.rpg-hover-card-preview__face').first();
       await face.waitFor();
@@ -50,6 +50,17 @@ try {
       const etat = await image.evaluate((img) => ({ chargee: img.naturalWidth, clip: getComputedStyle(img).clipPath, opacite: Number(getComputedStyle(img).opacity), cadre: Boolean(img.nextElementSibling?.matches('.rpg-cadre-carte')) }));
       assert.ok(etat.chargee > 0 && etat.opacite > 0 && etat.cadre, `${surface} ${id} : illustration et cadre présents`);
       assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
+      if (['samourai-du-dragon-rouge', 'jarl-du-dernier-rempart'].includes(id)) {
+        const cadre = face.locator(':scope > .rpg-cadre-carte--ascension');
+        assert.equal(await cadre.count(), 1, `${surface} ${id} : cadre Ascension`);
+        assert.equal(await cadre.evaluate((el) => getComputedStyle(el).pointerEvents), 'none');
+        assert.match(await cadre.evaluate((el) => getComputedStyle(el).backgroundImage), /cadre-ascension/);
+        const asset = await cadre.evaluate(async (el) => {
+          const url = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1];
+          return url && (await fetch(url)).ok;
+        });
+        assert.ok(asset, `${surface} ${id} : SVG chargé`);
+      }
     }
     assert.equal(requetesDecoupe, 0, 'aucune requête de SVG de découpe externe');
     await page.close();

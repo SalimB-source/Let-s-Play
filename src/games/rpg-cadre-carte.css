@@ -1,4 +1,4 @@
-/* Les trois dessins proviennent des SVG fournis. Le calque est décoratif,
+/* Les dessins proviennent des SVG fournis. Le calque est décoratif,
    au-dessus de la peinture et sous les pierres et les commandes de la face. */
 .rpg-cadre-carte {
   position: absolute;
@@ -11,16 +11,22 @@
 .rpg-cadre-carte--magie { background-image: url('./assets/cadre-sorts.svg'); }
 .rpg-cadre-carte--arme { background-image: url('./assets/cadre-arme.svg'); }
 .rpg-cadre-carte--creature { background-image: url('./assets/cadre-creature.svg'); }
+.rpg-cadre-carte--ascension { background-image: url('./assets/cadre-ascension.svg'); }
 
 /* Découper uniquement la peinture : les icônes, les indicateurs de sélection
    et leurs zones de clic peuvent toujours déborder. Ces silhouettes suivent
-   le contour extérieur de chaque SVG (viewBox 179,24 × 256,06). */
+   le contour extérieur de chaque SVG. */
 /* Découpes CSS autonomes : aucun fichier SVG externe ni fragment à charger
    pour afficher la peinture. Si la découpe n'est pas prise en charge, le
    navigateur conserve l'illustration entière au lieu de la masquer. Les
    points suivent les courbes des contours fournis. */
 :has(> .rpg-cadre-carte--creature) {
   --rpg-cadre-decoupe: polygon(2.23% 1.56%, 97.77% 1.56%, 97.77% 98.44%, 2.23% 98.44%);
+}
+/* Le cadre Ascension a un contour rectangulaire indépendant des trois
+   précédents : ses ornements sont dessinés à l’intérieur de ces bords. */
+:has(> .rpg-cadre-carte--ascension) {
+  --rpg-cadre-decoupe: polygon(3% 1.5%, 97% 1.5%, 97% 98.5%, 3% 98.5%);
 }
 :has(> .rpg-cadre-carte--arme) {
   --rpg-cadre-decoupe: polygon(
@@ -197,12 +203,12 @@
   50% { object-position: 51% 49%; }
 }
 
-/* Sur une créature Défenseur, le cadre suit l'écusson existant et sa taille,
-   sans rogner les icônes ni remplacer le liseré d'état. */
+/* Le Défenseur garde son écu et ses indicateurs. Le nouveau cadre Ascension
+   reste entier au-dessus de l’écusson plutôt que d’être rogné par celui-ci. */
 .rpg-card.rpg-carte-bouclier > .rpg-cadre-carte { scale: 1; }
-.rpg-carte-bouclier > .rpg-cadre-carte,
-.rpg-carte-bouclier .rpg-card-guide__art > .rpg-cadre-carte,
-.rpg-carte-bouclier .rpg-souk__carte-art > .rpg-cadre-carte {
+.rpg-carte-bouclier > .rpg-cadre-carte:not(.rpg-cadre-carte--ascension),
+.rpg-carte-bouclier .rpg-card-guide__art > .rpg-cadre-carte:not(.rpg-cadre-carte--ascension),
+.rpg-carte-bouclier .rpg-souk__carte-art > .rpg-cadre-carte:not(.rpg-cadre-carte--ascension) {
   -webkit-mask: var(--rpg-ecusson-masque) center / 100% 100% no-repeat;
   mask: var(--rpg-ecusson-masque) center / 100% 100% no-repeat;
 }
