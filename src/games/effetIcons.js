@@ -461,7 +461,7 @@ export function effetsFurieInactifs(carte, entite = null) {
 /**
  * Les effets d'une créature posée qu'elle a déjà dépensés : sa Tenacité
  * quand elle l'a sauvée une fois, son Bouclier quand il a bloqué son sort
- * (Salem, Guerrier, Parade de verre…) ou que le bouclier de lumière de la
+ * (Salem, Tour de sable, Parade de verre…) ou que le bouclier de lumière de la
  * Dame aux ailes d'or a été touché. L'aperçu grise alors
  * la pastille, son explication et les lignes de règle de cet effet. Une carte
  * en main ou au catalogue n'a pas d'entité : rien n'y est jamais épuisé. Un

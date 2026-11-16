@@ -1381,7 +1381,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         ? 'Choisissez une créature alliée, y compris la Tour, pour recevoir un bouclier.'
             : duel.arriveeEnAttente?.carteId === 'veilleuse-des-citernes'
         ? 'Choisissez une autre créature alliée : elle gagne Défenseur et reçoit un bouclier.'
-        : 'Choisissez une créature alliée, y compris le Guerrier lui-même, pour recevoir son bouclier.')
+        : 'Choisissez une créature alliée pour la capacité d’arrivée.')
     : defausse ? `Choisissez ${defausse} carte${defausse > 1 ? 's' : ''} à défausser${duel.defausseEnAttente?.motif === 'fin-de-tour' ? ' pour terminer votre tour' : ''}.`
     : ['le-tresor-de-lima', 'source-de-bimini'].includes(carte) ? 'Choisissez une case libre pour installer le Site.'
     : carte === 'lame-des-ergs' ? 'Choisissez une créature alliée ou une case libre pour créer son Chien de sable.'

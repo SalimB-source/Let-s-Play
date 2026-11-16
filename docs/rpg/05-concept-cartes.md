@@ -214,7 +214,7 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | **Débuff ciblé** | `-X/-Y`, la victime meurt si ses PV tombent à 0 (Lame de mer) | La carte est enfin jouée : l'IA choisit la victime qu'elle **détruit**, sinon la plus grosse menace rabotée. |
 | **Réanimation** | Ramène une créature choisie du cimetière | Évaluée au corps qu'elle ramène : jamais payée pour une magicienne ou un cimetière vide. |
 | **Auras** | Tarek, Amani, Kenshi, Bou Jeloud : la carte ne grandit que les créatures des deux cases ADJACENTES, jamais elle-même ; une case vide coupe le voisinage (`voisines` dans `rpgDuel.js`) | Valorisée au plus pour DEUX voisins, pas selon toute la table déjà posée. |
-| **Arrivées** | `soin-creatures` (Yamina en zone, et la Völva qui en désigne une seule pour 3 PV, `cible: 'creature-amie'`), `heures` (Guetteur), `bouclier` (Guerrier, qui peut le garder ou le donner, Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
+| **Arrivées** | `soin-creatures` (Yamina en zone, et la Völva qui en désigne une seule pour 3 PV, `cible: 'creature-amie'`), `heures` (Guetteur), `bouclier` (Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
 
 Ce qui reste volontairement hors du modèle : `prixPv` et les effets sans carte
 au catalogue (`sable`, `regarder-dessus`, `compteurs-arme`) ; et l'arrivée
@@ -246,8 +246,7 @@ valkyries n'émettent plus de Résonance viking.
   moteur ne retient que l'écart déjà appliqué (`compagnieBonusAtk` /
   `compagnieBonusDef`), donc une arme, la Furie ou un renfort temporaire ne
   dérivent pas. La pastille « Compagnie viking » et le journal suivent l'effet.
-- **Furie X** (Loup des neiges 1 ; Valkyrie au corbeau, Guerrier au bouclier
-  rond et Berserk des trois hivers 2 ; Jarl au marteau de guerre et Maître du
+- **Furie X** (Loup des neiges 1 ; Berserk des trois hivers 2 ; Jarl au marteau de guerre et Maître du
   marteau 3) — un état
   continu : tant que la défense actuelle d'une créature vivante est sous sa
   **DEF de base** — la défense imprimée de sa carte, sans les renforts ni les
@@ -267,7 +266,7 @@ valkyries n'émettent plus de Résonance viking.
 - **Berserk des trois hivers** (3 mana, 2/4) — Furie 2 et Overkill, sans Défenseur.
 
 Les créatures du Nord gardent leurs capacités propres (Furie et Overkill du
-Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, vent froid
+Berserk, Défenseur du Guerrier, Envol des valkyries, vent froid
 d'arrivée de la Valkyrie des glaces).
 
 Le **vent froid** de la Valkyrie des glaces ne choisit pas son camp : 1 dégât
@@ -626,8 +625,7 @@ protection avait été rompue ou si elle n'avait jamais existé.
 
 ### Le bouclier d'arrivée se désigne
 
-Trois cartes portent un `arrivee.bouclier` : le Guerrier au bouclier rond, la
-Veilleuse des citernes et la Tour de sable. Elles le **donnent**, elles ne se
+La Veilleuse des citernes et la Tour de sable portent une arrivée qui donne un bouclier. Elles le **donnent**, elles ne se
 contentent pas de le garder : `choisirCible: true` ouvre la désignation sur la
 table (`arriveeEnAttente` puis `rpgResoudreArriveeCiblee`) et le bouclier va à
 la créature alliée touchée. La Veilleuse donne également Défenseur à cette
@@ -642,12 +640,12 @@ le Hatamoto des cendres, la Dune marchante et le Veilleur du dernier crépuscule
 leurs rôles de protection, de garde ou de riposte s’accordent avec Défenseur.
 Ils conservent leurs autres capacités.
 
-Le Guerrier ajoute `cibleSoi: true` — sa parade peut rester sur lui. Sans cette
-exception, un Guerrier seul sur le champ n'aurait aucune cible légale
-(`arriveeACibleLegale` ne retient que les autres créatures amies), la carte
-serait injouable et la leçon Neige n'aurait plus de bouclier à faire tomber.
-Le texte imprimé le dit : « une créature alliée ciblée — ou lui-même — reçoit
-un bouclier ».
+La Tour de sable permet aussi de choisir elle-même comme cible (`cibleSoi: true`).
+
+Le **Griffon des dunes gelées** est une créature Griffon rare Sable/Neige,
+de coût 5 et 4/5, avec Défenseur, Envol et Vol de vie. Il suit les règles
+ordinaires de sacrifice pour une créature de coût 5 et les règles communes de
+ses trois capacités, en duel comme en MOBA.
 
 ## 7. Les contres (deck Marée des abysses)
 

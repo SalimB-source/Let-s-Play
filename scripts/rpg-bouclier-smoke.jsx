@@ -116,8 +116,8 @@ const rendreApercu = (carteId, effetsEpuises = []) => renderToStaticMarkup(
 
 export function rendreApercusEffetsEpuises() {
   return {
-    guerrierActif: rendreApercu('guerrier-au-bouclier-rond'),
-    guerrierEpuise: rendreApercu('guerrier-au-bouclier-rond', ['bouclier']),
+    guerrierActif: rendreApercu('tour-de-sable'),
+    guerrierEpuise: rendreApercu('tour-de-sable', ['bouclier']),
     maitreEpuise: rendreApercu('maitre-du-marteau', ['tenacite']),
     // Salem porte maintenant la parade ordinaire : intacte, ses trois
     // pastilles sont en couleur ; une fois tombée, seul le Bouclier se grise.

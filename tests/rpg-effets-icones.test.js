@@ -134,7 +134,7 @@ test('Tenacité et Bouclier ne se grisent qu’une fois dépensés sur la table'
   assert.deepEqual(effetsEpuisesPourEntite(maitre, { tenaciteDisponible: false }), ['tenacite'],
     'une Tenacité qui a sauvé son porteur est épuisée');
 
-  const guerrier = cardById('guerrier-au-bouclier-rond');
+  const guerrier = cardById('tour-de-sable');
   assert.deepEqual(effetsEpuisesPourEntite(guerrier, {
     bouclier: 1,
     bouclierLumiere: false,

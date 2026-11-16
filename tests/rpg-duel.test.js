@@ -983,20 +983,14 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   assert.equal(duel.joueur.creatures.includes(berserk), false, 'une créature qui meurt ne s’énerve pas');
   assert.equal(duel.joueur.cimetiere.includes('berserk-des-trois-hivers'), true);
 
-  // Le Guerrier au bouclier rond a perdu sa Furie dans sa révision : c’est
-  // un 2/2 dont la parade bloque un sort adverse sans absorber de dégâts.
+  // Le Guerrier reste Défenseur, mais n’a ni Furie ni Bouclier imprimé.
   donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
-  // Le bouclier d'arrivée se désigne : le Guerrier le garde pour lui.
-  const poseGuerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
-  rpgResoudreArriveeCiblee(duel, 'joueur', poseGuerrier.entite.id);
-  const guerrier = poseGuerrier.entite;
-  assert.deepEqual([guerrier.atk, guerrier.def, guerrier.bouclier], [2, 2, 1]);
-  assert.equal(guerrier.furie, undefined, 'plus aucune Furie imprimée');
-  assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 1, 'braise').recus, 1,
-    'un coup ordinaire traverse la parade');
-  assert.equal(guerrier.furieDeclenchee, false, 'rien ne s’allume : le Guerrier n’a plus de Furie');
-  assert.equal(guerrier.pv, 1, 'ses PV sont entamés');
-  assert.equal(guerrier.bouclier, 1, 'et la parade tient toujours : seul un sort la brise');
+  const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond').entite;
+  assert.deepEqual([guerrier.atk, guerrier.def, guerrier.bouclier ?? 0], [2, 3, 0]);
+  assert.equal(guerrier.furie, undefined);
+  assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 1, 'braise').recus, 1);
+  assert.equal(guerrier.furieDeclenchee, false);
+  assert.equal(guerrier.pv, 2);
 
   // Furie 3 : le Jarl 2/5 devient 5/4 après un point de dégâts.
   donner(duel, 'joueur', 'jarl-au-marteau-de-guerre');
@@ -4504,9 +4498,9 @@ test('Le Grand Hiver : 1 dégât à toutes les créatures, les deux camps compri
   const duel2 = duelDeBase();
   donnerMana(duel2, 'joueur', 8);
   donnerMana(duel2, 'sorcier', 8);
-  donner(duel2, 'sorcier', 'guerrier-au-bouclier-rond'); // 2/2, parade
+  donner(duel2, 'sorcier', 'guerrier-au-bouclier-rond'); // 2/3, parade accordée par un effet
   const guerrier = rpgJouerCreature(duel2, 'sorcier', 'guerrier-au-bouclier-rond').entite;
-  assert.equal(guerrier.bouclier, 1);
+  guerrier.bouclier = 1;
   const pvGuerrier = guerrier.pv;
   donner(duel2, 'joueur', 'grand-hiver');
   assert.equal(rpgLancerMagie(duel2, 'joueur', 'grand-hiver').ok, true);

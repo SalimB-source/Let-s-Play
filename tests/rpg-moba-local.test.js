@@ -889,8 +889,8 @@ test('shield-bearing creature chooses an ally on arrival and blocks actions unti
   duel.sorcier.main.push('mousse-des-galiotes'); duel.sorcier.mana.sable = 10;
   const enemy = rpgMobaJouerCreature(duel, 'sorcier', 'mousse-des-galiotes', 'center', 0).entite;
   rpgFinDeTour(duel);
-  duel.joueur.main.push('guerrier-au-bouclier-rond', 'eclair-du-marteau'); duel.joueur.mana.neige = 10;
-  const played = rpgMobaJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', 'right', 0);
+  duel.joueur.main.push('tour-de-sable', 'eclair-du-marteau'); duel.joueur.mana.sable = 10;
+  const played = rpgMobaJouerCreature(duel, 'joueur', 'tour-de-sable', 'right', 0);
   assert.equal(played.ok, true);
   assert.equal(played.arriveeEnAttente, true);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
@@ -909,19 +909,19 @@ test('shield-bearing creature chooses an ally on arrival and blocks actions unti
 
 test('shield-bearing creature can choose itself when it is the only ally', () => {
   const duel = partieCombat();
-  duel.joueur.main.push('guerrier-au-bouclier-rond'); duel.joueur.mana.neige = 10;
-  const played = rpgMobaJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', 'center', 0);
+  duel.joueur.main.push('tour-de-sable'); duel.joueur.mana.sable = 10;
+  const played = rpgMobaJouerCreature(duel, 'joueur', 'tour-de-sable', 'center', 0);
   assert.equal(played.arriveeEnAttente, true);
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', played.entite.id).ok, true);
   assert.equal(played.entite.bouclier, 1);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
-test('a scheduled return of the warrior keeps its lane and replays its classic shield arrival', () => {
+test('a scheduled return of the warrior keeps its lane without granting a shield', () => {
   const duel = partieCombat();
   duel.joueur.main.push('guerrier-au-bouclier-rond', 'grand-hiver'); duel.joueur.mana.neige = 10;
   const warrior = rpgMobaJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', 'right', 0).entite;
-  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', warrior.id).ok, true);
+  assert.equal(duel.arriveeEnAttente == null, true);
   warrior.bouclier = 0; warrior.tenaciteDisponible = true; warrior.pv = 1;
   assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver').ok, true);
   assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
@@ -929,7 +929,7 @@ test('a scheduled return of the warrior keeps its lane and replays its classic s
   const returned = duel.joueur.creatures.find((e) => e.carteId === 'guerrier-au-bouclier-rond');
   assert.ok(returned);
   assert.equal(returned.mobaLane, 'right');
-  assert.equal(returned.bouclier, 1);
+  assert.equal(returned.bouclier ?? 0, 0);
   assert.equal(duel.arriveeEnAttente, null);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
@@ -7955,8 +7955,8 @@ test('Grappin MOBA : contresort empêche l’attachement et la prise', () => {
 
 test('Grappin MOBA : un porteur à effet d’arrivée ne redemande pas son ancien choix', () => {
   const duel=partie();rpgFinDeTour(duel);duel.sorcier.main=['viking-des-neiges'];duel.sorcier.mana.neige=30;const victime=rpgMobaJouerCreature(duel,'sorcier','viking-des-neiges','left',0).entite;rpgFinDeTour(duel);
-  duel.joueur.main=['guerrier-au-bouclier-rond','grappin-d-abordage'];duel.joueur.mana.neige=30;duel.joueur.mana.sable=30;
-  const p=rpgMobaJouerCreature(duel,'joueur','guerrier-au-bouclier-rond','center',0).entite;
+  duel.joueur.main=['veilleuse-des-citernes','grappin-d-abordage'];duel.joueur.mana.eau=30;duel.joueur.mana.sable=30;
+  const p=rpgMobaJouerCreature(duel,'joueur','veilleuse-des-citernes','center',0).entite;
   if(duel.arriveeEnAttente)assert.equal(rpgMobaResoudreArrivee(duel,'joueur',p.id).ok,true);
   assert.equal(rpgMobaJouerArme(duel,'joueur','grappin-d-abordage',p.id).arriveeEnAttente,true);assert.equal(rpgMobaResoudreArrivee(duel,'joueur',victime.id).ok,true);
   assert.equal(duel.arriveeEnAttente,null);assert.equal(p.enCale.entite,victime);assert.equal(rpgMobaPlacementCoherent(duel),true);
