@@ -40,8 +40,8 @@ test('neuf identifiants nouveaux sans collision avec le 12', () => {
   for (const key of keys) assert.ok(!nov12[key]);
 });
 
-test('15 novembre en une, anciennes éditions toujours intégrées', () => {
-  for (const page of ['Home', 'News']) assert.ok(read(`src/pages/${page}.jsx`).includes("from '../news/daily/2026-11-15'"));
+test('éditions des 13–15 novembre conservées après la publication suivante', () => {
+  for (const page of ['CurrentNews', 'AllNews']) assert.ok(read(`src/pages/${page}.jsx`).includes("from '../news/daily/2026-11-15'"));
   for (const file of ['src/pages/AllNews.jsx', 'src/pages/CurrentNews.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/search/searchIndex.js']) {
     const text = read(file);
     for (const day of ['15', '14', '13', '12', '11']) assert.ok(text.includes(`from '../news/daily/2026-11-${day}'`), `${file}: ${day}`);
