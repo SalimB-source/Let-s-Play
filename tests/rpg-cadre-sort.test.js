@@ -19,7 +19,7 @@ test('chaque carte reçoit le cadre correspondant à son type', async () => {
       else assert.equal(html, '', kind);
     }
     for (const carte of RPG_ASCENSION_CARDS) {
-      assert.match(renderToStaticMarkup(React.createElement(Cadre, { carte })), /rpg-cadre-carte--ascension/, carte.id);
+      assert.equal(renderToStaticMarkup(React.createElement(Cadre, { carte })), '', carte.id);
     }
     for (const kind of ['hero', 'magie', 'arme', 'site']) {
       const html = renderToStaticMarkup(React.createElement(Cadre, { carte: { kind, ascension: {} } }));
@@ -50,11 +50,10 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   // Les illustrations ne doivent plus dépendre d'un SVG externe pour être
   // visibles : chaque découpe reste une forme CSS autonome, avec repli naturel
   // sur l'image entière si le navigateur ne reconnaît pas polygon().
-  for (const type of ['magie', 'arme', 'creature', 'ascension']) {
+  for (const type of ['magie', 'arme', 'creature']) {
     assert.match(css, new RegExp(`:has\\(> \\.rpg-cadre-carte--${type}\\) \\{\\s*--rpg-cadre-decoupe: polygon\\(`));
   }
-  assert.match(css, /cadre-ascension\.svg/);
-  assert.match(lire('assets/cadre-ascension.svg'), /viewBox="0 0 1171\.17 1677\.33" preserveAspectRatio="none"/);
+  assert.doesNotMatch(css, /cadre-ascension\.svg|rpg-cadre-carte--ascension/);
   assert.doesNotMatch(css, /decoupes-cartes\.svg|--rpg-cadre-decoupe:\s*url\(/);
   for (const type of ['sorts', 'arme', 'creature']) {
     assert.match(css, new RegExp(`cadre-${type}\\.svg`));
@@ -70,14 +69,6 @@ test('les SVG utilisés sont les dessins du commit, hormis leur adaptation au ra
 });
 
 
-test('le cadre Ascension correspond au dessin fourni', () => {
-  const original = readFileSync(new URL('../public/Cadre créatures Ascension.svg', import.meta.url), 'utf8');
-  assert.equal(lire('assets/cadre-ascension.svg'), original.replace('viewBox="0 0 1171.17 1677.33"', 'viewBox="0 0 1171.17 1677.33" preserveAspectRatio="none"'));
-});
-
-test('les vues de secours de la réserve et la miniature du rituel ont aussi un cadre', () => {
-  const reserve = lire('RpgReserveAscension.jsx');
-  assert.match(reserve, /rpg-ascension-preview-fallback-art[\s\S]*?<img[^>]+\/><RpgCadreCarte carte=\{carte\} \/>/);
-  assert.match(reserve, /rpg-ascension-ritual-art[\s\S]*?<img[^>]+\/><RpgCadreCarte carte=\{carte\} \/>/);
-  assert.match(reserve, /rpg-ascension-card-fallback[\s\S]*?<img[^>]+\/><RpgCadreCarte carte=\{c\} \/>/);
+test('les vues de secours de la réserve et du rituel restent sans cadre', () => {
+  assert.doesNotMatch(lire('RpgReserveAscension.jsx'), /<RpgCadreCarte/);
 });

@@ -1,4 +1,3 @@
-import RpgCadreCarte from './RpgCadreCarte.jsx';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { cardById } from './rpgCards.js';
 import { cardArt } from './rpgCardArt.js';
@@ -153,7 +152,7 @@ function ApercuAscension({ carte, selection, consultation, disponible, duel, Hov
     <div className="rpg-card-peek__backdrop" aria-hidden="true" />
     <div className="rpg-card-peek__panel">
       {HoverCardPreview ? <HoverCardPreview carte={cartePourApercu?.(carte) ?? carte} variante="catalogue" surface="RÉSERVE D’ASCENSION" />
-        : <figure className="rpg-ascension-preview-fallback"><span className="rpg-ascension-preview-fallback-art"><img src={cardArt(carte.id)} alt={carte.name} /><RpgCadreCarte carte={carte} /></span><figcaption><h2>{carte.name}</h2><p>{carte.text}</p></figcaption></figure>}
+        : <figure className="rpg-ascension-preview-fallback"><img src={cardArt(carte.id)} alt={carte.name} /><figcaption><h2>{carte.name}</h2><p>{carte.text}</p></figcaption></figure>}
       {(notesPourApercu?.(carte) ?? []).map((note) => <p key={note} className="rpg-ascension-note">{note}</p>)}
     </div>
     <div className="rpg-card-peek__bar">
@@ -173,7 +172,7 @@ function RituelAscension({ carte, duel, selection, disponible, onInvoquer, choix
   const victimes = ids.map((id) => duel.joueur.creatures.find((e) => e.id === id)).filter(Boolean);
   const prete = disponible && ascensionDisponible(duel, 'joueur', carte) && recette.ok;
   return <section className="rpg-ascension-ritual" role="region" aria-labelledby={titreId} inert={selection.apercuId ? true : undefined} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-    <button type="button" className="rpg-ascension-ritual-art" aria-label={`Voir l’aperçu de ${carte.name}`} onClick={(e) => selection.voir(carte.id, e.currentTarget)}><img src={cardArt(carte.id)} alt="" /><RpgCadreCarte carte={carte} /></button>
+    <button type="button" className="rpg-ascension-ritual-art" aria-label={`Voir l’aperçu de ${carte.name}`} onClick={(e) => selection.voir(carte.id, e.currentTarget)}><img src={cardArt(carte.id)} alt="" /></button>
     <div className="rpg-ascension-board-link">
       <small>ASCENSION · {libelleRecetteAscension(carte)}</small>
       <strong id={titreId}>{carte.name}</strong><span>Sacrifices automatiques : les créatures les plus faibles</span>
@@ -219,7 +218,7 @@ export default function ReserveAscension({ duel, cote, selection, onClose, onInv
           const entite = { ...c, id: `reserve-${cote}-${c.id}`, carteId: c.id, pv: c.def, pvMax: c.def, ready: false };
           return <div role="listitem" key={c.id} className={`rpg-ascension-reserve-item${prete ? ' is-ready' : ''}`}>
             {TableCard ? <TableCard entite={entite} cote={cote === 'joueur' ? 'joueur' : 'ennemi'} reserveAscension onClick={ouvrir} />
-              : <button type="button" className="rpg-ascension-card-fallback" data-ascension-reserve-card={c.id} aria-label={`Voir l’aperçu de ${c.name}`} onClick={ouvrir}><img src={cardArt(c.id)} alt="" /><RpgCadreCarte carte={c} /><span className="rpg-ascension-card-fallback-stats">⚔ {c.atk} · ◆ {c.def}</span></button>}
+              : <button type="button" className="rpg-ascension-card-fallback" data-ascension-reserve-card={c.id} aria-label={`Voir l’aperçu de ${c.name}`} onClick={ouvrir}><img src={cardArt(c.id)} alt="" /><span>⚔ {c.atk} · ◆ {c.def}</span></button>}
             <span className="rpg-ascension-reserve-name">{c.name}</span>
             <span className="rpg-ascension-reserve-status">{consultation ? 'Voir l’aperçu' : prete ? '✦ Invocable' : 'Conditions à réunir'}</span>
           </div>;
