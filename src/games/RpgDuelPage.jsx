@@ -9457,6 +9457,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timerSortRef.current = null;
     timerSortSorcierRef.current = null;
     setCarteEnVol(null);
+    setSacrificeFx(null);
+    sacrificeEnCoursRef.current = null;
     carteOrigineVolRef.current = null;
     setCarteGlissee(null);
     carteGlisseeRef.current = null;
@@ -11015,6 +11017,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerVolRef.current) window.clearTimeout(timerVolRef.current);
     timerVolRef.current = null;
     setCarteEnVol(null);
+    setSacrificeFx(null);
+    sacrificeEnCoursRef.current = null;
     carteOrigineVolRef.current = null;
     actionVolRef.current = null;
     setPhase(false);
@@ -11578,8 +11582,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const enCours = sacrificeEnCoursRef.current;
     if (!enCours || enCours.token !== token) return;
     sacrificeEnCoursRef.current = null;
-    setSacrificeFx(null);
     if (enCours.cote === 'sorcier') {
+      setSacrificeFx(null);
       // La résolution du moteur a déjà payé les victimes : la nouvelle carte
       // n'apparaît qu'après leurs cercles et l'IA attend la fin du rituel.
       force();
@@ -11587,6 +11591,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       else later(annoncerSuivantSorcier, delaiReflexionSorcier());
       return;
     }
+    // Le moteur ne paie le sacrifice qu'à l'atterrissage. Retirer les effets
+    // du rituel, mais garder les victimes masquées pendant le vol : elles
+    // existent encore dans le modèle et reparaîtraient sinon brièvement.
+    setSacrificeFx((courant) => courant?.token === token ? { ...courant, phase: 'vol' } : courant);
+    const poserApresRituel = () => {
+      finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
+      // En cas de pose refusée aussi, les victimes redeviennent visibles.
+      setSacrificeFx((courant) => courant?.token === token ? null : courant);
+    };
     // La carte reste en main pendant le rituel. Une fois celui-ci achevé,
     // elle effectue le même vol qu'une pose ordinaire avant le paiement réel.
     // L'Ascension vient de la réserve, pas de la main : elle se pose directement.
@@ -11598,10 +11611,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? rpgEmplacementsChamp(duel.joueur).findIndex((entite) => entite?.id === enCours.sacrificeIds[0])
       : -1;
     if (carte && source && Number.isInteger(index) && index >= 0 && !animationsReduites()) {
-      demarrerVolCarte(carte, index, () => finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds),
-        caseVictime >= 0 ? caseVictime : null);
+      demarrerVolCarte(carte, index, poserApresRituel, caseVictime >= 0 ? caseVictime : null);
     } else {
-      finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
+      poserApresRituel();
     }
     force();
   };
@@ -14364,7 +14376,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit
             posée à sa place (`dechirerEtPoser` enchaîne les deux temps). */}
-        {sacrificeFx?.victimes.map((victime) => (
+        {sacrificeFx?.phase !== 'vol' && sacrificeFx?.victimes.map((victime) => (
           <div
             key={victime.effectId}
             className={`rpg-card-tear-fx ${cardFrameClass(cardById(victime.cardId))} ${cardMotifClass(cardById(victime.cardId))}`}
@@ -14395,7 +14407,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
         {/* Cercle magique du sacrifice : runes et halo au pied de la créature
             sacrifiée, le temps de la déchirure. */}
-        {sacrificeFx?.victimes.map((victime) => (
+        {sacrificeFx?.phase !== 'vol' && sacrificeFx?.victimes.map((victime) => (
           <CercleMagique
             key={victime.effectId}
             onTermine={terminerCercleSacrifice}

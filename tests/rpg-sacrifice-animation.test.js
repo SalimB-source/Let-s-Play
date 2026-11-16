@@ -31,8 +31,9 @@ test('la pose attend tous les cercles et les minuteries périmées ne peuvent po
   assert.match(action, /enCours\.finPlanifiee = true/);
   assert.match(action, /later\(\(\) => terminerPoseSacrifice\(token\), dureeAnimation\(SACRIFICE_ANIMATION.pause\)\)/);
   const finaliser = action.slice(action.indexOf('  const terminerPoseSacrifice'));
-  assert.ok(finaliser.indexOf('setSacrificeFx(null)') < finaliser.indexOf('finaliserPoseCreature('));
-  assert.match(finaliser, /demarrerVolCarte\(carte, index, \(\) => finaliserPoseCreature\(enCours.carteId, enCours.sacrificeIds\)/);
+  assert.match(finaliser, /phase: 'vol'/, 'les victimes restent masquées pendant le vol');
+  assert.match(finaliser, /demarrerVolCarte\(carte, index, poserApresRituel/);
+  assert.match(finaliser, /finaliserPoseCreature\(enCours.carteId, enCours.sacrificeIds\);\s*\/\/[^\n]*\n\s*setSacrificeFx/);
   assert.match(finaliser, /!animationsReduites\(\)/);
   assert.doesNotMatch(action.slice(0, action.indexOf('  const terminerPoseSacrifice')), /annoncerVoixArrivee/);
   assert.match(page, /sacrificeFx\?\.victimes\.map\(\(victime\) => \([\s\S]*?onTermine=\{terminerCercleSacrifice\}/);
