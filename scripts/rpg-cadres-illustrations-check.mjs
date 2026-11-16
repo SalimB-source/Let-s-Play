@@ -14,7 +14,7 @@ try {
     let requetesDecoupe = 0;
     await page.route('**/*decoupes-cartes*.svg*', (route) => { requetesDecoupe += 1; return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="magie"/><clipPath id="arme"/><clipPath id="creature"/></defs></svg>' }); });
     await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html`, { waitUntil: 'networkidle' });
-    for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site', 'ascension']) {
+    for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site', 'terrain', 'ascension']) {
       const face = page.locator(`#${id}`);
       await face.scrollIntoViewIfNeeded();
       const result = await face.evaluate((el) => {
@@ -28,21 +28,17 @@ try {
       });
       assert.ok(result.loaded > 0, `${id} : illustration chargée`);
       assert.ok(result.visible, `${id} : illustration visible au centre (${result.clip})`);
-      if (!['site', 'ascension'].includes(id)) {
-        assert.match(result.clip, /^polygon\(/, `${id} : découpe CSS locale`);
-        assert.ok(result.coinRogne, `${id} : coins de l’illustration contenus dans le cadre`);
-        assert.ok(Number(result.frameZ) < Number(result.iconZ), `${id} : icône au-dessus du cadre`);
-        assert.equal(result.frameEvents, 'none', `${id} : cadre non interactif`);
-      } else {
-        assert.equal(result.frameZ, null, `${id} : aucun cadre`);
-        assert.equal(result.clip, 'none', `${id} : illustration sans découpe de cadre`);
-      }
+      assert.match(result.clip, /^polygon\(/, `${id} : découpe CSS locale`);
+      assert.ok(result.coinRogne, `${id} : coins de l’illustration contenus dans le cadre`);
+      assert.ok(Number(result.frameZ) < Number(result.iconZ), `${id} : icône au-dessus du cadre`);
+      assert.equal(result.frameEvents, 'none', `${id} : cadre non interactif`);
+      assert.equal(await face.locator(':scope > .rpg-cadre-carte--creature').count(), 1, `${id} : cadre des créatures`);
       await face.click({ position: { x: 60, y: 80 } });
       assert.equal(await page.locator('body').getAttribute('data-carte-cliquee'), id, `${id} : clic conservé`);
     }
     // Les composants de production sont aussi exercés avec leurs feuilles
     // complètes : annonces de sorts, armes, créatures et table Défenseur.
-    for (const [surface, id] of [['apercu', 'appel-des-marees'], ['apercu', 'sabre-maudit'], ['apercu', 'amani-des-ksour'], ['table', 'amani-des-ksour'], ['table', 'guerrier-au-bouclier-rond'], ['apercu', 'samourai-du-dragon-rouge'], ['table', 'samourai-du-dragon-rouge'], ['apercu', 'jarl-du-dernier-rempart'], ['table', 'jarl-du-dernier-rempart']]) {
+    for (const [surface, id] of [['apercu', 'appel-des-marees'], ['apercu', 'sabre-maudit'], ['apercu', 'amani-des-ksour'], ['table', 'amani-des-ksour'], ['table', 'guerrier-au-bouclier-rond'], ['apercu', 'samourai-du-dragon-rouge'], ['table', 'samourai-du-dragon-rouge'], ['apercu', 'source-de-bimini'], ['table', 'source-de-bimini'], ['apercu', 'jarl-du-dernier-rempart'], ['table', 'jarl-du-dernier-rempart']]) {
       await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html?${surface}=${id}`, { waitUntil: 'networkidle' });
       const face = page.locator(surface === 'table' ? '.rpg-card--img' : '.rpg-hover-card-preview__face').first();
       await face.waitFor();
@@ -50,13 +46,13 @@ try {
       await image.waitFor({ state: 'visible' });
       const etat = await image.evaluate((img) => ({ chargee: img.naturalWidth, clip: getComputedStyle(img).clipPath, opacite: Number(getComputedStyle(img).opacity), cadre: Boolean(img.nextElementSibling?.matches('.rpg-cadre-carte')) }));
       assert.ok(etat.chargee > 0 && etat.opacite > 0, `${surface} ${id} : illustration présente`);
-      if (['samourai-du-dragon-rouge', 'jarl-du-dernier-rempart'].includes(id)) {
-        assert.equal(etat.cadre, false, `${surface} ${id} : aucun cadre`);
-        assert.equal(await face.locator(':scope > .rpg-cadre-carte').count(), 0);
-      } else {
-        assert.ok(etat.cadre, `${surface} ${id} : cadre présent`);
-        assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
-      }
+      assert.ok(etat.cadre, `${surface} ${id} : cadre présent`);
+      assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
+      const cadre = face.locator(':scope > .rpg-cadre-carte--creature');
+      assert.equal(await cadre.count(), 1, `${surface} ${id} : cadre des créatures`);
+      assert.equal(await cadre.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
+      assert.notEqual(await cadre.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+
     }
     assert.equal(requetesDecoupe, 0, 'aucune requête de SVG de découpe externe');
     await page.close();

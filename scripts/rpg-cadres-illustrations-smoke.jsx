@@ -12,7 +12,8 @@ const cartes = [
   ['creature', 'creature', 'amani-des-ksour.jpg'],
   ['hero', 'hero', 'amani-des-ksour.jpg'],
   ['defenseur', 'creature', 'amani-des-ksour.jpg'],
-  ['site', 'site', 'amani-des-ksour.jpg'],
+  ['site', 'site', 'source-de-bimini.jpg'],
+  ['terrain', 'terrain', 'amani-des-ksour.jpg'],
   ['ascension', 'creature', 'samourai-du-dragon-rouge.jpg'],
 ];
 function App() {
