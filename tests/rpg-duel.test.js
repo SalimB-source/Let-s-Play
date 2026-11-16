@@ -1069,10 +1069,10 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
       cost: berserk.cost, atk: berserk.atk, def: berserk.def, furie: berserk.furie,
       defenseur: berserk.defenseur, coupRapide: berserk.coupRapide,
     },
-    { cost: 3, atk: 2, def: 4, furie: 2, defenseur: true, coupRapide: undefined },
-    'le Berserk devient 2/4 pour 3 manas, avec Furie 2 et Défenseur',
+    { cost: 3, atk: 2, def: 4, furie: 2, defenseur: undefined, coupRapide: undefined },
+    'le Berserk reste 2/4 pour 3 manas avec Furie 2, sans Défenseur',
   );
-  assert.match(berserk.text, /Défenseur/);
+  assert.doesNotMatch(berserk.text, /Défenseur/);
 
   const jarl = cardById('jarl-au-marteau-de-guerre');
   assert.deepEqual(
@@ -4845,7 +4845,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
   assert.equal(cardById('berserk-des-trois-hivers').coupRapide, undefined,
     'Attaque ciblée a quitté la fiche');
-  assert.equal(berserk.defenseur, true, 'l’entité porte Défenseur');
+  assert.equal(berserk.defenseur, false, 'l’entité ne porte pas Défenseur');
   berserk.ready = true;
   const pvSorcierAvantBerserk = duel.sorcier.pv;
   const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [fennec.id] });

@@ -93,8 +93,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
     'le Scorpion affiche Poison, sans l’ancien effet de mort');
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Défenseur', 'Overkill', 'Furie 2']);
-  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Défenseur', 'Overkill', 'Furie 2'],
-    'les pastilles du Berserk affichent Défenseur et sa nouvelle Furie 2');
+  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Overkill', 'Furie 2'],
+    'le Berserk conserve Overkill et Furie 2 sans Défenseur');
   assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque', 'Compagnie viking'],
     'Eirik affiche sa Contre-attaque et la Compagnie qui le fait grandir');
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
@@ -311,11 +311,8 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(jarl.texte, '', 'les mots-clés sobres ne laissent aucun pavé de règle sur la face');
 
   const berserk = effetsDetailles(cardById('berserk-des-trois-hivers'));
-  assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['defenseur', 'overkill', 'furie']);
-  assert.equal(berserk.pastilles.find((pastille) => pastille.cle === 'defenseur').description,
-    'Une attaque adverse doit la viser en priorité si elle est accessible. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
-    'la pastille Défenseur explique la priorité');
-  assert.equal(berserk.texte, '', 'Furie et Défenseur vivent entièrement dans leurs pastilles');
+  assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['overkill', 'furie']);
+  assert.equal(berserk.texte, '', 'Furie et Overkill vivent entièrement dans leurs pastilles');
 
   const corbeau = effetsDetailles(cardById('valkyrie-au-corbeau'));
   assert.deepEqual(corbeau.pastilles.map((pastille) => pastille.label), ['Envol', 'Furie']);
