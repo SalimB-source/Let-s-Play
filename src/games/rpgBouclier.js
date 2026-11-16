@@ -17,6 +17,12 @@
  * exactement la place et la taille des autres cartes ; le sonar `has-garde`
  * reste présent, dessiné dans la forme de l'écu.
  *
+ * Une créature Défenseur POSÉE sur la table est aussi **10 % plus grande** que
+ * ses voisines (`scale` sur `.rpg-card` dans `rpg-bouclier.css`), avec un peu
+ * plus d'espacement entre les emplacements. L'agrandissement est visuel : la
+ * boîte de mise en page ne change pas, donc les `cqw` et les tailles en px
+ * restent identiques, et les seules icônes sont ramenées à l'échelle 1.
+ *
  * Exception demandée : la MAIN, le MULLIGAN, la MAIN DU MOBA et les APERÇUS
  * (survol + fiche catalogue ouverte) ne reçoivent PAS la classe et restent des
  * cartes rectangulaires normales, avec ATQ à gauche et DÉF à droite — comme

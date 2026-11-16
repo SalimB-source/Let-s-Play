@@ -1968,6 +1968,27 @@ cartes) reste visible en liseré autour de l'acier, et une **ombre portée**
 `filter: drop-shadow()` suit l'alpha de l'écu. Aucun `outline`, aucun
 `box-shadow` de boîte, aucun cadre rectangulaire.
 
+**Une créature Défenseur posée est 10 % plus grande.** `rpg-bouclier.css` pose
+`scale: var(--rpg-defenseur-echelle)` (1.1) sur la `.rpg-card` de la table —
+un agrandissement **visuel**, pas un changement de largeur de mise en page.
+C'est ce qui permet de ne pas toucher aux icônes : la boîte de la carte garde
+sa taille, donc les mesures en `cqw` (résolues sur son conteneur) et toutes les
+polices en px des repères restent **exactement** celles d'une carte normale.
+Tous les enfants directs sont ramenés à l'échelle 1 (`scale: calc(1 / …)`) :
+pastilles ATQ/DÉF, pierres d'effets, compteurs, pastille d'arme, coût et
+pastille de couleur gardent leur taille en pixels. Seuls les calques pleine
+face (illustration, effets, bandeaux de texte) suivent le cadre, pour que leur
+masque reste aligné avec l'écu. `scale` compose avec `transform`, donc les
+cinématiques `fx-*` et l'ombre `drop-shadow` restent libres.
+
+La boîte ne bougeant pas, on élargit les gouttières des rangées (`.card-row`,
+héritées par les cinq emplacements via `gap: inherit`) : 12 → 18 px sur bureau,
+8 → 12 px, 4 → 6 px et 3 → 5 px dans les media queries, `clamp(7px, 1vw,
+14px)` → `clamp(10px, 1.4vw, 19px)`, et `--rpg-field-gap` de 16 % à 22 % de
+`--duel-card` au doigt. Les vignettes du catalogue / atelier / guide / Souk,
+la main, le mulligan, la main MOBA et les aperçus ne portent pas le facteur :
+leur taille et leurs repères restent inchangés.
+
 **Les effets prennent la forme de l'écu.** L'égide de Bouclier (violette,
 dorée ou colorée) et son impact de rupture, la vignette de Furie, le souffle
 d'Envol, la brume d'Infiltration, le sang, le givre et les ondes d'Aura /

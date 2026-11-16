@@ -136,7 +136,7 @@
      main et des commandes. Les rangées chargées adaptent toujours leur largeur. */
   --rpg-field-card: calc(var(--duel-card) * 1.05);
   --rpg-field-min: 40px;
-  --rpg-field-gap: max(6px, calc(var(--duel-card) * .16));
+  --rpg-field-gap: max(8px, calc(var(--duel-card) * .22));
   /* La taille des statistiques et le bas de la carte sont nommés une fois ;
      les losanges de compteurs vivent sous la couleur, loin du pied. */
   --rpg-field-stat-font: clamp(8px, calc(var(--duel-card) * .145), 12px);

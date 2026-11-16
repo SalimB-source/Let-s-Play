@@ -6,10 +6,11 @@
  * liseré de la couleur de l'élément et une ombre portée (aucun rectangle,
  * aucun `outline`, aucun `box-shadow` de boîte), que TOUS les effets pleine
  * face (égide de Bouclier, impact, Furie, Envol, brume, ondes, sang, givre)
- * prennent eux aussi la forme de l'écu, que les repères (ATQ/DÉF, type,
- * pierres, sonar) ne sont pas touchés, et que MAIN, MULLIGAN, MAIN MOBA et
- * APERÇUS restent des cartes rectangulaires normales avec ATQ à gauche / DÉF
- * à droite.
+ * prennent eux aussi la forme de l'écu, que les Défenseur POSÉS sont 10 % plus
+ * grands avec des icônes inchangées et des emplacements plus espacés, que les
+ * repères (ATQ/DÉF, type, pierres, sonar) ne sont pas touchés, et que MAIN,
+ * MULLIGAN, MAIN MOBA et APERÇUS restent des cartes rectangulaires normales
+ * avec ATQ à gauche / DÉF à droite.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -288,4 +289,59 @@ test('main, mulligan, main MOBA et aperçus restent des cartes rectangulaires', 
   // Le pied de l'aperçu garde sa grille deux colonnes : ATQ à gauche, DÉF à droite.
   assert.match(battleCss, /\.rpg-hover-card-preview__face \.rpg-card__foot,[\s\S]{0,400}?grid-template-columns:\s*repeat\(2,/, 'ATQ à gauche, DÉF à droite');
   assert.match(duel, /rpg-hover-card-preview__face[\s\S]{0,1200}?rpg-card__foot/, 'les statistiques restent sur la face d’aperçu');
+});
+
+test('les Défenseur posés sont 10 % plus grands, icônes inchangées, emplacements espacés', () => {
+  // Agrandissement VISUEL : la boîte de mise en page ne change pas, donc les
+  // mesures en cqw et les polices en px des repères restent identiques sans
+  // qu'on ait à compenser quoi que ce soit dans les autres feuilles.
+  const regle = css.match(/\.rpg-card\.rpg-carte-bouclier \{([\s\S]*?)\n\}/);
+  assert.ok(regle, 'la règle de taille existe');
+  assert.match(regle[0], /--rpg-defenseur-echelle: 1\.1;/, 'facteur 1.1');
+  assert.match(regle[0], /scale:\s*var\(--rpg-defenseur-echelle\);/, 'scale sur la carte de table');
+  assert.doesNotMatch(css, /transform:\s*scale|zoom\s*:/, 'ni transform: scale ni zoom');
+  // Seule la `.rpg-card` de la table est visée : vignettes et aperçus exclus.
+  assert.doesNotMatch(css, /\.rpg-card-catalogue__art\.rpg-carte-bouclier \{[^}]*scale:/s);
+  assert.doesNotMatch(css, /rpg-hover-card-preview__face[^\n]*scale:/);
+
+  // Les ICÔNES reviennent à l'échelle 1 ; les calques pleine face, eux, suivent
+  // le cadre pour que leur masque reste aligné avec l'écu.
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \* \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
+    'tous les enfants directs ramenés à 1');
+  const exceptions = css.match(/\.rpg-card\.rpg-carte-bouclier > :is\(([\s\S]*?)\) \{\s*scale: 1;/);
+  assert.ok(exceptions, 'la liste des calques pleine face existe');
+  for (const calque of [
+    '.rpg-card__img', '.rpg-card__blood', '.rpg-card__frost', '.rpg-card__resonance',
+    '.rpg-bouclier-egide', '.rpg-bouclier-impact', '.rpg-furie-vignette',
+    '.rpg-card__envol', '.rpg-card__brume',
+    '.rpg-card__title', '.rpg-card__type', '.rpg-card__text',
+  ]) assert.ok(exceptions[1].includes(calque), `${calque} suit le cadre`);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier :is\(\.rpg-mana-cost, \.rpg-card-element-badge\) \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
+    'coût et pastille de couleur ramenés à 1');
+
+  // AUCUNE largeur de carte ni mesure en cqw n'a été retouchée : c'est la
+  // garantie que les icônes gardent exactement leur taille en pixels.
+  assert.match(battleCss, /\.rpg-card, \.rpg-card-prison \{ width: clamp\(138px, 11\.5vw, 168px\); \}/,
+    'largeur de base inchangée');
+  assert.match(battleCss, /--rpg-plaque-taille: clamp\(24px, 26cqw, 52px\);/,
+    'mesure commune des pierres inchangée');
+  assert.match(mobileCss, /--rpg-card-marker-size: 27cqw;/, 'marqueur mobile inchangé');
+  assert.match(battleCss, /font: 900 9px\/1\.25 Georgia, serif;/, 'police px des repères intacte');
+  assert.equal((battleCss.match(/--rpg-defenseur-echelle/g) ?? []).length, 0,
+    'aucun facteur injecté dans les gabarits de cartes');
+  assert.equal((mobileCss.match(/--rpg-defenseur-echelle/g) ?? []).length, 0,
+    'aucun facteur injecté dans la feuille mobile');
+
+  // Un peu plus d'espacement entre les emplacements (la grille des cinq cases
+  // hérite de `gap` : `rpg-creature-slots { gap: inherit; }`).
+  const rangee = battleCss.match(/\.card-row \{([\s\S]*?)\n\}/);
+  assert.ok(rangee, 'la règle de la rangée existe');
+  assert.match(rangee[0], /gap: 18px;/, 'gouttière de base 12 → 18 px');
+  assert.match(battleCss, /\.card-row \{ gap: 12px; \}/, '900 px : 8 → 12 px');
+  assert.match(battleCss, /\.card-row \{ gap: 6px; \}/, '540 px : 4 → 6 px');
+  assert.match(battleCss, /height: 20%; gap: 5px;/, 'petit écran : 3 → 5 px');
+  assert.match(battleCss, /gap: clamp\(10px, 1\.4vw, 19px\);/, 'gouttière intermédiaire élargie');
+  assert.match(mobileCss, /--rpg-field-gap: max\(8px, calc\(var\(--duel-card\) \* \.22\)\);/,
+    'gouttière au doigt : 16 % → 22 %');
+  assert.match(lire('rpg-mana-essai.css'), /gap: inherit;/, 'les cinq emplacements héritent de la gouttière');
 });
