@@ -1,7 +1,7 @@
 /** Mulligan du Duel sur mobile : les cinq cartes ne doivent plus se toucher.
  *
  *  Décision utilisateur : portée = **Duel classique seulement**, écart = « bien
- *  aéré » (~14–16 px). Le PC et le mulligan MOBA gardent leurs valeurs.
+ *  aéré » (~14–16 px). La surcharge PC est indépendante du mobile et du MOBA.
  *  La rangée ne défile jamais : agrandir la gouttière DOIT réduire la largeur
  *  des cartes du même montant, via le `4 * var(--rpg-mulligan-gap)` déjà présent
  *  dans le calcul de `grid-auto-columns`.
@@ -28,10 +28,10 @@ const cardsRule = battle.slice(battle.indexOf('.rpg-mulligan__cards {'), battle.
 const bornes = /--rpg-mulligan-gap:\s*clamp\(([\d.]+)px,\s*([\d.]+)vw,\s*([\d.]+)px\)/.exec(mobile);
 const [gapMin, gapVw, gapMax] = bornes.slice(1).map(Number);
 const gouttiereMobile = (largeur) => Math.min(Math.max(largeur * gapVw / 100, gapMin), gapMax);
-/** La gouttière de référence du PC : clamp(4px, 1vh, 11px). */
-const gouttierePc = (hauteur) => Math.min(Math.max(hauteur / 100, 4), 11);
+/** La gouttière de référence historique, avant les surcharges. */
+const gouttiereAvant = (hauteur) => Math.min(Math.max(hauteur / 100, 4), 11);
 
-test('la gouttière de référence du PC reste inchangée', () => {
+test('la gouttière de repli reste disponible avant les surcharges PC et tactile', () => {
   assert.match(regle(battle, '.rpg-mulligan {'), /--rpg-mulligan-gap:\s*clamp\(4px, 1vh, 11px\);/);
   assert.doesNotMatch(battle, /\.rpg-battle--touch \.rpg-mulligan\s*\{[^}]*--rpg-mulligan-gap/s,
     'la surcharge vit dans la feuille tactile, pas dans la feuille commune');
@@ -49,12 +49,12 @@ test('au doigt, la gouttière du mulligan du Duel passe à 14–16 px', () => {
   for (const largeur of [568, 640, 844, 1024]) {
     const valeur = gouttiereMobile(largeur);
     assert.ok(valeur >= 14 && valeur <= 16, `${largeur} px : ${valeur} px`);
-    assert.ok(valeur - gouttierePc(390) >= 9, `${largeur} px : écart nettement plus grand que les 4 px d’avant`);
+    assert.ok(valeur - gouttiereAvant(390) >= 9, `${largeur} px : écart nettement plus grand que les 4 px d’avant`);
   }
 });
 
-test('la cascade donne la grande gouttière au doigt, la petite au PC', () => {
-  const css = `${regle(battle, '.rpg-mulligan {')}\n${regle(mobile, '.rpg-battle--touch .rpg-mulligan {')}`;
+test('la cascade donne à chaque mode sa propre gouttière', () => {
+  const css = `${regle(battle, '.rpg-mulligan {')}\n${regle(battle, '.rpg-battle:not(.rpg-battle--touch) .rpg-mulligan {')}\n${regle(mobile, '.rpg-battle--touch .rpg-mulligan {')}`;
   const dom = new JSDOM(`<!doctype html><style>${css}</style>
     <div class="rpg-battle"><div class="rpg-mulligan" id="pc"></div></div>
     <div class="rpg-battle rpg-battle--touch"><div class="rpg-mulligan" id="touch"></div></div>`,
@@ -64,7 +64,7 @@ test('la cascade donne la grande gouttière au doigt, la petite au PC', () => {
       .getPropertyValue('--rpg-mulligan-gap').trim();
     // jsdom renormalise les espaces des propriétés personnalisées :
     // `clamp(4px,1vh,11px)`. Peu importe, la valeur et l'ordre comptent.
-    assert.match(lireGap('pc'), /clamp\(4px,\s*1vh,\s*11px\)/);
+    assert.match(lireGap('pc'), /clamp\(36px,\s*3vw,\s*48px\)/);
     assert.match(lireGap('touch'), /clamp\(14px,\s*1\.8vw,\s*16px\)/,
       'la surcharge tactile gagne la cascade sur la valeur commune');
   } finally { dom.window.close(); }
@@ -96,7 +96,7 @@ test('les cinq cartes restent entières, touchables et à peine plus petites', (
     const margePanneau = 6;
     const margeScene = Math.min(Math.max(largeur * .02, 12), 24);
     const stage = largeur - 2 * (margeVolet + margePanneau + margeScene);
-    const avant = gouttierePc(hauteur);
+    const avant = gouttiereAvant(hauteur);
     const apres = gouttiereMobile(largeur);
     const largeurAvant = (stage - 4 * avant) / 5;
     const largeurApres = (stage - 4 * apres) / 5;
