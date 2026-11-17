@@ -3135,7 +3135,7 @@ export function TableCard({
           se lit à sa couleur, comme celle d'un bonus. */}
       {carte?.malediction ? <AuraOndes variante="malediction" phase={phaseAura(entite)} /> : null}
       {auraGarde ? <AuraOndes variante="garde" phase={phaseAura(entite)} /> : null}
-      {auraGarde ? <span className="rpg-card__liseret-garde" aria-hidden="true" /> : null}
+      {auraGarde ? <span className="rpg-card__liseret-garde" style={{ background: cardHybridGradient(carte) ?? cardFrameColor(carte) }} aria-hidden="true" /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
           aile qui passe — décalé lui aussi par entité. */}
       {entite.envol && (
@@ -4046,7 +4046,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
 }
 
 function VoletMulligan({
-  main, etape, choix, nouveau, bilan, essaiMana = false,
+  main, etape, choix, nouveau, bilan,
   onBasculer, onValider, onAnnulerSelection, onContinuer,
 }) {
   const nombre = choix.size;
@@ -4067,7 +4067,6 @@ function VoletMulligan({
           <p>{enChoix
             ? `Touchez une carte pour la mettre de côté : elle repart dans le paquet battu, et vous en piochez une nouvelle. Un seul échange, ${main.length} cartes en main.`
             : bilan}</p>
-          {essaiMana && <p className="rpg-mulligan__mana-note">Sans terrains ni mana : une invocation normale par tour ; les créatures de coût 5 ou plus demandent des sacrifices.</p>}
         </header>
         {/* La scène donne à la rangée une place mesurable, et c'est elle que
             les cartes interrogent : les cinq tiennent dans le volet. */}
@@ -15396,7 +15395,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           choix={mulligan.choix}
           nouveau={mulligan.nouveau}
           bilan={mulligan.bilan}
-          essaiMana={duel.modeMana === RPG_MODE_MANA_ESSAI}
           onBasculer={basculerCarteMulligan}
           onValider={validerMulligan}
           onAnnulerSelection={viderSelectionMulligan}
