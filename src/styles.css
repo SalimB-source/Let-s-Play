@@ -708,18 +708,58 @@ img{max-width:100%}
 /* Desktop — hide mobile-only chrome, keep layout intact */
 .nav-links-inner{display:contents}
 .mobile-menu-top,.mobile-menu-footer{display:none}
-/* Même règle de bureau pour l'entrée « Couleurs Vice City » de l'habillage
-   temporaire : elle vit dans la grille des commandes du tiroir, et sur
-   ordinateur la pastille de thème porte déjà les deux intentions. Le dessin
-   téléphone est dans theme/vice.css. */
-.nav-actions-grid .mobile-menu-vice{display:none}
+/* Entrée « Couleurs Vice City » — la porte de l'habillage temporaire.
+   Elle est rendue sur les deux mises en page, et c'est volontaire : la pastille
+   de thème ne porte qu'UNE intention (clair/sombre) et redevient soleil/lune
+   dès qu'on quitte la peau. Quand cette entrée n'existait qu'en téléphone,
+   revenir en sombre sur ordinateur refermait la porte : plus aucun chemin vers
+   l'habillage, alors que le thème, lui, fonctionnait toujours.
+   Le dessin suit les jetons du site, pas la peau : le jour où l'opération
+   s'arrête, cette entrée reste la seule porte vers l'habillage et doit se lire
+   sur les deux fonds. */
+/* Ordinateur : pastille compacte, icône seule (le libellé reste dans
+   `aria-label` et l'info-bulle) — la barre est déjà dense. */
+.nav-actions-grid .mobile-menu-vice{
+  flex:none;width:36px;height:36px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;
+  color:rgba(238,240,255,.88);
+  cursor:pointer;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:border-color .22s, background .22s, color .22s, transform .18s;
+}
+.nav-actions-grid .mobile-menu-vice:hover,
+.nav-actions-grid .mobile-menu-vice:focus-visible{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.14);
+  color:#fff;transform:translateY(-1px);
+}
+/* Pictogramme : le palmier, comme la pastille de thème quand l'habillage est
+   actif — c'est ce qui dit « Vice City » sans libellé. */
+.nav-actions-grid .mobile-menu-vice-icon{
+  display:grid;place-items:center;flex:none;width:15px;height:15px;
+}
+/* Point d'état, dans le coin : rose plein quand l'habillage est en place,
+   absent sinon (pas de contour vide — la barre resterait bruitée). */
+.nav-actions-grid .mobile-menu-vice{position:relative}
+.nav-actions-grid .mobile-menu-vice-dot{display:none}
+.nav-actions-grid .mobile-menu-vice[aria-pressed='true'] .mobile-menu-vice-dot{
+  display:block;position:absolute;top:2px;right:2px;
+  width:6px;height:6px;border-radius:50%;
+  border:1px solid rgba(10,4,20,.7);
+  background:#ff2e93;box-shadow:0 0 6px rgba(255,46,147,.9);
+}
+.nav-actions-grid .mobile-menu-vice-label,
+.nav-actions-grid .mobile-menu-vice-arrow{display:none}
+/* Une seule porte à la fois dans la barre : quand l'habillage est actif, la
+   pastille de thème EST la sortie (« Retour ») et cette entrée ferait doublon.
+   Dès qu'on quitte la peau, elle reprend le relais — il y a donc toujours
+   exactement un contrôle pour aller dans l'autre sens. */
+.nav-actions-grid .mobile-menu-vice[aria-pressed='true']{display:none}
 
-/* Entrée « Couleurs Vice City » : second accès à l'habillage temporaire, sur
-   sa propre ligne de la grille des commandes du tiroir. En mise en page
-   téléphone seulement — sur ordinateur, la pastille de thème porte déjà les
-   deux intentions. Le dessin suit les jetons du site, pas la peau : le jour où
-   l'opération s'arrête, cette entrée reste la seule porte vers l'habillage et
-   doit se lire sur les deux fonds. */
+/* Téléphone : le tiroir a la place d'un vrai libellé, sur sa propre ligne. */
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .nav-links .nav-actions .mobile-menu-vice{
     display:flex;align-items:center;gap:10px;
@@ -736,14 +776,24 @@ img{max-width:100%}
   .nav-links .nav-actions .mobile-menu-vice:focus-visible{
     color:var(--ink);border-color:var(--cyan);
   }
+  .nav-links .nav-actions .mobile-menu-vice-icon{
+    display:grid;place-items:center;flex:none;width:15px;height:15px;color:var(--aqua, var(--cyan));
+  }
   /* Un point de néon : rose plein quand l'habillage est en place, simple
      contour sinon. C'est le seul repère coloré de la pastille. */
   .nav-links .mobile-menu-vice-dot{
     flex:none;width:8px;height:8px;border-radius:50%;
     border:1px solid currentColor;background:transparent;
   }
-  .nav-links .mobile-menu-vice-label{flex:1;min-width:0;text-align:start}
-  .nav-links .mobile-menu-vice-arrow{flex:none;color:var(--dim);font-size:12px}
+  /* Le tiroir, lui, a la place du libellé : on le rétablit (la règle
+     « ordinateur » ci-dessus, de portée `.nav-actions-grid`, s'applique aussi
+     ici — il faut donc la surcharger explicitement). */
+  .nav-links .nav-actions-grid .mobile-menu-vice-label{
+    display:block;flex:1;min-width:0;text-align:start;
+  }
+  .nav-links .nav-actions-grid .mobile-menu-vice-arrow{
+    display:block;flex:none;color:var(--dim);font-size:12px;
+  }
   /* Rose « Vice City » (#ff2e93) en dur : c'est la seule teinte de la peau qui
      serve hors de theme/vice.css, et elle doit rester la même si la feuille
      disparaît. */

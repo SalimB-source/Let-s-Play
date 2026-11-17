@@ -58,8 +58,10 @@ function MoonIcon() {
   );
 }
 
-/** Palmier + soleil : l'icône de l'habillage temporaire. */
-function PalmIcon() {
+/** Palmier + soleil : l'icône de l'habillage temporaire.
+ *  Exportée : la pastille d'entrée du tiroir (Layout.jsx) porte le même
+ *  pictogramme — une seule définition du palmier pour tout le site. */
+export function PalmIcon() {
   return (
     <svg
       className="theme-toggle-icon theme-toggle-icon-palm"
