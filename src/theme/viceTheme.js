@@ -33,5 +33,20 @@
  */
 export const viceHeroImage = `${import.meta.env.BASE_URL}gta6-jason-lucia-hero.jpg`;
 
+/**
+ * Même image, recadrée en PORTRAIT (900×1414) pour le téléphone.
+ *
+ * L'original est un panoramique 2,1:1 : posé dans un héros presque vertical, il
+ * ne garde qu'une bande de ciel et un bras. On ne pouvait pas rattraper ça au
+ * `object-position` — aucun cadrage d'une image si large ne garde un couple
+ * étalé sur toute la longueur. Ce cadrage vertical garde Lucia en entier, avec
+ * la voiture et Jason en amorce à droite.
+ *
+ * Le basculement se fait en CSS (`@media` téléphone), pas en JavaScript : pas de
+ * `matchMedia` à écouter, et l'image lourde reste hors du chemin critique sur
+ * ordinateur.
+ */
+export const viceHeroPortraitImage = `${import.meta.env.BASE_URL}gta6-jason-lucia-hero-portrait.jpg`;
+
 /** Visuel du héros d'origine — conservé pour revenir en arrière d'une ligne. */
 export const defaultHeroImage = `${import.meta.env.BASE_URL}hero-lets-play.jpg`;
