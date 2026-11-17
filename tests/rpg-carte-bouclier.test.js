@@ -102,25 +102,59 @@ test('TableCard distingue les Défenseurs sans changer leurs règles', async () 
   } finally { await vite.close(); }
 });
 
-test('les Défenseurs n’ont ni cadre ni silhouette d’écu', () => {
-  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/,
-    'la feuille Défenseur ne peint ni bordure ni silhouette');
+test('les Défenseurs posés reprennent la forme d’écu, sans cadre Le Sablier', () => {
+  // La silhouette est celle de `rpg-bouclier.css` : aplat marine, masque
+  // d'écu et fin trait rouge. Aucun calque d'habillage n'est rendu dans le
+  // DOM — tout passe par les `mask-image` et deux pseudo-éléments.
+  assert.match(css, /--rpg-ecusson-aplat:/, 'aplat marine qui suit la silhouette');
+  assert.match(css, /--rpg-ecusson-masque:/, 'masque d’écu des calques pleine face');
+  assert.match(css, /--rpg-ecusson-effet-masque:/, 'masque des effets');
+  assert.match(css, /--rpg-ecusson-trait-defenseur:/, 'fin trait rouge de Défenseur');
+  assert.match(css, /preserveAspectRatio='none'/, 'la découpe suit toutes les tailles de carte');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > :is\([\s\S]*?\.rpg-card__img[\s\S]*?\)[^{]*\{\s*-webkit-mask-image: var\(--rpg-ecusson-masque\)/,
+    'l’illustration est découpée dans l’écu');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::before \{[\s\S]*?filter: drop-shadow\(0 7px 12px/,
+    'l’ombre portée suit l’alpha de l’écu');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__resonance--garde::after \{[\s\S]*?--rpg-ecusson-trait-defenseur/,
+    'le trait rouge épouse l’écu, au-dessus de l’illustration');
   assert.doesNotMatch(css, /rpg-card__liseret-garde|rpg-card__ombre-garde/,
-    'aucun liseré ou ombre de contour Défenseur');
+    'aucun calque d’habillage supplémentaire n’est nécessaire');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
     'le léger agrandissement du Défenseur est conservé');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/,
-    'les statistiques restent remontées sans dessiner de cadre');
+    'les statistiques restent remontées vers le milieu');
   assert.doesNotMatch(duel, /rpg-card__liseret-garde|rpg-card__ombre-garde/,
     'la table et l’aperçu ne rendent aucun calque de contour');
   assert.match(duel, /AuraOndes variante="garde"/,
-    'le sonar Défenseur reste un repère d’état distinct du cadre');
+    'le sonar Défenseur reste le repère qui porte le trait de l’écu');
 
   // Le cadre Le Sablier reste inchangé pour les autres types.
   const cadre = lire('rpg-cadre-carte.css');
   assert.doesNotMatch(cadre, /--rpg-ecusson|:not\(\.rpg-carte-bouclier\)/);
   assert.match(cadre, /--rpg-cadre-decoupe: polygon\(2\.23% 1\.56%, 97\.77% 1\.56%, 97\.77% 98\.44%, 2\.23% 98\.44%\)/);
   assert.doesNotMatch(battleCss, /--rpg-ecusson/);
+});
+
+test('la forme d’écu est la même au doigt qu’à la souris : aucune variante par écran', () => {
+  // Demande du joueur : « les créatures avec Défenseur doivent avoir la forme
+  // d'égide sur mobile aussi ». La silhouette ne doit donc dépendre d'AUCUNE
+  // media query, ni de `hover` / `pointer`, sinon un téléphone perdrait l'écu.
+  const regles = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(regles, /@media/, 'aucune règle de l’écu n’est conditionnée par l’écran');
+  assert.doesNotMatch(regles, /hover:|pointer:|min-width:|max-width:|orientation:/,
+    'ni survol, ni pointeur, ni largeur : le téléphone peint le même écu');
+  // Les découpes sont en pourcentage de la carte : elles suivent sa taille.
+  const masques = [...css.matchAll(/mask-size:\s*100% 100%/g)];
+  assert.ok(masques.length >= 4, 'toutes les découpes remplissent la carte');
+  // Le masque de la carte n'est posé nulle part : seuls les calques le portent,
+  // donc les repères (ATQ/DÉF, pierres, pastille) ne sont jamais rognés.
+  assert.doesNotMatch(css, /^\.rpg-card\.rpg-carte-bouclier \{[^}]*mask-image/ms,
+    'la carte elle-même n’est pas masquée : les repères débordent librement');
+  // La feuille tactile ne désactive aucune découpe du plateau.
+  assert.doesNotMatch(mobileCss, /rpg-carte-bouclier[^{]*\{[^}]*mask-image:\s*none/,
+    'la coque tactile ne retire pas le masque d’écu');
+  assert.doesNotMatch(mobileCss, /rpg-carte-bouclier[^{]*\{[^}]*clip-path:\s*none/,
+    'la coque tactile ne retire pas la découpe');
 });
 
 test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gabarit', () => {

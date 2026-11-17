@@ -52,10 +52,15 @@ test('les Défenseurs gardent la couleur de leur carte, sans aucun cadre', async
   } finally { await vite.close(); }
 });
 
-test('les styles Défenseur ne dessinent aucune forme de cadre', () => {
+test('les styles Défenseur dessinent l’écu, jamais un cadre de carte', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/);
+  // La forme d'écu est portée par des masques et deux pseudo-éléments : aucun
+  // calque d'habillage, aucun cadre Le Sablier, aucune bordure de boîte.
+  assert.match(css, /--rpg-ecusson-masque/);
   assert.doesNotMatch(css, /rpg-card__liseret-garde|rpg-card__ombre-garde/);
+  assert.doesNotMatch(css, /--rpg-cadre-decoupe|cadre-le-sablier/);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*border: 0 !important;/s,
+    'aucune bordure rectangulaire sur une face Défenseur');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
     'l’agrandissement posé reste indépendant du cadre');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/,
