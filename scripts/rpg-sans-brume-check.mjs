@@ -187,7 +187,7 @@ try {
   await page.locator('.rpg-hand__card[data-card-id="serment-de-la-forge"]').click();
   // L'annonce est éphémère : vérifier son image sans attendre son décodage,
   // qui peut finir après la disparition de la vignette.
-  const sort = page.locator('img.rpg-spell-played__art');
+  const sort = page.locator('.rpg-spell-played__art > img');
   await sort.waitFor();
   assert.match(await sort.getAttribute('src') ?? '', /\/cards\/serment-de-la-forge\.jpg/);
   await verifierPage(page, 'sur le sort annoncé');

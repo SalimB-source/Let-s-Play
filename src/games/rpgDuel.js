@@ -2,7 +2,7 @@ import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, 
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
-import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
+import { attaqueDirectePermise, ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -9235,7 +9235,6 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
   const carte = duelCardById(attaquant.carteId);
   if (attaquant.coupRapide) {
-    if (!cibleCreatureId && duel[autre(cote)].creatures.length) return { ok: false, raison: 'cible-obligatoire' };
     if (cibleCreatureId) {
       const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleCreatureId);
       if (!cible) return { ok: false, raison: 'cible' };
@@ -9244,6 +9243,9 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     }
   } else if (cibleCreatureId) {
     return { ok: false, raison: 'cible' };
+  }
+  if (!attaqueDirectePermise(attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)))) {
+    return { ok: false, raison: 'cible-obligatoire' };
   }
   // Ce raccourci suppose une attaque non bloquée : un bloqueur forcé capable
   // de s'interposer doit d'abord être déclaré dans un vrai combat.

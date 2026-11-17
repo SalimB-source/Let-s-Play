@@ -39,11 +39,6 @@
   --rpg-ecusson-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3C/svg%3E");
   --rpg-ecusson-effet-masque: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='rgb%28255,255,255%29'/%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='8'%20stroke-linejoin='round'/%3E%3C/svg%3E");
   --rpg-ecusson-effet-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='3.2'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-  /* Le fin trait de Défenseur : même tracé, 1,6 unité, rouge. C'est le SEUL
-     calque qui ne sert pas de masque — il est peint tel quel, au-dessus de
-     l'illustration, donc il reste visible sur un téléphone comme sur un PC. */
-  --rpg-ecusson-trait-defenseur: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28214,58,46%29'%20stroke-width='1.6'%20stroke-linejoin='round'/%3E%3C/svg%3E");
-
   /* L'aplat marine SUIT la silhouette : transparent partout ailleurs, donc
      aucun rectangle peint derrière l'illustration. `!important` : la carte
      garde son fond habituel (`#0c0c0e`) sur toutes ses autres faces. */
@@ -74,7 +69,7 @@
   inset: 0;
   z-index: -1;
   background: var(--rpg-ecusson-aplat) center / 100% 100% no-repeat;
-  filter: drop-shadow(0 7px 12px rgba(0, 0, 0, .85));
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, .98)) drop-shadow(0 6px 8px rgba(0, 0, 0, .8));
   pointer-events: none;
 }
 
@@ -156,8 +151,8 @@
 /* Le LISERÉ des effets : un fin filet coloré sur `::after`, tracé le long de
    l'écu (3,2 unités), suit la pointe `50 124` et remplace le `border`
    rectangulaire de l'égide, de l'impact et des sonars. Le sonar de garde
-   reçoit son propre trait rouge (règle suivante). */
-.rpg-card.rpg-carte-bouclier > :is(.rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-card__resonance)::after {
+   garde ses ondes mais ne dessine plus de filet. */
+.rpg-card.rpg-carte-bouclier > :is(.rpg-bouclier-egide, .rpg-bouclier-impact, .rpg-card__resonance:not(.rpg-card__resonance--garde))::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -187,20 +182,17 @@
 }
 /* Les sonars Résonance / Aura / Malédiction gardent, eux aussi, leur filet
    coloré le long de l'écu. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--aura::after { background-color: rgba(250, 205, 90, .58); }
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance:not(.rpg-card__resonance--garde):not(.rpg-card__resonance--malediction):not(.rpg-card__resonance--aura)::after {
+  background-color: rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .34);
+  filter: drop-shadow(0 0 4px rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .3));
+}
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance.rpg-card__resonance--aura:not(.rpg-card__resonance--garde)::after {
+  background-color: rgba(250, 205, 90, .34);
+  filter: drop-shadow(0 0 4px rgba(250, 205, 90, .3));
+}
 .rpg-card.rpg-carte-bouclier > .rpg-card__resonance--malediction::after { background-color: rgba(178, 146, 245, .58); }
 
-/* ── LE TRAIT ROUGE DE DÉFENSEUR ───────────────────────────────────────────
-   Un fin filet rouge épouse l'écu, au-dessus de l'illustration et sous les
-   repères. Il vit sur le `::after` du sonar orange : ce calque existe sur
-   TOUTES les cartes Défenseur (`AuraOndes variante="garde"`), il est déjà
-   `aria-hidden`, couvre exactement la face et suit la même découpe que les
-   autres effets. Aucun élément d'habillage supplémentaire n'est rendu, et
-   aucun `::after` de la carte n'est pris — la protection utilise le sien. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--garde::after {
-  background: var(--rpg-ecusson-trait-defenseur) center / 100% 100% no-repeat;
-  filter: drop-shadow(0 0 5px rgba(238, 111, 20, .45));
-}
+/* Le sonar de garde conserve ses ondes, sans filet autour de l'écu. */
 
 /* Coût et statistiques dépassent de l'écusson : le trait ne traverse jamais
    les chiffres. Ces règles ne changent aucune taille. */

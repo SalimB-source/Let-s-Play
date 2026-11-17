@@ -12,6 +12,10 @@ createRoot(document.getElementById('root')).render(<>
     <div className="card-row" style={{ position: 'relative', padding: '30px', justifyContent: 'start', gap: '35px' }}>
       <div id="provocation"><TableCard entite={creature({ provocation: true })} cote="joueur" onClick={click} /></div>
       <div id="normal"><TableCard entite={creature()} cote="joueur" /></div>
+      <div id="resonance"><TableCard entite={creature({ id: 'torii', carteId: 'samourai-du-torii' })} cote="joueur" /></div>
+      <div id="aura"><TableCard entite={creature({ id: 'forge', carteId: 'kenshi-de-la-forge' })} cote="joueur" /></div>
+      <div id="aura-garde"><TableCard entite={creature({ id: 'forge-garde', carteId: 'kenshi-de-la-forge', defenseurAccorde: true })} cote="joueur" /></div>
+      <div id="malediction"><TableCard entite={creature({ id: 'barbe', carteId: 'la-barbe-noire' })} cote="joueur" /></div>
       <div id="selection"><TableCard entite={creature({ defenseur: true })} cote="joueur" selected /></div>
       <div id="gele"><TableCard entite={creature({ defenseur: true, gelToursRestants: 1 })} cote="joueur" /></div>
     </div>

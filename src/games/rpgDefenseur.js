@@ -4,7 +4,9 @@ import { duelCardById } from './rpgCards.js';
  * sauf celles des créatures avec Infiltration.
  * L'ancienne propriété des Tours reste reconnue dans les parties sauvegardées.
  * On filtre d'abord les cibles autrement légales : un Défenseur impossible à
- * viser ne doit pas rendre les autres cibles impossibles.
+ * viser ne doit pas rendre les autres cibles impossibles. Pour une frappe
+ * directe en revanche, même un Défenseur inaccessible barre la voie à Envol,
+ * sauf s’il est la seule créature adverse et possède Infiltration.
  */
 // Les anciennes sauvegardes peuvent encore porter l'ancien marqueur : il
 // représente désormais Défenseur, sans conserver ses anciennes règles.
@@ -26,4 +28,14 @@ export function ciblesDefenseur(cibles = [], attaquant = null) {
   if (attaquant?.infiltration) return cibles;
   const defenseurs = cibles.filter(estDefenseur);
   return defenseurs.length ? defenseurs : cibles;
+}
+
+/** Une attaque directe est possible face à un champ vide ou à une seule
+ * créature avec Infiltration. Envol peut également passer au-dessus des
+ * créatures tant qu'aucun Défenseur n'est présent. L'appelant fournit les
+ * créatures du champ adverse ou de la voie visée (sans les Sites). */
+export function attaqueDirectePermise(attaquant, creaturesAdverses = []) {
+  return creaturesAdverses.length === 0
+    || (creaturesAdverses.length === 1 && Boolean(creaturesAdverses[0]?.infiltration))
+    || Boolean(attaquant?.envol && !creaturesAdverses.some(estDefenseur));
 }

@@ -124,11 +124,11 @@ const auraCss = resonanceCss.slice(
 assert.ok(auraCss.length > 0, 'la feuille déclare la variante jaune');
 assert.match(auraCss, /background:\s*radial-gradient\([^;]*rgba\(255, 226, 120,/s,
   'le halo prend une teinte d’or');
-assert.match(auraCss, /box-shadow:\s*inset 0 0 16px rgba\(250, 205, 90,/s,
+assert.match(auraCss, /box-shadow:\s*inset 0 0 12px rgba\(250, 205, 90,/s,
   'le liseré qui reste allumé passe au jaune');
 assert.match(auraCss, /\.rpg-card__resonance--aura \.rpg-card__resonance-onde\s*\{[^}]*border-color:\s*rgba\(250, 205, 90,/s,
   'les ondes de l’aura sont dorées');
-assert.match(auraCss, /border-color:\s*rgba\(250, 205, 90, \.92\);/,
+assert.match(auraCss, /border-color:\s*rgba\(250, 205, 90, \.58\);/,
   'l’anneau de l’onde est le même or que le halo');
 // Le bleu de la résonance reste intact : la variante ne fait que surcharger.
 assert.match(resonanceCss, /--rpg-resonance-teinte:\s*96,\s*178,\s*255;/,
