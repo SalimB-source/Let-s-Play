@@ -287,18 +287,25 @@ test('la rampe monte sans trou : puissances, IA, pactes et primes croissantes', 
     assert.ok(primes[i] > primes[i - 1], `prime croissante à l’étage ${i + 1}`);
     assert.ok(puissances[i] > puissances[i - 1], `puissance croissante à l’étage ${i + 1}`);
   }
-  // Le pacte arrive par paliers : rien aux étages 1 et 3, puis les leviers
-  // s'ajoutent — et le sommet les tient tous les quatre.
-  assert.ok(!tour.etages[0].atouts && !tour.etages[2].atouts, 'les premiers paliers restent nus');
-  assert.ok(tour.etages.slice(3).every((etage) => etage.atouts), 'la fin de la tour est pactisée');
+  // Le pacte arrive par paliers. Depuis la pression des Tours
+  // (`rpgDifficulteTours.js`), TOUS les paliers en portent un, calculé depuis
+  // leur puissance — mais les données écrites de la tour gardent leur rampe :
+  // rien aux étages 1 et 3, puis les leviers s'ajoutent, et le sommet les
+  // tient tous les quatre.
+  assert.ok(tour.etages.every((etage) => etage.atouts?.pv > 0), 'chaque palier a son pacte de PV');
+  assert.ok(!RPG_TOUR_OUBLIEE.etages[0].atouts && !RPG_TOUR_OUBLIEE.etages[2].atouts,
+    'les paliers écrits restent nus');
+  assert.ok(RPG_TOUR_OUBLIEE.etages.slice(3).every((etage) => etage.atouts), 'la fin de la tour est pactisée');
+  assert.ok(tour.etages[4].atouts.pv > RPG_TOUR_OUBLIEE.etages[4].atouts.pv,
+    'la pression ajoute ses PV à ceux du pacte déclaré');
 
-  // Les deux premiers étages sont « équilibrés » : aucune mythique, pas de
-  // niveau d'IA hors de portée d'un joueur de campagne classique.
+  // Les deux premiers étages sont « équilibrés » : aucune mythique, et une IA
+  // de campagne classique — Gardien, ou Veilleur dès que la puissance passe à 5.
   for (const etage of tour.etages.slice(0, 2)) {
     const mythiques = RPG_TOUR_OUBLIEE_DECKS[etage.deck]
       .filter((id) => cardById(id).rarity === 'mythique');
     assert.deepEqual(mythiques, [], `${etage.id} : pas de mythique pour un premier palier`);
-    assert.ok(['recit', 'normale'].includes(etage.ia.niveau), `${etage.id} : IA accessible`);
+    assert.ok(['recit', 'normale', 'veilleur'].includes(etage.ia.niveau), `${etage.id} : IA accessible`);
   }
   // L'étage 1 n'aligne que des communes et des inhabituelles ; l'étage 2
   // n'ajoute qu'une rare, comme premier avant-goût.
@@ -350,7 +357,12 @@ test('le pacte du sommet se lit dans l’état du duel : PV, mana, main et boucl
   assert.equal(duel.sorcier.bouclier, atouts.bouclier);
   assert.equal(duel.sorcier.main.length, 5 + atouts.main, 'une carte de départ de plus');
   assert.deepEqual(duel.sorcier.atouts, { pv: 12, mana: 1, main: 1, bouclier: 6 });
-  assert.ok(duel.sorcier.manaSources.length >= atouts.mana, 'le mana du pacte est déjà une source');
+  // Le Sablier se joue sans mana : un atout `mana` reste lisible dans les
+  // données (vestige des règles à terrains) mais n'offre aucune source, et
+  // surtout aucune carte gratuite de plus.
+  assert.equal(duel.sorcier.atouts.mana, 1, 'le vestige reste lisible');
+  assert.equal(Object.values(duel.sorcier.mana).reduce((somme, valeur) => somme + valeur, 0), 0,
+    'aucune source de mana n’est offerte : les règles sont sans mana');
   assert.ok(duel.log.some((ligne) => /pacte/i.test(ligne)), 'le pacte est annoncé dans le journal');
 
   // Sans atout — ou en PvP — le duel reste exactement celui d'avant.

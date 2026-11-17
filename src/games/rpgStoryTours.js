@@ -7,9 +7,17 @@
  * (voir `docs/rpg/06-mode-histoire.md`).
  *
  * Chaque étage porte un sorcier : son deck, sa puissance (indice de difficulté
- * affiché sur la fiche d'étage — elle ne gonfle plus les PV : tout le monde
- * démarre à 25 PV, voir `RPG_PV_SORCIER_PAR_PUISSANCE` dans `rpgDuel.js`) et
- * son profil d'IA (`rpgAI.js`) — la personnalité de gameplay.
+ * affiché sur la fiche d'étage) et son profil d'IA (`rpgAI.js`) — la
+ * personnalité de gameplay.
+ *
+ * **La difficulté ne vient plus du paquet.** Les paquets d'étage sont taillés
+ * dans les listes thématiques communes (`rpgDecksThematiques.js`) : le joueur
+ * peut aligner exactement les mêmes trente cartes, cartes récentes comprises.
+ * Un gardien se distingue donc par ce que la puissance lui accorde —
+ * `rpgDifficulteTours.js` traduit chaque puissance en **pacte** (PV de départ,
+ * cartes en main, bouclier) et en **plancher d'IA**, cumulés avec les atouts
+ * qu'un étage déclare. C'est cette pression qui rend les tours dures à
+ * battre, et elle est affichée avant le duel.
  *
  * La galerie et la page de chaque tour montrent sa **maquette 3D**
  * (`rpgStoryTowerModels.js`). La peinture `miniature`, livrée dans
@@ -18,6 +26,7 @@
  */
 
 import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
+import { appliquerPressionTours } from './rpgDifficulteTours.js';
 import { RPG_TOUR_OUBLIEE } from './rpgTourOubliee.js';
 
 /** Identifiants historiques de progression conservés dans les sauvegardes.
@@ -86,8 +95,11 @@ const themes = new Map(RPG_DECKS_THEMATIQUES.map((theme) => [theme.id, theme.car
 export const RPG_STORY_DECKS = Object.fromEntries(Object.entries(THEME_PAR_DECK)
   .map(([id, themeId]) => [id, themes.get(themeId)]));
 
-/** Les tours, de la plus basse à la plus haute. */
-export const RPG_STORY_TOURS = [
+/** Les tours, de la plus basse à la plus haute. La pression du Sablier
+ * (`rpgDifficulteTours.js`) est appliquée une fois, à la construction : chaque
+ * étage en ressort avec son pacte et son plancher d'IA, sans muter les fiches
+ * écrites ci-dessous (ni `RPG_TOUR_OUBLIEE`, qui reste la donnée brute). */
+const TOURS_SANS_PRESSION = [
   {
     id: 'tour-des-listes',
     nom: 'La Tour des Listes',
@@ -594,6 +606,8 @@ export const RPG_STORY_TOURS = [
   // Sablier (`deblocage`, lu par `etageEstDebloque`).
   RPG_TOUR_OUBLIEE,
 ];
+
+export const RPG_STORY_TOURS = appliquerPressionTours(TOURS_SANS_PRESSION);
 
 /** Tous les étages, dans l’ordre de gravée (tours puis étages). */
 export function tousLesEtages() {

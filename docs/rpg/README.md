@@ -31,6 +31,7 @@ réactif de *Clair Obscur*.
 | [`28-pierres-d-effets.md`](28-pierres-d-effets.md) | Les **pierres d'effets** : chaque mot-clé sur un emblème taillé — une forme par famille d'action, une pierre par registre, le pictogramme en blanc |
 | [`31-ascension.md`](31-ascension.md) | **Ascension** : réserve hors-pioche, invocation spéciale par sacrifices exacts, Samouraï du Dragon Rouge et intégration Duel/MOBA |
 | [`32-decks-ascension.md`](32-decks-ascension.md) | Les quatre decks de 30 cartes dédiés aux Ascensions, matériaux, préparation et mulligan |
+| [`33-pression-des-tours.md`](33-pression-des-tours.md) | La **pression des Tours** : la puissance d’un étage devient un pacte (PV, cartes en main, bouclier) et un plancher d’IA — des gardiens durs à battre alors même que leurs paquets sont les listes communes |
 
 ## La décision de conception
 

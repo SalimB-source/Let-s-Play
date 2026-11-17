@@ -76,6 +76,14 @@ elle joue dans leur paquet. Le Sablier, au sommet, n'a pas de visage
 
 ## 3. « L'IA a les meilleures cartes » : les recettes absolues
 
+> **Mise à jour.** Les paquets d'étage sont désormais retaillés dans les
+> **listes thématiques communes** (`rpgDecksThematiques.js`) : le joueur peut
+> aligner les mêmes trente cartes. La difficulté de la tour ne vient donc plus
+> du paquet mais de la **pression des Tours** (dossier 33) : +12 à +20 PV,
+> une à deux cartes de plus en main, un bouclier de 4 à 7, et le niveau Sablier
+> sur les sept paliers. Les recettes ci-dessous restent l'archive du premier
+> équilibrage.
+
 Les sept recettes vivent dans `RPG_RECETTES_HISTOIRE`
 (`rpgDeckRecipes.js`) et se distinguent par une absence : **ni
 `mythiquesMax`, ni `raresMax`**. Le composeur (`rpgDeckComposer.js`) remplit
