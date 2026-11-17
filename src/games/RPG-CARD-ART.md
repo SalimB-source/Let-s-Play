@@ -2072,10 +2072,11 @@ ATQ/DÉF, pierres d'effets et icône `i-defenseur`. Aucun `outline` sur la carte
 aucun `clip-path` global : la silhouette vient des `mask-image` appliqués couche
 par couche. Le décalage `translate: 0 -20cqw` du pied reste en place.
 
-### Mise à jour — retrait du cadre SVG des créatures
+### Mise à jour — aucun cadre sur les créatures, Défenseur compris
 
-`RpgCadreCarte` ne dessine plus le cadre Le Sablier pour les créatures et les
-héros, y compris les créatures d'Ascension, dans toutes les vues. Les sorts et
-les armes le conservent (y compris le Sabre maudit), ainsi que les autres types
-de cartes inchangés. La silhouette d'écu des Défenseurs posés sur le plateau
-reste distincte : son liseré suit la couleur de leurs éléments, hybrides inclus.
+`RpgCadreCarte` et `cardFrameClass` n'ajoutent aucun cadre aux créatures et aux
+héros, y compris ceux d'Ascension. Un Défenseur posé garde ses repères de statut
+(pastille, sonar et statistiques), mais plus de silhouette d'écu, de liseré
+coloré ni d'ombre de contour. Sa classe CSS ne sert qu'à conserver la taille et
+la position des statistiques du plateau. Les autres types conservent leurs
+classes et leurs couleurs de cadre selon les éléments de la carte.

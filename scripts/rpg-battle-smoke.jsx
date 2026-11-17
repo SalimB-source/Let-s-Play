@@ -4,7 +4,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { RPG_DECKS, RPG_DUEL_CARDS, RPG_TOUR_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasShinyFrame, cardHybridGradient } from '../src/games/rpgCards.js';
+import { RPG_DECKS_PRECONSTRUITS, RPG_DUEL_CARDS, RPG_TOUR_CARDS, cardById, cardFrameColor, cardFrameInfo, cardHasMythicFrame, cardHasShinyFrame, cardHybridGradient } from '../src/games/rpgCards.js';
+import { cardArt } from '../src/games/rpgCardArt.js';
 import { plateauDeDeck, RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PV_JOUEUR, rpgSorcierPv } from '../src/games/rpgDuel.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
@@ -58,13 +59,23 @@ export async function checkRpgBattle(assert) {
   const handCards = () => buttons().filter((b) => b.className.includes('rpg-hand__card'));
   const assertElementFrame = (element, cardId, context) => {
     const carte = cardById(cardId);
+    const sansCadre = ['creature', 'hero'].includes(carte?.kind);
     const frame = cardFrameInfo(carte);
-    assert.ok(element.classList.contains(`rpg-card--frame-${frame.key}`),
-      `${context} identifie sa couleur ${frame.key}`);
     assert.equal(element.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(carte),
-      `${context} utilise la couleur de cadre ${cardFrameColor(carte)}`);
-    assert.equal(element.classList.contains('rpg-card--frame-brillant'), cardHasShinyFrame(carte),
-      `${context} ne brille que si le cadre est mythique mono-élément`);
+      `${context} conserve sa couleur de carte ${cardFrameColor(carte)}`);
+    assert.equal(element.classList.contains('rpg-card--mythique'), cardHasMythicFrame(carte),
+      `${context} conserve son indicateur de rareté mythique`);
+    if (sansCadre) {
+      assert.doesNotMatch([...element.classList].join(' '), /rpg-card--frame-/,
+        `${context} ne porte pas de classe de cadre`);
+      assert.equal(element.querySelector('.rpg-cadre-carte'), null, `${context} reste sans cadre SVG`);
+    } else {
+      assert.ok(element.classList.contains(`rpg-card--frame-${frame.key}`),
+        `${context} identifie sa couleur ${frame.key}`);
+      assert.equal(element.classList.contains('rpg-card--frame-brillant'), cardHasShinyFrame(carte),
+        `${context} ne brille que si le cadre est mythique mono-élément`);
+      assert.ok(element.querySelector('.rpg-cadre-carte'), `${context} conserve son cadre SVG`);
+    }
   };
   const envoyerSouris = (target, type) => {
     target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, relatedTarget: document.body }));
@@ -191,108 +202,114 @@ export async function checkRpgBattle(assert) {
   for (const tour of RPG_TOUR_CARDS) {
     const carteTour = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${tour.id}"]`);
     assert.ok(carteTour, `${tour.name} apparaît dans le catalogue des créatures`);
-    assert.match(carteTour.textContent, /Tour de défense/, `${tour.name} garde son type de défense lisible`);
+    assert.equal(carteTour.dataset.type, 'creature', `${tour.name} garde son type de créature dans le catalogue`);
+    assert.match(carteTour.querySelector('.rpg-card-catalogue__ouvrir')?.getAttribute('aria-label') ?? '',
+      new RegExp(tour.name), `${tour.name} reste lisible dans le nom accessible de sa fiche`);
   }
-  // Les terrains ne font plus partie des cartes du duel (`rpg-decks-sans-terrains`) :
-  // plus aucune fiche de terrain à relire au catalogue.
+  // La grille ne répète pas les règles : le clic ouvre la fiche accessible.
+  // Les propriétés type/couleur et le nom du bouton restent disponibles sans
+  // modifier le traitement visuel sélectif des classes de cadre.
   for (const carte of RPG_DUEL_CARDS) {
-    const regles = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${carte.id}"] .rpg-card-catalogue__rules`);
-    assert.equal(regles.textContent, carte.text && carte.text !== '—' ? carte.text : 'Aucune capacité.',
-      `le texte de ${carte.name}, qui n'est pas un terrain, reste inchangé`);
+    const article = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${carte.id}"]`);
+    assert.ok(article, `${carte.name} est présent au catalogue`);
+    assert.equal(article.dataset.type, carte.kind, `${carte.name} garde son type de carte`);
+    assert.equal(article.dataset.color, carte.element, `${carte.name} garde son repère de couleur`);
+    assert.ok(article.querySelector('.rpg-card-catalogue__ouvrir')?.getAttribute('aria-label')?.includes(carte.name),
+      `${carte.name} reste accessible depuis la grille`);
+    assert.equal(article.querySelector('.rpg-card-catalogue__rules'), null,
+      `${carte.name} garde ses règles sur la fiche ouverte, pas dans la grille`);
   }
+  const coutAffiche = (article) => article?.querySelector('.rpg-mana-cost > b')?.textContent;
   const ifritCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="ifrit-al-ahmar"]');
-  assert.match(ifritCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
-    /\/cards\/ifrit-al-ahmar\.jpg\?v=minotaure-demon-photorealiste-v1$/,
-    'le catalogue charge l’illustration de l’Ifrit avec une URL versionnée contre le cache');
+  assert.equal(ifritCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src'), cardArt('ifrit-al-ahmar'),
+    'le catalogue utilise l’illustration résolue de l’Ifrit');
   const ferielCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="feriel"]');
   assert.equal(ferielCatalogue?.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('feriel')),
     'le catalogue garde la couleur Braise de Fériel, même si elle est mythique');
-  assert.ok(ferielCatalogue?.querySelector('.rpg-card-catalogue__art.rpg-card--frame-braise.rpg-card--frame-brillant.rpg-card--mythique'),
-    'le catalogue donne à Fériel le même cadre brillant que dans le duel');
+  const ferielCatalogueArt = ferielCatalogue?.querySelector('.rpg-card-catalogue__art');
+  assert.ok(ferielCatalogueArt?.classList.contains('rpg-card--mythique'),
+    'le catalogue garde le repère mythique de Fériel sans classe de cadre');
+  assert.doesNotMatch([...ferielCatalogueArt.classList].join(' '), /rpg-card--frame-/);
+  assert.equal(ferielCatalogueArt.querySelector('.rpg-cadre-carte'), null,
+    'Fériel, héroïne, reste sans cadre SVG dans le catalogue');
+  assertElementFrame(ferielCatalogueArt, 'feriel', 'Fériel au catalogue');
   assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__art .rpg-brume-mythique'), null,
     'la mythique du catalogue ne porte plus de voile de brume');
-  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
-    /\/cards\/feriel\.jpg\?v=feriel-tour-fleche-electrique-v1$/,
-    'le catalogue charge la nouvelle illustration de Fériel sur sa tour avec une URL versionnée contre le cache');
-  assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '4',
-    'le catalogue affiche le nouveau coût de quatre pour Fériel');
-  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /3\s*·\s*🛡\s*2/,
-    'le catalogue affiche les statistiques 3/2 de Fériel');
-  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Attaque ciblée/s,
-    'le catalogue décrit Rapidité et le ciblage de l’Attaque ciblée');
+  for (const id of ['chien-du-guet', 'trait-de-braise', 'sabre-maudit', 'le-tresor-de-lima', 'source-de-bimini']) {
+    const face = container.querySelector(`.rpg-card-catalogue__card[data-card-id="${id}"] .rpg-card-catalogue__art`);
+    assert.ok(face, `${id} est présent dans le catalogue`);
+    assertElementFrame(face, id, `${cardById(id).name} au catalogue`);
+  }
+  assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src'), cardArt('feriel'),
+    'le catalogue utilise l’illustration résolue de Fériel sur sa tour');
+  assert.equal(coutAffiche(ferielCatalogue), String(cardById('feriel').cost),
+    'le catalogue garde le coût imprimé sur la face de Fériel');
+  assert.deepEqual([cardById('feriel').atk, cardById('feriel').def], [3, 2],
+    'les statistiques 3/2 de Fériel restent dans ses données');
+  assert.match(cardById('feriel').text, /Rapidité.*Attaque ciblée/s,
+    'Fériel conserve dans ses données Rapidité et le ciblage de l’Attaque ciblée');
   const traitCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="trait-de-braise"]');
-  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
-    /\/cards\/trait-de-braise\.jpg\?v=trait-feu-sorcier-appeure-v1$/,
-    'le catalogue charge le nouveau Trait de braise vers le sorcier avec une URL versionnée');
-  assert.equal(traitCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '3',
-    'le catalogue affiche le coût de trois du Trait de braise');
-  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__type')?.textContent ?? '', /Magie Rapide/,
-    'le catalogue identifie le Trait de braise comme Magie Rapide');
-  assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts.*créature.*sorcier/i,
-    'le catalogue décrit ses 3 dégâts sur une créature ou un sorcier');
+  assert.equal(traitCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src'), cardArt('trait-de-braise'),
+    'le catalogue utilise l’illustration résolue du Trait de braise');
+  assert.equal(traitCatalogue?.dataset.type, 'magie', 'le Trait de braise garde son type Magie dans le catalogue');
+  assert.ok(traitCatalogue?.querySelector('.rpg-card-catalogue__sort'),
+    'le Trait de braise conserve son sceau Magie Rapide dans le catalogue');
+  assert.match(cardById('trait-de-braise').text, /3 dégâts.*créature.*sorcier/i,
+    'le Trait de braise conserve ses 3 dégâts sur une créature ou un sorcier');
   const anqaCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="anqa-des-braises"]');
-  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
-    /\/cards\/anqa-des-braises\.jpg\?v=anqa-des-braises-huile-v1$/,
-    'le catalogue charge l’illustration de l’Anqa avec une URL versionnée');
-  assert.equal(anqaCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '5',
-    'le catalogue affiche le coût de cinq de l’Anqa');
-  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /4\s*·\s*🛡\s*4/,
-    'le catalogue affiche les statistiques 4/4 de l’Anqa');
-  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /revient en jeu après quatre tours/i,
-    'le catalogue décrit le retour de l’Anqa quatre tours après sa destruction');
-  assert.match(anqaCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '',
+  assert.equal(anqaCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src'), cardArt('anqa-des-braises'),
+    'le catalogue utilise l’illustration résolue de l’Anqa');
+  assert.equal(coutAffiche(anqaCatalogue), '5', 'le catalogue garde le coût de cinq sur l’Anqa');
+  assert.deepEqual([cardById('anqa-des-braises').atk, cardById('anqa-des-braises').def], [4, 4],
+    'les statistiques 4/4 de l’Anqa restent dans ses données');
+  assert.match(cardById('anqa-des-braises').text, /revient en jeu après quatre tours/i,
+    'les données de l’Anqa gardent son retour quatre tours après sa destruction');
+  assert.match(cardById('anqa-des-braises').text,
     /Envol — Ne peut être bloquée que par une créature avec Envol/,
-    'le catalogue décrit l’Envol de l’Anqa et son blocage réservé aux créatures volantes');
+    'les données de l’Anqa gardent Envol et son blocage réservé aux créatures volantes');
   const fennecCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="fennec-des-decombres"]');
   assert.ok(fennecCatalogue, 'le Fennec apparaît au catalogue');
-  assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-rapidity, .rpg-card-catalogue__art .rpg-card-evasion'), null,
-    'le Fennec n’affiche aucune icône d’effet dans le catalogue');
-  assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-element-badge')?.textContent.trim(), '⏳',
-    'le badge élémentaire Sable du Fennec reste visible dans le catalogue');
-  assert.match(fennecCatalogue.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Butin/,
-    'le catalogue conserve Rapidité et la mécanique Butin du Fennec');
-  // Refonte « plein art 4:5 » des magies d’Eau et de Sable. Une peinture
-  // reprise sous le même nom de fichier doit changer d’URL — sinon le cache du
-  // navigateur resservirait l’ancien cadrage ; une peinture nouvelle n’a rien à
-  // tromper et pointe simplement sur son propre fichier.
+  assert.ok(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-card-icones'),
+    'le Fennec conserve ses repères d’effet dans le catalogue');
+  assert.equal(fennecCatalogue.querySelector('.rpg-card-catalogue__art .rpg-mana-cost')?.classList.contains('rpg-mana-cost--sable'), true,
+    'le coût du Fennec garde le repère coloré Sable');
+  assert.equal(fennecCatalogue.dataset.color, cardById('fennec-des-decombres').element,
+    'le catalogue conserve aussi la donnée de couleur du Fennec');
+  assert.match(cardById('fennec-des-decombres').text, /Rapidité.*Butin/,
+    'les données du Fennec conservent Rapidité et la mécanique Butin');
+  // Le catalogue et le service d'illustrations partagent la même résolution
+  // d'URL ; les versions de cache sont vérifiées dans les tests de `rpgCardArt`.
   const peinturesReprises = [
-    ['brisure-de-verre', 'plein-art-verre-v2'],
-    ['parade-du-verre', 'plein-art-verre-v1'],
-    ['maree-contraire', 'deflection-ultrason-v1'],
-    ['ressac', 'djinn-tourbillon-v1'],
-    ['courant-de-retour', 'djinn-tourbillon-v1'],
+    'brisure-de-verre', 'parade-du-verre', 'maree-contraire', 'ressac', 'courant-de-retour',
   ];
   const srcIllustration = (carteId) => container
     .querySelector(`.rpg-card-catalogue__card[data-card-id="${carteId}"]`)
     ?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '';
-  for (const [carteId, version] of peinturesReprises) {
-    assert.match(srcIllustration(carteId),
-      new RegExp(`/cards/${carteId}\\.jpg\\?v=${version}$`),
-      `${carteId} charge sa nouvelle peinture plein art avec une URL versionnée contre le cache`);
+  for (const carteId of peinturesReprises) {
+    assert.equal(srcIllustration(carteId), cardArt(carteId),
+      `${carteId} utilise la résolution d'illustration commune`);
   }
   for (const carteId of ['eau-de-la-source', 'lame-de-mer', 'maree-contraire', 'ressac', 'courant-de-retour']) {
     assert.match(srcIllustration(carteId), new RegExp(`/cards/${carteId}\\.jpg(\\?|$)`),
       `${carteId} n’emprunte plus l’illustration d’une autre carte`);
   }
   const deflectionCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="maree-contraire"]');
-  assert.match(deflectionCatalogue?.querySelector('.rpg-card-catalogue__title h3')?.textContent ?? '', /Déflection/,
-    'Marée contraire a rendu son nom : la carte s’appelle Déflection');
-  assert.match(srcIllustration('maree-contraire'), /deflection-ultrason/,
-    'Déflection est portée par le sorcier en méditation et son anneau d’ultrason bleu');
+  assert.ok(deflectionCatalogue?.querySelector('.rpg-card-catalogue__ouvrir')?.getAttribute('aria-label')?.includes(cardById('maree-contraire').name),
+    'Déflection conserve son nom dans la carte accessible du catalogue');
   const rapportCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="rapport-du-greffier"]');
-  assert.equal(rapportCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '3',
-    'le catalogue affiche le nouveau coût de trois du Rapport du greffier');
+  assert.ok(rapportCatalogue, 'le Rapport du greffier reste au catalogue');
   const rempartCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="rempart-de-dunes"]');
-  assert.match(rempartCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /\+0\/\+3.*fin du tour/u,
-    'le Rempart de dunes annonce un bonus qui ne dépasse pas le tour');
+  assert.ok(rempartCatalogue, 'le Rempart de dunes reste au catalogue');
+  assert.match(cardById('rempart-de-dunes').text, /\+0\/\+3.*fin du tour/u,
+    'les données du Rempart de dunes gardent un bonus qui ne dépasse pas le tour');
   const tempeteCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="tempete-de-sable"]');
-  assert.match(tempeteCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /3 dégâts à toutes les créatures adverses/u,
-    'la Tempête de sable annonce ses trois dégâts');
+  assert.ok(tempeteCatalogue, 'la Tempête de sable reste au catalogue');
+  assert.match(cardById('tempete-de-sable').text, /3 dégâts à toutes les créatures adverses/u,
+    'les données de la Tempête de sable gardent ses trois dégâts');
   const nuageCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="nuage-de-cendres"]');
-  assert.equal(nuageCatalogue?.querySelector('.rpg-card-catalogue__cost')?.textContent, '5',
-    'le catalogue affiche le coût de cinq du Nuage de cendres');
-  assert.match(nuageCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /puis 1 autre dégât au début de votre tour suivant/u,
-    'le Nuage de cendres annonce sa seconde vague pour le tour suivant du lanceur');
+  assert.ok(nuageCatalogue, 'le Nuage de cendres reste au catalogue');
+  assert.match(cardById('nuage-de-cendres').text, /puis 1 autre dégât au début de votre tour suivant/u,
+    'les données du Nuage de cendres gardent sa seconde vague pour le tour suivant');
   const filtresCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__filters select')];
   const filtrerCatalogue = async (select, value) => act(async () => {
     select.value = value;
@@ -307,10 +324,8 @@ export async function checkRpgBattle(assert) {
   const armesCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__card')];
   assert.ok(armesCatalogue.length && armesCatalogue.every((card) => card.dataset.colors.split(' ').includes('sable') && card.dataset.type === 'arme'),
     'les filtres couleur et type se cumulent, sur les armes du Sable');
-  assert.ok(armesCatalogue.every((card) => card.querySelector('.rpg-card-catalogue__art .rpg-card-element-badge')),
-    'les armes du catalogue gardent leur badge de couleur');
-  assert.ok(armesCatalogue.every((card) => card.querySelector('.rpg-card-catalogue__art .rpg-card-catalogue__cost')),
-    'chaque arme du catalogue affiche son coût');
+  assert.ok(armesCatalogue.every((card) => card.querySelector('.rpg-card-catalogue__art .rpg-cadre-carte')),
+    'les armes du catalogue conservent leur cadre SVG');
   await filtrerCatalogue(filtresCatalogue[1], 'tous');
   await filtrerCatalogue(filtresCatalogue[0], 'hybride');
   const cartesHybridesCatalogue = [...container.querySelectorAll('.rpg-card-catalogue__card')];
@@ -318,11 +333,11 @@ export async function checkRpgBattle(assert) {
     && cartesHybridesCatalogue.every((card) => card.dataset.colors.split(' ').length > 1),
   'le filtre hybride isole les cartes de plusieurs couleurs');
   const veilleurCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="djinn-de-foudre"]');
-  const coutDjinnCatalogue = veilleurCatalogue?.querySelector('.rpg-card-catalogue__cost');
-  assert.ok(coutDjinnCatalogue?.getAttribute('aria-label')?.includes('1 Sable et 1 Braise'),
-    'le coût du Djinn de foudre annonce clairement ses deux pips obligatoires');
-  assert.equal(coutDjinnCatalogue?.classList.contains('rpg-card-catalogue__cost--hybride'), true,
-    'le coût hybride a son propre disque dans le catalogue');
+  const coutDjinnCatalogue = veilleurCatalogue?.querySelector('.rpg-mana-cost');
+  assert.equal(coutDjinnCatalogue?.getAttribute('aria-label'), `Coût : ${cardById('djinn-de-foudre').cost} imprimé`,
+    'le coût imprimé du Djinn de foudre reste accessible');
+  assert.equal(coutDjinnCatalogue?.classList.contains('rpg-mana-cost--hybride'), true,
+    'le coût hybride garde ses marqueurs visuels dans le catalogue');
   assert.equal(coutDjinnCatalogue?.style.getPropertyValue('--rpg-hybrid-cost-bg'), cardHybridGradient('djinn-de-foudre'),
     'le catalogue peint le partage Sable/Braise du coût hybride');
   await filtrerCatalogue(filtresCatalogue[0], 'toutes');
@@ -347,15 +362,18 @@ export async function checkRpgBattle(assert) {
       .find((button) => button.textContent.includes('Deck')).click();
   });
   assert.ok(container.querySelector('.rpg-deck-catalog'), 'le mode Deck ouvre le catalogue');
-  // La crate « Nouveau deck » (au bouton « Composer ») est un choix de plus sur
-  // l’étagère : elle ne compte pas parmi les boîtiers du catalogue.
-  assert.equal(container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)').length, RPG_DECKS.length,
-    'chaque deck du catalogue (Sable, Braise, hybride, Eau de la Marée, Neige du Serment) est sélectionnable');
-  assert.match(container.textContent, /Veilleurs du Désert/, 'le deck joueur mono-Sable / Désert est présenté');
-  assert.match(container.textContent, /Cour des Djinns/, 'le deck adverse mono-Braise est présenté');
-  assert.match(container.textContent, /Sentiers de cendre/, 'le deck joueur hybride Sable + Braise est présenté');
-  assert.match(container.textContent, /Serment des Neuf Hivers/, 'le deck joueur mono-Neige est présenté');
-  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 0, 'la liste des cartes reste masquée tant qu’aucun deck n’est cliqué');
+  // La carte « Composer » est un choix de plus sur l'étagère, mais les boîtiers
+  // jouables sont les douze préconstruits thématiques actuels.
+  const choixDecks = [...container.querySelectorAll('.rpg-deck-choice:not(.rpg-deck-choice--neuf)')];
+  assert.equal(choixDecks.length, RPG_DECKS_PRECONSTRUITS.length,
+    'les douze decks préconstruits sont sélectionnables');
+  assert.deepEqual(
+    choixDecks.map((choix) => choix.querySelector('strong')?.textContent),
+    RPG_DECKS_PRECONSTRUITS.map((deck) => deck.name),
+    'l’étagère présente les douze noms du catalogue thématique, dans son ordre de données',
+  );
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, 0,
+    'la liste des cartes reste masquée tant qu’aucun deck n’est cliqué');
   // Chaque deck est un boîtier 3D : le clic est porté par le bouton voisin du décor.
   const boutonDeck = (nom) => [...container.querySelectorAll('.rpg-deck-choice__button')]
     .find((button) => button.textContent.includes(nom));
@@ -365,34 +383,20 @@ export async function checkRpgBattle(assert) {
     const boutonFermer = container.querySelector('.rpg-deck-detail__close');
     if (boutonFermer) await act(async () => { boutonFermer.click(); });
   };
-  await act(async () => { boutonDeck('Serment des Neuf Hivers').click(); });
-  const ficheNeige = container.querySelector('.rpg-deck-detail');
-  assert.match(ficheNeige?.textContent ?? '', /NEIGE[\s\S]*MONO/i,
-    'la fiche du Serment annonce son identité Neige mono-couleur');
-  assert.match(ficheNeige?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /30[\s\S]*0[\s\S]*17[\s\S]*12[\s\S]*1[\s\S]*validé/,
-    'le Serment est validé à 30 cartes : 17 créatures, 12 magies, 1 arme, sans terrain');
-  await fermerDeckOuvert();
-  await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
-  const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
-  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, new Set(veilleurs.cardIds).size,
-    'la fiche détaille les références distinctes avec leurs quantités, le Cavalier et les Dunes du Ténéré inclus');
-  assert.match(container.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /30[\s\S]*0[\s\S]*18[\s\S]*6[\s\S]*6/,
-    'la fiche indique 18 créatures, 6 magies et 6 armes au total, sans terrain');
-  await fermerDeckOuvert();
-  await act(async () => { boutonDeck('Cour des Djinns').click(); });
-  assert.match(container.querySelector('.rpg-deck-detail')?.textContent ?? '', /Braise/,
-    'la sélection affiche les détails du deck de Braise');
-  await fermerDeckOuvert();
-  await act(async () => { boutonDeck('Sentiers de cendre').click(); });
+  const forgeVerre = RPG_DECKS_PRECONSTRUITS.find((deck) => deck.id === 'preconstruit-ascension-verre');
+  assert.ok(forgeVerre, 'le préconstruit Forge du Verre Ardent existe');
+  await act(async () => { boutonDeck(forgeVerre.name).click(); });
   const ficheHybride = container.querySelector('.rpg-deck-detail');
-  assert.match(ficheHybride?.textContent ?? '', /Sable \+ Braise[\s\S]*HYBRIDE/i,
+  assert.match(ficheHybride?.textContent ?? '', /BRAISE \+ SABLE[\s\S]*HYBRIDE/i,
     'la fiche précise l’identité bicolore du deck');
   assert.match(ficheHybride?.textContent ?? '', /Djinn de foudre[\s\S]*Vent rouge/,
-    'la liste hybride présente ses cartes bicolores, Djinn de foudre et Vent rouge');
-  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /30[\s\S]*0[\s\S]*16[\s\S]*8[\s\S]*6[\s\S]*validé/,
-    'le deck hybride est validé à 30 cartes, avec 16 créatures, 8 magies et 6 armes, sans terrain');
+    'la liste de la Forge du Verre Ardent présente Djinn de foudre et Vent rouge');
+  assert.equal(container.querySelectorAll('.rpg-deck-list li').length, new Set(forgeVerre.cardIds).size,
+    'la fiche détaille chaque référence distincte du deck et sa quantité');
+  assert.match(ficheHybride?.querySelector('.rpg-deck-detail__stats')?.textContent ?? '', /30[\s\S]*0[\s\S]*18[\s\S]*10[\s\S]*2[\s\S]*validé/,
+    'la Forge est validée à 30 cartes : 18 créatures, 10 magies et 2 armes, sans terrain');
   await fermerDeckOuvert();
-  await act(async () => { boutonDeck('Veilleurs du Désert').click(); });
+  await act(async () => { boutonDeck(forgeVerre.name).click(); });
   assert.ok(findButton('Jouer avec ce deck'), 'la fiche du deck joueur permet de le lancer');
   await act(async () => { findButton('Jouer avec ce deck').click(); });
   await passerMulligan(container, cliquer);
@@ -400,8 +404,8 @@ export async function checkRpgBattle(assert) {
   // ── Nouvelle partie : table vide, 5 cartes, 25 PV face à un sorcier à 25 ─
   assert.ok(container.querySelector('.card-table'), 'la table de jeu doit être montée après le choix de Jouer');
   const tableDuDuel = container.querySelector('.card-table');
-  // Les deux paquets de ce scénario sont mono-Sable : les deux camps imposent
-  // le même terrain, l'Erg du Sahara — la table reste d'un seul tenant.
+  // Les paquets de test ont le Sable comme couleur dominante : les deux camps
+  // imposent l'Erg du Sahara, et la table reste d'un seul tenant.
   const plateauxMontes = RPG_PLATEAUX.filter(({ id }) => tableDuDuel.classList.contains(`card-table--plateau-${id}`));
   assert.equal(plateauxMontes.length, 1, 'la table porte exactement un plateau du catalogue');
   assert.equal(plateauxMontes[0].id, 'erg-du-sahara',
@@ -427,10 +431,10 @@ export async function checkRpgBattle(assert) {
     'la phase principale s’allume au début du tour du joueur');
   assert.equal(container.querySelectorAll('.rpg-phase-step[aria-current="step"]').length, 1,
     'une seule phase du duel est annoncée comme active');
-  assert.match(container.querySelector('.rpg-wizard-plate--joueur')?.textContent ?? '', /Veilleurs du Désert · ⏳ Sable/,
-    'le plateau annonce l’archétype mono-Désert du joueur');
-  assert.match(container.querySelector('.rpg-wizard-plate--ennemi')?.textContent ?? '', /Cour des Djinns · Braise/,
-    'le plateau annonce l’archétype de feu de l’adversaire');
+  assert.match(container.querySelector('.rpg-wizard-plate--joueur')?.textContent ?? '', /Forge du Verre Ardent.*Braise.*Sable/,
+    'le plateau annonce le deck hybride choisi par le joueur');
+  assert.match(container.querySelector('.rpg-wizard-plate--ennemi')?.textContent ?? '', /Meute des braises.*Sable.*Braise/,
+    'le plateau annonce l’archétype hybride du sorcier');
   assert.ok(container.querySelector('.rpg-hidden-hand'), 'la main adverse est au bord opposé, face cachée');
   assert.equal(container.querySelectorAll('.rpg-hidden-hand__card').length, 3, 'les 3 cartes adverses de départ sont représentées au sommet');
   assert.ok(container.querySelector('.rpg-card-piles--opponent') && container.querySelector('.rpg-card-piles--player'),
@@ -687,8 +691,8 @@ export async function checkRpgBattle(assert) {
   const visageTable = container.querySelector('.rpg-card--equipe');
   assertElementFrame(visageTable, visageTable.dataset.cardId, 'la carte posée sur la table');
   assert.ok(!visageTable.classList.contains('rpg-card--mythique')
-    && !visageTable.classList.contains('rpg-card--frame-brillant'),
-    'une carte monocolore non mythique garde son cadre mat, sans reflet');
+    && ![...visageTable.classList].some((nom) => nom.startsWith('rpg-card--frame-')),
+    'une créature non mythique reste sans classe de cadre');
   assert.equal(container.querySelectorAll('[class*="rpg-card--rarity-"]').length, 0,
     'aucune carte posée ne porte plus de cadre piloté par la rareté');
   assert.equal(visageTable.dataset.cardId, 'fennec-des-decombres', 'la créature jouée est le Fennec inhabituel du deck');
@@ -1642,9 +1646,10 @@ export async function checkRpgBattle(assert) {
   await poserDesertFeriel();
   const ferielEnMain = ferielHand().find((card) => card.dataset.cardId === 'feriel');
   assert.ok(ferielEnMain && estJouable(ferielEnMain), 'Fériel devient payable après quatre terrains');
-  assert.ok(ferielEnMain.classList.contains('rpg-card--mythique')
-    && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
-    'Fériel conserve son cadre Braise brillant dès la main');
+  assert.ok(ferielEnMain.classList.contains('rpg-card--mythique'),
+    'Fériel, héroïne mythique, conserve son marqueur de rareté dès la main');
+  assert.doesNotMatch([...ferielEnMain.classList].join(' '), /rpg-card--frame-/,
+    'Fériel en main ne reprend aucune classe de cadre');
   assertElementFrame(ferielEnMain, 'feriel', 'Fériel en main');
   assert.equal(ferielEnMain.querySelector('.rpg-brume-mythique'), null,
     'la mythique en main ne porte plus de voile de brume');
@@ -1652,7 +1657,9 @@ export async function checkRpgBattle(assert) {
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
-    'Fériel, mythique, garde son zellige sur la table');
+    'Fériel garde son marqueur mythique sur la table');
+  assert.doesNotMatch([...ferielEnJeu.classList].join(' '), /rpg-card--frame-/,
+    'Fériel en jeu ne reprend aucune classe de cadre');
   assertElementFrame(ferielEnJeu, 'feriel', 'Fériel en jeu');
   assert.equal(ferielEnJeu.querySelector('.rpg-brume-mythique'), null,
     'la mythique posée sur le champ ne porte plus de voile de brume');

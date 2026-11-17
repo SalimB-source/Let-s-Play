@@ -76,10 +76,12 @@ test('la table et l’aperçu reflètent la perte ou le gain de Défenseur', asy
         assert.equal(Boolean(table.querySelector('.rpg-card.has-garde.rpg-carte-bouclier')), defenseur);
         assert.equal(Boolean(table.querySelector('.rpg-card__resonance--garde')), defenseur);
         assert.equal(Boolean(table.querySelector('[data-effet="defenseur"]')), defenseur);
-        assert.equal(Boolean(table.querySelector('.rpg-card__ombre-garde')), defenseur);
+        assert.equal(table.querySelector('.rpg-card__ombre-garde'), null, 'aucune silhouette d’écu');
+        assert.equal(table.querySelector('.rpg-card__liseret-garde'), null, 'aucun cadre coloré');
         const apercu = doc(HoverCardPreview, { carte, entite: { ...entite, bouclierVisuel: defenseur }, variante: 'annonce' });
         assert.equal(Boolean(apercu.querySelector('[data-effet="defenseur"]')), defenseur);
         assert.equal(Boolean(apercu.querySelector('.rpg-card__resonance--garde')), defenseur);
+        assert.equal(apercu.querySelector('.rpg-card__liseret-garde'), null, 'aperçu sans liseré de Défenseur');
       }
     }
   } finally { await vite.close(); }

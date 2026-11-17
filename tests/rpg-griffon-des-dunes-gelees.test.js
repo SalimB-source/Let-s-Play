@@ -108,6 +108,9 @@ test('le Griffon posé affiche son repère Défenseur, ses ailes et ses trois pa
       const dom = new JSDOM(html);
       const card = dom.window.document.querySelector('.rpg-card');
       assert.ok(card.classList.contains('rpg-carte-bouclier'));
+      assert.doesNotMatch([...card.classList].join(' '), /rpg-card--frame-/);
+      assert.equal(card.querySelector('.rpg-cadre-carte'), null, 'la créature Défenseur reste sans cadre');
+      assert.equal(card.querySelector('.rpg-card__liseret-garde'), null, 'aucun liseré de couleur');
       assert.ok(card.classList.contains('is-envol'));
       assert.ok(card.querySelector('.rpg-card__resonance--garde'));
       for (const effet of ['defenseur', 'envol', 'volDeVie']) {

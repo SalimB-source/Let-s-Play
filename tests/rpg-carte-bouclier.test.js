@@ -102,48 +102,24 @@ test('TableCard distingue les Défenseurs sans changer leurs règles', async () 
   } finally { await vite.close(); }
 });
 
-test('l’écu est rétabli sur le plateau SEULEMENT, aperçus et vignettes rectangulaires', () => {
-  // « je veux juste que les créatures avec défenseur aient la forme d'écu EN
-  // JEU » → périmètre confirmé : plateau uniquement (Duel + MOBA).
-  for (const nom of [
-    '--rpg-ecusson-aplat', '--rpg-ecusson-masque', '--rpg-ecusson-effet-masque',
-    '--rpg-ecusson-effet-liseret', '--rpg-ecusson-defenseur-liseret',
-  ]) assert.match(css, new RegExp(`${nom}:\\s*url\\("data:image/svg\\+xml`), `${nom} existe`);
-  assert.match(css, /background-image: var\(--rpg-ecusson-aplat\) !important;/,
-    'l’aplat marine suit la silhouette, sans rectangle peint');
-  assert.match(css, /mask-image: var\(--rpg-ecusson-effet-masque\)/, 'les effets suivent l’écu');
-  assert.match(css, /viewBox='-5%20-5%20110%20137'/, 'la pointe basse reste visible');
+test('les Défenseurs n’ont ni cadre ni silhouette d’écu', () => {
+  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/,
+    'la feuille Défenseur ne peint ni bordure ni silhouette');
+  assert.doesNotMatch(css, /rpg-card__liseret-garde|rpg-card__ombre-garde/,
+    'aucun liseré ou ombre de contour Défenseur');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
+    'le léger agrandissement du Défenseur est conservé');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/,
+    'les statistiques restent remontées sans dessiner de cadre');
+  assert.doesNotMatch(duel, /rpg-card__liseret-garde|rpg-card__ombre-garde/,
+    'la table et l’aperçu ne rendent aucun calque de contour');
+  assert.match(duel, /AuraOndes variante="garde"/,
+    'le sonar Défenseur reste un repère d’état distinct du cadre');
 
-  // TOUTE règle qui découpe une couche est ciblée sur une carte POSÉE : aucun
-  // aperçu, aucune vignette, aucune main ne reçoit de masque d'écu.
-  const sansCommentaires = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const regles = [...sansCommentaires.matchAll(/([^{}]+)\{([^}]*)\}/g)];
-  const formes = regles.filter(([, , corps]) => /mask-image|background-image: var\(--rpg-ecusson-aplat\)/.test(corps));
-  assert.equal(formes.length, 5,
-    'cinq couches découpées : aplat, face/cadre, effets, filet d’effet, liseré Défenseur');
-  // L'ombre renforcée suit elle aussi la pointe, sans rectangle peint.
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__ombre-garde \{[^}]*background: var\(--rpg-ecusson-aplat\) center \/ 100% 100% no-repeat;/s);
-  for (const [, selecteur] of formes) {
-    assert.match(selecteur, /\.rpg-card\.rpg-carte-bouclier/, 'sélecteur de plateau');
-    for (const exclu of [
-      'rpg-hover-card-preview', 'rpg-card-catalogue__art', 'rpg-atelier__carte-art',
-      'rpg-card-guide__example', 'rpg-souk__carte', 'rpg-hand__card', 'rpg-mulligan__card',
-    ]) assert.doesNotMatch(selecteur, new RegExp(exclu), `${exclu} reste rectangulaire`);
-  }
-
-  // L'aperçu garde SON liseré orange rectangulaire, sans aucun masque.
-  const liseretApercu = css.match(/\.rpg-hover-card-preview__face\.rpg-carte-bouclier > \.rpg-card__liseret-garde \{([^}]*)\}/);
-  assert.ok(liseretApercu, 'le liseré d’aperçu existe');
-  assert.match(liseretApercu[1], /border: 1px solid #ff982f;/);
-  assert.match(liseretApercu[1], /pointer-events: none/);
-  assert.doesNotMatch(liseretApercu[1], /mask-image/);
-
-  // La feuille du cadre Le Sablier n'est PAS modifiée : les autres faces
-  // gardent leur découpe rectangulaire polygon().
+  // Le cadre Le Sablier reste inchangé pour les autres types.
   const cadre = lire('rpg-cadre-carte.css');
   assert.doesNotMatch(cadre, /--rpg-ecusson|:not\(\.rpg-carte-bouclier\)/);
   assert.match(cadre, /--rpg-cadre-decoupe: polygon\(2\.23% 1\.56%, 97\.77% 1\.56%, 97\.77% 98\.44%, 2\.23% 98\.44%\)/);
-  assert.match(css, /\.rpg-cadre-carte, \.rpg-card__img/);
   assert.doesNotMatch(battleCss, /--rpg-ecusson/);
 });
 

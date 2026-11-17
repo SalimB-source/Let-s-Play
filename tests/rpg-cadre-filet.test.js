@@ -12,17 +12,18 @@ import {
   cardHybridGradient,
 } from '../src/games/rpgCards.js';
 
-/* Plus aucun cadre sur les faces de cartes.
+/* Expérimentation CSS globale de bordure nulle — indépendante de la sélection
+ * sélective des cadres SVG.
  *
- * Décision d'octobre 2026 : l'anneau coloré (le « filet » de 3 px qui a suivi
- * l'anneau orné) disparaît partout — main, table, terrains, aperçu, annonce,
- * mulligan, piles, catalogue, guide, atelier. La peinture va d'un bord à
- * l'autre, comme sur une face de Furie ; l'élément se lit à la pastille de mana
- * et au fond, pas à une bordure.
+ * Ces tests vérifient la largeur de bordure CSS à zéro sur les faces de toutes
+ * les familles (main, table, terrains, aperçu, mulligan, catalogue, guide,
+ * atelier). Ils ne décident pas quels types reçoivent une classe ou un SVG :
+ * créatures/héros sans cadre et autres types avec cadre sont couverts par les
+ * tests sélectifs de `rpg-frames.test.js` et les contrôles de rendu dédiés.
  *
- * Ces tests lisent les feuilles et laissent jsdom appliquer la cascade réelle
- * (`!important` et spécificité compris) : ils n'affirment pas un rendu, ils
- * empêchent le retour d'un cadre sur une face.
+ * Jsdom applique la cascade réelle (`!important` et spécificité compris) :
+ * cette suite protège l'expérimentation CSS globale sans la confondre avec la
+ * politique de cadres par type.
  */
 
 const racine = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'games');
@@ -126,11 +127,10 @@ test('le retrait vaut pour toutes les faces, clavier comme doigt', () => {
   dom.window.close();
 });
 
-test('la règle du retrait est la dernière et se tait sur tout le reste', () => {
-  // On part du bloc de fin (« PLUS AUCUN CADRE ») : la règle des « cadres
-  // ornés » du milieu de feuille vise presque les mêmes sélecteurs, et c'est
-  // bien le dernier mot qui décide de la largeur.
-  const bloc = battle.slice(battle.lastIndexOf('PLUS AUCUN CADRE'));
+test('l’expérimentation CSS globale garde la bordure nulle sans masquer SVG ni animations', () => {
+  // Ce bloc de fin neutralise la bordure CSS globale ; il ne choisit pas les
+  // cartes qui portent une classe ou un cadre SVG sélectif.
+  const bloc = battle.slice(battle.lastIndexOf('EXPÉRIMENTATION CSS GLOBALE — toutes les bordures nulles'));
   const regle = bloc.slice(bloc.indexOf('.rpg-card[class*="rpg-card--frame-"]'));
   const finDeRegle = regle.indexOf('}');
   assert.ok(finDeRegle > 0, 'la règle finale existe');

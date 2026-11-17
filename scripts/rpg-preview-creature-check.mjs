@@ -26,7 +26,9 @@ for (const variante of ['', 'appui-long', 'catalogue']) {
   assert.equal(face.querySelector('.rpg-card__pt .rpg-stat-value').textContent, '0');
   assert.ok(face.querySelector('.rpg-card__stat--atk.is-buffed'));
   assert.ok(face.querySelector('.rpg-card__pt.is-debuffed.is-wounded'));
-  for (const sel of ['.rpg-card__liseret-garde', '.rpg-card__blood', '.rpg-card__frost-ice', '.rpg-bouclier-egide', '.rpg-card__envol']) assert.ok(face.querySelector(sel), `${variante} : ${sel}`);
+  for (const sel of ['.rpg-card__blood', '.rpg-card__frost-ice', '.rpg-bouclier-egide', '.rpg-card__envol']) assert.ok(face.querySelector(sel), `${variante} : ${sel}`);
+  assert.equal(face.querySelector('.rpg-card__liseret-garde'), null, `${variante} : aucun cadre Défenseur`);
+  assert.doesNotMatch([...face.classList].join(' '), /rpg-card--frame-/);
   assert.ok(face.querySelector('[data-effet="defenseur"]') || face.innerHTML.includes('i-defenseur'), 'icône Défenseur acquis');
 }
 const main = rendre(apercu(null)).querySelector('.rpg-hover-card-preview__face');

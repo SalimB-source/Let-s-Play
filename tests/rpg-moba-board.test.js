@@ -1241,7 +1241,10 @@ test('classic previews work on mulligan, hand and placed cards without playing t
     await mouse(placed, 'contextmenu');
     assert.ok(document.querySelector('.moba__preview-layer'));
     const previewFace = document.querySelector('.moba__preview-layer .rpg-hover-card-preview__face');
-    assert.ok(previewFace.classList.contains('rpg-carte-bouclier'), 'la fiche reprend le Défenseur acquis');
+    assert.ok(previewFace.classList.contains('rpg-carte-bouclier'), 'le statut Défenseur reste disponible pour la mise en page');
+    assert.doesNotMatch([...previewFace.classList].join(' '), /rpg-card--frame-/);
+    assert.equal(previewFace.querySelector('.rpg-cadre-carte'), null, 'l’aperçu ne reçoit aucun cadre');
+    assert.equal(previewFace.querySelector('.rpg-card__liseret-garde'), null, 'aucun liseré de Défenseur');
     assert.equal(previewFace.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, '9');
     assert.equal(previewFace.querySelector('.rpg-card__pt .rpg-stat-value').textContent, '1');
     Object.assign(duel.joueur.creatures[0], { atk: 6, pv: 0 });

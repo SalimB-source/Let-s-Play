@@ -263,16 +263,24 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PLUS AUCUN CADRE (jumeau du bloc de fin de `rpg-battle.css`)
+   EXPÉRIMENTATION CSS GLOBALE — bordure nulle dans les exemples du guide
    ──────────────────────────────────────────────────────────────────────────
-   L'exemple du guide se peint comme les faces du duel : sans anneau, d'un bord
-   à l'autre.
+   Cette règle locale conserve le zéro de bordure du guide pour tous ses types
+   d'exemple. Elle ne choisit pas quels types portent un cadre SVG : cette
+   sélection reste indépendante et vient de `RpgCadreCarte`.
    ══════════════════════════════════════════════════════════════════════════ */
+.rpg-card-guide__example--creature,
+.rpg-card-guide__example--hero,
 .rpg-card-guide__example[class*="rpg-card--frame-"] {
   border-width: 0 !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
   /* Le fond de la fiche garde son dégradé ; le motif et la matière de l'ancien
-     anneau se replient à une taille nulle au lieu de recouvrir la face. */
+     anneau se replient à une taille nulle au lieu de recouvrir la face.
+     Créatures et héros perdent aussi le halo intérieur de couleur. */
   background-size: 100% 100%, 0 0, 0 0 !important;
+}
+.rpg-card-guide__example--creature,
+.rpg-card-guide__example--hero {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .48);
 }

@@ -33,8 +33,10 @@ test('Défenseur ou Provocation portent une seule aura orange dans les deux mode
         assert.equal(icone?.getAttribute('data-pierre'), 'braise', 'icône Défenseur rouge');
         assert.ok(icone?.querySelector('polygon[fill="#a8282d"]'), 'pierre rouge visible');
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde').length, 1);
-        assert.equal(doc.querySelectorAll('.rpg-card__liseret-garde[aria-hidden="true"]').length, 1);
-        assert.equal(doc.querySelectorAll('.rpg-card__ombre-garde[aria-hidden="true"]').length, 1);
+        assert.equal(doc.querySelectorAll('.rpg-card__liseret-garde[aria-hidden="true"]').length, 0,
+          'Défenseur ne dessine plus de cadre');
+        assert.equal(doc.querySelectorAll('.rpg-card__ombre-garde[aria-hidden="true"]').length, 0,
+          'pas de silhouette d’écu');
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde .rpg-card__resonance-onde').length, 3);
         assert.equal(doc.querySelector('.rpg-card__resonance--garde').getAttribute('aria-hidden'), 'true');
         assert.match(doc.querySelector('.rpg-card__resonance--garde').getAttribute('style'), /--rpg-resonance-phase:/);
@@ -64,7 +66,9 @@ test('le sonar orange conserve le débordement, la cadence et le mouvement rédu
 });
 
 
-test('une ombre portée renforcée suit l’écu du plateau, indépendamment des filtres de la carte', () => {
+test('les repères Défenseur restent visibles sans dessiner de cadre', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__ombre-garde\s*\{[^}]*z-index:\s*-1;[^}]*background:\s*var\(--rpg-ecusson-aplat\) center \/ 100% 100% no-repeat;[^}]*drop-shadow\(0 7px 12px rgba\(0, 0, 0, \.85\)\)[^}]*pointer-events:\s*none/s);
+  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/);
+  assert.doesNotMatch(css, /rpg-card__ombre-garde|rpg-card__liseret-garde/);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s);
 });

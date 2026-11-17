@@ -14,22 +14,22 @@ try {
     for (const id of ['provocation', 'selection', 'gele', 'moba']) {
       const card = page.locator(`#${id} .rpg-card`);
       const etat = await card.evaluate(el => {
-        const trait = el.querySelector('.rpg-card__liseret-garde');
         const aura = el.querySelector('.rpg-card__resonance--garde');
-        const ombre = el.querySelector('.rpg-card__ombre-garde');
-        return { filter: getComputedStyle(ombre).filter, ombreEvents: getComputedStyle(ombre).pointerEvents, ombreZ: getComputedStyle(ombre).zIndex, couleur: getComputedStyle(trait).borderTopColor,
-          traitZ: getComputedStyle(trait).zIndex, traitEvents: getComputedStyle(trait).pointerEvents,
-          aura: getComputedStyle(aura).backgroundImage, onde: getComputedStyle(aura.querySelector('.rpg-card__resonance-onde')).borderColor,
-          outline: getComputedStyle(el).outlineColor, outlineStyle: getComputedStyle(el).outlineStyle, boxShadow: getComputedStyle(el).boxShadow };
+        return { liseret: Boolean(el.querySelector('.rpg-card__liseret-garde')),
+          ombre: Boolean(el.querySelector('.rpg-card__ombre-garde')),
+          cadre: Boolean(el.querySelector('.rpg-cadre-carte')),
+          cadreCouleur: [...el.classList].some(nom => nom.startsWith('rpg-card--frame-')),
+          aura: getComputedStyle(aura).backgroundImage,
+          onde: getComputedStyle(aura.querySelector('.rpg-card__resonance-onde')).borderColor,
+          outline: getComputedStyle(el).outlineColor, outlineStyle: getComputedStyle(el).outlineStyle,
+          boxShadow: getComputedStyle(el).boxShadow };
       });
-      assert.match(etat.filter, /drop-shadow\(rgba\(0, 0, 0, 0\.85\) 0px 7px 12px\)/, `${id}: ombre renforcée`);
-      assert.equal(etat.couleur, 'rgb(255, 152, 47)', `${id}: contour orange`);
-      assert.match(etat.aura, /238, 111, 20/, `${id}: aura orange`);
-      assert.equal(etat.onde, 'rgba(255, 151, 47, 0.92)', `${id}: ondes orange`);
-      assert.equal(etat.ombreEvents, 'none');
-      assert.equal(etat.ombreZ, '-1');
-      assert.equal(etat.traitEvents, 'none');
-      assert.equal(etat.traitZ, '5');
+      assert.equal(etat.liseret, false, `${id}: pas de cadre Défenseur`);
+      assert.equal(etat.ombre, false, `${id}: pas de silhouette d’écu`);
+      assert.equal(etat.cadre, false, `${id}: pas de cadre SVG sur la créature`);
+      assert.equal(etat.cadreCouleur, false, `${id}: pas de classe de cadre coloré`);
+      assert.match(etat.aura, /238, 111, 20/, `${id}: aura orange conservée`);
+      assert.equal(etat.onde, 'rgba(255, 151, 47, 0.92)', `${id}: ondes orange conservées`);
       if (id === 'selection') {
         if (touch) { assert.equal(etat.outline, 'rgb(255, 224, 130)'); assert.equal(etat.outlineStyle, 'solid'); }
         else assert.match(etat.boxShadow, /255, 107, 94/, 'sélection visible');
@@ -39,10 +39,12 @@ try {
     await page.locator('#provocation .rpg-card').click();
     assert.equal(await page.locator('body').getAttribute('data-clicked'), 'oui');
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    const gele = await page.locator('#gele .rpg-card__ombre-garde').evaluate(el => getComputedStyle(el).filter);
-    assert.match(gele, /drop-shadow/, 'ombre conservée en mouvement réduit');
+    assert.equal(await page.locator('#gele .rpg-card__ombre-garde').count(), 0,
+      'aucune ombre de contour sous mouvement réduit');
+    assert.ok(await page.locator('#gele .rpg-card__resonance--garde').count(),
+      'le repère sonar reste présent sous mouvement réduit');
     await page.close();
-    console.log(`${width}×${height} : aura, contour, ombre, sélection et interaction vérifiés`);
+    console.log(`${width}×${height} : aura, absence de cadre, sélection et interaction vérifiées`);
   }
 } finally {
   await browser?.close();

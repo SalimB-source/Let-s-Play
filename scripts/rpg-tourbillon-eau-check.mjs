@@ -47,10 +47,14 @@ try {
 
   const carteEmportee = racine.querySelector('.rpg-tourbillon-eau__carte');
   assert.ok(carteEmportee, 'la carte emportée reste visible dans le tourbillon');
-  assert.match(carteEmportee.querySelector('img')?.getAttribute('src') ?? '', /ressac/,
-    'c’est bien l’illustration de la créature renvoyée');
-  assert.ok([...carteEmportee.classList].some((classe) => classe.startsWith('rpg-card--frame-')),
-    'elle garde le cadre de sa couleur, comme sur la table');
+  assert.match(carteEmportee.querySelector('img')?.getAttribute('src') ?? '', /anqa-des-braises/,
+    'c’est bien l’illustration de la créature mythique renvoyée');
+  assert.ok(carteEmportee.classList.contains('rpg-card--mythique'),
+    'son repère de rareté mythique reste présent pendant le tourbillon');
+  assert.doesNotMatch([...carteEmportee.classList].join(' '), /rpg-card--frame-/,
+    'la créature renvoyée reste sans classe de cadre pendant son animation');
+  assert.equal(carteEmportee.querySelector('.rpg-cadre-carte'), null,
+    'aucun cadre SVG ne masque ni ne coupe son illustration');
   assert.ok(racine.querySelector('.rpg-tourbillon-eau__nappe'), 'une nappe d’eau se referme au sol');
   assert.ok(racine.querySelector('.rpg-tourbillon-eau__spirale'), 'une spirale tourne autour de la place');
   assert.equal(racine.querySelectorAll('.rpg-tourbillon-eau__anneau').length, 2,
@@ -145,8 +149,11 @@ assert.match(page, /setTourbillonsEau\(\[\]\);/, 'quitter le duel efface les tou
 assert.match(engine, /export function rpgRenvoisEnMain\(duel\)/, 'le moteur publie le journal des renvois');
 assert.match(engine, /renvoisParDuel\.set\(duel, journal\)/, 'le journal vit hors de l’état sérialisé');
 const corpsRenvoi = engine.slice(engine.indexOf('function renvoyerEnMain('), engine.indexOf('/**', engine.indexOf('function renvoyerEnMain(')));
-assert.match(corpsRenvoi, /journaliserRenvoiEnMain\(duel, cote, presente\);\s*\n\s*duel\.log\.push\(`\$\{presente\.name\} retourne dans la main/,
-  'chaque créature rendue en main est journalisée, juste avant son retour');
+const positionJournalRenvoi = corpsRenvoi.indexOf('journaliserRenvoiEnMain(duel, cote, presente);');
+const ligneLogRenvoi = "duel.log.push(`${presente.name} retourne ${estCarteAscension(presente.carteId) ? 'dans sa réserve d’Ascension' : 'dans la main de son propriétaire'}.`);";
+const positionLogRenvoi = corpsRenvoi.indexOf(ligneLogRenvoi);
+assert.ok(positionJournalRenvoi >= 0 && positionLogRenvoi > positionJournalRenvoi,
+  'chaque créature rendue en main est journalisée avant le journal de retour conditionnel en main ou en réserve d’Ascension');
 assert.ok(corpsRenvoi.indexOf('if (presente.jeton)') < corpsRenvoi.indexOf('journaliserRenvoiEnMain('),
   'un jeton qui cesse d’exister n’est pas un renvoi : il garde son adieu de carte détruite');
 assert.match(page, /rpgRenvoisEnMain\(duel\)/, 'la table lit le journal du moteur');

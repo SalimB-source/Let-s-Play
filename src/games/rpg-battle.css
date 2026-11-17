@@ -26,17 +26,17 @@
   color-scheme: dark;
 }
 
-/* ── Cadres : plus d'épaisseur du tout, sur aucune face
-   Les quatre gabarits de cadre (`--rpg-card-border`, `-large`, `-small`,
-   `-strong`) valaient 7 à 13 px et servaient de plaque commune à toutes les
-   faces — main, table, terrains, aperçu, mulligan, catalogue, atelier. Ils
-   tombent à zéro avec la décision d'octobre 2026 : la peinture va d'un bord à
-   l'autre, comme sur une face de Furie. Les variables restent, à zéro, pour
-   que chaque déclaration `border: var(--rpg-card-border…)` des faces lise la
-   même réponse — y compris celles qui n'ont pas de classe de cadre (une carte
-   en Furie, par exemple), que la règle finale « PLUS AUCUN CADRE » ne vise pas.
-   Le tout est en `border-box` : la taille extérieure des cartes ne bouge pas,
-   c'est l'illustration qui gagne l'anneau. */
+/* ── EXPÉRIMENTATION CSS GLOBALE : bordure nulle ─────────────────────────────
+   Ce réglage garde les quatre gabarits (`--rpg-card-border`, `-large`,
+   `-small`, `-strong`) à zéro sur toutes les faces — main, table, terrains,
+   aperçu, mulligan, catalogue et atelier. Il retire uniquement l'épaisseur de
+   la bordure CSS historique ; il ne décide ni quels types portent une classe
+   de cadre, ni quels types reçoivent le calque SVG. Cette sélection distincte
+   se fait dans `cardFrameClass` et `RpgCadreCarte` ; les tests de frames la
+   couvrent séparément des tests de cette expérimentation globale. Les variables
+   restent à zéro pour que chaque déclaration CSS existante lise la même valeur,
+   même sur les états sans classe de cadre (Furie, par exemple). Le tout reste
+   en `border-box` : la taille extérieure des cartes ne bouge pas. */
 .rpg-battle {
   /* Flou du plateau derrière une carte consultée (appui long, fiche, sort joué) :
      assez pour que le décor s'efface, assez peu pour qu'on le devine encore. */
@@ -9822,14 +9822,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Le cadre suit la COULEUR de la carte, jamais sa rareté : bleu pour l’Eau,
    beige de dune pour le Sable, rouge pour la Braise, bleu glacé pour la Neige.
-   Les hybrides partagent l’anneau en aplats diagonaux, sans reflet ; seules les
-   mythiques mono-élément brillent. Le bord reste le même en main, en jeu, sur les
-   terrains, dans l’aperçu au survol et pendant les animations ; seule sa matière change.
-   La rareté, elle, n’est annoncée que par le badge de l’aperçu. Le sélecteur
-   vise toute classe de cadre : une nouvelle combinaison n’a rien à ajouter ici.
-   L’épaisseur, elle, est nulle partout (voir les variables
-   `--rpg-card-border*`, à zéro, en tête de fichier) : plus aucun anneau où
-   peindre la couleur. */
+   Les hybrides partagent le cadre SVG en aplats diagonaux. Les créatures et
+   héros ne portent pas cette couche ; les autres types la gardent sur leurs
+   faces (main, table, aperçus, mulligan, terrains et catalogue). La rareté
+   reste un indicateur indépendant (`rpg-card--mythique`) : elle ne choisit
+   jamais la couleur élémentaire du cadre.
+
+   Les règles qui suivent gardent la peinture CSS historique comme repli mais
+   remettent sa largeur à zéro : le cadre visible est la couche SVG
+   `.rpg-cadre-carte`, pas une bordure `border-width`. */
 .rpg-card[class*="rpg-card--frame-"],
 .rpg-hand__card[class*="rpg-card--frame-"],
 .rpg-card-destruction-fx {
@@ -9892,12 +9893,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    dans l'anneau. Sans cette classe, la matière couvre toujours 100 % du cadre
    et la séparation diagonale des hybrides reste immobile. */
 .rpg-card--frame-brillant { --rpg-frame-material-size: 240% 100%; }
-/* Le reflet du cadre n'est plus joué dans le duel : l'expérimentation « plus
-   aucun cadre » retire `background-image` à toutes ces faces, il n'y aurait
-   donc rien à balayer. Surtout, déclaré après les cinématiques, il leur volait
-   la propriété `animation` — une seule par élément — sur les cartes brillantes
-   et mythiques. Le reflet ne vit plus que dans le guide : l'atelier de deck,
-   lui aussi passé à « plus aucun cadre », n'anime plus ses vignettes. */
+/* Le balayage CSS du reflet n'est pas joué sur les cartes du duel : une
+   animation `animation` sur la carte elle-même remplacerait l'arrivée, le bond,
+   le blocage et l'Envol. Le cadre SVG coloré reste affiché ; le repère mythique,
+   les effets de jouabilité et le traitement de l'illustration restent eux aussi
+   indépendants de ce balayage. Le guide garde son reflet de démonstration. */
 
 /* Hybrides : deux aplats francs, séparés par la diagonale qui monte du coin
    bas-gauche au coin haut-droit. La première couleur court donc du coin
@@ -11559,42 +11559,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PLUS AUCUN CADRE — la peinture d'un bord à l'autre
+   EXPÉRIMENTATION CSS GLOBALE — toutes les bordures nulles, sans décider des SVG
    ──────────────────────────────────────────────────────────────────────────
-   Décision (octobre 2026, elle remplace le « filet de couleur ») : les faces
-   de cartes n'ont plus d'anneau du tout. Pas de filet de 3 px, pas d'anneau
-   orné de 7 à 10 px : la largeur est zéro, en clair, et toutes les faces la
-   prennent — du plateau à la vignette de l'atelier. La variable
-   `--rpg-card-filet` a disparu avec le filet qu'elle mesurait : une épaisseur
-   nulle n'a rien à configurer.
+   Ce bloc est l'expérimentation CSS globale de bordure nulle : il neutralise
+   l'ancienne bordure et la peinture CSS de repli partout où existe une classe
+   `rpg-card--frame-*` (main, plateau, aperçu, mulligan, catalogue, etc.). Il
+   ne décide pas quels types reçoivent ou non une classe de cadre ni le calque
+   SVG. Cette règle sélective, indépendante, est dans `cardFrameClass` et
+   `RpgCadreCarte` : créatures et héros sans cadre, les autres types inchangés.
+   Les tests de cette sélection sont distincts des contrôles de bordure globale.
 
-   Pourquoi c'est tenable : l'anneau coloré n'était plus la seule marque de
-   l'élément. La pastille de mana le nomme (couleur + symbole), le fond de la
-   face le reprend, la ligne de couleur de la fiche l'écrit. L'anneau, lui,
-   rognait l'illustration de 3 px sur les quatre côtés — les faces de Furie,
-   peintes plein cadre, paraissaient plus grandes que les autres.
+   La remise à zéro CSS ci-dessous empêche l'ancienne pile (fond, motif,
+   matière) de dessiner un second cadre sous ou par-dessus le SVG, ou de
+   recouvrir la face entière lorsque la largeur vaut zéro. Le fond de carte,
+   les pastilles, badges, états, animations et interactions restent indépendants.
+   Les `!important` l'emportent sur les anciens `border-width` dispersés plus
+   haut (annonce, palettes, paliers `vw`, mobile). Les feuilles de l'atelier et
+   du guide gardent leur repli CSS correspondant, sans masquer le calque SVG.
 
-   Ce que la règle laisse intact : le fond de la face (première couche de la
-   pile de fonds, qui garde son grain), les pastilles, les badges, les liserés
-   de sélection, les halos d'état (jouable, mythique, Lien) et les ombres.
-   Rien d'autre n'est touché : les états se lisent toujours sur `box-shadow`,
-   jamais sur la bordure.
-
-   Les `!important` restent : cette règle doit l'emporter sur les dizaines de
-   `border-width` dispersés plus haut (annonce, palettes, paliers `vw`, mobile).
-   Les jumeaux vivent en fin de `rpg-deck-atelier.css` (la vignette de
-   l'atelier) et de `rpg-card-guide.css` (l'exemple du guide) : même largeur
-   nulle, même silence.
-
-   Le panneau `.rpg-hover-card-preview` n'est **pas** dans la liste : il porte
-   aussi la classe du cadre (pour l'inclinaison) mais ne déclare aucune
-   bordure — la seule face de l'aperçu, c'est `__face`, qui, elle, est bien
-   concernée. Lui donner un bord y dessinerait un liseré crème
-   (`currentColor`) autour de la fiche.
-
-   L'animation, elle, n'est pas touchée : `animation: none !important` emportait
-   les animations de la carte — arrivée en jeu, bond d'attaque, choc de blocage,
-   lévitation de l'Envol.
+   Le panneau `.rpg-hover-card-preview` n'est pas dans la liste : il ne déclare
+   pas de bordure. Ne jamais ajouter ici `animation: none !important` : cela
+   couperait les animations de la carte — arrivée, attaque, blocage et Envol.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-card[class*="rpg-card--frame-"],
 .rpg-hand__card[class*="rpg-card--frame-"],
@@ -11605,11 +11590,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-pile__card--top[class*="rpg-card--frame-"],
 .rpg-mulligan__card[class*="rpg-card--frame-"],
 .rpg-card-catalogue__art[class*="rpg-card--frame-"] {
-  /* Zéro : plus d'anneau. La pile de fonds de l'ancien cadre (fond de la face,
-     motif, matière) reste déclarée plus haut, mais sans bordure elle se
-     peindrait sur la face entière : on garde donc la première couche — le fond,
-     celui qui donne son grain à la face — aux dimensions de la carte, et l'on
-     met le motif et la matière à une taille nulle. */
+  /* On garde les dimensions de la face et son fond, mais pas le double cadre
+     CSS : c'est le calque SVG explicite qui porte la couleur et la silhouette
+     sur les types concernés. Le motif et la matière ne recouvrent pas l'image. */
   border-width: 0 !important;
   border-style: solid !important;
   --rpg-frame-motif: none;
@@ -11617,21 +11600,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-size: 100% 100%, 0 0, 0 0 !important;
 }
 
-/* La teinte de matière d'une mythique ne teintait que son anneau : sans anneau,
-   plus d'aplat derrière l'illustration non plus. */
+/* Les fonds de dégradé sont un repli CSS historique, pas le cadre visible.
+   L'aplat mythique ne doit donc pas se retrouver derrière l'illustration ;
+   le marqueur `rpg-card--mythique` et le SVG élémentaire restent présents. */
 .rpg-card--mythique[class*="rpg-card--frame-"] {
   background-color: transparent !important;
 }
 
-/* L'ombre décalée des piles était peinte avec `--rpg-frame-color` : c'est le
-   cadre en double, un cran plus loin de la carte (mobile.css le dit déjà :
-   « la couleur du cadre, au bord de la face : c'était le cadre, en double »).
-   Puisque plus aucune face ne porte d'anneau, la couleur de l'élément ne se
-   peint pas non plus un cran plus loin : la trace colorée part avec le cadre,
-   partout, comme le fait déjà la feuille tactile. Le compteur ×N et la
-   pastille d'engagement restent — ce sont eux qui disent la pile.
-   L'engagement partiel garde sa bague, qui dit un état.
-   (Deux règles à retirer si l'on veut garder la profondeur des piles.) */
+/* Les piles gardent leurs compteurs et les repères d'engagement. Leur ombre
+   décalée n'est pas un second cadre élémentaire : elle reste distincte de la
+   couche SVG visible sur les types qui la portent. */
 .rpg-card-stack,
 .rpg-terrain.rpg-terrain-stack.is-stacked {
   box-shadow: none !important;
@@ -16287,7 +16265,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview .rpg-hover-card-preview__face .rpg-card__foot .rpg-stat-icon {
   width: .85em; height: .85em; flex-basis: .85em;
 }
-/* En jeu les Défenseurs gardent leurs repères remontés : idem en aperçu. */
+/* Les statistiques restent légèrement remontées sur l'aperçu d'un Défenseur ;
+   la face elle-même conserve sa forme et son absence de cadre. */
 .rpg-hover-card-preview .rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__foot {
   translate: 0 -20cqw; z-index: 7;
 }
