@@ -1408,6 +1408,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     ? 'Choisissez une créature adverse à frapper avec la Lionne.'
     : duel.arriveeEnAttente?.carteId === 'maitre-du-marteau'
       ? 'Choisissez une créature adverse ou la voie adverse du Maître pour ses dégâts d’arrivée.'
+      : duel.arriveeEnAttente?.carteId === 'empereur-du-colisee'
+        ? 'Choisissez une créature alliée ou adverse de coût 4 ou moins à détruire.'
       : MOBA_ARRIVEES_NEUTRES.includes(duel.arriveeEnAttente?.carteId)
         ? 'Choisissez une créature admissible, alliée ou adverse, à exiler.'
       : duel.arriveeEnAttente?.carteId === 'kraken'

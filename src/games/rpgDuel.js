@@ -6057,7 +6057,8 @@ export function arriveeCiblePortee(carte) {
   if (arrivee.type === 'degats') return arrivee.cible === 'creature' ? 'ennemi' : null;
   // Le Kraken ne désigne qu'un navire adverse : la table n'allume que les
   // créatures portant le type imprimé « Navire » (voir `arriveeACibleLegale`).
-  if (arrivee.type === 'destruction-navire' || arrivee.type === 'destruction-cible') return 'ennemi';
+  if (arrivee.type === 'destruction-navire') return 'ennemi';
+  if (arrivee.type === 'destruction-cible') return arrivee.portee === 'tous' ? 'tous' : 'ennemi';
   if (arrivee.type === 'retour-main') {
     if (arrivee.cible === 'toutes-autres') return null; // la vague du Léviathan ne désigne rien
     return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -6534,10 +6535,16 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     }
   }
   if (carte.arrivee?.type === 'destruction-cible') {
-    const cible = duel[autre(cote)].creatures.find((e) => e.id === cibleId);
+    // Les sacrifices quittent le champ avant l'arrivée : ils ne sont donc ni
+    // des cibles possibles, ni une raison d'exiger une désignation.
+    const vueApresSacrifices = carte.arrivee.portee === 'tous'
+      ? { ...duel, [cote]: { ...camp, creatures: camp.creatures.filter((e) => !sacrifices.includes(e)) } }
+      : duel;
+    const cible = campsDePortee(cote, arriveeCiblePortee(carte))
+      .flatMap((campCible) => vueApresSacrifices[campCible].creatures).find((e) => e.id === cibleId);
     if (cibleId && (!cible || !cibleRespecteCoutMax(carte, cible))) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) return { ok: false, raison: 'cible' };
+    if (!cibleId && !cibleDifferee && arriveeACibleLegale(vueApresSacrifices, cote, carte)) return { ok: false, raison: 'cible' };
   }
   if (carte.arrivee?.type === 'destruction-navire') {
     // Le Kraken ne désigne qu'un navire adverse : une créature d'un autre
@@ -9817,10 +9824,13 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
     // L'arrivée qui désigne sa cible emporte toujours sa cible : si l'IA en
     // a oublié une, le moteur la retrouve (le venin de la Vipère, la lune de
     // Bakunawa, le passage du Faiseur).
+    const vueCible = carte?.arrivee?.type === 'destruction-cible' && carte.arrivee.portee === 'tous'
+      ? { ...duel, sorcier: { ...duel.sorcier, creatures: duel.sorcier.creatures.filter((e) => !(coup.sacrificeIds ?? []).includes(e.id)) } }
+      : duel;
     const cibleId = coup.cibleId
-      ?? (arriveeCiblePortee(carte) ? rpgCibleAuto(duel, 'sorcier', carte) : null);
+      ?? (arriveeCiblePortee(carte) ? rpgCibleAuto(vueCible, 'sorcier', carte) : null);
     if (!invocationPossible(duel, 'sorcier', carte)) { refuses.add(coup.carteId); continue; }
-    if (!cibleId && arriveeCiblePortee(carte) && arriveeACibleLegale(duel, 'sorcier', carte)) {
+    if (!cibleId && arriveeCiblePortee(carte) && arriveeACibleLegale(vueCible, 'sorcier', carte)) {
       // La carte exige une cible, il en reste une sur la table, et rien n'a
       // pu être désigné : elle n'est pas jouable. On l'écarte.
       refuses.add(coup.carteId);

@@ -60,6 +60,7 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'chevalier-sacre-des-braises': 'chevalier-blond-balafre-v5',
   'gardienne-des-sables-ensevelis': 'ascension-souls-v2',
   'valkyrie-de-la-derniere-aurore': 'ascension-pegase-dore-v3',
   'amiral-des-abysses': 'ascension-souls-v2',

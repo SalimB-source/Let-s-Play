@@ -507,9 +507,17 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     return navires[0]?.id ?? null;
   }
   if (carte?.effet?.type === 'destruction-cible' || carte?.arrivee?.type === 'destruction-cible') {
-    return ciblesLegales(duel, cote, carte, 'creature')
-      .filter((entite) => duelCardById(entite.carteId)?.kind !== 'site' && moteur.cibleRespecteCoutMax(carte, entite))
-      .sort((a, b) => Number(paradeContreSort(a, carte)) - Number(paradeContreSort(b, carte)) || menace(b) - menace(a))[0]?.id ?? null;
+    const legale = (entite) => duelCardById(entite.carteId)?.kind !== 'site' && moteur.cibleRespecteCoutMax(carte, entite);
+    const adverse = ciblesLegales(duel, cote, carte, 'creature')
+      .filter(legale)
+      .sort((a, b) => Number(paradeContreSort(a, carte)) - Number(paradeContreSort(b, carte)) || menace(b) - menace(a))[0];
+    if (adverse) return adverse.id;
+    // Une arrivée qui vise les deux camps reste obligatoire même sans cible
+    // adverse. Choisir l'allié le moins précieux, jamais la source elle-même.
+    if (carte?.arrivee?.portee === 'tous') return duel[cote].creatures
+      .filter((entite) => entite.id !== options.sourceId && legale(entite) && !estProtegee(entite, cardColors(carte)))
+      .sort((a, b) => valeurEntite(a) - valeurEntite(b))[0]?.id ?? null;
+    return null;
   }
   if (carte?.effet?.type === 'destruction-arme') {
     // Brise-lame : on désarme la plus grosse menace équipée que la protection
@@ -2431,8 +2439,20 @@ function candidatsCartesIA(duel, cote, options = {}) {
         .find((entite) => entite.id === evaluation.cibleId);
       if (visee && (estProtegee(visee, cardColors(carte)) || horsDAtteinteDuSort(visee, carte))) continue;
     }
-    const sacrificeIds = choisirSacrificesInvocationIA(duel, cote, carte, evaluation.cibleId ?? null);
+    const destructionNeutre = carte.arrivee?.type === 'destruction-cible' && carte.arrivee?.portee === 'tous';
+    let sacrificeIds = choisirSacrificesInvocationIA(duel, cote, carte, evaluation.cibleId ?? null);
+    if (destructionNeutre && sacrificeIds === null && evaluation.cibleId) {
+      sacrificeIds = choisirSacrificesInvocationIA(duel, cote, carte, null);
+    }
     if (sacrificeIds === null) continue;
+    if (destructionNeutre) {
+      // La cible est choisie après paiement : ne pas annoncer un allié qui
+      // vient d'être sacrifié, et ne pas exiger de cible si c'était le seul.
+      const vue = { ...duel, [cote]: { ...camp, creatures: camp.creatures.filter((e) => !sacrificeIds.includes(e.id)) } };
+      evaluation.cibleId = choisirCibleAutoIA(vue, cote, carte, { profil, rng });
+      const allie = vue[cote].creatures.find((e) => e.id === evaluation.cibleId);
+      if (allie) evaluation.score -= valeurEntite(allie);
+    }
     candidats.push({
       carteId,
       ...(sacrificeIds.length ? { sacrificeIds } : {}),
