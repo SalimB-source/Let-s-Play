@@ -134,9 +134,9 @@ Le site a porté un troisième thème temporaire, `vice`, pour la sortie de
 *Grand Theft Auto VI*. **Il a été retiré** : le site a retrouvé ses deux thèmes
 d'origine (sombre, clair), sa barre et son tiroir habituels.
 
-Il reste **une seule chose** de cet habillage : la clé d'art du héros, la vue
-nocturne de Vice City fournie par le propriétaire du site, dans
-`public/vice-city-hero.jpg`, servie par `src/theme/viceTheme.js`.
+Il reste **une seule chose** de cet habillage : la clé d'art du héros fournie
+par le propriétaire du site — Jason et Lucia devant la station-service —
+dans `public/gta6-jason-lucia-hero.jpg`, servie par `src/theme/viceTheme.js`.
 
 - Le héros garde **le voile du site** (`.hero-shade` dans `styles.css`) : un
   dégradé sombre à gauche qui porte le titre clair. Aucune teinte rose, aucun
@@ -150,7 +150,7 @@ nocturne de Vice City fournie par le propriétaire du site, dans
 
 **Tout retirer** : dans `Home.jsx`, remplacer `viceHeroImage` par
 `defaultHeroImage` (même import, `src/theme/viceTheme.js`), puis supprimer ce
-fichier et `public/vice-city-hero.jpg`. Rien d'autre n'en dépend.
+fichier et `public/gta6-jason-lucia-hero.jpg`. Rien d'autre n'en dépend.
 
 ## Mise en page téléphone (iPhone, Android, WebView)
 

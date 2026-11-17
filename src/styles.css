@@ -868,6 +868,11 @@ img{max-width:100%}
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
+  /* Cadrage : les visuels du héros sont des compositions horizontales dont le
+     sujet (personnages) occupe la moitié HAUTE. Recadrés en bandeau sur
+     téléphone, ils coupaient les têtes — d'où ce cadrage légèrement remonté,
+     valable pour toutes les images du héros. */
+  object-position:center 32%;
   background-position:center;background-size:cover;background-repeat:no-repeat;
   transform:scale(1.06);
   animation:hero-drift 24s ease-in-out infinite alternate;
