@@ -1372,7 +1372,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__rule-note p { margin: .35rem 0 0; }
 
 /* Prototype d'impact individuel : calque décoratif, jamais une cible de clic. */
-.moba .moba__impact-cinema { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; overflow: visible; pointer-events: none; }
+.moba .moba__impact-cinema, .card-table .rpg-classique-impact-cinema { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; overflow: visible; pointer-events: none; }
 .moba__impact-source { fill: #f9d18d33; stroke: #f7d392; stroke-width: 2; opacity: 0; animation: moba-impact-source calc(.55s * var(--rpg-anim-scale, 1)) ease-out both; }
 .moba__impact-trail { stroke: #ffd994; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 5px #d47535); opacity: 0; animation: moba-impact-trail calc(.65s * var(--rpg-anim-scale, 1)) ease-out both; }
 .moba__impact-burst { fill: #f8bd6d33; stroke: #ffe6b6; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: moba-impact-burst calc(.72s * var(--rpg-anim-scale, 1)) ease-out both; }
@@ -1389,6 +1389,20 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 @media (prefers-reduced-motion: reduce) {
   .moba .moba__impact-source, .moba .moba__impact-trail, .moba .moba__impact-burst { display: none; }
   .moba .moba__impact-number { animation: none; opacity: 1; }
+}
+/* Le duel classique réutilise la même mise en scène, sans mouvement si
+   demandé, tout en gardant le chiffre informatif. */
+.rpg-battle.is-reduced .rpg-classique-impact-cinema .moba__impact-source,
+.rpg-battle.is-reduced .rpg-classique-impact-cinema .moba__impact-trail,
+.rpg-battle.is-reduced .rpg-classique-impact-cinema .moba__impact-burst,
+.rpg-battle.is-reduced .rpg-classique-exchange-clash { display: none; }
+.rpg-battle.is-reduced .rpg-classique-impact-cinema .moba__impact-number { animation: none; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-classique-impact-cinema .moba__impact-source,
+  .rpg-classique-impact-cinema .moba__impact-trail,
+  .rpg-classique-impact-cinema .moba__impact-burst,
+  .rpg-classique-exchange-clash { display: none; }
+  .rpg-classique-impact-cinema .moba__impact-number { animation: none; opacity: 1; }
 }
 
 /* Soutien MOBA : les montants proviennent des soins réellement appliqués. */
