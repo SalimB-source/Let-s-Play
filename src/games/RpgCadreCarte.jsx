@@ -29,9 +29,9 @@ function fondCadre(carte) {
   return cadresParCouleurs.get(cle);
 }
 
-/** Toutes les cartes partagent le cadre Le Sablier, teinté selon leurs éléments. */
+/** Le cadre Le Sablier reste sur les sorts, armes et autres non-créatures. */
 export default function RpgCadreCarte({ carte }) {
-  if (!carte?.kind) return null;
+  if (!carte?.kind || carte.kind === 'creature' || carte.kind === 'hero') return null;
   const backgroundImage = fondCadre(carte);
   return <span className="rpg-cadre-carte rpg-cadre-carte--sablier" style={backgroundImage ? { backgroundImage } : undefined} aria-hidden="true" />;
 }

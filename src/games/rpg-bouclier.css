@@ -6,15 +6,12 @@
    portent `.rpg-card` (une carte posée) ET `.rpg-carte-bouclier`. Les aperçus
    (survol, appui long, fiche catalogue), la main, le mulligan, la main MOBA
    et les vignettes du catalogue / atelier / guide / Souk ne portent pas
-   `.rpg-card` : ils restent des cartes RECTANGULAIRES avec le cadre Le
-   Sablier, exactement comme après la PR #1481.
+   `.rpg-card` : ils restent des cartes RECTANGULAIRES. Les créatures ne
+   portent plus le cadre SVG Le Sablier ; l'écu du plateau et son liseré
+   coloré restent des repères distincts de Défenseur.
 
-   La PR #1481 avait supprimé 273 lignes de masques pour rendre toutes les
-   faces rectangulaires. On réintroduit ici la géométrie de l'écu sur le
-   plateau seulement. `rpg-cadre-carte.css` n'est PAS modifiée : ses règles
-   `:has(> .rpg-cadre-carte)` continuent de s'appliquer aux autres faces, et
-   sont simplement surpassées ici par une spécificité plus forte (deux
-   classes sur la carte) et des `!important` là où elle en posait.
+   La géométrie de l'écu ne concerne que le plateau : les règles du cadre
+   rectangulaire restent applicables aux cartes non-créatures.
 
    Les repères de priorité ajoutés depuis #1467 / #1478 sont CONSERVÉS :
    liseré aux couleurs de l'élément, ombre renforcée, aura et sonar orange,
@@ -51,9 +48,7 @@
   --rpg-ecusson-defenseur-liseret: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='-5%20-5%20110%20137'%20preserveAspectRatio='none'%3E%3Cpath%20d='M1%208%20C1%204%2022%201%2050%201%20C78%201%2099%204%2099%208%20L99%2062%20C99%20100%2065%20112%2050%20124%20C35%20112%201%20100%201%2062%20Z'%20fill='none'%20stroke='rgb%28255,255,255%29'%20stroke-width='1.6'%20stroke-linejoin='round'/%3E%3C/svg%3E");
 
   /* L'aplat marine SUIT la silhouette : transparent ailleurs, donc AUCUN
-     rectangle peint derrière l'illustration. `background-image` reprend la
-     main sur le `none !important` de `rpg-cadre-carte.css` (deux classes
-     contre une), sans modifier cette feuille ni les autres faces. */
+     rectangle peint derrière l'illustration, même sans cadre SVG. */
   background-color: transparent !important;
   background-image: var(--rpg-ecusson-aplat) !important;
   background-size: 100% 100%;
@@ -98,11 +93,8 @@
 }
 
 /* ── LA SILHOUETTE ─────────────────────────────────────────────────────────
-   Illustration, cadre Le Sablier, calques de sang/givre, bandeaux et voile
-   `::after` : tous découpés dans l'écu. `clip-path: none` annule la découpe
-   rectangulaire que `rpg-cadre-carte.css` pose sur l'image et le `::after` ;
-   la spécificité de ce sélecteur (deux classes + `:is()`) est plus forte.
-   Les pastilles ATQ/DÉF et les pierres d'effets ne sont PAS dans la liste :
+   Illustration, calques de sang/givre, bandeaux et voile `::after` : tous
+   découpés dans l'écu. Les pastilles ATQ/DÉF et les pierres d'effets ne sont PAS dans la liste :
    elles débordent librement, à leur place habituelle. */
 .rpg-card.rpg-carte-bouclier > :is(
   img, .rpg-card__img, .rpg-card__blood, .rpg-card__frost,

@@ -4781,6 +4781,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   position: relative;
   display: grid;
 }
+/* Le losange chevauche le haut de la face : réserver son débord dans la
+   grille pour qu'il reste visible même dans le panneau défilant ou sur mobile.
+   Sa moitié mesure 17 % de la largeur de la face, plus l'ombre portée. */
+.rpg-hover-card-preview__empile.has-arme::before {
+  content: '';
+  display: block;
+  width: 100%;
+  aspect-ratio: 100 / 17;
+  margin-bottom: 5px;
+}
+.rpg-hover-card-preview__empile.has-arme > .rpg-hover-card-preview__face {
+  overflow: visible;
+}
+/* Comme sur la table, les compteurs de la créature restent sous l'arme. */
+.rpg-hover-card-preview__empile.has-arme .rpg-card__compteurs-creature {
+  top: max(
+    calc(var(--rpg-card-element-marker-top, 5%) + (var(--rpg-cout-taille, 26.88px) - var(--rpg-card-counter-size)) / 2),
+    calc(max(34cqw, 26px) / 2 + var(--rpg-card-counter-size) * .21 + 2px)
+  );
+}
 .rpg-hover-card-preview__prisonniere {
   border-color: rgba(127, 212, 200, .72);
   background: rgba(18, 51, 45, .78);
@@ -6845,6 +6865,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    pour relancer l'animation même lors de deux impacts rapprochés. */
 .card-table.rpg-screen-shake--a { animation: rpg-screen-shake-a .56s cubic-bezier(.36, .07, .19, .97) both; }
 .card-table.rpg-screen-shake--b { animation: rpg-screen-shake-b .56s cubic-bezier(.36, .07, .19, .97) both; }
+/* La charge atteint sa cible vers 0,2 s : secouer à l'impact, pas à la
+   déclaration. Les deux noms relancent le geste lors de coups rapprochés. */
+.card-table.rpg-combat-screen-shake--a,
+.moba__surface.rpg-combat-screen-shake--a {
+  animation: rpg-screen-shake-a calc(.56s * var(--rpg-anim-scale, 1)) cubic-bezier(.36, .07, .19, .97) calc(.18s * var(--rpg-anim-scale, 1)) both;
+}
+.card-table.rpg-combat-screen-shake--b,
+.moba__surface.rpg-combat-screen-shake--b {
+  animation: rpg-screen-shake-b calc(.56s * var(--rpg-anim-scale, 1)) cubic-bezier(.36, .07, .19, .97) calc(.18s * var(--rpg-anim-scale, 1)) both;
+}
 @keyframes rpg-screen-shake-a {
   0%, 100% { transform: translate3d(0, 0, 0); }
   14% { transform: translate3d(-8px, 4px, 0) rotate(-.18deg); }
@@ -6947,9 +6977,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+.rpg-battle.is-reduced .card-table.rpg-combat-screen-shake--a,
+.rpg-battle.is-reduced .card-table.rpg-combat-screen-shake--b,
+.rpg-battle.is-reduced .moba__surface.rpg-combat-screen-shake--a,
+.rpg-battle.is-reduced .moba__surface.rpg-combat-screen-shake--b { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .card-table.rpg-screen-shake--a,
   .card-table.rpg-screen-shake--b,
+  .card-table.rpg-combat-screen-shake--a,
+  .card-table.rpg-combat-screen-shake--b,
+  .moba__surface.rpg-combat-screen-shake--a,
+  .moba__surface.rpg-combat-screen-shake--b,
   .rpg-card-flight.is-flying { animation: none !important; }
   .card-table.rpg-screen-hit--a::after,
   .card-table.rpg-screen-hit--b::after { animation: none !important; opacity: 0 !important; }
