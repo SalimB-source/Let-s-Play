@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { JSDOM } from 'jsdom';
 import { cibleApercuClicDroit } from '../src/games/rpgApercuCible.js';
+import { cardById } from '../src/games/rpgCards.js';
 
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const entite = (extra = {}) => ({ id: 'c1', carteId: 'chien-du-guet', name: 'Chien du guet', atk: 2, def: 2, pv: 2, pvMax: 2, ready: true, ...extra });
@@ -61,6 +62,33 @@ test('la vignette suit les armes réelles des deux camps et leur disparition', a
     assert.equal(rendre(entite({ armes: [], durabilitesArmes: [] })).querySelector('[data-compteur="durabilite"]'), null);
     assert.equal(rendre(entite({ arme: { carteId: 'inconnue' } })).querySelector('.rpg-card__arme-vignette'), null);
   } finally { await vite.close(); }
+});
+
+test('la fiche réserve le débord du losange et conserve les compteurs des armes', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  try {
+    const { HoverCardPreview, RPG_RENDU_MOBA } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const carte = cardById('chien-du-guet');
+    const armes = [cardById('jitte-d-amayas'), cardById('sabre-maudit')];
+    const visuel = entite({ durabiliteArme: 2, compteursArme: 3, heures: { restants: 1 } });
+    const rendre = (component, props) => new JSDOM(renderToStaticMarkup(React.createElement(component, props))).window.document;
+    for (const variante of ['', 'catalogue', 'appui-long']) {
+      const doc = rendre(HoverCardPreview, { carte, armes, entite: visuel, variante });
+      const pile = doc.querySelector('.rpg-hover-card-preview__empile.has-arme');
+      const badge = pile.querySelector('.rpg-hover-card-preview__face > .rpg-card__arme-vignette');
+      assert.match(badge.querySelector('img').getAttribute('src'), /jitte-d-amayas/);
+      assert.deepEqual([...badge.querySelectorAll('[data-compteur]')].map((n) => [n.dataset.compteur, n.textContent]), [['durabilite', '2'], ['sable', '3']]);
+      assert.equal(badge.querySelector('.rpg-card__arme-nombre').textContent, '+1');
+      assert.equal(pile.querySelector('.rpg-card__compteurs-creature [data-compteur="heures"]').textContent, '1');
+      assert.equal(rendre(HoverCardPreview, { carte, entite: visuel, variante }).querySelector('.has-arme'), null);
+      assert.equal(rendre(HoverCardPreview, { carte, armes, variante }).querySelector('.rpg-card__arme-vignette'), null);
+    }
+    const moba = rendre(RPG_RENDU_MOBA.ApercuCarteAppuiLong, { carte, armes, entite: visuel, onFermer: () => {} });
+    assert.ok(moba.querySelector('.rpg-card-peek .rpg-hover-card-preview__empile.has-arme .rpg-card__arme-vignette'));
+  } finally { await vite.close(); }
+  assert.match(css, /\.rpg-hover-card-preview__empile\.has-arme::before\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*100\s*\/\s*17;[^}]*margin-bottom:/s);
+  assert.match(css, /\.rpg-hover-card-preview__empile\.has-arme > \.rpg-hover-card-preview__face\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(css, /\.rpg-hover-card-preview__empile\.has-arme \.rpg-card__compteurs-creature\s*\{[^}]*34cqw/s);
 });
 
 test('le losange est centré à cheval, interactif, sans boîtier métallique', () => {

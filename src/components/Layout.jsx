@@ -38,7 +38,7 @@ export default function Layout({ children }) {
   const lastScroll = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, lang } = useLanguage();
+  const { t, lang, dir, pending } = useLanguage();
   const { isVice, toggleVice } = useTheme();
   const vice = viceCopy[lang] || viceCopy.fr;
   const { user, isDemo, signOut } = useAuth();
@@ -193,19 +193,41 @@ export default function Layout({ children }) {
     const ar = active.getBoundingClientRect();
     setIndicator({ left: ar.left - pr.left, width: ar.width, opacity: 1 });
   };
+  // La langue peut modifier la largeur et le sens de lecture de chaque onglet.
+  // `t` est aussi une dépendance : il ne change qu'à l'arrivée du dictionnaire,
+  // après le bref état `pending` pendant lequel l'ancienne traduction reste visible.
   useLayoutEffect(() => {
     updateIndicator();
-  }, [location.pathname]);
+    // En arabe, LanguageProvider applique aussi `dir` au document après le
+    // chargement : une mesure au cadre suivant récupère l'ordre visuel final.
+    if (typeof window.requestAnimationFrame !== 'function') return undefined;
+    const frame = window.requestAnimationFrame(updateIndicator);
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.pathname, lang, dir, pending, t]);
   useEffect(() => {
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
-    // attend la fin de la transition d'entrée
-    const t = setTimeout(updateIndicator, 800);
+    // Les traductions ou une police peuvent finir de modifier les dimensions
+    // après le rendu ; on observe la barre et ses entrées, sans mesurer l'indicateur
+    // lui-même (qui changerait de taille à chaque déplacement).
+    const primary = navPrimaryRef.current;
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updateIndicator)
+      : null;
+    if (primary && resizeObserver) {
+      resizeObserver.observe(primary);
+      [...primary.children]
+        .filter((child) => !child.classList.contains('nav-pill-indicator'))
+        .forEach((child) => resizeObserver.observe(child));
+    }
+    // Attend aussi la fin de la transition d'entrée de la barre.
+    const timer = setTimeout(updateIndicator, 800);
     return () => {
       window.removeEventListener('resize', updateIndicator);
-      clearTimeout(t);
+      resizeObserver?.disconnect();
+      clearTimeout(timer);
     };
-  }, [location.pathname]);
+  }, [location.pathname, lang, dir, pending, t]);
 
   useEffect(() => {
     setMenuOpen(false);

@@ -292,6 +292,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [projectilesVisuels, ajouterProjectiles, effacerProjectiles] = useEffetsTemporairesMoba(650);
   const [signaturesVisuelles, ajouterSignatures, effacerSignatures] = useEffetsTemporairesMoba(1000);
   const [chocsVisuels, ajouterChocs, effacerChocs] = useEffetsTemporairesMoba(700);
+  const [secousseEcran, ajouterSecousseEcran, effacerSecousseEcran] = useEffetsTemporairesMoba(900);
+  const sequenceSecousse = useRef(0);
   const combatFeedback = rpgMobaFusionnerFeedback(retoursCombat);
   const [impactsIndividuels, ajouterImpactIndividuel, effacerImpactsIndividuels] = useEffetsTemporairesMoba(1200);
   const [sortFx, setSortFx] = useState({});
@@ -1206,6 +1208,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (!afficherResultat(res)) return;
     montrerDestructions(avantDestructions, true);
     if (!rpgAnimationsReduites()) {
+      if ((duel.combatAnimations ?? []).some((animation) => animation.id > avantDestructions.animationSeq && animation.type === 'choc-creatures')) {
+        ajouterSecousseEcran({ ecran: ++sequenceSecousse.current });
+      }
       const tirs = rpgMobaProjectiles(avantDestructions, duel, combat, res).filter((tir) => tir.id === 'attaque-ciblee');
       ajouterProjectiles(Object.fromEntries(tirs.map((effet) => [`${++sequenceFx.current}-${effet.id}`, effet])));
       const choc = rpgMobaChocEchange(avantDestructions, duel, combat, res);
@@ -1250,7 +1255,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     setAttaquants(ids); setCiblesRapides(cibles); setCibleRapideEnCours(null); setCibleVoieEnCours(null);
     setCarte(null); setEtape('blocage'); setCible(cibleId ? null : attaquantId);
   };
-  const nouvellePartie = (partie = null) => { rituelSacrificeRef.current = null; setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setChoixCoutDemande(null); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
+  const nouvellePartie = (partie = null) => { rituelSacrificeRef.current = null; setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setChoixCoutDemande(null); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerSecousseEcran(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
   const demarrerHistoire = () => {
     const deck = modeHistoire && deckCampagneRef.current ? deckCampagneRef.current : deckPour('joueur');
     if (!deck || !rpgMobaValiderDeck(deck).ok) return;
@@ -1484,7 +1489,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {rendu?.AnnonceTour ? <rendu.AnnonceTour annonce={annonceTourVisible} /> : <div className="rpg-annonce-tour" style={{ '--rpg-annonce-tour-duree': `${dureeAnnonceTour}ms` }} role="status" aria-live="polite" aria-atomic="true">
       {annonceTourVisible && <p key={annonceTourVisible.token} className={`rpg-annonce-tour__bandeau is-${annonceTourVisible.camp}`}><span className="rpg-annonce-tour__lamp" aria-hidden="true" /><strong>{annonceTourVisible.camp === 'joueur' ? 'Votre tour' : 'Tour de l’adversaire'}</strong><span className="rpg-annonce-tour__lamp" aria-hidden="true" /></p>}
     </div>}
-    <div className="moba__surface" inert={Boolean(cerclesSacrifice.length || etape === 'mulligan' || etape === 'choix' || fini || duel.moba.centerChoice || apercuAnnonceOuvert || apercu || confirmerSortie || parametresOuverts || cimetiere || selectionAscension.apercuId || (recherche?.cote === 'joueur'))}>
+    <div className={`moba__surface${secousseEcran.ecran ? ` rpg-combat-screen-shake--${secousseEcran.ecran % 2 ? 'a' : 'b'}` : ''}`} data-screen-impact={secousseEcran.ecran ? 'combat' : undefined} inert={Boolean(cerclesSacrifice.length || etape === 'mulligan' || etape === 'choix' || fini || duel.moba.centerChoice || apercuAnnonceOuvert || apercu || confirmerSortie || parametresOuverts || cimetiere || selectionAscension.apercuId || (recherche?.cote === 'joueur'))}>
     <header className="moba__header" inert={selectionAscension.rituel ? true : undefined}>
       <div className="moba__brand"><span>LE SABLIER <i>✦</i> DUEL SOLO</span><h1>MOBA <small>Les trois voies</small></h1></div>
       <div className="moba__header-meta"><span className="moba__trial">{modeHistoire ? `HISTOIRE · CHAPITRE ${chapitreIndex + 1}/${MOBA_HISTOIRE.length}` : 'ESSAI · DUEL SOLO'}</span>{onToggleSound && <button type="button" className="moba__back moba__sound" aria-pressed={sonActif} aria-label={sonActif ? 'Couper tous les sons' : 'Activer tous les sons'} onClick={onToggleSound}><span aria-hidden="true">{sonActif ? '♫' : '♪'}</span> <span className="moba__sound-label">{sonActif ? 'Son activé' : 'Son coupé'}</span></button>}{rendu?.VolumesDuel && onToggleSound && onChangeVolumeSfx && onChangeVolumeVoix && onChangeVolumeMusique && <button type="button" ref={boutonParametres} className="moba__back moba__settings-button" aria-label="Paramètres audio" aria-haspopup="dialog" aria-expanded={parametresOuverts} onClick={() => setParametresOuverts(true)}><span aria-hidden="true">⚙</span></button>}<button type="button" ref={boutonQuitter} className="moba__back moba__quit" aria-label="Quitter la partie" onClick={() => setConfirmerSortie(true)}>← <span>Quitter la partie</span></button></div>
