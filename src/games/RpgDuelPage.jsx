@@ -1373,15 +1373,16 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         {topCard
-          ? <img
+          ? <span
               className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}`}
               style={cardFrameStyle(carteDuDessus)}
-              src={cardArt(topCard)}
-              alt=""
               data-card-id={carteDuDessus?.id}
               onMouseEnter={(event) => onHoverCard?.(carteDuDessus, event)}
               onMouseLeave={onLeaveHoverCard}
-            />
+            >
+              <img src={cardArt(topCard)} alt="" />
+              <RpgCadreCarte carte={carteDuDessus} />
+            </span>
           : <span key={drawToken ?? 'deck-top'} className="rpg-card-pile__card rpg-card-pile__card--top rpg-card-pile__card--back" />}
       </span>
       <b>{count}</b>
@@ -4140,12 +4141,13 @@ function SpellAnnouncement({ annonce, camp = 'joueur', nomLanceur = null }) {
           ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
           : `${nomLanceur ? `Magie de ${nomLanceur}` : sorcier ? 'Magie du sorcier' : 'Magie jouée'} : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
-      <img
+      <span
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
         style={cardFrameStyle(carte)}
-        src={cardArt(carte)}
-        alt=""
-      />
+      >
+        <img src={cardArt(carte)} alt="" />
+        <RpgCadreCarte carte={carte} />
+      </span>
       <div className="rpg-spell-played__details">
         {/* Le sur-titre prend la teinte de la famille du sort annoncé. Un
             contre garde son or : sa règle est plus spécifique (voir

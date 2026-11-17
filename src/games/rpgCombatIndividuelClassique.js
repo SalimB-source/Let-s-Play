@@ -1,4 +1,4 @@
-import { estDefenseur } from './rpgDefenseur.js';
+import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -20,12 +20,13 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   const attaquant = duel[cote]?.creatures.find((e) => e.id === attaquantId);
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
-  const possibles = (duel[autre(cote)]?.creatures ?? []).filter((e) => accessible(attaquant, e, ciblee));
+  const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
+  const possibles = adversaires.filter((e) => accessible(attaquant, e, ciblee));
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
-    directe: true,
+    directe: attaqueDirectePermise(attaquant, adversaires),
   };
 }
 
@@ -34,7 +35,7 @@ export function rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantI
   if (!soloClassique(duel, cote) || rpgVainqueur(duel)) return false;
   const attaquant = duel[cote]?.creatures.find((e) => e.id === attaquantId);
   if (!creature(attaquant) || (cibleeAnnoncee && !attaquant.coupRapide)) return false;
-  if (cibleId === null) return true;
+  if (cibleId === null) return attaqueDirectePermise(attaquant, (duel[autre(cote)]?.creatures ?? []).filter(creature));
   return accessible(attaquant, duel[autre(cote)]?.creatures.find((e) => e.id === cibleId), Boolean(cibleeAnnoncee));
 }
 

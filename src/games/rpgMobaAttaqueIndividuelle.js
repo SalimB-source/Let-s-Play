@@ -1,4 +1,4 @@
-import { estDefenseur } from './rpgDefenseur.js';
+import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
 /** Règles de ciblage et bonus propres au combat individuel MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { rpgEstProtegee } from './rpgDuel.js';
@@ -35,17 +35,17 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId, voieAttaque =
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
   return {
     cibles: possibles.map((e) => e.id),
-    directe: true,
+    directe: attaqueDirectePermise(attaquant, duel[autre(side)].creatures.filter((e) => creature(e) && mobaPartageVoie(duel.moba, e.mobaLane, voie))),
   };
 }
 
-/** La voie choisie à l'annonce reste fixe pendant la fenêtre de réponse. */
+/** La voie choisie reste fixe ; une frappe directe devenue interdite est annulée. */
 export function rpgMobaCibleIndividuelleEncoreLegale(duel, side, attackerId, cibleId, cibleeAnnoncee, voieAnnoncee) {
   if (!MOBA_SIDES.includes(side) || !duel?.moba || duel.moba.winner || duel.moba.centerChoice) return false;
   const attaquant = duel[side]?.creatures.find((e) => e.id === attackerId);
   if (!creature(attaquant) || !mobaVoiesCombat(duel.moba, attaquant.mobaLane).includes(voieAnnoncee) || !mobaVoie(duel.moba, voieAnnoncee)?.active) return false;
   if (cibleeAnnoncee && !attaquant.coupRapide) return false;
-  if (cibleId === null) return true;
+  if (cibleId === null) return attaqueDirectePermise(attaquant, duel[autre(side)].creatures.filter((e) => creature(e) && mobaPartageVoie(duel.moba, e.mobaLane, voieAnnoncee)));
   const cible = duel[autre(side)]?.creatures.find((e) => e.id === cibleId);
   return cibleAccessible(duel, attaquant, cible, Boolean(cibleeAnnoncee), voieAnnoncee);
 }
