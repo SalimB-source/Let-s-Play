@@ -368,12 +368,6 @@ for (const item of picked) {
   }
 }
 
-for (const { story } of articles) {
-  writeFileSafe(path.join(PATHS.autoDir, `${story.date.split('.').reverse().join('-')}-${story.slug}.json`), `${JSON.stringify(story, null, 2)}\n`);
-  validateStory(story);
-  console.log(`  ✔ /news/${story.slug} — ${story.title} ${story.accent}`);
-}
-
 // ------------------------------------------------- 4 bis. traductions FR → EN / AR
 // Chaque article reçoit ses versions anglaise et arabe au moment de sa
 // publication : c'était le manque d'origine — un nouvel article n'existait
@@ -381,6 +375,9 @@ for (const { story } of articles) {
 //
 // Une traduction qui échoue ne bloque JAMAIS la publication : l'article reste
 // en ligne en français et `npm run news:translate` le rattrapera.
+if (articles.length && (!TRANSLATE || !llm)) {
+  throw new Error('Publication blocked: every article requires English and Arabic translations.');
+}
 const translated = { en: 0, ar: 0 };
 const translationFailures = [];
 if (TRANSLATE && articles.length && llm) {
@@ -408,6 +405,16 @@ if (TRANSLATE && articles.length && llm) {
   console.log('Traductions : désactivées (--no-translate).');
 }
 for (const failure of translationFailures) console.warn(`  ⚠️ traduction non produite — ${failure}`);
+
+if (translationFailures.length) {
+  throw new Error('Publication blocked: incomplete English/Arabic translations.');
+}
+
+for (const { story } of articles) {
+  writeFileSafe(path.join(PATHS.autoDir, `${story.date.split('.').reverse().join('-')}-${story.slug}.json`), `${JSON.stringify(story, null, 2)}\n`);
+  validateStory(story);
+  console.log(`  ✔ /news/${story.slug} — ${story.title} ${story.accent}`);
+}
 
 const archived = pruneArchive();
 const allStories = generateAutoIndex();

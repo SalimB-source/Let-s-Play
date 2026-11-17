@@ -30,7 +30,7 @@ export const LOCALIZED_FIELDS = [
   'title', 'accent', 'dek', 'lead', 'intro',
   'h2', 'p1', 'quote', 'quoteBy', 'h2b', 'p2', 'p3', 'p4',
   'take', 'takeText', 'imageAlt', 'readTime', 'category', 'cover',
-  'source', 'sourceDetail', 'credit', 'videoTitle',
+  'source', 'sourceDetail', 'credit', 'imageCredit', 'videoTitle',
 ];
 
 /** Champs repris par les cartes de liste. */
