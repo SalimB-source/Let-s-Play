@@ -34,8 +34,8 @@ test('16 novembre : trois articles complets, officiels et sans collision', () =>
   }
 });
 
-test('nouvelle une, ordre des archives et intégration recherche/hubs', () => {
-  for (const page of ['Home', 'News']) assert.ok(read(`src/pages/${page}.jsx`).includes("from '../news/daily/2026-11-16'"));
+test('édition du 16 conservée, ordre des archives et intégration recherche/hubs', () => {
+  for (const page of ['CurrentNews', 'AllNews']) assert.ok(read(`src/pages/${page}.jsx`).includes("from '../news/daily/2026-11-16'"));
   for (const file of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/search/searchIndex.js']) {
     const text = read(file);
     for (const day of ['16', '15', '14', '13', '12']) assert.ok(text.includes(`from '../news/daily/2026-11-${day}'`));

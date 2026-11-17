@@ -111,6 +111,35 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"gta-6-discord-theme-vice-city": {
+  "label": "GTA VI",
+  "meta": "DISCORD",
+  "items": [
+    {
+      "id": "rz1B4B2yBZY",
+      "kind": "trailer",
+      "title": "Grand Theft Auto VI Launch Trailer",
+      "channel": "Rockstar Games",
+      "note": "Trailer officiel Rockstar publié le 15 octobre 2026, utilisé uniquement pour illustrer GTA VI. Ce n’est ni une vidéo du thème Discord ni une nouvelle bande-annonce du 17 novembre. L’annonce Discord date du 16 novembre.",
+      "verified": "17.11.2026"
+    }
+  ],
+  "credit": "Visuel officiel Discord associant son logo aux couleurs de Vice City et celui de GTA VI, publié le 16 novembre 2026. © Discord / Rockstar Games."
+},
+"cinema/mike-ward-modeste-netflix-17-novembre": {
+  "label": "MIKE WARD : MODESTE",
+  "meta": "NETFLIX TUDUM",
+  "items": [],
+  "credit": "Visuel officiel de Mike Ward: Modest dans le calendrier Netflix Tudum publié le 13 novembre 2026. © Netflix.",
+  "pending": "Une bande-annonce officielle de 1 min 07 est proposée sur la fiche Netflix du spectacle (titre 81697863). Aucun upload YouTube officiel n’a été vérifié pour l’intégrer ici ; aucune republication non officielle n’est utilisée."
+},
+"tech/gemini-notebook-sites-interactifs": {
+  "label": "GEMINI NOTEBOOK",
+  "meta": "GOOGLE",
+  "items": [],
+  "credit": "Illustration officielle Google d’un tableau périodique interactif pour Gemini Notebook, publiée le 16 novembre 2026. Démonstration du fournisseur, pas un résultat produit par la rédaction.",
+  "pending": "Google propose une démonstration vidéo directement dans son billet officiel. Aucun upload YouTube dédié provenant d’une chaîne officielle n’a été vérifié ; le visuel de l’annonce accompagne l’article sans vidéo générique de substitution."
+},
 "doom-dark-ages-revelations-slaughter-mode-16-novembre": {
   "label": "DOOM: THE DARK AGES",
   "meta": "BETHESDA · SLAYERS CLUB",
