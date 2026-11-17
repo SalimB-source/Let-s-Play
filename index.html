@@ -25,33 +25,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&family=Orbitron:wght@400..900&family=Pirata+One&family=Permanent+Marker&display=swap" rel="stylesheet" />
     <meta name="theme-color" content="#05060f" />
     <!--
-      Thème — posé avant le premier rendu (sombre, clair, ou habillage
-      temporaire « vice »). Sans ce script, la page s'affiche en sombre puis
-      bascule en clair une fois React monté : un flash très visible. La valeur
-      doit rester synchronisée avec `src/theme/ThemeContext.jsx` (clé
-      `lp-theme`, défaut `dark`).
+      Thème — posé avant le premier rendu (sombre ou clair). Sans ce script, la
+      page s'affiche en sombre puis bascule en clair une fois React monté : un
+      flash très visible. La valeur doit rester synchronisée avec
+      `src/theme/ThemeContext.jsx` (clé `lp-theme`, défaut `dark`).
 
-      Défaut de la campagne GTA 6 : du 12 au 30 novembre 2026, l'habillage
-      « vice » est le thème proposé quand le visiteur n'a encore rien choisi
-      (VICE_CAMPAIGN dans src/theme/viceTheme.js — mêmes dates, à changer aux
-      deux endroits). Un choix déjà mémorisé reste prioritaire.
+      L'habillage temporaire « vice » a été retiré : une ancienne valeur `vice`
+      encore mémorisée est ignorée ici et retombe sur le sombre.
     -->
     <script>
       (function () {
         try {
           var stored = localStorage.getItem('lp-theme');
-          /* Trois valeurs : dark (défaut), light, et vice — l'habillage
-             temporaire aux couleurs de GTA 6 (src/theme/vice.css). La liste
-             doit rester synchronisée avec THEMES dans ThemeContext.jsx. */
-          var campagnes = { vice: ['2026-11-12', '2026-11-30'] };
-          var today = new Date();
-          var day = today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
-          var fenetre = campagnes.vice;
-          var defaut = day >= fenetre[0] && day <= fenetre[1] ? 'vice' : 'dark';
-          var theme = stored === 'light' || stored === 'dark' || stored === 'vice' ? stored : defaut;
+          /* Deux valeurs : dark (défaut) et light. La liste doit rester
+             synchronisée avec THEMES dans ThemeContext.jsx. */
+          var theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
           document.documentElement.setAttribute('data-theme', theme);
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', theme === 'light' ? '#f7f8fc' : theme === 'vice' ? '#fff5fa' : '#05060f');
+          if (meta) meta.setAttribute('content', theme === 'light' ? '#f7f8fc' : '#05060f');
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }

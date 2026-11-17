@@ -2,9 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import ThemeToggle, { PalmIcon } from './ThemeToggle';
-import ViceNotice from './ViceNotice';
 import { useTheme } from '../theme/ThemeContext';
-import { viceCopy } from '../theme/viceTheme';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
 import { estRouteConnexionSablier } from '../games/rpgConnexionRoute';
@@ -39,8 +37,6 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, lang, dir, pending } = useLanguage();
-  const { isVice, toggleVice } = useTheme();
-  const vice = viceCopy[lang] || viceCopy.fr;
   const { user, isDemo, signOut } = useAuth();
   const routeSablier = estRouteConnexionSablier(location.pathname);
   const { summary } = useAchievements();
@@ -689,28 +685,6 @@ export default function Layout({ children }) {
               <div className="nav-actions-grid">
                 <ThemeToggle />
                 <LanguageSwitcher variant="nav" />
-                {/* Habillage temporaire « Vice City » : entrée PERMANENTE,
-                    sur ordinateur comme sur téléphone — dans la barre, la
-                    pastille de thème ne porte qu'une intention (clair/sombre)
-                    et redevient soleil/lune dès qu'on quitte la peau. Sans
-                    cette entrée, revenir en sombre refermait la porte : c'était
-                    une impasse (voir styles.css, « Entrée Vice City »).
-                    Le libellé dit ce qu'on OBTIENT, pas ce qui est actif. */}
-                <button
-                  type="button"
-                  className={`mobile-menu-vice${isVice ? ' is-active' : ''}`}
-                  onClick={() => { toggleVice(); setMenuOpen(false); }}
-                  aria-pressed={isVice}
-                  aria-label={isVice ? vice.exit : vice.entry}
-                  title={isVice ? vice.exit : vice.entry}
-                >
-                  <span className="mobile-menu-vice-icon" aria-hidden="true"><PalmIcon /></span>
-                  <span className="mobile-menu-vice-dot" aria-hidden="true" />
-                  <span className="mobile-menu-vice-label">
-                    {isVice ? vice.exit : vice.entry}
-                  </span>
-                  <span className="mobile-menu-vice-arrow" aria-hidden="true">↗</span>
-                </button>
                 {user ? (
                   <>
                     <div
@@ -932,10 +906,6 @@ export default function Layout({ children }) {
           <span>{t.footer.copyright}</span>
         </div>
       </footer>
-      {/* Habillage temporaire « Vice City » : l'avis qui dit ce que c'est et
-          comment en sortir. Rendu seulement quand le thème `vice` est actif,
-          dans le flux, au-dessus du pied de page. */}
-      <ViceNotice />
     </>
   );
 }
