@@ -41,26 +41,24 @@ export function rpgPayerCoutInvocationSpeciale(duel, cote, id, choix) {
   duel.log.push(`${cote === 'joueur' ? 'Vous' : 'Le sorcier'} ${cout.destination === 'exil' ? (cote === 'joueur' ? 'exilez' : 'exile') : (cote === 'joueur' ? 'défaussez' : 'défausse')} ${cardById(carteId)?.name ?? carteId} pour invoquer ${cardById(id)?.name ?? id}.`);
   return true;
 }
+const magiesRapidesCimetiere = (d, s) => (d[s]?.cimetiere ?? [])
+  .filter((id) => { const c = cardById(id); return c?.kind === 'magie' && c.instant; }).length;
+const exilerMagieRapide = Object.freeze({ zone: 'cimetiere', destination: 'exil',
+  admissible: (id) => { const c = cardById(id); return c?.kind === 'magie' && Boolean(c.instant); } });
+const defausserSabreMaudit = Object.freeze({ zone: 'main', destination: 'cimetiere',
+  admissible: (id) => id === 'sabre-maudit' });
 const exilerCreature = Object.freeze({ zone: 'cimetiere', destination: 'exil', admissible: estCreature });
 const defausserCreature = Object.freeze({ zone: 'main', destination: 'cimetiere', admissible: estCreature });
 const defausserMagie = Object.freeze({ zone: 'main', destination: 'cimetiere', admissible: (id) => cardById(id)?.kind === 'magie' });
 
 export const MOBA_EMBUSCADES_IMPRIMEES = Object.freeze({
-  'ouvrier-du-natron': entree('Défaussez une autre carte de créature de votre main, au choix.', (d, s) => autreCarteEnMain(d, s, 'ouvrier-du-natron', estCreature), defausserCreature),
-  'momie-de-lin': entree('Vous avez au moins deux cartes de créature dans votre cimetière.', (d, s) => creaturesCimetiere(d, s).length >= 2),
-  'veuve-des-urnes': entree('Défaussez une carte de magie de votre main, au choix.', (d, s) => autreCarteEnMain(d, s, 'veuve-des-urnes', defausserMagie.admissible), defausserMagie),
-  'gardien-des-sept-sceaux': entree('Vous avez au moins trois cartes dans votre cimetière.', (d, s) => (d[s]?.cimetiere ?? []).length >= 3),
-  'lecteur-du-dernier-nom': entree('Exilez une carte de créature de votre cimetière, au choix.', (d, s) => creaturesCimetiere(d, s).length > 0, exilerCreature),
-  'sentinelle-des-sables': entree('L’adversaire contrôle une créature.', (d, s) => creatures(d, autre(s)).length > 0),
-  'tojiro-le-pourfendeur': entree('L’adversaire contrôle un Djinn et vous contrôlez une créature blessée.', (d, s) => creatures(d, autre(s)).some((e) => cardHasPrintedType(e.carteId, 'Djinn')) && creatures(d, s).some(blessee)),
-  'garde-du-trone-givre': entree('Vous contrôlez une créature blessée et l’adversaire contrôle une créature.', (d, s) => creatures(d, s).some(blessee) && creatures(d, autre(s)).length > 0),
-  'eclipse-silencieuse': entree('L’adversaire contrôle une créature de force 2 ou plus.', (d, s) => creatures(d, autre(s)).some((e) => e.atk >= 2)),
-  'gardienne-du-croissant': entree('Vous contrôlez une créature blessée sans bouclier.', (d, s) => creatures(d, s).some((e) => blessee(e) && !e.bouclier)),
-  'traqueur-des-nuits-sans-lune': entree('L’adversaire contrôle au moins deux créatures.', (d, s) => creatures(d, autre(s)).length >= 2),
-  'sorcier-du-ressac-noir': entree('Vous contrôlez un Vampire, avez une Magie Rapide au cimetière et l’adversaire une créature non-jeton de coût 3 ou moins.', (d, s) => creatures(d, s).some(vampire) && (d[s]?.cimetiere ?? []).some((id) => { const c = cardById(id); return c?.kind === 'magie' && c.instant; }) && creatures(d, autre(s)).some((e) => !e.jeton && (cardById(e.carteId)?.cost ?? Infinity) <= 3)),
+  'garde-du-trone-givre': entree('Vous avez au moins un Viking dans votre cimetière.', (d, s) => creaturesCimetiere(d, s).some((id) => cardHasPrintedType(id, 'Viking'))),
+  'momie-de-lin': entree('Exilez une carte de créature de votre cimetière, au choix.', (d, s) => creaturesCimetiere(d, s).length > 0, exilerCreature),
   'sanguinaire-des-dunes': entree('L’adversaire contrôle au moins deux créatures blessées.', (d, s) => creatures(d, autre(s)).filter(blessee).length >= 2),
-  'porte-etendard-de-leclipse': entree('Vous contrôlez deux Vampires, dont un blessé.', (d, s) => creatures(d, s).filter(vampire).length >= 2 && creatures(d, s).some((e) => vampire(e) && blessee(e))),
-  'veilleuse-de-la-lune-givree': entree('L’adversaire contrôle une créature de force 3 ou plus.', (d, s) => creatures(d, autre(s)).some((e) => e.atk >= 3)),
+  'gardienne-du-croissant': entree('Vous contrôlez une créature blessée.', (d, s) => creatures(d, s).some(blessee)),
+  'porte-etendard-de-leclipse': entree('Vous contrôlez au moins trois créatures.', (d, s) => creatures(d, s).length >= 3),
+  'sorcier-du-ressac-noir': entree('Exilez une Magie Rapide de votre cimetière, au choix.', (d, s) => magiesRapidesCimetiere(d, s) > 0, exilerMagieRapide),
+  'tojiro-le-pourfendeur': entree('Défaussez une carte Sabre maudit de votre main, au choix.', (d, s) => autreCarteEnMain(d, s, 'tojiro-le-pourfendeur', (id) => id === 'sabre-maudit'), defausserSabreMaudit),
 });
 
 export const rpgMobaConditionImprimee = (duel, side, id) => Boolean(duel?.[side]

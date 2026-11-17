@@ -6212,6 +6212,14 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.a
     case 'attaque-ciblee': return allies.some((entite) => ciblesAttaque.includes(entite.id));
     case 'adversaire-force-4': return adversaires.some((entite) => entite.atk >= 4);
     case 'djinn-adverse': return adversaires.some((entite) => cardHasPrintedType(entite.carteId, 'Djinn'));
+    // La Sentinelle des sables : posée pendant le tour adverse, quand plus
+    // aucune créature ne défend et qu'une attaque part directement au sorcier.
+    case 'attaque-directe': {
+      const sansDefenseur = !allies.some((entite) => !estSite(entite));
+      const frappeDirecte = (combat?.attaquants ?? []).some((id) => !combat?.ciblesAttaque?.[id]
+        && !(combat?.blocages?.[id]?.length));
+      return sansDefenseur && frappeDirecte;
+    }
     default: return true;
   }
 }

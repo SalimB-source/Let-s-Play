@@ -988,11 +988,14 @@ test('classique : sans le Voile, le Djinn frappe même avec un Ashigaru allié',
   assert.equal(duel[adv].pv, 23);
 });
 
-test('classique : le Djinn sous le Voile est une invocation spéciale avec l’Ashigaru', () => {
+test('classique : le Djinn sous le Voile consomme désormais l’invocation normale', () => {
   const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
   assert.equal(duel.sorcier.invocationNormaleJouee, false);
   assert.ok(rpgJouerCreature(duel, 'sorcier', 'djinn-de-la-premiere-etincelle').ok);
-  assert.equal(duel.sorcier.invocationNormaleJouee, false);
+  // Le Djinn des braises voilées n’a plus d’Invocation spéciale : sa pose
+  // consomme l’invocation normale du tour.
+  assert.equal(duel.sorcier.invocationNormaleJouee, true);
+  duel.sorcier.invocationNormaleJouee = false;
   duel.sorcier.main = ['djinn-des-cendres-vengeresses'];
   assert.ok(rpgJouerCreature(duel, 'sorcier', 'djinn-des-cendres-vengeresses').ok);
   const pv = duel.joueur.pv;
@@ -1000,12 +1003,10 @@ test('classique : le Djinn sous le Voile est une invocation spéciale avec l’A
   assert.equal(duel.joueur.pv, pv - 1);
 });
 
-test('classique : ne pas exclure le Djinn spécial si une autre créature en main peut profiter de sa mort', () => {
-  const { duel } = furtifAvecAllie('sorcier', { allieId: 'ashigaru-des-braises' });
-  duel.sorcier.main.push('djinn-des-cendres-vengeresses');
-  // Exclure l'autre choix de carte isole le filtre sans retirer sa présence en main.
-  const choix = choisirCarteIA(duel, 'sorcier', { rng: () => .5, exclus: new Set(['djinn-des-cendres-vengeresses']) });
-  assert.equal(choix?.carteId, 'djinn-de-la-premiere-etincelle');
+test('classique : le Djinn des braises voilées n’est plus une carte à Invocation spéciale', async () => {
+  const { rpgCarteEmbuscade } = await import('../src/games/rpgEmbuscade.js');
+  assert.equal(rpgCarteEmbuscade('djinn-de-la-premiere-etincelle'), false);
+  assert.equal(rpgCarteEmbuscade('djinn-des-cendres-vengeresses'), false);
 });
 
 test('classique : une arme sur l’Ashigaru sort du cas simple sous le Voile', () => {

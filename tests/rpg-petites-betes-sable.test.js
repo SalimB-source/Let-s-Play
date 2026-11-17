@@ -12,7 +12,7 @@ import {
 } from '../src/games/rpgDuel.js';
 
 const BETES = [
-  ['gerboise-des-ruines', 2, 1, 'commune'],
+  ['gerboise-des-ruines', 1, 1, 'commune'],
   ['scarabee-des-sceaux', 1, 2, 'inhabituelle'],
   ['scorpion-du-seuil', 1, 2, 'inhabituelle'],
 ];
@@ -54,7 +54,8 @@ test('la Gerboise peut attaquer dès son arrivée', () => {
   assert.equal(gerboise.ready, true);
   const pv = d.sorcier.pv;
   assert.equal(rpgLancerAttaque(d, 'joueur', [gerboise.id], {}).ok, true);
-  assert.equal(d.sorcier.pv, pv - 2);
+  // La Gerboise est une 1/1 depuis qu'elle a perdu son Invocation spéciale.
+  assert.equal(d.sorcier.pv, pv - 1);
 });
 
 test('le Scarabée fait piocher une seule carte à son contrôleur en mourant', () => {
