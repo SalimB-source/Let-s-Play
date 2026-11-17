@@ -2,6 +2,9 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import ThemeToggle from './ThemeToggle';
+import ViceNotice from './ViceNotice';
+import { useTheme } from '../theme/ThemeContext';
+import { viceCopy } from '../theme/viceTheme';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
 import { estRouteConnexionSablier } from '../games/rpgConnexionRoute';
@@ -36,6 +39,8 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const { isVice, toggleVice } = useTheme();
+  const vice = viceCopy[lang] || viceCopy.fr;
   const { user, isDemo, signOut } = useAuth();
   const routeSablier = estRouteConnexionSablier(location.pathname);
   const { summary } = useAchievements();
@@ -662,6 +667,24 @@ export default function Layout({ children }) {
               <div className="nav-actions-grid">
                 <ThemeToggle />
                 <LanguageSwitcher variant="nav" />
+                {/* Habillage temporaire « Vice City » : sur téléphone, la
+                    pastille de thème n'a pas la place d'une seconde intention
+                    (clair/sombre ET habillage). L'entrée vit donc dans la
+                    grille des commandes, sur sa propre ligne, et n'apparaît
+                    qu'en mise en page téléphone (voir theme/vice.css §9).
+                    Le libellé dit ce qu'on OBTIENT, pas ce qui est actif. */}
+                <button
+                  type="button"
+                  className={`mobile-menu-vice${isVice ? ' is-active' : ''}`}
+                  onClick={() => { toggleVice(); setMenuOpen(false); }}
+                  aria-pressed={isVice}
+                >
+                  <span className="mobile-menu-vice-dot" aria-hidden="true" />
+                  <span className="mobile-menu-vice-label">
+                    {isVice ? vice.exit : (lang === 'ar' ? 'ألوان فايس سيتي' : lang === 'en' ? 'Vice City colours' : 'Couleurs Vice City')}
+                  </span>
+                  <span className="mobile-menu-vice-arrow" aria-hidden="true">↗</span>
+                </button>
                 {user ? (
                   <>
                     <div
@@ -883,6 +906,10 @@ export default function Layout({ children }) {
           <span>{t.footer.copyright}</span>
         </div>
       </footer>
+      {/* Habillage temporaire « Vice City » : l'avis qui dit ce que c'est et
+          comment en sortir. Rendu seulement quand le thème `vice` est actif,
+          dans le flux, au-dessus du pied de page. */}
+      <ViceNotice />
     </>
   );
 }

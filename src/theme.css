@@ -1851,6 +1851,24 @@
   [data-theme='light'] .nav-links .nav-logout:hover{
     background-color:rgba(190,18,60,.08);border-color:rgba(190,18,60,.22);color:var(--danger);
   }
+  /* Entrée « Couleurs Vice City » (habillage temporaire, styles.css) : même
+     fond de commande que la pastille de thème voisine. Son point actif passe
+     au rose profond — le rose néon #ff2e93 ne tient pas sur le panneau clair. */
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice{
+    background:rgba(86,70,190,.06);
+    border-color:rgba(86,70,190,.16);
+    color:var(--muted);
+  }
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice:hover,
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice:focus-visible{
+    background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.30);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links .mobile-menu-vice-arrow{color:var(--dim)}
+  [data-theme='light'] .nav-links .mobile-menu-vice[aria-pressed='true'] .mobile-menu-vice-dot{
+    border-color:#be185d;background:#be185d;
+    box-shadow:0 0 0 3px rgba(190,24,93,.14);
+  }
+
   /* Le bouton « S'inscrire » garde son aplat jaune + encre sombre (6bis). */
 
   /* Pied du tiroir : libellé et liens en encre de page. Le « • » de marque

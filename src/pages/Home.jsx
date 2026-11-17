@@ -12,6 +12,8 @@ import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-17';
+import { useTheme } from '../theme/ThemeContext';
+import { gta6CountdownLabel, heroImageFor, viceCopy } from '../theme/viceTheme';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -20,9 +22,6 @@ const HomeQuizBand = lazy(() => import('./HomeQuizBand'));
 // Le paramètre d'URL `?at=` (horloge simulée du bandeau « le plus attendu »)
 // est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
-
-// Visuel fixe du héros, utilisé dans les deux thèmes.
-const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-lets-play.jpg`;
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -65,6 +64,10 @@ const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/ne
 
 export default function Home() {
   const { t, lang } = useLanguage();
+  // Habillage temporaire « Vice City » : le héros change de visuel et gagne
+  // une étiquette de sortie. Voir src/theme/viceTheme.js.
+  const { isVice } = useTheme();
+  const vice = viceCopy[lang] || viceCopy.fr;
   const [liveVideoId, setLiveVideoId] = useState(null);
   const isLive = Boolean(liveVideoId);
   const [featuredTrailer, setFeaturedTrailer] = useState(null);
@@ -214,11 +217,13 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        {/* Visuel fixe du héros : plein cadre, avec le voile existant pour
-            conserver le contraste du contenu éditorial. */}
+        {/* Visuel du héros : plein cadre, avec le voile existant pour
+            conserver le contraste du contenu éditorial. L'habillage
+            temporaire « Vice City » en fournit un autre (voir viceTheme.js) ;
+            le voile et la géométrie, eux, ne changent pas. */}
         <img
           className="hero-bg hero-bg--keyart"
-          src={HERO_IMAGE}
+          src={heroImageFor(isVice)}
           alt=""
           aria-hidden="true"
           fetchPriority="high"
@@ -227,6 +232,13 @@ export default function Home() {
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
+          {isVice && (
+            <p className="vice-hero-tag">
+              <span aria-hidden="true">◈</span>
+              {vice.heroTag}
+              <b>{gta6CountdownLabel(lang)}</b>
+            </p>
+          )}
           <p className="eyebrow"><span className="live-dot" /> {t.home.eyebrow}</p>
           <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
           <p className="hero-text">{t.home.heroText}</p>
