@@ -13,6 +13,8 @@ import { instantanePrisesAnimation, prisesPourAnimation } from './rpgPrisesAnima
 import { sacrificesInvocation, invocationPossible, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
+import { cinematiqueCombatClassique, positionsCombatClassique } from './rpgCombatClassiqueCinematique.js';
+import { rpgMobaDecalerChiffres } from './rpgMobaImpact.js';
 import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
@@ -7637,6 +7639,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Ligne de charge : un trait de sable par attaquant, tracé juste avant le
   // bond. Effet purement visuel, déclenché par les deux résolutions de combat.
   const [lignesCharge, setLignesCharge] = useState([]);
+  const [impactsCombatClassique, setImpactsCombatClassique] = useState([]);
+  const sequenceImpactClassiqueRef = useRef(0);
   const sequenceChargeRef = useRef(0);
   const chargeTimersRef = useRef([]);
   // Le retournement 3D du bouton « Fin du tour » à chaque nouveau tour du
@@ -7651,6 +7655,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const positionsProjectilesRef = useRef({ duel: null, positions: new Map() });
   useEffect(() => {
     setProjectilesVisibles([]);
+    setImpactsCombatClassique([]);
     positionsProjectilesRef.current = { duel: null, positions: new Map() };
   }, [ecran]);
   const [gelMasseFx, setGelMasseFx] = useState(null);
@@ -8549,6 +8554,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     tributTimersRef.current = [];
     tributsDuelRef.current = { duel: null, position: 0 };
     setLignesCharge([]);
+    setImpactsCombatClassique([]);
     chargeTimersRef.current.forEach((id) => window.clearTimeout(id));
     chargeTimersRef.current = [];
     if (timerFlipRef.current) window.clearTimeout(timerFlipRef.current);
@@ -12730,12 +12736,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const resoudreCombatIndividuel = (cote, combat) => {
     const champAvant = prendreInstantaneChamp();
+    const positionsImpact = positionsCombatClassique(tableRef.current, champAvant);
     const debutJournal = rpgNombreDestructions(duel);
     const res = rpgResoudreAttaqueIndividuelleClassique(duel, cote);
     if (!res.ok) { jouerSfx('erreur'); force(); return; }
     const id = combat.attaquants[0];
-    const cible = combat.cibleIndividuelle.cibleId ?? 'sorcier';
-    if (!res.annule) declencherLignesCharge(cote, [id], { [id]: cible }, champAvant);
+    const noms = Object.fromEntries(champAvant.map((carte) => [carte.entityId, carte.name]));
+    noms['avatar:joueur'] = nomJoueurAffiche;
+    noms['avatar:sorcier'] = nomSorcierAdverse;
+    const impact = cinematiqueCombatClassique(combat, cote, res, positionsImpact, noms);
+    if (impact) {
+      const token = ++sequenceImpactClassiqueRef.current;
+      // Ces minuteries visuelles ne doivent pas être annulées par la fin d'un
+      // tour IA, mais sont nettoyées au changement de partie et au démontage.
+      const programmerNettoyage = (rappel, duree) => {
+        const timer = window.setTimeout(() => {
+          animationsVisuellesTimersRef.current = animationsVisuellesTimersRef.current.filter((idTimer) => idTimer !== timer);
+          rappel();
+        }, dureeAnimation(duree));
+        animationsVisuellesTimersRef.current.push(timer);
+      };
+      setImpactsCombatClassique((courants) => [...courants,
+        { ...rpgMobaDecalerChiffres(impact, courants), token }].slice(-32));
+      programmerNettoyage(() => setImpactsCombatClassique((courants) => courants.filter((effet) => effet.token !== token)), 1200);
+      if (impact.projectileRate && !animationsReduites()) {
+        const tir = { ...impact.projectileRate, id: `classique-rate-${token}` };
+        setProjectilesVisibles((courants) => [...courants, tir].slice(-32));
+        programmerNettoyage(() => setProjectilesVisibles((courants) => courants.filter((autre) => autre.id !== tir.id)), 650);
+      }
+      if (res.resume?.coupsRapides?.some((coup) => coup.attaquantId === id && coup.rate && !coup.annule)) declencherMissEntites([id]);
+    }
     animerModificationsChamp(champAvant, res.annule ? [] : [id], debutJournal);
     for (const son of rpgSonsResolutionCombat(res.resume)) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran(cote === 'joueur' ? 'dealt' : 'received');
@@ -14430,6 +14460,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onTermine={(effectId) => setBalancesTenebres((current) => current.filter((autre) => autre.effectId !== effectId))}
           />
         ))}
+
+        {/* Même cinématique de contact que le MOBA, dans le repère de la table. */}
+        {impactsCombatClassique.map((impact) => impact.positions && <Fragment key={impact.token}>
+          {impact.choc && <span className="moba__exchange-clash rpg-classique-exchange-clash" aria-hidden="true" style={{ left: impact.choc.x, top: impact.choc.y }}><i /><i /></span>}
+          <svg className={`moba__impact-cinema rpg-classique-impact-cinema${impact.tirCible ? ' is-targeted' : ''}`} viewBox={`0 0 ${impact.positions.width} ${impact.positions.height}`} preserveAspectRatio="none" aria-hidden="true">
+            {impact.source && impact.destination && <>
+              <circle className="moba__impact-source" cx={impact.source.x} cy={impact.source.y} r="17" />
+              {!impact.tirCible && <line className="moba__impact-trail" x1={impact.source.x} y1={impact.source.y} x2={impact.destination.x} y2={impact.destination.y} pathLength="1" />}
+            </>}
+            {impact.impacts.map((marque, index) => marque.point && <g key={`${marque.id}-${index}`} className={`moba__impact-mark${marque.critique ? ' is-critical' : ''}`} transform={`translate(${marque.point.x} ${marque.point.y})`}>
+              <circle className="moba__impact-burst" r="22" />
+              <text className="moba__impact-number" x={marque.decalageX || undefined} y="-18" textAnchor="middle">−{marque.montant}</text>
+            </g>)}
+          </svg>
+        </Fragment>)}
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{impactsCombatClassique.map((impact) => impact.annonce).filter(Boolean).join(' ; ')}</p>
 
         {projectilesVisibles.map((tir) => (
           <span key={tir.id} className={`rpg-projectile-combat rpg-projectile-combat--${tir.variante}`}
