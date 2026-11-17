@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { cardArt, CARD_ART_LARGEUR, CARD_ART_HAUTEUR } from '../src/games/rpgCardArt.js';
 
 const illustrations = {
-  'gardienne-des-sables-ensevelis': 'ascension-souls-v2',
+  'gardienne-des-sables-ensevelis': 'sables-ensevelis-ames-grises-v1',
   'valkyrie-de-la-derniere-aurore': 'ascension-pegase-dore-v3',
   'amiral-des-abysses': 'ascension-souls-v2',
   'serpent-des-deux-rivages': 'ascension-souls-v2',

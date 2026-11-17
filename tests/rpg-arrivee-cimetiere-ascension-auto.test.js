@@ -75,12 +75,14 @@ for (const moba of [false,true]) for (const scenario of [
 
 for (const moba of [false,true]) test(`Gardienne : chaîne limitée à une activation par tour (${moba?'MOBA':'PvP'})`, () => {
  const d=partie(moba); d.joueur.main=['reanimation']; d.joueur.mana.sable=20;
- d.joueur.cimetiere=['gardienne-des-sables-ensevelis','viking-des-neiges','gardienne-des-sables-ensevelis'];
+ d.joueur.cimetiere=['gardienne-des-sables-ensevelis','gardienne-des-portes-de-sable','gardienne-des-sables-ensevelis'];
  const r=moba?rpgMobaLancerMagie(d,'joueur','reanimation',null,'left',null,{emplacementReanimation:0}):rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:'reanimation'});
  assert.ok(r.ok,JSON.stringify(r)); choisirCimetiere(d,'joueur','gardienne-des-sables-ensevelis');
- const c=rpgCartesRenfortChoisi(d,'joueur'); assert.deepEqual(c.map(x=>x.id),['viking-des-neiges']);
- const rr=moba?rpgMobaResoudreRecherche(d,'joueur',c[0].id,c[0].index):rpgPvpAppliquer(d,'joueur',{type:'choisir-renfort',index:c[0].index});
- assert.ok(rr.ok); assert.equal(d.joueur.creatures.length,2); assert.equal(d.joueur.creatures.find(e => e.carteId === 'viking-des-neiges').bouclier, 1); assert.ok(!d.renfortChoixEnAttente && !d.mobaRechercheEnAttente);
+ // Depuis le passage au coût 6 ou moins, les copies de la Gardienne restent
+ // admissibles : seul le Viking est choisi ici.
+ const c=rpgCartesRenfortChoisi(d,'joueur'); const choix=c.find(x=>x.id==='gardienne-des-portes-de-sable'); assert.ok(choix);
+ const rr=moba?rpgMobaResoudreRecherche(d,'joueur',choix.id,choix.index):rpgPvpAppliquer(d,'joueur',{type:'choisir-renfort',index:choix.index});
+ assert.ok(rr.ok); assert.equal(d.joueur.creatures.length,2); assert.equal(d.joueur.creatures.find(e => e.carteId === 'gardienne-des-portes-de-sable').bouclier, 1); assert.ok(!d.renfortChoixEnAttente && !d.mobaRechercheEnAttente);
  // Une seconde copie peut arriver, mais ne rouvre pas la capacité ce tour.
  d.joueur.main=['gardienne-des-sables-ensevelis']; d.joueur.invocationNormaleJouee=false;
  if(moba) d.moba.creaturesJouees.joueur=false;

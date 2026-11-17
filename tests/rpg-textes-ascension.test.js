@@ -31,7 +31,7 @@ test('Retour des ensevelis : les conditions et le choix restent lisibles', () =>
 
 test('Chaque soutien conserve sa source, sa sélection et ses contraintes essentielles', () => {
   const motifs = {
-    'gardienne-des-sables-ensevelis': /choisissez dans votre cimetière.*coût imprimé 3 ou moins.*spécialement.*bouclier avant son effet d’arrivée/,
+    'gardienne-des-sables-ensevelis': /choisissez une créature Sable.*coût imprimé 6 ou moins.*cimetière.*spécialement.*bouclier avant son effet d’arrivée/,
     'convoi-des-dunes': /choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière.*dans votre main/,
     'confluence-des-etincelles': /depuis votre main jusqu’à deux Djinns Braise : le premier de coût imprimé 1, puis le premier de coût 3/,
     'eveil-des-dunes': /premier Élémental Sable de coût imprimé 4 depuis le dessus de votre pioche/,
