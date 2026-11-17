@@ -95,3 +95,49 @@ test('depuis le centre conquis, chaque jauge légale permet de choisir son flanc
     globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+for (const complet of [false, true]) {
+  test(`${complet ? 'plateau illustré' : 'plateau simplifié'} : cible directe proposée contre une unique infiltration`, async () => {
+    const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' });
+    const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+    const oldWindow = globalThis.window, oldDocument = globalThis.document;
+    globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    let root;
+    try {
+      const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+      const { RPG_RENDU_MOBA } = complet ? await server.ssrLoadModule('/src/games/RpgDuelPage.jsx') : {};
+      const { rpgMobaNouveauDuel, rpgMobaJouerCreature } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+      const { rpgFinDeTour } = await server.ssrLoadModule('/src/games/rpgDuel.js');
+      let duel;
+      const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 }));
+      const props = { initialiser, onQuitter: () => {}, ...(complet ? { rendu: RPG_RENDU_MOBA } : {}) };
+      root = createRoot(document.getElementById('root'));
+      const render = () => act(async () => root.render(React.createElement(Board, props)));
+      const click = async (el) => { assert.ok(el); assert.equal(el.disabled, false); await act(async () => el.click()); };
+      await render(); await click(document.querySelector('.moba__mulligan .moba__primary'));
+      duel.joueur.main = ['ashigaru-des-braises'];
+      const a = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+      rpgFinDeTour(duel); duel.sorcier.main = ['ashigaru-des-braises'];
+      const c = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+      rpgFinDeTour(duel); a.ready = true; a.malInvocation = false; a.coupRapide = true;
+      duel.sorcier.main = []; duel.joueur.main = [];
+      await render(); await click(document.querySelector(`[data-moba-entity="${a.id}"] button`));
+      const health = document.querySelector('[data-moba-lane-hp="@moba:left:sorcier"]');
+      assert.equal(health.querySelector('.moba__attack-direct'), null);
+      c.infiltration = true; await render();
+      assert.ok(health.querySelector('.moba__attack-direct'), 'Infiltration de la seule créature ouvre la voie');
+      c.defenseurAccorde = true; await render();
+      assert.ok(health.querySelector('.moba__attack-direct'), 'l’exception reste valable si elle est Défenseur');
+      assert.equal(document.querySelector(`[data-moba-entity="${c.id}"] button`).disabled, false, 'Attaque ciblée peut aussi choisir cette créature');
+      await click(health.querySelector('.moba__attack-direct'));
+      assert.equal(duel.combatDeclare?.cibleIndividuelle.cibleId, null);
+      assert.equal(duel.combatDeclare?.cibleIndividuelle.voie, 'left');
+      await act(async () => new Promise(resolve => setTimeout(resolve, 650)));
+      assert.equal(duel.moba.lanes.find(lane => lane.id === 'left').hp.sorcier, 19);
+      assert.ok(duel.sorcier.creatures.some(e => e.id === c.id));
+    } finally {
+      if (root) await act(async () => root.unmount());
+      await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+    }
+  });
+}

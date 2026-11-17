@@ -651,8 +651,8 @@ export function iconePourLigne(carte, ligne = '') {
 /** La définition de chaque effet, au féminin de « la créature » (ou de la carte). */
 export const EFFET_DEFINITIONS = {
   reactionTourAdverse: 'Si sa condition est remplie, vous pouvez jouer cette carte pendant votre phase principale, sans sacrifice ni invocation normale. Sinon, vous pouvez l’invoquer normalement pendant votre tour.',
-  envol: 'Peut attaquer une créature accessible au sol ou en vol. Une attaque normale au sol ne peut pas la viser. Elle peut aussi attaquer directement même en présence de créatures adverses, sauf si un Défenseur est présent sur le champ ou dans la voie visée.',
-  infiltration: 'Ignore la priorité des Défenseurs pour viser une créature, sans déroger aux règles d’attaque directe. Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser.',
+  envol: 'Peut attaquer une créature accessible au sol ou en vol. Une attaque normale au sol ne peut pas la viser. Elle peut aussi attaquer directement même en présence de créatures adverses, sauf si un Défenseur est présent sur le champ ou dans la voie visée ; une unique créature adverse avec Infiltration permet toutefois une attaque directe.',
+  infiltration: 'Ignore la priorité des Défenseurs pour viser une créature, sans déroger aux règles d’attaque directe. Ne peut pas être visée par une attaque normale, mais une Attaque ciblée peut la viser. Si elle est la seule créature adverse sur le champ ou dans la voie visée, l’adversaire peut attaquer directement.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   furtif: 'Cette créature est détruite à la fin du tour où elle arrive en jeu.',
@@ -660,7 +660,7 @@ export const EFFET_DEFINITIONS = {
   coupCritique: 'En combat, 15 % de chances de multiplier les dégâts contre une créature ou l’adversaire : ×4 pour Kagutsuchi, ×2 pour les autres créatures, les armes et le Serment de la forge.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
   blocage: 'À chaque attaque adverse qui la cible légalement, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Les bonus se cumulent, même si l’attaque est ensuite annulée ou ratée.',
-  defenseur: 'Une attaque adverse sans Infiltration doit la viser en priorité si elle est accessible. Elle empêche aussi les attaques directes, y compris celles avec Envol ou Infiltration. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
+  defenseur: 'Une attaque adverse sans Infiltration doit la viser en priorité si elle est accessible. Elle empêche aussi les attaques directes, sauf si elle est la seule créature adverse et possède Infiltration. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
   esquive: () => '15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Elle peut aussi esquiver la réplique lorsqu’elle attaque. Les effets alliés ne sont pas esquivés.',

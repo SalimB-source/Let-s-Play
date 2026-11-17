@@ -182,7 +182,14 @@
 }
 /* Les sonars Résonance / Aura / Malédiction gardent, eux aussi, leur filet
    coloré le long de l'écu. */
-.rpg-card.rpg-carte-bouclier > .rpg-card__resonance--aura::after { background-color: rgba(250, 205, 90, .58); }
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance:not(.rpg-card__resonance--garde):not(.rpg-card__resonance--malediction):not(.rpg-card__resonance--aura)::after {
+  background-color: rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .34);
+  filter: drop-shadow(0 0 4px rgba(var(--rpg-bouclier-teinte, 186, 132, 255), .3));
+}
+.rpg-card.rpg-carte-bouclier > .rpg-card__resonance.rpg-card__resonance--aura:not(.rpg-card__resonance--garde)::after {
+  background-color: rgba(250, 205, 90, .34);
+  filter: drop-shadow(0 0 4px rgba(250, 205, 90, .3));
+}
 .rpg-card.rpg-carte-bouclier > .rpg-card__resonance--malediction::after { background-color: rgba(178, 146, 245, .58); }
 
 /* Le sonar de garde conserve ses ondes, sans filet autour de l'écu. */

@@ -104,19 +104,17 @@ test('TableCard distingue les Défenseurs sans changer leurs règles', async () 
 
 test('les Défenseurs posés reprennent la forme d’écu, sans cadre Le Sablier', () => {
   // La silhouette est celle de `rpg-bouclier.css` : aplat marine, masque
-  // d'écu et fin trait rouge. Aucun calque d'habillage n'est rendu dans le
+  // d'écu sans filet décoratif. Aucun calque d'habillage n'est rendu dans le
   // DOM — tout passe par les `mask-image` et deux pseudo-éléments.
   assert.match(css, /--rpg-ecusson-aplat:/, 'aplat marine qui suit la silhouette');
   assert.match(css, /--rpg-ecusson-masque:/, 'masque d’écu des calques pleine face');
   assert.match(css, /--rpg-ecusson-effet-masque:/, 'masque des effets');
-  assert.match(css, /--rpg-ecusson-trait-defenseur:/, 'fin trait rouge de Défenseur');
+  assert.doesNotMatch(css, /--rpg-ecusson-trait-defenseur:/, 'aucun filet décoratif de Défenseur');
   assert.match(css, /preserveAspectRatio='none'/, 'la découpe suit toutes les tailles de carte');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier > :is\([\s\S]*?\.rpg-card__img[\s\S]*?\)[^{]*\{\s*-webkit-mask-image: var\(--rpg-ecusson-masque\)/,
     'l’illustration est découpée dans l’écu');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::before \{[\s\S]*?filter: drop-shadow\(0 7px 12px/,
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::before \{[\s\S]*?filter: drop-shadow\(0 10px 12px/,
     'l’ombre portée suit l’alpha de l’écu');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__resonance--garde::after \{[\s\S]*?--rpg-ecusson-trait-defenseur/,
-    'le trait rouge épouse l’écu, au-dessus de l’illustration');
   assert.doesNotMatch(css, /rpg-card__liseret-garde|rpg-card__ombre-garde/,
     'aucun calque d’habillage supplémentaire n’est nécessaire');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
@@ -126,7 +124,7 @@ test('les Défenseurs posés reprennent la forme d’écu, sans cadre Le Sablier
   assert.doesNotMatch(duel, /rpg-card__liseret-garde|rpg-card__ombre-garde/,
     'la table et l’aperçu ne rendent aucun calque de contour');
   assert.match(duel, /AuraOndes variante="garde"/,
-    'le sonar Défenseur reste le repère qui porte le trait de l’écu');
+    'le sonar Défenseur reste présent sans filet');
 
   // Le cadre Le Sablier reste inchangé pour les autres types.
   const cadre = lire('rpg-cadre-carte.css');
