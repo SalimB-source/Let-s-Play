@@ -2071,3 +2071,11 @@ ombre renforcée qui suit la pointe de l'écu, aura et sonar orange, pastilles
 ATQ/DÉF, pierres d'effets et icône `i-defenseur`. Aucun `outline` sur la carte,
 aucun `clip-path` global : la silhouette vient des `mask-image` appliqués couche
 par couche. Le décalage `translate: 0 -20cqw` du pied reste en place.
+
+### Mise à jour — retrait du cadre SVG des créatures
+
+`RpgCadreCarte` ne dessine plus le cadre Le Sablier pour les créatures et les
+héros, y compris les créatures d'Ascension, dans toutes les vues. Les sorts et
+les armes le conservent (y compris le Sabre maudit), ainsi que les autres types
+de cartes inchangés. La silhouette d'écu des Défenseurs posés sur le plateau
+reste distincte : son liseré suit la couleur de leurs éléments, hybrides inclus.

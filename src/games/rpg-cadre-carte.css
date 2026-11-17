@@ -23,16 +23,16 @@
 :has(> .rpg-cadre-carte) > img:has(+ .rpg-cadre-carte) {
   clip-path: var(--rpg-cadre-decoupe);
 }
-/* Toutes les faces, y compris Défenseur, utilisent le même cadre rectangulaire. */
+/* Les faces qui gardent le cadre utilisent le même fond rectangulaire. */
 :has(> .rpg-cadre-carte) {
   background-image: none !important;
   background-color: transparent !important;
 }
 :has(> .rpg-cadre-carte)::after { clip-path: var(--rpg-cadre-decoupe); }
 
-/* Le flottement d’image ne doit pas décaler sa découpe hors du cadre. */
+/* Les créatures sans cadre gardent leur flottement discret au survol. */
 @media (hover: hover) and (pointer: fine) {
-  .rpg-card--type-creature:is(:hover, :focus-visible) > img:has(+ .rpg-cadre-carte) {
+  .rpg-card--type-creature:is(:hover, :focus-visible) > img.rpg-card__img {
     animation: rpg-cadre-peinture-flottante 2.2s ease-in-out infinite;
   }
 }

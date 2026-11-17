@@ -3624,7 +3624,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // vignette, comme une arme portée, sans doubler la face principale.
   // Une carte posée reprend son état ; toutes les faces restent rectangulaires.
   const face = (
-    <div className="rpg-hover-card-preview__empile">
+    <div className={`rpg-hover-card-preview__empile${entite && armesEquipees.length > 0 ? ' has-arme' : ''}`}>
     <div
       className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}${entite?.bouclierVisuel ? ' rpg-carte-bouclier' : ''}`}
       style={estEnFurie ? undefined : cardFrameStyle(carte)}
@@ -6523,7 +6523,7 @@ function SfxReactifsDuel({ vainqueur, phaseDuelActive, cartesEnDestruction, impa
     prevDestructionCountRef.current = cartesEnDestruction.length;
   }, [cartesEnDestruction]);
   useEffect(() => {
-    if (impactEcran) {
+    if (impactEcran && impactEcran.mode !== 'combat') {
       jouerSfx(impactEcran.mode === 'received' ? 'degats' : 'degats_sorcier');
       jouerSfx('impact', 0.08);
     }
@@ -10417,7 +10417,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (timerImpactRef.current !== timer) return;
       timerImpactRef.current = null;
       setImpactEcran((current) => current?.token === token ? null : current);
-    }, 900);
+    }, mode === 'combat' ? dureeAnimation(900) : 900);
     timerImpactRef.current = timer;
   };
 
@@ -10697,6 +10697,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((animation) => animation.type === 'impact-combat'
         && !idsEsquives.has(animation.cible?.entiteId))
       .map((animation) => animation.cible?.entiteId));
+    // Un seul tremblement par résolution, y compris si les deux cartes meurent.
+    // Le journal est partagé par les combats collectifs et le PvP ; le choc
+    // individuel n'est émis qu'après une blessure effectivement résolue.
+    if (!mouvementReduit && (impactsCombat.size > 0
+      || animationsCombatNouvelles.some((animation) => animation.type === 'choc-creatures'))) {
+      declencherImpactEcran('combat');
+    }
     if (!mouvementReduit) {
       for (const animation of animationsCombatNouvelles) {
         if (animation.type === 'esquive') {
@@ -13732,7 +13739,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ref={tableRef}
         inert={viewport.portrait || mulliganOuvert || sacrificeFx || selectionAscension.apercuId || duel.renfortChoixEnAttente?.cote === 'joueur' ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
-        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
+        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` ${impactEcran.mode === 'combat' ? 'rpg-combat-screen-shake' : 'rpg-screen-shake'}--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
         data-anim-reduite={rpgAnimationsReduites(animReduite) ? 'true' : undefined}
         data-anim-vitesse={String(vitesseAnim)}

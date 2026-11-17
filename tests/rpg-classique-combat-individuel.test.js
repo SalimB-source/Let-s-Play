@@ -47,9 +47,32 @@ test('déclaration puis échange simultané, sans blocage ni phase d’attaque g
   const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
   assert.ok(r.ok, JSON.stringify(r));
   assert.equal(r.resume.blessures.length, 2);
+  assert.equal(d.combatAnimations.filter((e) => e.type === 'choc-creatures').length, 1);
+  assert.ok(JSON.parse(JSON.stringify(d)).combatAnimations.some((e) => e.type === 'choc-creatures'), 'le signal traverse le PvP');
   assert.equal(d.joueur.creatures.length, 0); assert.equal(d.sorcier.creatures.length, 0);
   assert.equal(d.phase, 'principale'); assert.equal(d.attaqueJouee, null);
   assert.equal(d.combatDeclare, null); assert.equal(d.fenetreReponse, false);
+});
+
+test('le signal de secousse exclut les attaques directes, ratées ou sans dégâts', () => {
+  const signal = (d) => (d.combatAnimations ?? []).filter((e) => e.type === 'choc-creatures');
+  const direct = partie(), seul = poser(direct, 'joueur');
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(direct, 'joueur', seul.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(direct, 'joueur').ok);
+  assert.equal(signal(direct).length, 0);
+
+  const rate = partie(), archer = poser(rate, 'joueur'), cible = poser(rate, 'sorcier');
+  archer.coupRapide = true;
+  rpgReglerHasard(rate, () => 0.01);
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(rate, 'joueur', archer.id, cible.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(rate, 'joueur').ok);
+  assert.equal(signal(rate).length, 0);
+
+  const nul = partie(), a = poser(nul, 'joueur'), c = poser(nul, 'sorcier');
+  a.atk = 0; c.atk = 0;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(nul, 'joueur', a.id, c.id).ok);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(nul, 'joueur').ok);
+  assert.equal(signal(nul).length, 0);
 });
 
 test('deux créatures attaquent séparément ; la même ne peut attaquer deux fois', () => {

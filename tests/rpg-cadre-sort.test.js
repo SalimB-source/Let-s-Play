@@ -4,23 +4,90 @@ import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { CARD_FRAME_COLORS, RPG_ASCENSION_CARDS, RPG_DUEL_CARDS, RPG_ELEMENTS } from '../src/games/rpgCards.js';
+import { JSDOM } from 'jsdom';
+import { CARD_FRAME_COLORS, RPG_ASCENSION_CARDS, RPG_DUEL_CARDS, RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js';
 
 const lire = (chemin) => readFileSync(new URL(`../src/games/${chemin}`, import.meta.url), 'utf8');
 
-test('toutes les cartes utilisent le cadre Le Sablier', async () => {
+test('les créatures et héros sont sans cadre SVG, les autres cartes le conservent', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'silent' });
   try {
     const { default: Cadre } = await vite.ssrLoadModule('/src/games/RpgCadreCarte.jsx');
     const cadre = /class="rpg-cadre-carte rpg-cadre-carte--sablier"(?: style="[^"]*")? aria-hidden="true"/;
     for (const carte of [...RPG_DUEL_CARDS, ...RPG_ASCENSION_CARDS, ...['magie', 'arme', 'creature', 'hero', 'terrain', 'site'].map(kind => ({ kind }))]) {
-      assert.match(renderToStaticMarkup(React.createElement(Cadre, { carte })), cadre, carte.id ?? carte.kind);
+      const html = renderToStaticMarkup(React.createElement(Cadre, { carte }));
+      if (['creature', 'hero'].includes(carte.kind)) assert.equal(html, '', carte.id ?? carte.kind);
+      else assert.match(html, cadre, carte.id ?? carte.kind);
     }
     assert.equal(renderToStaticMarkup(React.createElement(Cadre)), '');
     assert.equal(renderToStaticMarkup(React.createElement(Cadre, { carte: {} })), '');
   } finally {
     await vite.close();
   }
+});
+
+test('la table, le mulligan et les aperçus retirent seulement le cadre des créatures', async () => {
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { TableCard, HoverCardPreview, RPG_RENDU_MOBA } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const doc = (element) => new JSDOM(renderToStaticMarkup(element)).window.document;
+    for (const id of ['chien-du-guet', 'feriel', 'gardien-de-la-porte-ardente', RPG_ASCENSION_CARDS[0].id]) {
+      const carte = cardById(id);
+      const entite = { id: 'c1', carteId: id, name: carte.name, atk: carte.atk, def: carte.def, pv: carte.def, pvMax: carte.def, ready: true };
+      for (const moba of [null, { className: 'moba__slot' }]) {
+        const table = doc(React.createElement(TableCard, { entite, cote: 'joueur', moba }));
+        assert.ok(table.querySelector('.rpg-card__img'), id);
+        assert.equal(table.querySelector('.rpg-card > .rpg-cadre-carte'), null, id);
+      }
+      for (const variante of ['', 'catalogue', 'appui-long']) {
+        const face = doc(React.createElement(HoverCardPreview, { carte, entite, variante })).querySelector('.rpg-hover-card-preview__face');
+        assert.ok(face?.querySelector('img'), id);
+        assert.equal(face.querySelector(':scope > .rpg-cadre-carte'), null, id);
+      }
+      const mulligan = doc(React.createElement(RPG_RENDU_MOBA.CarteMulligan, { carte, index: 0, onBasculer: () => {} }));
+      assert.equal(mulligan.querySelector('.rpg-cadre-carte'), null, id);
+    }
+    for (const id of ['trait-de-braise', 'armure-de-cendres', 'sabre-maudit', 'source-de-bimini']) {
+      const carte = cardById(id);
+      for (const variante of ['', 'catalogue', 'appui-long']) {
+        const apercu = doc(React.createElement(HoverCardPreview, { carte, variante }));
+        // Le survol rapide des non-créatures est volontairement textuel.
+        if (variante) assert.ok(apercu.querySelector('.rpg-hover-card-preview__face > .rpg-cadre-carte'), `${id} ${variante}`);
+      }
+      const mulligan = doc(React.createElement(RPG_RENDU_MOBA.CarteMulligan, { carte, index: 0, onBasculer: () => {} }));
+      assert.ok(mulligan.querySelector('.rpg-cadre-carte'), id);
+    }
+  } finally { await vite.close(); }
+});
+
+test('atelier, guide et Souk partagent le même retrait sélectif', async () => {
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { default: Atelier } = await vite.ssrLoadModule('/src/games/RpgDeckAtelier.jsx');
+    const { default: Guide } = await vite.ssrLoadModule('/src/games/RpgCardGuide.jsx');
+    const { default: Booster } = await vite.ssrLoadModule('/src/games/RpgBoosterOuverture.jsx');
+    const doc = (element) => new JSDOM(renderToStaticMarkup(element)).window.document;
+    const art = (carte) => `/cartes/${typeof carte === 'string' ? carte : carte.id}.jpg`;
+    const atelier = doc(React.createElement(Atelier, { artUrl: art, onEnregistrer: () => {}, onAnnuler: () => {} }));
+    for (const [id, cadre] of [['chien-du-guet', false], ['feriel', false], ['trait-de-braise', true], ['armure-de-cendres', true]]) {
+      const face = atelier.querySelector(`.rpg-atelier__carte[data-card-id="${id}"] .rpg-atelier__carte-art`);
+      assert.ok(face?.querySelector('img'), id);
+      assert.equal(Boolean(face.querySelector('.rpg-cadre-carte')), cadre, id);
+    }
+    const guide = doc(React.createElement(Guide, { cardArt: art, onExit: () => {} }));
+    for (const face of guide.querySelectorAll('.rpg-card-guide__example')) {
+      assert.ok(face.querySelector('img'));
+      assert.equal(face.querySelector('.rpg-cadre-carte'), null);
+    }
+    assert.ok(guide.querySelectorAll('.rpg-card-guide__example').length);
+    const ids = ['chien-du-guet', 'feriel', 'trait-de-braise', 'armure-de-cendres', 'sabre-maudit', 'chien-du-guet', 'feriel'];
+    const souk = doc(React.createElement(Booster, { ouverture: { cartes: ids.map((id) => ({ id })) }, cardArt: art, onFermer: () => {} }));
+    for (const [id, cadre] of [['chien-du-guet', false], ['feriel', false], ['trait-de-braise', true], ['armure-de-cendres', true], ['sabre-maudit', true]]) {
+      const face = souk.querySelector(`.rpg-souk__carte[data-card-id="${id}"]`);
+      assert.ok(face?.querySelector('img'), id);
+      assert.equal(Boolean(face.querySelector('.rpg-cadre-carte')), cadre, id);
+    }
+  } finally { await vite.close(); }
 });
 
 test('la couleur suit les éléments et les hybrides conservent chaque couleur', async () => {
@@ -32,19 +99,19 @@ test('la couleur suit les éléments et les hybrides conservent chaque couleur',
     const source = lire('assets/cadre-le-sablier.svg');
     for (const element of RPG_ELEMENTS) {
       const attendu = source.replaceAll('#ffd60b', CARD_FRAME_COLORS[element].color);
-      for (const kind of ['creature', 'hero', 'magie', 'arme', 'terrain', 'site']) {
+      for (const kind of ['magie', 'arme', 'terrain', 'site']) {
         assert.equal(svg({ kind, element }), attendu, `${kind} ${element}`);
       }
     }
-    const hybride = { kind: 'creature', colors: ['tenebres', 'braise', 'eau', 'braise'] };
+    const hybride = { kind: 'magie', colors: ['tenebres', 'braise', 'eau', 'braise'] };
     const dessin = svg(hybride);
     assert.equal(dessin, svg({ ...hybride, colors: ['eau', 'tenebres', 'braise'] }), 'ordre canonique et doublons');
     assert.match(dessin, /gradientUnits="userSpaceOnUse"/);
     const teintes = [...dessin.matchAll(/stop-color="(#[a-f0-9]+)"/gi)].map(m => m[1]);
     assert.deepEqual(teintes, ['braise', 'eau', 'tenebres'].flatMap(e => [CARD_FRAME_COLORS[e].color, CARD_FRAME_COLORS[e].color]));
     assert.equal(dessin.replace(/<linearGradient[^]*?<\/linearGradient>/, '').replaceAll('url(#cadre-elements)', '#ffd60b'), source, 'seules les couleurs du SVG changent');
-    assert.doesNotMatch(html({ kind: 'creature' }), /style=/, 'sans élément, repli sur le dessin doré');
-    assert.doesNotMatch(html({ kind: 'creature', element: 'inconnu' }), /style=/);
+    assert.doesNotMatch(html({ kind: 'arme' }), /style=/, 'sans élément, repli sur le dessin doré');
+    assert.doesNotMatch(html({ kind: 'magie', element: 'inconnu' }), /style=/);
   } finally { await vite.close(); }
 });
 
@@ -86,7 +153,7 @@ test('les anciens fichiers de cadres de cartes sont supprimés', async () => {
   }
 });
 
-test('les vues de secours de la réserve et du rituel utilisent aussi le cadre', () => {
+test('les vues de secours passent par le composant de cadre sélectif', () => {
   const reserve = lire('RpgReserveAscension.jsx');
   assert.match(reserve, /rpg-ascension-preview-fallback-art[\s\S]*?<img[^>]+\/><RpgCadreCarte carte=\{carte\} \/>/);
   assert.match(reserve, /rpg-ascension-ritual-art[\s\S]*?<img[^>]+\/><RpgCadreCarte carte=\{carte\} \/>/);

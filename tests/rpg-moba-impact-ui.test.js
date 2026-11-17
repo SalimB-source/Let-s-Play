@@ -127,3 +127,61 @@ test('les chiffres restent annoncés en mouvement réduit et Rejouer nettoie les
     await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('le choc entre créatures secoue le plateau MOBA, sauf en mouvement réduit', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { rpgChoisirCouleurMana } = await server.ssrLoadModule('/src/games/rpgDuel.js');
+    const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.click()); };
+    const ok = (result) => assert.equal(result.ok, true, JSON.stringify(result));
+    for (const reduite of [false, true]) {
+      dom.window.localStorage.setItem('letsplay_sablier_anim_reduite_v1', reduite ? 'on' : 'off');
+      let duel;
+      const props = { onQuitter: () => {}, initialiser: () => (duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), rng: () => .5 })) };
+      root = createRoot(document.getElementById('root'));
+      const render = () => act(async () => root.render(React.createElement(Board, props)));
+      await render(); await click(document.querySelector('.moba__mulligan .moba__primary'));
+      ok(engine.rpgMobaTerminerTour(duel, 'joueur')); ok(engine.rpgMobaPasserFinDeTour(duel, 'sorcier'));
+      duel.sorcier.mana.braise = 10; duel.sorcier.main = ['ashigaru-des-braises'];
+      const cible = engine.rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+      assert.ok(cible); cible.pv = cible.pvMax = 20; cible.atk = 0;
+      ok(engine.rpgMobaTerminerTour(duel, 'sorcier')); ok(engine.rpgMobaPasserFinDeTour(duel, 'joueur'));
+      // Une éventuelle sélection de couleur dépend du deck, pas du combat.
+      if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', 'braise'));
+      duel.joueur.mana.braise = 10; duel.joueur.main = ['ashigaru-des-braises', 'ashigaru-des-braises'];
+      const attaquant = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+      duel.moba.creaturesJouees.joueur = false;
+      const second = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 1).entite;
+      assert.ok(attaquant); assert.ok(second);
+      for (const creature of [attaquant, second]) { creature.ready = true; creature.malInvocation = false; }
+      dom.window.localStorage.setItem('letsplay_sablier_anim_vitesse_v1', '2');
+      await render();
+      await click(document.querySelector(`[data-moba-entity="${attaquant.id}"] button`));
+      await click(document.querySelector(`[data-moba-entity="${cible.id}"] button`));
+      assert.ok(duel.combatDeclare);
+      assert.equal(document.querySelector('[data-screen-impact="combat"]'), null, 'pas de secousse à la déclaration');
+      await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
+      assert.ok(duel.combatAnimations.some((event) => event.type === 'choc-creatures'));
+      assert.equal(Boolean(document.querySelector('.moba__surface[data-screen-impact="combat"]')), !reduite);
+      if (!reduite) {
+        assert.ok(document.querySelector('.moba__surface.rpg-combat-screen-shake--a'));
+        await click(document.querySelector(`[data-moba-entity="${second.id}"] button`));
+        await click(document.querySelector(`[data-moba-entity="${cible.id}"] button`));
+        await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
+        assert.ok(document.querySelector('.moba__surface.rpg-combat-screen-shake--b'), 'le second choc relance la secousse');
+        await act(async () => new Promise((resolve) => setTimeout(resolve, 1850)));
+        assert.equal(document.querySelector('.moba__surface[data-screen-impact="combat"]'), null);
+      }
+      await act(async () => root.unmount()); root = null;
+    }
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

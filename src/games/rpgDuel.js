@@ -9097,6 +9097,12 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
           },
           onFurie: (entite, camp) => resume.furies.push({ entiteId: entite.id, carteId: entite.carteId, cote: camp }),
         });
+        // Un choc de créatures réellement résolu, transmis aussi au PvP :
+        // ni cible disparue, ni tir raté, esquive ou dégâts nuls ne secouent
+        // l'arène. Une seule entrée suffit pour les blessures simultanées.
+        if (resume.blessures.some((blessure) => blessure.montant > 0)) {
+          journaliserAnimationCombat(duel, { type: 'choc-creatures' });
+        }
         for (const esquive of esquives ?? []) {
           const defenseur = duel[esquive.cote]?.creatures.find((e) => e.id === esquive.entiteId);
           if (defenseur) riposteDeContreAttaque(duel, defenseur, esquive.source);
