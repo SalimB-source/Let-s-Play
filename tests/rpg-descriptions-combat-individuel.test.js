@@ -8,10 +8,10 @@ const description = (id, cle) => effetsDetailles(cardById(id)).pastilles.find((p
 
 test('les mots-clés décrivent les cibles individuelles et leurs priorités', () => {
   assert.match(description('valkyrie-au-corbeau', 'envol'), /au sol ou en vol/);
-  assert.match(description('valkyrie-au-corbeau', 'envol'), /Sans créature volante adverse accessible.*directement/);
+  assert.match(description('valkyrie-au-corbeau', 'envol'), /directement.*sauf si un Défenseur/);
   assert.match(description('danseuse-des-ombres-de-dune', 'infiltration'), /ignore la priorité des Défenseurs/i);
   assert.match(description('danseuse-des-ombres-de-dune', 'infiltration'), /attaque normale.*Attaque ciblée/);
-  assert.match(description('feriel', 'coupRapide'), /créature adverse ou directement.*priorité/);
+  assert.match(description('feriel', 'coupRapide'), /créature adverse ou directement.*règles/);
   assert.match(description('feriel', 'coupRapide'), /15 %.*capacités peuvent riposter/);
   assert.match(description('gardienne-des-portes-de-sable', 'defenseur'), /priorité.*accessible/);
   assert.match(description('gardien-de-la-porte-ardente', 'defenseur'), /priorité.*accessible/);

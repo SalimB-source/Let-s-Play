@@ -86,6 +86,14 @@ try {
       assert.equal(etat.classeCadre, !sansCadreCarte, `${surface} ${id} : classe de cadre selon le type`);
       const cadre = face.locator(':scope > .rpg-cadre-carte--sablier');
       assert.equal(await cadre.count(), sansCadreCarte ? 0 : 1, `${surface} ${id} : cadre Le Sablier selon le type`);
+      if (id === 'guerrier-au-bouclier-rond' && surface === 'table') {
+        const etatGarde = await face.evaluate(el => ({
+          ombre: getComputedStyle(el, '::before').filter,
+          filet: getComputedStyle(el.querySelector('.rpg-card__resonance--garde'), '::after').content,
+        }));
+        assert.match(etatGarde.ombre, /drop-shadow.*drop-shadow/, 'ombre portée de l’écu renforcée');
+        assert.equal(etatGarde.filet, 'none', 'pas de filet de Défenseur');
+      }
       if (sansCadreCarte) assert.equal(etat.clip, 'none', `${surface} ${id} : illustration rectangulaire sans découpe`);
       else {
         assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
@@ -93,6 +101,35 @@ try {
         assert.notEqual(await cadre.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
       }
 
+    }
+    // Les miniatures de production sont de vraies faces à deux calques,
+    // en classique et dans les composants partagés avec la Conquête.
+    for (const [surface, id] of [['sort', 'trait-de-braise'], ['pile', 'trait-de-braise'], ['pile', 'sabre-maudit'], ['pile', 'chien-du-guet'], ['pile', 'feriel']]) {
+      for (const mode of (surface === 'sort' ? ['joueur', 'sorcier'] : ['joueur'])) {
+        await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html?${surface}=${id}&camp=${mode}${touch && surface === 'sort' ? '&touch' : ''}`, { waitUntil: 'networkidle' });
+        const face = page.locator(surface === 'sort' ? '.rpg-spell-played__art' : '.rpg-card-pile__card--top');
+        const image = face.locator(':scope > img');
+        const cadre = face.locator(':scope > .rpg-cadre-carte--sablier');
+        const sansCadre = ['creature', 'hero'].includes(cardById(id).kind);
+        assert.equal(await cadre.count(), sansCadre ? 0 : 1, `${surface} ${id} : cadre sélectif`);
+        assert.ok(await image.evaluate(img => img.naturalWidth > 0 && img.getBoundingClientRect().width > 0));
+        if (!sansCadre) {
+          assert.match(await image.evaluate(img => getComputedStyle(img).clipPath), /^polygon\(/);
+          assert.equal(await cadre.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
+          assert.notEqual(await cadre.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+          const dimensions = await face.evaluate(el => {
+            const face = el.getBoundingClientRect(), cadre = el.querySelector('.rpg-cadre-carte').getBoundingClientRect();
+            return [face.width, face.height, cadre.width, cadre.height];
+          });
+          assert.ok(dimensions[0] > 0 && dimensions[1] > 0 && Math.abs(dimensions[0] - dimensions[2]) < 1 && Math.abs(dimensions[1] - dimensions[3]) < 1, `${surface} ${id} : cadre sur la face`);
+        }
+        if (surface === 'pile') {
+          await face.hover();
+          assert.equal(await page.locator('body').getAttribute('data-pile-survolee'), id);
+          await face.click();
+          assert.equal(await page.locator('body').getAttribute('data-pile-cliquee'), 'oui');
+        }
+      }
     }
     assert.equal(requetesDecoupe, 0, 'aucune requête de SVG de découpe externe');
     await page.close();

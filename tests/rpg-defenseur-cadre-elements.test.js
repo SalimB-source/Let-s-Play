@@ -65,4 +65,7 @@ test('les styles Défenseur dessinent l’écu, jamais un cadre de carte', () =>
     'l’agrandissement posé reste indépendant du cadre');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/,
     'la position des statistiques reste inchangée');
+  assert.doesNotMatch(css, /--rpg-ecusson-trait-defenseur/, 'aucun dessin de contour Défenseur');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::before\s*\{[^}]*drop-shadow\(0 10px 12px[^}]*drop-shadow\(0 6px 8px/s, 'ombre portée renforcée sans toucher aux repères');
+  assert.match(css, /\.rpg-card__resonance:not\(\.rpg-card__resonance--garde\)/, 'le filet des autres effets subsiste sans contour Défenseur');
 });

@@ -238,7 +238,7 @@ test('Attaque ciblée : les effets de défense ne partent pas sans duel ordinair
 
 test('frappe directe : sans duel, l’effet « à l’attaque » du Sahir ne part pas', () => {
   const { d, a, c } = partie();
-  a.carteId = 'sahir-des-braises'; a.infiltration = true; a.atk = 2;
+  a.carteId = 'sahir-des-braises'; a.infiltration = true; a.envol = true; a.atk = 2;
   const pv = c.pv, hp = mobaVoie(d.moba, 'left').hp.sorcier;
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).ok);
   const result = rpgMobaResoudreAttaqueIndividuelle(d, 'joueur');
@@ -398,11 +398,10 @@ test('Tojiro en réponse ne sacrifie pas la cible en présence du Djinn attaquan
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp); assert.ok(rpgMobaPlacementCoherent(d));
 });
 
-test('une créature normale frappe la voie occupée sans devoir viser sa créature', () => {
+test('une créature normale ne frappe pas directement une voie occupée', () => {
   const { d, a, c } = partie();
   assert.ok(c); const hp = mobaVoie(d.moba, 'left').hp.sorcier;
-  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).ok);
-  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
-  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp - a.atk);
-  assert.ok(d.sorcier.creatures.some(e => e.id === c.id));
+  assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null).raison, 'cible');
+  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, hp);
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, c.id).ok);
 });

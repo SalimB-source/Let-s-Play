@@ -177,3 +177,27 @@ test('les vues de secours passent par le composant de cadre sélectif', () => {
   assert.match(reserve, /rpg-ascension-card-fallback[\s\S]*?<img[^>]+\/><RpgCadreCarte carte=\{c\} \/>/);
   assert.equal((lire('RpgDuelPage.jsx').match(/<img src=\{cardArt\(terrain\.carteId\)\} alt="" \/>\s*<RpgCadreCarte carte=\{carte\} \/>/g) ?? []).length, 2);
 });
+
+test('les miniatures de sort joué et de cimetière portent aussi le cadre sélectif', async () => {
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { RPG_RENDU_MOBA } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const doc = (element) => new JSDOM(renderToStaticMarkup(element)).window.document;
+    for (const camp of ['joueur', 'sorcier']) {
+      const fiche = doc(React.createElement(RPG_RENDU_MOBA.SpellAnnouncement, {
+        annonce: { carteId: 'trait-de-braise', cible: { nom: 'Cible' } }, camp,
+      }));
+      assert.ok(fiche.querySelector('.rpg-spell-played__art > img + .rpg-cadre-carte--sablier'));
+      assert.match(fiche.querySelector('[role="status"]').getAttribute('aria-label'), /Trait de braise/i);
+      assert.ok(fiche.querySelector('.rpg-spell-played__target'));
+    }
+    for (const [id, cadre] of [['trait-de-braise', true], ['sabre-maudit', true], ['chien-du-guet', false], ['feriel', false]]) {
+      const pile = doc(React.createElement(RPG_RENDU_MOBA.CardPile, { count: 1, label: 'Cimetière', variant: 'graveyard', topCard: id, onClick: () => {} }));
+      const face = pile.querySelector('.rpg-card-pile__card--top');
+      assert.equal(face.dataset.cardId, id);
+      assert.ok(face.querySelector(':scope > img'));
+      assert.equal(Boolean(face.querySelector(':scope > img + .rpg-cadre-carte--sablier')), cadre, id);
+      assert.equal(pile.querySelector('[role="button"]').getAttribute('tabindex'), '0');
+    }
+  } finally { await vite.close(); }
+});

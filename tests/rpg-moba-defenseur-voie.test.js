@@ -21,7 +21,7 @@ function partie(side) {
   d[side].main = ['ashigaru-des-braises'];
   const attaquant = rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite;
   assert.ok(garde?.defenseur && cible && attaquant);
-  attaquant.ready = true; attaquant.coupRapide = true; attaquant.atk = 4;
+  attaquant.ready = true; attaquant.malInvocation = false; attaquant.coupRapide = true; attaquant.envol = true; attaquant.atk = 4;
   d[enemy].main = [];
   return { d, garde, cible, attaquant, enemy };
 }
@@ -33,7 +33,7 @@ for (const side of ['joueur', 'sorcier']) {
       assert.deepEqual(rpgMobaCiblesIndividuelles(d, side, attaquant.id), { cibles: [garde.id, cible.id], directe: true });
       const id = destination === 'directe' ? null : destination === 'cible' ? cible.id : garde.id;
       const pvAvant = destination === 'directe' ? mobaVoie(d.moba, 'left').hp[enemy] : d[enemy].creatures.find(e => e.id === id).pv;
-      assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, side, attaquant.id, id).ok);
+      { const result = rpgMobaDeclarerAttaqueIndividuelle(d, side, attaquant.id, id); assert.ok(result.ok, JSON.stringify(result)); }
       assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, side).ok);
       const pvApres = destination === 'directe' ? mobaVoie(d.moba, 'left').hp[enemy] : (d[enemy].creatures.find(e => e.id === id)?.pv ?? 0);
       assert.ok(pvApres < pvAvant);
@@ -78,7 +78,10 @@ test('le centre conquis participe aux deux voies et conserve sa case après la c
   attaquant.ready = true; attaquant.coupRapide = true;
   assert.deepEqual(rpgMobaCiblesIndividuelles(d, 'joueur', attaquant.id, 'left'), { cibles: [local.id], directe: false });
   assert.deepEqual(rpgMobaCiblesIndividuelles(d, 'joueur', attaquant.id, 'right'), { cibles: [loin.id], directe: false });
-  local.defenseur = false; loin.defenseur = false;
+  // Les cartes imprimées Défenseur gardent ce statut même si le marqueur est effacé.
+  // Remplacer les deux gardes par des créatures ordinaires pour tester Envol.
+  local.carteId = loin.carteId = 'ashigaru-des-braises';
+  local.defenseur = false; loin.defenseur = false; attaquant.envol = true;
   assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', attaquant.id, null).raison, 'voie-obligatoire');
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', attaquant.id, null, 'right').ok);
   assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
