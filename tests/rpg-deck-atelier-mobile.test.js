@@ -87,6 +87,11 @@ test('sur mobile : possédées par défaut, onglets persistants, sauvegarde depu
     assert.equal(container.querySelector('.rpg-atelier__toggles--fin button').getAttribute('aria-pressed'), 'true');
     assert.equal(container.querySelector('.rpg-atelier__carte.is-locked'), null, 'les cartes non possédées sont masquées au départ');
     assert.match(container.querySelector('.rpg-atelier__mobile-compteur').textContent, /1\/30/);
+    const chienInitial = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
+    const ashigaru = container.querySelector('.rpg-atelier__carte[data-card-id="ashigaru-des-braises"]');
+    assert.ok(chienInitial.classList.contains('is-picked'), 'les cartes initiales sont grisées sur mobile');
+    assert.ok(!ashigaru.classList.contains('is-picked'), 'une carte absente du deck reste en couleur');
+    assert.match(chienInitial.querySelector('.rpg-atelier__carte-ouvrir').getAttribute('aria-label'), /1 exemplaire dans le deck/);
     const filtrePossedees = container.querySelector('.rpg-atelier__toggles--fin button');
     await act(async () => filtrePossedees.click());
     assert.ok(container.querySelector('.rpg-atelier__carte.is-locked'), 'les cartes verrouillées restent consultables à la demande');
