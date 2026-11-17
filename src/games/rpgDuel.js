@@ -65,8 +65,10 @@ import {
 
 /* Tout le monde PART à 25 PV : le joueur comme chaque sorcier adverse. La
  * puissance d'un étage du mode Histoire ne gonfle plus les PV (bonus à 0) —
- * elle reste affichée sur la fiche d'étage comme indice de difficulté, la
- * vraie difficulté venant du deck et du profil d'IA du sorcier.
+ * elle reste affichée sur la fiche d'étage comme indice de difficulté, et
+ * c'est elle qui règle le **pacte** de l'étage (`rpgDifficulteTours.js`) :
+ * PV de départ et bouclier supplémentaires, cartes de plus en main, plancher
+ * d'IA. La difficulté vient donc du pacte et du profil d'IA du sorcier.
  *
  * Mais 25 n'est plus un PLAFOND : c'est un point de départ. Tout gain de vie
  * (soin, Tribut, transfert) qui porte la vie au-dessus du maximum courant
@@ -470,7 +472,7 @@ export const rpgSorcierPv = (puissance = 0) =>
   RPG_PV_SORCIER_BASE + RPG_PV_SORCIER_PAR_PUISSANCE * Math.max(0, puissance);
 
 /**
- * Les **atouts** d'un sorcier d'étage — le « pacte » de la Tour Oubliée.
+ * Les **atouts** d'un sorcier d'étage — le « pacte » de l'étage.
  *
  * Un étage peut déclarer `atouts: { pv, mana, main, bouclier }` : des PV de
  * départ supplémentaires, des sources de mana permanentes offertes, des cartes
@@ -478,6 +480,12 @@ export const rpgSorcierPv = (puissance = 0) =>
  * sur la fiche d'étage** — aucun atout caché — et **borné** : même une faute de
  * frappe dans les données ne peut pas produire un duel absurde. Les valeurs
  * absentes ou illisibles valent zéro.
+ *
+ * `mana` est un vestige des règles à terrains : le Sablier se joue aujourd'hui
+ * sans mana (`rpgPeutPayer` ne regarde que le prix en PV), donc un atout mana
+ * ne change rien au duel. Il reste accepté pour les sauvegardes et les fiches
+ * anciennes, mais la pression des Tours n'en accorde plus
+ * (`rpgDifficulteTours.js`).
  */
 export const RPG_ATOUTS_MAX = Object.freeze({ pv: 20, mana: 3, main: 3, bouclier: 10 });
 

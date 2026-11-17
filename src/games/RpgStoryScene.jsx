@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cardById } from './rpgCards.js';
 import { cartesReveleesParEtage } from './rpgCollection.js';
 import { GAINS } from './rpgCredits.js';
-import { rpgSorcierPv } from './rpgDuel.js';
+import { rpgAtoutsSorcier, rpgSorcierPv } from './rpgDuel.js';
 import { etageHistoireParId } from './rpgStoryTours.js';
 import { acteCourantRecit, cleCurseurRecit } from './rpgStoryFlow.js';
 import {
@@ -333,7 +333,11 @@ export default function RpgStoryScene({
   const choixDef = choixEnAttente ? questionChoix(scene.choix) : null;
   const envoyer = (type, extra = {}) => onEvent({ type, curseur, ...extra });
   const epilogue = curseur.type === 'fin' ? texteEpilogueActe(acte.id, recit.choix) : null;
-  const pvAdversaire = rpgSorcierPv(etage?.puissance ?? 0);
+  // Les PV annoncés avant le duel sont ceux que le pacte de l'étage
+  // accorde vraiment : la pression des Tours (`rpgDifficulteTours.js`) donne
+  // des PV de départ au gardien, et la fiche ne peut pas promettre 25 quand
+  // la table en pose 45.
+  const pvAdversaire = rpgSorcierPv(etage?.puissance ?? 0) + rpgAtoutsSorcier(etage?.atouts).pv;
   const styleAdversaire = LIBELLE_STYLE_IA[etage?.ia?.style] ?? 'Équilibré';
   const niveauAdversaire = LIBELLE_NIVEAU_IA[etage?.ia?.niveau] ?? 'Gardien';
 

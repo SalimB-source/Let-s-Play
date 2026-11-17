@@ -93,6 +93,7 @@ import {
   tourEstDebloquee,
   tourEstTerminee,
 } from './rpgStory.js';
+import { libellePacte } from './rpgDifficulteTours.js';
 import {
   deckHistoire,
   etageHistoireParId,
@@ -6564,15 +6565,10 @@ const HorlogePvp = memo(function HorlogePvp({ echeance, statut, vainqueur, pvpRe
   );
 });
 
-/** Le pacte d'un étage, en clair : « Pacte : +12 PV · +1 mana · +1 carte ». */
-function libellePacteEtage(atouts) {
-  if (!atouts) return '';
-  const morceaux = [];
-  if (atouts.pv) morceaux.push(`+${atouts.pv} PV`);
-  if (atouts.main) morceaux.push(`+${atouts.main} carte${atouts.main > 1 ? 's' : ''}`);
-  if (atouts.bouclier) morceaux.push(`bouclier ${atouts.bouclier}`);
-  return morceaux.length ? `Pacte : ${morceaux.join(' · ')}` : '';
-}
+/** Le pacte d'un étage, en clair — même texte que la fiche d'étage de la
+ * tour (`libellePacte`, `rpgDifficulteTours.js`). La pression des Tours étant
+ * calculée depuis la puissance, toutes les fiches parlent d'une seule voix. */
+const libellePacteEtage = libellePacte;
 
 // The MOBA reuses the same card and detail rendering as the classic table.
 export const RPG_RENDU_MOBA = Object.freeze({ AnnonceTour, HoverCardPreview, dureeAnnonceTour: RPG_ANNONCE_TOUR_DUREE, TableCard, ManaCost, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite, CercleMagique, FaceDownHand, CardPile, CimetiereCarousel, RoueDeFeu, TempeteSable, EclairDuMarteau, FluxManaTrack, FullscreenIcon, BlockerArrows, ChoixManaEssai, VolumesDuel, PhaseTrack, CombatFeedEvent });
