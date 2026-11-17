@@ -2007,9 +2007,12 @@ img{max-width:100%}
   [dir=\"rtl\"] .mobile-menu-hud{right:auto;left:0}
 
   .hero{padding:104px 0 92px}
-  /* Cadrage portrait du héros : soleil+palmiers au coin haut-gauche (derrière
-     le voile), Lucia à droite, sac et voiture en bas. */
-  .hero-bg{object-position:left 18%}
+  /* Cadrage portrait du héros : Lucia décalée à droite, soleil et palmiers
+     derrière le voile à gauche. L'image fournie est un panoramique très large
+     (2,1:1) — tout cadrage vertical coupe forcément Jason ou la voiture, mais
+     il faut éviter l'effet « personnage excentré à droite » : ce point
+     d'accroche ramène assez de décor à gauche sans cacher Lucia. */
+  .hero-bg{object-position:30% 20%}
   /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
      ne tenait plus dans la colonne et le titre du héros passait à quatre
      lignes. */
