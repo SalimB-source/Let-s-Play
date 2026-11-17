@@ -623,5 +623,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-16",
     "section": "Actualités tech"
+  },
+  "/news/gta-6-discord-theme-vice-city": {
+    "title": "GTA VI VICE CITY HABILLE DISCORD. — Let’s Play",
+    "description": "Discord propose un thème Vice City, une icône et un style de nom à l’approche de GTA VI. Annoncé le 16 novembre, cet habillage temporaire est accessible à tous jusqu’au 13 décembre, puis plus longtemps avec certaines offres Nitro.",
+    "image": "https://cdn.prod.website-files.com/5f9072399b2640f14d6a2bf4/6afb29184f11f9480a13ccc4_image1.png",
+    "type": "article",
+    "published": "2026-11-17",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/mike-ward-modeste-netflix-17-novembre": {
+    "title": "MIKE WARD : MODESTE LE STAND-UP PASSE SUR NETFLIX. — Let’s Play",
+    "description": "Netflix programme Mike Ward : Modeste le 17 novembre. Le spectacle de l’humoriste québécois aborde notamment les rencontres après un divorce et les décisions impulsives, dans un registre destiné aux adultes.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQdIBQ3JtCWwU10LjXcVXsz170YOpZsVCFiWtJdlYyOoDvN-LD8HNgFKHdNOqeeOmcVGDUo6em6N7gHhVv-2FQUuOTOE0d3fjeNdQkvj4kKHRNveXKFpR8BMmnA_yuY1qln3dX-cxR7hi2-lmLg.jpg?r=057",
+    "type": "article",
+    "published": "2026-11-17",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/gemini-notebook-sites-interactifs": {
+    "title": "GEMINI NOTEBOOK LES SOURCES DEVIENNENT INTERACTIVES. — Let’s Play",
+    "description": "Google annonce que Gemini Notebook peut transformer les sources d’un carnet en sites interactifs : fiches de révision, tableaux de bord ou suivis de projets. Le déploiement commence sur le web pour les utilisateurs de 18 ans et plus.",
+    "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/blog_hero_periodic_table3_2784x1566.max-1440x810.png",
+    "type": "article",
+    "published": "2026-11-17",
+    "section": "Actualités tech"
   }
 };

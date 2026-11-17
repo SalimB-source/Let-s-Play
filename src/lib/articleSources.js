@@ -26,6 +26,8 @@ export function officialSourceUrl(value) {
     if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
     const host = url.hostname.toLowerCase();
     // Only these individually reviewed pages, never the whole hosting platform.
+    // Official Discord product announcement, not a community server or user content.
+    if (url.href === 'https://discord.com/blog/vice-city-theme-available-in-discord') return url.href;
     if (url.href === 'https://www.facebook.com/photo/?fbid=1787284180064227&set=pb.100063479863011.-2207520000') return url.href;
     // The S-GAME publisher listing supplies an official Phantom Blade Zero visual.
     if (url.href === 'https://store.epicgames.com/p/phantom-blade-zero-e78a35') return url.href;
