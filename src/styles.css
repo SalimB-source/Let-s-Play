@@ -864,15 +864,21 @@ img{max-width:100%}
   padding:120px 0 110px;
 }
 /* Le héros affiche l'image Let's Play en plein cadre, le voile `.hero-shade`
-   gardant le texte lisible à gauche. */
+   gardant le texte lisible à gauche. Le `<picture>` qui l'enveloppe ne doit pas
+   changer sa mise en page : il n'existe que pour choisir la variante portrait
+   en téléphone (voir `Home.jsx`). */
+.hero-picture{position:absolute;inset:0;display:block}
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
-  /* Cadrage : les visuels du héros sont des compositions horizontales dont le
-     sujet (personnages) occupe la moitié HAUTE. Recadrés en bandeau sur
-     téléphone, ils coupaient les têtes — d'où ce cadrage légèrement remonté,
-     valable pour toutes les images du héros. */
-  object-position:center 32%;
+  /* Cadrage : les visuels du héros sont des panoramiques 16:9 / 2,1:1 dont le
+     sujet occupe la moitié haute. Recadrés en bandeau sur téléphone, ils
+     coupaient les têtes — cadrage légèrement remonté sur ordinateur. Sur
+     téléphone, c'est une variante portrait dédiée qui porte son propre
+     cadrage (voir `Home.jsx` et `viceHeroPortraitImage`) ; on descend un peu
+     le point d'accroche pour que le soleil et les palmiers restent visibles
+     dans la partie voilée à gauche. */
+  object-position:center 30%;
   background-position:center;background-size:cover;background-repeat:no-repeat;
   transform:scale(1.06);
   animation:hero-drift 24s ease-in-out infinite alternate;
@@ -2001,6 +2007,9 @@ img{max-width:100%}
   [dir=\"rtl\"] .mobile-menu-hud{right:auto;left:0}
 
   .hero{padding:104px 0 92px}
+  /* Cadrage portrait du héros : soleil+palmiers au coin haut-gauche (derrière
+     le voile), Lucia à droite, sac et voiture en bas. */
+  .hero-bg{object-position:left 18%}
   /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
      ne tenait plus dans la colonne et le titre du héros passait à quatre
      lignes. */

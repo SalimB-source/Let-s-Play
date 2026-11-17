@@ -12,7 +12,7 @@ import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-17';
-import { viceHeroImage } from '../theme/viceTheme';
+import { viceHeroImage, viceHeroPortraitImage } from '../theme/viceTheme';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -214,16 +214,21 @@ export default function Home() {
       <section className="hero" id="top">
         {/* Visuel du héros : plein cadre, avec le voile existant pour
             conserver le contraste du contenu éditorial. C'est la clé d'art
-            « Vice City » fournie par le propriétaire du site, seule trace
-            restante de l'habillage GTA 6 (voir src/theme/viceTheme.js). */}
-        <img
-          className="hero-bg hero-bg--keyart"
-          src={viceHeroImage}
-          alt=""
-          aria-hidden="true"
-          fetchPriority="high"
-          decoding="async"
-        />
+            GTA 6 (Jason et Lucia) fournie par le propriétaire du site, seule
+            trace restante de l'habillage (voir src/theme/viceTheme.js).
+            `srcSet` : l'image large est un panoramique — sur téléphone, la
+            variante portrait est la seule qui garde un sujet lisible. */}
+        <picture className="hero-picture">
+          <source media="(max-width:800px)" srcSet={viceHeroPortraitImage} />
+          <img
+            className="hero-bg hero-bg--keyart"
+            src={viceHeroImage}
+            alt=""
+            aria-hidden="true"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
