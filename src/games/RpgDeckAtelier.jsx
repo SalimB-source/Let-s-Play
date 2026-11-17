@@ -763,7 +763,7 @@ export function RpgDeckAtelier({
                     <button
                       type="button"
                       className="rpg-atelier__carte-ouvrir rpg-card-catalogue__ouvrir"
-                      aria-label={`Agrandir ${carte.name}${!possedee ? ', carte verrouillée' : ''}`}
+                      aria-label={`Agrandir ${carte.name}${!possedee ? ', carte verrouillée' : ''}${dansLeDeck > 0 ? `, ${dansLeDeck} exemplaire${dansLeDeck > 1 ? 's' : ''} dans le deck` : ''}`}
                       onClick={() => onOpenCardPreview?.(carte)}
                     />
                   </span>

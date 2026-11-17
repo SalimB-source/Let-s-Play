@@ -149,8 +149,17 @@ test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, faces por
   assert.equal(carte.justifySelf, 'center', 'les cartes restent centrées dans leur colonne');
   assert.match(atelierCss, /@media \(max-width: 540px\)[\s\S]*?\.rpg-atelier__carte \{ width: 100%; \}/,
     'les cartes conservent leur largeur lisible sur téléphone');
-  const art = window.getComputedStyle(window.document.querySelector('.rpg-atelier__carte-art'));
+  const face = window.document.querySelector('.rpg-atelier__carte-art');
+  const art = window.getComputedStyle(face);
   assert.equal(art.aspectRatio, '4 / 5', 'la face adopte le format portrait du catalogue');
+  assert.notEqual(art.filter, 'grayscale(1) brightness(.82)', 'une carte absente du deck garde ses couleurs');
+  const elementCarte = window.document.querySelector('.rpg-atelier__carte');
+  elementCarte.classList.add('is-picked');
+  assert.equal(window.getComputedStyle(face).filter, 'grayscale(1) brightness(.82)', 'une carte présente est grisée');
+  assert.notEqual(window.getComputedStyle(elementCarte.querySelector('.rpg-atelier__losanges')).filter, 'grayscale(1) brightness(.82)', 'les indicateurs de stock restent colorés');
+  assert.notEqual(window.getComputedStyle(elementCarte.querySelector('.rpg-atelier__carte-ajout')).filter, 'grayscale(1) brightness(.82)', 'la commande reste lisible');
+  elementCarte.classList.remove('is-picked');
+  assert.notEqual(window.getComputedStyle(face).filter, 'grayscale(1) brightness(.82)', 'la couleur revient après retrait');
 
   const astuce = window.getComputedStyle(window.document.querySelector('.rpg-atelier__astuce'));
   assert.equal(astuce.display, 'none', 'l’astuce tactile est masquée sur souris');
@@ -251,6 +260,7 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
     assert.equal(carteChien.querySelectorAll('.rpg-atelier__losange.is-dispo').length, 2,
       'deux losanges disponibles avant ajout');
     assert.equal(carteChien.querySelectorAll('.rpg-atelier__losange.is-pris').length, 0);
+    assert.equal(carteChien.classList.contains('is-picked'), false);
 
     const carteMythiqueVerrouillee = container.querySelector('.rpg-atelier__carte[data-card-id="kraken"]');
     assert.equal(carteMythiqueVerrouillee.querySelectorAll('.rpg-atelier__losange').length, 1,
@@ -273,6 +283,9 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
     await act(async () => {
       container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-ajout').click();
     });
+    assert.ok(carteChien.classList.contains('is-picked'), 'grisé dès le premier exemplaire');
+    assert.equal(carteChien.querySelector('.rpg-atelier__carte-ajout').disabled, false, 'un second exemplaire reste ajoutable');
+    assert.match(carteChien.querySelector('.rpg-atelier__carte-ouvrir').getAttribute('aria-label'), /1 exemplaire dans le deck/);
     await act(async () => {
       container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-ajout').click();
     });
@@ -280,6 +293,9 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
     const chienApres = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
     assert.equal(chienApres.querySelectorAll('.rpg-atelier__losange.is-pris').length, 2,
       'les deux losanges s’allument quand les deux exemplaires sont dans le deck');
+    assert.ok(chienApres.classList.contains('is-picked'));
+    assert.equal(chienApres.querySelector('.rpg-atelier__carte-ajout').disabled, true, 'le quota reste respecté');
+    assert.match(chienApres.querySelector('.rpg-atelier__carte-ouvrir').getAttribute('aria-label'), /2 exemplaires dans le deck/);
     const ligneChien = container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');
     await act(async () => {
       ligneChien.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
@@ -333,11 +349,14 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
     });
     assert.equal(container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"] .rpg-atelier__ligne-qte').textContent, '1x',
       'le bouton « − » de la grille retire explicitement un exemplaire');
+    assert.ok(carteChien.classList.contains('is-picked'), 'reste grisé tant qu’un exemplaire demeure');
     await act(async () => {
       container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"] .rpg-atelier__ligne-compte button').click();
     });
     assert.equal(container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]'), null,
       'le bouton « − » de la pile retire le dernier exemplaire');
+    assert.equal(carteChien.classList.contains('is-picked'), false, 'la carte retrouve ses couleurs');
+    assert.doesNotMatch(carteChien.querySelector('.rpg-atelier__carte-ouvrir').getAttribute('aria-label'), /dans le deck/);
 
     await act(async () => {
       root.unmount();

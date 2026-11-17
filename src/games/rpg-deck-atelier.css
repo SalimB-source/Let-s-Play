@@ -395,6 +395,12 @@
   height: 100%;
   object-fit: cover;
 }
+/* Une carte déjà présente dans le deck se distingue dès le premier exemplaire.
+   Seule la face est grisée : les losanges de stock et les boutons +/− restent
+   colorés, lisibles et utilisables tant que le quota l'autorise. */
+.rpg-atelier__carte.is-picked .rpg-atelier__carte-art {
+  filter: grayscale(1) brightness(.82);
+}
 .rpg-atelier__carte-art::after {
   content: "";
   position: absolute;
