@@ -108,6 +108,33 @@ export async function checkNav(assert) {
     await page.unmount();
   }
 
+  const localizedPage = await mountAt('/community');
+  const localizedNav = localizedPage.node.querySelector('.nav-primary');
+  const communityLink = localizedNav.querySelector('a.active');
+  const indicator = localizedNav.querySelector('.nav-pill-indicator');
+  assert.equal(communityLink?.querySelector('.nav-link-label')?.textContent, 'Communauté', 'la page communauté est active en français');
+  // jsdom ne calcule pas la mise en page : ces rectangles simulés font varier
+  // la position de l’onglet quand son libellé est traduit, comme dans le navigateur.
+  localizedNav.getBoundingClientRect = () => ({ left: 100, width: 500 });
+  communityLink.getBoundingClientRect = () => {
+    const label = communityLink.querySelector('.nav-link-label').textContent;
+    const left = label === 'Community' ? 310 : 225;
+    return { left, width: label === 'Community' ? 92 : 112 };
+  };
+  await act(async () => window.dispatchEvent(new window.Event('resize')));
+  assert.equal(indicator.style.left, '125px', 'la pastille s’aligne sous le lien français actif');
+  assert.equal(indicator.style.width, '112px', 'la pastille prend la largeur du lien français');
+
+  await click(localizedPage.node.querySelector('.lang-switch-button'));
+  const englishOption = [...localizedPage.node.querySelectorAll('.lang-switch-option')]
+    .find((option) => option.querySelector('.lang-switch-code')?.textContent === 'EN');
+  assert.ok(englishOption, 'le sélecteur propose l’anglais');
+  await click(englishOption);
+  assert.equal(communityLink.querySelector('.nav-link-label').textContent, 'Community', 'le libellé actif est traduit en anglais');
+  assert.equal(indicator.style.left, '210px', 'la pastille suit le lien après le chargement du dictionnaire');
+  assert.equal(indicator.style.width, '92px', 'la pastille adopte aussi sa nouvelle largeur');
+  await localizedPage.unmount();
+
   const games = await mountAt('/jeu');
   assert.equal(games.node.querySelector('.nav-item--menu').classList.contains('active'), false, 'Actus reste éteint dans Nos jeux');
   await games.unmount();
