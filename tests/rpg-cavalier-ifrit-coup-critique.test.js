@@ -20,18 +20,18 @@ function classique(id, side = 'joueur') {
 }
 for (const id of ids) {
   test(`${id} : fiche, capacités et cumul avec arme`, () => {
-    const c = cardById(id); assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
-    assert.match(c.text, /Coup critique.*15 %.*doubler/);
+    const c = cardById(id); assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
+    assert.match(c.text, /Coup critique.*25 %.*doubler/);
     assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
     const { d, a } = classique(id); assert.deepEqual(a.coupCritique, c.coupCritique);
     if (id === 'ifrit-al-ahmar') { assert.equal(a.coupRapide, true); assert.deepEqual(c.resonance, 2); assert.equal(c.protection.contre, 'eau'); }
     else { assert.equal(a.rapidite, true); assert.equal(c.destruction.amount, 2); }
     d.joueur.main.push('lance-de-la-lune-givree'); assert.ok(rpgJouerArme(d, 'joueur', 'lance-de-la-lune-givree', a.id).ok);
-    assert.deepEqual(a.coupCritique, { chance: .3, fois: 2 });
+    assert.deepEqual(a.coupCritique, { chance: .5, fois: 2 });
     d.joueur.main.push('cuirasse-de-sel'); assert.ok(rpgJouerArme(d, 'joueur', 'cuirasse-de-sel', a.id).ok);
-    assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+    assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 });
   });
-  for (const [jet, multiple] of [[.149, 2], [.15, 1]]) test(`${id} : attaque directe classique au seuil ${jet}`, () => {
+  for (const [jet, multiple] of [[.249, 2], [.25, 1]]) test(`${id} : attaque directe classique au seuil ${jet}`, () => {
     const { d, a } = classique(id); const pv = d.sorcier.pv; rpgReglerHasard(d, () => jet);
     assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
     const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');

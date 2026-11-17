@@ -141,7 +141,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['fennec-des-decombres'],
     title: 'Rapidité et Esquive changent les échanges',
-    text: 'Rapidité permet d’attaquer dès l’arrivée ; sans elle, une créature attend le début du prochain tour de son camp, mais peut défendre immédiatement. Esquive donne 15 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés.',
+    text: 'Rapidité permet d’attaquer dès l’arrivée ; sans elle, une créature attend le début du prochain tour de son camp, mais peut défendre immédiatement. Esquive donne 25 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur la cible ne porte pas du tout. Les effets alliés ne sont pas esquivés ; deux sources d’Esquive se cumulent.',
   },
   {
     id: 'contre-attaque',

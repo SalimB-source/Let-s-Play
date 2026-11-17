@@ -33,17 +33,17 @@ function dragon(d, side, pvp = false) {
 }
 test('fiche : Défenseur conservé, Coup critique et autres capacités visibles', () => {
   const c = cardById(ID); assert.equal(c.defenseur, true); assert.ok(c.esquive && c.contreAttaque);
-  assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
+  assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
   const pastilles = effetsDetailles(c).pastilles; for (const cle of ['coupCritique', 'defenseur', 'esquive', 'contreAttaque']) assert.ok(pastilles.find(p => p.cle === cle)?.description);
 });
-for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) for (const jet of [.149, .15]) test(`Dragon ${mode} ${side} : critique direct au seuil ${jet}`, () => {
+for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) for (const jet of [.249, .25]) test(`Dragon ${mode} ${side} : critique direct au seuil ${jet}`, () => {
   const moba = mode === 'moba', pvp = mode === 'pvp', adv = side === 'joueur' ? 'sorcier' : 'joueur';
-  const d = partie(moba, pvp), a = dragon(d, side, pvp); assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+  const d = partie(moba, pvp), a = dragon(d, side, pvp); assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 });
   const before = moba ? mobaVoie(d.moba, 'left').hp[adv] : d[adv].pv; rpgReglerHasard(d, () => jet);
   const decl = moba ? rpgMobaDeclarerAttaqueIndividuelle(d, side, a.id, null, 'left') : pvp ? rpgPvpAppliquer(d, side, { type: 'attaquer', declarer: true, attaquants: [a.id] }) : rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null);
   assert.ok(decl.ok, JSON.stringify(decl));
   const r = moba ? rpgMobaResoudreAttaqueIndividuelle(d, side) : pvp ? rpgPvpAppliquer(d, adv, { type: 'bloquer', blocages: {} }) : rpgResoudreAttaqueIndividuelleClassique(d, side);
-  assert.ok(r.ok, JSON.stringify(r)); assert.equal(moba ? mobaVoie(d.moba, 'left').hp[adv] : d[adv].pv, before - (jet < .15 ? 14 : 7));
+  assert.ok(r.ok, JSON.stringify(r)); assert.equal(moba ? mobaVoie(d.moba, 'left').hp[adv] : d[adv].pv, before - (jet < .25 ? 14 : 7));
   if (moba) assert.ok(rpgMobaPlacementCoherent(d));
 });
 for (const mode of ['classique', 'pvp', 'moba']) test(`Dragon ${mode} : Défenseur prioritaire et critique en riposte`, () => {

@@ -54,7 +54,7 @@ test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => 
   assert.equal(values('braise-et-sable').kind, 'arme');
   assert.equal(values('braise-et-sable').bonus.atk, 1);
   assert.equal(values('braise-et-sable').donne.coupRapide, true);
-  assert.equal(values('braise-et-sable').donne.coupCritique, 0.15);
+  assert.equal(values('braise-et-sable').donne.coupCritique, 0.25);
   assert.equal(values('braise-et-sable').durabilite, 1);
 });
 

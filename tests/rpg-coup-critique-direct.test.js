@@ -33,7 +33,7 @@ function equipe(d, side, a, sabre = false) {
 }
 for (const side of ['joueur', 'sorcier']) {
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
-  for (const [rng, fois] of [[.149, 4], [.15, 1]]) {
+  for (const [rng, fois] of [[.249, 4], [.25, 1]]) {
     test(`${side} : critique imprimé sur une attaque directe classique (tirage ${rng})`, () => {
       const { d, a } = classique(side); rpgReglerHasard(d, () => rng);
       const pv = d[enemy].pv;
@@ -53,7 +53,7 @@ for (const side of ['joueur', 'sorcier']) {
     assert.ok(result.ok, JSON.stringify(result)); assert.equal(d[enemy].pv, pv - a.atk * 4);
     assert.ok(d.log.some(line => /Coup critique.*4 fois/.test(line)));
   });
-  for (const [rng, multiplicateur] of [[.149, 2], [.15, 1]]) {
+  for (const [rng, multiplicateur] of [[.249, 2], [.25, 1]]) {
     test(`${side} : la Lance peut critiquer directement une voie MOBA (tirage ${rng})`, () => {
       const deck = Array(30).fill('ashigaru-des-braises');
       const d = rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
@@ -76,7 +76,7 @@ for (const side of ['joueur', 'sorcier']) {
 
 test('Lance et critique imprimé se cumulent aussi contre le sorcier', () => {
   const { d, a } = classique('joueur'); equipe(d, 'joueur', a);
-  assert.deepEqual(a.coupCritique, { chance: .3, fois: 4 });
+  assert.deepEqual(a.coupCritique, { chance: .5, fois: 4 });
   rpgReglerHasard(d, () => .2);
   const pv = d.sorcier.pv;
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);

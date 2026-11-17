@@ -20,15 +20,15 @@ function jouer(d, side, carte) {
 }
 test('Sanguinaire : fiche, pastille et dégâts d’arrivée restent distincts du critique', () => {
   const c = cardById(id);
-  assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
-  assert.match(c.text, /Coup critique.*15 %.*doubler/);
+  assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
+  assert.match(c.text, /Coup critique.*25 %.*doubler/);
   assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
   const d = classique(); const cible = jouer(d, 'sorcier', 'chien-du-guet');
   cible.pv = cible.pvMax = cible.def = 10;
   rpgReglerHasard(d, () => 0); const a = jouer(d, 'joueur', id);
   assert.equal(cible.pv, 9); assert.deepEqual(a.coupCritique, c.coupCritique);
 });
-for (const [jet, multiple] of [[.149, 2], [.15, 1]]) {
+for (const [jet, multiple] of [[.249, 2], [.25, 1]]) {
   test(`Sanguinaire : attaque directe au seuil ${jet}`, () => {
     const d = classique(); const a = jouer(d, 'joueur', id); a.ready = true; a.malInvocation = false;
     rpgReglerHasard(d, () => jet); const pv = d.sorcier.pv;

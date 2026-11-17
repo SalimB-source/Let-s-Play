@@ -25,13 +25,13 @@ function classique(id, side = 'joueur') {
 for (const id of ids) {
   test(`${id} : coup critique imprimé, pastille et ancienne Attaque ciblée`, () => {
     const carte = cardById(id);
-    assert.deepEqual(carte.coupCritique, { chance: .15, fois: 2 });
+    assert.deepEqual(carte.coupCritique, { chance: .25, fois: 2 });
     assert.equal(carte.coupRapide, true);
     assert.ok(pastillesPourCarte(carte).some(p => p.cle === 'coupCritique'));
-    assert.match(effetsDetailles(carte).pastilles.find(p => p.cle === 'coupCritique').description, /15 %.*doubler.*créature ou l’adversaire/);
-    assert.deepEqual(classique(id).a.coupCritique, { chance: .15, fois: 2 });
+    assert.match(effetsDetailles(carte).pastilles.find(p => p.cle === 'coupCritique').description, /25 %.*doubler.*créature ou l’adversaire/);
+    assert.deepEqual(classique(id).a.coupCritique, { chance: .25, fois: 2 });
   });
-  for (const [rng, multiple] of [[.149, 2], [.15, 1]]) {
+  for (const [rng, multiple] of [[.249, 2], [.25, 1]]) {
     test(`${id} : critique classique contre le sorcier (tirage ${rng})`, () => {
       const { duel, a } = classique(id); const pv = duel.sorcier.pv;
       rpgReglerHasard(duel, () => rng);
@@ -77,10 +77,10 @@ test('un équipement critique cumule sa chance sans effacer le critique imprimé
   for (const id of ids) {
     const { duel, a } = classique(id); duel.joueur.main.push('lance-de-la-lune-givree');
     assert.ok(rpgJouerArme(duel, 'joueur', 'lance-de-la-lune-givree', a.id).ok);
-    assert.deepEqual(a.coupCritique, { chance: .3, fois: 2 });
+    assert.deepEqual(a.coupCritique, { chance: .5, fois: 2 });
     duel.joueur.main.push('cuirasse-de-sel');
     assert.ok(rpgJouerArme(duel, 'joueur', 'cuirasse-de-sel', a.id).ok);
-    assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+    assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 });
   }
 });
 

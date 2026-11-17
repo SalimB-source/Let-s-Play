@@ -1845,7 +1845,7 @@ test('Serment de la forge accorde Coup critique sans Attaque ciblée puis expire
   const result = rpgMobaLancerMagie(duel, 'joueur', 'serment-de-la-forge', null, 'left');
   assert.equal(result.ok, true, JSON.stringify(result));
   assert.equal(a.atk, 3); assert.equal(a.coupRapide, false);
-  assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+  assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 });
   rpgFinDeTour(duel); assert.equal(a.coupCritique, null); assert.equal(a.atk, 1);
 });
 
@@ -4866,7 +4866,7 @@ test('Serment reads Daimyō at resolution after the defender removes its anchor'
     assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'serment-de-la-forge', null, null, null, { ouvrirReponse: true }).sortEnAttente, true);
     if (removeAnchor) assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'ressac', anchor.id).renvoiMain, true);
     assert.equal(rpgMobaPasserSort(duel, 'sorcier').ok, true);
-    assert.equal(ally.atk, removeAnchor ? 3 : 4); assert.equal(ally.coupRapide, false); assert.deepEqual(ally.coupCritique, { chance: .15, fois: 2 });
+    assert.equal(ally.atk, removeAnchor ? 3 : 4); assert.equal(ally.coupRapide, false); assert.deepEqual(ally.coupCritique, { chance: .25, fois: 2 });
   }
 });
 
@@ -5849,7 +5849,7 @@ for (const caster of ['joueur', 'sorcier']) test(`Sabre maudit : annonce, armure
   const paid = JSON.stringify(duel[caster].mana);
   const res = rpgMobaPasserSort(duel,defense); assert.equal(res.ok,true,JSON.stringify(res));
   assert.deepEqual([bearer.atk,bearer.pv,bearer.pvMax],[before[0]+2,before[1]+1,before[2]+1]);
-  assert.equal(bearer.volDeVie,true); assert.equal(bearer.coupCritique.chance,0.15); assert.deepEqual(bearer.armes,['sabre-maudit']);
+  assert.equal(bearer.volDeVie,true); assert.equal(bearer.coupCritique.chance,0.25); assert.deepEqual(bearer.armes,['sabre-maudit']);
   assert.equal(JSON.stringify(duel[caster].mana),paid);
   bearer.ready = true; bearer.attaquee = false; rpgReglerHasard(duel,()=>.5);
   mobaInfliger(duel.moba,defense,'right',5); const legacy = duel[caster].pv;
@@ -7568,7 +7568,7 @@ test('Javelot MOBA : sa rupture conserve Attaque ciblée imprimée et le critiqu
     assert.equal(rpgMobaJouerArme(duel,'joueur','javelot-du-beffroi',porteur.id).ok,true);
     if(id==='gardienne-des-portes-de-sable')assert.equal(rpgMobaLancerMagie(duel,'joueur','serment-de-la-forge',null,'left').ok,true);
     porteur.ready=true;assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);assert.equal(rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true}).ok,true);
-    assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.deepEqual(porteur.coupCritique,{chance:.15,fois:2});rpgFinDeTour(duel);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.deepEqual(porteur.coupCritique,id==='tislit-des-aures'?{chance:.15,fois:2}:null);assert.equal(rpgMobaPlacementCoherent(duel),true);
+    assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.deepEqual(porteur.coupCritique,{chance:.25,fois:2});rpgFinDeTour(duel);assert.equal(porteur.coupRapide,id==='tislit-des-aures');assert.deepEqual(porteur.coupCritique,id==='tislit-des-aures'?{chance:.25,fois:2}:null);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
 
@@ -7591,7 +7591,7 @@ test('Javelot MOBA : renvoi et conquête détachent l’arme sans la renvoyer en
 
 test('Cuirasse MOBA : Esquive, armure blessée et soins conservent les règles classiques', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','cuirasse-de-sel'];duel.joueur.mana.sable=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;
-  const equip=rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id,{ouvrirReponse:true});assert.equal(equip.sortEnAttente,true);assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.deepEqual([porteur.pv,porteur.pvMax,porteur.esquiveChance,porteur.arme.durabilite],[7,7,.15,2]);assert.deepEqual(porteur.arme.armure,{max:3,restant:3});rpgFinDeTour(duel);
+  const equip=rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id,{ouvrirReponse:true});assert.equal(equip.sortEnAttente,true);assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.deepEqual([porteur.pv,porteur.pvMax,porteur.esquiveChance,porteur.arme.durabilite],[7,7,.25,2]);assert.deepEqual(porteur.arme.armure,{max:3,restant:3});rpgFinDeTour(duel);
   duel.sorcier.main=['trait-de-braise','trait-de-braise'];duel.sorcier.mana.braise=30;rpgReglerHasard(duel,()=>.1);assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);assert.equal(porteur.pv,7);assert.equal(porteur.arme.armure.restant,3);
   rpgReglerHasard(duel,()=>.99);assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);assert.equal(porteur.pv,4);assert.equal(porteur.arme.armure.restant,0);rpgFinDeTour(duel);
   duel.joueur.main=['festin-des-vaillants'];duel.joueur.mana.sable=30;duel.joueur.mana.neige=30;assert.equal(rpgMobaLancerMagie(duel,'joueur','festin-des-vaillants',null,'left').ok,true);assert.equal(porteur.pv,4,'les soins ne restaurent pas l’armure épuisée');assert.equal(porteur.arme.armure.restant,0);assert.equal(rpgMobaPlacementCoherent(duel),true);
@@ -7606,8 +7606,8 @@ test('Cuirasse MOBA : Lien Bouchra intervoies et retrait de l’ancre sans déri
 
 test('Cuirasse MOBA : esquive imprimée et arme se cumulent, puis Brise-lame ne retire que l’arme', () => {
   const duel=partie();duel.joueur.main=['bouchra-guerriere-des-cretes','cuirasse-de-sel'];duel.joueur.mana.sable=30;const bouchra=rpgMobaJouerCreature(duel,'joueur','bouchra-guerriere-des-cretes','right',0).entite;assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',bouchra.id).ok,true);
-  assert.equal(bouchra.esquiveChance,.3);assert.equal(bouchra.arme.armure.max,4);rpgFinDeTour(duel);duel.sorcier.main=['brise-lame'];duel.sorcier.mana.braise=30;rpgReglerHasard(duel,()=>.99);
-  const result=rpgMobaLancerMagie(duel,'sorcier','brise-lame',bouchra.id);assert.equal(result.ok,true,JSON.stringify(result));assert.equal(bouchra.arme,null);assert.equal(bouchra.esquiveChance,.15);assert.equal(bouchra.pv,1);assert.ok(duel.joueur.cimetiere.includes('cuirasse-de-sel'));assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.equal(bouchra.esquiveChance,.5);assert.equal(bouchra.arme.armure.max,4);rpgFinDeTour(duel);duel.sorcier.main=['brise-lame'];duel.sorcier.mana.braise=30;rpgReglerHasard(duel,()=>.99);
+  const result=rpgMobaLancerMagie(duel,'sorcier','brise-lame',bouchra.id);assert.equal(result.ok,true,JSON.stringify(result));assert.equal(bouchra.arme,null);assert.equal(bouchra.esquiveChance,.25);assert.equal(bouchra.pv,1);assert.ok(duel.joueur.cimetiere.includes('cuirasse-de-sel'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Braise et sable MOBA : coût bicolore, Lien intervoies, critique et endurance', () => {
@@ -7650,7 +7650,7 @@ test('Braise et sable MOBA : cumul critique et Vol de vie du Sabre survivent à 
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','sabre-maudit','braise-et-sable'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;
   assert.equal(rpgMobaLancerMagie(duel,'joueur','sabre-maudit',porteur.id).ok,true);assert.equal(rpgMobaJouerArme(duel,'joueur','braise-et-sable',porteur.id).ok,true);assert.equal(porteur.coupCritique.chance,.3);assert.equal(porteur.volDeVie,true);
   mobaInfliger(duel.moba,'sorcier','left',4);porteur.ready=true;rpgReglerHasard(duel,()=>.99);assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);const result=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));
-  assert.equal(mobaVoie(duel.moba,'left').hp.joueur,8);assert.equal(porteur.arme,null);assert.deepEqual(porteur.armes,['sabre-maudit']);assert.equal(porteur.coupCritique.chance,.15);assert.equal(porteur.volDeVie,true);assert.equal(porteur.coupRapide,false);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.equal(mobaVoie(duel.moba,'left').hp.joueur,8);assert.equal(porteur.arme,null);assert.deepEqual(porteur.armes,['sabre-maudit']);assert.equal(porteur.coupCritique.chance,.25);assert.equal(porteur.volDeVie,true);assert.equal(porteur.coupRapide,false);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Takouba MOBA : Lien à travers les voies et Infiltration disparaissent avec l’arme', () => {
@@ -7797,14 +7797,14 @@ test('Masque MOBA : une victoire immédiate termine le combat avant les déclenc
   assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[p.id]).ok,true);assert.equal(rpgMobaLancerAttaque(duel,'joueur',[p.id],{},{declaree:true}).ok,true);assert.equal(duel.moba.winner,'joueur');assert.equal(duel.joueur.deck.length,2);assert.ok(!duel.defausseEnAttente);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Lance de la lune MOBA : ciblage dans la voie, immanquable et critique à 15 %, puis rupture', () => {
+test('Lance de la lune MOBA : ciblage dans la voie, immanquable et critique à 25 %, puis rupture', () => {
   for (const jet of [0.01, 0.8]) {
     const duel=partie(); duel.joueur.main=['gardienne-des-portes-de-sable','lance-de-la-lune-givree']; duel.joueur.mana.sable=30; duel.joueur.mana.neige=30; duel.joueur.mana.tenebres=30;
     const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;
     assert.equal(rpgMobaJouerArme(duel,'joueur','lance-de-la-lune-givree',porteur.id,{ouvrirReponse:true}).sortEnAttente,true);
     assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);
     assert.deepEqual([porteur.atk,porteur.pv,porteur.coupRapide,porteur.arme.durabilite],[2,5,true,1]);
-    assert.deepEqual(porteur.coupCritique,{chance:.15,fois:2});
+    assert.deepEqual(porteur.coupCritique,{chance:.25,fois:2});
     rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable','gardienne-des-portes-de-sable'];duel.sorcier.mana.sable=30;
     const cible=rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','left',0).entite;
     const loin=rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','right',0).entite; rpgFinDeTour(duel);
@@ -7813,8 +7813,8 @@ test('Lance de la lune MOBA : ciblage dans la voie, immanquable et critique à 1
     assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id],{[porteur.id]:cible.id}).ok,true);
     const combat=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(combat.ok,true,JSON.stringify(combat));
     assert.equal(combat.resume.coupsRapides[0].rate,undefined);
-    assert.equal(combat.resume.coupsRapides[0].critique,jet<.15);
-    assert.equal(combat.resume.coupsRapides[0].degats,jet<.15?4:2);
+    assert.equal(combat.resume.coupsRapides[0].critique,jet<.25);
+    assert.equal(combat.resume.coupsRapides[0].degats,jet<.25?4:2);
     assert.equal(loin.pv,4); assert.equal(porteur.arme,null); assert.equal(porteur.coupRapide,false);assert.equal(porteur.coupCritique,null);
     assert.ok(duel.joueur.cimetiere.includes('lance-de-la-lune-givree')); assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
@@ -7830,7 +7830,7 @@ test('Lance de la lune MOBA : le critique fonctionne contre une voie, seul ou cu
     assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);
     const result=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));
     assert.equal(mobaVoie(duel.moba,'left').hp.sorcier,sabre?2:6);
-    assert.equal(porteur.arme,null);assert.deepEqual(porteur.coupCritique,sabre?{chance:.15,fois:2}:null);
+    assert.equal(porteur.arme,null);assert.deepEqual(porteur.coupCritique,sabre?{chance:.25,fois:2}:null);
     assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
@@ -7840,10 +7840,10 @@ test('Lance de la lune MOBA : contre, remplacement et cumul critique de Kagutsuc
   const porteur=rpgMobaJouerCreature(duel,'joueur','kagutsuchi-flamme-originelle','left',0).entite;
   duel.sorcier.main=['contresort-des-abimes'];duel.sorcier.mana.eau=30;
   assert.equal(rpgMobaJouerArme(duel,'joueur','lance-de-la-lune-givree',porteur.id,{ouvrirReponse:true}).sortEnAttente,true);
-  assert.equal(rpgMobaLancerMagie(duel,'sorcier','contresort-des-abimes').contre,true);assert.equal(porteur.arme,null);assert.deepEqual(porteur.coupCritique,{chance:.15,fois:4});
+  assert.equal(rpgMobaLancerMagie(duel,'sorcier','contresort-des-abimes').contre,true);assert.equal(porteur.arme,null);assert.deepEqual(porteur.coupCritique,{chance:.25,fois:4});
   duel.joueur.main.push('lance-de-la-lune-givree');assert.equal(rpgMobaJouerArme(duel,'joueur','lance-de-la-lune-givree',porteur.id).ok,true);
-  assert.deepEqual(porteur.coupCritique,{chance:.3,fois:4});assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);
-  assert.deepEqual(porteur.coupCritique,{chance:.15,fois:4});assert.equal(porteur.coupRapide,true);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.deepEqual(porteur.coupCritique,{chance:.5,fois:4});assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);
+  assert.deepEqual(porteur.coupCritique,{chance:.25,fois:4});assert.equal(porteur.coupRapide,true);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Sandales MOBA : ne donnent pas Rapidité à une créature fraîche, même après remplacement', () => {

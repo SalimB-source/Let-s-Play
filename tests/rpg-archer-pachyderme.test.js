@@ -55,7 +55,7 @@ test('fiche jouable, hybride, capacités et illustration', () => {
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
   assert.ok(carteJouableSansTerrain(c)); assert.ok(c.coupRapide);
-  assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 }); assert.deepEqual(c.blocage, { chance: .15, def: 2 });
+  assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 }); assert.deepEqual(c.blocage, { chance: .15, def: 2 });
   for (const cle of ['coupRapide', 'coupCritique', 'blocage']) assert.ok(effetsDetailles(c).pastilles.find(p => p.cle === cle)?.description, cle);
   assert.match(c.text, /Attaque ciblée/); assert.match(c.text, /Coup critique/); assert.match(c.text, /Blocage/);
   const path = new URL(`../public/cards/${ID}.jpg`, import.meta.url); assert.ok(existsSync(path));

@@ -19,7 +19,7 @@ export const RPG_ASCENSION_CARDS = Object.freeze([
     contreAttaque: true,
     esquive: true,
     defenseur: true,
-    coupCritique: Object.freeze({ chance: 0.15, fois: 2 }),
+    coupCritique: Object.freeze({ chance: 0.25, fois: 2 }),
     ascension: Object.freeze({ nombre: 2, type: 'samourai', typeLabel: 'Samouraï', coutTotal: 7, materiaux: Object.freeze([Object.freeze({ carteId: 'ronin-du-soleil-rouge' }), Object.freeze({ carteId: 'onna-musha-des-cendres' })]) }),
     typeLine: 'Créature d’Ascension — Dragon · Samouraï',
     text: 'Ascension — Rōnin du Soleil rouge + Onna-musha des cendres. Coût total : 7. Contre-attaque. Esquive. Défenseur. Coup critique.',

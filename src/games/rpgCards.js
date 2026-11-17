@@ -721,8 +721,8 @@ export const RPG_CREATURE_CARDS = [
     // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
     // ciblée — elle désigne une créature adverse avant le combat.
     coupRapide: true,
-    coupCritique: { chance: 0.15, fois: 2 },
-    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier. Coup critique — 15 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire.',
+    coupCritique: { chance: 0.25, fois: 2 },
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier. Coup critique — 25 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -752,13 +752,13 @@ export const RPG_CREATURE_CARDS = [
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
     // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
     // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
-    // insaisissable (Esquive, 15 %) : ce qu'elle ne pare pas, elle l'évite.
+    // insaisissable (Esquive, 25 %) : ce qu'elle ne pare pas, elle l'évite.
     // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
     // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -914,8 +914,8 @@ export const RPG_CREATURE_CARDS = [
     name: 'Djinn de la flèche ardente',
     element: 'braise', cost: 3, atk: 3, def: 1, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-de-la-fleche-ardente',
-    rapidite: true, coupRapide: true, coupCritique: { chance: 0.15, fois: 2 }, furtif: true, ephemere: true,
-    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 15 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    rapidite: true, coupRapide: true, coupCritique: { chance: 0.25, fois: 2 }, furtif: true, ephemere: true,
+    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 15 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Une flèche de feu, puis le silence.',
   },
   {
@@ -995,8 +995,8 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,
-    coupCritique: { chance: 0.15, fois: 2 },
-    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Coup critique — 15 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
+    coupCritique: { chance: 0.25, fois: 2 },
+    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Coup critique — 25 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire ; contre une créature déjà blessée, il est garanti. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
     flavor: 'Ses flèches portent le froid des longs hivers.',
   },
   {
@@ -1010,7 +1010,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature légendaire — Guerrier viking',
     art: 'eirik-du-premier-serment',
     contreAttaque: true,
-    coupCritique: { chance: 0.15, fois: 2 },
+    coupCritique: { chance: 0.25, fois: 2 },
     // Compagnie viking — un effet de présence, du même genre que les auras :
     // +1/+1 par créature viking de SON camp en jeu, lui exclu. Seul sur la
     // table, Eirik reste donc le 1/1 imprimé ; chaque frère d'armes le fait
@@ -1018,7 +1018,7 @@ export const RPG_CREATURE_CARDS = [
     // Le type se lit sur la ligne de type imprimée, comme la Résonance — un
     // Viking adverse ne le nourrit pas.
     compagnie: { tribu: 'viking', atk: 1, def: 1 },
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
   },
   {
@@ -1305,8 +1305,8 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
     arrivee: { type: 'degats', amount: 1, amountSiBlessee: 2, cible: 'toutes-creatures' },
-    coupCritique: { chance: 0.15, fois: 2 },
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins deux créatures blessées. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    coupCritique: { chance: 0.25, fois: 2 },
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins deux créatures blessées. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {
@@ -1445,9 +1445,9 @@ export const RPG_CREATURE_CARDS = [
     cost: 5, atk: 4, def: 3, rarity: 'rare',
     typeLine: 'Créature — Cavalier · Spectre',
     rapidite: true,
-    coupCritique: { chance: 0.15, fois: 2 },
+    coupCritique: { chance: 0.25, fois: 2 },
     destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Le cavalier du bûcher meurt : le bûcher s’embrase et inflige 2 dégâts à chaque créature adverse. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Le cavalier du bûcher meurt : le bûcher s’embrase et inflige 2 dégâts à chaque créature adverse. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'On l’abat, et la nuit prend feu.',
   },
   {
@@ -1457,9 +1457,9 @@ export const RPG_CREATURE_CARDS = [
     cost: 6, atk: 4, def: 8, rarity: 'rare',
     typeLine: 'Créature — Humain · Archer',
     coupRapide: true,
-    coupCritique: { chance: 0.15, fois: 2 },
+    coupCritique: { chance: 0.25, fois: 2 },
     blocage: { chance: 0.15, def: 2 },
-    text: 'Attaque ciblée — Il peut viser une créature adverse : il lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage. Blocage — Quand une attaque adverse le cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    text: 'Attaque ciblée — Il peut viser une créature adverse : il lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Blocage — Quand une attaque adverse le cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Sous ses flèches, le désert avance à pas de géant.',
   },
   {
@@ -1470,8 +1470,8 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Humain · Chevalier',
     rapidite: true,
     volDeVie: true,
-    coupCritique: { chance: 0.15, fois: 2 },
-    text: 'Rapidité — Il peut attaquer dès son arrivée. Vol de vie — Quand il inflige des dégâts, son camp récupère la moitié de ces dégâts en PV, arrondie à l’entier supérieur. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    coupCritique: { chance: 0.25, fois: 2 },
+    text: 'Rapidité — Il peut attaquer dès son arrivée. Vol de vie — Quand il inflige des dégâts, son camp récupère la moitié de ces dégâts en PV, arrondie à l’entier supérieur. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Sa lame embrase les ténèbres, et chaque victoire ranime les siens.',
   },
   {
@@ -1481,9 +1481,9 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine · Chevalière',
     coupRapide: true,
-    coupCritique: { chance: 0.15, fois: 2 },
+    coupCritique: { chance: 0.25, fois: 2 },
     defenseur: true,
-    text: 'Défenseur. Attaque ciblée — Elle peut viser une créature adverse : elle lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    text: 'Défenseur. Attaque ciblée — Elle peut viser une créature adverse : elle lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Là où son frère se jette dans la bataille, elle tient la ligne.',
   },
   {
@@ -1822,7 +1822,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité de coût 1 entre en jeu sans payer de mana. Esquive — 15 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité de coût 1 entre en jeu sans payer de mana. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -1841,9 +1841,9 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    coupCritique: { chance: 0.15, fois: 2 },
+    coupCritique: { chance: 0.25, fois: 2 },
     resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
-    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 15 % de chances de doubler les dégâts de son attaque ou de son blocage.',
+    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -2732,7 +2732,7 @@ export const RPG_ARME_CARDS = [
     donne: { esquive: true },
     // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4), rien
     // de plus — le texte ne dit que la différence. Le CUMUL d'Esquive
-    // (15 % + 15 % = 30 % sur la guerrière) est une règle générale du
+    // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
     // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
     text: 'Arme — Le porteur gagne +0/+3 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+3.',
@@ -2872,8 +2872,8 @@ export const RPG_ARME_CARDS = [
     id: 'lance-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Lance de la lune givrée',
     element: 'neige', colors: ['neige', 'tenebres'],
     kind: 'arme', typeLine: 'Arme — Lance',  rarity: 'inhabituelle',
-    bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.15 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 15 % de chances de doubler ses dégâts contre une créature ou l’adversaire.',
+    bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 25 % de doubler ses dégâts sur une créature ou l’adversaire, garanti si elle est déjà blessée.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 

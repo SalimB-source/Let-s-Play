@@ -2,7 +2,7 @@ import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
-import { rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgAvecCompteurEntitesIsole, rpgEstProtegee, rpgPeutAttaquer, rpgPeutPayer, rpgReglerHasard, rpgResoudreDestructionCiblee, rpgResoudreEchangeIndividuelClassique, rpgVainqueur } from './rpgDuel.js';
+import { rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgAvecCompteurEntitesIsole, rpgEstProtegee, rpgPeutAttaquer, rpgPeutPayer, rpgReglerHasard, rpgResoudreDestructionCiblee, rpgResoudreEchangeIndividuelClassique, rpgVainqueur, RPG_COUP_CRITIQUE_CHANCE } from './rpgDuel.js';
 
 const camps = ['joueur', 'sorcier'];
 const autre = (cote) => cote === 'joueur' ? 'sorcier' : 'joueur';
@@ -180,7 +180,7 @@ function renvoiSansGain(duel, cote, attaquant, cible) {
 function sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible) {
   const adv = autre(cote);
   if (attaquant.carteId !== 'tislit-des-aures' || !attaquant.coupRapide || attaquant.arme
-    || (attaquant.coupCritique && (attaquant.coupCritique.chance !== .15 || attaquant.coupCritique.fois !== 2))
+    || (attaquant.coupCritique && (attaquant.coupCritique.chance !== RPG_COUP_CRITIQUE_CHANCE || attaquant.coupCritique.fois !== 2))
     || attaquant.atk !== 1 || attaquant.pv !== 1
     || !estDefenseur(cible) || !cible.contreAttaque
     || cible.pv !== cible.pvMax || cible.pv < 4
@@ -498,7 +498,7 @@ function tirSimpleEvitePerte(duel, cote, attaquant, dangereuse, alternative) {
   // sans équipements autres que les Sandales (qui tombent au cimetière).
   if (adv !== 'joueur' || attaquant.carteId !== 'djinn-de-la-fleche-ardente'
     || !attaquant.detruireFinDuTour || !attaquant.coupRapide || attaquant.arme || attaquant.armes?.length
-    || (attaquant.coupCritique && (attaquant.coupCritique.chance !== .15 || attaquant.coupCritique.fois !== 2))
+    || (attaquant.coupCritique && (attaquant.coupCritique.chance !== RPG_COUP_CRITIQUE_CHANCE || attaquant.coupCritique.fois !== 2))
     || dangereuse.carteId !== 'ghul-des-cendres' || effet?.type !== 'degats' || effet.cible !== 'creature' || !(effet.amount > 0)
     || dangereuse.esquive || dangereuse.contreAttaque || dangereuse.provocation || dangereuse.tenaciteDisponible
     || dangereuse.enCale || dangereuse.cargaison || dangereuse.armes?.length

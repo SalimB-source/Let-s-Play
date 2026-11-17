@@ -5,7 +5,7 @@ import { estDefenseur } from './rpgDefenseur.js';
 import { mobaVieMaxPourCamp, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
 import { choisirCouleurManaIA, rpgCombinaisonsSacrificesIA } from './rpgAI.js';
-import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana, rpgAvecCompteurEntitesIsole } from './rpgDuel.js';
+import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasard, rpgFinDeTour, rpgChoisirCouleurMana, rpgAvecCompteurEntitesIsole, RPG_ESQUIVE_CHANCE } from './rpgDuel.js';
 import {
   MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
@@ -135,7 +135,7 @@ function valeurCreature(entity) {
   if (estDefenseur(entity)) valeur += 0.8;
   // Dodge prevents attacks and spells, not abilities; keep it a modest
   // bounded bonus rather than equating it with guaranteed protection.
-  if (entity.esquive) valeur += Math.min(1, Math.max(0, Number.isFinite(entity.esquiveChance) ? entity.esquiveChance : 0.15)) * 5;
+  if (entity.esquive) valeur += Math.min(1, Math.max(0, Number.isFinite(entity.esquiveChance) ? entity.esquiveChance : RPG_ESQUIVE_CHANCE)) * 5;
   if (entity.envol || entity.infiltration) valeur += 1;
   return valeur * (ephemere ? 0.25 : 1);
 }

@@ -52,7 +52,7 @@ test('fiche 2/3, coût 3, Sable et Braise, avec ses trois capacités et son illu
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
   assert.equal(sacrificesInvocation(c), 0); assert.ok(carteJouableSansTerrain(c));
-  assert.equal(c.coupRapide, true); assert.equal(c.defenseur, true); assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
+  assert.equal(c.coupRapide, true); assert.equal(c.defenseur, true); assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
   assert.notEqual(c.rapidite, true); assert.notEqual(c.volDeVie, true);
   for (const cle of ['coupRapide', 'coupCritique', 'defenseur']) assert.ok(effetsDetailles(c).pastilles.find(p => p.cle === cle)?.description, cle);
   assert.match(c.text, /Attaque ciblée/); assert.match(c.text, /Coup critique/); assert.match(c.text, /Défenseur/);
@@ -76,12 +76,12 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
     assert.equal(cible.pv, cible.pvMax); assert.equal(a.pv, 3);
     assert.ok(!(d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === a.id));
   });
-  for (const jet of [.149, .15]) test(`${mode} ${side} : critique en défense au seuil ${jet}`, () => {
+  for (const jet of [.249, .25]) test(`${mode} ${side} : critique en défense au seuil ${jet}`, () => {
     const d = partie(mode), gardienne = poser(d, mode, autre(side), ID), attaquant = poser(d, mode, side, 'ashigaru-des-braises');
     attaquant.pv = attaquant.pvMax = attaquant.def = 20; d.tour = side; rpgReglerHasard(d, () => jet);
     assert.ok(declarer(d, mode, side, attaquant, gardienne).ok); assert.ok(resoudre(d, mode, side).ok);
-    assert.equal(attaquant.pv, jet < .15 ? 16 : 18);
-    assert.equal((d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === gardienne.id), jet < .15);
+    assert.equal(attaquant.pv, jet < .25 ? 16 : 18);
+    assert.equal((d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === gardienne.id), jet < .25);
   });
   test(`${mode} ${side} : Défenseur impose sa priorité aux attaquants adverses`, () => {
     const d = partie(mode), gardienne = poser(d, mode, autre(side), ID, 0);

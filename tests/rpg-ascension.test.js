@@ -79,7 +79,7 @@ test('Ascension : un Dragon Samouraï 7/7 avec Contre-attaque, Esquive, Défense
   assert.equal(duelCardById(DRAGON), fiche);
   assert.equal(fiche.atk, 7); assert.equal(fiche.def, 7); assert.equal(fiche.contreAttaque, true); assert.ok(!fiche.overkill);
   assert.equal(fiche.esquive, true); assert.equal(fiche.defenseur, true);
-  assert.deepEqual(fiche.coupCritique, { chance: 0.15, fois: 2 });
+  assert.deepEqual(fiche.coupCritique, { chance: 0.25, fois: 2 });
   assert.equal(fiche.typeLine, 'Créature d’Ascension — Dragon · Samouraï');
   assert.deepEqual(fiche.ascension.materiaux.map(r => r.carteId), ['ronin-du-soleil-rouge', 'onna-musha-des-cendres']);
   assert.equal(fiche.ascension.coutTotal, fiche.cost);
@@ -115,7 +115,7 @@ test('Dragon : la fiche expose ses capacités et la nouvelle illustration casse 
   for (const cle of ['contreAttaque', 'esquive', 'defenseur', 'coupCritique']) {
     assert.ok(pastilles.some((p) => p.cle === cle), cle);
   }
-  assert.match(pastilles.find((p) => p.cle === 'esquive').description, /15 %/);
+  assert.match(pastilles.find((p) => p.cle === 'esquive').description, /25 %/);
   assert.match(pastilles.find((p) => p.cle === 'defenseur').description, /priorité/);
   assert.match(cardArt(DRAGON), /samourai-du-dragon-rouge\.jpg\?v=ascension-dragon-humanoide-v2$/);
   const jpeg = readFileSync(new URL('../public/cards/samourai-du-dragon-rouge.jpg', import.meta.url));
@@ -123,8 +123,8 @@ test('Dragon : la fiche expose ses capacités et la nouvelle illustration casse 
   assert.deepEqual([...jpeg.subarray(0, 2)], [0xff, 0xd8], 'fichier JPEG réel');
 });
 
-for (const sourceType of ['attaque', 'magie', 'capacite']) test(`Dragon : Esquive à 15 % face à ${sourceType}`, () => {
-  for (const [jet, esquive] of [[.14999, true], [.15, false]]) {
+for (const sourceType of ['attaque', 'magie', 'capacite']) test(`Dragon : Esquive à 25 % face à ${sourceType}`, () => {
+  for (const [jet, esquive] of [[.24999, true], [.25, false]]) {
     const duel = nouveau();
     const res = invoquer(duel, paire(duel)); assert.ok(res.ok, res.raison);
     const dragon = res.entite;
@@ -163,7 +163,7 @@ for (const voie of ['right', 'left']) test(`Dragon MOBA : Défenseur respecte le
   const res = rpgMobaJouerCreature(duel, 'joueur', DRAGON, 'right', 1, { sacrificeIds: victimes.map((e) => e.id) });
   assert.ok(res.ok, res.raison);
   const dragon = res.entite;
-  assert.equal(dragon.defenseur, true); assert.equal(dragon.esquiveChance, .15);
+  assert.equal(dragon.defenseur, true); assert.equal(dragon.esquiveChance, .25);
   assert.equal(dragon.overkill, false); assert.equal(dragon.contreAttaque, true); assert.equal(dragon.atk, 7); assert.equal(dragon.pv, 7);
   const attaquant = poserMoba(duel, 'feriel', voie, 0, 'sorcier'); duel.tour = 'sorcier';
   const choix = rpgMobaCiblesIndividuelles(duel, 'sorcier', attaquant.id);
@@ -208,7 +208,7 @@ test('3 + 4 Samouraïs : sacrifices, entrée depuis la réserve, effets de mort 
   assert.ok(res.ok, res.raison); assert.equal(res.entite.carteId, DRAGON);
   assert.equal(res.entite.atk, 7); assert.equal(res.entite.pv, 7);
   assert.equal(res.entite.overkill, false); assert.equal(res.entite.contreAttaque, true); assert.equal(res.entite.esquive, true);
-  assert.equal(res.entite.esquiveChance, .15); assert.equal(res.entite.defenseur, true);
+  assert.equal(res.entite.esquiveChance, .25); assert.equal(res.entite.defenseur, true);
   assert.equal(res.entite.mur, false); assert.equal(res.entite.nePeutPasAttaquer, false);
   assert.equal(rpgPeutAttaquer({ ...res.entite, malInvocation: false }), true, 'Défenseur n’est pas un Mur et n’interdit pas d’attaquer');
   assert.deepEqual(res.sacrificeIds, victimes.map((e) => e.id));

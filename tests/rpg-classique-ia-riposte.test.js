@@ -156,7 +156,7 @@ test('classique : une seconde alliée préserve le choix tactique existant', () 
 test('classique : Tislit peut tenter de terminer un Pourfendeur à 2 PV grâce à son critique', () => {
   const { duel, defenseur, tislit } = partieContreAttaque();
   assert.ok(rpgBlesserCreature(duel, 'joueur', defenseur.id, 2).ok);
-  assert.deepEqual(tislit.coupCritique, { chance: .15, fois: 2 });
+  assert.deepEqual(tislit.coupCritique, { chance: .25, fois: 2 });
   assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: tislit.id, cibleId: defenseur.id });
   const tirages = [.5, .01]; rpgReglerHasard(duel, () => tirages.shift() ?? .5);
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(duel, 'sorcier', tislit.id, defenseur.id).ok);
