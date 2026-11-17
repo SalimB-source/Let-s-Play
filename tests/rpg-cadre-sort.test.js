@@ -137,10 +137,15 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   assert.match(css, /z-index:\s*1/);
   assert.match(css, /> img:has\(\+ \.rpg-cadre-carte\)\s*\{\s*clip-path:\s*var\(--rpg-cadre-decoupe\)/);
   const bouclier = lire('rpg-bouclier.css');
-  assert.doesNotMatch(bouclier, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/,
-    'le Défenseur ne réintroduit aucune forme de cadre');
+  // Le cadre Le Sablier ne revient pas sur les créatures : le Défenseur ne
+  // porte que SA forme d'écu, dessinée par `rpg-bouclier.css`. La découpe de
+  // ce fichier ne touche jamais les faces rectangulaires (main, aperçus).
+  assert.doesNotMatch(bouclier, /--rpg-cadre-decoupe|cadre-le-sablier/,
+    'le Défenseur ne reprend pas le cadre SVG des autres cartes');
   assert.match(bouclier, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
     'le repère Défenseur conserve sa mise en page');
+  assert.match(bouclier, /\.rpg-card\.rpg-carte-bouclier \{[^}]*--rpg-ecusson-masque:/s,
+    'la forme d’écu du plateau vient de la feuille Défenseur');
   assert.match(css, /pointer-events:\s*none/);
   assert.doesNotMatch(css, /--rpg-ecusson-masque/);
   // Les illustrations ne doivent plus dépendre d'un SVG externe pour être

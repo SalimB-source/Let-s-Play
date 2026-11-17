@@ -66,9 +66,18 @@ test('le sonar orange conserve le débordement, la cadence et le mouvement rédu
 });
 
 
-test('les repères Défenseur restent visibles sans dessiner de cadre', () => {
+test('les repères Défenseur restent visibles sous la forme d’écu', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/);
-  assert.doesNotMatch(css, /rpg-card__ombre-garde|rpg-card__liseret-garde/);
+  assert.match(css, /--rpg-ecusson-masque/);
+  assert.doesNotMatch(css, /rpg-card__ombre-garde|rpg-card__liseret-garde/,
+    'l’écu se dessine sans calque d’habillage supplémentaire');
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s);
+  // Le sonar garde son élément : c'est lui qui porte le fin trait rouge de
+  // l'écu, et ses trois ondes ne sont jamais rognées par la découpe de la carte.
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__resonance--garde::after \{[\s\S]*?--rpg-ecusson-trait-defenseur/,
+    'le fin trait rouge épouse l’écu');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > :is\(\.rpg-bouclier-egide, \.rpg-bouclier-impact, \.rpg-card__resonance\)::after \{[\s\S]*?z-index: 3;/,
+    'le filet passe au-dessus de l’illustration');
+  assert.doesNotMatch(css, /overflow: visible !important;/,
+    'le débordement reste celui du plateau (marge de rognage de 58 px)');
 });

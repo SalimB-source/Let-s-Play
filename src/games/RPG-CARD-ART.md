@@ -2072,11 +2072,28 @@ ATQ/DÉF, pierres d'effets et icône `i-defenseur`. Aucun `outline` sur la carte
 aucun `clip-path` global : la silhouette vient des `mask-image` appliqués couche
 par couche. Le décalage `translate: 0 -20cqw` du pied reste en place.
 
-### Mise à jour — aucun cadre sur les créatures, Défenseur compris
+### Mise à jour — aucun cadre de créature, mais l'écu de Défenseur revient sur tous les écrans
 
 `RpgCadreCarte` et `cardFrameClass` n'ajoutent aucun cadre aux créatures et aux
-héros, y compris ceux d'Ascension. Un Défenseur posé garde ses repères de statut
-(pastille, sonar et statistiques), mais plus de silhouette d'écu, de liseré
-coloré ni d'ombre de contour. Sa classe CSS ne sert qu'à conserver la taille et
-la position des statistiques du plateau. Les autres types conservent leurs
-classes et leurs couleurs de cadre selon les éléments de la carte.
+héros, y compris ceux d'Ascension. Les autres types conservent leurs classes et
+leurs couleurs de l'écu Le Sablier selon les éléments de la carte.
+
+**Défenseur fait exception, et seulement pour sa forme.** Demande du joueur :
+« les créatures avec Défenseur doivent avoir la forme d'égide sur mobile
+aussi ». `rpg-bouclier.css` redessine donc la silhouette d'écu des créatures et
+des héros **posés** — Duel et MOBA — avec l'aplat marine, le masque des calques
+pleine face, le fin trait rouge qui épouse la pointe et l'ombre portée qui suit
+l'alpha de l'écu.
+
+La règle ne dépend d'**aucune** media query : ni largeur, ni `hover`, ni
+`pointer: coarse`. Un téléphone en portrait ou en paysage, une tablette et un
+poste de bureau peignent exactement la même forme ; les découpes sont des
+`mask-image` en `100% 100%` (`preserveAspectRatio='none'`), donc elles suivent
+toutes les tailles de carte sans mesure en pixels.
+
+Aucun calque d'habillage n'est rendu dans le DOM : l'ombre et le trait rouge
+passent par `::before` et par le `::after` du sonar `has-garde`. Les repères
+restent intacts (pierre Défenseur rouge, sonar orange à trois ondes, pastilles
+ATQ/DÉF, pierres d'effets, icône d'arme) et peuvent déborder librement de la
+silhouette. La main, le mulligan, la main du MOBA et les aperçus restent des
+cartes rectangulaires : ils ne portent pas `.rpg-card`.

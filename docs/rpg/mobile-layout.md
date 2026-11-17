@@ -295,6 +295,23 @@ La compilation web et les tests de navigateur ne valident pas l’APK natif. Vé
 
 Les cartes posées n’impriment plus leur type sur l’illustration ; celui-ci reste disponible dans l’aperçu au survol et le libellé accessible. Les cartes en main ne sont pas modifiées.
 
+## L’écu du Défenseur, au doigt comme à la souris
+
+Une créature ou un héros **Défenseur posé sur le plateau** reprend la forme
+d’écu : aplat marine, illustration découpée dans la silhouette, pointe en V et
+fin trait rouge. La règle ne dépend d’aucune media query — ni largeur, ni
+`hover`, ni `pointer: coarse` — donc un téléphone en portrait, un téléphone en
+paysage et un écran de bureau peignent exactement la même forme. Les découpes
+sont des `mask-image` en `100% 100%` : elles suivent toutes les tailles de
+carte, du poste de bureau à la main réduite d’un petit écran.
+
+La main, le mulligan, la main de la Conquête et les aperçus restent des cartes
+rectangulaires. Les repères du plateau ne changent pas : pierre Défenseur rouge,
+sonar orange à trois ondes, pastilles ATQ/DÉF remontées vers le milieu, pierres
+d’effets et icône d’arme. `scripts/rpg-garde-orange-check.mjs` mesure la découpe
+et le trait à 390 × 844 au doigt **et** à 1280 × 720 à la souris : les deux
+doivent rendre le même écu.
+
 ## Consulter le cimetière
 
 En duel comme en Conquête, le cimetière présente les cartes les plus récentes d’abord dans un écrin sombre, avec leurs filtres toujours visibles et une fiche dédiée à la sélection. La carte active est distinguée par un cadre doré et une coche ; la fiche montre son illustration, son type et son effet. Le choix d’une arme utilise cette même fiche. La liste et le détail défilent indépendamment : en portrait la fiche passe sous la grille, en paysage elle reste à côté, même sur un écran peu haut. Les statistiques des vignettes restent contenues dans les cartes, sans empiéter sur leurs voisines.

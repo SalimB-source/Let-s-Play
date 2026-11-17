@@ -21,6 +21,9 @@ try {
           cadreCouleur: [...el.classList].some(nom => nom.startsWith('rpg-card--frame-')),
           aura: getComputedStyle(aura).backgroundImage,
           onde: getComputedStyle(aura.querySelector('.rpg-card__resonance-onde')).borderColor,
+          ecu: getComputedStyle(el.querySelector('.rpg-card__img')).maskImage
+            || getComputedStyle(el.querySelector('.rpg-card__img')).webkitMaskImage,
+          traitEcu: getComputedStyle(aura, '::after').backgroundImage,
           outline: getComputedStyle(el).outlineColor, outlineStyle: getComputedStyle(el).outlineStyle,
           boxShadow: getComputedStyle(el).boxShadow };
       });
@@ -29,6 +32,10 @@ try {
       assert.equal(etat.cadre, false, `${id}: pas de cadre SVG sur la créature`);
       assert.equal(etat.cadreCouleur, false, `${id}: pas de classe de cadre coloré`);
       assert.match(etat.aura, /238, 111, 20/, `${id}: aura orange conservée`);
+      // Parité téléphone / bureau : le même écu se découpe à 390 px au doigt
+      // qu’à 1280 px à la souris, et le fin trait rouge suit la silhouette.
+      assert.match(etat.ecu, /data:image\/svg/, `${id} (${width}×${height}): illustration découpée dans l’écu`);
+      assert.match(etat.traitEcu, /data:image\/svg/, `${id} (${width}×${height}): fin trait rouge de l’écu`);
       assert.equal(etat.onde, 'rgba(255, 151, 47, 0.92)', `${id}: ondes orange conservées`);
       if (id === 'selection') {
         if (touch) { assert.equal(etat.outline, 'rgb(255, 224, 130)'); assert.equal(etat.outlineStyle, 'solid'); }
