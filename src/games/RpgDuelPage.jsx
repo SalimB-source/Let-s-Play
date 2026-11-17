@@ -13593,6 +13593,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? 'Choisissez l’attaquant dont le Veilleur intercepte l’Attaque ciblée'
               : attenteAbordage && carteEstArme(carteCiblee)
               ? `${carteCiblee.name} accroché — choisissez la créature adverse à prendre en cale (coût ${duel.arriveeEnAttente?.abordage} ou moins)`
+              : carteCiblee?.id === 'empereur-du-colisee' && duel.arriveeEnAttente?.carteId === carteCiblee.id
+                ? 'Choisissez une créature alliée ou adverse de coût 4 ou moins à détruire'
               : carteEstArme(carteCiblee)
                 ? `Choisissez une créature alliée à équiper avec ${carteCiblee.name}`
                 // Boualem n'apparaît plus ici : quand il contre un sort, la

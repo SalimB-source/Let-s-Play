@@ -13,7 +13,7 @@ export const CARTES_COMBAT_AUDITEES = new Set([
   'veuve-des-urnes', 'porteur-de-la-plume', 'scarabee-des-sceaux', 'scorpion-du-seuil', 'manticore-des-dunes', 'vampire-des-braises',
   'novice-des-cendres', 'chasseuse-de-braise', 'sentinelle-du-brasier', 'danseuse-des-ombres-de-dune', 'veilleur-du-dernier-crepuscule', 'archonte-du-sablier-noir',
   'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges', 'eirik-du-premier-serment', 'pourfendeur-des-djinns', 'ghul-des-cendres', 'chercheuse-des-armes-ensevelies', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or',
-  'gardienne-des-portes-de-sable', 'gardien-viking-du-fjord',
+  'gardienne-des-portes-de-sable', 'gardien-viking-du-fjord', 'archer-du-pachyderme-ardent', 'chevalier-sacre-des-braises', 'chevaliere-du-baton-sacre', 'empereur-du-colisee',
   'loup-des-neiges', 'berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre',
   'anqa-des-braises', 'porteuse-de-cruches', 'sahir-des-braises', 'guerrier-au-bouclier-rond', 'lionne-du-midi-ardent', 'maitre-du-marteau',
   'ifrit-des-ergs', 'djinn-des-braises-voilees', 'djinn-du-dernier-brasier', 'djinn-de-la-premiere-etincelle', 'djinn-des-ailes-de-cendre',
