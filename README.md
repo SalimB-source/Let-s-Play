@@ -161,6 +161,23 @@ Aucun test de CI ne verrouille `data-theme`, et `vice.css` ne figure pas dans
 les audits du thème clair : rien d'autre ne casse. En attendant, laisser les
 dates expirer suffit à rendre le site à son apparence d'origine.
 
+**Les trois façons de revenir**, de la plus légère à la plus définitive :
+
+1. **Rien faire** — passé le 30 novembre, `vice` n'est plus le défaut : toute
+   visite sans choix mémorisé repart en sombre, et la page d'accueil retrouve
+   son visuel d'origine. Le code du skin reste en place, inerte.
+2. **Retirer la peau** — la liste de fichiers ci-dessus, ou un
+   `git revert` du commit de l'habillage. Vérifié : le diff contre l'état
+   d'avant est vide, `vite build` passe, et `check:light-news`,
+   `check:light-mobile-menu`, `check:nav` et `check:i18n` restent au vert.
+3. **Garder l'habillage, couper la campagne** — remettre `VICE_CAMPAIGN` dans
+   le passé (ou retirer la seule ligne `defaut` du script d'`index.html`) :
+   plus de défaut `vice`, mais l'entrée reste accessible pour les curieux.
+
+Dans les trois cas, **un visiteur qui avait `vice` mémorisé retombe sur le
+sombre tout seul** : `THEMES` ne le reconnaît plus, et la valeur est ignorée
+au chargement comme au démarrage. Personne ne reste coincé dans la peau.
+
 ## Mise en page téléphone (iPhone, Android, WebView)
 
 Le site bascule sur sa mise en page mobile via des requêtes média
