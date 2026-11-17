@@ -19,6 +19,38 @@ export const listings = {
     "category": "CINEMA · GODZILLA",
     "readTime": "2 MIN READ"
   },
+  "/news/cinema/kpop-demon-hunters-golden-world-tour-2027": {
+    "title": "KPOP DEMON HUNTERS",
+    "accent": "HUNTR/X TAKES THE STAGE.",
+    "dek": "Netflix and AEG Presents announce a KPop Demon Hunters Golden World Tour from June 2027. General ticket sales are announced for 20 November, with conditional presales.",
+    "imageAlt": "Official KPop Demon Hunters Golden World Tour poster published by Netflix on 13 November 2026. © Netflix / AEG Presents.",
+    "category": "CINEMA · LIVE SHOW",
+    "readTime": "3 MIN READ"
+  },
+  "/news/cinema/mike-ward-modeste-netflix-17-novembre": {
+    "title": "MIKE WARD: MODEST",
+    "accent": "STAND-UP COMES TO NETFLIX.",
+    "dek": "Netflix schedules Mike Ward: Modest for 17 November. The Quebec comedian’s special covers dating after divorce and impulsive decisions, in a style intended for adults.",
+    "imageAlt": "Official Mike Ward: Modest visual from Netflix Tudum’s calendar published on 13 November 2026. © Netflix.",
+    "category": "CINEMA / SPECIALS · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
+  "/news/cinema/steps-netflix-sortie-20-novembre": {
+    "title": "STEPS",
+    "accent": "THE SISTERS CHANGE THE TALE.",
+    "dek": "One to watch this week: Steps revisits Cinderella from her stepsisters’ perspective. Netflix announces the animated film for 20 November, with Ali Wong, Stephanie Hsu and Amanda Seyfried in the original voice cast.",
+    "imageAlt": "Official Netflix thumbnail and trailer published on 15 October 2026. Illustration for Steps’ announced 20 November release, not a new image from 16 November.",
+    "category": "CINEMA · NETFLIX ANIMATION",
+    "readTime": "3 MIN READ"
+  },
+  "/news/doom-dark-ages-revelations-slaughter-mode-16-novembre": {
+    "title": "DOOM: THE DARK AGES",
+    "accent": "SURVIVAL HAS NO END.",
+    "dek": "Slaughter Mode is announced for 16 November in DOOM: The Dark Ages | Revelations. This survival challenge combines random waves with rewards to risk, at no extra cost for owners of eligible content.",
+    "imageAlt": "Official Slaughter Mode trailer thumbnail published by Bethesda Softworks on 12 November 2026. © Bethesda Softworks / id Software.",
+    "category": "GAMING · ID SOFTWARE",
+    "readTime": "3 MIN READ"
+  },
   "/news/god-of-war-laufey-report-20-mai-2027": {
     "title": "GOD OF WAR LAUFEY",
     "accent": "FAYE WILL WAIT FOR MAY.",
@@ -26,6 +58,22 @@ export const listings = {
     "imageAlt": "Official PlayStation thumbnail — God of War Laufey - Pre-Orders Open Now | PS5 Games, archive video.",
     "category": "GAMING · PS5",
     "readTime": "2 MIN READ"
+  },
+  "/news/gta-6-calendrier-xbox-semaine-16-20-novembre": {
+    "title": "GTA VI",
+    "accent": "LEONIDA’S WEEK APPROACHES.",
+    "dek": "GTA VI features in Xbox’s schedule for the week of 16–20 November. The official calendar keeps the 19th for Leonida, alongside Ranger’s Path, Unicorn Academy and Dark Rail.",
+    "imageAlt": "Official GTA VI illustration reproduced by Xbox Wire for its 13 November calendar. © Rockstar Games. The illustrative trailer dates from 15 October.",
+    "category": "GAMING · XBOX CALENDAR",
+    "readTime": "3 MIN READ"
+  },
+  "/news/gta-6-discord-theme-vice-city": {
+    "title": "GTA VI",
+    "accent": "VICE CITY TAKES OVER DISCORD.",
+    "dek": "Discord is offering a Vice City theme, app icon and Display Name Style ahead of GTA VI. Announced on 16 November, this temporary makeover is available to everyone through 13 December, then longer with certain Nitro plans.",
+    "imageAlt": "Official Discord visual combining its Vice City-coloured logo with the GTA VI logo, published on 16 November 2026. © Discord / Rockstar Games.",
+    "category": "GAMING · GTA VI & DISCORD",
+    "readTime": "3 MIN READ"
   },
   "/news/gta-6-precommandes-estimations-sensor-tower-novembre": {
     "title": "GTA VI",
@@ -43,6 +91,22 @@ export const listings = {
     "category": "GAMING · EXPLORATION & FARMING",
     "readTime": "2 MIN READ"
   },
+  "/news/tech/app-store-connect-descripteurs-age-16-novembre": {
+    "title": "APP STORE CONNECT",
+    "accent": "AGE RATINGS GET MORE PRECISE.",
+    "dek": "From 16 November, Apple announces two new rating descriptors in App Store Connect: shared location and dating/relationships. All apps must have completed these declarations by 12 January 2027.",
+    "imageAlt": "Official App Store Connect presentation illustration on Apple Developer. General service visual, not a screenshot of the new rating fields. © Apple.",
+    "category": "TECH · APPLE DEVELOPER",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/gemini-notebook-sites-interactifs": {
+    "title": "GEMINI NOTEBOOK",
+    "accent": "SOURCES BECOME INTERACTIVE.",
+    "dek": "Google says Gemini Notebook can turn a notebook’s sources into interactive sites: study aids, dashboards or project trackers. The rollout starts on the web for users aged 18 and over.",
+    "imageAlt": "Official Google illustration of an interactive periodic table for Gemini Notebook, published on 16 November 2026. Supplier demonstration, not a result produced by our team.",
+    "category": "TECH · GOOGLE LABS",
+    "readTime": "3 MIN READ"
+  },
   "/news/tech/openai-pierre-acquisition-codex-5-novembre": {
     "title": "CODEX",
     "accent": "THE GIT TOOLS BET.",
@@ -58,6 +122,14 @@ export const listings = {
     "imageAlt": "Official Siri AI icon published by Apple Developer in its 3 November announcement",
     "category": "TECH · APPLE & DEVELOPMENT",
     "readTime": "2 MIN READ"
+  },
+  "/news/tech/xbox-playback-historique-compte-pays": {
+    "title": "XBOX PLAYBACK",
+    "accent": "YOUR HISTORY IN NUMBERS.",
+    "dek": "Xbox Playback offers a personalised recap of your gaming history. Launched on 12 November in fifteen countries, the service relies on available account data and is announced through 31 December.",
+    "imageAlt": "Official Xbox Playback visual published on 12 November 2026. It does not represent our team’s personal statistics.",
+    "category": "TECH · ACCOUNTS & DATA",
+    "readTime": "3 MIN READ"
   },
   "/news/zelda-ocarina-of-time-sortie-switch-2-5-novembre": {
     "title": "OCARINA OF TIME",
