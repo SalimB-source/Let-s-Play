@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { RPG_ASCENSION_CARDS, RPG_DUEL_CARDS, RPG_JETON_CARDS, cardById, cardColors, jetonById } from '../src/games/rpgCards.js';
+import { rpgCandidatsCoutInvocationSpeciale } from '../src/games/rpgMobaEmbuscadesImprimees.js';
 import { carteCorrespondMateriau, combinaisonsAscension, libelleRecetteAscension, validerMateriauxAscension } from '../src/games/rpgAscension.js';
 import { indexReanimation, planRenfortAscension } from '../src/games/rpgRenforts.js';
 import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
@@ -59,7 +60,11 @@ function poser(d, id, s = 'joueur', pref = null) {
   const tour = d.tour; d.tour = s; d[s].invocationNormaleJouee = false;
   if (d.moba) d.moba.creaturesJouees[s] = false;
   d[s].main.push(id);
-  const opts = { sacrificeIds: victimes.map(e => e.id) };
+  // Certaines créatures paient un coût depuis qu'elles ont une Invocation
+  // spéciale : le test pose toujours la carte normalement, coût compris.
+  const coutSpecial = rpgCandidatsCoutInvocationSpeciale(d, s, id)[0];
+  const opts = { sacrificeIds: victimes.map(e => e.id),
+    ...(coutSpecial ? { choixCoutInvocation: coutSpecial } : {}) };
   let res;
   if (d.moba) {
     const place = victimes.length ? (() => { const v = d.moba.lanes.find(l => l.slots[s].includes(victimes[0].id)); return [v.id, v.slots[s].indexOf(victimes[0].id)]; })() : placeLibre(d, s, pref);

@@ -89,7 +89,8 @@ test('Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', 
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
-  assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Invocation spéciale', 'Rapidité', 'Butin']);
+  assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin'],
+    'le Fennec se joue normalement : plus de pastille Invocation spéciale');
   assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
     'le Scorpion affiche Poison, sans l’ancien effet de mort');
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Overkill', 'Furie 2']);
@@ -110,9 +111,9 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
     'Tiziri ne produit plus de mana et ne porte pas de pastille de mana');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
-  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Invocation spéciale', 'Esquive', 'Contre-attaque'],
+  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
-  assert.deepEqual(pastillesDe('salem'), ['Invocation spéciale', 'Rapidité', 'Attaque ciblée', 'Contre-attaque', 'Bouclier'],
+  assert.deepEqual(pastillesDe('salem'), ['Rapidité', 'Attaque ciblée', 'Contre-attaque', 'Bouclier'],
     'Salem affiche Rapidité, Attaque ciblée, Contre-attaque et sa parade anti-sort');
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');
@@ -282,11 +283,11 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
 
 test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte de l’aperçu', () => {
   const feriel = effetsDetailles(cardById('feriel'));
-  assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Invocation spéciale', 'Rapidité', 'Attaque ciblée']);
-  assert.equal(feriel.pastilles[0].description, 'Vous pouvez jouer cette carte pendant votre phase principale si sa condition est remplie : Vous contrôlez une créature Sable et une créature Braise distinctes, dont une blessée. Sans sacrifice ni invocation normale ; sinon, invocation normale pendant votre tour.',
-    'la condition de l’Embuscade reste indépendante de Rapidité');
-  assert.match(feriel.pastilles[1].description, /attaquer le tour où elle arrive/);
-  assert.match(feriel.pastilles[2].description, /créature adverse ou directement.*15 %/u,
+  assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Rapidité', 'Attaque ciblée'],
+    'Fériel se joue normalement : sa pastille Invocation spéciale a disparu');
+  assert.match(feriel.pastilles[0].description, /attaquer le tour où elle arrive/,
+    'Rapidité reste décrite par sa pastille');
+  assert.match(feriel.pastilles[1].description, /créature adverse ou directement.*15 %/u,
     'la bulle décrit la nouvelle attaque ciblée');
   assert.equal(feriel.texte, '', 'tout le texte de Fériel est passé dans ses pastilles');
 
@@ -466,7 +467,9 @@ test('le chiffre de la carte se lit aussi hors des pastilles', () => {
 });
 
 test('Invocation spéciale nomme la phase principale et fournit une pastille explicative', () => {
-  const cartes = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse);
+  // La Sentinelle des sables est la seule carte à réaction pure : elle ne figure
+  // dans aucune table, son texte imprimé décrit une réponse à une attaque directe.
+  const cartes = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse && carte.id !== 'sentinelle-des-sables');
   assert.ok(cartes.length > 0);
   assert.equal(EFFET_ICONE.reactionTourAdverse, 'i-invocation-speciale');
   for (const carte of cartes) {
@@ -479,7 +482,10 @@ test('Invocation spéciale nomme la phase principale et fournit une pastille exp
     assert.match(pastillesCarte(carte), /#i-invocation-speciale/, carte.id);
   }
   assert.ok(!pastillesPourCarte(cardById('chien-du-guet')).some((p) => p.cle === 'reactionTourAdverse'));
-  assert.ok(pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle possède désormais Embuscade');
+  const sentinelle = effetsDetailles(cardById('sentinelle-des-sables')).pastilles
+    .find((p) => p.cle === 'reactionTourAdverse');
+  assert.equal(sentinelle?.label, 'Invocation spéciale');
+  assert.match(sentinelle.description, /attaque directement/u, 'la Sentinelle répond à une attaque directe');
   assert.ok(!pastillesPourCarte(cardById('embuscade')).some((p) => p.cle === 'reactionTourAdverse'), 'le sort homonyme ne gagne pas cette capacité');
 });
 

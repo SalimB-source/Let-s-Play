@@ -114,11 +114,14 @@ test('hors tour, le Pilote ne répond pas à une annonce, qui reprend normalemen
 test('l’IA peut préférer une invocation spéciale à la pose normale déjà utilisée', () => {
   const d = partie();
   rpgFinDeTour(d);
-  d.sorcier.main = ['gardienne-des-portes-de-sable', 'faiseur-de-passage'];
+  // La Garde du trône givré exige un Viking au cimetière : elle profite alors
+  // d'une Invocation spéciale alors que la pose normale est déjà utilisée.
+  d.sorcier.cimetiere.push('viking-des-neiges');
+  d.sorcier.main = ['gardienne-des-portes-de-sable', 'garde-du-trone-givre'];
   poser(d, 'sorcier', 'gardienne-des-portes-de-sable');
   const avant = JSON.stringify(d);
   const choix = rpgMobaChoisirCreatureIA(d, 'sorcier');
-  assert.equal(choix?.id, 'faiseur-de-passage');
+  assert.equal(choix?.id, 'garde-du-trone-givre');
   assert.deepEqual(choix.sacrificeIds, []);
   assert.equal(JSON.stringify(d), avant);
 });

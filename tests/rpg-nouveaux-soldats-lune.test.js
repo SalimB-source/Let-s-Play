@@ -17,7 +17,12 @@ function poser(d, cote, id, cible = null, options = {}) {
 test('Six soldats illustrés, bicolores et jouables normalement pendant leur tour', () => {
   const elements = ['sable', 'sable', 'eau', 'braise', 'sable', 'neige'];
   for (const [i, id] of ids.entries()) {
-    const c = cardById(id); assert.equal(c.kind, 'creature'); assert.ok(c.reactionTourAdverse && c.arrivee);
+    const c = cardById(id); assert.equal(c.kind, 'creature'); assert.ok(c.arrivee);
+    // L'Éclipse et la Veilleuse de la lune givrée ont perdu leur Invocation
+    // spéciale : elles gardent leur arrivée et se posent normalement.
+    const sansSpeciale = ['eclipse-silencieuse', 'traqueur-des-nuits-sans-lune', 'veilleuse-de-la-lune-givree'];
+    if (!sansSpeciale.includes(id)) assert.ok(c.reactionTourAdverse, id);
+    else assert.ok(!c.reactionTourAdverse, id);
     assert.deepEqual(cardColors(c), [elements[i], 'tenebres']);
     assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)));
     const d = duel();

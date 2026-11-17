@@ -37,7 +37,11 @@ test('tous les registres MOBA sont reconnus avec leur condition dans les deux ca
       delete d.moba;
     }
   }
-  for (const c of RPG_CREATURE_CARDS.filter(c => c.reactionTourAdverse)) assert.ok(rpgCarteEmbuscade(c), c.id);
+  // Une carte peut aussi ne garder qu'un déclencheur de tour adverse, sans
+  // figurer dans une table d'Invocation spéciale (la Sentinelle des sables).
+  for (const c of RPG_CREATURE_CARDS.filter(c => c.reactionTourAdverse)) {
+    assert.ok(rpgCarteEmbuscade(c) || c.conditionEmbuscade, c.id);
+  }
 });
 
 for (const defenseur of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
@@ -83,7 +87,7 @@ test('IA solo ne répond plus avec une créature Invocation spéciale', () => {
 });
 
 test('les aperçus indiquent la condition commune et la pastille Embuscade', () => {
-  for (const id of ['veilleuse-des-citernes', 'fennec-des-decombres', 'tojiro-le-pourfendeur']) {
+  for (const id of ['veilleuse-des-citernes', 'chacal-du-seuil', 'tojiro-le-pourfendeur']) {
     const carte = cardById(id);
     assert.equal(conditionEmbuscadePourApercu(carte), rpgTexteConditionEmbuscade(id));
     const lecture = effetsDetailles(carte);

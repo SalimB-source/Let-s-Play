@@ -129,7 +129,10 @@ test('les conditions d’Embuscade dépendent du plateau, pas du type d’attaqu
   const d = partie(), a = poser(d, 'joueur'), c = poser(d, 'sorcier');
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, c.id).ok);
   assert.equal(rpgConditionEmbuscadeRemplie(d, 'sorcier', cardById('gardienne-du-croissant')), false);
-  assert.equal(rpgConditionEmbuscadeRemplie(d, 'sorcier', cardById('sentinelle-des-sables')), true);
+  // La Sentinelle des sables ne se déclenche plus sur une simple attaque : il
+  // faut un sorcier sans défenseur frappé directement.
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'sorcier', cardById('sentinelle-des-sables')), false);
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'sorcier', cardById('chacal-du-seuil')), true);
   const d2 = partie(), tireur = poser(d2, 'joueur'), cible = poser(d2, 'sorcier');
   tireur.coupRapide = true;
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d2, 'joueur', tireur.id, cible.id).ok);

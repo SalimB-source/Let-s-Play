@@ -355,7 +355,14 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'sans ancre : +1/+0');
   assert.equal(porteur.coupRapide, true, 'Attaque ciblée est toujours donnée');
 
-  poser(duel, 'joueur', 'cavalier-des-deux-sabres');
+  // Depuis la fin des Invocations spéciales, le Cavalier coûte 6 et demande un
+  // sacrifice : on lui offre un chien du guet, et la pose consomme le quota.
+  duel.joueur.invocationNormaleJouee = false;
+  const victime = poser(duel, 'joueur', 'chien-du-guet');
+  duel.joueur.invocationNormaleJouee = false;
+  donner(duel, 'joueur', 'cavalier-des-deux-sabres'); manaPlein(duel, 'joueur');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'cavalier-des-deux-sabres', null, { sacrificeIds: [victime.id] }).ok, true,
+    'cavalier-des-deux-sabres entre en jeu');
   assert.equal(porteur.atk, atkNu + 2, 'avec le Cavalier : +2/+0');
   assert.equal(porteur.coupRapide, true, 'et le Lien ne retire pas Attaque ciblée');
 

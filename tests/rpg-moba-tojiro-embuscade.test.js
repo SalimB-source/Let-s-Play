@@ -15,8 +15,7 @@ function partie(actif, plein=false){
  d[actif].main=['djinn-du-dernier-brasier'];d[actif].mana.braise=20;
  // Le Djinn éphémère est conservé pour préparer une menace à un tour ultérieur.
  const djinn=rpgMobaJouerCreature(d,actif,'djinn-du-dernier-brasier','left',0).entite;assert.ok(djinn);djinn.detruireFinDuTour=false;rpgFinDeTour(d);rpgFinDeTour(d);djinn.ready=true;
- victime.pv--; // La condition MOBA exige une créature alliée blessée.
- d[defenseur].main=[id];d[defenseur].mana.braise=20;d[actif].mana.braise=20;
+ d[defenseur].main=[id,'sabre-maudit'];d[defenseur].mana.tenebres=20;d[defenseur].mana.braise=20;d[actif].mana.braise=20;
  return {d,defenseur,victime,djinn};
 }
 for (const actif of ['joueur', 'sorcier']) for (const fenetre of ['combat', 'sort', 'creature', 'fin']) {
@@ -39,18 +38,20 @@ for (const actif of ['joueur', 'sorcier']) for (const fenetre of ['combat', 'sor
  });
 }
 for (const actif of ['joueur', 'sorcier']) {
- test(`Tojiro vérifie Djinn et créature blessée à son tour (${actif})`, () => {
-  const {d, defenseur, victime, djinn} = partie(actif);
+ test(`Tojiro vérifie le Sabre maudit en main à son tour (${actif})`, () => {
+  const {d, defenseur, victime} = partie(actif);
   assert.ok(rpgMobaTerminerTour(d, actif).ok);
   assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
-  const carte = djinn.carteId; djinn.carteId = 'gardienne-des-portes-de-sable';
+  // Sans le Sabre maudit, aucune Invocation spéciale : la carte reste une pose
+  // normale qui demande une victime.
+  d[defenseur].main = [id];
   assert.equal(rpgMobaInvocationSpecialeDisponible(d, defenseur, id), false);
-  djinn.carteId = carte; victime.carteId = 'source-de-bimini';
-  assert.equal(rpgMobaInvocationSpecialeDisponible(d, defenseur, id), false);
-  victime.carteId = 'gardienne-des-portes-de-sable';
+  // Avec le Sabre maudit, elle est disponible et le Sabre part au cimetière.
+  d[defenseur].main = [id, 'sabre-maudit'];
   assert.equal(rpgMobaInvocationSpecialeDisponible(d, defenseur, id), true);
-  const result = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds: []});
+  const result = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { choixCoutInvocation: 'sabre-maudit' });
   assert.ok(result.ok, JSON.stringify(result));
+  assert.ok(d[defenseur].cimetiere.includes('sabre-maudit'));
   assert.ok(d[defenseur].creatures.includes(victime));
  });
 }
@@ -119,7 +120,7 @@ for (const actif of ['joueur', 'sorcier']) test(`une annonce reste intacte aprè
  const {d, defenseur, victime} = partie(actif); d[actif].main = ['ashigaru-des-braises'];
  assert.ok(rpgMobaJouerCreature(d, actif, 'ashigaru-des-braises', 'right', 0, {ouvrirReponse:true}).creatureEnAttente);
  const initial = d.mobaCreatureEnAttente, before = JSON.stringify(d);
- assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds:[]}).raison, 'pas-votre-tour');
+ assert.equal(rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { choixCoutInvocation: 'sabre-maudit' }).raison, 'pas-votre-tour');
  assert.equal(JSON.stringify(d), before); assert.equal(d.mobaCreatureEnAttente, initial);
  assert.ok(d[defenseur].creatures.includes(victime));
  assert.ok(rpgMobaPasserCreature(d, defenseur).entite);
@@ -130,10 +131,11 @@ test('Tojiro spécial à son tour ne déclenche pas les effets de mort', () => {
  assert.ok(rpgMobaTerminerTour(d, 'sorcier').ok);
  assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
  const cimetiere = [...d[defenseur].cimetiere];
- const result = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds:[]});
+ const result = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { choixCoutInvocation: 'sabre-maudit' });
  assert.ok(result.ok, JSON.stringify(result));
  assert.ok(d[defenseur].creatures.includes(victime));
- assert.deepEqual(d[defenseur].cimetiere, cimetiere);
+ // Seul le coût (le Sabre maudit défaussé) rejoint le cimetière.
+ assert.deepEqual(d[defenseur].cimetiere, [...cimetiere, 'sabre-maudit']);
 });
 
 for(const side of ['joueur','sorcier']) for(const [jet, esquive] of [[0, true], [0.9, false]]) test(`un souffle de créature ${esquive ? 'esquivé' : 'encaissé'} réveille la riposte sur la même voie MOBA (${side})`,()=>{
@@ -168,7 +170,9 @@ for(const actif of ['joueur','sorcier']) test(`champ plein : la capacité ciblé
 
 test('toutes les créatures portant Embuscade sont présentes dans le pool audité',async()=>{
  const {RPG_DUEL_CARDS}=await import('../src/games/rpgCards.js');const ids=RPG_DUEL_CARDS.filter(card=>card.reactionTourAdverse).map(card=>card.id);
- assert.equal(ids.length,10);for(const card of ids)assert.ok(MOBA_CARTES_AUTORISEES.includes(card),card);
+ // Sept cartes portent encore un déclencheur de tour adverse depuis le ménage
+ // des Invocations spéciales : elles restent toutes dans le pool audité.
+ assert.equal(ids.length,7);for(const card of ids)assert.ok(MOBA_CARTES_AUTORISEES.includes(card),card);
 });
 for(const side of ['joueur','sorcier']) test(`Réanimation de Tojiro sans Djinn ni sacrifice (${side})`,()=>{
  const deck=Array(30).fill('ashigaru-des-braises');const d=rpgMobaNouveauDuel({joueurDeck:deck,sorcierDeck:deck,rng:()=>.5});
@@ -191,7 +195,7 @@ test('une Invocation spéciale à son tour laisse l’invocation normale disponi
  const {d, defenseur, victime} = partie('sorcier');
  assert.ok(rpgMobaTerminerTour(d, 'sorcier').ok);
  assert.ok(rpgMobaPasserFinDeTour(d, defenseur).ok);
- const special = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, {sacrificeIds:[]});
+ const special = rpgMobaJouerCreature(d, defenseur, id, 'left', 1, { choixCoutInvocation: 'sabre-maudit' });
  assert.ok(special.ok, JSON.stringify(special));
  assert.equal(d.moba.creaturesJouees[defenseur], false);
  assert.ok(d[defenseur].creatures.includes(victime));

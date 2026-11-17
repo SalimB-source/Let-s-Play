@@ -116,11 +116,20 @@ for (const moba of [false, true]) test(`Esquive de l'attaquant contre Contre-att
   assert.ok((moba ? rpgMobaResoudreAttaqueIndividuelle(d, 'joueur') : rpgResoudreAttaqueIndividuelleClassique(d, 'joueur')).ok);
   assert.equal(a.pv, 2); assert.ok(d.log.some(l => l.includes('esquive')));
 });
-for (const moba of [false, true]) test(`Veuve : invocation spéciale et coût distinct de l'arrivée (${moba ? 'MOBA' : 'duel'})`, () => {
-  const d = partie(moba, true); d.tour = 'joueur'; d.joueur.main = ['veuve-des-urnes', 'reanimation']; d.joueur.deck = ['papyrus'];
-  const before = moba ? mobaVoie(d.moba, 'left').hp.joueur : d.joueur.pv;
-  const r = moba ? rpgMobaJouerCreature(d, 'joueur', 'veuve-des-urnes', 'left', 0, { choixCoutInvocation: 'reanimation', sacrificeIds: [] }) : rpgJouerCreature(d, 'joueur', 'veuve-des-urnes', null, { choixCoutInvocation: 'reanimation' });
-  assert.ok(r.ok, JSON.stringify(r)); assert.ok(d.joueur.cimetiere.includes('reanimation')); assert.deepEqual(d.joueur.main, ['papyrus']); assert.equal(moba ? mobaVoie(d.moba, 'left').hp.joueur : d.joueur.pv, before - 2);
+for (const moba of [false, true]) test(`Momie de lin : le coût d'Invocation spéciale reste distinct de l'arrivée (${moba ? 'MOBA' : 'duel'})`, () => {
+  const d = partie(moba, true); d.tour = 'joueur';
+  d.joueur.cimetiere = ['chien-du-guet', 'papyrus'];
+  d.joueur.main = ['momie-de-lin'];
+  const r = moba
+    ? rpgMobaJouerCreature(d, 'joueur', 'momie-de-lin', 'left', 0, { choixCoutInvocation: 'chien-du-guet', sacrificeIds: [] })
+    : rpgJouerCreature(d, 'joueur', 'momie-de-lin', null, { choixCoutInvocation: 'chien-du-guet' });
+  assert.ok(r.ok, JSON.stringify(r));
+  // Le coût exile la créature choisie, sans rien prendre d'autre au cimetière.
+  assert.deepEqual(d.joueur.exil ?? [], ['chien-du-guet']);
+  assert.deepEqual(d.joueur.cimetiere, ['papyrus']);
+  assert.ok(!(moba ? d.moba.creaturesJouees.joueur : d.joueur.invocationNormaleJouee),
+    'la spéciale ne consomme pas l’invocation normale');
+  assert.ok(d.joueur.creatures.some((entite) => entite.carteId === 'momie-de-lin'));
 });
 test('MOBA : payer depuis le centre rallié touche les deux voies latérales', () => {
   const d = partie(true); d.tour = 'joueur'; const center = mobaVoie(d.moba, 'center'); center.active = false; center.conqueredBy = 'joueur'; d.moba.centerJoined = { side: 'joueur', laneId: null };

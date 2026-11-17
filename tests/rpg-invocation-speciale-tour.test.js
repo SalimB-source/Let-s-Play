@@ -10,8 +10,15 @@ import { rpgMobaChoisirCreatureIA } from '../src/games/rpgMobaAI.js';
 import { effetsDetailles, texteCombatIndividuel } from '../src/games/effetIcons.js';
 import { rpgMobaCartePourApercu } from '../src/games/rpgMobaPresentation.js';
 
-const cible = 'tojiro-le-pourfendeur';
+const cible = 'le-chasseur-d-ocracoke';
 const autre = (c) => c === 'joueur' ? 'sorcier' : 'joueur';
+// La condition de la carte testée disparaît quand l'adversaire n'a plus ni
+// Pirate ni Navire : son brûlot redevient un simple chien du guet.
+const retirerPirate = (d) => {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const e of d[cote].creatures) if (e.carteId === 'le-brulot') e.carteId = 'chien-du-guet';
+  }
+};
 function partie(moba = false, pvp = true) {
   const deck = Array(30).fill('chien-du-guet');
   const opts = { joueurDeck: deck, sorcierDeck: deck, rng: () => .5 };
@@ -27,7 +34,7 @@ function preparer(moba, pvp, side) {
   const ami = moba ? rpgMobaJouerCreature(d, side, d[side].main[0], 'left', 0) : rpgJouerCreature(d, side, d[side].main[0]);
   assert.ok(ami.ok, JSON.stringify(ami)); ami.entite.pv--;
   rpgFinDeTour(d);
-  const ennemi = autre(side); d[ennemi].main = ['djinn-du-dernier-brasier'];
+  const ennemi = autre(side); d[ennemi].main = ['le-brulot'];
   const djinn = moba ? rpgMobaJouerCreature(d, ennemi, d[ennemi].main[0], 'left', 0) : rpgJouerCreature(d, ennemi, d[ennemi].main[0]);
   assert.ok(djinn.ok, JSON.stringify(djinn)); djinn.entite.detruireFinDuTour = false;
   rpgFinDeTour(d);
@@ -48,7 +55,7 @@ for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
     assert.equal(d[side].creatures.find((e) => e.carteId === cible)?.malInvocation, true);
   });
   test(`duel ${pvp ? 'PvP' : 'solo'} ${side} : condition absente utilise l'invocation normale`, () => {
-    const { d, ami } = preparer(false, pvp, side); ami.pv = ami.pvMax;
+    const { d, ami } = preparer(false, pvp, side); retirerPirate(d);
     assert.equal(rpgInvocationSpecialeSurSonTour(d, side, cardById(cible)), false);
     assert.equal(sacrificesInvocation(cardById(cible), d, side), 1);
     const r = pvp ? rpgPvpAppliquer(d, side, { type: 'jouer-carte', carteId: cible, sacrificeIds: [ami.id] }) : rpgJouerCreature(d, side, cible, null, { sacrificeIds: [ami.id] });
@@ -70,7 +77,7 @@ for (const side of ['joueur', 'sorcier']) {
     assert.equal(result.entite.malInvocation, true);
   });
   test(`MOBA ${side} : condition absente conserve la pose normale avec sacrifice`, () => {
-    const { d, ami } = preparer(true, true, side); ami.pv = ami.pvMax;
+    const { d, ami } = preparer(true, true, side); retirerPirate(d);
     assert.equal(rpgMobaInvocationSpecialeDisponible(d, side, cible), false);
     assert.equal(rpgMobaSacrificesInvocation(d, side, cardById(cible)), 1);
     const result = rpgMobaJouerCreature(d, side, cible, 'left', 0, { sacrificeIds: [ami.id] });
@@ -107,7 +114,7 @@ for (const moba of [false, true]) {
 }
 
 test('MOBA : un drapeau interne ne permet pas une spéciale sans condition', () => {
-  const { d, ami } = preparer(true, true, 'joueur'); ami.pv = ami.pvMax;
+  const { d, ami } = preparer(true, true, 'joueur'); retirerPirate(d);
   const avant = JSON.stringify(d);
   const result = rpgJouerCreature(d, 'joueur', cible, null, { invocationSpecialeMoba: true, sacrificeIds: [] });
   assert.equal(result.raison, 'condition-embuscade');

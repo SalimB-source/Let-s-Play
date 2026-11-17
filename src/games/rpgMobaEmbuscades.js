@@ -1,35 +1,30 @@
-import { cardById, cardColors, cardHasPrintedType } from './rpgCards.js';
+import { cardById, cardHasPrintedType } from './rpgCards.js';
 
-/** Conditions communes des Embuscades : réévaluées à chaque annonce. */
+/** Conditions communes des Embuscades : réévaluées à chaque annonce.
+ *
+ * Réduites volontairement à quatre cartes : les autres créatures qui
+ * portaient une Invocation spéciale se jouent maintenant comme n'importe
+ * quelle créature (coût, sacrifices, quota). Une entrée retirée d'ici rend la
+ * carte normale — le texte imprimé suit, il est calculé depuis ces tables. */
 export const MOBA_EMBUSCADES_CONDITIONS = Object.freeze({
-  'faiseur-de-passage': 'Vous contrôlez une créature Sable.',
-  'ghul-des-cendres': 'Vous contrôlez un autre Djinn.',
-  feriel: 'Vous contrôlez une créature Sable et une créature Braise distinctes, dont une blessée.',
+  'pilote-de-la-carreira': 'Vous n’avez aucun Navire en main.',
+  'kenshi-de-la-forge': 'Vous contrôlez deux autres Samouraïs.',
+  'pretre-de-la-bouche': 'Vous avez au moins deux cartes de créature dans votre cimetière.',
   'veilleuse-des-citernes': 'Vous contrôlez une créature blessée.',
   'volva-soigneuse': 'Vous contrôlez un Viking blessé.',
-  'kenshi-de-la-forge': 'Vous contrôlez un autre Samouraï.',
-  'pretre-de-la-bouche': 'Vous contrôlez une créature blessée et l’adversaire contrôle plus de créatures que vous.',
-  'pilote-de-la-carreira': 'Vous n’avez aucun Navire en main.',
-  'corbeau-de-givre': 'L’adversaire contrôle une créature de coût 3 ou moins.',
 });
 
 export function rpgMobaConditionSpeciale(duel, side, cardId) {
   if (!duel || !Object.hasOwn(MOBA_EMBUSCADES_CONDITIONS, cardId) || !duel[side]) return false;
   const allies = duel[side].creatures.filter((e) => cardById(e.carteId)?.kind !== 'site');
-  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
-  const adversaires = duel[enemy].creatures.filter((e) => cardById(e.carteId)?.kind !== 'site');
+  const cimetiere = duel[side].cimetiere ?? [];
   switch (cardId) {
-    case 'faiseur-de-passage': return allies.some((e) => cardColors(cardById(e.carteId)).includes('sable'));
-    case 'ghul-des-cendres': return allies.some((e) => cardHasPrintedType(e.carteId, 'Djinn'));
-    case 'feriel': return allies.some((e) => cardColors(cardById(e.carteId)).includes('sable')
-      && allies.some((autre) => autre.id !== e.id && cardColors(cardById(autre.carteId)).includes('braise')
-        && (e.pv < e.pvMax || autre.pv < autre.pvMax)));
+    case 'pilote-de-la-carreira': return !duel[side].main.some((id) => cardHasPrintedType(id, 'Navire'));
+    case 'kenshi-de-la-forge': return allies.filter((e) => cardHasPrintedType(e.carteId, 'Samouraï')).length >= 2;
+    case 'pretre-de-la-bouche': return cimetiere
+      .filter((id) => ['creature', 'hero'].includes(cardById(id)?.kind)).length >= 2;
     case 'veilleuse-des-citernes': return allies.some((e) => e.pv < e.pvMax);
     case 'volva-soigneuse': return allies.some((e) => e.pv < e.pvMax && cardHasPrintedType(e.carteId, 'Viking'));
-    case 'kenshi-de-la-forge': return allies.some((e) => cardHasPrintedType(e.carteId, 'Samouraï'));
-    case 'pretre-de-la-bouche': return allies.some((e) => e.pv < e.pvMax) && adversaires.length > allies.length;
-    case 'pilote-de-la-carreira': return !duel[side].main.some((id) => cardHasPrintedType(id, 'Navire'));
-    case 'corbeau-de-givre': return adversaires.some((e) => (cardById(e.carteId)?.cost ?? Infinity) <= 3);
     default: return false;
   }
 }

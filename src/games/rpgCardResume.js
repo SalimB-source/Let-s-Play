@@ -194,6 +194,7 @@ const CONDITIONS_EMBUSCADE_COURTES = {
   'vie-inferieure': ['vous avez ', 'moins de PV', ' que l’adversaire'],
   'attaque-ciblee': ['une ', 'Attaque ciblée', ' adverse vise une de vos ', 'créatures'],
   'adversaire-force-4': ['l’adversaire a une créature de ', 'force 4+'],
+  'attaque-directe': ['vous ne contrôlez ', 'aucune créature', ' et qu’une créature adverse vous ', 'attaque directement'],
 };
 
 /** Texte du cadre ; le texte imprimé reste un repli pour un futur cas inconnu. */

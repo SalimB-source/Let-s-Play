@@ -290,15 +290,16 @@ test('la leçon Embuscade prête son propre paquet, jouable en mana sans terrain
 test('la leçon invoque normalement puis spécialement pendant son tour', () => {
   const tutoriel = tutorielParId('embuscade-de-la-lune-noire');
   const duel = duelDeLecon(tutoriel);
-  const chien = duel.sorcier.creatures.find((entite) => entite.carteId === 'chien-du-guet');
-  assert.ok(chien);
+  // Deux Gardes du voile sont déjà en jeu : la condition du Porte-étendard
+  // (trois créatures alliées) attend la Danseuse.
+  assert.equal(duel.joueur.creatures.length, 2);
   const danseuse = rpgJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune');
   assert.ok(danseuse.ok);
   assert.equal(duel.joueur.invocationNormaleJouee, true);
-  const sentinelle = rpgJouerCreature(duel, 'joueur', 'sentinelle-des-sables', null, { cibleDifferee: true });
-  assert.ok(sentinelle.ok);
-  assert.ok(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok);
-  assert.equal(duel.sorcier.creatures.includes(chien), false);
+  const etendard = rpgJouerCreature(duel, 'joueur', 'porte-etendard-de-leclipse');
+  assert.ok(etendard.ok, etendard.raison);
+  assert.equal(duel.joueur.invocationNormaleJouee, true, 'la spéciale n’ajoute pas de seconde invocation');
+  assert.ok(duel.joueur.creatures.some((entite) => entite.carteId === 'porte-etendard-de-leclipse'));
 });
 
 test('la récompense d’un tutoriel n’est versée qu’une fois', () => {

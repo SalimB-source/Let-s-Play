@@ -82,7 +82,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
 
 test('les conditions d’Embuscade ont une version courte avec des mots clés à mettre en gras', () => {
   const embuscades = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse && carte.conditionEmbuscade);
-  assert.equal(embuscades.length, 10, "les dix cartes dotées d’Embuscade sont concernées");
+  assert.equal(embuscades.length, 7, "les sept cartes dotées d’Embuscade sont concernées");
   for (const carte of embuscades) {
     const morceaux = conditionEmbuscadeCourtePourApercu(carte);
     assert.ok(morceaux?.length >= 2, carte.id);
@@ -90,7 +90,7 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
     assert.ok(morceaux.join('').length < conditionEmbuscadePourApercu(carte).length + 12, `${carte.id} : condition concise`);
   }
   const tojiro = cardById('tojiro-le-pourfendeur');
-  assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['', 'L’adversaire contrôle un Djinn et vous contrôlez une créature blessée.']);
+  assert.deepEqual(conditionEmbuscadeCourtePourApercu(tojiro), ['', 'Défaussez une carte Sabre maudit de votre main, au choix.']);
   assert.equal(conditionEmbuscadeCourtePourApercu(cardById('chien-du-guet')), null);
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*background: linear-gradient\(110deg, #e4bd60, #c1922c\);[^}]*color: #000;/s,
@@ -106,7 +106,7 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
 test('la condition d’Embuscade de chaque Vampire utilise la condition commune', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
-  assert.equal(vampires.length, 10, "le nouveau Vampire rejoint les Embuscades conditionnelles");
+  assert.equal(vampires.length, 7, "les Vampires restants gardent leur Embuscade conditionnelle");
   for (const carte of vampires) {
     const condition = conditionEmbuscadePourApercu(carte);
     assert.ok(condition, `condition de ${carte.id} absente`);

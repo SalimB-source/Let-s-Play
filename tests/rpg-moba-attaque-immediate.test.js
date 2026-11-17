@@ -99,11 +99,11 @@ test('Invocation spéciale sans Rapidité : mal pendant son tour, défense et pr
 });
 
 test('les fiches conservent Rapidité et Embuscade, ainsi que Rapidité des jetons', () => {
-  const c = rpgMobaCartePourApercu(cardById('fennec-des-decombres'));
+  const c = rpgMobaCartePourApercu(cardById('chacal-du-seuil'));
   assert.equal(c.rapidite, true); assert.match(c.text, /Invocation spéciale/); assert.match(c.text, /Rapidité/);
   const labels = effetsDetailles(c).pastilles.map(p => p.cle);
   assert.ok(labels.includes('rapidite') && labels.includes('reactionTourAdverse'));
-  assert.match(rpgMobaNotesCarte(cardById('fennec-des-decombres')).join(' '), /Rapidité/);
+  assert.match(rpgMobaNotesCarte(cardById('chacal-du-seuil')).join(' '), /Rapidité/);
   for (const id of ['chien-de-sable', 'guepard']) {
     const token = rpgMobaCartePourApercu(cardById(id)); assert.equal(token.rapidite, true); assert.match(token.text, /Rapidité/);
   }
