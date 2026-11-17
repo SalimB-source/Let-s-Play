@@ -114,7 +114,6 @@ Deux points d'attention pour la suite :
 
 ```bash
 npm run theme:ink-sweep   # régénère la liste des encres à rabattre vers le sombre
-npm run theme:ink-sweep:vice   # idem pour la peau Vice
 ```
 
 `theme:ink-sweep` reparcourt les feuilles et réécrit la section « encre claire →
@@ -129,89 +128,29 @@ dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
 les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
 signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 
-## Habillage temporaire « Vice City » (GTA 6)
+## Héros « GTA 6 / Vice City » (habillage retiré, visuel conservé)
 
-Pendant la sortie de GTA 6, le site peut porter un troisième thème, `vice` :
-**papier rose bonbon**, cartes blanches, accents rose vif / menthe / citron et
-palmiers, avec la vue nocturne de Vice City fournie par le propriétaire du site
-en héros (`public/vice-city-hero.jpg` — c'est SA clé d'art, ne pas la remplacer
-par une image générée), un compte à rebours dans le héros et un avis
-« habillage temporaire » au-dessus du pied de page.
-C'est un **hommage non officiel** : Let's Play n'est affilié ni à Rockstar Games
-ni à Take-Two.
+Le site a porté un troisième thème temporaire, `vice`, pour la sortie de
+*Grand Theft Auto VI*. **Il a été retiré** : le site a retrouvé ses deux thèmes
+d'origine (sombre, clair), sa barre et son tiroir habituels.
 
-**La peau est CLAIRE.** Ce n'est pas un détail cosmétique : la moitié des
-feuilles de page du site écrivent pour un fond noir (texte blanc, panneaux
-nuit). Sur papier rose, ces textes disparaissent. Deux mécanismes s'en
-chargent, et il faut toucher aux deux quand on ajoute un composant :
+Il reste **une seule chose** de cet habillage : la clé d'art du héros, la vue
+nocturne de Vice City fournie par le propriétaire du site, dans
+`public/vice-city-hero.jpg`, servie par `src/theme/viceTheme.js`.
 
-1. **les encres** — `npm run theme:ink-sweep:vice`
-   régénère la section 9 de `vice.css` (même balayage mécanique que le thème
-   clair : encres blanches → encre prune, jaune de marque → citron foncé,
-   statuts → versions lisibles). Ne pas l'éditer à la main ;
-2. **les surfaces** — section 8bis, écrite à la main : les blocs qui posent un
-   fond nuit en dur (cartes Actus, panneaux Communauté, bannière Quiz, bandeau
-   CTA, commentaires, encadrés de test…) passent en carte blanche.
+- Le héros garde **le voile du site** (`.hero-shade` dans `styles.css`) : un
+  dégradé sombre à gauche qui porte le titre clair. Aucune teinte rose, aucun
+  cadre spécial. C'est ce voile, et lui seul, qui garantit le contraste sur
+  cette photo de nuit — ne pas le retirer sans remesurer.
+- C'est un **hommage non officiel** : Let's Play n'est affilié ni à Rockstar
+  Games ni à Take-Two. L'image vient du propriétaire du site, ce n'est pas une
+  image générée — ne pas la remplacer par une vue de jour produite pour un skin.
+- Un visiteur qui avait `vice` mémorisé dans `lp-theme` retombe sur le sombre
+  tout seul : la valeur est ignorée au chargement comme au démarrage.
 
-Règle de palette, à respecter partout : **chaque accent existe en deux
-familles** — la teinte *vive* (`--vice-pink`, `--vice-aqua`, `--vice-lemon`)
-pour les aplats, halos et bordures, et son *encre* (`--vice-pink-ink`,
-`--vice-mint-ink`, `--vice-lemon-ink`) dès qu'il s'agit d'écrire. Le vif sur
-blanc tombe sous 3:1 ; c'est l'encre qui passe AA.
-
-Restent volontairement sombres, comme dans les deux autres peaux : les médias
-(lecteurs, vignettes, cadres vidéo), la bande des partenaires (logos tiers), le
-jeu « Le Sablier » et les cartes-image du hub Actus.
-
-- **Fenêtre de campagne** : `VICE_CAMPAIGN` dans `src/theme/viceTheme.js`
-  (12 → 30 novembre 2026). Ces dates sont reprises à l'identique par le script
-  de démarrage d'`index.html` — les deux endroits doivent rester synchronisés.
-  Pendant la fenêtre, `vice` est le thème **par défaut** d'un visiteur qui n'a
-  encore rien choisi ; un `lp-theme` déjà mémorisé reste prioritaire. Hors
-  fenêtre, le site revient tout seul au sombre.
-- **Sortir de l'habillage** : la pastille de la barre (libellé « Retour » sur
-  ordinateur), l'entrée « Couleurs Vice City » du tiroir, ou le bouton « Retour
-  au look normal » de l'avis. Le choix est mémorisé, comme pour le clair.
-- **Y revenir une fois sorti** : la pastille palmier de la barre (icône seule,
-  infobulle et `aria-label`), présente sur ordinateur comme sur téléphone.
-  C'était le défaut de la première version : l'entrée de retour n'existait
-  qu'en téléphone, donc sortir de la peau sur ordinateur refermait la porte.
-  Règle à garder : **la barre ne montre qu'une porte à la fois** — en `vice`,
-  la pastille de thème devient la sortie et l'entrée palmier s'efface ; hors
-  `vice`, c'est l'inverse (`styles.css`, `[aria-pressed='true']`).
-- `?theme=vice` force l'habillage le temps d'une visite (recette, partage).
-- La peau vit dans **`src/theme/vice.css`**, importé après `theme.css` mais
-  **avant** les feuilles de page (`social.css`, `news-article.css`…) : toute
-  règle de même spécificité visant un composant de page doit donc être
-  qualifiée (`[data-theme='vice']`, ou le nom du composant, comme
-  `.social-dock`). C'est le piège à connaître avant d'y ajouter une règle.
-
-**Retirer l'opération** (le jour où elle s'arrête) : supprimer
-`src/theme/vice.css`, `src/theme/viceTheme.js`, `src/components/ViceNotice.jsx`
-et `public/vice-city-hero.jpg`, puis retirer la
-ligne d'import de `vice.css`
-dans `src/main.jsx`, les appels à `toggleVice` / `isVice` dans `ThemeToggle`,
-`Layout` et `Home`, et les mentions `vice` dans `ThemeContext` et `index.html`.
-Aucun test de CI ne verrouille `data-theme`, et `vice.css` ne figure pas dans
-les audits du thème clair : rien d'autre ne casse. En attendant, laisser les
-dates expirer suffit à rendre le site à son apparence d'origine.
-
-**Les trois façons de revenir**, de la plus légère à la plus définitive :
-
-1. **Rien faire** — passé le 30 novembre, `vice` n'est plus le défaut : toute
-   visite sans choix mémorisé repart en sombre, et la page d'accueil retrouve
-   son visuel d'origine. Le code du skin reste en place, inerte.
-2. **Retirer la peau** — la liste de fichiers ci-dessus, ou un
-   `git revert` du commit de l'habillage. Vérifié : le diff contre l'état
-   d'avant est vide, `vite build` passe, et `check:light-news`,
-   `check:light-mobile-menu`, `check:nav` et `check:i18n` restent au vert.
-3. **Garder l'habillage, couper la campagne** — remettre `VICE_CAMPAIGN` dans
-   le passé (ou retirer la seule ligne `defaut` du script d'`index.html`) :
-   plus de défaut `vice`, mais l'entrée reste accessible pour les curieux.
-
-Dans les trois cas, **un visiteur qui avait `vice` mémorisé retombe sur le
-sombre tout seul** : `THEMES` ne le reconnaît plus, et la valeur est ignorée
-au chargement comme au démarrage. Personne ne reste coincé dans la peau.
+**Tout retirer** : dans `Home.jsx`, remplacer `viceHeroImage` par
+`defaultHeroImage` (même import, `src/theme/viceTheme.js`), puis supprimer ce
+fichier et `public/vice-city-hero.jpg`. Rien d'autre n'en dépend.
 
 ## Mise en page téléphone (iPhone, Android, WebView)
 

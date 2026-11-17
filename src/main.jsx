@@ -22,7 +22,6 @@ import './social/social.css';
 import './typography.css';
 import './large-screen.css'; // paliers ≥ 1440 px : conteneur, grilles, rythme
 import './theme.css';        // thème clair : importé en dernier (surcharge)
-import './theme/vice.css';   // habillage temporaire « Vice City » (GTA 6) — APRÈS theme.css
 import { LanguageProvider } from './i18n/LanguageContext';
 import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';

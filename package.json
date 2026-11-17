@@ -178,7 +178,6 @@
     "check:nav-ghost": "node scripts/nav-ghost-check.mjs",
     "check:calls": "node scripts/calls-check.mjs && node scripts/calls-e2e-check.mjs",
     "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write",
-    "theme:ink-sweep:vice": "node scripts/theme-ink-sweep.mjs --theme=vice --write",
     "check:rpg-story-browser": "node scripts/rpg-story-browser-check.mjs",
     "desktop:icon": "node desktop/make-icon.mjs",
     "android:icons": "node scripts/android-icons.mjs",
