@@ -142,9 +142,16 @@ du pied de page. C'est un **hommage non officiel** : Let's Play n'est affilié n
   Pendant la fenêtre, `vice` est le thème **par défaut** d'un visiteur qui n'a
   encore rien choisi ; un `lp-theme` déjà mémorisé reste prioritaire. Hors
   fenêtre, le site revient tout seul au sombre.
-- **Sortir de l'habillage** : la pastille de la barre (libellé « Normal » sur
-  ordinateur), l'entrée « Couleurs Vice City » du menu mobile, ou le bouton
-  « Retour au look normal » de l'avis. Le choix est mémorisé, comme pour le clair.
+- **Sortir de l'habillage** : la pastille de la barre (libellé « Retour » sur
+  ordinateur), l'entrée « Couleurs Vice City » du tiroir, ou le bouton « Retour
+  au look normal » de l'avis. Le choix est mémorisé, comme pour le clair.
+- **Y revenir une fois sorti** : la pastille palmier de la barre (icône seule,
+  infobulle et `aria-label`), présente sur ordinateur comme sur téléphone.
+  C'était le défaut de la première version : l'entrée de retour n'existait
+  qu'en téléphone, donc sortir de la peau sur ordinateur refermait la porte.
+  Règle à garder : **la barre ne montre qu'une porte à la fois** — en `vice`,
+  la pastille de thème devient la sortie et l'entrée palmier s'efface ; hors
+  `vice`, c'est l'inverse (`styles.css`, `[aria-pressed='true']`).
 - `?theme=vice` force l'habillage le temps d'une visite (recette, partage).
 - La peau vit dans **`src/theme/vice.css`**, importé après `theme.css` mais
   **avant** les feuilles de page (`social.css`, `news-article.css`…) : toute

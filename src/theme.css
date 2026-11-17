@@ -1853,18 +1853,19 @@
   }
   /* Entrée « Couleurs Vice City » (habillage temporaire, styles.css) : même
      fond de commande que la pastille de thème voisine. Son point actif passe
-     au rose profond — le rose néon #ff2e93 ne tient pas sur le panneau clair. */
-  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice{
+     au rose profond — le rose néon #ff2e93 ne tient pas sur le panneau clair,
+     et il faut une variante par mise en page : la pastille compacte de la
+     barre gardait sinon son dessin pour fond sombre sur l'île claire. */
+  [data-theme='light'] .nav-actions-grid .mobile-menu-vice{
     background:rgba(86,70,190,.06);
     border-color:rgba(86,70,190,.16);
     color:var(--muted);
   }
-  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice:hover,
-  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice:focus-visible{
+  [data-theme='light'] .nav-actions-grid .mobile-menu-vice:hover,
+  [data-theme='light'] .nav-actions-grid .mobile-menu-vice:focus-visible{
     background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.30);color:var(--ink);
   }
-  [data-theme='light'] .nav-links .mobile-menu-vice-arrow{color:var(--dim)}
-  [data-theme='light'] .nav-links .mobile-menu-vice[aria-pressed='true'] .mobile-menu-vice-dot{
+  [data-theme='light'] .nav-actions-grid .mobile-menu-vice[aria-pressed='true'] .mobile-menu-vice-dot{
     border-color:#be185d;background:#be185d;
     box-shadow:0 0 0 3px rgba(190,24,93,.14);
   }
@@ -1877,4 +1878,23 @@
   [data-theme='light'] .nav-links .mobile-menu-footer a,
   [data-theme='light'] .nav-links .mobile-menu-footer-label{color:var(--dim)}
   [data-theme='light'] .nav-links .mobile-menu-footer-dot{color:var(--yellow-ink)}
+}
+
+/* Même entrée, mise en page téléphone (elle prend toute la largeur du tiroir,
+   sur sa propre ligne — voir styles.css). */
+@media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice{
+    background:rgba(86,70,190,.06);
+    border-color:rgba(86,70,190,.16);
+    color:var(--muted);
+  }
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice:hover,
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice:focus-visible{
+    background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.30);color:var(--ink);
+  }
+  [data-theme='light'] .nav-links .nav-actions .mobile-menu-vice-arrow{color:var(--dim)}
+  [data-theme='light'] .nav-links .mobile-menu-vice[aria-pressed='true'] .mobile-menu-vice-dot{
+    border-color:#be185d;background:#be185d;
+    box-shadow:0 0 0 3px rgba(190,24,93,.14);
+  }
 }
