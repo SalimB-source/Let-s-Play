@@ -8,15 +8,19 @@ import { VICE_NOTICE_KEY, VICE_THEME, isViceCampaignOn } from './viceTheme';
  *               le défaut.
  *   • `light` : le thème clair, posé sur du papier (src/theme.css).
  *   • `vice`  : l'HABILLAGE TEMPORAIRE aux couleurs de GTA 6 / Vice City
- *               (src/theme/vice.css) — rose néon, aqua, jaune sur nuit violette.
+ *               (src/theme/vice.css) — papier rose, cartes blanches, accents
+ *               rose vif / menthe / citron.
  *
  * Les trois se partagent la même clé `localStorage` et le même attribut
  * `data-theme` sur <html> : ajouter la peau n'a pas créé un second mécanisme
  * de thème à côté du premier, sinon les deux se seraient battus au démarrage.
  *
- * `vice` est un thème SOMBRE. Tout le code qui ne connaît que deux états
- * (`isLight`) continue donc de fonctionner sans retouche : la peau se pose
- * *par-dessus* le sombre, elle ne s'y substitue pas.
+ * `vice` est un thème CLAIR depuis la bascule « rose bonbon » : son socle est
+ * du papier rose, ses cartes sont blanches. Il n'est PAS déclaré clair pour
+ * autant — `isLight` reste réservé au thème clair du site, dont les règles
+ * (src/theme.css) repeignent en bleu-gris ; la peau a ses propres règles et
+ * elles se déclencheraient par-dessus. C'est pourquoi `vice.css` porte sa
+ * propre copie du balayage d'encres (section 9), générée par le même script.
  *
  * L'attribut est écrit avant le premier rendu par un script en ligne dans
  * index.html (même clé, même liste, même défaut) : sans lui, la page
@@ -35,7 +39,7 @@ const THEMES = ['dark', 'light', VICE_THEME];
 const SITE_DEFAULT = 'dark';
 
 /** Couleur de la barre du navigateur (mobile) par thème. */
-const THEME_COLORS = { dark: '#05060f', light: '#f7f8fc', [VICE_THEME]: '#140a20' };
+const THEME_COLORS = { dark: '#05060f', light: '#f7f8fc', [VICE_THEME]: '#fff5fa' };
 
 const ThemeContext = createContext({
   theme: SITE_DEFAULT,
