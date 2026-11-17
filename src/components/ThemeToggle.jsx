@@ -1,11 +1,18 @@
 import React from 'react';
 import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../i18n/LanguageContext';
+import { viceCopy } from '../theme/viceTheme';
 
 /**
  * Bascule clair / sombre — version morphing.
  * Les deux icônes coexistent et se transforment l'une en l'autre
  * (rotation + scale + opacité) pour un effet premium.
+ *
+ * Depuis le passage en habillage « Vice City » (thème `vice`, voir
+ * src/theme/vice.css), le bouton porte LE RETOUR au thème normal : quand la
+ * peau est active, il affiche une néon rose + le libellé « Retour », et un clic
+ * rend au site son apparence d'origine. C'est le seul chemin de sortie
+ * nécessaire — la peau est temporaire, elle ne doit jamais piéger le visiteur.
  */
 
 function SunIcon() {
@@ -51,10 +58,61 @@ function MoonIcon() {
   );
 }
 
+/** Palmier + soleil : l'icône de l'habillage temporaire. */
+function PalmIcon() {
+  return (
+    <svg
+      className="theme-toggle-icon theme-toggle-icon-palm"
+      viewBox="0 0 16 16"
+      width="15"
+      height="15"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M8.4 14.4c-.5-3.1-.2-6.4.8-9.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.2 5.2C7.9 3.4 6.1 2.6 3.7 3c1.9.2 3.3.9 4.3 2.1M9.2 5.2C9.4 3.1 10.6 1.7 12.9 1.3c-1.4 1-2.2 2.1-2.5 3.6M9.2 5.2c-1.9-.5-3.6 0-4.9 1.4 1.6-.4 2.9-.3 4.2.3M9.2 5.2c1.8-.2 3.3.4 4.4 1.9-1.6-.5-2.9-.5-4.1 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function ThemeToggle() {
-  const { isLight, toggleTheme } = useTheme();
-  const { t } = useLanguage();
+  const { isLight, isVice, toggleTheme, toggleVice } = useTheme();
+  const { t, lang } = useLanguage();
   const copy = t.nav.theme || {};
+  const vice = viceCopy[lang] || viceCopy.fr;
+
+  // Habillage temporaire : le bouton devient la sortie de secours.
+  if (isVice) {
+    return (
+      <button
+        type="button"
+        className="theme-toggle is-vice"
+        onClick={toggleVice}
+        aria-label={vice.exit}
+        aria-pressed="true"
+        title={vice.exit}
+      >
+        <span className="theme-toggle-track" aria-hidden="true">
+          <PalmIcon />
+        </span>
+        <span className="theme-toggle-label">{copy.exitShort || 'Retour'}</span>
+      </button>
+    );
+  }
+
   const label = isLight ? copy.toDark || 'Switch to dark' : copy.toLight || 'Switch to light';
   const short = isLight ? copy.dark || 'Dark' : copy.light || 'Light';
 

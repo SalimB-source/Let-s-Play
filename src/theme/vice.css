@@ -1,0 +1,726 @@
+/* ==========================================================================
+   HABILLAGE « VICE CITY » — GTA 6 · TEMPORAIRE
+   --------------------------------------------------------------------------
+   Peau saisonnière posée sur le site pour la sortie de GTA VI (19.11.2026).
+   Elle s'active depuis le bouton de thème (voir ThemeToggle / ThemeContext),
+   s'écrit dans `data-theme="vice"` sur <html> et se retire en un clic.
+
+   Le site est déjà bâti sur des jetons (`--bg`, `--panel`, `--ink`, `--cyan`,
+   `--yellow`, `--line`…) : une grande partie de la peau tient donc dans le
+   bloc « 1. JETONS ». Le reste est une liste assumée de sélecteurs qui, eux,
+   portent une couleur en dur — un `rgba(34,211,238,…)` écrit à la main dans
+   une feuille de section, un dégradé violet en clair, etc. Ces règles sont
+   regroupées par écran (socle, navigation, héros, cartes, avis) pour qu'on
+   puisse les retrouver et les retirer facilement : c'est le point faible de
+   toute peau temporaire, autant qu'il soit lisible.
+
+   RÈGLE DE COULEUR — d'où viennent ces teintes :
+     • rose néon   #ff2e93 : l'accent principal (remplace le cyan en tête) ;
+     • aqua        #33f0e4 : le second accent, l'ancien cyan réchauffé ;
+     • jaune citron#ffe14d : le jaune de marque de Let's Play, conservé (bouton
+       principal, pastilles actives, compteurs) — c'est la continuité ;
+     • nuit violette #100a1e : le fond, plus chaud et plus violet que le
+       bleu-noir d'origine ;
+     • coucher de soleil #ff8a5c : les halos, avec parcimonie.
+
+   ⚠️ Hommage NON OFFICIEL : aucun logo Rockstar / GTA n'est utilisé, aucune
+   jaquette officielle n'est embarquée. Le visuel du héros est une création
+   pour ce skin (public/vice-city-keyart.jpg). La mention légale affichée par
+   l'avis (`.vice-notice`) le rappelle au visiteur.
+
+   Import : `src/main.jsx`, APRÈS `theme.css` — la peau doit gagner les
+   surcharges du thème clair, y compris quand `data-theme` vaut `vice`.
+   ========================================================================== */
+
+/* ============ 1. JETONS ============ */
+/* `--cyan` et `--yellow` restent les noms : 800 règles du site les lisent
+   (l'habillage n'a pas à les renommer, juste à les repeindre). */
+:root[data-theme='vice']{
+  color-scheme: dark;
+
+  /* teintes propres à la peau */
+  --vice-pink:#ff2e93;
+  --vice-pink-bright:#ff6fc0;
+  --vice-aqua:#33f0e4;
+  --vice-aqua-bright:#8dfff7;
+  --vice-lemon:#ffe14d;
+  --vice-sunset:#ff8a5c;
+  --vice-night:#100a1e;
+  --vice-night-deep:#0a0614;
+  --vice-panel:#170f2a;
+  --vice-panel-2:#1d1436;
+  --vice-glow-pink:rgba(255,46,147,.42);
+  --vice-glow-aqua:rgba(51,240,228,.34);
+  /* Encre posée SUR l'aplat citron (boutons, pastille active, pastilles) :
+     un prune très sombre, comme le site d'origine le fait sur son jaune. */
+  --vice-ink-on-lemon:#1b0a12;
+
+  /* surfaces et encres — mêmes noms que src/styles.css */
+  --bg:var(--vice-night);
+  --panel:var(--vice-panel);
+  --panel-2:var(--vice-panel-2);
+  --ink:#fff4ff;
+  --muted:rgba(255,233,255,.70);
+  --dim:rgba(255,233,255,.47);
+  --line:rgba(255,92,171,.20);
+  --line-strong:rgba(255,92,171,.42);
+
+  /* accents */
+  --cyan:var(--vice-aqua);
+  --cyan-bright:var(--vice-aqua-bright);
+  --yellow:var(--vice-lemon);
+  --yellow-ink:var(--vice-lemon);
+  --violet:var(--vice-pink-bright);
+  --purple:#7a3fd1;
+
+  /* Le site écrit « encre sur du jaune » en dur, une quarantaine de fois
+     (`color:#0a0b1a` sous `.button-yellow`, `.nav-primary a.active`,
+     `.filter.active`, `.comment-level`…). On réutilise leurs noms de jetons
+     pour que ces règles suivent la peau sans être toutes réécrites. */
+  --vice-on-yellow:#1b0a12;
+}
+
+/* ============ 2. SOCLE ============ */
+/* Fond : nuit violette, un soleil de coucher couchant en haut, une nappe aqua
+   en bas à gauche. Les deux halos sont FIXES (comme le fond d'origine) pour
+   que la page reste « dans » le décor quand on défile. */
+[data-theme='vice'] body{
+  background:
+    radial-gradient(1100px 620px at 82% -10%, rgba(255,46,147,.26), transparent 62%),
+    radial-gradient(760px 520px at 12% 12%, rgba(255,138,92,.12), transparent 65%),
+    radial-gradient(900px 560px at -10% 34%, rgba(51,240,228,.10), transparent 60%),
+    var(--bg);
+}
+/* Le disque solaire, très discret, derrière le contenu. */
+[data-theme='vice'] body::before{
+  content:"";
+  position:fixed;z-index:-1;pointer-events:none;
+  top:-26vh;left:50%;transform:translateX(-50%);
+  width:min(1040px,120vw);aspect-ratio:1;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,86,150,.20) 0%, rgba(255,138,92,.10) 42%, transparent 68%);
+  filter:blur(6px);
+}
+/* Les scanlines restent : elles font le « CRT » du site dans les deux autres
+   thèmes, et tiennent le rose vif à distance sur les grandes surfaces. */
+[data-theme='vice'] ::selection{background:var(--vice-pink);color:#14061a}
+[data-theme='vice'] :focus-visible{outline-color:var(--vice-aqua)}
+[data-theme='vice'] ::-webkit-scrollbar{background:var(--vice-night-deep)}
+[data-theme='vice'] ::-webkit-scrollbar-thumb{background:#3a1f4d;border-color:var(--vice-night-deep)}
+[data-theme='vice'] ::-webkit-scrollbar-thumb:hover{background:#5a2f74}
+
+/* Icônes néon du décor : la palette d'origine reste lisible, on la réaccorde. */
+[data-theme='vice'] .ni-gamepad,
+[data-theme='vice'] .ni-zap{color:var(--vice-pink)}
+[data-theme='vice'] .ni-dpad,
+[data-theme='vice'] .ni-sparkle{color:var(--vice-aqua)}
+[data-theme='vice'] .ni-heart,
+[data-theme='vice'] .ni-joystick{color:#ff6fa8}
+[data-theme='vice'] .ni-trophy{color:var(--vice-lemon)}
+
+/* ============ 3. NAVIGATION — L'ÎLE ============ */
+/* Verre violet : même géométrie, même flou, même ombre. Seule la teinte du
+   verre change, pour que l'île se détache du fond rose. */
+[data-theme='vice'] .nav,
+[data-theme='vice'] .nav.nav-home{
+  background:rgba(28,14,46,.66);
+  border-color:rgba(255,255,255,.10);
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.7), 0 4px 12px -6px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,214,246,.08);
+}
+[data-theme='vice'] .nav.scrolled,
+[data-theme='vice'] .nav.nav-home.scrolled{
+  background:rgba(28,14,46,.86);
+  border-color:rgba(255,255,255,.12);
+  box-shadow:0 16px 40px -16px rgba(0,0,0,.8), 0 6px 16px -8px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,214,246,.08);
+}
+[data-theme='vice'] .nav-primary{
+  background:rgba(255,255,255,.05);
+  border-color:rgba(255,255,255,.07);
+}
+[data-theme='vice'] .nav-links a{color:rgba(255,236,252,.82)}
+/* Entrées de l'île. La pastille qui glisse (`.nav-pill-indicator`) porte
+   l'aplat citron ; l'entrée active reçoit l'encre prune posée dessus, comme
+   dans les deux autres thèmes. */
+[data-theme='vice'] .nav-links a{color:rgba(255,236,252,.82)}
+[data-theme='vice'] .nav-primary a{color:rgba(255,236,252,.82)}
+[data-theme='vice'] .nav-primary a:hover{color:#fff;background:rgba(255,46,147,.14)}
+/* Ordinateur : l'entrée active est recouverte par la pastille citron, son
+   texte passe donc en encre prune. Même requête média que le site (voir
+   styles.css, « Island grid ») pour ne pas ajouter de pastille dans le tiroir
+   du téléphone, où l'entrée active est simplement colorée. */
+@media(min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){
+  [data-theme='vice'] .nav-primary a.active,
+  [data-theme='vice'] .nav-primary a.active:hover,
+  [data-theme='vice'] .nav .nav-primary a.active,
+  [data-theme='vice'] .nav .nav-primary a.active:hover{
+    color:var(--vice-ink-on-lemon);
+    background:var(--vice-lemon);
+    box-shadow:0 2px 12px -2px rgba(255,225,77,.5);
+  }
+}
+[data-theme='vice'] .nav-pill-indicator{
+  background:var(--vice-lemon);
+  box-shadow:0 2px 12px -2px rgba(255,225,77,.5);
+}
+
+/* Recherche, langue, compte : les pilules de l'île. */
+[data-theme='vice'] .nav-search{
+  background:rgba(255,255,255,.05);
+  border-color:rgba(255,255,255,.09);
+}
+[data-theme='vice'] .nav-search:focus-within{
+  border-color:var(--vice-aqua);
+  background:rgba(51,240,228,.08);
+}
+[data-theme='vice'] .nav-account.nav-login,
+[data-theme='vice'] .nav-account.nav-register{
+  border-color:rgba(255,255,255,.16);
+  color:rgba(255,236,252,.92);
+}
+[data-theme='vice'] .nav-account.nav-login{background:rgba(255,255,255,.06)}
+[data-theme='vice'] .nav-account.nav-login:hover{background:rgba(51,240,228,.14);border-color:var(--vice-aqua);color:#fff}
+[data-theme='vice'] .nav-account.nav-register{
+  background:var(--vice-lemon);color:var(--vice-ink-on-lemon);border-color:var(--vice-lemon);
+  box-shadow:0 4px 14px -4px rgba(255,225,77,.42);
+}
+[data-theme='vice'] .nav-account.nav-register:hover{
+  background:#fff08a;border-color:#fff08a;color:var(--vice-ink-on-lemon);
+  transform:translateY(-1px);
+}
+/* Sous-menu « Actus » : le panneau est un verre, les liens gardent l'encre. */
+[data-theme='vice'] .nav-primary .nav-submenu{
+  background:rgba(24,12,40,.96);
+  border-color:rgba(255,92,171,.24);
+}
+[data-theme='vice'] .nav-primary .nav-submenu a{
+  background:linear-gradient(90deg, rgba(51,240,228,.07), transparent 70%);
+  border-color:rgba(51,240,228,.22);
+}
+[data-theme='vice'] .nav-primary .nav-submenu a:hover{
+  background:linear-gradient(90deg, rgba(255,225,77,.14), transparent 70%);
+  border-color:rgba(255,225,77,.34);
+}
+
+/* Bouton de thème : en habillage vice, la pastille prend le rose et affiche
+   le libellé du retour au thème normal (voir ThemeToggle.jsx). */
+[data-theme='vice'] .nav .theme-toggle,
+[data-theme='vice'] .nav-actions-grid .theme-toggle{
+  border-color:rgba(255,46,147,.45);
+  background:rgba(255,46,147,.16);
+  color:#ffe6f6;
+}
+[data-theme='vice'] .nav .theme-toggle:hover,
+[data-theme='vice'] .nav-actions-grid .theme-toggle:hover{
+  background:rgba(255,46,147,.26);
+  border-color:var(--vice-pink-bright);
+  color:#fff;
+}
+
+/* ============ 4. HÉROS ============ */
+/* Le visuel « vice » (public/vice-city-keyart.jpg) remplace la photo de
+   matériel ; le voile, lui, garde exactement la même géométrie pour que le
+   texte blanc/jaune posé à gauche reste aussi lisible qu'avant. */
+[data-theme='vice'] .hero{background:var(--vice-night-deep)}
+[data-theme='vice'] .hero-shade{
+  background:
+    linear-gradient(90deg, rgba(10,4,20,.82) 0%, rgba(10,4,20,.60) 32%, rgba(10,4,20,.24) 64%, rgba(10,4,20,.06) 100%),
+    linear-gradient(180deg, rgba(10,4,20,.52) 0%, rgba(10,4,20,.04) 18%, rgba(10,4,20,0) 36%, rgba(10,4,20,.30) 64%, rgba(10,4,20,.90) 92%, rgba(10,4,20,.96) 100%),
+    radial-gradient(120% 90% at 50% 35%, transparent 48%, rgba(16,4,24,.32) 100%);
+}
+/* Cadres de coin du héros : aqua, avec un halo rose. */
+[data-theme='vice'] .hero-frame span{
+  border-color:rgba(51,240,228,.85);
+  filter:drop-shadow(0 0 7px rgba(51,240,228,.5)) drop-shadow(0 0 16px rgba(255,46,147,.35));
+}
+[data-theme='vice'] .hero .eyebrow{color:var(--vice-aqua)}
+[data-theme='vice'] .hero h1 em{
+  color:var(--vice-pink-bright);
+  text-shadow:0 0 26px rgba(255,46,147,.62), 0 0 80px rgba(255,46,147,.34);
+}
+[data-theme='vice'] .hero-text{color:rgba(255,238,252,.82)}
+[data-theme='vice'] .live-dot{
+  background:var(--vice-lemon);
+  box-shadow:0 0 10px rgba(255,225,77,.9);
+}
+/* Bouton principal du héros : jaune citron, encre prune (contraste identique
+   au jaune d'origine) ; secondaire : verre aqua. */
+[data-theme='vice'] .hero-cta{
+  --cta-edge:var(--vice-lemon);
+  --cta-surface:var(--vice-lemon);
+  --cta-ink:#1b0a12;
+  filter:drop-shadow(0 4px 14px rgba(255,225,77,.20));
+}
+[data-theme='vice'] .hero-cta:hover{filter:drop-shadow(0 5px 20px rgba(255,225,77,.42))}
+[data-theme='vice'] .hero-cta-icon{
+  background:rgba(20,6,26,.12);
+  border-color:rgba(20,6,26,.22);
+}
+[data-theme='vice'] .hero-cta--secondary{
+  --cta-edge:rgba(51,240,228,.85);
+  --cta-surface:rgba(20,10,32,.92);
+  --cta-ink:#e9fffc;
+  filter:drop-shadow(0 4px 14px rgba(51,240,228,.16));
+}
+[data-theme='vice'] .hero-cta--secondary .hero-cta-icon{
+  color:var(--vice-aqua-bright);
+  background:rgba(51,240,228,.12);
+  border-color:rgba(51,240,228,.32);
+}
+[data-theme='vice'] .hero-cta--secondary .hero-cta-arrow{color:var(--vice-aqua-bright)}
+@media (hover:hover){
+  [data-theme='vice'] .hero-cta--secondary:hover{
+    --cta-surface:#2a1240;
+    filter:drop-shadow(0 5px 20px rgba(51,240,228,.38));
+  }
+}
+/* Étiquette de sortie, au-dessus de l'accroche du héros (voir Home.jsx) : la
+   date du jeu, le compte à rebours et les plateformes. `display:flex` +
+   `width:fit-content` : elle tient sur sa propre ligne, sans étirer la boîte
+   sur toute la colonne. */
+[data-theme='vice'] .vice-hero-tag{
+  display:flex;align-items:center;gap:10px;
+  width:fit-content;margin:0 0 16px;
+  padding:7px 12px;
+  border:1px solid rgba(51,240,228,.45);
+  background:rgba(10,4,20,.55);
+  color:var(--vice-aqua-bright);
+  font:600 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+}
+[data-theme='vice'] .vice-hero-tag b{
+  flex:none;white-space:nowrap;
+  color:var(--vice-lemon);font-weight:700;
+  padding:2px 7px;border-radius:999px;background:rgba(255,225,77,.14);
+}
+/* Téléphone : l'étiquette porte trois informations sur une ligne. On resserre
+   le corps et l'interlettrage plutôt que de laisser le compte à rebours passer
+   sous la date — « D-2 » coupé en deux ne se lit pas. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  [data-theme='vice'] .vice-hero-tag{
+    gap:7px;padding:6px 9px;margin-bottom:14px;
+    font-size:8.5px;letter-spacing:.1em;white-space:nowrap;
+  }
+}
+
+/* ============ 5. BANDES, CTA, CARTES ============ */
+/* Bandeau défilant : le dégradé violet/cyan d'origine devient rose/aqua. */
+[data-theme='vice'] .ticker{
+  background:linear-gradient(90deg, rgba(255,46,147,.26), rgba(51,240,228,.10));
+  border-block-color:var(--line);
+}
+[data-theme='vice'] .ticker b{color:var(--vice-lemon);text-shadow:0 0 12px rgba(255,225,77,.6)}
+/* Raccourcis de l'accueil. */
+[data-theme='vice'] .home-explore a{
+  background:linear-gradient(120deg, rgba(255,46,147,.12), rgba(51,240,228,.05));
+}
+[data-theme='vice'] .home-explore a span{color:var(--vice-aqua)}
+[data-theme='vice'] .home-explore a:hover,
+[data-theme='vice'] .home-explore a:focus-visible{
+  color:var(--vice-lemon);border-color:var(--vice-aqua);
+  background:rgba(51,240,228,.09);
+}
+/* Titres mis en avant (le mot en couleur des h2 de section). */
+[data-theme='vice'] .hero h1 em,
+[data-theme='vice'] .featured-copy h2 em,
+[data-theme='vice'] .featured-dossiers-head h2 em,
+[data-theme='vice'] .featured-dossier-copy h3 em,
+[data-theme='vice'] .latest-tests-head h2 em,
+[data-theme='vice'] .latest h2 em,
+[data-theme='vice'] .carousel-head h2 em,
+[data-theme='vice'] .page-hero h1 em,
+[data-theme='vice'] .page-h2 em,
+[data-theme='vice'] .live-head h2 em,
+[data-theme='vice'] .reels-head h2 em,
+[data-theme='vice'] .short-review-head h2 em,
+[data-theme='vice'] .search-hero h1 em,
+[data-theme='vice'] .actus-heading h1 span,
+[data-theme='vice'] .article-heading h1 em,
+[data-theme='vice'] .dossier-hero h1 em,
+[data-theme='vice'] .dzdev-hero h1 em,
+[data-theme='vice'] .daily-news-copy h2 em,
+[data-theme='vice'] .daily-news-copy h3 em{
+  color:var(--vice-pink-bright);
+  text-shadow:0 0 24px rgba(255,46,147,.45);
+}
+/* Liens fléchés : soulignement aqua. */
+[data-theme='vice'] .arrow-link{
+  color:var(--vice-aqua);
+  border-bottom-color:rgba(51,240,228,.42);
+}
+[data-theme='vice'] .arrow-link:hover{color:var(--vice-lemon);border-color:var(--vice-lemon)}
+/* Cadres HUD (coins néon) : aqua. */
+[data-theme='vice'] .hud-frame{
+  background:
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left top / 28px 2px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left top / 2px 28px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right top / 28px 2px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right top / 2px 28px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left bottom / 28px 2px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left bottom / 2px 28px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right bottom / 28px 2px no-repeat,
+    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right bottom / 2px 28px no-repeat;
+}
+/* Lecteurs et affiches encadrés : les halos cyan deviennent aqua. */
+[data-theme='vice'] .featured-player,
+[data-theme='vice'] .featured-dossiers-grid .featured-dossier-card,
+[data-theme='vice'] .short-review-player,
+[data-theme='vice'] .short-review-grid,
+[data-theme='vice'] .live-player,
+[data-theme='vice'] .carousel-frame{
+  box-shadow:0 0 44px -12px rgba(51,240,228,.30), 0 24px 60px -30px rgba(0,0,0,.9);
+}
+[data-theme='vice'] .featured-sponsor-text{
+  color:#fff;text-shadow:0 0 18px rgba(51,240,228,.42);
+}
+[data-theme='vice'] .live-player--offline,
+[data-theme='vice'] .live-offline{
+  background:radial-gradient(circle at 50% 42%, rgba(255,46,147,.22), transparent 46%), linear-gradient(145deg, rgba(23,15,42,.98), rgba(10,4,20,.98));
+}
+[data-theme='vice'] .live-player--offline{
+  background:radial-gradient(circle at 50% 42%, rgba(255,46,147,.22), transparent 46%), linear-gradient(145deg, rgba(23,15,42,.98), rgba(10,4,20,.98));
+}
+[data-theme='vice'] .live-status--live{color:#ff6b8f}
+[data-theme='vice'] .live-status--live i{background:var(--vice-pink);box-shadow:0 0 0 3px rgba(255,46,147,.18)}
+[data-theme='vice'] .live-status--unknown,
+[data-theme='vice'] .live-status--unknown i{color:var(--vice-lemon)}
+[data-theme='vice'] .live-status--unknown i{background:var(--vice-lemon);box-shadow:0 0 0 3px rgba(255,225,77,.16)}
+[data-theme='vice'] .live-status-card{background:rgba(23,15,42,.74)}
+[data-theme='vice'] .live-footer{color:var(--vice-lemon)}
+[data-theme='vice'] .live-footer .arrow-link{color:var(--vice-aqua)}
+
+/* Formats (cartes de l'accueil) : les deux teintes d'accent suivent la peau. */
+[data-theme='vice'] .format-card,
+[data-theme='vice'] .card-movies{--accent:var(--vice-aqua);--glow:rgba(51,240,228,.36)}
+[data-theme='vice'] .card-gaming{--accent:var(--vice-lemon);--glow:rgba(255,225,77,.36)}
+
+/* Chiffres et scores : le cyan des compteurs passe en aqua (lisible sur nuit). */
+[data-theme='vice'] .countdown-unit strong,
+[data-theme='vice'] .release-date,
+[data-theme='vice'] .release-timeline-dot,
+[data-theme='vice'] .awaited-band-date,
+[data-theme='vice'] .awaited-band-ticket b,
+[data-theme='vice'] .latest-test-meta span:last-child{
+  color:var(--vice-aqua);
+}
+[data-theme='vice'] .awaited-band{
+  background:linear-gradient(110deg, rgba(255,46,147,.16), rgba(51,240,228,.06));
+}
+[data-theme='vice'] .hero .awaited-band{
+  background:linear-gradient(110deg, rgba(23,9,36,.84), rgba(23,9,36,.62)), linear-gradient(110deg, rgba(255,46,147,.32), rgba(51,240,228,.14));
+  border-top-color:rgba(255,92,171,.34);
+}
+[data-theme='vice'] .awaited-band-eyebrow{color:var(--vice-aqua)}
+[data-theme='vice'] .awaited-band-chip{
+  border-color:var(--vice-lemon);background:rgba(255,225,77,.10);color:var(--vice-lemon);
+}
+[data-theme='vice'] .awaited-band-inner:hover .awaited-band-title,
+[data-theme='vice'] .awaited-band-inner:hover .awaited-band-arrow{color:var(--vice-lemon)}
+[data-theme='vice'] .release-countdown{
+  background:linear-gradient(110deg, rgba(255,46,147,.20), rgba(51,240,228,.08));
+}
+[data-theme='vice'] .countdown-unit{background:rgba(10,4,20,.66)}
+[data-theme='vice'] .monthly-releases-head h2 em{color:var(--vice-pink-bright);text-shadow:0 0 22px rgba(255,46,147,.4)}
+[data-theme='vice'] .monthly-releases-head h2 em,
+[data-theme='vice'] .actus-card{--actus-accent:var(--vice-aqua)}
+
+/* Appel final de l'accueil. */
+[data-theme='vice'] .cta{
+  background:linear-gradient(120deg, rgba(255,46,147,.30), rgba(51,240,228,.10) 55%, rgba(23,15,42,.42));
+}
+[data-theme='vice'] .cta h2 em{color:var(--vice-lemon);text-shadow:0 0 26px rgba(255,225,77,.5)}
+
+/* Boutons de liste / filtres actifs : encre prune (jamais du noir bleuté). */
+[data-theme='vice'] .filter.active,
+[data-theme='vice'] .button-yellow,
+[data-theme='vice'] .comment-level,
+[data-theme='vice'] .news-feature-badge,
+[data-theme='vice'] .dzdev-video-play-badge{
+  color:var(--vice-ink-on-lemon);
+}
+[data-theme='vice'] .carousel-controls button:hover{
+  background:var(--vice-aqua);border-color:var(--vice-aqua);
+  color:#08181a;
+  box-shadow:0 0 18px rgba(51,240,228,.4);
+}
+[data-theme='vice'] .button-ghost{
+  background:rgba(255,255,255,.05);color:#fff;border-color:rgba(255,255,255,.32);
+}
+[data-theme='vice'] .button-ghost:hover{
+  border-color:var(--vice-aqua);background:rgba(51,240,228,.10);
+  box-shadow:0 0 24px rgba(51,240,228,.28);
+}
+
+/* Cartes d'articles : le verre bleu nuit devient verre prune, et les survols
+   passent du cyan au rose. */
+[data-theme='vice'] .actus-card{
+  background:linear-gradient(150deg, rgba(38,20,58,.96), rgba(18,10,32,.9));
+  border-color:rgba(255,92,171,.28);
+}
+[data-theme='vice'] .news-feature-card:hover,
+[data-theme='vice'] .news-hub-card:hover,
+[data-theme='vice'] .latest-test-card:hover .latest-test-image,
+[data-theme='vice'] .reel-card:hover,
+[data-theme='vice'] .search-result-card:hover,
+[data-theme='vice'] .community-group-card.is-active,
+[data-theme='vice'] .community-button-outline:hover,
+[data-theme='vice'] .community-refresh:hover{
+  border-color:var(--vice-pink);
+}
+[data-theme='vice'] .news-feature-card:hover{box-shadow:0 24px 60px -28px rgba(255,46,147,.50)}
+[data-theme='vice'] .news-feature-image,
+[data-theme='vice'] .latest-test-image,
+[data-theme='vice'] .reel-card{background:var(--vice-panel)}
+[data-theme='vice'] .news-kicker,
+[data-theme='vice'] .article-byline,
+[data-theme='vice'] .aside-kicker,
+[data-theme='vice'] .article-engagement-count,
+[data-theme='vice'] .article-source a,
+[data-theme='vice'] .dzdev-story a:not(.button),
+[data-theme='vice'] .comments h2 em{color:var(--vice-aqua)}
+[data-theme='vice'] .article-endnote{background:rgba(51,240,228,.05)}
+[data-theme='vice'] .aside-card{background:rgba(23,15,42,.68)}
+[data-theme='vice'] .aside-card-accent{
+  border-color:rgba(255,225,77,.42);
+  background:linear-gradient(150deg, rgba(255,225,77,.10), rgba(23,15,42,.72));
+}
+[data-theme='vice'] .article-video-frame,
+[data-theme='vice'] .article-trailer-frame{
+  border-color:rgba(51,240,228,.4);
+  box-shadow:0 24px 60px -30px rgba(0,0,0,.9), 0 0 44px -14px rgba(51,240,228,.26);
+}
+[data-theme='vice'] .article-engagement{
+  border-color:rgba(255,46,147,.30);
+  background:linear-gradient(135deg, rgba(38,16,52,.9), rgba(18,10,32,.9));
+  box-shadow:0 20px 48px -34px rgba(255,46,147,.6);
+}
+[data-theme='vice'] .article-reaction{background:rgba(10,4,20,.62)}
+[data-theme='vice'] .article-reaction:hover,
+[data-theme='vice'] .article-reaction:focus-visible{border-color:var(--vice-aqua)}
+[data-theme='vice'] .article-reaction.is-selected{
+  background:rgba(255,46,147,.12);
+  border-color:var(--vice-pink);
+  box-shadow:inset 0 0 0 1px rgba(255,46,147,.22);
+}
+[data-theme='vice'] .article-reaction-icon{color:var(--vice-aqua);background:rgba(51,240,228,.07)}
+[data-theme='vice'] .article-reaction-meter i{background:var(--vice-aqua)}
+[data-theme='vice'] .article-reading-progress{box-shadow:0 0 16px rgba(255,46,147,.46)}
+
+/* Bandeaux de marque (partenaires), quizz, succès : les mêmes teintes de
+   remplissage, repeintes par les jetons — seules les ombres en dur restent. */
+[data-theme='vice'] .partner-mark-badge{background:var(--vice-panel-2)}
+[data-theme='vice'] .community-avatar{
+  background:linear-gradient(145deg, rgba(255,46,147,.5), rgba(51,240,228,.18));
+  border-color:rgba(51,240,228,.4);
+}
+[data-theme='vice'] .community-discussion-icon{
+  background:radial-gradient(circle at 35% 25%, rgba(51,240,228,.15), transparent 74%), rgba(255,46,147,.08);
+}
+[data-theme='vice'] .community-group-card-icon{
+  background:linear-gradient(145deg, rgba(255,46,147,.14), rgba(51,240,228,.07));
+}
+[data-theme='vice'] .community-filters button.is-active{
+  border-color:rgba(255,46,147,.42);
+  background:rgba(255,46,147,.10);
+  color:var(--vice-pink-bright);
+}
+[data-theme='vice'] .community-search:focus-within,
+[data-theme='vice'] .community-composer textarea:focus{
+  border-color:var(--vice-aqua);
+  background:rgba(51,240,228,.05);
+}
+
+/* Messagerie et lanceur social : verre prune, halos aqua.
+   Attention : `social.css` est chargé APRÈS cette feuille (voir main.jsx) —
+   une règle de même spécificité y gagnerait. On qualifie donc par `.nav` /
+   `.social-dock` pour rester devant, ou l'on reprend la spécificité d'origine. */
+[data-theme='vice'] .social-dock .social-launcher{
+  background:linear-gradient(160deg, rgba(58,22,80,.96), rgba(14,7,24,.97));
+  border-color:rgba(255,92,171,.34);
+}
+[data-theme='vice'] .social-dock .social-launcher:hover,
+[data-theme='vice'] .social-dock .social-launcher:focus-visible{
+  border-color:var(--vice-aqua);
+  box-shadow:0 16px 34px -16px rgba(0,0,0,.85), 0 0 28px -8px rgba(51,240,228,.5);
+}
+[data-theme='vice'] .social-dock.is-open .social-launcher{border-color:var(--vice-aqua)}
+[data-theme='vice'] .social-dock .social-launcher.has-alert{border-color:rgba(255,225,77,.55)}
+
+/* Étiquette du bouton de thème : `theme.css` la masque sur ordinateur
+   (`.theme-toggle-label{display:none}`). En habillage temporaire elle porte
+   l'action de sortie — « Normal » — et doit rester lisible à côté du palmier,
+   sinon la pastille ne dit plus ce qu'elle fait. */
+[data-theme='vice'] .theme-toggle-label{display:inline}
+/* Entre 801 et 1100 px, l'île est déjà resserrée (voir styles.css) : le
+   libellé repasserait par-dessus la recherche. Le bouton garde alors son
+   icône de palmier, son `aria-label` et son info-bulle. */
+@media(min-width:801px) and (max-width:1100px) and (hover:hover), (min-width:801px) and (max-width:1100px) and (min-device-width:601px){
+  [data-theme='vice'] .theme-toggle-label{display:none}
+}
+
+/* Le Sablier et Mirage gardent leur propre direction artistique : la peau ne
+   touche qu'à leurs accents de jeton (boutons, cadres), jamais à leurs
+   illustrations ni à leurs palettes de jeu. */
+
+/* ============ 6. AVIS DE L'HABILLAGE ============ */
+/* Bande fine, posée en bas de page DANS le flux (voir Layout.jsx) : elle ne
+   recouvre ni le contenu ni le lanceur social, et son bouton rend le site
+   normal en un clic. */
+/* Le bloc est scopé `[data-theme='vice']` : sans ça, ses boutons resteraient
+   stylés après le retour au thème normal (l'avis, lui, disparaît — mais un
+   composant qui réutiliserait ces classes hériterait du rose).
+   `z-index:4` : l'avis s'efface sous l'île de navigation (1000) et sous toutes
+   les surcouches (messagerie 1250, appels 1900), qui doivent rester devant. */
+/* Écart avec le pied de page : les deux blocs sont posés l'un sur l'autre
+   (l'avis vient APRÈS `</footer>` dans Layout.jsx, il ne peut pas passer
+   avant), et le pied n'a pas de marge basse — sans ce retrait, les deux
+   cadres se toucheraient sur le fil du filet. */
+[data-theme='vice'] .footer{margin-bottom:12px}
+[data-theme='vice'] .vice-notice{
+  position:relative;z-index:4;
+  margin:26px auto 0;
+  width:min(1240px,calc(100% - 56px));
+  border:1px solid rgba(255,92,171,.30);
+  background:
+    linear-gradient(110deg, rgba(255,46,147,.13), rgba(51,240,228,.07) 62%, transparent),
+    rgba(18,10,32,.7);
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+}
+[data-theme='vice'] .vice-notice-inner{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:14px 18px;
+}
+[data-theme='vice'] .vice-notice-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;flex:none;
+  font:700 9px var(--mono);letter-spacing:.18em;text-transform:uppercase;
+  color:var(--vice-lemon);
+}
+[data-theme='vice'] .vice-notice-eyebrow i{
+  width:7px;height:7px;border-radius:50%;background:var(--vice-pink);
+  box-shadow:0 0 8px rgba(255,46,147,.9);
+  font-style:normal;
+}
+[data-theme='vice'] .vice-notice-copy{margin:0;flex:1 1 320px;min-width:0;color:var(--muted);font-size:12.5px;line-height:1.5}
+[data-theme='vice'] .vice-notice-copy b{color:var(--ink);font-weight:700}
+[data-theme='vice'] .vice-notice-legal{display:block;margin-top:4px;color:var(--dim);font-size:10.5px;line-height:1.45}
+[data-theme='vice'] .vice-notice-actions{display:flex;align-items:center;gap:8px;flex:none}
+[data-theme='vice'] .vice-notice-exit,
+[data-theme='vice'] [data-theme='vice'] .vice-notice-close{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 13px;border-radius:0;cursor:pointer;
+  font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  transition:background .2s, border-color .2s, color .2s, transform .18s;
+}
+[data-theme='vice'] .vice-notice-exit{
+  border:1px solid var(--vice-aqua);
+  background:rgba(51,240,228,.12);
+  color:#e9fffc;
+}
+[data-theme='vice'] .vice-notice-exit:hover{background:rgba(51,240,228,.22);transform:translateY(-1px)}
+.vice-notice-close{
+  border:1px solid rgba(255,255,255,.16);
+  background:transparent;
+  color:var(--muted);
+}
+[data-theme='vice'] .vice-notice-close:hover{border-color:rgba(255,255,255,.3);color:var(--ink)}
+/* Sur téléphone, les deux actions passent sur leur propre ligne et prennent
+   toute la largeur : cibles confortables, aucune compression du texte. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  [data-theme='vice'] .vice-notice{width:calc(100% - 32px);margin-top:22px}
+  [data-theme='vice'] .vice-notice-inner{gap:12px;padding:14px}
+  [data-theme='vice'] .vice-notice-actions{flex:1 1 100%;display:grid;grid-template-columns:1fr auto;gap:8px}
+  [data-theme='vice'] .vice-notice-exit{justify-content:center}
+}
+
+/* ============ 7. TÉLÉPHONE — LA BARRE REDEVIENT UNE BARRE PLEINE LARGEUR ============ */
+/* La version mobile de la navigation a ses propres fonds en dur (verre bleu
+   nuit, bordures cyan). Les mêmes règles sont reprises ici avec les teintes de
+   la peau, à l'identique : hauteurs, marges et empilement ne bougent pas. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  [data-theme='vice'] .nav,
+  [data-theme='vice'] .nav.scrolled,
+  [data-theme='vice'] .nav.nav-home,
+  [data-theme='vice'] .nav.nav-home.scrolled{
+    background:rgba(24,12,40,.92);
+    border-bottom-color:rgba(255,46,147,.26);
+  }
+  [data-theme='vice'] .nav.open{
+    background:rgba(24,12,40,.96);
+    border-bottom-color:rgba(51,240,228,.3);
+  }
+  [data-theme='vice'] .menu-button{
+    background:rgba(255,255,255,.06);
+    border-color:rgba(255,92,171,.4);
+  }
+  [data-theme='vice'] .menu-button:hover{
+    border-color:var(--vice-aqua);background:rgba(51,240,228,.12);
+  }
+  [data-theme='vice'] .menu-button.open{
+    background:var(--vice-lemon);border-color:var(--vice-lemon);color:var(--vice-ink-on-lemon);
+  }
+  /* Le panneau « Actus » du tiroir : `theme.css` §15 lui donne un fond clair
+     en thème clair ; ici le verre est celui des autres panneaux du tiroir. */
+  /* `theme.css` renforce le fond du panneau en « 6bis » (`.nav .nav-primary
+     .nav-submenu`, deux classes de plus) : on reprend la même portée pour
+     rester devant, sinon le panneau reste blanc dans le tiroir sombre. */
+  [data-theme='vice'] .nav-links .nav-primary .nav-submenu,
+  [data-theme='vice'] .nav .nav-primary .nav-submenu{
+    background:rgba(30,16,48,.96);
+    border-color:rgba(255,92,171,.24);
+  }
+  [data-theme='vice'] .nav-links .nav-primary .nav-submenu a{background:transparent;border-color:transparent}
+  [data-theme='vice'] .nav-links .nav-primary .nav-submenu a:hover,
+  [data-theme='vice'] .nav-links .nav-primary .nav-submenu a:focus-visible{
+    color:#1b0a12;background:var(--vice-lemon);
+  }
+  [data-theme='vice'] .nav-primary .nav-submenu a{
+    color:rgba(255,236,252,.86);
+    border-color:transparent;
+    background:transparent;
+  }
+  [data-theme='vice'] .nav-primary .nav-submenu a:hover,
+  [data-theme='vice'] .nav-primary .nav-submenu a:focus-visible{
+    color:#1b0a12;
+    background:var(--vice-lemon);
+  }
+  [data-theme='vice'] .nav-link-num{color:var(--vice-aqua)}
+  [data-theme='vice'] .nav-primary a.active .nav-link-num{color:var(--vice-lemon)}
+  [data-theme='vice'] .nav-link-desc{color:rgba(255,233,255,.58)}
+  [data-theme='vice'] .nav-link-arrow{color:rgba(141,255,247,.8);border-color:rgba(51,240,228,.3)}
+
+  /* Le tiroir plein écran : même voile, mêmes halos, teintes de la peau. */
+  [data-theme='vice'] .nav-links{
+    background:
+      radial-gradient(900px 600px at 85% -10%, rgba(255,46,147,.22), transparent 60%),
+      radial-gradient(700px 500px at -10% 90%, rgba(51,240,228,.14), transparent 60%),
+      linear-gradient(180deg, rgba(20,10,34,.98), rgba(9,4,16,.995));
+  }
+  [data-theme='vice'] .nav-links::before{
+    background:
+      linear-gradient(90deg, rgba(255,92,171,.07) 1px, transparent 1px),
+      linear-gradient(rgba(255,92,171,.05) 1px, transparent 1px);
+    background-size:46px 46px;
+    mask-image:radial-gradient(80% 60% at 50% 30%, black, transparent 90%);
+  }
+  [data-theme='vice'] .nav-profile-avatar{
+    border-color:var(--vice-pink);
+    background:linear-gradient(135deg, var(--purple), var(--vice-panel-2));
+    box-shadow:0 0 16px rgba(255,46,147,.3);
+    color:var(--vice-lemon);
+  }
+  [data-theme='vice'] .nav-actions-grid .lang-switch-menu{background:rgba(23,15,42,.98)}
+  [data-theme='vice'] .mobile-menu-socials a:hover{
+    color:var(--vice-aqua);border-color:var(--vice-aqua);background:rgba(51,240,228,.1);
+  }
+  [data-theme='vice'] .mobile-menu-hud span{border-color:var(--vice-aqua)}
+  [data-theme='vice'] .mobile-menu-hud span:nth-child(2){border-color:var(--vice-lemon)}
+  [data-theme='vice'] .mobile-menu-hud span:nth-child(3){background:var(--vice-aqua)}
+  [data-theme='vice'] .mobile-menu-hud span:nth-child(4){background:var(--vice-lemon);border-color:var(--vice-lemon)}
+  [data-theme='vice'] .nav-messages-link:hover,
+  [data-theme='vice'] .nav-profile-link:hover{border-color:rgba(255,46,147,.3);background:linear-gradient(90deg, rgba(255,46,147,.1), transparent 70%)}
+}
+
+/* ============ 8. MOUVEMENT RÉDUIT ============ */
+/* La peau n'ajoute aucune animation : rien à couper ici. Les halos et le
+   disque solaire sont des dégradés statiques. */

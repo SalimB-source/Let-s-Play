@@ -45,7 +45,10 @@ execFileSync(
 
 const { renderPages } = await import(path.join(outDir, 'light-news-check.js'));
 
-/* Ordre d'import de src/main.jsx : theme.css en dernier, il a le dernier mot. */
+/* Ordre d'import de src/main.jsx : theme.css en dernier, il a le dernier mot.
+   `theme/vice.css` (habillage temporaire) n'y figure pas : ses règles portent
+   toutes sur `[data-theme='vice']` — les audits clairs n'ont rien à y mesurer,
+   et l'entrée « Couleurs Vice City » du tiroir est dessinée dans styles.css. */
 const CSS_ORDER = [
   'styles.css', 'motion.css', 'auth/auth.css', 'daily-news.css',
   'monthly-releases.css', 'partners.css', 'reels-carousel.css',

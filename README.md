@@ -128,6 +128,56 @@ dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
 les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
 signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 
+## Habillage temporaire « Vice City » (GTA 6)
+
+Pendant la sortie de GTA 6, le site peut porter un troisième thème, `vice` :
+rose néon, aqua, citron et palmiers, avec la clé d'art de Vice City en héros,
+un compte à rebours dans le héros et un avis « habillage temporaire » au-dessus
+du pied de page. C'est un **hommage non officiel** : Let's Play n'est affilié ni
+à Rockstar Games ni à Take-Two, et le visuel a été produit pour le site.
+
+- **Fenêtre de campagne** : `VICE_CAMPAIGN` dans `src/theme/viceTheme.js`
+  (12 → 30 novembre 2026). Ces dates sont reprises à l'identique par le script
+  de démarrage d'`index.html` — les deux endroits doivent rester synchronisés.
+  Pendant la fenêtre, `vice` est le thème **par défaut** d'un visiteur qui n'a
+  encore rien choisi ; un `lp-theme` déjà mémorisé reste prioritaire. Hors
+  fenêtre, le site revient tout seul au sombre.
+- **Sortir de l'habillage** : la pastille de la barre (libellé « Normal » sur
+  ordinateur), l'entrée « Couleurs Vice City » du menu mobile, ou le bouton
+  « Retour au look normal » de l'avis. Le choix est mémorisé, comme pour le clair.
+- `?theme=vice` force l'habillage le temps d'une visite (recette, partage).
+- La peau vit dans **`src/theme/vice.css`**, importé après `theme.css` mais
+  **avant** les feuilles de page (`social.css`, `news-article.css`…) : toute
+  règle de même spécificité visant un composant de page doit donc être
+  qualifiée (`[data-theme='vice']`, ou le nom du composant, comme
+  `.social-dock`). C'est le piège à connaître avant d'y ajouter une règle.
+
+**Retirer l'opération** (le jour où elle s'arrête) : supprimer
+`src/theme/vice.css`, `src/theme/viceTheme.js`, `src/components/ViceNotice.jsx`
+et `public/vice-city-keyart.jpg`, puis retirer la ligne d'import de `vice.css`
+dans `src/main.jsx`, les appels à `toggleVice` / `isVice` dans `ThemeToggle`,
+`Layout` et `Home`, et les mentions `vice` dans `ThemeContext` et `index.html`.
+Aucun test de CI ne verrouille `data-theme`, et `vice.css` ne figure pas dans
+les audits du thème clair : rien d'autre ne casse. En attendant, laisser les
+dates expirer suffit à rendre le site à son apparence d'origine.
+
+**Les trois façons de revenir**, de la plus légère à la plus définitive :
+
+1. **Rien faire** — passé le 30 novembre, `vice` n'est plus le défaut : toute
+   visite sans choix mémorisé repart en sombre, et la page d'accueil retrouve
+   son visuel d'origine. Le code du skin reste en place, inerte.
+2. **Retirer la peau** — la liste de fichiers ci-dessus, ou un
+   `git revert` du commit de l'habillage. Vérifié : le diff contre l'état
+   d'avant est vide, `vite build` passe, et `check:light-news`,
+   `check:light-mobile-menu`, `check:nav` et `check:i18n` restent au vert.
+3. **Garder l'habillage, couper la campagne** — remettre `VICE_CAMPAIGN` dans
+   le passé (ou retirer la seule ligne `defaut` du script d'`index.html`) :
+   plus de défaut `vice`, mais l'entrée reste accessible pour les curieux.
+
+Dans les trois cas, **un visiteur qui avait `vice` mémorisé retombe sur le
+sombre tout seul** : `THEMES` ne le reconnaît plus, et la valeur est ignorée
+au chargement comme au démarrage. Personne ne reste coincé dans la peau.
+
 ## Mise en page téléphone (iPhone, Android, WebView)
 
 Le site bascule sur sa mise en page mobile via des requêtes média
