@@ -8707,7 +8707,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : 'egalite')
     : null;
   const vainqueur = vainqueurPvp ?? (duel ? rpgVainqueur(duel) : null);
-  // Fin de duel : SEUL l'avatar du camp perdant éclate en mille morceaux. Le
+  // Fin de duel : SEUL l'avatar du camp perdant éclate en morceaux. Le
   // gagnant reste intact ; en cas d'égalité les deux éclatent. Mouvement réduit
   // (réglage joueur ou système) : aucun éclat et l'écran de fin arrive de suite.
   const eclatementActif = Boolean(vainqueur) && !rpgAnimationsReduites(animReduite);

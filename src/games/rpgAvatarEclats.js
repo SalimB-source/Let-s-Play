@@ -1,8 +1,8 @@
-/** Les « mille morceaux » de l'avatar — géométrie pure, sans DOM ni image.
+/** Éclats de l'avatar — géométrie pure, sans DOM ni image.
  *
- * Le disque doré est découpé en une grille de 36 × 36 cases. On ne garde que
- * les cases dont le centre tombe DANS le cercle : environ un millier d'éclats
- * (π/4 × 1296), et aucun morceau ne vient d'un coin qui n'existait pas.
+ * Le disque doré est découpé en une grille de 14 × 14 cases. On ne garde que
+ * les cases dont le centre tombe DANS le cercle : environ 150 éclats au lieu
+ * d'un millier, sans morceaux provenant des coins extérieurs.
  * Chaque éclat reçoit sa tranche du portrait (`--col` / `--ligne` pilotent
  * `background-position` dans la feuille) et sa propre trajectoire : angle,
  * portée, rotation, retard et durée. Le tout est DÉTERMINISTE (hachage entier
@@ -12,8 +12,10 @@
  * opaque (`#d7ad61`) recouvert d'une tranche du WebP déjà livré.
  */
 
-/** Côté de la grille : 36 × 36 = 1296 cases, ~1016 dans le disque. */
-export const GRILLE_ECLATS = 36;
+/** 14 × 14 cases : 156 éclats, lisibles même sur les petits avatars. */
+export const GRILLE_ECLATS = 14;
+// Le dernier morceau finit avant 1600 ms de vol + 230 ms de retard.
+export const DUREE_ECLATEMENT_MAX = 1900;
 
 /** Un nombre pseudo-aléatoire stable dans [0, 1[ pour une case et un grain. */
 function hasard(col, ligne, grain) {
@@ -61,7 +63,6 @@ export function creerEclatsAvatar() {
           '--r': `${((d - 0.5) * 1080).toFixed(0)}deg`,
           '--d': `${(distance * 145 + c * 85).toFixed(0)}ms`,
           '--duree': `${(1080 + b * 520).toFixed(0)}ms`,
-          '--teinte': (0.82 + a * 0.4).toFixed(2),
         },
       });
     }
@@ -69,8 +70,7 @@ export function creerEclatsAvatar() {
   return eclats;
 }
 
-/** Calculée une seule fois au chargement du module : ~1 000 éclats, pas un
- *  recalcul à chaque rendu React de la fin de duel. */
+/** Calculée une seule fois au chargement du module, pas à chaque rendu React. */
 export const ECLATS_AVATAR = Object.freeze(creerEclatsAvatar());
 
 /** Le nombre exact de morceaux, pour les tests et les libellés. */

@@ -1,8 +1,8 @@
-/* ── ÉCLATEMENT DE L'AVATAR EN MILLE MORCEAUX ────────────────────────────────
-   Un seul calque, ~1 016 éclats, zéro image nouvelle : chaque morceau est une
+/* ── ÉCLATEMENT DE L'AVATAR ──────────────────────────────────────────────────
+   Un seul calque, 156 éclats, zéro image nouvelle : chaque morceau est une
    tranche du WebP du portrait posée sur un fond doré OPAQUE. La trajectoire
    de chacun vient de variables CSS individuelles (`--x`, `--y`, `--r`, `--d`,
-   `--duree`, `--teinte`) ; une seule `@keyframes` suffit pour tous.
+   `--duree`) ; une seule `@keyframes` suffit pour tous.
 
    `--rpg-eclat-portee` est le diamètre du disque, posé par
    `rpg-avatars-plateau.css` à partir de la taille de la plaque (PC / tactile).
@@ -26,24 +26,20 @@
 
 .rpg-avatar-eclatement__eclat {
   position: absolute;
-  /* 100 / 36 = 2.777778 % : la case dans la grille. Un léger débord évite
-     les jours entre deux éclats au tout premier instant. */
-  left: calc(var(--col) * 2.777778%);
-  top: calc(var(--ligne) * 2.777778%);
-  width: calc(2.777778% + .4px);
-  height: calc(2.777778% + .4px);
-  /* Fond doré PLEIN : jamais de transparence, jamais de PNG. Le portrait
-     (WebP à canal alpha) est découpé en 36 × 36 tranches : `background-size`
-     le rend 36 fois plus grand que l'éclat, et `background-position` choisit
-     la tranche (100 / 35 = 2.857143 %). */
+  /* Les dimensions et positions sont calculées depuis la grille JS. Un léger
+     débord évite les jours entre les morceaux au tout premier instant. */
+  left: calc(var(--col) * var(--rpg-eclat-case));
+  top: calc(var(--ligne) * var(--rpg-eclat-case));
+  width: calc(var(--rpg-eclat-case) + .4px);
+  height: calc(var(--rpg-eclat-case) + .4px);
+  /* Fond doré plein et tranche du portrait existant, sans filtre ni ombre
+     par morceau pour limiter le coût de dessin pendant le vol. */
   background-color: #d7ad61;
   background-image: var(--rpg-eclat-image);
   background-repeat: no-repeat;
-  background-size: 3600% 3600%;
+  background-size: var(--rpg-eclat-taille) var(--rpg-eclat-taille);
   background-position:
-    calc(var(--col) * 2.857143%) calc(var(--ligne) * 2.857143%);
-  box-shadow: inset 0 0 0 .4px rgba(255, 240, 190, .22);
-  filter: brightness(var(--teinte, 1));
+    calc(var(--col) * var(--rpg-eclat-position)) calc(var(--ligne) * var(--rpg-eclat-position));
   backface-visibility: hidden;
   animation: rpg-avatar-eclat-vol var(--duree) cubic-bezier(.16, .68, .32, 1) var(--d) both;
 }

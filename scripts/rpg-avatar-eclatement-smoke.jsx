@@ -23,7 +23,7 @@ function Demo() {
 
   return (
     <>
-      <h1>Éclatement de l’avatar en mille morceaux</h1>
+      <h1>Éclatement de l’avatar</h1>
       <p className="intro">
         Disque doré rempli en CSS — aucun PNG transparent — puis fin de duel :
         l’avatar du perdant se brise en {NOMBRE_ECLATS} éclats, le gagnant reste intact.
