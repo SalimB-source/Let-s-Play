@@ -77,7 +77,7 @@ test('le Porteur conserve son soin de mort, et son arrivée consulte le deck', (
 test('les fiches conservent leurs capacités et affichent les nouveautés', () => {
   const sus = cardById('susanoo'), cav = cardById('cavalier-des-deux-sabres'), ibis = cardById('ibis-des-comptes'), momie = cardById('momie-de-lin');
   assert.ok(sus.esquive && sus.arrivee.type === 'exil' && sus.honneur);
-  assert.ok(cav.rapidite && !cav.overkill && cav.honneur); assert.deepEqual(cav.coupCritique, { chance: .15, fois: 2 });
+  assert.ok(cav.rapidite && !cav.overkill && cav.honneur); assert.deepEqual(cav.coupCritique, { chance: .25, fois: 2 });
   assert.ok(ibis.envol && ibis.arrivee.type === 'pioche-defausse'); assert.equal(ibis.tribut, 1);
   assert.ok(momie.defenseur && momie.destruction.type === 'jetons'); assert.deepEqual(momie.blocage, { chance: .15, def: 2 });
   for (const [carte, cle] of [[sus, 'esquive'], [cav, 'coupCritique'], [ibis, 'tribut'], [momie, 'blocage'], [momie, 'defenseur']]) assert.ok(pastillesPourCarte(carte).some(p => p.cle === cle), `${carte.id}: ${cle}`);
@@ -113,9 +113,9 @@ function poserCher(d, side, id) {
 for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
   const mode = `${moba ? 'MOBA' : 'duel'}, ${side}`;
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
-  test(`Cavalier : critique direct à 15 %, sans Overkill imprimé (${mode})`, () => {
+  test(`Cavalier : critique direct à 25 %, sans Overkill imprimé (${mode})`, () => {
     const d = partie(moba, side), cav = poserCher(d, side, 'cavalier-des-deux-sabres');
-    assert.equal(cav.overkill, false); assert.equal(cav.rapidite, true); assert.deepEqual(cav.coupCritique, { chance: .15, fois: 2 });
+    assert.equal(cav.overkill, false); assert.equal(cav.rapidite, true); assert.deepEqual(cav.coupCritique, { chance: .25, fois: 2 });
     cav.ready = true; cav.malInvocation = false; rpgReglerHasard(d, () => .1);
     const vie = moba ? mobaVoie(d.moba, 'left').hp[enemy] : d[enemy].pv;
     const a = moba ? rpgMobaDeclarerAttaqueIndividuelle(d, side, cav.id, null, 'left') : rpgDeclarerAttaqueIndividuelleClassique(d, side, cav.id, null);
@@ -126,7 +126,7 @@ for (const moba of [false, true]) for (const side of ['joueur', 'sorcier']) {
   });
   test(`Susanoo : son Esquive évite une attaque, exil toujours imprimé (${mode})`, () => {
     const d = partie(moba, enemy), sus = poserCher(d, enemy, 'susanoo');
-    assert.ok(sus.esquive); assert.equal(sus.esquiveChance, .15);
+    assert.ok(sus.esquive); assert.equal(sus.esquiveChance, .25);
     d.tour = side; const attaquant = poser(d, side, 'chien-du-guet'); attaquant.ready = true; attaquant.malInvocation = false;
     rpgReglerHasard(d, () => .1); const pv = sus.pv;
     const a = moba ? rpgMobaDeclarerAttaqueIndividuelle(d, side, attaquant.id, sus.id, 'left') : rpgDeclarerAttaqueIndividuelleClassique(d, side, attaquant.id, sus.id);
@@ -166,5 +166,5 @@ test('un effet externe peut toujours donner Overkill au Cavalier', () => {
   const d = partie(), cav = poserCher(d, 'joueur', 'cavalier-des-deux-sabres');
   assert.equal(cav.overkill, false); d.joueur.main = ['mur-de-boucliers'];
   assert.ok(rpgLancerMagie(d, 'joueur', 'mur-de-boucliers').ok); assert.equal(cav.overkill, true);
-  rpgFinDeTour(d); assert.equal(cav.overkill, false); assert.deepEqual(cav.coupCritique, { chance: .15, fois: 2 });
+  rpgFinDeTour(d); assert.equal(cav.overkill, false); assert.deepEqual(cav.coupCritique, { chance: .25, fois: 2 });
 });

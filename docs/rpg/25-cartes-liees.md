@@ -60,9 +60,9 @@ mécanique sur des cartes du catalogue.
 | **Serment de la forge** (magie, mythique) | 4 | +2/+1 · Attaque ciblée | **+3/+1** · Attaque ciblée | +1/+0 | Daimyō du Soleil rouge (Braise, mythique, 5) |
 | **Nuage de cendres** (magie, rare) | 5 | **2** dégâts à toutes + 1 d'écho | **3** dégâts à toutes + **1** d'écho | +1, écho inchangé | Susanoo (Braise, mythique, 6) |
 | **Brise-lame** (magie rapide, inhabituelle) | 3 | brise une arme adverse · pioche **1** | brise l'arme · pioche **2** | +1 carte | Orochi (Braise, mythique, 8) |
-| **Braise et sable** (arme, rare) | 3 | +1/+0 · Attaque ciblée · critique 15 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
+| **Braise et sable** (arme, rare) | 3 | +1/+0 · Attaque ciblée · critique 25 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
 | **Feux de kitsune** (magie, rare) | 5 | **4** dégâts à une créature, ou **2** à chacune de deux | **5** dégâts, ou **3** et **3** | +1 sur les deux modes | Oni de la fournaise (Braise, mythique, 5) |
-| **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **15 % ×2** | **+2/+0** · critique **30 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
+| **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **25 % ×2** | **+2/+0** · critique **50 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
 | **Frappe d'iaijutsu** (magie rapide, rare) | 1 | **2** dégâts à une créature | **3** dégâts | un cran, et la carte la plus jouable du set | Tojiro, le pourfendeur (Braise, mythique, 6) |
 | **Poigne de givre** (magie rapide, commune) | 2 | **2** dégâts + gel | **3** dégâts, gel inchangé | le gel ne s'achète pas au détail | Valkyrie des glaces (Neige, mythique, 6) |
 | **La Grande Pesée** (sorcellerie, rare) | 5 | −3 PV adverse / +3 / pioche 2 | **−4 / +4** | le même verbe : peser, c'est déjà manger | La Dévoreuse (Ténèbres, mythique, 6) |
@@ -108,8 +108,11 @@ Les formes que prend ce cran :
   table qui s'allume sur la créature quand l'ancre est en jeu, et le sort
   refuse de partir s'il ne reste aucune proie légale ;
 - **le cumul d'un mot-clé à jet** : l'Esquive et le coup critique s'**additionnent**.
-  L'Esquive vaut **15 %** par source ; une créature qui l'imprime et porte la
-  Cuirasse de sel esquive donc à 30 %. Le calcul vit dans `recalculerEsquive`,
+  Les deux valent **25 %** par source ; une créature qui imprime l'Esquive et porte
+  la Cuirasse de sel esquive donc à 50 %, et le Sabre maudit fait passer Kagutsuchi
+  de 25 % à 50 % (×4 conservé). Le Coup critique est **garanti** — sans tirage —
+  contre une créature **déjà blessée** (PV sous son maximum) ; la frappe portée
+  au sorcier, elle, repasse toujours par le dé. Le calcul vit dans `recalculerEsquive`,
   le même patron que `recalculerCoupCritique` : il relit la fiche imprimée,
   les armes-sorts attachées et l'arme du prototype, et pose
   `entite.esquiveChance` que `tenterEsquive` jette réellement ;

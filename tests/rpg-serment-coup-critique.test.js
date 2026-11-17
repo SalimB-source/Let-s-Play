@@ -30,8 +30,8 @@ function serment(d) {
 }
 test('Serment : fiche et Lien conservent le renfort sans donner Attaque ciblée', () => {
   const c = cardById(spell);
-  assert.equal(c.effet.coupRapide, undefined); assert.equal(c.effet.coupCritique, .15);
-  assert.equal(effetLie(c, true).atk, 3); assert.equal(effetLie(c, true).coupCritique, .15);
+  assert.equal(c.effet.coupRapide, undefined); assert.equal(c.effet.coupCritique, .25);
+  assert.equal(effetLie(c, true).atk, 3); assert.equal(effetLie(c, true).coupCritique, .25);
   assert.match(c.text, /Coup critique/); assert.doesNotMatch(c.text, /Attaque ciblée/);
   assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
   assert.match(rpgMobaCartePourApercu(c).text, /voie choisie/);
@@ -42,25 +42,25 @@ test('Serment : cumul, équipement, Attaque ciblée imprimée et expiration', ()
   const ennemi = poser(d, 'sorcier', 'chien-du-guet');
   serment(d);
   assert.deepEqual([simple.atk, simple.pv, simple.coupRapide], [4, 3, false]);
-  assert.deepEqual(simple.coupCritique, { chance: .15, fois: 2 });
-  assert.deepEqual(native.coupCritique, { chance: .3, fois: 2 }); assert.equal(native.coupRapide, true);
+  assert.deepEqual(simple.coupCritique, { chance: .25, fois: 2 });
+  assert.deepEqual(native.coupCritique, { chance: .5, fois: 2 }); assert.equal(native.coupRapide, true);
   assert.equal(ennemi.coupCritique, null);
   d.joueur.main.push('lance-de-la-lune-givree'); assert.ok(rpgJouerArme(d, 'joueur', 'lance-de-la-lune-givree', native.id).ok);
-  assert.deepEqual(native.coupCritique, { chance: .45, fois: 2 });
+  assert.deepEqual(native.coupCritique, { chance: .75, fois: 2 });
   d.joueur.main.push('cuirasse-de-sel'); assert.ok(rpgJouerArme(d, 'joueur', 'cuirasse-de-sel', native.id).ok);
-  assert.deepEqual(native.coupCritique, { chance: .3, fois: 2 });
+  assert.deepEqual(native.coupCritique, { chance: .5, fois: 2 });
   rpgFinDeTour(d);
   assert.equal(simple.coupCritique, null); assert.deepEqual([simple.atk, simple.pv, simple.coupRapide], [2, 2, false]);
-  assert.deepEqual(native.coupCritique, { chance: .15, fois: 2 }); assert.equal(native.coupRapide, true);
+  assert.deepEqual(native.coupCritique, { chance: .25, fois: 2 }); assert.equal(native.coupRapide, true);
 });
 test('Serment : les sources multiples expirent sans perdre le multiplicateur ×4 imprimé', () => {
   const d = classique(); const offrande = poser(d, 'joueur', 'chien-du-guet');
   const a = poser(d, 'joueur', 'kagutsuchi-flamme-originelle', { sacrificeId: offrande.id });
   serment(d); serment(d);
-  assert.deepEqual(a.coupCritique, { chance: .45, fois: 4 });
-  rpgFinDeTour(d); assert.deepEqual(a.coupCritique, { chance: .15, fois: 4 });
+  assert.deepEqual(a.coupCritique, { chance: .75, fois: 4 });
+  rpgFinDeTour(d); assert.deepEqual(a.coupCritique, { chance: .25, fois: 4 });
 });
-for (const [jet, multiple] of [[.149, 2], [.15, 1]]) test(`Serment : tirage ${jet} en attaque directe`, () => {
+for (const [jet, multiple] of [[.249, 2], [.25, 1]]) test(`Serment : tirage ${jet} en attaque directe`, () => {
   const d = classique(); const a = poser(d, 'joueur', 'chien-du-guet'); serment(d);
   a.ready = true; a.malInvocation = false; const pv = d.sorcier.pv; rpgReglerHasard(d, () => jet);
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
@@ -80,7 +80,7 @@ for (const side of ['joueur', 'sorcier']) test(`Serment MOBA : annonce, résolut
   const r = rpgMobaLancerMagie(d, side, spell, null, 'left', null, { ouvrirReponse: true });
   assert.equal(r.sortEnAttente, true, JSON.stringify(r)); assert.equal(a.coupCritique, null); assert.equal(d.mobaSortEnAttente.laneId, 'left');
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur'; assert.ok(rpgMobaPasserSort(d, enemy).ok);
-  assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 }); assert.equal(a.coupRapide, false);
+  assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 }); assert.equal(a.coupRapide, false);
   assert.equal(a.atk, 4); assert.equal(b.atk, 2); assert.equal(b.coupCritique, null);
   rpgFinDeTour(d); assert.equal(a.coupCritique, null); assert.equal(a.atk, 2);
 });
@@ -100,14 +100,14 @@ for (const side of ['joueur', 'sorcier']) test(`Serment PvP : lancé par ${side}
   const d = classique(); d.tour = side; const a = poser(d, side, 'chien-du-guet');
   d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d[side].main.push(spell);
   assert.ok(rpgPvpAppliquer(d, side, { type: 'jouer-carte', carteId: spell }).ok);
-  assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 }); assert.equal(a.coupRapide, false);
+  assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 }); assert.equal(a.coupRapide, false);
   rpgFinDeTour(d); assert.equal(a.coupCritique, null);
 });
 test('Serment : un état sauvegardé conserve puis expire le bonus temporaire', () => {
   let d = classique(); const a = poser(d, 'joueur', 'tislit-des-aures'); serment(d);
   d = JSON.parse(JSON.stringify(d)); const recharge = d.joueur.creatures.find(e => e.id === a.id);
-  assert.deepEqual(recharge.coupCritique, { chance: .3, fois: 2 });
-  rpgFinDeTour(d); assert.deepEqual(recharge.coupCritique, { chance: .15, fois: 2 });
+  assert.deepEqual(recharge.coupCritique, { chance: .5, fois: 2 });
+  rpgFinDeTour(d); assert.deepEqual(recharge.coupCritique, { chance: .25, fois: 2 });
 });
 
 test('Serment : Daimyō améliore l’attaque sans modifier le critique prêté', () => {
@@ -115,13 +115,13 @@ test('Serment : Daimyō améliore l’attaque sans modifier le critique prêté'
   const sacrifice = poser(d, 'joueur', 'ashigaru-des-braises');
   poser(d, 'joueur', 'daimyo-du-soleil-rouge', { sacrificeId: sacrifice.id });
   const avant = allie.atk; serment(d);
-  assert.equal(allie.atk, avant + 3); assert.deepEqual(allie.coupCritique, { chance: .15, fois: 2 });
+  assert.equal(allie.atk, avant + 3); assert.deepEqual(allie.coupCritique, { chance: .25, fois: 2 });
 });
 test('Serment : le critique de l’arme demeure à la fin du tour', () => {
   const d = classique(); const a = poser(d, 'joueur', 'chien-du-guet');
   d.joueur.main.push('lance-de-la-lune-givree'); assert.ok(rpgJouerArme(d, 'joueur', 'lance-de-la-lune-givree', a.id).ok);
-  serment(d); assert.deepEqual(a.coupCritique, { chance: .3, fois: 2 });
-  rpgFinDeTour(d); assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 }); assert.equal(a.coupRapide, true);
+  serment(d); assert.deepEqual(a.coupCritique, { chance: .5, fois: 2 });
+  rpgFinDeTour(d); assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 }); assert.equal(a.coupRapide, true);
 });
 
 for (const side of ['joueur', 'sorcier']) test(`Serment MOBA : le critique prêté double l'attaque de ${side}`, () => {

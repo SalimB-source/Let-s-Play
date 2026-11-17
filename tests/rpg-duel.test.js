@@ -454,8 +454,8 @@ test('Bouchra esquive l’attaque qui devait la tuer — pas de bouclier, mais r
   const attaquant = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
   attaquant.ready = true;
 
-  // 14 % : sous le seuil de 15 %, l’attaque est annulée en entier.
-  rpgReglerHasard(duel, () => 0.14);
+  // 24 % : sous le seuil de 25 %, l’attaque est annulée en entier.
+  rpgReglerHasard(duel, () => 0.24);
   const combat = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [bouchra.id] });
   assert.equal(combat.ok, true, JSON.stringify(combat));
   assert.equal(bouchra.pv, 1, 'l’attaque esquivée ne lui retire rien');
@@ -2785,7 +2785,7 @@ test('Tour de Braise : 0/4 et 1 dégât de sort à la créature qu’elle bloque
 
 test('le dégât de sort de la Tour de Braise peut être esquivé', () => {
   let jets = 0;
-  const duel = duelDeBase({ rng: () => { jets += 1; return 0.14; } });
+  const duel = duelDeBase({ rng: () => { jets += 1; return 0.24; } });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'tour-de-braise');
@@ -2796,7 +2796,7 @@ test('le dégât de sort de la Tour de Braise peut être esquivé', () => {
 
   const jetsAvantCombat = jets;
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [attaquante.id], { [attaquante.id]: [tour.id] }).ok, true);
-  assert.equal(attaquante.pv, 3, 'l’attaquante esquive le dégât de sort à 14 %');
+  assert.equal(attaquante.pv, 3, 'l’attaquante esquive le dégât de sort à 24 %');
   assert.equal(tour.pv, 1, 'elle porte ensuite ses 3 blessures de combat à la Tour 0/4');
   assert.ok(duel.log.some((ligne) => /Onna-musha.*esquive le sort/.test(ligne)));
   assert.equal(jets - jetsAvantCombat, 2,
@@ -2981,7 +2981,7 @@ test('Sahir : une parade ne prévient plus les dégâts du partage', () => {
   sahir.ready = true;
   bloqueurs[0].bouclier = 1;
   const pvEsquive = bloqueurs[0].pv;
-  // Jet d'esquive manqué (au-dessus du seuil de 15 %) : l'Onna-musha encaisse
+  // Jet d'esquive manqué (au-dessus du seuil de 25 %) : l'Onna-musha encaisse
   // la blessure normale, que le test veut voir passer.
   rpgReglerHasard(duel, () => 0.9);
   const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
@@ -3537,8 +3537,8 @@ test('capacité à l’arrivée : la Vipère inocule son venin à une créature 
   assert.equal(chien.atk, 0, 'le Chien 2/2 perd ses 2 attaques');
   assert.ok(chien.empecheAttaqueToursRestants > 0, 'et ne peut plus attaquer avant la fin de son prochain tour');
 });
-test('Esquive : 15 % des attaques, Magies et Sorcelleries sont annulées entièrement', () => {
-  assert.equal(RPG_ESQUIVE_CHANCE, 0.15);
+test('Esquive : 25 % des attaques, Magies et Sorcelleries sont annulées entièrement', () => {
+  assert.equal(RPG_ESQUIVE_CHANCE, 0.25);
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -3549,8 +3549,8 @@ test('Esquive : 15 % des attaques, Magies et Sorcelleries sont annulées entièr
   porteuse.ready = true;
   assert.equal(esquiveuse.esquive, true, 'l’Onna-musha imprime Esquive, sans chiffre');
 
-  // À 14 %, le jet est encore sous le seuil de 15 % : l’attaque ne porte pas du tout.
-  rpgReglerHasard(duel, () => 0.14);
+  // À 24 %, le jet est encore sous le seuil de 25 % : l’attaque ne porte pas du tout.
+  rpgReglerHasard(duel, () => 0.24);
   const combat = rpgLancerAttaque(duel, 'sorcier', [porteuse.id], { [porteuse.id]: [esquiveuse.id] });
   assert.equal(combat.ok, true);
   assert.equal(esquiveuse.pv, 3, 'l’attaque esquivée est annulée en entier');
@@ -3562,18 +3562,18 @@ test('Esquive : 15 % des attaques, Magies et Sorcelleries sont annulées entièr
   duel.tour = 'sorcier';
   donner(duel, 'sorcier', 'feux-de-kitsune');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'feux-de-kitsune', esquiveuse.id).ok, true);
-  assert.equal(esquiveuse.pv, 3, 'la Sorcellerie est esquivée à 14 %');
+  assert.equal(esquiveuse.pv, 3, 'la Sorcellerie est esquivée à 24 %');
   assert.ok(duel.log.some((ligne) => /esquive le sort/.test(ligne)), 'le journal distingue le sort esquivé');
 
-  // À 15 %, le jet échoue : la Magie Rapide inflige normalement ses 3 dégâts.
-  rpgReglerHasard(duel, () => 0.15);
+  // À 25 %, le jet échoue : la Magie Rapide inflige normalement ses 3 dégâts.
+  rpgReglerHasard(duel, () => 0.25);
   donner(duel, 'sorcier', 'trait-de-braise');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', esquiveuse.id).ok, true);
-  assert.equal(esquiveuse.pv, 0, 'au seuil de 15 %, l’Esquive échoue et la Magie Rapide frappe');
+  assert.equal(esquiveuse.pv, 0, 'au seuil de 25 %, l’Esquive échoue et la Magie Rapide frappe');
 });
 
 test('Esquive annule les sorts et les blessures de capacité sur leur cible', () => {
-  const duel = duelDeBase({ rng: () => 0.14 });
+  const duel = duelDeBase({ rng: () => 0.24 });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'onna-musha-des-cendres');
@@ -3603,12 +3603,12 @@ test('Esquive annule les sorts et les blessures de capacité sur leur cible', ()
 
   const degatsCapacite = rpgBlesserCreature(duel, 'joueur', esquiveuse.id, 1, 'braise', null, 'capacite');
   assert.equal(degatsCapacite.esquive, true, 'la capacité hostile tente aussi l’Esquive');
-  assert.equal(esquiveuse.pv, 3, 'la blessure de capacité est évitée à 14 %');
-  rpgReglerHasard(duel, () => 0.15);
+  assert.equal(esquiveuse.pv, 3, 'la blessure de capacité est évitée à 24 %');
+  rpgReglerHasard(duel, () => 0.25);
   const capaciteReussie = rpgBlesserCreature(duel, 'joueur', esquiveuse.id, 1, 'braise', null, 'capacite');
-  assert.equal(capaciteReussie.esquive, false, 'le jet échoue au seuil exact de 15 %');
+  assert.equal(capaciteReussie.esquive, false, 'le jet échoue au seuil exact de 25 %');
   assert.equal(esquiveuse.pv, 2, 'la capacité inflige alors ses dégâts');
-  rpgReglerHasard(duel, () => 0.14);
+  rpgReglerHasard(duel, () => 0.24);
 
   donner(duel, 'sorcier', 'haut-fond');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'haut-fond', esquiveuse.id).ok, true);
@@ -3630,8 +3630,8 @@ test('Esquive : le jet se tente pour chaque attaquant d’un combat', () => {
   const premierePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
   const secondePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
 
-  // Premier coup esquivé à 14 %, second coup encaissé : deux jets indépendants.
-  const jets = [0.14, 0.9];
+  // Premier coup esquivé à 24 %, second coup encaissé : deux jets indépendants.
+  const jets = [0.24, 0.9];
   rpgReglerHasard(duel, () => (jets.length ? jets.shift() : 0.9));
   const combat = rpgLancerAttaque(duel, 'joueur', [esquiveuse.id], {
     [esquiveuse.id]: [premierePorteuse.id, secondePorteuse.id],

@@ -22,13 +22,13 @@ function classique(id, side = 'joueur') {
 }
 for (const id of ids) {
   test(`${id} : fiche et capacité critique`, () => {
-    const c = cardById(id); assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
-    assert.match(c.text, /Coup critique.*15 %.*doubler/); assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
+    const c = cardById(id); assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
+    assert.match(c.text, /Coup critique.*25 %.*doubler/); assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
     const { a } = classique(id); assert.deepEqual(a.coupCritique, c.coupCritique);
     if (id === 'djinn-de-la-fleche-ardente') assert.ok(a.coupRapide && a.rapidite && a.detruireFinDuTour);
     else assert.equal(a.contreAttaque, true);
   });
-  for (const [jet, multiple] of [[.149, 2], [.15, 1]]) test(`${id} : seuil du critique en attaque directe ${jet}`, () => {
+  for (const [jet, multiple] of [[.249, 2], [.25, 1]]) test(`${id} : seuil du critique en attaque directe ${jet}`, () => {
     const { d, a } = classique(id); const pv = d.sorcier.pv; rpgReglerHasard(d, () => jet);
     assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
     const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');

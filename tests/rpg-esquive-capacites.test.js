@@ -22,8 +22,8 @@ function poser(duel, cote, carteId, cibleId = null, options = {}) {
   return resultat.entite;
 }
 
-test('une capacité hostile ciblée s’esquive ou non au seuil de 15 %', () => {
-  for (const [jet, esquive] of [[0.14, true], [0.15, false]]) {
+test('une capacité hostile ciblée s’esquive ou non au seuil de 25 %', () => {
+  for (const [jet, esquive] of [[0.24, true], [0.25, false]]) {
     const duel = duelVide();
     const cible = poser(duel, 'joueur', 'onna-musha-des-cendres');
     rpgReglerHasard(duel, () => jet);
@@ -101,7 +101,7 @@ test('l’IA estime aussi les capacités et la chance cumulée d’Esquive', () 
 
 
 test('le retour d’Anqa permet d’esquiver sa capacité hostile', () => {
-  for (const [jet, esquive] of [[0.14, true], [0.15, false]]) {
+  for (const [jet, esquive] of [[0.24, true], [0.25, false]]) {
     const duel = duelVide();
     const cible = poser(duel, 'sorcier', 'onna-musha-des-cendres');
     duel.joueur.cimetiere.push('anqa-des-braises');

@@ -52,13 +52,13 @@ test('fiche 4/4, coût 4, hybride et trois capacités jouables', () => {
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
   assert.equal(sacrificesInvocation(c), 0); assert.ok(carteJouableSansTerrain(c));
-  assert.equal(c.rapidite, true); assert.equal(c.volDeVie, true); assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
+  assert.equal(c.rapidite, true); assert.equal(c.volDeVie, true); assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
   for (const cle of ['rapidite', 'volDeVie', 'coupCritique']) assert.ok(effetsDetailles(c).pastilles.find(p => p.cle === cle)?.description, cle);
   assert.match(c.text, /Rapidité/); assert.match(c.text, /Vol de vie/); assert.match(c.text, /Coup critique/);
   assert.ok(existsSync(new URL(`../public/cards/${ID}.jpg`, import.meta.url)));
 });
 
-for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) for (const [jet, multiplicateur] of [[.149, 2], [.15, 1]]) test(`${mode} ${side} : attaque immédiate, critique ${jet} et vol de vie`, () => {
+for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) for (const [jet, multiplicateur] of [[.249, 2], [.25, 1]]) test(`${mode} ${side} : attaque immédiate, critique ${jet} et vol de vie`, () => {
   const d = partie(mode), a = poser(d, mode, side, ID), adv = autre(side);
   assert.ok(a.rapidite && a.volDeVie && rpgPeutAttaquer(a));
   assert.deepEqual([a.atk, a.pv], [4, 4]);
@@ -69,7 +69,7 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
   const signaux = (d.combatAnimations ?? []).filter(e => e.type === 'coup-critique' && e.entiteId === a.id);
   assert.equal(signaux.length, multiplicateur === 2 ? 1 : 0);
   if (d.moba) assert.ok(rpgMobaPlacementCoherent(d));
-  if (mode === 'pvp') assert.deepEqual(rpgPvpVue(d, side).joueur.creatures.find(e => e.id === a.id)?.coupCritique, { chance: .15, fois: 2 });
+  if (mode === 'pvp') assert.deepEqual(rpgPvpVue(d, side).joueur.creatures.find(e => e.id === a.id)?.coupCritique, { chance: .25, fois: 2 });
 });
 
 for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : critique et vol de vie lorsque le chevalier se défend`, () => {

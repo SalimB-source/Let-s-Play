@@ -24,19 +24,19 @@ function lionne(d, side = 'joueur', cible = null) {
   return poser(d, side, id, cible, { sacrificeId: offrande.id });
 }
 test('Lionne : fiche, pastille et souffle à l’arrivée inchangé', () => {
-  const c = cardById(id); assert.deepEqual(c.coupCritique, { chance: .15, fois: 2 });
+  const c = cardById(id); assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
   assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
-  assert.match(c.text, /Coup critique.*15 %.*doubler/);
+  assert.match(c.text, /Coup critique.*25 %.*doubler/);
   assert.equal(c.rapidite, true); assert.deepEqual(c.protection.contre, ['eau', 'neige']);
   const d = duel(); const cible = poser(d, 'sorcier', 'chien-du-guet'); cible.pv = cible.def = cible.pvMax = 20;
   rpgReglerHasard(d, () => 0); const a = lionne(d, 'joueur', cible.id);
   assert.deepEqual(a.coupCritique, c.coupCritique); assert.equal(cible.pv, 16);
   d.joueur.main.push('lance-de-la-lune-givree'); assert.ok(rpgJouerArme(d, 'joueur', 'lance-de-la-lune-givree', a.id).ok);
-  assert.deepEqual(a.coupCritique, { chance: .3, fois: 2 });
+  assert.deepEqual(a.coupCritique, { chance: .5, fois: 2 });
   d.joueur.main.push('cuirasse-de-sel'); assert.ok(rpgJouerArme(d, 'joueur', 'cuirasse-de-sel', a.id).ok);
-  assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+  assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 });
 });
-for (const [jet, multiple] of [[.149, 2], [.15, 1]]) test(`Lionne : attaque directe classique au seuil ${jet}`, () => {
+for (const [jet, multiple] of [[.249, 2], [.25, 1]]) test(`Lionne : attaque directe classique au seuil ${jet}`, () => {
   const d = duel(); const a = lionne(d); a.ready = true; a.malInvocation = false;
   const pv = d.sorcier.pv; rpgReglerHasard(d, () => jet);
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);

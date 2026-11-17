@@ -30,20 +30,20 @@ function jouer(d, cote, id) {
 for (const id of ids) {
   test(`${id} : fiche, entité et équipement conservent le critique`, () => {
     const fiche = cardById(id);
-    assert.deepEqual(fiche.coupCritique, { chance: .15, fois: 2 });
-    assert.match(fiche.text, /Coup critique.*15 %.*doubler/);
+    assert.deepEqual(fiche.coupCritique, { chance: .25, fois: 2 });
+    assert.match(fiche.text, /Coup critique.*25 %.*doubler/);
     assert.ok(pastillesPourCarte(fiche).some(p => p.cle === 'coupCritique'));
     assert.equal(fiche.honneur, 1);
     const d = duelTest(); const a = jouer(d, 'joueur', id);
     assert.deepEqual(a.coupCritique, fiche.coupCritique);
     d.joueur.main.push('lance-de-la-lune-givree');
     assert.ok(rpgJouerArme(d, 'joueur', 'lance-de-la-lune-givree', a.id).ok);
-    assert.deepEqual(a.coupCritique, { chance: .3, fois: 2 });
+    assert.deepEqual(a.coupCritique, { chance: .5, fois: 2 });
     d.joueur.main.push('cuirasse-de-sel');
     assert.ok(rpgJouerArme(d, 'joueur', 'cuirasse-de-sel', a.id).ok);
-    assert.deepEqual(a.coupCritique, { chance: .15, fois: 2 });
+    assert.deepEqual(a.coupCritique, { chance: .25, fois: 2 });
   });
-  for (const [jet, multiple] of [[.149, 2], [.15, 1]]) {
+  for (const [jet, multiple] of [[.249, 2], [.25, 1]]) {
     test(`${id} : attaque directe classique au seuil ${jet}`, () => {
       const d = duelTest(); const a = jouer(d, 'joueur', id);
       a.ready = true; a.malInvocation = false; rpgReglerHasard(d, () => jet);

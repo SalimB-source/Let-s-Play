@@ -38,7 +38,7 @@ créature du même type ou de même coût ne la remplace pas.
 | Amiral des abysses | Eau | 6 | **4 / 4** | Raïs de la galiote (2) + La légende du Hollandais volant (4) |
 | Serpent des deux rivages | Sable / Eau | 7 | **6 / 6** | Cotre de course (3) + La légende du Hollandais volant (4) |
 
-Le Dragon possède Contre-attaque, Esquive 15 %, Défenseur et Coup critique (15 % de chances de doubler ses dégâts de combat). Le Jarl possède
+Le Dragon possède Contre-attaque, Esquive 25 %, Défenseur et Coup critique (25 % de chances de doubler ses dégâts de combat, garanti contre une créature déjà blessée). Le Jarl possède
 Overkill, Bouclier et Furie 4. Le Scorpion possède Défenseur et Poison : à son
 arrivée, il détruit toutes les créatures blessées des deux camps ; en MOBA,
 cette vague reste limitée à sa voie. Il n’a plus Vol de vie.
