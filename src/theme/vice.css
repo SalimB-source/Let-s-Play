@@ -5,6 +5,14 @@
    Elle s'active depuis le bouton de thème (voir ThemeToggle / ThemeContext),
    s'écrit dans `data-theme="vice"` sur <html> et se retire en un clic.
 
+   ⚠️ La peau est CLAIRE. Ce n'est pas un détail cosmétique : `isLight` reste
+   faux (la peau n'est pas le thème clair du site), donc tout l'outillage
+   écrit pour les fonds sombres s'applique encore — et c'est pour ça que le
+   bloc « 1. JETONS » ne se contente pas de repeindre : il INVERSE les encres
+   (texte prune sur papier rose) et ASSOMBRIT les accents, exactement comme
+   `theme.css` le fait pour le thème clair. Toute nouvelle règle de peau doit
+   être vérifiée sur fond clair, jamais sur fond noir.
+
    Le site est déjà bâti sur des jetons (`--bg`, `--panel`, `--ink`, `--cyan`,
    `--yellow`, `--line`…) : une grande partie de la peau tient donc dans le
    bloc « 1. JETONS ». Le reste est une liste assumée de sélecteurs qui, eux,
@@ -14,14 +22,22 @@
    puisse les retrouver et les retirer facilement : c'est le point faible de
    toute peau temporaire, autant qu'il soit lisible.
 
-   RÈGLE DE COULEUR — d'où viennent ces teintes :
-     • rose néon   #ff2e93 : l'accent principal (remplace le cyan en tête) ;
-     • aqua        #33f0e4 : le second accent, l'ancien cyan réchauffé ;
-     • jaune citron#ffe14d : le jaune de marque de Let's Play, conservé (bouton
-       principal, pastilles actives, compteurs) — c'est la continuité ;
-     • nuit violette #100a1e : le fond, plus chaud et plus violet que le
-       bleu-noir d'origine ;
-     • coucher de soleil #ff8a5c : les halos, avec parcimonie.
+   RÈGLE DE COULEUR — d'où viennent ces teintes (version claire) :
+     • rose bonbon #ff3d9a : l'accent principal, REMPLISSAGE (aplats, halos,
+       bordures). Illisible en texte sur fond pâle : pour le texte, c'est
+       `--vice-pink-ink` (#c2006a) ;
+     • menthe     #00b3a4 : le second accent, même logique à deux vitesses
+       (`--vice-mint-ink` #00796f pour le texte) ;
+     • citron     #ffe14d : le jaune de marque de Let's Play, conservé en
+       aplat, TOUJOURS avec l'encre prune posée dessus ;
+     • papier rose #ffe9f4 : le fond, un rose très pâle, plus chaud que le
+       blanc du thème clair ;
+     • prune      #2b0a24 : l'encre, jamais du noir (elle garde la teinte) ;
+     • pêche      #ff8a5c : les halos, avec parcimonie.
+
+   Deux familles par accent, comme dans `theme.css` : la teinte vive pour ce
+   qui REMPLIT, la teinte sombre pour ce qui SE LIT. Confondre les deux est
+   l'erreur la plus facile à commettre en retouchant cette feuille.
 
    ⚠️ Hommage NON OFFICIEL : aucun logo Rockstar / GTA n'est utilisé, aucune
    jaquette officielle n'est embarquée. Le visuel du héros est une création
@@ -36,114 +52,137 @@
 /* `--cyan` et `--yellow` restent les noms : 800 règles du site les lisent
    (l'habillage n'a pas à les renommer, juste à les repeindre). */
 :root[data-theme='vice']{
-  color-scheme: dark;
+  /* La peau claire n'annonce pas de fond sombre au navigateur : barres de
+     défilement, champs, menus natifs suivent. */
+  color-scheme: light;
 
-  /* teintes propres à la peau */
-  --vice-pink:#ff2e93;
-  --vice-pink-bright:#ff6fc0;
-  --vice-aqua:#33f0e4;
-  --vice-aqua-bright:#8dfff7;
+  /* --- teintes de la peau : deux familles par accent ------------------- */
+  /* REMPLISSAGE : aplats, halos, bordures, traits. */
+  --vice-pink:#ff3d9a;
+  --vice-pink-bright:#ff6fb5;
+  --vice-aqua:#2fe3d6;
+  --vice-aqua-bright:#8ff5ee;
   --vice-lemon:#ffe14d;
   --vice-sunset:#ff8a5c;
-  --vice-night:#100a1e;
-  --vice-night-deep:#0a0614;
-  --vice-panel:#170f2a;
-  --vice-panel-2:#1d1436;
-  --vice-glow-pink:rgba(255,46,147,.42);
-  --vice-glow-aqua:rgba(51,240,228,.34);
-  /* Encre posée SUR l'aplat citron (boutons, pastille active, pastilles) :
-     un prune très sombre, comme le site d'origine le fait sur son jaune. */
-  --vice-ink-on-lemon:#1b0a12;
+  /* ENCRE : les mêmes accents, assombris jusqu'à passer AA sur le papier. */
+  --vice-pink-ink:#c2006a;      /* 5,1:1 sur --bg */
+  --vice-mint-ink:#00796f;      /* 5,9:1 sur --bg */
+  --vice-lemon-ink:#7a5a00;     /* le citron ne se lit pas : on l'encercle */
 
-  /* surfaces et encres — mêmes noms que src/styles.css */
+  /* --- surfaces ------------------------------------------------------- */
+  --vice-night:#fff5fa;         /* le nom reste (800 règles le lisent) */
+  --vice-night-deep:#ffe9f4;
+  --vice-panel:#ffffff;
+  --vice-panel-2:#fff0f7;
+  --vice-glass:rgba(255,255,255,.72);
+
+  /* --- halos : sur papier, un halo = une ombre colorée très douce ------ */
+  --vice-glow-pink:rgba(255,61,154,.20);
+  --vice-glow-aqua:rgba(0,179,164,.18);
+
+  /* Encre posée SUR l'aplat citron (boutons, pastille active) : le prune de
+     la peau, comme le site le fait sur son propre jaune. */
+  --vice-ink-on-lemon:#2b0a24;
+
+  /* Alias lisibles pour le balayage `scripts/theme-ink-sweep.mjs --theme=vice`
+     (section 9) : il vise des jetons, pas des hexadécimaux. */
+  --vice-ink:var(--ink);
+  --vice-muted:var(--muted);
+  --vice-danger:#a3003f;
+  --vice-ok:#006b47;
+  --vice-warn:#8a5200;
+  --vice-link:#0b4a8f;
+
+  /* --- jetons du site, réécrits --------------------------------------- */
   --bg:var(--vice-night);
   --panel:var(--vice-panel);
   --panel-2:var(--vice-panel-2);
-  --ink:#fff4ff;
-  --muted:rgba(255,233,255,.70);
-  --dim:rgba(255,233,255,.47);
-  --line:rgba(255,92,171,.20);
-  --line-strong:rgba(255,92,171,.42);
+  --ink:#2b0a24;
+  --muted:rgba(43,10,36,.72);
+  --dim:rgba(43,10,36,.52);
+  --line:rgba(194,0,106,.16);
+  --line-strong:rgba(194,0,106,.32);
 
-  /* accents */
-  --cyan:var(--vice-aqua);
-  --cyan-bright:var(--vice-aqua-bright);
+  /* accents : le VIF remplit, l'ENCRE écrit (voir l'en-tête) */
+  --cyan:var(--vice-mint-ink);
+  --cyan-bright:var(--vice-aqua);
   --yellow:var(--vice-lemon);
-  --yellow-ink:var(--vice-lemon);
-  --violet:var(--vice-pink-bright);
-  --purple:#7a3fd1;
+  --yellow-ink:var(--vice-lemon-ink);
+  --violet:var(--vice-pink-ink);
+  --purple:#a0128f;
 
   /* Le site écrit « encre sur du jaune » en dur, une quarantaine de fois
      (`color:#0a0b1a` sous `.button-yellow`, `.nav-primary a.active`,
      `.filter.active`, `.comment-level`…). On réutilise leurs noms de jetons
      pour que ces règles suivent la peau sans être toutes réécrites. */
-  --vice-on-yellow:#1b0a12;
+  --vice-on-yellow:#2b0a24;
+
+  /* Le fond du site est FIXE hors téléphone : le papier rose doit l'être aussi,
+     sinon un dégradé sombre réapparaît au défilement. */
+  --vice-paper:var(--vice-night);
 }
 
 /* ============ 2. SOCLE ============ */
-/* Fond : nuit violette, un soleil de coucher couchant en haut, une nappe aqua
-   en bas à gauche. Les deux halos sont FIXES (comme le fond d'origine) pour
-   que la page reste « dans » le décor quand on défile. */
+/* Fond : papier rose, un halo citron en haut à droite (le soleil de Miami),
+   une nappe menthe en bas. Les halos sont FIXES pour que la page reste « dans »
+   le décor quand on défile. Sur papier, un halo s'obtient en assombrissant à
+   peine — pas en projetant du néon : la peau claire joue la lumière, pas le
+   vice. */
 [data-theme='vice'] body{
   background:
-    radial-gradient(1100px 620px at 82% -10%, rgba(255,46,147,.26), transparent 62%),
-    radial-gradient(760px 520px at 12% 12%, rgba(255,138,92,.12), transparent 65%),
-    radial-gradient(900px 560px at -10% 34%, rgba(51,240,228,.10), transparent 60%),
+    radial-gradient(1100px 620px at 84% -8%, rgba(255,184,196,.55), transparent 62%),
+    radial-gradient(760px 520px at 8% 6%, rgba(255,225,77,.30), transparent 66%),
+    radial-gradient(900px 560px at -10% 40%, rgba(143,245,238,.34), transparent 62%),
     var(--bg);
 }
-/* Le disque solaire, très discret, derrière le contenu. */
+/* Le disque solaire, très pâle, derrière le contenu. */
 [data-theme='vice'] body::before{
   content:"";
   position:fixed;z-index:-1;pointer-events:none;
-  top:-26vh;left:50%;transform:translateX(-50%);
+  top:-30vh;left:50%;transform:translateX(-50%);
   width:min(1040px,120vw);aspect-ratio:1;
   border-radius:50%;
-  background:radial-gradient(circle, rgba(255,86,150,.20) 0%, rgba(255,138,92,.10) 42%, transparent 68%);
+  background:radial-gradient(circle, rgba(255,196,120,.42) 0%, rgba(255,184,196,.26) 44%, transparent 70%);
   filter:blur(6px);
 }
-/* Les scanlines restent : elles font le « CRT » du site dans les deux autres
-   thèmes, et tiennent le rose vif à distance sur les grandes surfaces. */
-[data-theme='vice'] ::selection{background:var(--vice-pink);color:#14061a}
-[data-theme='vice'] :focus-visible{outline-color:var(--vice-aqua)}
+[data-theme='vice'] ::selection{background:var(--vice-pink);color:#fff}
+[data-theme='vice'] :focus-visible{outline-color:var(--vice-mint-ink)}
 [data-theme='vice'] ::-webkit-scrollbar{background:var(--vice-night-deep)}
-[data-theme='vice'] ::-webkit-scrollbar-thumb{background:#3a1f4d;border-color:var(--vice-night-deep)}
-[data-theme='vice'] ::-webkit-scrollbar-thumb:hover{background:#5a2f74}
+[data-theme='vice'] ::-webkit-scrollbar-thumb{background:#ffc2dd;border-color:var(--vice-night-deep)}
+[data-theme='vice'] ::-webkit-scrollbar-thumb:hover{background:#ff9dcb}
 
-/* Icônes néon du décor : la palette d'origine reste lisible, on la réaccorde. */
+/* Icônes néon du décor : sur papier, teintes d'encre (une icône claire sur fond
+   clair disparaîtrait). */
 [data-theme='vice'] .ni-gamepad,
-[data-theme='vice'] .ni-zap{color:var(--vice-pink)}
+[data-theme='vice'] .ni-zap{color:var(--vice-pink-ink)}
 [data-theme='vice'] .ni-dpad,
-[data-theme='vice'] .ni-sparkle{color:var(--vice-aqua)}
+[data-theme='vice'] .ni-sparkle{color:var(--vice-mint-ink)}
 [data-theme='vice'] .ni-heart,
-[data-theme='vice'] .ni-joystick{color:#ff6fa8}
-[data-theme='vice'] .ni-trophy{color:var(--vice-lemon)}
+[data-theme='vice'] .ni-joystick{color:#d94a86}
+[data-theme='vice'] .ni-trophy{color:var(--vice-lemon-ink)}
 
 /* ============ 3. NAVIGATION — L'ÎLE ============ */
-/* Verre violet : même géométrie, même flou, même ombre. Seule la teinte du
-   verre change, pour que l'île se détache du fond rose. */
+/* Verre blanc dépoli : même géométrie, même flou, même ombre. L'île se détache
+   du papier par son ombre portée, pas par sa teinte. */
 [data-theme='vice'] .nav,
 [data-theme='vice'] .nav.nav-home{
-  background:rgba(28,14,46,.66);
-  border-color:rgba(255,255,255,.10);
-  box-shadow:0 10px 30px -12px rgba(0,0,0,.7), 0 4px 12px -6px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,214,246,.08);
+  background:rgba(255,255,255,.80);
+  border-color:rgba(194,0,106,.14);
+  box-shadow:0 10px 30px -14px rgba(43,10,36,.28), 0 4px 12px -8px rgba(43,10,36,.18), inset 0 1px 0 #fff;
 }
 [data-theme='vice'] .nav.scrolled,
 [data-theme='vice'] .nav.nav-home.scrolled{
-  background:rgba(28,14,46,.86);
-  border-color:rgba(255,255,255,.12);
-  box-shadow:0 16px 40px -16px rgba(0,0,0,.8), 0 6px 16px -8px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,214,246,.08);
+  background:rgba(255,255,255,.94);
+  border-color:rgba(194,0,106,.18);
+  box-shadow:0 16px 40px -18px rgba(43,10,36,.32), 0 6px 16px -10px rgba(43,10,36,.22), inset 0 1px 0 #fff;
 }
 [data-theme='vice'] .nav-primary{
-  background:rgba(255,255,255,.05);
-  border-color:rgba(255,255,255,.07);
+  background:rgba(43,10,36,.04);
+  border-color:rgba(43,10,36,.06);
 }
-[data-theme='vice'] .nav-links a{color:rgba(255,236,252,.82)}
-/* Entrées de l'île. La pastille qui glisse (`.nav-pill-indicator`) porte
-   l'aplat citron ; l'entrée active reçoit l'encre prune posée dessus, comme
-   dans les deux autres thèmes. */
-[data-theme='vice'] .nav-links a{color:rgba(255,236,252,.82)}
-[data-theme='vice'] .nav-primary a{color:rgba(255,236,252,.82)}
-[data-theme='vice'] .nav-primary a:hover{color:#fff;background:rgba(255,46,147,.14)}
+[data-theme='vice'] .nav-links a{color:rgba(43,10,36,.76)}
+[data-theme='vice'] .nav-primary a{color:rgba(43,10,36,.76)}
+[data-theme='vice'] .nav-primary a:hover{color:var(--ink);background:rgba(255,61,154,.12)}
 /* Ordinateur : l'entrée active est recouverte par la pastille citron, son
    texte passe donc en encre prune. Même requête média que le site (voir
    styles.css, « Island grid ») pour ne pas ajouter de pastille dans le tiroir
@@ -155,122 +194,130 @@
   [data-theme='vice'] .nav .nav-primary a.active:hover{
     color:var(--vice-ink-on-lemon);
     background:var(--vice-lemon);
-    box-shadow:0 2px 12px -2px rgba(255,225,77,.5);
+    box-shadow:0 2px 12px -4px rgba(255,225,77,.9);
   }
 }
 [data-theme='vice'] .nav-pill-indicator{
   background:var(--vice-lemon);
-  box-shadow:0 2px 12px -2px rgba(255,225,77,.5);
+  box-shadow:0 2px 12px -4px rgba(255,225,77,.9);
 }
 
 /* Recherche, langue, compte : les pilules de l'île. */
 [data-theme='vice'] .nav-search{
-  background:rgba(255,255,255,.05);
-  border-color:rgba(255,255,255,.09);
+  background:rgba(43,10,36,.04);
+  border-color:rgba(43,10,36,.10);
 }
+[data-theme='vice'] .nav-search input{color:var(--ink)}
+[data-theme='vice'] .nav-search input::placeholder{color:var(--dim)}
 [data-theme='vice'] .nav-search:focus-within{
-  border-color:var(--vice-aqua);
-  background:rgba(51,240,228,.08);
+  border-color:var(--vice-mint-ink);
+  background:#fff;
 }
 [data-theme='vice'] .nav-account.nav-login,
 [data-theme='vice'] .nav-account.nav-register{
-  border-color:rgba(255,255,255,.16);
-  color:rgba(255,236,252,.92);
+  border-color:rgba(43,10,36,.18);
+  color:var(--ink);
 }
-[data-theme='vice'] .nav-account.nav-login{background:rgba(255,255,255,.06)}
-[data-theme='vice'] .nav-account.nav-login:hover{background:rgba(51,240,228,.14);border-color:var(--vice-aqua);color:#fff}
+[data-theme='vice'] .nav-account.nav-login{background:rgba(255,255,255,.7)}
+[data-theme='vice'] .nav-account.nav-login:hover{background:rgba(47,227,214,.22);border-color:var(--vice-mint-ink);color:var(--ink)}
 [data-theme='vice'] .nav-account.nav-register{
   background:var(--vice-lemon);color:var(--vice-ink-on-lemon);border-color:var(--vice-lemon);
-  box-shadow:0 4px 14px -4px rgba(255,225,77,.42);
+  box-shadow:0 4px 14px -6px rgba(255,225,77,.9);
 }
 [data-theme='vice'] .nav-account.nav-register:hover{
-  background:#fff08a;border-color:#fff08a;color:var(--vice-ink-on-lemon);
+  background:#ffec86;border-color:#ffec86;color:var(--vice-ink-on-lemon);
   transform:translateY(-1px);
 }
-/* Sous-menu « Actus » : le panneau est un verre, les liens gardent l'encre. */
+/* Sous-menu « Actus » : panneau blanc, liens en encre. */
 [data-theme='vice'] .nav-primary .nav-submenu{
-  background:rgba(24,12,40,.96);
-  border-color:rgba(255,92,171,.24);
+  background:#fff;
+  border-color:rgba(194,0,106,.20);
+  box-shadow:0 18px 40px -18px rgba(43,10,36,.30);
 }
 [data-theme='vice'] .nav-primary .nav-submenu a{
-  background:linear-gradient(90deg, rgba(51,240,228,.07), transparent 70%);
-  border-color:rgba(51,240,228,.22);
+  background:transparent;
+  border-color:rgba(194,0,106,.12);
+  color:var(--ink);
 }
 [data-theme='vice'] .nav-primary .nav-submenu a:hover{
-  background:linear-gradient(90deg, rgba(255,225,77,.14), transparent 70%);
-  border-color:rgba(255,225,77,.34);
+  background:rgba(255,225,77,.30);
+  border-color:rgba(255,225,77,.70);
+  color:var(--vice-ink-on-lemon);
 }
 
 /* Bouton de thème : en habillage vice, la pastille prend le rose et affiche
    le libellé du retour au thème normal (voir ThemeToggle.jsx). */
 [data-theme='vice'] .nav .theme-toggle,
 [data-theme='vice'] .nav-actions-grid .theme-toggle{
-  border-color:rgba(255,46,147,.45);
-  background:rgba(255,46,147,.16);
-  color:#ffe6f6;
+  border-color:rgba(194,0,106,.30);
+  background:rgba(255,61,154,.12);
+  color:var(--vice-pink-ink);
 }
 [data-theme='vice'] .nav .theme-toggle:hover,
 [data-theme='vice'] .nav-actions-grid .theme-toggle:hover{
-  background:rgba(255,46,147,.26);
-  border-color:var(--vice-pink-bright);
-  color:#fff;
+  background:rgba(255,61,154,.20);
+  border-color:var(--vice-pink-ink);
+  color:var(--vice-pink-ink);
 }
 
 /* ============ 4. HÉROS ============ */
-/* Le visuel « vice » (public/vice-city-keyart.jpg) remplace la photo de
-   matériel ; le voile, lui, garde exactement la même géométrie pour que le
-   texte blanc/jaune posé à gauche reste aussi lisible qu'avant. */
+/* Le visuel « vice » de JOUR (public/vice-city-day.jpg) remplace la photo de
+   matériel. Le voile s'inverse : sur une image claire, il faut une nappe
+   PÂLE à gauche pour que le titre prune et le texte restent lisibles — c'est
+   l'exact pendant du voile sombre de la version nuit. */
 [data-theme='vice'] .hero{background:var(--vice-night-deep)}
 [data-theme='vice'] .hero-shade{
   background:
-    linear-gradient(90deg, rgba(10,4,20,.82) 0%, rgba(10,4,20,.60) 32%, rgba(10,4,20,.24) 64%, rgba(10,4,20,.06) 100%),
-    linear-gradient(180deg, rgba(10,4,20,.52) 0%, rgba(10,4,20,.04) 18%, rgba(10,4,20,0) 36%, rgba(10,4,20,.30) 64%, rgba(10,4,20,.90) 92%, rgba(10,4,20,.96) 100%),
-    radial-gradient(120% 90% at 50% 35%, transparent 48%, rgba(16,4,24,.32) 100%);
+    linear-gradient(90deg, rgba(255,245,250,.82) 0%, rgba(255,245,250,.62) 34%, rgba(255,245,250,.20) 64%, rgba(255,245,250,0) 100%),
+    linear-gradient(180deg, rgba(255,245,250,.55) 0%, rgba(255,245,250,.08) 20%, rgba(255,245,250,0) 40%, rgba(255,245,250,.35) 68%, rgba(255,233,244,.85) 92%, var(--vice-night-deep) 100%);
 }
-/* Cadres de coin du héros : aqua, avec un halo rose. */
+/* Cadres de coin du héros : encre rose, sans halo (un halo sur papier = une
+   tache). */
 [data-theme='vice'] .hero-frame span{
-  border-color:rgba(51,240,228,.85);
-  filter:drop-shadow(0 0 7px rgba(51,240,228,.5)) drop-shadow(0 0 16px rgba(255,46,147,.35));
+  border-color:var(--vice-pink-ink);
+  filter:none;
 }
-[data-theme='vice'] .hero .eyebrow{color:var(--vice-aqua)}
+[data-theme='vice'] .hero .eyebrow{color:var(--vice-mint-ink)}
+[data-theme='vice'] .hero h1{color:var(--ink);text-shadow:none}
 [data-theme='vice'] .hero h1 em{
-  color:var(--vice-pink-bright);
-  text-shadow:0 0 26px rgba(255,46,147,.62), 0 0 80px rgba(255,46,147,.34);
+  color:var(--vice-pink-ink);
+  text-shadow:none;
 }
-[data-theme='vice'] .hero-text{color:rgba(255,238,252,.82)}
+[data-theme='vice'] .hero-text{color:rgba(43,10,36,.80)}
 [data-theme='vice'] .live-dot{
-  background:var(--vice-lemon);
-  box-shadow:0 0 10px rgba(255,225,77,.9);
+  background:var(--vice-pink);
+  box-shadow:0 0 0 3px rgba(255,61,154,.18);
 }
 /* Bouton principal du héros : jaune citron, encre prune (contraste identique
-   au jaune d'origine) ; secondaire : verre aqua. */
+   au jaune du site) ; secondaire : blanc bordé de menthe. */
 [data-theme='vice'] .hero-cta{
   --cta-edge:var(--vice-lemon);
   --cta-surface:var(--vice-lemon);
-  --cta-ink:#1b0a12;
-  filter:drop-shadow(0 4px 14px rgba(255,225,77,.20));
+  --cta-ink:var(--vice-ink-on-lemon);
+  filter:drop-shadow(0 4px 14px rgba(255,225,77,.55));
 }
-[data-theme='vice'] .hero-cta:hover{filter:drop-shadow(0 5px 20px rgba(255,225,77,.42))}
+[data-theme='vice'] .hero-cta:hover{filter:drop-shadow(0 5px 20px rgba(255,225,77,.8))}
 [data-theme='vice'] .hero-cta-icon{
-  background:rgba(20,6,26,.12);
-  border-color:rgba(20,6,26,.22);
+  background:rgba(43,10,36,.10);
+  border-color:rgba(43,10,36,.20);
 }
 [data-theme='vice'] .hero-cta--secondary{
-  --cta-edge:rgba(51,240,228,.85);
-  --cta-surface:rgba(20,10,32,.92);
-  --cta-ink:#e9fffc;
-  filter:drop-shadow(0 4px 14px rgba(51,240,228,.16));
+  --cta-edge:var(--vice-mint-ink);
+  --cta-surface:rgba(255,255,255,.92);
+  --cta-ink:var(--vice-mint-ink);
+  filter:drop-shadow(0 4px 14px rgba(0,121,111,.20));
 }
 [data-theme='vice'] .hero-cta--secondary .hero-cta-icon{
-  color:var(--vice-aqua-bright);
-  background:rgba(51,240,228,.12);
-  border-color:rgba(51,240,228,.32);
+  color:var(--vice-mint-ink);
+  background:rgba(47,227,214,.18);
+  border-color:rgba(0,121,111,.30);
 }
-[data-theme='vice'] .hero-cta--secondary .hero-cta-arrow{color:var(--vice-aqua-bright)}
+[data-theme='vice'] .hero-cta--secondary .hero-cta-arrow{color:var(--vice-mint-ink)}
 @media (hover:hover){
   [data-theme='vice'] .hero-cta--secondary:hover{
-    --cta-surface:#2a1240;
-    filter:drop-shadow(0 5px 20px rgba(51,240,228,.38));
+    --cta-surface:#fff;
+    --cta-edge:var(--vice-mint-ink);
+    filter:drop-shadow(0 5px 20px rgba(0,121,111,.34));
   }
 }
 /* Étiquette de sortie, au-dessus de l'accroche du héros (voir Home.jsx) : la
@@ -281,17 +328,17 @@
   display:flex;align-items:center;gap:10px;
   width:fit-content;margin:0 0 16px;
   padding:7px 12px;
-  border:1px solid rgba(51,240,228,.45);
-  background:rgba(10,4,20,.55);
-  color:var(--vice-aqua-bright);
+  border:1px solid rgba(0,121,111,.42);
+  background:rgba(255,255,255,.86);
+  color:var(--vice-mint-ink);
   font:600 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
 }
 [data-theme='vice'] .vice-hero-tag b{
   flex:none;white-space:nowrap;
-  color:var(--vice-lemon);font-weight:700;
-  padding:2px 7px;border-radius:999px;background:rgba(255,225,77,.14);
+  color:var(--vice-ink-on-lemon);font-weight:700;
+  padding:2px 7px;border-radius:999px;background:var(--vice-lemon);
 }
 /* Téléphone : l'étiquette porte trois informations sur une ligne. On resserre
    le corps et l'interlettrage plutôt que de laisser le compte à rebours passer
@@ -304,21 +351,21 @@
 }
 
 /* ============ 5. BANDES, CTA, CARTES ============ */
-/* Bandeau défilant : le dégradé violet/cyan d'origine devient rose/aqua. */
+/* Bandeau défilant : le dégradé violet/cyan d'origine devient rose/menthe. */
 [data-theme='vice'] .ticker{
-  background:linear-gradient(90deg, rgba(255,46,147,.26), rgba(51,240,228,.10));
+  background:linear-gradient(90deg, rgba(255,61,154,.18), rgba(47,227,214,.14));
   border-block-color:var(--line);
 }
-[data-theme='vice'] .ticker b{color:var(--vice-lemon);text-shadow:0 0 12px rgba(255,225,77,.6)}
+[data-theme='vice'] .ticker b{color:var(--vice-pink-ink);text-shadow:none}
 /* Raccourcis de l'accueil. */
 [data-theme='vice'] .home-explore a{
-  background:linear-gradient(120deg, rgba(255,46,147,.12), rgba(51,240,228,.05));
+  background:linear-gradient(120deg, rgba(255,61,154,.10), rgba(47,227,214,.08));
 }
-[data-theme='vice'] .home-explore a span{color:var(--vice-aqua)}
+[data-theme='vice'] .home-explore a span{color:var(--vice-mint-ink)}
 [data-theme='vice'] .home-explore a:hover,
 [data-theme='vice'] .home-explore a:focus-visible{
-  color:var(--vice-lemon);border-color:var(--vice-aqua);
-  background:rgba(51,240,228,.09);
+  color:var(--vice-pink-ink);border-color:var(--vice-pink-ink);
+  background:rgba(255,61,154,.10);
 }
 /* Titres mis en avant (le mot en couleur des h2 de section). */
 [data-theme='vice'] .hero h1 em,
@@ -340,59 +387,64 @@
 [data-theme='vice'] .dzdev-hero h1 em,
 [data-theme='vice'] .daily-news-copy h2 em,
 [data-theme='vice'] .daily-news-copy h3 em{
-  color:var(--vice-pink-bright);
-  text-shadow:0 0 24px rgba(255,46,147,.45);
+  color:var(--vice-pink-ink);
+  text-shadow:none;
 }
 /* Liens fléchés : soulignement aqua. */
 [data-theme='vice'] .arrow-link{
-  color:var(--vice-aqua);
-  border-bottom-color:rgba(51,240,228,.42);
+  color:var(--vice-mint-ink);
+  border-bottom-color:rgba(0,121,111,.34);
 }
-[data-theme='vice'] .arrow-link:hover{color:var(--vice-lemon);border-color:var(--vice-lemon)}
-/* Cadres HUD (coins néon) : aqua. */
+[data-theme='vice'] .arrow-link:hover{color:var(--vice-pink-ink);border-color:var(--vice-pink-ink)}
+/* Cadres HUD (coins) : on garde le dessin, en encre de menthe (les coins aqua
+   clairs disparaîtraient sur le papier). */
 [data-theme='vice'] .hud-frame{
   background:
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left top / 28px 2px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left top / 2px 28px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right top / 28px 2px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right top / 2px 28px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left bottom / 28px 2px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) left bottom / 2px 28px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right bottom / 28px 2px no-repeat,
-    linear-gradient(var(--vice-aqua),var(--vice-aqua)) right bottom / 2px 28px no-repeat;
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) left top / 28px 2px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) left top / 2px 28px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) right top / 28px 2px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) right top / 2px 28px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) left bottom / 28px 2px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) left bottom / 2px 28px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) right bottom / 28px 2px no-repeat,
+    linear-gradient(var(--vice-mint-ink),var(--vice-mint-ink)) right bottom / 2px 28px no-repeat;
 }
 /* Lecteurs et affiches encadrés : les halos cyan deviennent aqua. */
+/* Sur papier, une ombre colorée remplace le halo : même intention (le cadre
+   « flotte »), une intensité divisée par trois. */
 [data-theme='vice'] .featured-player,
 [data-theme='vice'] .featured-dossiers-grid .featured-dossier-card,
 [data-theme='vice'] .short-review-player,
 [data-theme='vice'] .short-review-grid,
 [data-theme='vice'] .live-player,
 [data-theme='vice'] .carousel-frame{
-  box-shadow:0 0 44px -12px rgba(51,240,228,.30), 0 24px 60px -30px rgba(0,0,0,.9);
+  box-shadow:0 18px 44px -26px rgba(43,10,36,.42), 0 0 0 1px rgba(194,0,106,.10);
 }
+/* Le texte posé SUR le lecteur reste clair : c'est un média, il garde son
+   fond sombre dans les deux thèmes du site (règle n°2 de theme.css). */
 [data-theme='vice'] .featured-sponsor-text{
-  color:#fff;text-shadow:0 0 18px rgba(51,240,228,.42);
+  color:#fff;text-shadow:0 0 18px rgba(0,0,0,.5);
 }
+/* Le lecteur hors ligne est un média : il RESTE sombre (voir la règle n°2 de
+   theme.css). Seul le halo change de teinte. */
 [data-theme='vice'] .live-player--offline,
-[data-theme='vice'] .live-offline{
-  background:radial-gradient(circle at 50% 42%, rgba(255,46,147,.22), transparent 46%), linear-gradient(145deg, rgba(23,15,42,.98), rgba(10,4,20,.98));
-}
+[data-theme='vice'] .live-offline,
 [data-theme='vice'] .live-player--offline{
-  background:radial-gradient(circle at 50% 42%, rgba(255,46,147,.22), transparent 46%), linear-gradient(145deg, rgba(23,15,42,.98), rgba(10,4,20,.98));
+  background:radial-gradient(circle at 50% 42%, rgba(255,61,154,.28), transparent 48%), linear-gradient(145deg, #2a1030, #12071a);
 }
-[data-theme='vice'] .live-status--live{color:#ff6b8f}
-[data-theme='vice'] .live-status--live i{background:var(--vice-pink);box-shadow:0 0 0 3px rgba(255,46,147,.18)}
+[data-theme='vice'] .live-status--live{color:#e0006f}
+[data-theme='vice'] .live-status--live i{background:var(--vice-pink);box-shadow:0 0 0 3px rgba(255,61,154,.16)}
 [data-theme='vice'] .live-status--unknown,
-[data-theme='vice'] .live-status--unknown i{color:var(--vice-lemon)}
-[data-theme='vice'] .live-status--unknown i{background:var(--vice-lemon);box-shadow:0 0 0 3px rgba(255,225,77,.16)}
-[data-theme='vice'] .live-status-card{background:rgba(23,15,42,.74)}
-[data-theme='vice'] .live-footer{color:var(--vice-lemon)}
-[data-theme='vice'] .live-footer .arrow-link{color:var(--vice-aqua)}
+[data-theme='vice'] .live-status--unknown i{color:var(--vice-lemon-ink)}
+[data-theme='vice'] .live-status--unknown i{background:var(--vice-lemon);box-shadow:0 0 0 3px rgba(255,225,77,.35)}
+[data-theme='vice'] .live-status-card{background:rgba(255,255,255,.82)}
+[data-theme='vice'] .live-footer{color:var(--vice-pink-ink)}
+[data-theme='vice'] .live-footer .arrow-link{color:var(--vice-mint-ink)}
 
 /* Formats (cartes de l'accueil) : les deux teintes d'accent suivent la peau. */
 [data-theme='vice'] .format-card,
-[data-theme='vice'] .card-movies{--accent:var(--vice-aqua);--glow:rgba(51,240,228,.36)}
-[data-theme='vice'] .card-gaming{--accent:var(--vice-lemon);--glow:rgba(255,225,77,.36)}
+[data-theme='vice'] .card-movies{--accent:var(--vice-mint-ink);--glow:rgba(0,179,164,.20)}
+[data-theme='vice'] .card-gaming{--accent:var(--vice-pink-ink);--glow:rgba(255,61,154,.22)}
 
 /* Chiffres et scores : le cyan des compteurs passe en aqua (lisible sur nuit). */
 [data-theme='vice'] .countdown-unit strong,
@@ -401,34 +453,41 @@
 [data-theme='vice'] .awaited-band-date,
 [data-theme='vice'] .awaited-band-ticket b,
 [data-theme='vice'] .latest-test-meta span:last-child{
-  color:var(--vice-aqua);
+  color:var(--vice-mint-ink);
 }
 [data-theme='vice'] .awaited-band{
-  background:linear-gradient(110deg, rgba(255,46,147,.16), rgba(51,240,228,.06));
+  background:linear-gradient(110deg, rgba(255,61,154,.14), rgba(47,227,214,.10));
 }
+/* Dans le héros, la bande pose sur l'image claire : nappe blanche translucide
+   pour rester lisible, comme le voile du titre. */
 [data-theme='vice'] .hero .awaited-band{
-  background:linear-gradient(110deg, rgba(23,9,36,.84), rgba(23,9,36,.62)), linear-gradient(110deg, rgba(255,46,147,.32), rgba(51,240,228,.14));
-  border-top-color:rgba(255,92,171,.34);
+  background:linear-gradient(110deg, rgba(255,255,255,.90), rgba(255,255,255,.74)), linear-gradient(110deg, rgba(255,61,154,.22), rgba(47,227,214,.16));
+  border-top-color:rgba(194,0,106,.24);
 }
-[data-theme='vice'] .awaited-band-eyebrow{color:var(--vice-aqua)}
+[data-theme='vice'] .awaited-band-eyebrow{color:var(--vice-mint-ink)}
 [data-theme='vice'] .awaited-band-chip{
-  border-color:var(--vice-lemon);background:rgba(255,225,77,.10);color:var(--vice-lemon);
+  border-color:var(--vice-pink-ink);background:rgba(255,61,154,.12);color:var(--vice-pink-ink);
 }
 [data-theme='vice'] .awaited-band-inner:hover .awaited-band-title,
-[data-theme='vice'] .awaited-band-inner:hover .awaited-band-arrow{color:var(--vice-lemon)}
+[data-theme='vice'] .awaited-band-inner:hover .awaited-band-arrow{color:var(--vice-pink-ink)}
 [data-theme='vice'] .release-countdown{
-  background:linear-gradient(110deg, rgba(255,46,147,.20), rgba(51,240,228,.08));
+  background:linear-gradient(110deg, rgba(255,61,154,.16), rgba(47,227,214,.12));
 }
-[data-theme='vice'] .countdown-unit{background:rgba(10,4,20,.66)}
-[data-theme='vice'] .monthly-releases-head h2 em{color:var(--vice-pink-bright);text-shadow:0 0 22px rgba(255,46,147,.4)}
-[data-theme='vice'] .monthly-releases-head h2 em,
-[data-theme='vice'] .actus-card{--actus-accent:var(--vice-aqua)}
+[data-theme='vice'] .countdown-unit{background:rgba(255,255,255,.80)}
+[data-theme='vice'] .monthly-releases-head h2 em{color:var(--vice-pink-ink);text-shadow:none}
+[data-theme='vice'] .actus-card{--actus-accent:var(--vice-mint-ink)}
 
 /* Appel final de l'accueil. */
 [data-theme='vice'] .cta{
-  background:linear-gradient(120deg, rgba(255,46,147,.30), rgba(51,240,228,.10) 55%, rgba(23,15,42,.42));
+  background:linear-gradient(120deg, rgba(255,61,154,.22), rgba(47,227,214,.16) 55%, rgba(255,255,255,.50));
 }
-[data-theme='vice'] .cta h2 em{color:var(--vice-lemon);text-shadow:0 0 26px rgba(255,225,77,.5)}
+/* Le CTA est un aplat rose/magenta/vert : son encre reste BLANCHE (comme dans
+   les deux autres peaux) et son `em` passe au citron. En encre prune, le titre
+   disparaissait dans le magenta. */
+[data-theme='vice'] .cta h2,
+[data-theme='vice'] .cta h2 em{color:#fff;text-shadow:none}
+[data-theme='vice'] .cta h2 em{color:var(--vice-lemon)}
+[data-theme='vice'] .cta .eyebrow{color:var(--vice-aqua-bright)}
 
 /* Boutons de liste / filtres actifs : encre prune (jamais du noir bleuté). */
 [data-theme='vice'] .filter.active,
@@ -439,23 +498,91 @@
   color:var(--vice-ink-on-lemon);
 }
 [data-theme='vice'] .carousel-controls button:hover{
-  background:var(--vice-aqua);border-color:var(--vice-aqua);
-  color:#08181a;
-  box-shadow:0 0 18px rgba(51,240,228,.4);
+  background:var(--vice-mint-ink);border-color:var(--vice-mint-ink);
+  color:#fff;
+  box-shadow:0 0 18px rgba(0,121,111,.28);
 }
 [data-theme='vice'] .button-ghost{
-  background:rgba(255,255,255,.05);color:#fff;border-color:rgba(255,255,255,.32);
+  background:#fff;color:var(--ink);border-color:rgba(43,10,36,.24);
 }
 [data-theme='vice'] .button-ghost:hover{
-  border-color:var(--vice-aqua);background:rgba(51,240,228,.10);
-  box-shadow:0 0 24px rgba(51,240,228,.28);
+  border-color:var(--vice-mint-ink);background:rgba(47,227,214,.14);
+  box-shadow:0 0 24px rgba(0,121,111,.18);
 }
 
 /* Cartes d'articles : le verre bleu nuit devient verre prune, et les survols
    passent du cyan au rose. */
+/* La une de l'accueil et le reste du fil ont leur PROPRE carte
+   (`.daily-news-card`), avec un dégradé nuit en dur dans `daily-news.css`.
+   Le bloc ci-dessus ne les couvre pas : sans ces deux règles, la carte reste
+   noire et le texte prune de la peau disparaît dessus. C'était le cas au
+   premier passage en clair — vérifier cette carte à chaque retouche. */
+[data-theme='vice'] .daily-news-card{
+  background:linear-gradient(110deg, #ffffff, var(--vice-panel-2));
+  border-color:rgba(194,0,106,.18);
+}
+[data-theme='vice'] .daily-news-card:hover{
+  border-color:var(--vice-pink-ink);
+  box-shadow:0 20px 46px -26px rgba(194,0,106,.32);
+}
+[data-theme='vice'] .daily-news-copy h2,
+[data-theme='vice'] .daily-news-copy h3{color:var(--ink)}
+[data-theme='vice'] .daily-news-copy .read-link{color:var(--vice-pink-ink)}
+/* L'affiche de la une est un média : elle garde son fond sombre, on ne fait
+   que remplacer le halo cyan par une ombre rose. */
+[data-theme='vice'] .daily-news-image{background:var(--vice-night-deep)}
+
+/* Reels : les vignettes sont des cadres vidéo (média). Sur papier, leur fond
+   `--panel` devenait BLANC — les reels apparaissaient comme des rectangles
+   vides. Un fond sombre les fait lire comme des lecteurs, dans les deux cas. */
+[data-theme='vice'] .reel-card,
+[data-theme='vice'] .reel-card iframe,
+[data-theme='vice'] .reel-card .scroll-autoplay-video{
+  background:#1b0d24;
+}
+
+/* Le fil Actus a SES cartes, distinctes de `.actus-card` : le carrousel
+   (`.news-carousel-card`) et les cartes de rubrique (`.news-hub-card`), toutes
+   deux peintes en dégradé nuit dans leurs feuilles (`news-carousel.css`,
+   `news-views…`). Même piège que `.daily-news-card` : sans ces règles, elles
+   restent noires avec l'encre prune de la peau par-dessus. Toute carte qui
+   apporte son propre fond doit être listée ici. */
+[data-theme='vice'] .news-carousel-card{
+  background:linear-gradient(155deg, #ffffff, var(--vice-panel-2));
+  border-color:rgba(194,0,106,.16);
+}
+/* Le texte de ces cartes est écrit en BLANC dans `news-carousel.css` (lisible
+   sur le dégradé nuit d'origine) : passer la carte en blanc sans reprendre ces
+   encres donnerait du blanc sur blanc — le titre disparaîtrait purement. */
+[data-theme='vice'] .news-carousel-copy h2{color:var(--ink)}
+[data-theme='vice'] .news-carousel-copy p{color:var(--muted)}
+[data-theme='vice'] .news-carousel-copy .news-kicker{color:var(--vice-mint-ink)}
+[data-theme='vice'] .news-carousel-copy .read-link{color:var(--vice-pink-ink)}
+[data-theme='vice'] .news-carousel-card:hover{
+  border-color:var(--vice-pink-ink);
+  box-shadow:0 18px 36px -22px rgba(194,0,106,.34);
+}
+/* Les cartes de rubrique, elles, sont des cartes-IMAGE plein cadre avec un
+   voile sombre (`.news-hub-card-overlay`) : elles restent sombres, comme les
+   affiches et les lecteurs. Seule la bordure suit la peau. */
+[data-theme='vice'] .news-hub-card{border-color:rgba(194,0,106,.24)}
+/* Sur ces cartes sombres, le corps de texte et les étiquettes reçoivent la
+   couleur `--muted` de la peau (prune à 72 %) : illisible. On rend la gamme
+   claire d'origine, réservée à ces trois cartes. */
+[data-theme='vice'] .news-hub-card-copy h2,
+[data-theme='vice'] .news-hub-card-copy h2 em{color:#fff}
+[data-theme='vice'] .news-hub-card-copy p,
+[data-theme='vice'] .news-hub-card-copy p span,
+[data-theme='vice'] .news-hub-card-meta,
+[data-theme='vice'] .news-hub-card .news-kicker,
+[data-theme='vice'] .news-hub-card-meta > span:first-child{color:rgba(255,255,255,.74)}
+[data-theme='vice'] .news-hub-card .read-link{color:var(--vice-aqua)}
+[data-theme='vice'] .news-hub-card:hover{border-color:var(--vice-pink-ink)}
+
+/* Cartes d'articles : cartes blanches sur papier rose, ombre douce au survol. */
 [data-theme='vice'] .actus-card{
-  background:linear-gradient(150deg, rgba(38,20,58,.96), rgba(18,10,32,.9));
-  border-color:rgba(255,92,171,.28);
+  background:#fff;
+  border-color:rgba(194,0,106,.16);
 }
 [data-theme='vice'] .news-feature-card:hover,
 [data-theme='vice'] .news-hub-card:hover,
@@ -465,69 +592,74 @@
 [data-theme='vice'] .community-group-card.is-active,
 [data-theme='vice'] .community-button-outline:hover,
 [data-theme='vice'] .community-refresh:hover{
-  border-color:var(--vice-pink);
+  border-color:var(--vice-pink-ink);
 }
-[data-theme='vice'] .news-feature-card:hover{box-shadow:0 24px 60px -28px rgba(255,46,147,.50)}
+[data-theme='vice'] .news-feature-card:hover{box-shadow:0 24px 60px -30px rgba(194,0,106,.34)}
 [data-theme='vice'] .news-feature-image,
 [data-theme='vice'] .latest-test-image,
-[data-theme='vice'] .reel-card{background:var(--vice-panel)}
+[data-theme='vice'] .reel-card{background:var(--vice-panel-2)}
 [data-theme='vice'] .news-kicker,
 [data-theme='vice'] .article-byline,
 [data-theme='vice'] .aside-kicker,
 [data-theme='vice'] .article-engagement-count,
 [data-theme='vice'] .article-source a,
 [data-theme='vice'] .dzdev-story a:not(.button),
-[data-theme='vice'] .comments h2 em{color:var(--vice-aqua)}
-[data-theme='vice'] .article-endnote{background:rgba(51,240,228,.05)}
-[data-theme='vice'] .aside-card{background:rgba(23,15,42,.68)}
+[data-theme='vice'] .comments h2 em{color:var(--vice-mint-ink)}
+[data-theme='vice'] .article-endnote{background:rgba(47,227,214,.14)}
+[data-theme='vice'] .aside-card{background:rgba(255,255,255,.86)}
 [data-theme='vice'] .aside-card-accent{
-  border-color:rgba(255,225,77,.42);
-  background:linear-gradient(150deg, rgba(255,225,77,.10), rgba(23,15,42,.72));
+  border-color:rgba(255,225,77,.70);
+  background:linear-gradient(150deg, rgba(255,225,77,.24), #fff);
 }
+/* Cadres média : ils gardent leur fond sombre (média), seule la bordure change. */
 [data-theme='vice'] .article-video-frame,
 [data-theme='vice'] .article-trailer-frame{
-  border-color:rgba(51,240,228,.4);
-  box-shadow:0 24px 60px -30px rgba(0,0,0,.9), 0 0 44px -14px rgba(51,240,228,.26);
+  border-color:rgba(0,121,111,.34);
+  box-shadow:0 24px 60px -32px rgba(43,10,36,.42), 0 0 0 1px rgba(0,121,111,.10);
 }
 [data-theme='vice'] .article-engagement{
-  border-color:rgba(255,46,147,.30);
-  background:linear-gradient(135deg, rgba(38,16,52,.9), rgba(18,10,32,.9));
-  box-shadow:0 20px 48px -34px rgba(255,46,147,.6);
+  border-color:rgba(194,0,106,.22);
+  background:linear-gradient(135deg, #fff, var(--vice-panel-2));
+  box-shadow:0 20px 48px -36px rgba(194,0,106,.40);
 }
-[data-theme='vice'] .article-reaction{background:rgba(10,4,20,.62)}
+[data-theme='vice'] .article-reaction{background:rgba(255,255,255,.86)}
 [data-theme='vice'] .article-reaction:hover,
-[data-theme='vice'] .article-reaction:focus-visible{border-color:var(--vice-aqua)}
+[data-theme='vice'] .article-reaction:focus-visible{border-color:var(--vice-mint-ink)}
 [data-theme='vice'] .article-reaction.is-selected{
-  background:rgba(255,46,147,.12);
-  border-color:var(--vice-pink);
-  box-shadow:inset 0 0 0 1px rgba(255,46,147,.22);
+  background:rgba(255,61,154,.10);
+  border-color:var(--vice-pink-ink);
+  box-shadow:inset 0 0 0 1px rgba(194,0,106,.20);
 }
-[data-theme='vice'] .article-reaction-icon{color:var(--vice-aqua);background:rgba(51,240,228,.07)}
-[data-theme='vice'] .article-reaction-meter i{background:var(--vice-aqua)}
-[data-theme='vice'] .article-reading-progress{box-shadow:0 0 16px rgba(255,46,147,.46)}
+[data-theme='vice'] .article-reaction-icon{color:var(--vice-mint-ink);background:rgba(47,227,214,.16)}
+[data-theme='vice'] .article-reaction-meter i{background:var(--vice-mint-ink)}
+[data-theme='vice'] .article-reading-progress{box-shadow:0 0 16px rgba(255,61,154,.34)}
 
 /* Bandeaux de marque (partenaires), quizz, succès : les mêmes teintes de
    remplissage, repeintes par les jetons — seules les ombres en dur restent. */
-[data-theme='vice'] .partner-mark-badge{background:var(--vice-panel-2)}
+/* ⚠️ `.partner-mark-badge` n'est PAS repeint : la bande des partenaires reste
+   sombre dans tous les thèmes du site (logos tiers dessinés clairs sur noir,
+   voir theme.css). La peau ne touche pas à des marques qui ne sont pas les
+   nôtres. */
 [data-theme='vice'] .community-avatar{
-  background:linear-gradient(145deg, rgba(255,46,147,.5), rgba(51,240,228,.18));
-  border-color:rgba(51,240,228,.4);
+  background:linear-gradient(145deg, rgba(255,61,154,.42), rgba(47,227,214,.30));
+  border-color:rgba(0,121,111,.40);
+  color:var(--vice-ink-on-lemon);
 }
 [data-theme='vice'] .community-discussion-icon{
-  background:radial-gradient(circle at 35% 25%, rgba(51,240,228,.15), transparent 74%), rgba(255,46,147,.08);
+  background:radial-gradient(circle at 35% 25%, rgba(47,227,214,.30), transparent 74%), rgba(255,61,154,.10);
 }
 [data-theme='vice'] .community-group-card-icon{
-  background:linear-gradient(145deg, rgba(255,46,147,.14), rgba(51,240,228,.07));
+  background:linear-gradient(145deg, rgba(255,61,154,.16), rgba(47,227,214,.14));
 }
 [data-theme='vice'] .community-filters button.is-active{
-  border-color:rgba(255,46,147,.42);
-  background:rgba(255,46,147,.10);
-  color:var(--vice-pink-bright);
+  border-color:rgba(194,0,106,.34);
+  background:rgba(255,61,154,.10);
+  color:var(--vice-pink-ink);
 }
 [data-theme='vice'] .community-search:focus-within,
 [data-theme='vice'] .community-composer textarea:focus{
-  border-color:var(--vice-aqua);
-  background:rgba(51,240,228,.05);
+  border-color:var(--vice-mint-ink);
+  background:#fff;
 }
 
 /* Messagerie et lanceur social : verre prune, halos aqua.
@@ -535,16 +667,17 @@
    une règle de même spécificité y gagnerait. On qualifie donc par `.nav` /
    `.social-dock` pour rester devant, ou l'on reprend la spécificité d'origine. */
 [data-theme='vice'] .social-dock .social-launcher{
-  background:linear-gradient(160deg, rgba(58,22,80,.96), rgba(14,7,24,.97));
-  border-color:rgba(255,92,171,.34);
+  background:linear-gradient(160deg, #ffffff, #ffeaf5);
+  border-color:rgba(194,0,106,.28);
+  color:var(--ink);
 }
 [data-theme='vice'] .social-dock .social-launcher:hover,
 [data-theme='vice'] .social-dock .social-launcher:focus-visible{
-  border-color:var(--vice-aqua);
-  box-shadow:0 16px 34px -16px rgba(0,0,0,.85), 0 0 28px -8px rgba(51,240,228,.5);
+  border-color:var(--vice-mint-ink);
+  box-shadow:0 16px 34px -20px rgba(43,10,36,.34), 0 0 0 2px rgba(0,121,111,.14);
 }
-[data-theme='vice'] .social-dock.is-open .social-launcher{border-color:var(--vice-aqua)}
-[data-theme='vice'] .social-dock .social-launcher.has-alert{border-color:rgba(255,225,77,.55)}
+[data-theme='vice'] .social-dock.is-open .social-launcher{border-color:var(--vice-mint-ink)}
+[data-theme='vice'] .social-dock .social-launcher.has-alert{border-color:var(--vice-pink-ink)}
 
 /* Étiquette du bouton de thème : `theme.css` la masque sur ordinateur
    (`.theme-toggle-label{display:none}`). En habillage temporaire elle porte
@@ -580,10 +713,10 @@
   position:relative;z-index:4;
   margin:26px auto 0;
   width:min(1240px,calc(100% - 56px));
-  border:1px solid rgba(255,92,171,.30);
+  border:1px solid rgba(194,0,106,.22);
   background:
-    linear-gradient(110deg, rgba(255,46,147,.13), rgba(51,240,228,.07) 62%, transparent),
-    rgba(18,10,32,.7);
+    linear-gradient(110deg, rgba(255,61,154,.12), rgba(47,227,214,.10) 62%, transparent),
+    rgba(255,255,255,.86);
   clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
 }
 [data-theme='vice'] .vice-notice-inner{
@@ -593,11 +726,11 @@
 [data-theme='vice'] .vice-notice-eyebrow{
   display:inline-flex;align-items:center;gap:8px;flex:none;
   font:700 9px var(--mono);letter-spacing:.18em;text-transform:uppercase;
-  color:var(--vice-lemon);
+  color:var(--vice-pink-ink);
 }
 [data-theme='vice'] .vice-notice-eyebrow i{
   width:7px;height:7px;border-radius:50%;background:var(--vice-pink);
-  box-shadow:0 0 8px rgba(255,46,147,.9);
+  box-shadow:0 0 0 3px rgba(255,61,154,.16);
   font-style:normal;
 }
 [data-theme='vice'] .vice-notice-copy{margin:0;flex:1 1 320px;min-width:0;color:var(--muted);font-size:12.5px;line-height:1.5}
@@ -613,17 +746,19 @@
   transition:background .2s, border-color .2s, color .2s, transform .18s;
 }
 [data-theme='vice'] .vice-notice-exit{
-  border:1px solid var(--vice-aqua);
-  background:rgba(51,240,228,.12);
-  color:#e9fffc;
+  border:1px solid var(--vice-mint-ink);
+  background:rgba(47,227,214,.16);
+  color:var(--vice-mint-ink);
 }
-[data-theme='vice'] .vice-notice-exit:hover{background:rgba(51,240,228,.22);transform:translateY(-1px)}
-.vice-notice-close{
-  border:1px solid rgba(255,255,255,.16);
+[data-theme='vice'] .vice-notice-exit:hover{background:rgba(47,227,214,.28);transform:translateY(-1px)}
+/* Scopé comme le reste de l'avis : hors `vice`, ces classes ne doivent plus
+   porter aucune couleur si un composant les réutilise. */
+[data-theme='vice'] .vice-notice-close{
+  border:1px solid rgba(43,10,36,.20);
   background:transparent;
   color:var(--muted);
 }
-[data-theme='vice'] .vice-notice-close:hover{border-color:rgba(255,255,255,.3);color:var(--ink)}
+[data-theme='vice'] .vice-notice-close:hover{border-color:rgba(43,10,36,.40);color:var(--ink)}
 /* Sur téléphone, les deux actions passent sur leur propre ligne et prennent
    toute la largeur : cibles confortables, aucune compression du texte. */
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
@@ -638,89 +773,703 @@
    nuit, bordures cyan). Les mêmes règles sont reprises ici avec les teintes de
    la peau, à l'identique : hauteurs, marges et empilement ne bougent pas. */
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  /* Barre pleine largeur : blanc franc (elle doit se détacher du papier rose
+     qui défile dessous), filet rose en bas. */
   [data-theme='vice'] .nav,
   [data-theme='vice'] .nav.scrolled,
   [data-theme='vice'] .nav.nav-home,
   [data-theme='vice'] .nav.nav-home.scrolled{
-    background:rgba(24,12,40,.92);
-    border-bottom-color:rgba(255,46,147,.26);
+    background:rgba(255,250,253,.94);
+    border-bottom-color:rgba(194,0,106,.20);
   }
   [data-theme='vice'] .nav.open{
-    background:rgba(24,12,40,.96);
-    border-bottom-color:rgba(51,240,228,.3);
+    background:#fffafd;
+    border-bottom-color:rgba(0,121,111,.30);
   }
   [data-theme='vice'] .menu-button{
-    background:rgba(255,255,255,.06);
-    border-color:rgba(255,92,171,.4);
+    background:#fff;
+    border-color:rgba(194,0,106,.30);
+    color:var(--ink);
   }
   [data-theme='vice'] .menu-button:hover{
-    border-color:var(--vice-aqua);background:rgba(51,240,228,.12);
+    border-color:var(--vice-mint-ink);background:rgba(47,227,214,.16);
   }
   [data-theme='vice'] .menu-button.open{
     background:var(--vice-lemon);border-color:var(--vice-lemon);color:var(--vice-ink-on-lemon);
   }
-  /* Le panneau « Actus » du tiroir : `theme.css` §15 lui donne un fond clair
-     en thème clair ; ici le verre est celui des autres panneaux du tiroir. */
-  /* `theme.css` renforce le fond du panneau en « 6bis » (`.nav .nav-primary
-     .nav-submenu`, deux classes de plus) : on reprend la même portée pour
-     rester devant, sinon le panneau reste blanc dans le tiroir sombre. */
+  /* Panneau « Actus » du tiroir. `theme.css` §15 lui donne déjà un fond clair
+     en thème clair ; ici il faut la MÊME portée (`.nav .nav-primary
+     .nav-submenu`, deux classes de plus que la règle de base) pour rester
+     devant, sinon le panneau garde le verre sombre de la version nuit. */
   [data-theme='vice'] .nav-links .nav-primary .nav-submenu,
   [data-theme='vice'] .nav .nav-primary .nav-submenu{
-    background:rgba(30,16,48,.96);
-    border-color:rgba(255,92,171,.24);
+    background:#fff;
+    border-color:rgba(194,0,106,.18);
+    box-shadow:0 14px 30px -18px rgba(43,10,36,.24);
   }
-  [data-theme='vice'] .nav-links .nav-primary .nav-submenu a{background:transparent;border-color:transparent}
+  [data-theme='vice'] .nav-links .nav-primary .nav-submenu a{
+    color:var(--ink);background:transparent;border-color:rgba(194,0,106,.10);
+  }
   [data-theme='vice'] .nav-links .nav-primary .nav-submenu a:hover,
   [data-theme='vice'] .nav-links .nav-primary .nav-submenu a:focus-visible{
-    color:#1b0a12;background:var(--vice-lemon);
+    color:var(--vice-ink-on-lemon);background:rgba(255,225,77,.45);
   }
-  [data-theme='vice'] .nav-primary .nav-submenu a{
-    color:rgba(255,236,252,.86);
-    border-color:transparent;
-    background:transparent;
-  }
-  [data-theme='vice'] .nav-primary .nav-submenu a:hover,
-  [data-theme='vice'] .nav-primary .nav-submenu a:focus-visible{
-    color:#1b0a12;
-    background:var(--vice-lemon);
-  }
-  [data-theme='vice'] .nav-link-num{color:var(--vice-aqua)}
-  [data-theme='vice'] .nav-primary a.active .nav-link-num{color:var(--vice-lemon)}
-  [data-theme='vice'] .nav-link-desc{color:rgba(255,233,255,.58)}
-  [data-theme='vice'] .nav-link-arrow{color:rgba(141,255,247,.8);border-color:rgba(51,240,228,.3)}
+  [data-theme='vice'] .nav-link-num{color:var(--vice-mint-ink)}
+  [data-theme='vice'] .nav-primary a.active .nav-link-num{color:var(--vice-pink-ink)}
+  [data-theme='vice'] .nav-link-desc{color:rgba(43,10,36,.58)}
+  [data-theme='vice'] .nav-link-arrow{color:var(--vice-mint-ink);border-color:rgba(0,121,111,.30)}
 
-  /* Le tiroir plein écran : même voile, mêmes halos, teintes de la peau. */
+  /* Le tiroir plein écran : papier rose franc, halos pâles. */
   [data-theme='vice'] .nav-links{
     background:
-      radial-gradient(900px 600px at 85% -10%, rgba(255,46,147,.22), transparent 60%),
-      radial-gradient(700px 500px at -10% 90%, rgba(51,240,228,.14), transparent 60%),
-      linear-gradient(180deg, rgba(20,10,34,.98), rgba(9,4,16,.995));
+      radial-gradient(900px 600px at 85% -10%, rgba(255,184,196,.55), transparent 62%),
+      radial-gradient(700px 500px at -10% 90%, rgba(143,245,238,.42), transparent 62%),
+      linear-gradient(180deg, #fffafd, #ffeaf5);
   }
   [data-theme='vice'] .nav-links::before{
     background:
-      linear-gradient(90deg, rgba(255,92,171,.07) 1px, transparent 1px),
-      linear-gradient(rgba(255,92,171,.05) 1px, transparent 1px);
+      linear-gradient(90deg, rgba(194,0,106,.06) 1px, transparent 1px),
+      linear-gradient(rgba(194,0,106,.05) 1px, transparent 1px);
     background-size:46px 46px;
     mask-image:radial-gradient(80% 60% at 50% 30%, black, transparent 90%);
   }
   [data-theme='vice'] .nav-profile-avatar{
-    border-color:var(--vice-pink);
-    background:linear-gradient(135deg, var(--purple), var(--vice-panel-2));
-    box-shadow:0 0 16px rgba(255,46,147,.3);
-    color:var(--vice-lemon);
+    border-color:var(--vice-pink-ink);
+    background:linear-gradient(135deg, var(--vice-pink), var(--vice-aqua));
+    box-shadow:none;
+    color:var(--vice-ink-on-lemon);
   }
-  [data-theme='vice'] .nav-actions-grid .lang-switch-menu{background:rgba(23,15,42,.98)}
+  [data-theme='vice'] .nav-actions-grid .lang-switch-menu{background:#fff}
+  /* `theme.css` §6bis décrit ces commandes en `rgba(255,255,255,…)` (écrit pour
+     l'île sombre) : il faut la même portée `.nav-links .nav-actions-grid` pour
+     repasser devant, sinon le bouton reste blanc sur blanc — le drapeau « EN »
+     disparaissait. */
+  [data-theme='vice'] .nav-links .nav-actions-grid .lang-switch-button,
+  [data-theme='vice'] .nav .nav-actions-grid .lang-switch-button{
+    background:rgba(43,10,36,.05);
+    border-color:rgba(43,10,36,.14);
+    color:var(--ink);
+  }
+  [data-theme='vice'] .nav-links .nav-actions-grid .lang-switch-globe,
+  [data-theme='vice'] .nav .nav-actions-grid .lang-switch-globe{color:var(--vice-mint-ink)}
   [data-theme='vice'] .mobile-menu-socials a:hover{
-    color:var(--vice-aqua);border-color:var(--vice-aqua);background:rgba(51,240,228,.1);
+    color:var(--vice-mint-ink);border-color:var(--vice-mint-ink);background:rgba(47,227,214,.16);
   }
-  [data-theme='vice'] .mobile-menu-hud span{border-color:var(--vice-aqua)}
-  [data-theme='vice'] .mobile-menu-hud span:nth-child(2){border-color:var(--vice-lemon)}
-  [data-theme='vice'] .mobile-menu-hud span:nth-child(3){background:var(--vice-aqua)}
+  [data-theme='vice'] .mobile-menu-hud span{border-color:var(--vice-mint-ink)}
+  [data-theme='vice'] .mobile-menu-hud span:nth-child(2){border-color:var(--vice-pink-ink)}
+  [data-theme='vice'] .mobile-menu-hud span:nth-child(3){background:var(--vice-mint-ink)}
   [data-theme='vice'] .mobile-menu-hud span:nth-child(4){background:var(--vice-lemon);border-color:var(--vice-lemon)}
   [data-theme='vice'] .nav-messages-link:hover,
-  [data-theme='vice'] .nav-profile-link:hover{border-color:rgba(255,46,147,.3);background:linear-gradient(90deg, rgba(255,46,147,.1), transparent 70%)}
+  [data-theme='vice'] .nav-profile-link:hover{border-color:rgba(194,0,106,.28);background:linear-gradient(90deg, rgba(255,61,154,.10), transparent 70%)}
 }
 
 /* ============ 8. MOUVEMENT RÉDUIT ============ */
 /* La peau n'ajoute aucune animation : rien à couper ici. Les halos et le
    disque solaire sont des dégradés statiques. */
+
+/* Vignette de repli d'une vidéo (`.video-thumb-fallback`) : c'est un MÉDIA.
+   Le thème clair la repeint en gradient clair, ce qui donnait un rectangle
+   blanc « LET'S PLAY ▶ » au milieu du papier. On la laisse sombre, comme les
+   lecteurs, dans les deux peaux. */
+[data-theme='vice'] .video-thumb-fallback{
+  background:linear-gradient(140deg,#2b0a24,#12030f);
+  border-color:rgba(255,61,154,.28);
+}
+[data-theme='vice'] .video-thumb-fallback .video-thumb-fallback-label{color:rgba(255,255,255,.62)}
+[data-theme='vice'] .video-thumb-fallback .video-thumb-fallback-mark{color:var(--vice-lemon)}
+
+/* Pastilles de la signature d'article : elles portaient un fond NOIR
+   translucide (écrit pour la nuit) et le balayage venait d'y remettre une encre
+   sombre — texte noir sur pastille noire. On inverse : papier blanc, encre de
+   la peau. Même chose pour la pastille « vues ». */
+[data-theme='vice'] .article-byline > span,
+[data-theme='vice'] .article-views-inline{
+  background:#fff;
+  border-color:rgba(194,0,106,.22);
+  color:var(--vice-muted);
+}
+[data-theme='vice'] .article-byline > span:first-child{color:var(--vice-mint-ink);border-color:rgba(0,121,111,.3)}
+[data-theme='vice'] .article-byline > span:nth-child(2){color:var(--vice-lemon-ink);border-color:rgba(122,90,0,.3)}
+/* En-tête posé SUR la couverture de l'article (média, donc sombre) : encre
+   claire conservée, le balayage l'avait assombrie. */
+[data-theme='vice'] .article-cover strong{color:#fff}
+[data-theme='vice'] .article-cover small{color:var(--vice-lemon)}
+
+/* Page Communauté : ses panneaux ne lisent pas les jetons du site mais un jeu
+   de variables locales (`--community-*`), réancrées par `community.css` pour le
+   thème clair uniquement. Sans ce bloc, les panneaux passaient bien en blanc
+   via la section 8bis, mais leur texte restait blanc sur blanc — le titre
+   « THE CONVERSATION STARTS HERE » disparaissait. Mêmes variables, valeurs de
+   la peau : à garder alignées avec le bloc `[data-theme='light']` du fichier. */
+:root[data-theme='vice'] .community-page{
+  --community-surface:linear-gradient(150deg,#ffffff, var(--vice-panel-2));
+  --community-surface-raised:rgba(194,0,106,.04);
+  --community-surface-soft:rgba(194,0,106,.06);
+  --community-text-strong:var(--ink);
+  --community-edge:rgba(194,0,106,.16);
+  --community-edge-strong:rgba(194,0,106,.32);
+  --community-danger:#a3003f;
+  --community-danger-edge:rgba(163,0,63,.42);
+  --community-danger-soft:rgba(163,0,63,.08);
+}
+[data-theme='vice'] .community-empty-discussion h3 em{color:var(--vice-mint-ink)}
+/* Page « DZ Dev » : sa carte-studio porte un dégradé violet nuit en dur
+   (`src/dz-dev.css`) — passée en carte blanche ci-dessus, elle garde son lien
+   de fin en jaune de marque, qu'on repasse au rose de la peau pour la lecture. */
+[data-theme='vice'] .dzdev-read-link{color:var(--vice-pink-ink)}
+/* Barre de mois du calendrier : elle est COLLANTE en haut de page, donc elle
+   doit rester opaque (une carte translucide laisserait voir le contenu passer
+   dessous). Blanc franc, pas le dégradé des cartes. */
+[data-theme='vice'] .calendar-month-nav{
+  background:#fff;
+  border-color:rgba(194,0,106,.18);
+  box-shadow:0 10px 24px -18px rgba(194,0,106,.4);
+}
+[data-theme='vice'] .calendar-month-nav a.is-current{
+  background:var(--vice-lemon);
+  border-color:var(--vice-lemon);
+  color:var(--vice-ink-on-lemon);
+}
+[data-theme='vice'] .calendar-month-nav a.is-current b,
+[data-theme='vice'] .calendar-month-nav a.is-current span{color:var(--vice-ink-on-lemon)}
+
+/* ============ 8bis. SURFACES SOMBRES EN DUR → PAPIERS DE LA PEAU ============ */
+/* Certaines pages posent leur propre fond nuit dans leurs feuilles (une
+   trentaine de règles : cartes Actus en mode grille, panneaux Communauté,
+   bannière Quiz, bandeau CTA, commentaires, encadré de test…). Le texte y est
+   écrit clair : tant que le fond reste sombre c'est lisible, mais le bloc
+   jure au milieu du papier rose. On les repeint en blanc, et le balayage de la
+   section 9 se charge des encres.
+   Le thème clair du site traite les mêmes blocs dans `theme.css` §4 : même
+   liste, mêmes valeurs, à garder alignées.
+   NE RESTENT PAS dans cette liste, volontairement : la une de l'accueil et les
+   cartes-image du hub Actus (média), la bande partenaires (logos tiers), et le
+   jeu « Le Sablier » (écran de jeu). */
+[data-theme='vice'] .news-carousel.is-grid .news-carousel-card,
+[data-theme='vice'] .community-directory,
+[data-theme='vice'] .community-discussion,
+[data-theme='vice'] .quiz-daily,
+[data-theme='vice'] .short-review-grid,
+[data-theme='vice'] .comments-panel,
+[data-theme='vice'] .comment-form,
+[data-theme='vice'] .comment-identity,
+[data-theme='vice'] .comment-report-form,
+[data-theme='vice'] .article-engagement,
+[data-theme='vice'] .aside-card,
+[data-theme='vice'] .partner-card,
+[data-theme='vice'] .partner-strip,
+[data-theme='vice'] .dossier-stat-card,
+[data-theme='vice'] .dossier-sidebar-inner,
+[data-theme='vice'] .release-card,
+[data-theme='vice'] .release-timeline,
+[data-theme='vice'] .search-result-card,
+[data-theme='vice'] .format-card,
+[data-theme='vice'] .live-status-card,
+[data-theme='vice'] .calendar-month-nav,
+[data-theme='vice'] .dzdev-feature,
+[data-theme='vice'] .dossier-feature-card,
+[data-theme='vice'] .dossier-dark-panel,
+[data-theme='vice'] .proscons .pc-col{
+  background:linear-gradient(160deg,#ffffff, var(--vice-panel-2));
+  border-color:rgba(194,0,106,.18);
+  box-shadow:0 14px 34px -20px rgba(194,0,106,.28);
+}
+/* Le bandeau d'appel final est une APLAT saturé dans les deux peaux : il garde
+   son encre blanche, on ne fait que le passer du violet au rose de la peau. */
+[data-theme='vice'] .cta{
+  background:linear-gradient(120deg,#c2006a,#a0128f 58%,#00796f);
+  border-color:transparent;
+}
+/* Bandeau « à venir » : fond clair, encres sombres. */
+[data-theme='vice'] .awaited-band{
+  background:linear-gradient(120deg,#ffffff, var(--vice-panel-2));
+  border-color:rgba(194,0,106,.2);
+}
+
+/* ============ 9. ENCRE CLAIRE → ENCRE DE LA PEAU ============ */
+/* Les pages écrites pour le fond noir posent des encres claires en dur
+   (« blanc », blanc bleuté, jaune de marque). La peau étant CLAIRE, ces textes
+   disparaissent — c'est ce qui rendait les pages Actus, Quiz, Tests, Communauté
+   et Article illisibles au premier passage. Le bloc ci-dessous est GÉNÉRÉ :
+   ne pas l'éditer à la main, relancer
+
+       node scripts/theme-ink-sweep.mjs --theme=vice --write
+
+   Les contextes qui gardent une encre claire (médias, affiches, lecteurs,
+   bandeaux de marque) sont exclus dans le script, et traités à la main dans la
+   section 5. Même mécanique que `theme.css` §3 pour le thème clair. */
+/* #region encre-claire — généré par scripts/theme-ink-sweep.mjs --theme=vice */
+
+/* Encres blanches littérales : supposent un fond sombre. */
+  [data-theme='vice'] .achievement-level-number,
+  [data-theme='vice'] .achievement-tooltip-name,
+  [data-theme='vice'] .actus-card,
+  [data-theme='vice'] .auth-social-btn:hover:not(:disabled),
+  [data-theme='vice'] .button-demo-secondary:hover,
+  [data-theme='vice'] .player-games-filter-btn.active .player-games-filter-count,
+  [data-theme='vice'] .player-games-action-btn:hover,
+  [data-theme='vice'] .player-games-action-btn.active,
+  [data-theme='vice'] .player-gear-action-btn:hover,
+  [data-theme='vice'] .player-gear-action-btn.active,
+  [data-theme='vice'] .player-signout-btn:hover,
+  [data-theme='vice'] .delete-account-btn:hover,
+  [data-theme='vice'] .delete-account-dialog h2,
+  [data-theme='vice'] .delete-account-eye:hover,
+  [data-theme='vice'] .nav-account.connected,
+  [data-theme='vice'] .nav-account-name,
+  [data-theme='vice'] .quiz-rank-heading h2,
+  [data-theme='vice'] .quiz-rank-hero-value,
+  [data-theme='vice'] .spoiler-alert-title,
+  [data-theme='vice'] .spoiler-alert-toggle,
+  [data-theme='vice'] .inline-spoiler-btn,
+  [data-theme='vice'] .inline-spoiler-content,
+  [data-theme='vice'] .inline-spoiler-hide:hover,
+  [data-theme='vice'] [data-theme='light'] .spoiler-alert-badge,
+  [data-theme='vice'] .dossier-lead,
+  [data-theme='vice'] .dossier-pullquote,
+  [data-theme='vice'] .dossier-stat-card span,
+  [data-theme='vice'] .dzdev-next-note strong,
+  [data-theme='vice'] .dzdev-story-lead,
+  [data-theme='vice'] .friends-row-name,
+  [data-theme='vice'] .friends-search input,
+  [data-theme='vice'] .player-friend-name,
+  [data-theme='vice'] .school-filters button[aria-pressed=true],
+  [data-theme='vice'] .school-stage-dots li,
+  [data-theme='vice'] .driving-top-brief .driving-live-copy,
+  [data-theme='vice'] .driving-speed-alert,
+  [data-theme='vice'] .driving-card-launch,
+  [data-theme='vice'] .driving-result-actions button,
+  [data-theme='vice'] .driving-side-mirror span,
+  [data-theme='vice'] .driving-school.is-driving .driving-instructor .driving-objective p,
+  [data-theme='vice'] .driving-school.is-driving .driving-top-brief,
+  [data-theme='vice'] .driving-school.is-driving .driving-max-speed,
+  [data-theme='vice'] .driving-recommendation button,
+  [data-theme='vice'] .game-disc__serial,
+  [data-theme='vice'] .mirage-pseudo-avatar,
+  [data-theme='vice'] .vice-free-roam-minimap span,
+  [data-theme='vice'] .vice-free-roam-compass i,
+  [data-theme='vice'] .vice-free-roam-compass span,
+  [data-theme='vice'] .vice-free-roam-touch button,
+  [data-theme='vice'] .vice-free-roam-feature-panel>header button,
+  [data-theme='vice'] .vice-free-roam-destination-list button,
+  [data-theme='vice'] .vice-free-roam-challenge,
+  [data-theme='vice'] .messages-search input,
+  [data-theme='vice'] .messages-row-name,
+  [data-theme='vice'] .messages-thread-name,
+  [data-theme='vice'] .messages-more-item:hover,
+  [data-theme='vice'] .messages-suggest-close:hover,
+  [data-theme='vice'] .messages-suggest-chip:hover,
+  [data-theme='vice'] .messages-composer textarea,
+  [data-theme='vice'] .messages-report-reason:hover,
+  [data-theme='vice'] .messages-report-reason.is-active,
+  [data-theme='vice'] .messages-report-note,
+  [data-theme='vice'] .social-page-tab:hover,
+  [data-theme='vice'] .messages-page-kicker,
+  [data-theme='vice'] .news-feature-copy h2,
+  [data-theme='vice'] .article-lead,
+  [data-theme='vice'] .article-body h2,
+  [data-theme='vice'] .article-pullquote p,
+  [data-theme='vice'] .aside-card strong,
+  [data-theme='vice'] .comments h2,
+  [data-theme='vice'] .comment strong,
+  [data-theme='vice'] .comment-form-heading strong,
+  [data-theme='vice'] .review-feature-copy h2,
+  [data-theme='vice'] .review-score-card strong,
+  [data-theme='vice'] .article-video-title,
+  [data-theme='vice'] .comment-identity-text strong,
+  [data-theme='vice'] .comment-report-title,
+  [data-theme='vice'] .comment-author-link,
+  [data-theme='vice'] .article-engagement-heading h2,
+  [data-theme='vice'] .article-reaction,
+  [data-theme='vice'] .article-trailer-title,
+  [data-theme='vice'] .news-views,
+  [data-theme='vice'] .news-carousel-copy h2,
+  [data-theme='vice'] .news-hub-card,
+  [data-theme='vice'] .partner-mark-text b,
+  [data-theme='vice'] .partner-link,
+  [data-theme='vice'] .partners-sources-list a,
+  [data-theme='vice'] .arena-lead,
+  [data-theme='vice'] .arena-by-meta a:hover,
+  [data-theme='vice'] .player-list-toggle:hover,
+  [data-theme='vice'] .quiz-filter-chip:hover,
+  [data-theme='vice'] .quiz-survival-title,
+  [data-theme='vice'] .quiz-survival-card:hover .arrow-link,
+  [data-theme='vice'] .quiz-survival-infinity,
+  [data-theme='vice'] .horror-glitch-title,
+  [data-theme='vice'] .horror-tape--red,
+  [data-theme='vice'] .horror-chip-pulse,
+  [data-theme='vice'] .horror-file-title,
+  [data-theme='vice'] .horror-timer-count,
+  [data-theme='vice'] .horror-heart-lost,
+  [data-theme='vice'] .horror-question-mark,
+  [data-theme='vice'] .horror-verdict-icon,
+  [data-theme='vice'] .horror-choice:hover:not(:disabled) .horror-choice-key,
+  [data-theme='vice'] .horror-gameover-title,
+  [data-theme='vice'] .horror-stats .quiz-stat strong,
+  [data-theme='vice'] [data-theme='light'] .survival-horror .quiz-header h1,
+  [data-theme='vice'] [data-theme='light'] .horror-file-inner h2,
+  [data-theme='vice'] .lets-talk-label,
+  [data-theme='vice'] .nav-messages-link .lets-talk-label,
+  [data-theme='vice'] .social-panel-kicker,
+  [data-theme='vice'] .social-tab:hover,
+  [data-theme='vice'] .nav-logout:hover,
+  [data-theme='vice'] .nav-profile-dropdown-avatar,
+  [data-theme='vice'] .nav-profile-dropdown-meta strong,
+  [data-theme='vice'] .nav-profile-dropdown-links a:hover,
+  [data-theme='vice'] .nav-profile-dropdown-logout:hover,
+  [data-theme='vice'] .cmd-palette-head input,
+  [data-theme='vice'] .cmd-palette-close:hover,
+  [data-theme='vice'] .cmd-palette-item-text strong,
+  [data-theme='vice'] .cmd-palette-quick a:hover,
+  [data-theme='vice'] .nav-primary a:hover,
+  [data-theme='vice'] .nav-submenu-toggle:hover,
+  [data-theme='vice'] .nav-item--menu:hover .nav-submenu-toggle,
+  [data-theme='vice'] .nav-item--menu.is-open .nav-submenu-toggle,
+  [data-theme='vice'] .nav-primary .nav-submenu a:hover,
+  [data-theme='vice'] .nav-primary .nav-submenu a.is-current,
+  [data-theme='vice'] .nav-actions-grid .mobile-menu-vice:hover,
+  [data-theme='vice'] .nav-actions-grid .mobile-menu-vice:focus-visible,
+  [data-theme='vice'] .nav-search-clear:hover,
+  [data-theme='vice'] .nav .theme-toggle:hover,
+  [data-theme='vice'] .nav-actions-grid .theme-toggle:hover,
+  [data-theme='vice'] .lang-switch-button:hover,
+  [data-theme='vice'] .lang-switch.is-open .lang-switch-button,
+  [data-theme='vice'] .lang-switch-option:hover,
+  [data-theme='vice'] .lang-switch-option:focus-visible,
+  [data-theme='vice'] .lang-switch-option.active,
+  [data-theme='vice'] .featured-sponsor-text,
+  [data-theme='vice'] .featured-dossier-sponsor-text,
+  [data-theme='vice'] .stats strong,
+  [data-theme='vice'] .format-card a,
+  [data-theme='vice'] .filter:hover,
+  [data-theme='vice'] .video-card h3,
+  [data-theme='vice'] .carousel-controls button,
+  [data-theme='vice'] .nav-profile-level strong,
+  [data-theme='vice'] .nav-search input,
+  [data-theme='vice'] .search-form input,
+  [data-theme='vice'] .nav-search-result,
+  [data-theme='vice'] .nav-search-result:hover,
+  [data-theme='vice'] .written-review-image-credit {
+  color: var(--vice-ink);
+}
+
+/* Encres blanches atténuées : corps de texte et libellés. */
+  [data-theme='vice'] .actus-card-number,
+  [data-theme='vice'] .spoiler-alert-body-inner p,
+  [data-theme='vice'] .maj-site__texte,
+  [data-theme='vice'] .mirage-game-brand,
+  [data-theme='vice'] .mirage-sound-button,
+  [data-theme='vice'] .mirage-pause-button,
+  [data-theme='vice'] .mirage-fullscreen-button,
+  [data-theme='vice'] .mirage-graphics-button,
+  [data-theme='vice'] .mirage-hud-card small,
+  [data-theme='vice'] .mirage-hud-card > span,
+  [data-theme='vice'] .mirage-clock small,
+  [data-theme='vice'] .mirage-duel-odds,
+  [data-theme='vice'] .mirage-touch-layer .mirage-swipe-hint.is-on,
+  [data-theme='vice'] .mirage-overlay > p,
+  [data-theme='vice'] .mirage-overlay-hint,
+  [data-theme='vice'] .mirage-keys-hint,
+  [data-theme='vice'] .mirage-result-stats span,
+  [data-theme='vice'] .mirage-save-note,
+  [data-theme='vice'] .mirage-pause-stats span,
+  [data-theme='vice'] .mirage-settings-tabs button,
+  [data-theme='vice'] .mirage-board-subtitle,
+  [data-theme='vice'] .mirage-board-message small,
+  [data-theme='vice'] .mirage-board-name,
+  [data-theme='vice'] .mirage-skin-chip small,
+  [data-theme='vice'] .mirage-skin-3d.is-fallback,
+  [data-theme='vice'] .mirage-skin-tags i,
+  [data-theme='vice'] .mirage-xp-award,
+  [data-theme='vice'] .mirage-shop-copy p,
+  [data-theme='vice'] .mirage-rule small,
+  [data-theme='vice'] .mirage-score-tip,
+  [data-theme='vice'] .mirage-community-note,
+  [data-theme='vice'] .mirage-community-note strong,
+  [data-theme='vice'] .mirage-intro-lead,
+  [data-theme='vice'] .mirage-secondary-button,
+  [data-theme='vice'] .mirage-mode-tab,
+  [data-theme='vice'] .mirage-field-label em,
+  [data-theme='vice'] .mirage-form-field small,
+  [data-theme='vice'] .mirage-rooms-empty p,
+  [data-theme='vice'] .mirage-room-card-meta,
+  [data-theme='vice'] .mirage-direct-code-label,
+  [data-theme='vice'] .mirage-room-code-line,
+  [data-theme='vice'] .mirage-player-mount,
+  [data-theme='vice'] .mirage-ready-hint,
+  [data-theme='vice'] .mirage-launch-party-btn,
+  [data-theme='vice'] .mirage-room-chat-empty,
+  [data-theme='vice'] .mirage-chat-quick-chip,
+  [data-theme='vice'] .mirage-world-error span,
+  [data-theme='vice'] .mirage-room-waiting-panel p,
+  [data-theme='vice'] .mirage-waiting-status,
+  [data-theme='vice'] .mirage-room-finished-banner p,
+  [data-theme='vice'] .mirage-scoreboard th,
+  [data-theme='vice'] .mirage-sb-medal,
+  [data-theme='vice'] .mirage-sb-tag,
+  [data-theme='vice'] .mirage-sb-time strong.is-remaining,
+  [data-theme='vice'] .mirage-sb-time small,
+  [data-theme='vice'] .mirage-sb-pts small,
+  [data-theme='vice'] .mirage-results-status,
+  [data-theme='vice'] .mirage-cup-card-action,
+  [data-theme='vice'] .mirage-cup-rank,
+  [data-theme='vice'] .mirage-cup-name small,
+  [data-theme='vice'] .mirage-cup-progress li,
+  [data-theme='vice'] .mirage-cup-gained span,
+  [data-theme='vice'] .mirage-trophy-lede,
+  [data-theme='vice'] .mirage-trophy-purse,
+  [data-theme='vice'] .mirage-trophy-purse small,
+  [data-theme='vice'] .mirage-trophy-champion-bonus,
+  [data-theme='vice'] .mirage-cup-champion-bonus,
+  [data-theme='vice'] .mirage-trophy-champion-bonus small,
+  [data-theme='vice'] .mirage-cup-champion-bonus small,
+  [data-theme='vice'] .mirage-cup-points-pill i,
+  [data-theme='vice'] .mirage-graphics-switch,
+  [data-theme='vice'] .mirage-graphics-choice,
+  [data-theme='vice'] .mirage-graphics-note,
+  [data-theme='vice'] .article-body,
+  [data-theme='vice'] .proscons li,
+  [data-theme='vice'] .horror-photo-inner,
+  [data-theme='vice'] .nav-logout,
+  [data-theme='vice'] .nav-profile-dropdown-meta small,
+  [data-theme='vice'] .nav-profile-dropdown-links a,
+  [data-theme='vice'] .cmd-palette-icon,
+  [data-theme='vice'] .cmd-palette-kbd,
+  [data-theme='vice'] .cmd-palette-close,
+  [data-theme='vice'] .cmd-palette-shortcuts em,
+  [data-theme='vice'] .cmd-palette-item,
+  [data-theme='vice'] .cmd-palette-empty,
+  [data-theme='vice'] .cmd-palette-quick a,
+  [data-theme='vice'] .cmd-palette-tips strong,
+  [data-theme='vice'] .nav-links a,
+  [data-theme='vice'] .nav-primary a,
+  [data-theme='vice'] .nav-submenu-toggle,
+  [data-theme='vice'] .nav-primary .nav-submenu a,
+  [data-theme='vice'] .nav-actions-grid .mobile-menu-vice,
+  [data-theme='vice'] .nav-search-clear,
+  [data-theme='vice'] .nav .theme-toggle,
+  [data-theme='vice'] .nav-actions-grid .theme-toggle,
+  [data-theme='vice'] .lang-switch-button,
+  [data-theme='vice'] .lang-switch-option,
+  [data-theme='vice'] .nav-search button,
+  [data-theme='vice'] .nav-search-icon,
+  [data-theme='vice'] .nav-search-kbd {
+  color: var(--vice-muted);
+}
+
+/* Jaune de marque en texte : assombri pour rester lisible. */
+  [data-theme='vice'] .achievement-hero-number,
+  [data-theme='vice'] .achievement-toast-kicker,
+  [data-theme='vice'] .trophy-shelf-count strong,
+  [data-theme='vice'] .trophy-shelf-percent,
+  [data-theme='vice'] .trophy-category-count,
+  [data-theme='vice'] .article-lang--french .article-lang-icon,
+  [data-theme='vice'] .article-lang--french .article-lang-text strong,
+  [data-theme='vice'] .auth-demo-kicker,
+  [data-theme='vice'] .auth-diag-line,
+  [data-theme='vice'] .auth-switch,
+  [data-theme='vice'] .player-avatar-fallback,
+  [data-theme='vice'] .player-badge-tier,
+  [data-theme='vice'] .player-xp-level-tag,
+  [data-theme='vice'] .player-stat-value,
+  [data-theme='vice'] .player-edit-form-head h3,
+  [data-theme='vice'] .nav-account-avatar,
+  [data-theme='vice'] .nav-account-initials,
+  [data-theme='vice'] .nav-account.connected:hover .nav-account-name,
+  [data-theme='vice'] .quiz-rank-kicker,
+  [data-theme='vice'] .quiz-rank-position,
+  [data-theme='vice'] .quiz-rank-meta-value,
+  [data-theme='vice'] .spoiler-alert-toggle-arrow,
+  [data-theme='vice'] .read-link,
+  [data-theme='vice'] .dossier-byline,
+  [data-theme='vice'] .dossier-stat-card strong,
+  [data-theme='vice'] .chapter-list time,
+  [data-theme='vice'] .dzdev-hero-index strong,
+  [data-theme='vice'] .dzdev-image-tag,
+  [data-theme='vice'] .dzdev-read-link,
+  [data-theme='vice'] .dzdev-byline,
+  [data-theme='vice'] .dzdev-story a:not(.button):hover,
+  [data-theme='vice'] .dzdev-video-play-label,
+  [data-theme='vice'] .friends-row-level,
+  [data-theme='vice'] .friends-avatar img,
+  [data-theme='vice'] .friends-avatar-fallback,
+  [data-theme='vice'] .friend-btn-note-lead,
+  [data-theme='vice'] .friend-icon-add:not(:disabled):hover,
+  [data-theme='vice'] .friend-icon-incoming,
+  [data-theme='vice'] .player-friend-level,
+  [data-theme='vice'] .messages-tool.is-flagged,
+  [data-theme='vice'] .messages-more-item.is-flagged,
+  [data-theme='vice'] .messages-report-title,
+  [data-theme='vice'] .social-page-back:hover,
+  [data-theme='vice'] .social-page-tab-icon,
+  [data-theme='vice'] .messages-page-kicker svg,
+  [data-theme='vice'] .monthly-releases-head h2 em,
+  [data-theme='vice'] .release-countdown h3 em,
+  [data-theme='vice'] .release-timeline-today em,
+  [data-theme='vice'] .release-countdown-out,
+  [data-theme='vice'] .calendar-month-nav a.is-current,
+  [data-theme='vice'] .calendar-month-head h3 span,
+  [data-theme='vice'] .calendar-month-now,
+  [data-theme='vice'] .article-pullquote span,
+  [data-theme='vice'] .article-endnote strong,
+  [data-theme='vice'] .comments-mark,
+  [data-theme='vice'] .comment-form-heading span,
+  [data-theme='vice'] .review-feature-copy h2 em,
+  [data-theme='vice'] .review-score-card span,
+  [data-theme='vice'] .article-engagement-kicker,
+  [data-theme='vice'] .article-engagement-footer .arrow-link,
+  [data-theme='vice'] .article-reaction-yellow .article-reaction-icon,
+  [data-theme='vice'] .article-byline > span:nth-child(2),
+  [data-theme='vice'] .article-toc-progress,
+  [data-theme='vice'] .article-lightbox-kicker,
+  [data-theme='vice'] .article-lightbox-caption,
+  [data-theme='vice'] .news-carousel.is-grid .news-carousel-copy .read-link,
+  [data-theme='vice'] .partners-head h2 em,
+  [data-theme='vice'] .partner-link:hover,
+  [data-theme='vice'] .partner-detail-facts-label,
+  [data-theme='vice'] .partners-sources-list a:hover,
+  [data-theme='vice'] .arena-hero h2 em,
+  [data-theme='vice'] .arena-pills li:first-child,
+  [data-theme='vice'] .arena-by-label,
+  [data-theme='vice'] .arena-by-meta a,
+  [data-theme='vice'] .quiz-header h1 em,
+  [data-theme='vice'] .quiz-chip--medium,
+  [data-theme='vice'] .quiz-chip--daily,
+  [data-theme='vice'] .quiz-chip--streak,
+  [data-theme='vice'] .quiz-daily .arrow-link,
+  [data-theme='vice'] .quiz-card-best,
+  [data-theme='vice'] .quiz-level--medium .quiz-level-name,
+  [data-theme='vice'] .quiz-live-item--points,
+  [data-theme='vice'] .quiz-live-item--streak,
+  [data-theme='vice'] .quiz-verdict-points,
+  [data-theme='vice'] .quiz-tier--veteran .quiz-result-tier,
+  [data-theme='vice'] .quiz-result-points,
+  [data-theme='vice'] .quiz-result-combo,
+  [data-theme='vice'] .quiz-result-perfect,
+  [data-theme='vice'] .quiz-result-record,
+  [data-theme='vice'] .quiz-board-score,
+  [data-theme='vice'] .quiz-player-intro.is-locked h1,
+  [data-theme='vice'] .quiz-finished-best,
+  [data-theme='vice'] .quiz-result-finished,
+  [data-theme='vice'] .quiz-confirm-dialog--medium .quiz-confirm-title,
+  [data-theme='vice'] .social-tab--messages.lets-talk-label.is-active,
+  [data-theme='vice'] .social-launcher-meta-unread,
+  [data-theme='vice'] .cmd-palette-foot-dot,
+  [data-theme='vice'] .menu-button .dash.open,
+  [data-theme='vice'] .lang-switch-code,
+  [data-theme='vice'] .home-explore a:hover,
+  [data-theme='vice'] .home-explore a:focus-visible,
+  [data-theme='vice'] .arrow-link:hover,
+  [data-theme='vice'] .stats strong span,
+  [data-theme='vice'] .latest-test-card:hover h3,
+  [data-theme='vice'] .video-card:hover h3,
+  [data-theme='vice'] .live-head h2 em,
+  [data-theme='vice'] .live-footer,
+  [data-theme='vice'] .live-status--unknown,
+  [data-theme='vice'] .nav-primary a:hover .nav-link-num,
+  [data-theme='vice'] .nav-primary a.active .nav-link-num,
+  [data-theme='vice'] .nav-profile-avatar,
+  [data-theme='vice'] .nav-profile-level,
+  [data-theme='vice'] .mobile-menu-footer-dot,
+  [data-theme='vice'] .search-clear:hover,
+  [data-theme='vice'] .search-result-top span:last-child,
+  [data-theme='vice'] .nav-search-all {
+  color: var(--vice-lemon-ink);
+}
+  [data-theme='vice'] .achievement-reset:hover,
+  [data-theme='vice'] .auth-protection-status-error,
+  [data-theme='vice'] .auth-error,
+  [data-theme='vice'] .player-game-chip-remove:hover:not(:disabled),
+  [data-theme='vice'] .player-signout-btn,
+  [data-theme='vice'] .delete-account-btn,
+  [data-theme='vice'] .delete-account-icon,
+  [data-theme='vice'] .delete-account-error,
+  [data-theme='vice'] .player-edit-error,
+  [data-theme='vice'] .player-avatar-note-error,
+  [data-theme='vice'] .friends-action-quiet:hover,
+  [data-theme='vice'] .friends-inline-error,
+  [data-theme='vice'] .friend-btn-link:not(:disabled):hover,
+  [data-theme='vice'] .friend-btn-error,
+  [data-theme='vice'] .messages-more-item-danger:hover,
+  [data-theme='vice'] .messages-bubble-delete:hover,
+  [data-theme='vice'] .messages-char-count.is-over,
+  [data-theme='vice'] .messages-blocked-banner,
+  [data-theme='vice'] .messages-inline-error,
+  [data-theme='vice'] .comment-note-error,
+  [data-theme='vice'] .comment-delete:hover:not(:disabled),
+  [data-theme='vice'] .comment-report:hover,
+  [data-theme='vice'] .comment-report[aria-expanded='true'],
+  [data-theme='vice'] .comment-empty-error,
+  [data-theme='vice'] .comment-empty-error .comment-empty-icon,
+  [data-theme='vice'] .quiz-chip--hard,
+  [data-theme='vice'] .quiz-chip--survival,
+  [data-theme='vice'] .quiz-survival-card .arrow-link,
+  [data-theme='vice'] .quiz-survival-best,
+  [data-theme='vice'] .quiz-survival-final-label,
+  [data-theme='vice'] .quiz-level--hard .quiz-level-name,
+  [data-theme='vice'] .quiz-heart,
+  [data-theme='vice'] .quiz-verdict.is-wrong,
+  [data-theme='vice'] .quiz-result-gameover,
+  [data-theme='vice'] .quiz-challenge-error,
+  [data-theme='vice'] .quiz-confirm-dialog--hard .quiz-confirm-title,
+  [data-theme='vice'] .quiz-confirm-warning,
+  [data-theme='vice'] .horror-section-label,
+  [data-theme='vice'] .horror-log,
+  [data-theme='vice'] .horror-timer-label,
+  [data-theme='vice'] .horror-lives-label,
+  [data-theme='vice'] .horror-choice-key,
+  [data-theme='vice'] .horror-gameover-kicker,
+  [data-theme='vice'] .horror-sound-toggle,
+  [data-theme='vice'] .horror-empty,
+  [data-theme='vice'] .nav-profile-dropdown-logout,
+  [data-theme='vice'] .live-status--live {
+  color: var(--vice-danger);
+}
+  [data-theme='vice'] .player-status-badge,
+  [data-theme='vice'] .sso-badge-status.connected,
+  [data-theme='vice'] .player-game-row-btn.added,
+  [data-theme='vice'] .auth-connected-check,
+  [data-theme='vice'] .messages-row-preview.is-online,
+  [data-theme='vice'] .messages-thread-status.is-online,
+  [data-theme='vice'] .messages-report-thanks,
+  [data-theme='vice'] .home-quiz-band .quiz-chip--levels.is-complete,
+  [data-theme='vice'] .quiz-chip--levels.is-complete,
+  [data-theme='vice'] .quiz-level-check,
+  [data-theme='vice'] .quiz-unlock-note,
+  [data-theme='vice'] .quiz-verdict.is-right,
+  [data-theme='vice'] .quiz-fix-a span:last-child,
+  [data-theme='vice'] .quiz-challenge-sent {
+  color: var(--vice-ok);
+}
+  [data-theme='vice'] .review-score-card-is-mid span,
+  [data-theme='vice'] .proscons .pc-cons h3,
+  [data-theme='vice'] .short-review-score.tier-is-mid .short-review-score-value,
+  [data-theme='vice'] .short-review-score.tier-is-mid .short-review-score-tier {
+  color: var(--vice-warn);
+}
+  [data-theme='vice'] .quiz-chip--easy,
+  [data-theme='vice'] .quiz-level--easy .quiz-level-name,
+  [data-theme='vice'] .quiz-confirm-dialog--easy .quiz-confirm-title {
+  color: var(--vice-link);
+}
+
+/* Motifs décoratifs translucides (les seuls dont l'alpha est conservé). */
+  [data-theme='vice'] .quiz-global-rank::after,
+  [data-theme='vice'] .maj-site__date,
+  [data-theme='vice'] .mirage-hud-streak > span i,
+  [data-theme='vice'] .mirage-game-foot,
+  [data-theme='vice'] .mirage-board-rank,
+  [data-theme='vice'] .mirage-board-footer,
+  [data-theme='vice'] .mirage-page-footer,
+  [data-theme='vice'] .mirage-chat-meta time,
+  [data-theme='vice'] .mirage-sb-none,
+  [data-theme='vice'] .mirage-cup-name-field input::placeholder,
+  [data-theme='vice'] .cmd-palette-head input::placeholder,
+  [data-theme='vice'] .cmd-palette-meta,
+  [data-theme='vice'] .cmd-palette-recent small,
+  [data-theme='vice'] .cmd-palette-tips,
+  [data-theme='vice'] .cmd-palette-foot,
+  [data-theme='vice'] .nav-search input::placeholder {
+  color: rgba(43,10,36,.05);
+}
+/* #endregion encre-claire */

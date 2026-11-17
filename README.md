@@ -114,6 +114,7 @@ Deux points d'attention pour la suite :
 
 ```bash
 npm run theme:ink-sweep   # régénère la liste des encres à rabattre vers le sombre
+npm run theme:ink-sweep:vice   # idem pour la peau Vice
 ```
 
 `theme:ink-sweep` reparcourt les feuilles et réécrit la section « encre claire →
@@ -131,10 +132,34 @@ signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 ## Habillage temporaire « Vice City » (GTA 6)
 
 Pendant la sortie de GTA 6, le site peut porter un troisième thème, `vice` :
-rose néon, aqua, citron et palmiers, avec la clé d'art de Vice City en héros,
-un compte à rebours dans le héros et un avis « habillage temporaire » au-dessus
-du pied de page. C'est un **hommage non officiel** : Let's Play n'est affilié ni
-à Rockstar Games ni à Take-Two, et le visuel a été produit pour le site.
+**papier rose bonbon**, cartes blanches, accents rose vif / menthe / citron et
+palmiers, avec un boulevard de Vice City de jour en héros, un compte à rebours
+dans le héros et un avis « habillage temporaire » au-dessus du pied de page.
+C'est un **hommage non officiel** : Let's Play n'est affilié ni à Rockstar Games
+ni à Take-Two.
+
+**La peau est CLAIRE.** Ce n'est pas un détail cosmétique : la moitié des
+feuilles de page du site écrivent pour un fond noir (texte blanc, panneaux
+nuit). Sur papier rose, ces textes disparaissent. Deux mécanismes s'en
+chargent, et il faut toucher aux deux quand on ajoute un composant :
+
+1. **les encres** — `npm run theme:ink-sweep:vice`
+   régénère la section 9 de `vice.css` (même balayage mécanique que le thème
+   clair : encres blanches → encre prune, jaune de marque → citron foncé,
+   statuts → versions lisibles). Ne pas l'éditer à la main ;
+2. **les surfaces** — section 8bis, écrite à la main : les blocs qui posent un
+   fond nuit en dur (cartes Actus, panneaux Communauté, bannière Quiz, bandeau
+   CTA, commentaires, encadrés de test…) passent en carte blanche.
+
+Règle de palette, à respecter partout : **chaque accent existe en deux
+familles** — la teinte *vive* (`--vice-pink`, `--vice-aqua`, `--vice-lemon`)
+pour les aplats, halos et bordures, et son *encre* (`--vice-pink-ink`,
+`--vice-mint-ink`, `--vice-lemon-ink`) dès qu'il s'agit d'écrire. Le vif sur
+blanc tombe sous 3:1 ; c'est l'encre qui passe AA.
+
+Restent volontairement sombres, comme dans les deux autres peaux : les médias
+(lecteurs, vignettes, cadres vidéo), la bande des partenaires (logos tiers), le
+jeu « Le Sablier » et les cartes-image du hub Actus.
 
 - **Fenêtre de campagne** : `VICE_CAMPAIGN` dans `src/theme/viceTheme.js`
   (12 → 30 novembre 2026). Ces dates sont reprises à l'identique par le script
@@ -161,7 +186,8 @@ du pied de page. C'est un **hommage non officiel** : Let's Play n'est affilié n
 
 **Retirer l'opération** (le jour où elle s'arrête) : supprimer
 `src/theme/vice.css`, `src/theme/viceTheme.js`, `src/components/ViceNotice.jsx`
-et `public/vice-city-keyart.jpg`, puis retirer la ligne d'import de `vice.css`
+et `public/vice-city-keyart.jpg` / `public/vice-city-day.jpg`, puis retirer la
+ligne d'import de `vice.css`
 dans `src/main.jsx`, les appels à `toggleVice` / `isVice` dans `ThemeToggle`,
 `Layout` et `Home`, et les mentions `vice` dans `ThemeContext` et `index.html`.
 Aucun test de CI ne verrouille `data-theme`, et `vice.css` ne figure pas dans

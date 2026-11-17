@@ -51,7 +51,7 @@
           var theme = stored === 'light' || stored === 'dark' || stored === 'vice' ? stored : defaut;
           document.documentElement.setAttribute('data-theme', theme);
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', theme === 'light' ? '#f7f8fc' : theme === 'vice' ? '#140a20' : '#05060f');
+          if (meta) meta.setAttribute('content', theme === 'light' ? '#f7f8fc' : theme === 'vice' ? '#fff5fa' : '#05060f');
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }

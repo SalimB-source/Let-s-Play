@@ -6,8 +6,15 @@
  * clair, elles doivent basculer sur une encre sombre. Cette liste est
  * mécanique : elle évite d'en oublier, et se régénère quand le site évolue.
  *
- *   node scripts/theme-ink-sweep.mjs           # rapport
- *   node scripts/theme-ink-sweep.mjs --write   # réécrit le bloc dans theme.css
+ *   node scripts/theme-ink-sweep.mjs                 # rapport (thème clair)
+ *   node scripts/theme-ink-sweep.mjs --write         # réécrit le bloc dans theme.css
+ *   node scripts/theme-ink-sweep.mjs --theme=vice --write
+ *                                                    # réécrit le bloc équivalent dans vice.css
+ *
+ * `vice` est lui aussi une peau CLAIRE depuis la bascule en « rose bonbon » :
+ * il a exactement le même problème d'encres claires héritées, et le même
+ * besoin mécanique. Le balayage y écrit dans le marqueur `#region encre-claire`
+ * de src/theme/vice.css, avec les jetons de la peau (`--vice-ink`…).
  *
  * Les contextes qui gardent leur encre claire (médias, bandeaux de marque,
  * pastilles colorées) sont exclus ici et traités à la main dans la section
@@ -18,8 +25,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const SRC = 'src';
-const THEME = path.join(SRC, 'theme.css');
-const START = '/* #region encre-claire — généré par scripts/theme-ink-sweep.mjs */';
+const argTheme = (process.argv.find((a) => a.startsWith('--theme=')) || '--theme=light').split('=')[1];
+const isVice = argTheme === 'vice';
+const THEME = isVice ? path.join(SRC, 'theme', 'vice.css') : path.join(SRC, 'theme.css');
+const PREFIX = isVice ? "[data-theme='vice']" : "[data-theme='light']";
+const START = isVice
+  ? '/* #region encre-claire — généré par scripts/theme-ink-sweep.mjs --theme=vice */'
+  : '/* #region encre-claire — généré par scripts/theme-ink-sweep.mjs */';
 const END = '/* #endregion encre-claire */';
 
 const write = process.argv.includes('--write');
@@ -72,11 +84,17 @@ const KEEP = new RegExp([
    #ff8c9d tombe à 2,2:1). Seules les déclarations `color` sont concernées :
    les mêmes teintes servent de remplissage (pastilles, points de présence) et
    doivent y rester vives. */
+/* Jetons d'arrivée : la peau vice écrit en encre prune, pas en encre bleue. */
+const INK_VAR = isVice ? 'var(--vice-ink)' : 'var(--ink)';
+const MUTED_VAR = isVice ? 'var(--vice-muted)' : 'var(--muted)';
+const YELLOW_VAR = isVice ? 'var(--vice-lemon-ink)' : 'var(--yellow-ink)';
+const FADED_RGBA = isVice ? 'rgba(43,10,36,.05)' : 'rgba(20,18,50,.05)';
+
 const STATUS_INK = new Map([
-  ['var(--danger)', /#(?:ff8c9d|fb7185|fca5a5|fecdd3|ffb4be|ff8f8f|ff6b6b|ff5c5c|ff4d5a|ff3d4f|f87171|dc2626)\b/i],
-  ['var(--ok)', /#(?:10b981|34d399|16a34a)\b/i],
-  ['#b45309', /#(?:ff8a4c|f97316|eab308)\b/i],
-  ['#1d4ed8', /#(?:60a5fa|3b82f6)\b/i],
+  [isVice ? 'var(--vice-danger)' : 'var(--danger)', /#(?:ff8c9d|fb7185|fca5a5|fecdd3|ffb4be|ff8f8f|ff6b6b|ff5c5c|ff4d5a|ff3d4f|f87171|dc2626)\b/i],
+  [isVice ? 'var(--vice-ok)' : 'var(--ok)', /#(?:10b981|34d399|16a34a)\b/i],
+  [isVice ? 'var(--vice-warn)' : '#b45309', /#(?:ff8a4c|f97316|eab308)\b/i],
+  [isVice ? 'var(--vice-link)' : '#1d4ed8', /#(?:60a5fa|3b82f6)\b/i],
 ]);
 
 const WHITE_HEX = /#(?:fff|ffffff)\b/;
@@ -88,7 +106,7 @@ const files = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p);
-    else if (e.name.endsWith('.css') && e.name !== 'theme.css') files.push(p);
+    else if (e.name.endsWith('.css') && e.name !== 'theme.css' && e.name !== 'vice.css') files.push(p);
   }
 })(SRC);
 
@@ -102,6 +120,10 @@ for (const file of files.sort()) {
   const root = postcss.parse(fs.readFileSync(file, 'utf8'), { from: file });
   root.walkDecls((decl) => {
     if (decl.prop.toLowerCase() !== 'color') return;
+    /* Les images-clés (`0%`, `to`) ne sont pas des sélecteurs : les préfixer
+       par `[data-theme='vice']` produit un CSS invalide (combinatuer pendant). */
+    const at = decl.parent.parent;
+    if (at && at.type === 'atrule' && /keyframes$/i.test(at.name)) return;
     const sel = (decl.parent.selector || '').replace(/\s*\n\s*/g, ' ').trim();
     if (!sel || KEEP.test(sel)) return;
     const value = decl.value;
@@ -126,7 +148,7 @@ for (const file of files.sort()) {
 const split = (sel) => sel.split(/\s*,\s*/).filter(Boolean);
 const uniq = (list) => [...new Set(list.flatMap(split))];
 const group = (sel, value, comment) => {
-  const lines = uniq(sel).map((s) => `  [data-theme='light'] ${s}`);
+  const lines = uniq(sel).map((s) => `  ${PREFIX} ${s}`);
   if (!lines.length) return '';
   return `\n/* ${comment} */\n${lines.join(',\n')} {\n  color: ${value};\n}\n`;
 };
@@ -134,13 +156,13 @@ const group = (sel, value, comment) => {
 const block =
   START +
   '\n' +
-  group(ink, 'var(--ink)', 'Encres blanches littérales : supposent un fond sombre.') +
-  group(muted, 'var(--muted)', 'Encres blanches atténuées : corps de texte et libellés.') +
-  group(yellowInk, 'var(--yellow-ink)', 'Jaune de marque en texte : assombri pour rester lisible.') +
+  group(ink, INK_VAR, 'Encres blanches littérales : supposent un fond sombre.') +
+  group(muted, MUTED_VAR, 'Encres blanches atténuées : corps de texte et libellés.') +
+  group(yellowInk, YELLOW_VAR, 'Jaune de marque en texte : assombri pour rester lisible.') +
   [...new Set(statusInk.map((f) => f.replacement))]
     .map((replacement) => {
       const sels = statusInk.filter((f) => f.replacement === replacement).map((f) => f.sel);
-      const lines = uniq(sels).map((x) => `  [data-theme='light'] ${x}`);
+      const lines = uniq(sels).map((x) => `  ${PREFIX} ${x}`);
       return lines.join(',\n') + ` {\n  color: ${replacement};\n}\n`;
     })
     .join('') +
@@ -149,10 +171,10 @@ const block =
       uniq(faded.map((f) => `${f.sel}|${f.a}`))
         .map((k) => {
           const [s, a] = k.split('|');
-          return `  [data-theme='light'] ${s}`;
+          return `  ${PREFIX} ${s}`;
         })
         .join(',\n') +
-      ` {\n  color: rgba(20,18,50,.05);\n}\n`
+      ` {\n  color: ${FADED_RGBA};\n}\n`
     : '') +
   END;
 

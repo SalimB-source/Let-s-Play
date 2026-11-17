@@ -54,8 +54,14 @@ export const VICE_NOTICE_KEY = 'lp-vice-notice';
  */
 export const GTA6_RELEASE = { year: 2026, month: 11, day: 19 };
 
-/** Visuel du héros en habillage « vice » (généré pour ce skin, non officiel). */
-export const viceHeroImage = `${import.meta.env.BASE_URL}vice-city-keyart.jpg`;
+/**
+ * Visuel du héros en habillage « vice » (généré pour ce skin, non officiel).
+ * Version JOUR : la peau est claire (voir `vice.css`), un coucher de soleil
+ * sombre jurerait sous un titre à encre prune. Même cadrage, même composition
+ * que la version nuit (`vice-city-keyart.jpg`, l'image fournie à la main par le
+ * propriétaire du site).
+ */
+export const viceHeroImage = `${import.meta.env.BASE_URL}vice-city-day.jpg`;
 
 /** Visuel du héros dans l'habillage d'origine. */
 export const defaultHeroImage = `${import.meta.env.BASE_URL}hero-lets-play.jpg`;
