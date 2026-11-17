@@ -41,7 +41,8 @@
 
    ⚠️ Hommage NON OFFICIEL : aucun logo Rockstar / GTA n'est utilisé, aucune
    jaquette officielle n'est embarquée. Le visuel du héros est une création
-   pour ce skin (public/vice-city-keyart.jpg). La mention légale affichée par
+   pour ce skin (public/vice-city-hero.jpg, fourni par le propriétaire du site).
+   La mention légale affichée par
    l'avis (`.vice-notice`) le rappelle au visiteur.
 
    Import : `src/main.jsx`, APRÈS `theme.css` — la peau doit gagner les
@@ -261,16 +262,49 @@
 }
 
 /* ============ 4. HÉROS ============ */
-/* Le visuel « vice » de JOUR (public/vice-city-day.jpg) remplace la photo de
-   matériel. Le voile s'inverse : sur une image claire, il faut une nappe
-   PÂLE à gauche pour que le titre prune et le texte restent lisibles — c'est
-   l'exact pendant du voile sombre de la version nuit. */
+/* Le visuel « vice » (public/vice-city-hero.jpg : la vue nocturne de Vice City
+   fournie par le propriétaire) remplace la photo de matériel. La peau étant
+   CLAIRE, le voile s'inverse : nappe pâle à gauche pour que le titre prune et
+   le texte restent lisibles, l'image respirant à droite. Sur une photo de nuit,
+   c'est ce voile qui fait tout le travail — sans lui, un titre à encre prune
+   serait illisible sur les tours éclairées. */
 [data-theme='vice'] .hero{background:var(--vice-night-deep)}
 [data-theme='vice'] .hero-shade{
+  /* La photo est une vue de NUIT : un voile uniformément pâle la délaie en
+     buée grise. On garde donc une nappe opaque seulement sous la colonne de
+     texte (à gauche), qui s'ouvre vite pour laisser voir la ville à droite,
+     et une fermeture en bas pour raccorder au papier. */
   background:
-    linear-gradient(90deg, rgba(255,245,250,.82) 0%, rgba(255,245,250,.62) 34%, rgba(255,245,250,.20) 64%, rgba(255,245,250,0) 100%),
-    linear-gradient(180deg, rgba(255,245,250,.55) 0%, rgba(255,245,250,.08) 20%, rgba(255,245,250,0) 40%, rgba(255,245,250,.35) 68%, rgba(255,233,244,.85) 92%, var(--vice-night-deep) 100%);
+    linear-gradient(90deg,
+      rgba(255,245,250,.92) 0%,
+      rgba(255,245,250,.88) 30%,
+      rgba(255,245,250,.66) 52%,
+      rgba(255,245,250,.22) 72%,
+      rgba(255,245,250,0) 88%),
+    linear-gradient(180deg,
+      rgba(255,245,250,.28) 0%,
+      rgba(255,245,250,0) 16%,
+      rgba(255,245,250,0) 62%,
+      rgba(255,233,244,.72) 88%,
+      var(--vice-night-deep) 100%);
 }
+/* Téléphone : le texte occupe toute la largeur, donc toute la photo. Le dégradé
+   horizontal ne suffit plus — on empile une nappe verticale, sinon le corps de
+   texte et la ligne « ALGERIA'S GAMING… » tombent sur les tours éclairées. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  [data-theme='vice'] .hero-shade{
+    background:
+      linear-gradient(180deg,
+        rgba(255,245,250,.55) 0%,
+        rgba(255,245,250,.80) 16%,
+        rgba(255,245,250,.86) 48%,
+        rgba(255,245,250,.70) 72%,
+        rgba(255,233,244,.88) 90%,
+        var(--vice-night-deep) 100%),
+      linear-gradient(90deg, rgba(255,245,250,.55) 0%, rgba(255,245,250,.28) 60%, rgba(255,245,250,.10) 100%);
+  }
+}
+
 /* Cadres de coin du héros : encre rose, sans halo (un halo sur papier = une
    tache). */
 [data-theme='vice'] .hero-frame span{

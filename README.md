@@ -133,8 +133,10 @@ signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 
 Pendant la sortie de GTA 6, le site peut porter un troisième thème, `vice` :
 **papier rose bonbon**, cartes blanches, accents rose vif / menthe / citron et
-palmiers, avec un boulevard de Vice City de jour en héros, un compte à rebours
-dans le héros et un avis « habillage temporaire » au-dessus du pied de page.
+palmiers, avec la vue nocturne de Vice City fournie par le propriétaire du site
+en héros (`public/vice-city-hero.jpg` — c'est SA clé d'art, ne pas la remplacer
+par une image générée), un compte à rebours dans le héros et un avis
+« habillage temporaire » au-dessus du pied de page.
 C'est un **hommage non officiel** : Let's Play n'est affilié ni à Rockstar Games
 ni à Take-Two.
 
@@ -186,7 +188,7 @@ jeu « Le Sablier » et les cartes-image du hub Actus.
 
 **Retirer l'opération** (le jour où elle s'arrête) : supprimer
 `src/theme/vice.css`, `src/theme/viceTheme.js`, `src/components/ViceNotice.jsx`
-et `public/vice-city-keyart.jpg` / `public/vice-city-day.jpg`, puis retirer la
+et `public/vice-city-hero.jpg`, puis retirer la
 ligne d'import de `vice.css`
 dans `src/main.jsx`, les appels à `toggleVice` / `isVice` dans `ThemeToggle`,
 `Layout` et `Home`, et les mentions `vice` dans `ThemeContext` et `index.html`.
