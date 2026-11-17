@@ -1395,31 +1395,23 @@
   .rpg-battle--touch .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
 }
 
-/* ── Sans cadre, au doigt : la règle du plateau, resserrée ici ───────────────
-   Les faces n'ont plus d'anneau nulle part (voir « PLUS AUCUN CADRE » en fin de
-   `rpg-battle.css`) : ce bloc ne fait donc plus qu'appliquer, au doigt, la même
-   largeur nulle aux trois surfaces du duel — main, table, terrains — avec la
-   spécificité qui gagne sur les paliers `vw` de la feuille principale.
-
-   Pourquoi le retrait plutôt qu'un filet amaigri : sur une carte en main de
-   62 px (844 × 390, cinq cartes), 3 px de bordure pèsent déjà un vingtième de
-   la face, et la couleur de l'élément est de toute façon annoncée par la
-   pastille, le coût et la ligne de type. Sur un écran qu'on tient à bout de
-   bras — comme sur un écran de bureau —, la peinture compte plus que l'anneau.
+/* ── Bordure CSS de repli, au doigt : le cadre SVG reste sélectif ────────────
+   Les créatures et héros n'ont pas de cadre. Les autres types gardent leur
+   couche SVG élémentaire (`.rpg-cadre-carte`) ; la coque tactile neutralise
+   seulement l'ancienne bordure CSS et ses couches de motif/matière, pour ne
+   pas dessiner un second cadre sous le SVG. Cette règle gagne sur les paliers
+   `vw` de la feuille principale.
 
    `!important` : la règle de fin de `rpg-battle.css` est elle-même
-   `!important` et vise les mêmes classes `rpg-card--frame-*`. Celle-ci la
-   dépasse par la spécificité — deux classes et deux attributs, contre une
-   classe et un attribut.
+   `!important` et vise les classes `rpg-card--frame-*`. Celle-ci la dépasse
+   par sa spécificité, sans masquer le calque SVG.
 
    Rien d'autre ne bouge, et surtout pas la géométrie : tout est en
    `border-box`, chaque face garde sa largeur, son 4:5 et sa mesure
    (`--duel-card` pour la main, `--rpg-field-card` pour la table, les 40/48 px
-   du rail pour les terrains) — c'est l'illustration qui gagne l'anneau, pas la
-   face qui grandit. Les pastilles d'élément, les coûts, les compteurs de pile
-   et les états (`is-selected`, `is-ciblable`, `is-declared-attacker`, halos de
-   jouabilité) gardent leurs propres bords et leurs ombres : la règle ne touche
-   qu'à `border-width`. */
+   du rail pour les terrains). Les pastilles, coûts, compteurs de pile, états,
+   illustrations, animations et interactions conservent leurs propres styles ;
+   le cadre SVG reste décoratif et ne capte aucun geste. */
 .rpg-battle--touch .rpg-hand .rpg-hand__card,
 .rpg-battle--touch .card-row .rpg-card,
 .rpg-battle--touch .rpg-terrain {

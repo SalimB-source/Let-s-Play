@@ -1,5 +1,6 @@
 /** Vérifie que les portraits ne dépendent pas d’un SVG de découpe externe. */
 import assert from 'node:assert/strict';
+import { cardById } from '../src/games/rpgCards.js';
 import { createServer } from 'vite';
 import { chromium } from 'playwright';
 
@@ -14,6 +15,7 @@ try {
     let requetesDecoupe = 0;
     await page.route('**/*decoupes-cartes*.svg*', (route) => { requetesDecoupe += 1; return route.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="magie"/><clipPath id="arme"/><clipPath id="creature"/></defs></svg>' }); });
     await page.goto(`http://127.0.0.1:${port}/Let-s-Play/scripts/rpg-cadres-illustrations.html`, { waitUntil: 'networkidle' });
+    const sansCadre = new Set(['creature', 'hero', 'defenseur', 'ascension']);
     for (const id of ['magie', 'arme', 'creature', 'hero', 'defenseur', 'site', 'terrain', 'ascension', 'braise', 'eau', 'sable', 'neige', 'tenebres', 'hybride']) {
       const face = page.locator(`#${id}`);
       await face.scrollIntoViewIfNeeded();
@@ -24,15 +26,21 @@ try {
         const rect = el.getBoundingClientRect();
         const point = document.elementFromPoint(rect.left + rect.width * .5, rect.top + rect.height * .48);
         const coin = document.elementFromPoint(rect.left + rect.width * .02, rect.top + rect.height * .02);
-        return { loaded: img.naturalWidth, visible: point === img && getComputedStyle(img).visibility === 'visible' && Number(getComputedStyle(img).opacity) > 0, coinRogne: coin !== img, clip: getComputedStyle(img).clipPath, frameZ: cadre && getComputedStyle(cadre).zIndex, iconZ: getComputedStyle(icone).zIndex, frameEvents: cadre && getComputedStyle(cadre).pointerEvents };
+        return { loaded: img.naturalWidth, visible: point === img && getComputedStyle(img).visibility === 'visible' && Number(getComputedStyle(img).opacity) > 0, coinRogne: coin !== img, clip: getComputedStyle(img).clipPath, frameZ: cadre && getComputedStyle(cadre).zIndex, iconZ: getComputedStyle(icone).zIndex, frameEvents: cadre && getComputedStyle(cadre).pointerEvents, cadre: Boolean(cadre) };
       });
       assert.ok(result.loaded > 0, `${id} : illustration chargée`);
       assert.ok(result.visible, `${id} : illustration visible au centre (${result.clip})`);
-      assert.match(result.clip, /^polygon\(/, `${id} : découpe CSS locale`);
-      assert.ok(result.coinRogne, `${id} : coins de l’illustration contenus dans le cadre`);
-      assert.ok(Number(result.frameZ) < Number(result.iconZ), `${id} : icône au-dessus du cadre`);
-      assert.equal(result.frameEvents, 'none', `${id} : cadre non interactif`);
-      assert.equal(await face.locator(':scope > .rpg-cadre-carte--sablier').count(), 1, `${id} : cadre Le Sablier`);
+      assert.equal(result.cadre, !sansCadre.has(id), `${id} : cadre selon le type`);
+      if (sansCadre.has(id)) {
+        assert.equal(result.clip, 'none', `${id} : peinture non découpée`);
+        assert.equal(await face.locator(':scope > .rpg-cadre-carte--sablier').count(), 0, `${id} : sans cadre Le Sablier`);
+      } else {
+        assert.match(result.clip, /^polygon\(/, `${id} : découpe CSS locale`);
+        assert.ok(result.coinRogne, `${id} : coins de l’illustration contenus dans le cadre`);
+        assert.ok(Number(result.frameZ) < Number(result.iconZ), `${id} : icône au-dessus du cadre`);
+        assert.equal(result.frameEvents, 'none', `${id} : cadre non interactif`);
+        assert.equal(await face.locator(':scope > .rpg-cadre-carte--sablier').count(), 1, `${id} : cadre Le Sablier`);
+      }
       await face.click({ position: { x: 60, y: 80 } });
       assert.equal(await page.locator('body').getAttribute('data-carte-cliquee'), id, `${id} : clic conservé`);
     }
@@ -63,14 +71,27 @@ try {
       await face.waitFor();
       const image = face.locator(':scope > img').first();
       await image.waitFor({ state: 'visible' });
-      const etat = await image.evaluate((img) => ({ chargee: img.naturalWidth, clip: getComputedStyle(img).clipPath, opacite: Number(getComputedStyle(img).opacity), cadre: Boolean(img.nextElementSibling?.matches('.rpg-cadre-carte')) }));
+      const etat = await image.evaluate((img) => ({
+        chargee: img.naturalWidth,
+        clip: getComputedStyle(img).clipPath,
+        opacite: Number(getComputedStyle(img).opacity),
+        cadre: Boolean(img.nextElementSibling?.matches('.rpg-cadre-carte')),
+        classeCadre: [...img.parentElement.classList].some(nom => nom.startsWith('rpg-card--frame-')),
+      }));
+      const carte = cardById(id);
+      assert.ok(carte, `${id} : définition de carte`);
+      const sansCadreCarte = ['creature', 'hero'].includes(carte.kind);
       assert.ok(etat.chargee > 0 && etat.opacite > 0, `${surface} ${id} : illustration présente`);
-      assert.ok(etat.cadre, `${surface} ${id} : cadre présent`);
-      assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
+      assert.equal(etat.cadre, !sansCadreCarte, `${surface} ${id} : cadre selon le type`);
+      assert.equal(etat.classeCadre, !sansCadreCarte, `${surface} ${id} : classe de cadre selon le type`);
       const cadre = face.locator(':scope > .rpg-cadre-carte--sablier');
-      assert.equal(await cadre.count(), 1, `${surface} ${id} : cadre Le Sablier`);
-      assert.equal(await cadre.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
-      assert.notEqual(await cadre.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+      assert.equal(await cadre.count(), sansCadreCarte ? 0 : 1, `${surface} ${id} : cadre Le Sablier selon le type`);
+      if (sansCadreCarte) assert.equal(etat.clip, 'none', `${surface} ${id} : illustration rectangulaire sans découpe`);
+      else {
+        assert.match(etat.clip, /^polygon\(/, `${surface} ${id} : découpe CSS autonome`);
+        assert.equal(await cadre.evaluate(el => getComputedStyle(el).pointerEvents), 'none');
+        assert.notEqual(await cadre.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+      }
 
     }
     assert.equal(requetesDecoupe, 0, 'aucune requête de SVG de découpe externe');

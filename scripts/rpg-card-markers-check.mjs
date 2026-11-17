@@ -1,4 +1,6 @@
-/** Browser regression for shared marker diameters and frameless cards.
+/** Browser regression for shared marker diameters and the global CSS zero-border experiment.
+ * It intentionally keeps frame classes on every sample: it checks the global border width,
+ * not the selective class/SVG policy for creature and hero cards (covered by frame tests).
  * node scripts/rpg-card-markers-check.mjs
  * CHROMIUM_EXECUTABLE_PATH can override Playwright's browser.
  */
@@ -13,11 +15,11 @@ const browser = await chromium.launch({
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 const markers = (hybrid, catalogue = false, preview = false) => `
-  <span class="rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : 'braise'}">${hybrid
-    ? '<i class="rpg-card-element-badge__pip">🔥</i><i class="rpg-card-element-badge__pip">⏳</i>' : '🔥'}</span>
+  <span class="rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : 'braise'} is-plaque">${hybrid
+    ? '<i class="rpg-card-element-badge__pip is-plaque">🔥</i><i class="rpg-card-element-badge__pip is-plaque">⏳</i>' : '🔥'}</span>
   ${catalogue ? '<span class="rpg-card-catalogue__cost">3</span>'
-    : preview ? '<span class="rpg-mana-cost rpg-mana-cost--braise"><b>3</b></span><span class="rpg-sort-sceau rpg-sort-sceau--rapide rpg-hover-card-preview__sceau rpg-hover-card-preview__sort"></span><footer class="rpg-card__foot"><span class="rpg-card__stat--atk"><svg class="rpg-stat-icon" viewBox="0 0 24 24"></svg><span class="rpg-stat-value">4</span></span><span class="rpg-card__pt"><svg class="rpg-stat-icon" viewBox="0 0 24 24"></svg><span class="rpg-stat-value">3</span></span></footer>'
-    : '<header class="rpg-card__title rpg-hand__title"><span class="rpg-mana-cost is-compact"><b>3</b></span></header>'}`;
+    : preview ? '<span class="rpg-mana-cost rpg-mana-cost--braise is-plaque"><b>3</b></span><span class="rpg-sort-sceau rpg-sort-sceau--rapide rpg-hover-card-preview__sceau rpg-hover-card-preview__sort"></span><footer class="rpg-card__foot"><span class="rpg-card__stat--atk"><svg class="rpg-stat-icon" viewBox="0 0 24 24"></svg><span class="rpg-stat-value">4</span></span><span class="rpg-card__pt"><svg class="rpg-stat-icon" viewBox="0 0 24 24"></svg><span class="rpg-stat-value">3</span></span></footer>'
+    : '<header class="rpg-card__title rpg-hand__title"><span class="rpg-mana-cost is-compact is-plaque"><b>3</b></span></header>'}`;
 try {
   const page = await browser.newPage();
   for (const width of [1440, 844, 568, 390]) {
@@ -62,46 +64,63 @@ try {
           statFont: atk ? parseFloat(getComputedStyle(atk).fontSize) : 0,
           border: parseFloat(style.borderTopWidth),
           background: style.backgroundImage,
+          backgroundSize: style.backgroundSize,
         };
       }));
       for (const result of results) {
         const label = `${width}px ${touch ? 'mobile/APK' : 'souris'} ${result.name}`;
         if (result.cost) {
-          // Dans la main au doigt, la pastille de couleur est volontairement
-          // plus petite que le disque de coût (16 px contre 22) : elle laisse
-          // l'illustration respirer. Partout ailleurs — table, mulligan,
-          // catalogue, aperçus, souris —, les deux repères gardent même diamètre.
-          if (touch && result.name.startsWith('rpg-hand__card')) {
-            assert.ok(result.color.width <= result.cost.width - 4, `${label}: pastille de couleur réduite dans la main au doigt`);
-            assert.ok(result.color.width >= 12 && result.color.height >= 12, `${label}: pastille de couleur encore lisible`);
+          if (result.name.startsWith('rpg-card-catalogue__art')) {
+            // Dans le catalogue, le coût reste un disque indépendant de la
+            // pierre de couleur ; les deux doivent être visibles et carrés.
+            assert.ok(result.color.width >= 16 && result.color.height >= 16, `${label}: couleur lisible`);
+          } else if (touch && result.name.startsWith('rpg-hand__card')) {
+            // Le doigt réduit encore la couleur dans la main ; le losange du
+            // coût reste un peu plus grand pour rester facile à lire.
+            assert.ok(result.color.width <= result.cost.width - 2.5, `${label}: pastille de couleur réduite dans la main au doigt`);
+            assert.ok(result.color.width >= 16 && result.color.height >= 16, `${label}: pastille de couleur encore lisible`);
           } else {
-            assert.ok(Math.abs(result.color.width - result.cost.width) < 0.1, `${label}: même diamètre`);
-            assert.ok(Math.abs(result.color.height - result.cost.height) < 0.1, `${label}: même hauteur`);
+            // Le losange a une boîte 12 % plus grande que l'hexagone, afin que
+            // les deux silhouettes aient un poids visuel comparable.
+            assert.ok(Math.abs(result.cost.width / result.color.width - 1.12) < 0.02,
+              `${label}: dimensions de la pierre de coût proportionnelles`);
+            assert.ok(Math.abs(result.cost.height / result.color.height - 1.12) < 0.02,
+              `${label}: hauteur de la pierre de coût proportionnelle`);
           }
-          assert.ok(Math.abs(result.cost.width - result.cost.height) < 0.1, `${label}: coût rond`);
-          assert.ok(result.cost.width >= 16, `${label}: repères visibles`);
+          assert.ok(Math.abs(result.cost.width - result.cost.height) < 0.1, `${label}: coût carré`);
+          assert.ok(result.color.width >= 16, `${label}: repère de couleur visible`);
+          assert.ok(result.cost.width >= 16, `${label}: repère de coût visible`);
         }
         if (result.name.startsWith('aperçu')) {
-          assert.ok(Math.abs(result.color.top - result.cost.top) < 0.1, `${label}: couleur et coût alignés en haut`);
-          const leftInset = result.color.left - result.face.left;
-          const rightInset = result.face.right - result.cost.right;
-          assert.ok(Math.abs(leftInset - rightInset) < 0.1, `${label}: marges symétriques`);
-          assert.ok(Math.abs(result.sceau.left - result.color.left) < 0.1, `${label}: sceau de sort aligné sur la couleur`);
-          assert.ok(Math.abs((result.face.bottom - result.sceau.bottom) - (result.color.top - result.face.top)) < 0.5, `${label}: marge verticale du sceau symétrique à la couleur`);
-          assert.ok(Math.abs(result.sceau.width - result.color.width) < 0.1, `${label}: même diamètre pour le sceau et la couleur`);
-          assert.ok(result.costFont >= result.cost.width * .45, `${label}: chiffre à l'échelle du disque`);
-          assert.ok(result.statFont >= result.color.width * .6, `${label}: statistiques ATQ/DÉF agrandies à l'échelle de l'aperçu`);
+          assert.ok(Math.abs(result.color.top - result.cost.bottom - 6) < 0.5,
+            `${label}: la couleur suit le coût avec un espacement constant`);
+          const centerColor = result.color.left + result.color.width / 2;
+          const centerCost = result.cost.left + result.cost.width / 2;
+          assert.ok(Math.abs(centerColor - centerCost) < 1.1, `${label}: couleur et coût centrés dans le même axe`);
+          assert.ok(Math.abs(result.sceau.left - (result.face.left + result.face.width * .06)) < 0.5,
+            `${label}: sceau de sort dans son coin inférieur gauche`);
+          assert.ok(Math.abs((result.face.bottom - result.sceau.bottom) - (result.cost.top - result.face.top)) < 0.5,
+            `${label}: sceau inférieur symétrique au coût supérieur`);
+          assert.ok(Math.abs(result.sceau.width - result.sceau.height) < 0.1 && result.sceau.width >= 24,
+            `${label}: sceau de sort carré et lisible`);
+          assert.ok(result.costFont >= result.cost.width * .45, `${label}: chiffre à l'échelle du losange`);
+          assert.ok(result.statFont >= result.color.width * .3, `${label}: statistiques ATQ/DÉF restent lisibles à l'échelle de l'aperçu`);
         }
-        // L'essai sans cadre s'applique désormais aussi à l'ordinateur.
-        assert.equal(result.border, 0, `${label}: aucun cadre`);
-        // Le guide conserve son fond de texte, qui n'est pas un cadre.
-        if (result.name !== 'rpg-card-guide__example') {
-          assert.equal(result.background, 'none', `${label}: aucune matière de cadre`);
+        // Cette assertion porte uniquement sur l'expérimentation CSS globale :
+        // tous les échantillons gardent volontairement leur classe de cadre.
+        assert.equal(result.border, 0, `${label}: bordure CSS globale à zéro`);
+        // La vignette de l'atelier n'a pas cette pile CSS historique ; sa
+        // feuille garde un sélecteur local de bordure nulle, vérifié ci-dessus.
+        if (result.name !== 'rpg-atelier__carte-art') {
+          const couchesFond = result.backgroundSize.split(',').map((couche) => couche.trim());
+          assert.equal(couchesFond.length, 3, `${label}: pile CSS historique en trois couches`);
+          assert.equal(couchesFond[1], '0px 0px', `${label}: motif CSS de cadre neutralisé`);
+          assert.equal(couchesFond[2], '0px 0px', `${label}: matière CSS de cadre neutralisée`);
         }
       }
     }
   }
-  console.log('✓ Diamètres couleur/coût identiques (mono et hybride), catalogue et aperçus inclus — la pastille de couleur de la main, elle, est réduite au doigt ; alignement, marges et chiffre des aperçus vérifiés ; cadres retirés sur souris et mobile/APK.');
+  console.log('✓ Diamètres et alignement des marqueurs vérifiés ; expérimentation CSS globale de bordure nulle et neutralisation du motif/matière CSS vérifiées indépendamment de la sélection des cadres SVG.');
 } finally {
   await browser.close();
 }

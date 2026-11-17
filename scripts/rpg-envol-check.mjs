@@ -39,6 +39,12 @@ for (const [nom, cas] of [['envol', rendu.envol], ['parArme', rendu.parArme]]) {
   const { dom, racine } = carteDom(cas.html);
   try {
     assert.ok(racine.classList.contains('is-envol'), `${nom} : la carte reçoit l’état visuel de l’Envol`);
+    assert.doesNotMatch([...racine.classList].join(' '), /rpg-card--frame-/,
+      `${nom} : la créature garde sa face sans classe de cadre`);
+    assert.equal(racine.querySelector('.rpg-cadre-carte'), null,
+      `${nom} : la créature garde sa face sans cadre SVG`);
+    assert.ok(racine.querySelector(':scope > img.rpg-card__img'),
+      `${nom} : l’illustration reste dans la face sans cadre`);
     const calque = racine.querySelector('.rpg-card__envol');
     assert.ok(calque, `${nom} : le calque du souffle est rendu`);
     assert.equal(calque.getAttribute('aria-hidden'), 'true',
@@ -120,13 +126,13 @@ assert.ok(debutCss > 0, 'la feuille porte un bloc consacré à l’Envol');
 assert.ok(finCss > debutCss, 'le bloc de l’Envol précède les états de survol');
 const envolCss = battleCss.slice(debutCss, finCss);
 
-assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*z-index:\s*2;[^}]*translate:\s*0 -14px;[^}]*rotate:\s*-0\.7deg;[^}]*scale:\s*1;[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 5\.1s\) ease-in-out infinite;/s,
-  'au repos la carte est levée et inclinée, et la lévitation est une animation CSS');
+assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*z-index:\s*2;[^}]*translate:\s*0 var\(--rpg-envol-repos, -14px\);[^}]*rotate:\s*-0\.7deg;[^}]*scale:\s*1;[^}]*animation:\s*rpg-envol-levite var\(--rpg-envol-duree, 5\.1s\) ease-in-out infinite;/s,
+  'au repos la carte est levée et inclinée, et la lévitation est une animation CSS indépendante du cadre');
 assert.match(envolCss, /\.rpg-card\.is-envol\s*\{[^}]*drop-shadow\(0 24px 16px rgba\(0, 0, 0, \.45\)\)/s,
   'son ombre s’éloigne : la hauteur se lit même immobile');
-assert.match(envolCss, /@keyframes rpg-envol-levite\s*\{\s*0%, 100% \{ translate: 0 -14px; rotate: -0\.7deg; scale: 1; \}/,
+assert.match(envolCss, /@keyframes rpg-envol-levite\s*\{\s*0%, 100% \{ translate: 0 var\(--rpg-envol-repos, -14px\); rotate: -0\.7deg; scale: 1; \}/,
   'le cycle se referme sur le repos : une reprise après une cinématique ne saute pas');
-assert.match(envolCss, /50% \{ translate: 0\.6px -23px; rotate: 0\.7deg; scale: 1\.015; \}/,
+assert.match(envolCss, /50% \{ translate: 0\.6px var\(--rpg-envol-sommet, -23px\); rotate: 0\.7deg; scale: 1\.015; \}/,
   'la carte monte de neuf pixels, dérive, grossit et s’incline au sommet — le vol se lit');
 const imagesCles = envolCss.slice(envolCss.indexOf('@keyframes rpg-envol-levite'));
 assert.doesNotMatch(imagesCles.slice(0, imagesCles.indexOf('}')), /(top|left|width|height|transform|filter):/,
@@ -160,16 +166,21 @@ assert.match(battleCss, /@keyframes rpg-card-arrive\s*\{\s*0% \{ opacity: 0; tra
 assert.match(battleCss, /@keyframes card-lunge-team \{ 40% \{ translate: 0 -52px; \} \}/,
   'le bond d’attaque anime translate');
 
-// ── 2 ter. Rien ne coupe les animations de la carte ────────────────────────
-// L'expérimentation « plus aucun cadre » retirait l'anneau ET, avec
-// `animation: none !important`, toutes les animations de la carte : arrivée,
-// bond, choc et lévitation. Elle ne doit plus toucher à `animation`.
-const blocCadres = battleCss.slice(battleCss.indexOf('EXPÉRIMENTATION — PLUS AUCUN CADRE'));
-assert.match(blocCadres, /border-width:\s*0 !important;/, 'l’expérimentation « plus aucun cadre » est toujours là');
-assert.match(blocCadres, /background-image:\s*none !important;/, 'elle retire bien la peinture de l’anneau');
-assert.doesNotMatch(blocCadres.slice(0, blocCadres.indexOf('/* La teinte de matière')),
-  /animation:\s*none !important;/,
-  'mais elle ne coupe plus les animations des cartes : la lévitation et les cinématiques vivent');
+// ── 2 ter. L'expérimentation CSS globale ne coupe pas les animations ───────
+// Cette règle de bordure nulle globale reste indépendante du retrait sélectif
+// des classes et SVG des créatures/héros vérifié par les tests de cadres.
+const debutCadres = battleCss.indexOf('EXPÉRIMENTATION CSS GLOBALE — toutes les bordures nulles');
+const debutRegleCadres = battleCss.indexOf('.rpg-card[class*="rpg-card--frame-"]', debutCadres);
+const finRegleCadres = battleCss.indexOf('\n}', debutRegleCadres);
+assert.ok(debutCadres >= 0 && debutRegleCadres > debutCadres && finRegleCadres > debutRegleCadres,
+  'la règle CSS de repli des cadres est présente');
+const regleCadres = battleCss.slice(debutRegleCadres, finRegleCadres);
+assert.match(regleCadres, /border-width:\s*0 !important;/,
+  'le filet CSS est supprimé sans toucher au cadre SVG sélectionné par type');
+assert.match(regleCadres, /background-size:\s*100% 100%, 0 0, 0 0 !important;/,
+  'l’ancien motif et la matière CSS ne recouvrent pas l’illustration');
+assert.doesNotMatch(regleCadres.replace(/\/\*[\s\S]*?\*\//g, ''), /background-image:\s*none|animation:\s*none/,
+  'la règle ne masque ni la peinture, ni le calque SVG, ni les animations');
 // Le reflet des cadres brillants, déclaré plus bas que les cinématiques, volait
 // leur propriété `animation` aux cartes brillantes et mythiques.
 assert.doesNotMatch(battleCss, /\.rpg-card\.rpg-card--frame-brillant,/,
@@ -189,9 +200,9 @@ assert.doesNotMatch(envolCss, /@media[^{]*max-width/,
 
 // ── 3. Le vol de la carte jouée : de la main jusqu'à sa destination ─────────
 const volDebut = battleCss.indexOf("/* Le vol d'une carte jouée, en trois temps.");
-const volFin = battleCss.indexOf('/* Sur téléphone, le tremblement de toute la table');
+const volFin = battleCss.indexOf('.rpg-battle.is-reduced .card-table.rpg-combat-screen-shake--a');
 assert.ok(volDebut > 0, 'la feuille décrit le vol de la carte jouée');
-assert.ok(volFin > volDebut, 'son bloc précède celui du tremblement de table');
+assert.ok(volFin > volDebut, 'son bloc précède les règles de mouvement réduit de la table');
 const volCss = battleCss.slice(volDebut, volFin);
 assert.match(volCss, /calc\(var\(--rpg-flight-dy\) \* \.46 - 34px\)/,
   'la trajectoire bombe vers le haut : la carte passe au-dessus de la table');

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   CARD_FRAME_COLORS,
   CARD_RARITIES,
+  RPG_ASCENSION_CARDS,
   RPG_DUEL_CARDS,
   RPG_ELEMENTS,
   cardById,
@@ -30,6 +31,23 @@ test('une mythique mono garde la couleur de son élément, avec un cadre brillan
   }
   // La pastille de rareté conserve sa couleur propre, distincte du cadre.
   assert.equal(cardRarityInfo({ element: 'eau', rarity: 'mythique' }).color, CARD_RARITIES.mythique.color);
+});
+
+test('les créatures et héros n’ont pas de cadre coloré, les autres types gardent leur couleur', () => {
+  for (const kind of ['creature', 'hero']) {
+    const carte = { kind, element: 'eau', rarity: 'rare' };
+    assert.equal(cardFrameClass(carte), '', `${kind} rare sans cadre`);
+    assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS.eau.color, `${kind} conserve sa couleur de référence`);
+    assert.equal(cardFrameClass({ ...carte, rarity: 'mythique' }), 'rpg-card--mythique',
+      `${kind} mythique garde ses effets de rareté sans classe de cadre`);
+  }
+
+  for (const kind of ['magie', 'arme', 'terrain', 'site']) {
+    assert.equal(cardFrameClass({ kind, element: 'eau' }), 'rpg-card--frame-eau', `${kind} garde le cadre de l’Eau`);
+  }
+  for (const carte of [...RPG_DUEL_CARDS, ...RPG_ASCENSION_CARDS].filter(({ kind }) => ['creature', 'hero'].includes(kind))) {
+    assert.doesNotMatch(cardFrameClass(carte), /rpg-card--frame-/, carte.id);
+  }
 });
 
 test('une hybride garde la diagonale de sa combinaison sans reflet, même mythique', () => {
@@ -77,8 +95,10 @@ test('le catalogue applique les mêmes cadres aux vraies mythiques, sans violet 
   for (const carte of RPG_DUEL_CARDS.filter((c) => c.rarity === 'mythique')) {
     assert.equal(cardFrameColor(carte), cardFrameInfo(carte).color, carte.id);
     assert.equal(cardHasMythicFrame(carte), true, carte.id);
+    const sansCadre = ['creature', 'hero'].includes(carte.kind);
     assert.equal(cardFrameClass(carte).includes('rpg-card--frame-brillant'),
-      !cardFrameInfo(carte).key.startsWith('hybride-'), carte.id);
+      !sansCadre && !cardFrameInfo(carte).key.startsWith('hybride-'), carte.id);
+    if (sansCadre) assert.equal(cardFrameClass(carte), 'rpg-card--mythique', `${carte.id} garde la rareté sans cadre`);
   }
   assert.equal(cardFrameColor(cardById('anqa-des-braises')), CARD_FRAME_COLORS.braise.color);
   assert.equal(cardFrameColor(cardById('kraken')), CARD_FRAME_COLORS.eau.color);

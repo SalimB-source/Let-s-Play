@@ -403,10 +403,16 @@ export function cardFrameColor(carte) {
   return cardFrameInfo(carte).color;
 }
 
-/** Classes communes à toutes les présentations d'une carte du Sablier. */
+/** Classes communes aux cadres, sans bordure sur les créatures et les héros. */
 export function cardFrameClass(carte) {
-  const classes = [`rpg-card--frame-${cardFrameInfo(carte).key}`];
-  if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
+  const classes = [];
+  const sansCadre = ['creature', 'hero'].includes(carte?.kind);
+  if (!sansCadre) {
+    classes.push(`rpg-card--frame-${cardFrameInfo(carte).key}`);
+    if (cardHasShinyFrame(carte)) classes.push('rpg-card--frame-brillant');
+  }
+  // Le marqueur mythique sert aussi aux effets sur l'illustration : il reste
+  // indépendant du cadre, qui est absent pour les créatures et les héros.
   if (cardHasMythicFrame(carte)) classes.push('rpg-card--mythique');
   return classes.join(' ');
 }

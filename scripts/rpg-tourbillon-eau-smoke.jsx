@@ -8,7 +8,7 @@ void RpgDuelPage;
 const EFFET = Object.freeze({
   entityId: 'entite-renvoyee',
   effectId: 'eau-7-entite-renvoyee',
-  cardId: 'ressac',
+  cardId: 'anqa-des-braises',
   name: 'Créature renvoyée',
   left: 214,
   top: 96,

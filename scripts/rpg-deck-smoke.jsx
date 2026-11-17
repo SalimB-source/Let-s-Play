@@ -428,16 +428,25 @@ export async function checkRpgDecks(assert) {
   const rangeeKraken = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="kraken"]');
   assert.ok(rangeeKraken.classList.contains('is-locked'), 'le Kraken est verrouillé au départ');
   assert.equal(rangeeKraken.style.getPropertyValue('--frame'), cardFrameColor(cardById('kraken')),
-    'le cadre du Kraken mythique suit sa couleur Eau dans la collection');
-  assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-art.rpg-card--frame-eau.rpg-card--frame-brillant.rpg-card--mythique'),
-    'le Kraken garde ses classes de cadre mythique brillant dans l’atelier');
-  assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-art .rpg-brume-mythique'), null,
+    'la couleur Eau du Kraken mythique reste disponible pour ses repères');
+  const artKraken = rangeeKraken.querySelector('.rpg-atelier__carte-art');
+  assert.ok(artKraken.classList.contains('rpg-card--mythique'),
+    'le Kraken conserve son marqueur de rareté mythique dans l’atelier');
+  assert.doesNotMatch([...artKraken.classList].join(' '), /rpg-card--frame-/,
+    'créature mythique, le Kraken ne reçoit aucune classe de cadre coloré');
+  assert.equal(artKraken.querySelector('.rpg-cadre-carte'), null,
+    'le Kraken reste sans cadre SVG dans l’atelier');
+  assert.equal(artKraken.querySelector('.rpg-brume-mythique'), null,
     'la mythique de la collection ne porte plus de voile de brume');
   assert.match(texte(rangeeKraken), /Le Souk la vendra après « Le Pêcheur de perles » — La Tour des Abysses/, 'et il annonce où il se débloque');
   assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-ajout').disabled, true, 'impossible d’ajouter une carte verrouillée');
-  const rangeeHybride = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="rais-de-la-galiote"]');
-  assert.ok(rangeeHybride?.querySelector('.rpg-atelier__carte-art.rpg-card--frame-hybride-eau-sable:not(.rpg-card--frame-brillant)'),
-    'une carte hybride garde dans l’atelier ses deux aplats diagonaux, sans reflet');
+  const rangeeHybride = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="le-tresor-de-lima"]');
+  const artHybride = rangeeHybride?.querySelector('.rpg-atelier__carte-art');
+  assert.ok(artHybride?.classList.contains('rpg-card--frame-hybride-eau-sable')
+    && !artHybride.classList.contains('rpg-card--frame-brillant'),
+    'un site hybride garde dans l’atelier son cadre à deux aplats diagonaux, sans reflet');
+  assert.ok(artHybride?.querySelector('.rpg-cadre-carte'),
+    'le site hybride conserve aussi son cadre SVG');
   const rangeeChien = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
   assert.ok(!rangeeChien.classList.contains('is-locked'), 'une commune de la dotation est libre');
   assert.equal(rangeeChien.querySelector('.rpg-brume-mythique'), null,

@@ -1,8 +1,8 @@
-/** Repérage visuel des créatures Défenseur, imprimées ou acquises en jeu.
- * La classe conserve les repères propres au statut. `rpg-bouclier.css` ne
- * redessine l'écu que sur les cartes POSÉES (`.rpg-card`, Duel et MOBA) ;
- * aperçus, main, mulligan et vignettes restent rectangulaires. Les règles de
- * jeu restent dans rpgDefenseur.js. */
+/** Repérage des créatures Défenseur, imprimées ou acquises en jeu.
+ * La classe identifie le statut sans dessiner de cadre : les créatures et les
+ * héros restent rectangulaires, y compris sur le plateau. `rpg-bouclier.css`
+ * conserve uniquement le léger agrandissement et la position des statistiques
+ * des cartes posées. Les règles de jeu restent dans rpgDefenseur.js. */
 
 import { estDefenseur } from './rpgDefenseur.js';
 

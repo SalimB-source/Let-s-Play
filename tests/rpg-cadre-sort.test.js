@@ -78,8 +78,16 @@ test('atelier, guide et Souk partagent le même retrait sélectif', async () => 
     for (const face of guide.querySelectorAll('.rpg-card-guide__example')) {
       assert.ok(face.querySelector('img'));
       assert.equal(face.querySelector('.rpg-cadre-carte'), null);
+      if (['creature', 'hero'].includes(face.className.match(/rpg-card-guide__example--(\S+)/)?.[1])) {
+        assert.doesNotMatch(face.className, /rpg-card--frame-/);
+      }
     }
     assert.ok(guide.querySelectorAll('.rpg-card-guide__example').length);
+    const guideCss = lire('rpg-card-guide.css');
+    assert.match(guideCss, /\.rpg-card-guide__example--creature,[\s\S]*?\.rpg-card-guide__example--hero,[\s\S]*?border-width: 0 !important;[\s\S]*?background-size: 100% 100%, 0 0, 0 0 !important;/,
+      'créatures et héros du guide ne reçoivent pas la bordure colorée');
+    assert.match(guideCss, /\.rpg-card-guide__example--creature,\s*\.rpg-card-guide__example--hero\s*\{[^}]*box-shadow: 0 12px 30px rgba\(0, 0, 0, \.48\);/s,
+      'aucun halo intérieur de cadre ne reste sur le guide');
     const ids = ['chien-du-guet', 'feriel', 'trait-de-braise', 'armure-de-cendres', 'sabre-maudit', 'chien-du-guet', 'feriel'];
     const souk = doc(React.createElement(Booster, { ouverture: { cartes: ids.map((id) => ({ id })) }, cardArt: art, onFermer: () => {} }));
     for (const [id, cadre] of [['chien-du-guet', false], ['feriel', false], ['trait-de-braise', true], ['armure-de-cendres', true], ['sabre-maudit', true]]) {
@@ -128,7 +136,11 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   const css = lire('rpg-cadre-carte.css');
   assert.match(css, /z-index:\s*1/);
   assert.match(css, /> img:has\(\+ \.rpg-cadre-carte\)\s*\{\s*clip-path:\s*var\(--rpg-cadre-decoupe\)/);
-  assert.match(lire('rpg-bouclier.css'), /\.rpg-cadre-carte, \.rpg-card__img/);
+  const bouclier = lire('rpg-bouclier.css');
+  assert.doesNotMatch(bouclier, /--rpg-ecusson|mask-image|clip-path|background-image|border\s*:/,
+    'le Défenseur ne réintroduit aucune forme de cadre');
+  assert.match(bouclier, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
+    'le repère Défenseur conserve sa mise en page');
   assert.match(css, /pointer-events:\s*none/);
   assert.doesNotMatch(css, /--rpg-ecusson-masque/);
   // Les illustrations ne doivent plus dépendre d'un SVG externe pour être

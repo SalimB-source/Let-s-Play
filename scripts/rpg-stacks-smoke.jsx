@@ -298,11 +298,10 @@ async function scenarioChampAdverse(assert) {
 }
 
 /**
- * Une créature équipée conserve le cadre ordinaire de sa propre carte : les
- * armes n'ont plus de cadre spécifique. La carte d'arme ne se glisse pas
- * derrière elle, et l'aperçu (survol, appui long) dit de quelle arme il
- * s'agit. Joué une fois au doigt, une fois à la souris : la carte ne dépend
- * pas de la disposition.
+ * Une créature reste sans cadre, même équipée : les armes n'ont plus de cadre
+ * spécifique. La carte d'arme ne se glisse pas derrière elle, et l'aperçu
+ * (survol, appui long) dit de quelle arme il s'agit. Joué une fois au doigt,
+ * une fois à la souris : la carte ne dépend pas de la disposition.
  */
 async function scenarioCreatureArmee(assert, disposition) {
   const duel = creerDuel(assert, {});
@@ -332,13 +331,15 @@ async function scenarioCreatureArmee(assert, disposition) {
     await finDuTour();
     await click(hand('desert'), `[${disposition}] poser le troisième Désert`);
 
-    // ── Un Chien nu : le cadre ordinaire de sa carte ───────────────────────
+    // ── Un Chien nu : la face de créature est sans cadre ────────────────────
     const chien = camp('equipe', 'chien-du-guet')[0];
     assert.ok(chien, `[${disposition}] le Chien est sur le champ`);
     assert.equal(chien.classList.contains('is-arme-equipee'), false,
       `[${disposition}] un Chien nu n’est pas marqué comme équipé`);
-    assert.equal(chien.className.includes('rpg-card--frame-arme'), false,
-      `[${disposition}] un Chien nu ne porte aucun cadre d’arme`);
+    assert.doesNotMatch([...chien.classList].join(' '), /rpg-card--frame-/,
+      `[${disposition}] le Chien nu reste sans classe de cadre`);
+    assert.equal(chien.querySelector('.rpg-cadre-carte'), null,
+      `[${disposition}] le Chien nu reste sans cadre SVG`);
 
     // ── La Takouba s'attache sans changer le cadre du Chien ───────────────
     await click(hand('takouba-des-pistes'), `[${disposition}] jouer la Takouba`);
@@ -349,10 +350,12 @@ async function scenarioCreatureArmee(assert, disposition) {
       `[${disposition}] aucune classe de cadre d’arme n’est ajoutée au porteur`);
     assert.equal(armee.className.includes('rpg-card--frame-arme'), false,
       `[${disposition}] le Chien équipé ne reçoit pas de cadre d’arme`);
-    assert.ok(armee.classList.contains('rpg-card--frame-sable'),
-      `[${disposition}] le cadre ordinaire de l’élément de la créature est conservé`);
+    assert.doesNotMatch([...armee.classList].join(' '), /rpg-card--frame-/,
+      `[${disposition}] la créature équipée reste sans classe de cadre`);
+    assert.equal(armee.querySelector('.rpg-cadre-carte'), null,
+      `[${disposition}] la créature équipée reste sans cadre SVG`);
     assert.equal(armee.style.getPropertyValue('--rpg-frame-color'), cardFrameColor(cardById('chien-du-guet')),
-      `[${disposition}] la couleur de cadre reste celle de la créature`);
+      `[${disposition}] la couleur de la carte reste disponible pour ses repères`);
     assert.equal(armee.closest('.rpg-card-stack--arme'), null,
       `[${disposition}] la créature équipée n’est plus enveloppée dans une pile`);
     assert.equal(armee.querySelector('.rpg-card-stack__arme'), null,
