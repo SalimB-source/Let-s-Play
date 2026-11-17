@@ -74,3 +74,102 @@ export function messageChargementJeu(erreur) {
   }
   return brut || 'Erreur inconnue pendant le chargement du jeu.';
 }
+
+
+/**
+ * Le rechargement de secours — `tenterRechargementSecours`
+ * -------------------------------------------------------
+ * Les trois essais ci-dessus ne peuvent rien contre le cas le plus fréquent :
+ * le site vient d'être redéployé, l'ancien nom du morceau (`RpgDuelPage-abc123.js`)
+ * n'existe plus sur le serveur. Réessayer le MÊME nom ne peut pas marcher ;
+ * il faut une **page neuve**, qui lira l'`index.html` à jour et ses nouveaux
+ * noms de fichiers.
+ *
+ * D'où ce garde-fou : quand un morceau échoue pour de bon, on recharge une
+ * fois, tout seul, sur une URL neuve (`?recharge=<horodatage>`, la seule forme
+ * qu'une WebView accepte de relire). Le joueur ne voit alors qu'un clignotement
+ * — plus jamais la carte d'erreur pour une simple mise à jour.
+ *
+ * La mémoire (`sessionStorage`) empêche la boucle : si le rechargement ramène
+ * la même panne (serveur réellement en panne, `/assets/` bloqué par une
+ * extension), on ne recharge pas une deuxième fois dans la foulée — la carte
+ * d'erreur reprend la main, avec les explications et le bouton.
+ */
+
+/** Le paramètre qui force une URL neuve. */
+export const PARAM_RECHARGE = 'recharge';
+
+/** La clé de `sessionStorage` : l'horodatage du dernier rechargement automatique. */
+export const CLE_MEMOIRE_RECHARGE = 'letsplay:recharge-jeu';
+
+/** Deux échecs d'affilée dans ce délai : on ne recharge plus, on explique. */
+export const DELAI_ENTRE_RECHARGEMENTS_MS = 3 * 60 * 1000;
+
+/**
+ * Vrai quand l'erreur vient d'un fichier du jeu qui n'est pas arrivé — et non
+ * d'un bug du jeu lui-même. Les navigateurs ne disent pas la même chose :
+ * Chrome/Vite « Failed to fetch dynamically imported module » ou
+ * « error loading dynamically imported module », WebKit « Importing a module
+ * script failed », webpack « ChunkLoadError », et un `<script>`/CSS qui tombe
+ * donne « Loading chunk … failed » / « Unable to preload CSS ».
+ */
+export function estErreurDeMorceau(erreur) {
+  if (!erreur) return false;
+  const nom = typeof erreur.name === 'string' ? erreur.name : '';
+  if (nom === 'ChunkLoadError') return true;
+  const brut = String(erreur.message ?? erreur);
+  return /dynamically imported module|Importing a module script failed|Loading (CSS )?chunk|ChunkLoadError|Unable to preload (CSS|module)|Importing a module script failed/i.test(brut);
+}
+
+/**
+ * L'URL de secours : la même page, plus un paramètre **jamais vu**. On garde
+ * les paramètres existants (une partie en cours, un code de défi) et le
+ * fragment ; seul `recharge` change.
+ */
+export function urlRechargementSecours(href, marqueur = Date.now()) {
+  try {
+    const url = new URL(href);
+    url.searchParams.set(PARAM_RECHARGE, String(marqueur));
+    return url.toString();
+  } catch {
+    return String(href ?? '');
+  }
+}
+
+/**
+ * Tente le rechargement automatique. Rend `true` si la navigation est partie,
+ * `false` si l'erreur ne s'y prête pas, si l'on a déjà rechargé il y a moins de
+ * `delaiMs`, ou si l'environnement ne le permet pas (rendu de test, WebView
+ * sans `location.replace`).
+ *
+ * Tout est injectable (`fenetre`, `stockage`, `maintenant`, `marqueur`) : ce
+ * module reste pur, testable sans navigateur.
+ */
+export function tenterRechargementSecours({
+  erreur = null,
+  fenetre = typeof window === 'undefined' ? null : window,
+  stockage = (() => { try { return globalThis.sessionStorage ?? null; } catch { return null; } })(),
+  maintenant = () => Date.now(),
+  delaiMs = DELAI_ENTRE_RECHARGEMENTS_MS,
+  marqueur = null,
+} = {}) {
+  if (!estErreurDeMorceau(erreur)) return false;
+  const location = fenetre?.location;
+  const href = location?.href;
+  if (typeof href !== 'string' || !href || typeof location.replace !== 'function') return false;
+  const instant = maintenant();
+  try {
+    const memo = JSON.parse(stockage?.getItem?.(CLE_MEMOIRE_RECHARGE) || 'null');
+    const dernier = Number(memo?.ts);
+    if (Number.isFinite(dernier) && dernier > 0 && instant - dernier < delaiMs) return false;
+  } catch {
+    /* mémoire illisible : on ne bloque pas le joueur pour autant */
+  }
+  try {
+    stockage?.setItem?.(CLE_MEMOIRE_RECHARGE, JSON.stringify({ ts: instant }));
+  } catch {
+    /* quota plein ou mode privé : la navigation reste la priorité */
+  }
+  location.replace(urlRechargementSecours(href, marqueur ?? instant));
+  return true;
+}
