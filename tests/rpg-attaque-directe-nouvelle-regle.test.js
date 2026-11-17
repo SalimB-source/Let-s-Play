@@ -6,6 +6,7 @@ import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassiqu
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaCiblesIndividuelles } from '../src/games/rpgMobaAttaqueIndividuelle.js';
 import { mobaVoie } from '../src/games/rpgMoba.js';
+import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 
 function classique(side, pvp = false) {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => .9 });
@@ -27,7 +28,7 @@ for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
     const { d, poser } = classique(side, pvp), a = poser(side);
     const choix = () => rpgCiblesIndividuellesClassique(d, side, a.id);
     assert.equal(choix().directe, true);
-    const c = poser(enemy); c.envol = true; c.infiltration = true; c.gelToursRestants = 1; c.attaquee = true;
+    const c = poser(enemy); c.envol = true; c.gelToursRestants = 1; c.attaquee = true;
     assert.equal(choix().directe, false, 'une créature inaccessible ou engagée protège aussi');
     a.coupRapide = true; a.infiltration = true;
     assert.equal(choix().directe, false, 'Infiltration et Attaque ciblée ne contournent pas la règle');
@@ -86,7 +87,7 @@ for (const side of ['joueur', 'sorcier']) {
     assert.equal(choix().directe, false);
     a.infiltration = true; a.coupRapide = true;
     assert.equal(choix().directe, false);
-    a.envol = true; c.envol = true; c.infiltration = true;
+    a.envol = true; c.envol = true;
     assert.equal(choix().directe, true);
     c.defenseurAccorde = true;
     assert.equal(choix().directe, false);
@@ -121,4 +122,97 @@ test('Conquête : un Défenseur apparu en réponse annule la frappe volante', ()
   const pv = mobaVoie(d.moba, 'left').hp.sorcier;
   assert.equal(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').annule, true);
   assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, pv);
+});
+
+for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  test(`${side} ${pvp ? 'PvP' : 'duel'} : une unique créature avec Infiltration laisse passer la frappe`, () => {
+    const { d, poser } = classique(side, pvp), a = poser(side), c = poser(enemy);
+    c.infiltration = true; c.envol = true; c.attaquee = true;
+    for (const rapide of [false, true]) {
+      a.coupRapide = rapide;
+      assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, true);
+      c.defenseurAccorde = true;
+      const choix = rpgCiblesIndividuellesClassique(d, side, a.id);
+      assert.equal(choix.directe, true, 'la seule créature infiltrée ouvre la frappe même si elle est Défenseur');
+      if (rapide) assert.deepEqual(choix.cibles, [c.id], 'la priorité reste applicable aux cibles créatures');
+      c.defenseurAccorde = false;
+    }
+    const deuxieme = poser(enemy); deuxieme.infiltration = true;
+    assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, false, 'deux créatures infiltrées ne remplissent pas la condition');
+    deuxieme.infiltration = false;
+    assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, false, 'une seconde créature ordinaire interdit la frappe');
+    d[enemy].creatures = d[enemy].creatures.filter(e => e !== deuxieme);
+    d[enemy].creatures.push({ id: 'site', carteId: 'source-de-bimini' });
+    assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null).ok);
+    const pv = d[enemy].pv;
+    assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, side).ok);
+    assert.equal(d[enemy].pv, pv - a.atk);
+    assert.ok(d[enemy].creatures.includes(c));
+  });
+}
+
+test('la perte d’Infiltration en réponse annule la frappe directe, sans redirection', () => {
+  const { d, poser } = classique('joueur'), a = poser('joueur'), c = poser('sorcier');
+  c.infiltration = true;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id, null).ok);
+  c.infiltration = false;
+  const pv = d.sorcier.pv;
+  assert.equal(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').annule, true);
+  assert.equal(d.sorcier.pv, pv);
+});
+
+test('le raccourci et l’IA classique peuvent frapper derrière une unique créature infiltrée', () => {
+  const { d, poser } = classique('sorcier'), a = poser('sorcier'), c = poser('joueur');
+  c.infiltration = true; d.joueur.pv = 1;
+  const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(d);
+  assert.equal(choix?.attaquantId, a.id); assert.equal(choix?.cibleId, null);
+  assert.ok(rpgAttaquerSorcier(d, 'sorcier', a.id).ok);
+});
+
+for (const side of ['joueur', 'sorcier']) {
+  test(`${side} en Conquête : une unique infiltration dans la voie laisse passer la frappe`, () => {
+    const { d, a, c, enemy } = moba(side); c.infiltration = true;
+    const choix = () => rpgMobaCiblesIndividuelles(d, side, a.id, 'left');
+    assert.deepEqual(choix(), { cibles: [], directe: true });
+    a.coupRapide = true; c.defenseurAccorde = true;
+    assert.deepEqual(choix(), { cibles: [c.id], directe: true }, 'le Défenseur peut être visé, ou contourné car c’est l’unique infiltration');
+    const pv = mobaVoie(d.moba, 'left').hp[enemy];
+    assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, side, a.id, null, 'left').ok);
+    assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, side).ok);
+    assert.equal(mobaVoie(d.moba, 'left').hp[enemy], pv - a.atk);
+    assert.ok(d[enemy].creatures.includes(c));
+  });
+}
+
+test('Conquête : perdre Infiltration pendant la réponse annule la frappe', () => {
+  const { d, a, c } = moba('joueur'); c.infiltration = true;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null, 'left').ok);
+  c.infiltration = false; const pv = mobaVoie(d.moba, 'left').hp.sorcier;
+  assert.equal(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').annule, true);
+  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, pv);
+});
+
+test('Conquête : deux créatures dont une infiltrée ne dégagent pas la voie', () => {
+  const { d, a, c } = moba('joueur'); c.infiltration = true;
+  assert.equal(rpgMobaCiblesIndividuelles(d, 'joueur', a.id, 'left').directe, true);
+  rpgFinDeTour(d); d.sorcier.main = ['ashigaru-des-braises'];
+  const deuxieme = rpgMobaJouerCreature(d, 'sorcier', 'ashigaru-des-braises', 'left', 1).entite;
+  assert.ok(deuxieme); rpgFinDeTour(d); a.ready = true; a.malInvocation = false;
+  assert.equal(rpgMobaCiblesIndividuelles(d, 'joueur', a.id, 'left').directe, false);
+  deuxieme.infiltration = true;
+  assert.equal(rpgMobaCiblesIndividuelles(d, 'joueur', a.id, 'left').directe, false);
+  assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null, 'left').raison, 'cible');
+});
+
+
+test('PvP : l’intention distante déclare et résout la frappe contre l’infiltrée seule', () => {
+  const { d, poser } = classique('joueur', true), a = poser('joueur'), c = poser('sorcier');
+  c.infiltration = true; d.mulliganFait = { joueur: true, sorcier: true }; const pv = d.sorcier.pv;
+  const declaration = rpgPvpAppliquer(d, 'joueur', { type: 'attaquer', declarer: true, attaquants: [a.id], cibleId: 'sorcier' });
+  assert.ok(declaration.ok, JSON.stringify(declaration));
+  assert.equal(d.combatDeclare.cibleIndividuelle.cibleId, null);
+  const resolution = rpgPvpAppliquer(d, 'sorcier', { type: 'bloquer', blocages: {} });
+  assert.ok(resolution.ok, JSON.stringify(resolution));
+  assert.equal(d.sorcier.pv, pv - a.atk);
 });

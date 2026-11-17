@@ -23,7 +23,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
   const possibles = adversaires.filter((e) => accessible(attaquant, e, ciblee));
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
-  if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: false };
+  if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: attaqueDirectePermise(attaquant, adversaires) };
   return {
     cibles: possibles.map((e) => e.id),
     directe: attaqueDirectePermise(attaquant, adversaires),

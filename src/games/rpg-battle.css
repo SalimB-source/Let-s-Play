@@ -12053,12 +12053,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    cadence, même débordement — seule la teinte change, pour que la source d'un
    bonus se repère à sa couleur.
 
-   La **Malédiction** joue la même partition en violet (`.has-malediction` /
-   `.rpg-card__resonance--malediction`) : le sonar est identique, ondes,
-   cadence et débordement compris, mais sa teinte dit que l'effet part dans
-   l'autre sens — la source n'irradie pas un bonus, elle maudit le camp
-   d'en face. Défenseur utilise à leur tour ce sonar en
-   rouge, en un seul calque même si les deux capacités sont présentes. */
+   La **Malédiction** conserve son sonar violet d'origine. Résonance, aura
+   et Défenseur partagent une pulsation plus discrète, de même cadence mais
+   moins lumineuse et moins ample ; leurs couleurs restent distinctes. */
 .rpg-card:is(.has-resonance, .has-aura, .has-malediction) {
   overflow: clip;
   overflow-clip-margin: 58px;
@@ -12088,22 +12085,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% 52%,
-    rgba(120, 190, 255, .04) 32%,
-    rgba(70, 150, 255, .17) 100%
+    rgba(120, 190, 255, .02) 32%,
+    rgba(70, 150, 255, .09) 100%
   );
   box-shadow:
-    inset 0 0 16px rgba(96, 178, 255, .28),
-    0 0 14px rgba(70, 150, 255, .34);
+    inset 0 0 12px rgba(96, 178, 255, .16),
+    0 0 10px rgba(70, 150, 255, .19);
 }
 
 .rpg-card__resonance-onde {
   position: absolute;
   inset: 0;
-  border: 2px solid rgba(96, 178, 255, .9);
+  border: 2px solid rgba(96, 178, 255, .58);
   border-radius: 50%;
   box-shadow:
-    0 0 10px rgba(70, 160, 255, .6),
-    inset 0 0 10px rgba(120, 200, 255, .5);
+    0 0 7px rgba(70, 160, 255, .35),
+    inset 0 0 7px rgba(120, 200, 255, .28);
   opacity: 0;
   transform: scale(.6);
   transform-origin: center;
@@ -12116,24 +12113,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card__resonance--aura {
   background: radial-gradient(
     ellipse at 50% 52%,
-    rgba(255, 226, 120, .045) 32%,
-    rgba(226, 172, 30, .18) 100%
+    rgba(255, 226, 120, .02) 32%,
+    rgba(226, 172, 30, .09) 100%
   );
   box-shadow:
-    inset 0 0 16px rgba(250, 205, 90, .30),
-    0 0 14px rgba(226, 172, 30, .36);
+    inset 0 0 12px rgba(250, 205, 90, .17),
+    0 0 10px rgba(226, 172, 30, .2);
 }
 .rpg-card__resonance--aura .rpg-card__resonance-onde {
-  border-color: rgba(250, 205, 90, .92);
+  border-color: rgba(250, 205, 90, .58);
   box-shadow:
-    0 0 10px rgba(232, 176, 40, .62),
-    inset 0 0 10px rgba(255, 226, 130, .52);
+    0 0 7px rgba(232, 176, 40, .35),
+    inset 0 0 7px rgba(255, 226, 130, .29);
 }
-/* La Malédiction, en violet : le même sonar, teinté des Ténèbres (#9a7ce0).
-   Rien ne change au mouvement — ni cycle, ni retard, ni images clés — seule la
-   teinte dit que l'onde ne porte pas un bonus mais un malus, et qu'elle part
-   vers le camp d'en face. Le liseré violet reste allumé avec les ondes : la
-   source se repère même en mouvement réduit. */
+/* La Malédiction garde son sonar et son cycle d'origine, en violet : cette
+   teinte distingue le malus des auras bénéfiques. Le liseré violet reste
+   allumé avec les ondes, même en mouvement réduit. */
 .rpg-card__resonance--malediction {
   background: radial-gradient(
     ellipse at 50% 52%,
@@ -12153,12 +12148,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Défenseur / Provocation : sonar orange, même rythme et mêmes trois ondes. */
 .rpg-card__resonance--garde {
-  background: radial-gradient(ellipse at 50% 52%, rgba(255, 196, 115, .05) 32%, rgba(238, 111, 20, .2) 100%);
-  box-shadow: inset 0 0 16px rgba(255, 151, 47, .32), 0 0 14px rgba(238, 111, 20, .38);
+  background: radial-gradient(ellipse at 50% 52%, rgba(255, 196, 115, .025) 32%, rgba(238, 111, 20, .1) 100%);
+  box-shadow: inset 0 0 12px rgba(255, 151, 47, .18), 0 0 10px rgba(238, 111, 20, .21);
 }
 .rpg-card__resonance--garde .rpg-card__resonance-onde {
-  border-color: rgba(255, 151, 47, .92);
-  box-shadow: 0 0 10px rgba(246, 118, 25, .62), inset 0 0 10px rgba(255, 198, 122, .52);
+  border-color: rgba(255, 151, 47, .58);
+  box-shadow: 0 0 7px rgba(246, 118, 25, .35), inset 0 0 7px rgba(255, 198, 122, .29);
 }
 
 .rpg-card__resonance-onde--1 { --rpg-resonance-retard: 0s; }
@@ -12170,6 +12165,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   16% { opacity: .9; }
   60% { opacity: .42; }
   100% { opacity: 0; transform: scale(1.42); }
+}
+
+/* Résonance, aura et Défenseur : on limite la pulsation et sa luminosité,
+   sans toucher à la Malédiction, aux repères ou à la cadence des trois ondes. */
+.rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde {
+  transform: scale(.84);
+  animation-name: rpg-sonar-doux;
+}
+@keyframes rpg-sonar-doux {
+  0% { opacity: 0; transform: scale(.84); }
+  16% { opacity: .45; }
+  60% { opacity: .21; }
+  100% { opacity: 0; transform: scale(1.14); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -12186,6 +12194,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle.is-reduced .rpg-card__resonance-onde--1 { opacity: .42; transform: scale(.78); }
 .rpg-battle.is-reduced .rpg-card__resonance-onde--2 { opacity: .26; transform: scale(1.02); }
 .rpg-battle.is-reduced .rpg-card__resonance-onde--3 { opacity: .15; transform: scale(1.26); }
+
+/* Les deux réglages de mouvement réduit conservent des couronnes statiques,
+   plus discrètes pour les trois effets concernés ; la Malédiction reste intacte. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde { animation: none; }
+  .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde--1 { opacity: .22; transform: scale(.86); }
+  .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde--2 { opacity: .14; transform: scale(1); }
+  .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde--3 { opacity: .08; transform: scale(1.12); }
+}
+.rpg-battle.is-reduced .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde--1 { opacity: .22; transform: scale(.86); }
+.rpg-battle.is-reduced .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde--2 { opacity: .14; transform: scale(1); }
+.rpg-battle.is-reduced .rpg-card__resonance:not(.rpg-card__resonance--malediction) .rpg-card__resonance-onde--3 { opacity: .08; transform: scale(1.12); }
 
 /* ── Infiltration : la carte brumeuse et transparente ────────────────────────
    Une créature qui ne peut pas être bloquée se fond dans le décor : la face
