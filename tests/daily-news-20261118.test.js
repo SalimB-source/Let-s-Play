@@ -6,16 +6,19 @@ import {dailySeoEntries} from '../src/news/daily/seo-index.js';
 import {articleFooterSource, officialSourceUrl} from '../src/lib/articleSources.js';
 import {getArticleTrailerEntry} from '../src/articleTrailers.js';
 const read = f => fs.readFileSync(f,'utf8');
-test('18 novembre : trois articles officiels, GTA en tête, SEO et médias explicites',()=>{
+test('18 novembre : quatre articles officiels, Game Awards 2026 à la une, SEO et médias explicites',()=>{
  assert.equal(editionDate,'18.11.2026'); assert.equal(editionIsoDate,'2026-11-18');
- assert.equal(dailyNewsListing.length,3);
- assert.equal(dailyNewsListing[0].to,'/news/gta-6-miami-heat-night-vice-city-18-novembre');
+ assert.equal(dailyNewsListing.length,4);
+ assert.equal(dailyNewsListing[0].to,'/news/game-awards-2026-les-6-nommes-jeu-annee');
+ assert.equal(dailyNewsListing[1].to,'/news/gta-6-miami-heat-night-vice-city-18-novembre');
+ assert.equal(getArticleTrailerEntry('game-awards-2026-les-6-nommes-jeu-annee').items?.[0]?.id,'_e0oJSfmIFU');
  for(const [key,s] of Object.entries(dailyStories)){
   assert.equal(articleFooterSource(s)?.href,s.sourceUrl);
   assert.equal(dailySeoEntries[`/news/${key}`].published,editionIsoDate);
   assert.ok(fs.existsSync(`public/${s.fallbackImage}`));
   assert.ok(read('public/sitemap.xml').includes(`/news/${key}</loc>`));
-  assert.ok(getArticleTrailerEntry(key).pending);
+  const trailer = getArticleTrailerEntry(key);
+  assert.ok(trailer.items?.length || trailer.pending);
   for(const field of ['lead','intro','p1','p2','p3','p4','takeText'])assert.ok(s[field].length>100,`${key}: ${field}`);
  }
 });
