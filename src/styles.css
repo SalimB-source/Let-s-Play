@@ -2011,7 +2011,7 @@ img{max-width:100%}
      le voile à gauche, sac/voiture en bas. L'image fournie est un panoramique
      très large (2,4:1) — aucun cadrage vertical ne peut garder les deux
      personnages, mais le héros ne doit pas sembler vide à gauche. */
-  .hero-bg{object-position:28% 22%}
+  .hero-bg{object-position:center top}
   /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
      ne tenait plus dans la colonne et le titre du héros passait à quatre
      lignes. */
