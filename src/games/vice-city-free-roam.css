@@ -112,11 +112,18 @@
 .vice-free-roam-challenge-list>button em{color:#f4d476;font-size:7px;font-style:normal;font-weight:900;letter-spacing:.08em}
 
 /* Free-drive actions: one fixed-width column, separate from the school HUD. */
+/* Actions de conduite libre : un seul conteneur, deux mises en page.
+   Sur ordinateur, `display:contents` : le conteneur disparaît de la boîte et
+   les sept boutons reprennent leur colonne absolue historique (112 px, même
+   coordonnées au pixel). Sur téléphone, il devient le tiroir : deux colonnes
+   sous la pastille ☰ ACTIONS, et la colonne n'existe plus. */
+.vice-free-roam-actions{display:contents}
 .vice-free-roam:not(.driving-school-world) .vice-free-roam-header{
   z-index:9;
   padding-right:calc(140px + env(safe-area-inset-right, 0px));
 }
-.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button{
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button:not(.vice-free-roam-actions-toggle),
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:not(.vice-free-roam-expand){
   position:absolute;
   right:max(12px,env(safe-area-inset-right, 0px));
   top:calc(max(12px,env(safe-area-inset-top, 0px)) + var(--free-action-row) * 44px);
@@ -125,24 +132,34 @@
   padding:6px 8px!important;font-size:11px!important;line-height:1;
   letter-spacing:.04em;white-space:nowrap;
 }
-.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button:nth-of-type(1){--free-action-row:0}
-.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button:nth-of-type(2){--free-action-row:1}
-.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button:nth-of-type(3){--free-action-row:2}
-.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button:nth-of-type(4){--free-action-row:3}
-.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button:nth-of-type(5){--free-action-row:4}
-.vice-free-roam-header>button:nth-of-type(6){--free-action-row:5}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(1){--free-action-row:0}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(2){--free-action-row:1}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(3){--free-action-row:2}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(4){--free-action-row:3}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(5){--free-action-row:4}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(6){--free-action-row:5}
 /* 7ᵉ action : le plein écran, réservé aux écrans tactiles (voir le JSX). */
-.vice-free-roam-header>button:nth-of-type(7){--free-action-row:6}
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button:nth-of-type(7){--free-action-row:6}
+/* La pastille ☰ ACTIONS n'existe que sur téléphone : masquée ici, et le
+   `display` de la colonne ci-dessus ne s'applique pas à elle. */
+.vice-free-roam:not(.driving-school-world) .vice-free-roam-header>.vice-free-roam-actions-toggle{display:none}
 .vice-free-roam-header .vice-free-roam-quality{border-color:#9fd8c8aa;color:#d2f2e8}
 .vice-free-roam-header .vice-free-roam-quality.is-lite{border-color:#f5d27ecc;color:#ffe9b8;background:#3c331bbb}
 .vice-free-roam-header .vice-free-roam-quality.is-low{border-color:#ff9a76cc;color:#ffd7c6;background:#3d241bbb}
-.vice-free-roam-header .vice-free-roam-expand{display:none}
+.vice-free-roam-header .vice-free-roam-expand{display:none!important}
+/* Le plein écran n'a une place que dans le tiroir (voir plus bas) : en paysage
+   et sur ordinateur, il resterait sans rang dans la colonne de 112 px et
+   tomberait sur GARAGE. Son état `.is-on` ne doit pas le rouvrir non plus. */
 .vice-free-roam-header .vice-free-roam-expand.is-on{border-color:#74e1df;color:#74e1df;background:#14333abb}
+/* Le plein écran n'a une place que dans le tiroir (voir plus bas) : sur
+   ordinateur et en paysage, il reste masqué comme avant — sinon il tomberait
+   sur la colonne de 112 px, en huitième position sans rang assigné. */
 .vice-free-roam:not(.driving-school-world) .vice-free-roam-compass{
   right:calc(144px + env(safe-area-inset-right, 0px));
 }
 @media(max-height:480px){
-  .vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button{
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button,
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button{
     top:calc(max(8px,env(safe-area-inset-top, 0px)) + var(--free-action-row) * 36px);
     height:32px;font-size:10px!important;
   }
@@ -156,6 +173,71 @@
 .vice-free-roam-touch.is-driving-only button[data-action="brake"]{grid-row:2;grid-column:1}
 .vice-free-roam-touch.is-driving-only button[data-action="jump"]{grid-row:1;grid-column:2}
 @media(max-width:650px),(hover:none) and (pointer:coarse) and (max-device-width:600px){.vice-free-roam-touch.is-driving-only{--drive-control-size:62px}}
+
+
+/* ── Tiroir d'actions, sur téléphone ─────────────────────────────────────────
+   Sept boutons empilés à droite prennent un tiers de la largeur en portrait,
+   et sortent de la fenêtre en paysage. Une seule pastille ☰ ACTIONS ouvre un
+   tiroir à deux colonnes, posé sous elle ; un tap sur la ville le referme.
+   L'ordinateur n'est pas concerné : la colonne de 112 px y reste telle quelle.
+
+   Quand le tiroir est fermé, ses boutons ne sont ni cliquables ni lus par un
+   lecteur d'écran (`visibility:hidden`), mais ils restent dans le document —
+   le même bouton porte l'état son/rendu dans les deux mises en page. */
+@media (hover:none) and (pointer:coarse) and (max-device-width:600px), (max-width:650px){
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions-toggle{
+    display:flex!important;align-items:center;justify-content:center;gap:5px;
+    position:absolute!important;right:max(10px,env(safe-area-inset-right))!important;
+    top:max(10px,env(safe-area-inset-top))!important;
+    box-sizing:border-box;width:108px;height:38px;margin:0;padding:0 8px!important;
+    font-size:11px!important;letter-spacing:.04em;white-space:nowrap;
+    border-color:#74e1df88!important;color:#dffffa!important;
+  }
+  .vice-free-roam-actions-toggle>span{font-size:15px;line-height:1}
+  .vice-free-roam[data-actions-open="true"] .vice-free-roam-actions-toggle{
+    border-color:#ff6489!important;background:#ff6489!important;color:#1a1216!important;
+  }
+    /* L'école a son propre bandeau (grille) : ni pastille ni tiroir chez elle. */
+  .driving-school-world .vice-free-roam-actions-toggle{display:none!important}
+  /* Le bandeau ne réserve plus la colonne : la pastille tient la place. */
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-header{padding-right:calc(128px + env(safe-area-inset-right,0px))}
+  /* Les sept actions deviennent le tiroir : deux colonnes, sous la pastille. */
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+    position:absolute;left:auto;right:max(10px,env(safe-area-inset-right));
+    top:calc(max(10px,env(safe-area-inset-top)) + 46px);
+    width:min(260px,calc(100vw - 20px));padding:8px;z-index:19;
+    border:1px solid #7de4d966;border-radius:8px;
+    background:linear-gradient(145deg,#131e27f7,#10151df2);
+    box-shadow:0 18px 50px #000b;backdrop-filter:blur(14px);
+    visibility:hidden;opacity:0;transform:translateY(-6px);
+    transition:opacity .16s ease,transform .16s ease,visibility .16s;
+  }
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions.is-open{visibility:visible!important;opacity:1!important;transform:none}
+  /* Les boutons cessent d'être posés en absolu : ils suivent la grille. */
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button{
+    position:static;inset:auto;display:flex;align-items:center;justify-content:center;
+    box-sizing:border-box;width:100%!important;height:38px!important;margin:0;
+    padding:4px 6px!important;font-size:10px!important;line-height:1;
+    letter-spacing:.03em;white-space:nowrap;border-radius:5px;
+  }
+  /* Sur téléphone, la neuvième action (plein écran) prend les deux colonnes :
+     c'est une bascule, pas une action parmi d'autres. */
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>.vice-free-roam-expand{display:flex!important;grid-column:1/-1}
+}
+/* Téléphone débout : le tiroir reste à droite, sous la pastille, plutôt que de
+   barrer tout l'écran. Il laisse le coin haut-gauche au titre de la ville et au
+   logo du site, qui passent au-dessus du jeu (barre de navigation, z-index
+   supérieur) — un panneau pleine largeur y perdrait ses premiers boutons. */
+@media (orientation:portrait) and (max-width:650px), (orientation:portrait) and (hover:none) and (pointer:coarse) and (max-device-width:600px){
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions{top:calc(max(10px,env(safe-area-inset-top)) + 50px);width:min(280px,calc(100vw - 20px))}
+}
+/* Paysage sur téléphone : le tiroir ne mange pas la route. */
+@media (orientation:landscape) and (max-height:500px), (orientation:landscape) and (hover:none) and (pointer:coarse) and (max-device-width:600px){
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions{top:calc(max(6px,env(safe-area-inset-top)) + 40px);width:min(280px,60vw);padding:6px;gap:5px}
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button,
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions>button{height:32px!important;font-size:9px!important}
+}
 
 /* ── Portrait ────────────────────────────────────────────────────────────────
    Vice City se joue debout comme couché. En portrait, la place est rare en
@@ -175,8 +257,7 @@
   .vice-free-roam-minimap span{font-size:6px;letter-spacing:.1em}
   /* Colonne d'actions : libellés plus courts (voir le JSX), largeur fixe. */
   .vice-free-roam:not(.driving-school-world) .vice-free-roam-header{padding-right:calc(112px + env(safe-area-inset-right,0px))}
-  .vice-free-roam:not(.driving-school-world) .vice-free-roam-header>button{width:96px;height:34px;font-size:10px!important}
-  .vice-free-roam-header .vice-free-roam-expand{display:flex}
+  .vice-free-roam:not(.driving-school-world) .vice-free-roam-actions-toggle{width:96px;height:34px;font-size:10px!important}
   /* Commandes : le stick remonte, la croix reste au pouce droit. */
   .vice-free-roam-joystick{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 56px)}
   .vice-free-roam-joystick-base{width:clamp(108px,28vw,132px)}

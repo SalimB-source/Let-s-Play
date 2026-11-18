@@ -62,6 +62,12 @@ import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { CityRushAudio } from './cityRushAudio.js';
 import {
+  CITY_RUSH_CAMERA_BASE_FOV,
+  applyViceCityCameraFraming,
+  isViceCityPortraitViewport,
+  viceCityCameraFraming,
+} from './viceCityMobileCamera.js';
+import {
   VICE_CITY_CHALLENGES, VICE_CITY_POINTS_OF_INTEREST, createViceCityChallenge,
   viceCityGpsRoute, viceCityStreetName, viceCityDistrictName, viceCityChallengeProgress,
 } from './viceCityFreeDriveFeatures.js';
@@ -3396,6 +3402,12 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     if (typeof window === 'undefined') return false;
     return Boolean(window.LetsPlayAndroid) || Boolean(window.matchMedia?.('(pointer: coarse)').matches);
   });
+  // Le tiroir d'actions, sur téléphone : une pastille ☰ ACTIONS remplace la
+  // colonne de sept boutons empilés. Sur ordinateur il reste fermé et invisible
+  // — le CSS ne montre que la colonne historique.
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsOpenRef = useRef(actionsOpen);
+  actionsOpenRef.current = actionsOpen;
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
   const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
   // Rendu de la ville : standard (WebGL), cinéma (halo) ou essai WebGPU. La
@@ -3406,6 +3418,14 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   // avancer du même cran (deux clics rapprochés doivent faire cinéma *puis*
   // WebGPU, pas cinéma deux fois).
   const graphicsModeRef = useRef(graphicsMode);
+  // `graphicsMode` est la préférence **demandée** ; le bouton, lui, affiche
+  // `runningGraphics` — la vérité, repli compris. Les deux ne diffèrent
+  // qu'après un refus du moteur, et c'est l'affichage qui commande : sur une
+  // ville en « STANDARD · REPLI », le clic suivant doit donner CINÉMA. Avant
+  // ce correctif, la référence n'était écrite qu'au clic : elle restait sur
+  // l'essai WebGPU refusé, et le premier clic sur RENDU redemandait cet essai
+  // alors que le bouton affichait STANDARD. Elle est désormais resynchronisée
+  // à chaque rendu (voir `runningGraphics`, plus bas).
   const [graphicsLive, setGraphicsLive] = useState(null);
   const [liteDevice] = useState(cityRushLiteDevice);
   // ── Niveau de qualité de la ville ────────────────────────────────────────
@@ -3584,6 +3604,10 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     : cityRushGraphicsModeLabel(runningGraphics);
   // Le moteur effectivement ouvert (`webgl`/`webgpu`), pour l'infobulle.
   const graphicsEngine = graphicsLive?.renderer || null;
+  // La référence du cycle suit ce que le bouton affiche, à chaque rendu : un
+  // clic part toujours du mode visible, et deux clics rapprochés avancent
+  // bien de deux crans (le clic écrit la référence avant le rendu).
+  graphicsModeRef.current = runningGraphics;
   const setTouchKey = (code, pressed) => {
     if (pressed) touchKeysRef.current.add(code);
     else touchKeysRef.current.delete(code);
@@ -3692,7 +3716,11 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // caméra la suit, sinon le GPU dessine des immeubles invisibles.
     scene.fog = new THREE.Fog(0x9bd8f4, sceneBudget.viewDistance * 0.29, sceneBudget.viewDistance);
     addViceCityClouds(scene);
-    const camera = new THREE.PerspectiveCamera(66, 1, 0.1, sceneBudget.farPlane);
+    // Le cadrage : 66° en paysage, élargi en portrait pour retrouver le champ
+    // horizontal d'un 16/9 (voir `viceCityMobileCamera.js`). Le champ et le
+    // placement sont (re)calculés par `resize` à chaque rotation.
+    const camera = new THREE.PerspectiveCamera(CITY_RUSH_CAMERA_BASE_FOV, 1, 0.1, sceneBudget.farPlane);
+    let chaseFraming = viceCityCameraFraming(mount.clientWidth, mount.clientHeight);
 
     renderer.setPixelRatio(renderBudget.pixelRatio);
     renderer.shadowMap.enabled = true;
@@ -4006,16 +4034,26 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       speed: resumedPose.speed ?? 0, time: resumedPose.time ?? 0,
       steer: 0, lateralSpeed: 0, damage: 0, airHeight: 0, jumps: 0,
     };
+    // Le premier placement suit déjà le cadrage de l'écran : sur un téléphone
+    // debout, la ville ne s'ouvre pas sur un cadrage paysage corrigé à la
+    // deuxième image.
+    const placeChaseCamera = () => {
+      const ground = city.surfaceHeight(state.x, state.z);
+      camera.position.set(
+        state.x - Math.sin(state.heading) * chaseFraming.distance,
+        ground + chaseFraming.height,
+        state.z + Math.cos(state.heading) * chaseFraming.distance,
+      );
+      camera.lookAt(state.x, ground + chaseFraming.lookHeight, state.z);
+    };
     if (resumedPose.resumed) {
       playerVehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
       playerVehicle.rotation.y = -state.heading;
-      camera.position.set(state.x - Math.sin(state.heading) * 5, city.surfaceHeight(state.x, state.z) + 2.7, state.z + Math.cos(state.heading) * 5);
-      camera.lookAt(state.x, city.surfaceHeight(state.x, state.z) + 1, state.z);
+      placeChaseCamera();
     }
     if (schoolExercise) {
       playerVehicle.rotation.y = -state.heading;
-      camera.position.set(state.x - Math.sin(state.heading) * 5, city.surfaceHeight(state.x, state.z) + 2.7, state.z + Math.cos(state.heading) * 5);
-      camera.lookAt(state.x, city.surfaceHeight(state.x, state.z) + 1, state.z);
+      placeChaseCamera();
     }
     const challengeState = { current: null, rewardTotal: readFreeRoamProgress().credits, lastUiAt: 0, lastStreetAt: 0 };
     const ambientEvent = { nextAt: 48, offerId: null, expiresAt: 0, lastUiAt: 0 };
@@ -4671,7 +4709,13 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         activateAudio();
         keys.add(event.code);
       }
-      if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
+      if (event.code === 'Escape') {
+        event.preventDefault();
+        // Échap referme d'abord le tiroir s'il est ouvert : c'est ce qu'on
+        // attend d'un panneau, avant de quitter la ville.
+        if (actionsOpenRef.current) { setActionsOpen(false); return; }
+        onExitRef.current?.();
+      }
     };
     const onUp = (event) => keys.delete(event.code);
     const blur = () => {
@@ -4692,11 +4736,27 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // fois). En qualité allégée le halo n'est pas monté : c'est le matériel
     // qu'on ménage. `postChain` reste nul en standard et en WebGPU.
     let postChain = null;
+    // La caméra est-elle en vue cockpit ? `resize` s'en sert pour ne pas
+    // écraser le champ du cockpit par celui de la poursuite.
+    let cockpitActive = false;
     const postWanted = cityRushCinemaAvailable({ mode: requestedGraphicsRef.current, lite: liteDevice });
     const resize = () => {
       const width = Math.max(1, mount.clientWidth); const height = Math.max(1, mount.clientHeight);
-      renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false); camera.aspect = width / height;
+      // Le cadrage portrait se règle **ici**, pas au montage : une rotation de
+      // téléphone redimensionne le canevas sans reconstruire la ville, et la
+      // caméra reprend son champ et son recul dans la même image. En paysage,
+      // `viceCityCameraFraming` rend les valeurs historiques — 66°, 5,0 m,
+      // 2,7 m —, donc le jeu au clavier ne bouge pas d'un pixel.
+      chaseFraming = viceCityCameraFraming(width, height);
+      if (!cockpitActive) applyViceCityCameraFraming(camera, chaseFraming);
+      camera.updateProjectionMatrix();
       postChain?.setSize(width, height);
+      // Ce qui est appliqué, lisible dans le DOM : les vérifications lisent ces
+      // deux nombres au lieu de croire à une intention.
+      mount.dataset.chaseFov = camera.fov.toFixed(2);
+      mount.dataset.chaseDistance = chaseFraming.distance.toFixed(2);
+      mount.dataset.chaseFraming = isViceCityPortraitViewport(width, height) ? 'portrait' : 'landscape';
     };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
     if (postWanted) {
@@ -4730,7 +4790,6 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     const cockpitHeadQuat = new THREE.Quaternion();
     const cockpitTargetQuat = new THREE.Quaternion();
     const cockpitHeadEuler = new THREE.Euler();
-    let cockpitActive = false;
     let cockpitCameraSnap = true;
     const overlapsVehicleHitbox = (x, z, carX, carZ, yaw, width, length) => {
       const dx = x - carX;
@@ -5191,7 +5250,9 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         const cockpit = cockpitActive ? ensurePlayerCockpit() : playerCockpit;
         cockpit?.setActive(cockpitActive);
         cockpitCameraSnap = true;
-        camera.fov = cockpitActive ? CITY_RUSH_COCKPIT_FOV : 66;
+        // Sortie du cockpit : on retrouve le champ de poursuite **courant**
+        // (66° en paysage, élargi en portrait), pas une constante en dur.
+        camera.fov = cockpitActive ? CITY_RUSH_COCKPIT_FOV : chaseFraming.fov;
         camera.updateProjectionMatrix();
       }
       const activeCockpit = isCockpitView ? ensurePlayerCockpit() : null;
@@ -5214,12 +5275,16 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         camera.fov = CITY_RUSH_COCKPIT_FOV + speedRatio * CITY_RUSH_COCKPIT_SPEED_FOV;
         camera.updateProjectionMatrix();
       } else {
-        cameraPosition.copy(vehicle.position).addScaledVector(forward, -5.0);
-        cameraPosition.y += 2.7;
+        // Poursuite : le recul et la hauteur viennent du cadrage de l'écran.
+        // En paysage ce sont les valeurs historiques — 5,0 m derrière, 2,7 m
+        // au-dessus, regard à 1,1 m du sol —, donc le jeu au clavier ne bouge
+        // pas. En portrait la caméra recule, monte, et regarde plus haut.
+        cameraPosition.copy(vehicle.position).addScaledVector(forward, -chaseFraming.distance);
+        cameraPosition.y += chaseFraming.height;
         camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
         cameraTarget.set(
           state.x + forward.x * 3.5,
-          city.surfaceHeight(state.x + forward.x * 3.5, state.z + forward.z * 3.5) + 1.1,
+          city.surfaceHeight(state.x + forward.x * 3.5, state.z + forward.z * 3.5) + chaseFraming.lookHeight,
           state.z + forward.z * 3.5,
         );
         camera.lookAt(cameraTarget);
@@ -5373,8 +5438,13 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   }, [carId, schoolMode, schoolExercise, liteDevice, graphicsEpoch]);
 
   return (
-    <div ref={rootRef} className={`vice-free-roam${schoolMode ? ' driving-school-world' : ''}`} data-school-steering={schoolControls?.steering ?? 'buttons'} role="application" aria-label={schoolExercise ? `Exercice : ${schoolExercise.title}` : "Conduite libre dans Vice City"}>
-      <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
+    <div ref={rootRef} className={`vice-free-roam${schoolMode ? ' driving-school-world' : ''}`} data-school-steering={schoolControls?.steering ?? 'buttons'} data-actions-open={actionsOpen ? 'true' : 'false'} role="application" aria-label={schoolExercise ? `Exercice : ${schoolExercise.title}` : "Conduite libre dans Vice City"}>
+      <div className="vice-free-roam-world" ref={mountRef} onPointerDown={() => {
+        // Un tap sur la ville referme le tiroir : on revient au jeu sans viser
+        // une pastille.
+        if (actionsOpenRef.current) setActionsOpen(false);
+        activateAudio();
+      }} />
       {schoolMode && <div className="driving-side-mirrors" aria-label="Rétroviseurs latéraux en direct">
         <div className="driving-side-mirror" role="img" aria-label="Vue du rétroviseur gauche en direct">
           <canvas ref={leftMirrorRef} width={256} height={128} aria-hidden="true" /><span>Rétro gauche</span>
@@ -5392,54 +5462,77 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       <header className="vice-free-roam-header">
         <div className="vice-free-roam-brand"><span>VICE CITY</span><b>{schoolExercise ? 'EXERCICE ROUTIER' : 'FREE DRIVE'}</b><small>{schoolExercise ? schoolExercise.title : `${displayCar.name} · ${streetLabel} · 1986`}</small></div>
         <div className="vice-free-roam-location"><i /> {worldCondition} <span>—</span> {freeRoamRewards} $</div>
-        <button type="button" onClick={() => setFeaturePanel(featurePanel === 'activities' ? null : 'activities')}>✦ ACTIVITÉS</button>
-        <button type="button" onClick={() => setFeaturePanel(featurePanel === 'garage' ? null : 'garage')}>⚒ GARAGE</button>
-        <button type="button" className={`vice-free-roam-sound${soundOn ? ' is-on' : ''}`} onClick={toggleSound}
-          aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
-          <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
-        </button>
-        {/* Le rendu de la ville : standard (WebGL), cinéma (halo) ou essai
-            WebGPU. Le libellé dit le mode demandé ; « · REPLI » apparaît si le
-            moteur a dû renoncer (carte absente, pilote qui refuse). */}
-        <button type="button" className={`vice-free-roam-graphics${runningGraphics !== 'standard' ? ' is-on' : ''}`}
-          data-graphics-mode={runningGraphics} onClick={() => graphicsRef.current()}
-          aria-pressed={runningGraphics !== 'standard'}
-          aria-label={`Rendu de la ville : ${graphicsLabel}${graphicsLive?.reason ? ` (${graphicsLive.reason})` : ''}`}
-          title={graphicsLive?.reason
-            // Un refus se dit tel quel : le joueur sait pourquoi le clic n'a
-            // pas donné ce qu'il demandait.
-            ? `${graphicsLive.reason} — la ville reste en ${cityRushGraphicsModeLabel(runningGraphics).toLowerCase()}`
-            : graphicsMode === 'webgpu'
-              ? (graphicsEngine === 'webgpu' ? 'Essai WebGPU actif : la ville est dessinée en WGSL par le GPU' : 'Essai WebGPU : la ville est reconstruite, dessinée en WGSL par le GPU')
-              : graphicsMode === 'cinema'
-                ? 'Halo de post-traitement sur les néons et le soleil (puis essai WebGPU)'
-                : (webGpuSupported ? 'Rendu standard · puis cinéma, puis essai WebGPU' : 'Rendu standard (WebGL) · essai WebGPU indisponible sur cet appareil')}>
-          ◈ {graphicsLabel}
-        </button>
-        {/* Qualité : ce qu'on demande au moteur (décor, ombres, néons, trafic).
-            Le libellé dit le niveau actif ; l'infobulle dit ce qui change. */}
-        <button type="button" className={`vice-free-roam-quality is-${quality}`} onClick={() => cycleQualityRef.current()}
-          data-quality={quality} aria-label={`Qualité graphique : ${qualityLabel}`}
-          title={`${qualityLabel} — ${qualityDetail}. Cliquer pour ${qualityNextLabel}.${deviceHint ? ` ${deviceHint}` : ''}`}>
-          ◆ {qualityLabel}
-        </button>
-        <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
-          aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
-          title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
-          ◉ COCKPIT
-        </button>
-        <button type="button" className="vice-free-roam-menu" onClick={exitFreeRoam}>↶ MENU</button>
-        {/* Plus d'écran « tournez votre téléphone » : le jeu se joue debout
-            comme couché. Ce bouton ne change que la place disponible — paysage
-            en plein écran, pour ceux qui le préfèrent. */}
-        {touchDevice && (
-          <button type="button" className={`vice-free-roam-expand${expanded ? ' is-on' : ''}`}
-            onClick={toggleExpanded} aria-pressed={expanded}
-            aria-label={expanded ? 'Quitter le plein écran' : 'Passer en plein écran'}
-            title={expanded ? 'Quitter le plein écran' : 'Passer en plein écran'}>
-            <span aria-hidden="true">{expanded ? '⤡' : '⤢'}</span> {expanded ? 'RÉDUIRE' : 'PLEIN ÉCRAN'}
+        {/*
+          Les sept actions vivent ici, dans un seul conteneur. Sur ordinateur,
+          `display:contents` le fait disparaître de la mise en page : les
+          boutons restent des enfants directs du bandeau, à la même place et à
+          la même taille qu'avant. Sur téléphone, ce conteneur devient le
+          tiroir : deux colonnes sous la pastille ☰ ACTIONS, ouvertes et
+          refermées sans reconstruire la ville.
+        */}
+        <div id="vice-free-roam-actions" className={`vice-free-roam-actions${actionsOpen ? ' is-open' : ''}`}
+          role="group" aria-label="Actions de conduite libre">
+          <button type="button" className="vice-free-roam-action vice-free-roam-activities" onClick={() => setFeaturePanel(featurePanel === 'activities' ? null : 'activities')}>✦ ACTIVITÉS</button>
+          <button type="button" className="vice-free-roam-action vice-free-roam-garage" onClick={() => setFeaturePanel(featurePanel === 'garage' ? null : 'garage')}>⚒ GARAGE</button>
+          <button type="button" className={`vice-free-roam-action vice-free-roam-sound${soundOn ? ' is-on' : ''}`} onClick={toggleSound}
+            aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
+            <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
           </button>
-        )}
+          {/* Le rendu de la ville : standard (WebGL), cinéma (halo) ou essai
+              WebGPU. Le libellé dit le mode demandé ; « · REPLI » apparaît si le
+              moteur a dû renoncer (carte absente, pilote qui refuse). */}
+          <button type="button" className={`vice-free-roam-action vice-free-roam-graphics${runningGraphics !== 'standard' ? ' is-on' : ''}`}
+            data-graphics-mode={runningGraphics} onClick={() => graphicsRef.current()}
+            aria-pressed={runningGraphics !== 'standard'}
+            aria-label={`Rendu de la ville : ${graphicsLabel}${graphicsLive?.reason ? ` (${graphicsLive.reason})` : ''}`}
+            title={graphicsLive?.reason
+              // Un refus se dit tel quel : le joueur sait pourquoi le clic n'a
+              // pas donné ce qu'il demandait.
+              ? `${graphicsLive.reason} — la ville reste en ${cityRushGraphicsModeLabel(runningGraphics).toLowerCase()}`
+              : graphicsMode === 'webgpu'
+                ? (graphicsEngine === 'webgpu' ? 'Essai WebGPU actif : la ville est dessinée en WGSL par le GPU' : 'Essai WebGPU : la ville est reconstruite, dessinée en WGSL par le GPU')
+                : graphicsMode === 'cinema'
+                  ? 'Halo de post-traitement sur les néons et le soleil (puis essai WebGPU)'
+                  : (webGpuSupported ? 'Rendu standard · puis cinéma, puis essai WebGPU' : 'Rendu standard (WebGL) · essai WebGPU indisponible sur cet appareil')}>
+            ◈ {graphicsLabel}
+          </button>
+          {/* Qualité : ce qu'on demande au moteur (décor, ombres, néons, trafic).
+              Le libellé dit le niveau actif ; l'infobulle dit ce qui change. */}
+          <button type="button" className={`vice-free-roam-action vice-free-roam-quality is-${quality}`} onClick={() => cycleQualityRef.current()}
+            data-quality={quality} aria-label={`Qualité graphique : ${qualityLabel}`}
+            title={`${qualityLabel} — ${qualityDetail}. Cliquer pour ${qualityNextLabel}.${deviceHint ? ` ${deviceHint}` : ''}`}>
+            ◆ {qualityLabel}
+          </button>
+          <button type="button" className={`vice-free-roam-action vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
+            aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
+            title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
+            ◉ COCKPIT
+          </button>
+          <button type="button" className="vice-free-roam-action vice-free-roam-menu" onClick={exitFreeRoam}>↶ MENU</button>
+          {/* Plus d'écran « tournez votre téléphone » : le jeu se joue debout
+              comme couché. Ce bouton ne change que la place disponible — paysage
+              en plein écran, pour ceux qui le préfèrent. */}
+          {touchDevice && (
+            <button type="button" className={`vice-free-roam-action vice-free-roam-expand${expanded ? ' is-on' : ''}`}
+              onClick={toggleExpanded} aria-pressed={expanded}
+              aria-label={expanded ? 'Quitter le plein écran' : 'Passer en plein écran'}
+              title={expanded ? 'Quitter le plein écran' : 'Passer en plein écran'}>
+              <span aria-hidden="true">{expanded ? '⤡' : '⤢'}</span> {expanded ? 'RÉDUIRE' : 'PLEIN ÉCRAN'}
+            </button>
+          )}
+        </div>
+        {/* Téléphone : une seule pastille à la place des sept boutons — un
+            tiers de l'écran en portrait, hors fenêtre en paysage. Sur
+            ordinateur elle est masquée et la colonne de 112 px reste en place.
+            Les sept actions sont **les mêmes boutons** dans les deux cas : pas
+            de second jeu à maintenir, pas d'état qui divergerait. */}
+        <button type="button" className="vice-free-roam-actions-toggle"
+          aria-expanded={actionsOpen}
+          aria-label={actionsOpen ? 'Fermer les actions' : 'Ouvrir les actions : son, rendu, qualité, cockpit, menu'}
+          title={actionsOpen ? 'Fermer les actions' : 'Ouvrir les actions'}
+          onClick={() => setActionsOpen((open) => !open)}>
+          <span aria-hidden="true">☰</span> {actionsOpen ? 'FERMER' : 'ACTIONS'}
+        </button>
       </header>
       {schoolMode && <div className="driving-turn-signal" ref={turnSignalRef} data-direction="none" data-lit="false" aria-label="Clignotants éteints">
         <span data-side="left" aria-hidden="true">◀</span><small>CLIGNOTANTS AUTO</small><span data-side="right" aria-hidden="true">▶</span>

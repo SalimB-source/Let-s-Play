@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { CITY_RUSH_CHASE_LANDSCAPE } from '../src/games/viceCityMobileCamera.js';
 
 import {
   CITY_RUSH_CARS,
@@ -176,10 +177,17 @@ test('les voitures de conduite libre sont agrandies sans désynchroniser les hit
   assert.match(source, /function makeFreeRoamPlayerCar\(profile, options\)/u);
   assert.equal((source.match(/playerVehicle = makeFreeRoamPlayerCar\(profile,/gu) || []).length, 2,
     'la voiture initiale et la voiture temporaire du garage gardent la même taille');
-  assert.match(source, /addScaledVector\(forward, -5\.0\)/u,
+  // La poursuite lit son recul et sa hauteur dans le cadrage de l'écran. En
+  // paysage, ce sont **exactement** ces valeurs-là (5,0 m et 2,7 m) : la
+  // constante a changé de place, pas de valeur métier — et sur un téléphone
+  // debout, c'est le module de cadrage qui les remplace (voir
+  // `vice-city-mobile-camera.test.js`).
+  assert.match(source, /addScaledVector\(forward, -chaseFraming\.distance\)/u,
     'la caméra de poursuite reste juste derrière le véhicule');
-  assert.match(source, /cameraPosition\.y \+= 2\.7/u,
+  assert.match(source, /cameraPosition\.y \+= chaseFraming\.height/u,
     'la caméra est abaissée pour suivre le véhicule agrandi');
+  assert.equal(CITY_RUSH_CHASE_LANDSCAPE.distance, 5.0, 'le recul paysage reste 5,0 m');
+  assert.equal(CITY_RUSH_CHASE_LANDSCAPE.height, 2.7, 'la hauteur paysage reste 2,7 m');
 });
 
 test('visée souris : le corps garde son cap, seuls les bras suivent le point visé', () => {
