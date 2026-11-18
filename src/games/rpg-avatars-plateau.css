@@ -256,6 +256,22 @@
     "mana allies controls"
     "hand hand hand";
 }
+/* Deux lignes sur un écran court : la bande du sorcier vaut la moitié de la
+   table moins le bandeau d'avatar, et celle du joueur le reste. Sur un
+   téléphone en paysage (ou une fenêtre basse), deux rangées de cartes ne
+   tiennent pas dans la moitié : le contenu débordait de sa bande, et comme la
+   bande adverse se range par le bas (contre la ligne médiane), ses cases
+   venaient s'entrelacer avec celles du joueur. Chaque bande prend donc **au
+   moins la hauteur de ses deux rangées** (`min-content`) ; sur un écran qui a
+   la place, les `1fr` continuent de partager comme avant. La règle ne touche
+   que le plateau à deux lignes : le champ d'une seule rangée garde sa grille. */
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table:has(.card-row[data-lignes="true"]) {
+  grid-template-rows: var(--rpg-avatar-nav)
+    minmax(min-content, calc(50% - var(--rpg-avatar-nav) - 1.5 * var(--rpg-touch-gap)))
+    minmax(min-content, 1fr)
+    var(--rpg-touch-hand);
+}
+
 @supports (height: 100svh) {
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {

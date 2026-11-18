@@ -1073,6 +1073,16 @@
   width: min(100%, var(--essai-colonne));
   max-width: none;
 }
+/* Les deux grilles — les cartes et les cases dessinées — partagent **les mêmes
+   rangées**. Une carte fait 4/5 de large : sa hauteur est donc 1,25 × la
+   colonne, et les deux rangées mesurent exactement cela. Avec `min-content` de
+   part et d'autre, la moindre différence de hauteur (carte et case ne se
+   mesuraient pas sur la même variable au doigt) décalait les deux grilles : les
+   cases tombaient entre deux rangées de cartes. */
+.rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"],
+.rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] .rpg-creature-slots {
+  grid-template-rows: repeat(2, calc(var(--essai-colonne) * 1.25));
+}
 .rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 1; }
 .rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 2; }
 .rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 2; }
