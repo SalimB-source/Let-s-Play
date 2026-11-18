@@ -1,5 +1,5 @@
 /* Les Défenseurs gardent la forme rectangulaire des autres cartes. Leur
-   repère est la pierre orange animée ; aucune face ni effet n'est masqué. */
+   repère est la pierre marron doré animée ; aucune face ni effet n'est masqué. */
 .rpg-card.rpg-carte-bouclier {
   --rpg-defenseur-echelle: 1.1;
   scale: var(--rpg-defenseur-echelle);
@@ -26,8 +26,8 @@
   animation: rpg-defenseur-pierre 3.6s ease-in-out infinite;
 }
 @keyframes rpg-defenseur-pierre {
-  0%, 100% { opacity: .76; filter: drop-shadow(0 0 1px rgba(238, 111, 20, .25)); }
-  50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(255, 151, 47, .7)); }
+  0%, 100% { opacity: .76; filter: drop-shadow(0 0 1px rgba(147, 102, 47, .25)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(215, 172, 104, .7)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card-icone[data-effet='defenseur'] .rpg-effet-icone { animation: none; opacity: 1; }

@@ -143,7 +143,7 @@ test('les cartes du Corbeau réunissent les vocabulaires imprimés des deux coul
 
   const berserk = cardById('berserk-du-crepuscule');
   assert.deepEqual([berserk.atk, berserk.def], [3, 5], 'le berserker tient la ligne : 3/5');
-  assert.equal(berserk.defenseur, true, 'la Défenseur ouvre le combat');
+  assert.equal(berserk.defenseur, undefined, 'le Berserk ne porte plus Défenseur');
   assert.equal(berserk.furie, 2, 'la Furie est un mot-clé de Neige');
   assert.equal(berserk.tribut, 2, 'le Tribut est un mot-clé de Ténèbres');
   assert.equal(berserk.destruction, undefined, 'la mort ne paie plus : le Tribut paie au contact');

@@ -37,7 +37,7 @@ try {
       // Parité téléphone / bureau : même silhouette sans filet décoratif.
       assert.equal(etat.ecu, 'none', `${id}: illustration rectangulaire`);
       assert.equal(etat.icone, 'rpg-defenseur-pierre', `${id}: icône animée`);
-      assert.equal(etat.pierre, 'orange', `${id}: icône orange`);
+      assert.equal(etat.pierre, 'bronze', `${id}: icône marron doré`);
       assert.equal(etat.traitEcu, 'none', `${id} (${width}×${height}): aucun filet Défenseur`);
       assert.equal(etat.onde, 'rgba(255, 151, 47, 0.58)', `${id}: ondes orange conservées`);
       if (id === 'selection') {

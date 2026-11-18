@@ -2,16 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js';
 import { pastillesPourCarte, effetsDetailles } from '../src/games/effetIcons.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgResoudreArriveeCiblee, rpgFinDeTour, rpgMulligan, rpgDemarrerManaEssai } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgResoudreArriveeCiblee, rpgResoudreRenfortChoisi, rpgFinDeTour, rpgMulligan, rpgDemarrerManaEssai } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from '../src/games/rpgCombatIndividuelClassique.js';
-import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaqueIndividuelle } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaResoudreRecherche, rpgMobaDeclarerAttaqueIndividuelle } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaCiblesIndividuelles } from '../src/games/rpgMobaAttaqueIndividuelle.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 import { rpgMobaChoisirArriveeIA } from '../src/games/rpgMobaAI.js';
 import { estDefenseur } from '../src/games/rpgDefenseur.js';
 
-const nouveaux = ['guetteuse-des-marees', 'guerrier-au-bouclier-rond', 'amani-des-ksour', 'gardienne-de-la-balance', 'onna-musha-des-cendres'];
+const nouveaux = ['guerrier-au-bouclier-rond', 'amani-des-ksour', 'gardienne-de-la-balance', 'onna-musha-des-cendres'];
+const sansDefenseur = ['gardienne-des-sables-ensevelis', 'gardienne-des-derniers-noms', 'guetteuse-des-marees', 'hatamoto-des-cendres', 'berserk-du-crepuscule'];
 function partie() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => .9 });
   for (const c of ['joueur', 'sorcier']) d[c].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 40]));
@@ -27,14 +28,13 @@ function pose(d, c, id, cible = null, options = {}) {
   return r;
 }
 
-test('les cinq gardiens choisis portent Défenseur et gardent leurs capacités', () => {
+test('les quatre gardiens choisis portent Défenseur et gardent leurs capacités', () => {
   for (const id of nouveaux) {
     const carte = cardById(id);
     assert.equal(carte.defenseur, true, id);
     assert.match(carte.text, /Défenseur/, id);
     assert.equal(pastillesPourCarte(carte).filter(p => p.cle === 'defenseur').length, 1, id);
   }
-  assert.equal(cardById('guetteuse-des-marees').arrivee.type, 'exil-temporaire');
   assert.equal(cardById('guerrier-au-bouclier-rond').arrivee, undefined);
   assert.equal(cardById('amani-des-ksour').aura.def, 1);
   assert.equal(cardById('gardienne-de-la-balance').destruction.type, 'soin');
@@ -114,7 +114,7 @@ test('le don ne suit pas une créature qui quitte le champ puis revient', () => 
   pose(d, 'joueur', 'veilleuse-des-citernes', allie.id);
   assert.equal(estDefenseur(allie), true);
   const guetteuse = pose(d, 'joueur', 'guetteuse-des-marees', allie.id).entite;
-  assert.equal(estDefenseur(guetteuse), true);
+  assert.equal(estDefenseur(guetteuse), false);
   assert.ok(!d.joueur.creatures.includes(allie));
   rpgFinDeTour(d);
   const retour = d.joueur.creatures.find(e => e.carteId === 'ashigaru-des-braises');
@@ -157,7 +157,7 @@ test('une créature qui possède déjà Défenseur garde une seule pastille apr�
 });
 
 
-test('les anciennes sauvegardes des cinq cartes retrouvent leur Défenseur imprimé', () => {
+test('les anciennes sauvegardes des quatre cartes retrouvent leur Défenseur imprimé', () => {
   for (const carteId of nouveaux) {
     const ancienne = { carteId, defenseur: false };
     assert.equal(estDefenseur(ancienne), true, carteId);
@@ -175,7 +175,7 @@ test('la Veilleuse seule en MOBA reçoit Défenseur et Bouclier', () => {
   assert.equal(estDefenseur(r.entite), true); assert.equal(r.entite.bouclier, 1);
 });
 
-test('les cinq nouveaux Défenseurs imposent leur priorité dès leur arrivée', () => {
+test('les quatre nouveaux Défenseurs imposent leur priorité dès leur arrivée', () => {
   for (const id of nouveaux) {
     const d = partie();
     const gardien = pose(d, 'joueur', id).entite;
@@ -185,9 +185,9 @@ test('les cinq nouveaux Défenseurs imposent leur priorité dès leur arrivée',
   }
 });
 
-const autresGardiens = ['gardienne-des-sables-ensevelis', 'gardienne-des-derniers-noms', 'hatamoto-des-cendres', 'dune-marchante', 'veilleur-du-dernier-crepuscule'];
+const autresGardiens = ['dune-marchante', 'veilleur-du-dernier-crepuscule'];
 
-test('cinq autres gardiens ont Défenseur sans perdre leurs capacités imprimées', () => {
+test('deux autres gardiens ont Défenseur sans perdre leurs capacités imprimées', () => {
   for (const id of autresGardiens) {
     const carte = cardById(id);
     assert.equal(carte.defenseur, true, id);
@@ -195,11 +195,6 @@ test('cinq autres gardiens ont Défenseur sans perdre leurs capacités imprimée
     assert.equal(pastillesPourCarte(carte).filter(p => p.cle === 'defenseur').length, 1, id);
     assert.equal(estDefenseur({ carteId: id, defenseur: false }), true, `ancienne sauvegarde : ${id}`);
   }
-  assert.equal(cardById('gardienne-des-sables-ensevelis').arrivee.type, 'renfort-choisi');
-  assert.equal(cardById('gardienne-des-sables-ensevelis').arrivee.bouclierRenfort, true);
-  assert.equal(cardById('gardienne-des-derniers-noms').destruction.type, 'renfort-ascension');
-  assert.equal(cardById('hatamoto-des-cendres').honneur, 1);
-  assert.match(cardById('hatamoto-des-cendres').text, /Harakiri/);
   assert.equal(cardById('dune-marchante').arrivee.type, 'recherche-deck-categories');
   assert.equal(cardById('veilleur-du-dernier-crepuscule').contreAttaque, true);
 });
@@ -248,15 +243,78 @@ test('la priorité du Veilleur protège son allié et sa Contre-attaque riposte 
   assert.ok(d.log.some(ligne => ligne.includes('Contre-attaque : Veilleur du dernier crépuscule')));
 });
 
-test('en PvP le Hatamoto interdit la frappe directe et protège son allié', () => {
+test('les cinq cartes perdent seulement leur Défenseur imprimé, même dans les sauvegardes', () => {
+  for (const carteId of sansDefenseur) {
+    const carte = cardById(carteId);
+    assert.equal(carte.defenseur, undefined, carteId);
+    assert.doesNotMatch(carte.text, /Défenseur/i, carteId);
+    assert.ok(!pastillesPourCarte(carte).some(p => p.cle === 'defenseur'), carteId);
+
+    const ancienne = { carteId, defenseur: true, provocation: true };
+    assert.equal(estDefenseur(ancienne), false, carteId);
+    assert.equal(estDefenseur({ ...ancienne, defenseurAccorde: true }), true, carteId);
+  }
+  const gardienneSable = cardById('gardienne-des-sables-ensevelis');
+  assert.equal(gardienneSable.arrivee.type, 'renfort-choisi');
+  assert.equal(gardienneSable.arrivee.bouclierRenfort, true);
+  assert.equal(cardById('gardienne-des-derniers-noms').destruction.type, 'renfort-ascension');
+  assert.equal(cardById('guetteuse-des-marees').arrivee.type, 'exil-temporaire');
+  const hatamoto = cardById('hatamoto-des-cendres');
+  assert.equal(hatamoto.honneur, 1);
+  assert.match(hatamoto.text, /Harakiri/);
+  assert.deepEqual(hatamoto.coupCritique, { chance: .25, fois: 2 });
+  const berserk = cardById('berserk-du-crepuscule');
+  assert.equal(berserk.furie, 2);
+  assert.equal(berserk.overkill, true);
+  assert.equal(berserk.tribut, 2);
+});
+
+for (const mode of ['Classique', 'PvP', 'Conquête']) test(`${mode} : les cinq cartes n’imposent plus leur ciblage`, () => {
+  const moba = mode === 'Conquête';
+  const recrue = 'ashigaru-des-braises';
+  const deck = Array(30).fill(recrue);
+  for (const id of sansDefenseur) {
+    const d = moba ? rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .9 }) : partie();
+    if (!moba) d.pvp = mode === 'PvP';
+    if (moba) {
+      assert.ok(rpgMulligan(d, 'joueur', []).ok && rpgMulligan(d, 'sorcier', []).ok && rpgDemarrerManaEssai(d).ok);
+      for (const camp of ['joueur', 'sorcier']) d[camp].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 40]));
+    }
+    const poser = (camp, carteId, slot = 0) => {
+      if (!moba) return pose(d, camp, carteId).entite;
+      d[camp].main = [carteId];
+      const r = rpgMobaJouerCreature(d, camp, carteId, 'left', slot);
+      assert.ok(r.ok, `${carteId} : ${r.raison}`);
+      return r.entite;
+    };
+    // Poser la Guetteuse avant sa voisine pour ne pas déclencher l'exil allié.
+    const creature = poser('joueur', id);
+    if (d.renfortChoixEnAttente || d.mobaRechercheEnAttente) {
+      const r = moba ? rpgMobaResoudreRecherche(d, 'joueur', null) : rpgResoudreRenfortChoisi(d, 'joueur');
+      assert.ok(r.ok, `${id} : ${r.raison}`);
+    }
+    if (moba) rpgFinDeTour(d);
+    const attaquant = poser('sorcier', recrue);
+    if (moba) rpgFinDeTour(d);
+    const voisine = poser('joueur', recrue, 1);
+    attaquant.envol = true;
+    assert.equal(creature.defenseur, false, id);
+    const choix = () => moba ? rpgMobaCiblesIndividuelles(d, 'sorcier', attaquant.id, 'left')
+      : rpgCiblesIndividuellesClassique(d, 'sorcier', attaquant.id);
+    assert.deepEqual(choix(), { cibles: [creature.id, voisine.id], directe: true }, id);
+    creature.defenseurAccorde = true;
+    assert.deepEqual(choix(), { cibles: [creature.id], directe: false }, id);
+  }
+});
+
+test('en PvP le Hatamoto ne protège plus son allié, sans modifier la règle de frappe directe au sol', () => {
   const d = partie();
   const tireur = pose(d, 'joueur', 'ashigaru-des-braises').entite;
   const allie = pose(d, 'sorcier', 'ashigaru-des-braises').entite;
-  const garde = pose(d, 'sorcier', 'hatamoto-des-cendres').entite;
+  pose(d, 'sorcier', 'hatamoto-des-cendres');
   tireur.ready = true; tireur.malInvocation = false; tireur.coupRapide = true;
   d.pvp = true; d.tour = 'joueur'; d.phase = 'principale'; d.mulliganFait = { joueur: true, sorcier: true };
   const attaquer = cibleId => rpgPvpAppliquer(d, 'joueur', { type: 'attaquer', declarer: true, attaquants: [tireur.id], cibleId });
   assert.equal(attaquer(null).raison, 'cible');
-  assert.equal(attaquer(allie.id).raison, 'cible');
-  assert.ok(attaquer(garde.id).ok);
+  assert.ok(attaquer(allie.id).ok);
 });
