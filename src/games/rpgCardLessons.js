@@ -8,7 +8,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Types de cartes',
     cardIds: ['tislit-des-aures', 'tin-hinan'],
     title: 'Des cartes à jouer, aucun terrain',
-    text: 'Le deck contient 30 cartes sans terrain. Il n’y a pas de mana : une créature normale peut être invoquée par tour, avec un sacrifice pour un coût imprimé de 5 ou 6, et deux pour 7 ou plus ; créatures et héros occupent le champ de bataille et combattent ; une magie produit son effet puis rejoint le cimetière. Un héros est donc une carte à part dans la collection, mais une créature en jeu.',
+    text: 'Le deck contient 30 cartes sans terrain. Il n’y a pas de mana : une créature normale peut être invoquée par tour, avec un sacrifice pour un coût imprimé de 5 ou 6, et deux pour 7 ou plus. Une créature engagée ne peut pas être sacrifiée ; créatures et héros occupent le champ de bataille et combattent ; une magie produit son effet puis rejoint le cimetière. Un héros est donc une carte à part dans la collection, mais une créature en jeu.',
   },
   {
     id: 'armes',

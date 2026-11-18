@@ -154,3 +154,12 @@ test('engaged and available copies split, then regroup when untapped', () => {
   assert.deepEqual(groupEntitesParCarte([b, a]).map(p => p.entites.map(e => e.id)), [['b'], ['a']]);
   assert.equal(groupEntitesParCarte(entities.map(e => ({ ...e, attaquee: false }))).length, 1);
 });
+
+
+test('les piles tactiles séparent le mal d’invocation des créatures disponibles', () => {
+  const prete = creature('a', 'chien-du-guet');
+  const malade = { ...creature('b', 'chien-du-guet'), malInvocation: true };
+  const rapide = { ...creature('c', 'chien-du-guet'), malInvocation: true, rapiditeAccordee: true };
+  assert.deepEqual(groupEntitesParCarte([prete, malade, rapide]).map(p => p.entites.map(e => e.id)), [['a', 'c'], ['b']]);
+  assert.equal(groupEntitesParCarte([prete, { ...malade, malInvocation: false }]).length, 1);
+});

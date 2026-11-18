@@ -50,7 +50,7 @@ const rolesDe = (condition) => condition?.materiaux?.map(({ cout, coutMax, ...ro
 export function materiauAscensionValide(carte, entite) {
   const condition = definition(carte)?.ascension;
   const roles = rolesDe(condition);
-  return Boolean(condition && vivant(entite)
+  return Boolean(condition && vivant(entite) && !entite.attaquee
     && (!condition.type || cardHasPrintedType(entite.carteId, condition.type))
     && (!roles || roles.some((role) => carteCorrespondMateriau(entite.carteId, role))));
 }
@@ -77,6 +77,7 @@ export function validerMateriauxAscension(camp, carte, ids) {
   }
   const victimes = ids.map((id) => camp?.creatures?.find((e) => e.id === id));
   if (victimes.some((e) => !e)) return { ok: false, raison: 'ascension-allies' };
+  if (victimes.some((e) => e.attaquee)) return { ok: false, raison: 'ascension-engagee' };
   if (victimes.some((e) => !vivant(e) || (condition.type && !cardHasPrintedType(e.carteId, condition.type)))) {
     return { ok: false, raison: 'ascension-type' };
   }
@@ -160,6 +161,7 @@ export const ERREURS_ASCENSION = Object.freeze({
   'ascension-timing': 'L’Ascension se prépare pendant votre phase principale, sans action en attente.',
   'ascension-nombre': 'Choisissez exactement le nombre de sacrifices indiqué.',
   'ascension-allies': 'Les sacrifices doivent être des créatures distinctes que vous contrôlez encore.',
+  'ascension-engagee': 'Une créature engagée ne peut pas être sacrifiée.',
   'ascension-type': 'Les sacrifices doivent être vivants et porter le type imprimé demandé.',
   'ascension-cout': 'La somme des coûts imprimés doit être exactement égale au coût imprimé de la créature d’Ascension.',
   'ascension-recette': 'Les créatures sacrifiées doivent être celles nommées dans la recette.',

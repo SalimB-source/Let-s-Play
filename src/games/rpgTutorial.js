@@ -161,7 +161,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 2 · INVOCATION',
         title: 'Une invocation normale par tour',
-        text: 'Il n’y a plus de mana. Vous pouvez invoquer normalement une créature par tour : coût imprimé 1 à 4, aucun sacrifice ; 5 ou 6, un sacrifice ; 7 ou plus, deux. Les magies et armes n’ont pas de quota. Une Invocation spéciale jouée pendant votre phase principale ne consomme pas cette invocation et ne demande pas de sacrifice.',
+        text: 'Il n’y a plus de mana. Vous pouvez invoquer normalement une créature par tour : coût imprimé 1 à 4, aucun sacrifice ; 5 ou 6, un sacrifice ; 7 ou plus, deux. Une créature engagée ne peut pas être sacrifiée. Les magies et armes n’ont pas de quota. Une Invocation spéciale jouée pendant votre phase principale ne consomme pas cette invocation et ne demande pas de sacrifice.',
         nextLabel: 'Jouer une créature',
         side: 'top',
       },

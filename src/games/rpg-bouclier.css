@@ -1,22 +1,7 @@
 /* Les Défenseurs gardent la forme rectangulaire des autres cartes. Leur
    repère est la pierre marron doré animée ; aucune face ni effet n'est masqué. */
-.rpg-card.rpg-carte-bouclier {
-  --rpg-defenseur-echelle: 1.1;
-  scale: var(--rpg-defenseur-echelle);
-}
 .rpg-card.rpg-carte-bouclier:not(.is-active, .is-selected, .is-blocking, .is-blocker-assigned, .is-blocker-target-hover, .is-blocker-selected, .is-sacrifice, .is-sacrifice-target, .is-ascension-chosen, .is-attacking, .is-target, .is-ciblable, .is-declared-attacker) {
   box-shadow: 0 10px 12px rgba(0, 0, 0, .9), 0 6px 8px rgba(0, 0, 0, .7);
-}
-/* Les repères conservent leur taille malgré l'agrandissement visuel. */
-.rpg-card.rpg-carte-bouclier > * { scale: calc(1 / var(--rpg-defenseur-echelle, 1)); }
-.rpg-card.rpg-carte-bouclier > :is(
-  .rpg-cadre-carte, .rpg-card__img, .rpg-card__blood, .rpg-card__frost,
-  .rpg-card__resonance, .rpg-bouclier-egide, .rpg-bouclier-impact,
-  .rpg-furie-vignette, .rpg-card__envol, .rpg-card__brume,
-  .rpg-card__title, .rpg-card__type, .rpg-card__text, .rpg-card__ward, .rpg-card__set
-) { scale: 1; }
-.rpg-card.rpg-carte-bouclier :is(.rpg-mana-cost, .rpg-card-element-badge) {
-  scale: calc(1 / var(--rpg-defenseur-echelle, 1));
 }
 .rpg-card.rpg-carte-bouclier > .rpg-card__foot { translate: 0 -20cqw; }
 

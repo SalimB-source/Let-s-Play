@@ -14,6 +14,7 @@
  */
 
 import { cardById, cardCost } from './rpgCards.js';
+import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 
 /**
  * Présente la main par coût croissant, de gauche à droite, avec ou sans piles.
@@ -89,15 +90,22 @@ export function armesPortees(entite) {
  * Regroupe les entités en jeu qui partagent la même carte. Appelé par camp :
  * deux créatures identiques ne fusionnent jamais d'un côté à l'autre, et une
  * créature armée reste seule dans sa pile. Les exemplaires engagés et
- * dégagés restent dans des piles distinctes.
+ * dégagés restent dans des piles distinctes, tout comme les cartes encore
+ * atteintes du mal d’invocation et celles qui ne le sont pas.
  * @param {{ id: string, carteId: string }[]} entites créatures d'un camp
  * @returns {{ carteId: string, entites: object[] }[]} une pile par nom, dans
  *   l'ordre du champ de bataille ; `entites[0]` est la carte de tête.
  */
+/** Même gris que la carte elle-même, Rapidité comprise. */
+export function rpgEtatVisuelPile(entite) {
+  if (entite?.attaquee) return 'engagee';
+  return rpgSouffreMalInvocation(entite) ? 'mal-invocation' : 'degagee';
+}
+
 export function groupEntitesParCarte(entites = []) {
   const piles = new Map();
   for (const entite of entites ?? []) {
-    const cle = armesPortees(entite).length ? `arme:${entite.id}` : `${entite.carteId}:${entite.attaquee ? "engagee" : "degagee"}`;
+    const cle = armesPortees(entite).length ? `arme:${entite.id}` : `${entite.carteId}:${rpgEtatVisuelPile(entite)}`;
     let pile = piles.get(cle);
     if (!pile) {
       pile = { carteId: entite.carteId, entites: [] };

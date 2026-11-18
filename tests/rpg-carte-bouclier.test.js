@@ -154,12 +154,8 @@ test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement'
     /--rpg-defenseur-echelle/,
   ]) assert.doesNotMatch(corps, interdit, `ni ${interdit} dans la remontée`);
 
-  // Le `scale` visuel de la carte et le `scale` inverse des enfants restent
-  // exactement tels quels : la demande ne porte que sur la hauteur du pied.
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*--rpg-defenseur-echelle: 1\.1;[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
-    'l’échelle 1.1 de la carte n’est pas modifiée');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \* \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
-    'les icônes restent ramenées à l’échelle 1');
+  // La carte Défenseur reprend la même taille que les autres cartes.
+  assert.doesNotMatch(css, /--rpg-defenseur-echelle|scale:\s*calc\(1 \/ var\(--rpg-defenseur-echelle/);
 
   // Ciblage étroit : pas de main, mulligan, aperçu, vignette ni variante mobile.
   for (const exclu of [
@@ -188,33 +184,9 @@ test('aperçu : attaque au-dessus de défense comme sur la table', () => {
   assert.match(duel, /entite\?\.pv \?\?/);
 });
 
-test('les Défenseur posés sont 10 % plus grands, icônes inchangées, emplacements espacés', () => {
-  // Agrandissement VISUEL : la boîte de mise en page ne change pas, donc les
-  // mesures en cqw et les polices en px des repères restent identiques sans
-  // qu'on ait à compenser quoi que ce soit dans les autres feuilles.
-  const regle = css.match(/\.rpg-card\.rpg-carte-bouclier \{([\s\S]*?)\n\}/);
-  assert.ok(regle, 'la règle de taille existe');
-  assert.match(regle[0], /--rpg-defenseur-echelle: 1\.1;/, 'facteur 1.1');
-  assert.match(regle[0], /scale:\s*var\(--rpg-defenseur-echelle\);/, 'scale sur la carte de table');
-  assert.doesNotMatch(css, /transform:\s*scale|zoom\s*:/, 'ni transform: scale ni zoom');
-  // Seule la `.rpg-card` de la table est visée : vignettes et aperçus exclus.
-  assert.doesNotMatch(css, /\.rpg-card-catalogue__art\.rpg-carte-bouclier \{[^}]*scale:/s);
-  assert.doesNotMatch(css, /rpg-hover-card-preview__face[^\n]*scale:/);
-
-  // Les ICÔNES reviennent à l'échelle 1 ; les calques pleine face, eux, suivent
-  // le cadre pour rester alignés avec la face rectangulaire.
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \* \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
-    'tous les enfants directs ramenés à 1');
-  const exceptions = css.match(/\.rpg-card\.rpg-carte-bouclier > :is\(([\s\S]*?)\) \{\s*scale: 1;/);
-  assert.ok(exceptions, 'la liste des calques pleine face existe');
-  for (const calque of [
-    '.rpg-card__img', '.rpg-card__blood', '.rpg-card__frost', '.rpg-card__resonance',
-    '.rpg-bouclier-egide', '.rpg-bouclier-impact', '.rpg-furie-vignette',
-    '.rpg-card__envol', '.rpg-card__brume',
-    '.rpg-card__title', '.rpg-card__type', '.rpg-card__text',
-  ]) assert.ok(exceptions[1].includes(calque), `${calque} suit le cadre`);
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier :is\(\.rpg-mana-cost, \.rpg-card-element-badge\) \{\s*scale: calc\(1 \/ var\(--rpg-defenseur-echelle, 1\)\);/,
-    'coût et pastille de couleur ramenés à 1');
+test('les Défenseurs posés ont la même taille que les autres créatures', () => {
+  assert.doesNotMatch(css, /--rpg-defenseur-echelle|transform:\s*scale|zoom\s*:/);
+  assert.doesNotMatch(css, /\.rpg-card\.rpg-carte-bouclier(?: > \*)? \{[^}]*scale:/s);
 
   // AUCUNE largeur de carte ni mesure en cqw n'a été retouchée : c'est la
   // garantie que les icônes gardent exactement leur taille en pixels.
