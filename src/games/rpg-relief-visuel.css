@@ -1,0 +1,91 @@
+/* Des effets de table légers, indépendants du décor WebGL : même une table
+   découpée entre deux plateaux les conserve. Aucun ne capte les interactions. */
+.rpg-lumiere-invocation {
+  position: absolute;
+  inset: -22px;
+  z-index: 1;
+  mix-blend-mode: screen;
+  background: var(--rpg-lumiere-fond);
+  pointer-events: none;
+  opacity: 0;
+  animation: rpg-lumiere-pose calc(.6s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-lumiere-invocation--case { inset: -18px -18px 0; z-index: 1; }
+@keyframes rpg-lumiere-pose {
+  0%, 100% { opacity: 0; transform: scale(.85); }
+  42% { opacity: .7; transform: scale(1); }
+}
+
+/* Le halo est sous le contenu de l'annonce ; les bordures des cartes et les
+   couleurs de l'équipe restent inchangées. */
+.rpg-spell-played { position: relative; }
+.rpg-spell-played > :is(.rpg-spell-played__art, .rpg-spell-played__details) { position: relative; z-index: 1; }
+.rpg-lumiere-sort {
+  position: absolute;
+  inset: -70px -95px;
+  background: var(--rpg-lumiere-fond);
+  opacity: 0;
+  pointer-events: none;
+  animation: rpg-lumiere-sort calc(1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+@keyframes rpg-lumiere-sort {
+  0%, 100% { opacity: 0; transform: scale(.85); }
+  32% { opacity: .62; transform: scale(1); }
+}
+
+/* Une ombre et une onde écrasées sur le plan ajoutent du poids à l'impact.
+   Elles utilisent uniquement les blessures réelles du bilan de combat. */
+.rpg-impact-ombre, .rpg-impact-onde {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+  animation: rpg-impact-sol calc(.72s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-impact-ombre { fill: #100d0bc0; }
+.rpg-impact-onde { fill: none; stroke: #e7bd7e; stroke-width: 1.5; }
+.moba__impact-cinema.is-targeted .rpg-impact-ombre,
+.moba__impact-cinema.is-targeted .rpg-impact-onde { animation-name: rpg-impact-sol-cible; }
+@keyframes rpg-impact-sol {
+  0%, 32% { opacity: 0; transform: scale(.5); }
+  45% { opacity: .65; }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+@keyframes rpg-impact-sol-cible {
+  0%, 65% { opacity: 0; transform: scale(.5); }
+  78% { opacity: .65; }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Ombre séparée : on ne remplace ni l'ombre Défenseur ni les signes d'état. */
+.rpg-relief-ombre {
+  position: absolute;
+  inset: 2px;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: var(--rpg-ombre-x, 0px) var(--rpg-ombre-y, 8px) 16px 3px #000c;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, box-shadow .2s ease;
+}
+
+/* Au pointeur précis seulement : pas de changement de la géométrie des cases,
+   ni de transformation concurrente quand une carte est engagée ou animée. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .rpg-battle:not(.is-reduced):not(.rpg-battle--touch) .rpg-card[data-relief-survol="true"]:not([data-combat-tilted="true"]):not(
+    .is-attacked, .is-declared-attacker, .is-selected, .is-active, .is-blocking, .is-envol,
+    .is-sacrifice-animating, .is-blocker-dragging, .is-invoking, .is-attacking, .fx-enter, .fx-lunge, .fx-hit,
+    .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+  ) {
+    transform: perspective(900px) rotateX(var(--rpg-relief-x, 0deg)) rotateY(var(--rpg-relief-y, 0deg));
+  }
+  .rpg-battle:not(.is-reduced):not(.rpg-battle--touch) .rpg-card[data-relief-survol="true"]:not([data-combat-tilted="true"]):not(
+    .is-attacked, .is-declared-attacker, .is-selected, .is-active, .is-blocking, .is-envol,
+    .is-sacrifice-animating, .is-blocker-dragging, .is-invoking, .is-attacking, .fx-enter, .fx-lunge, .fx-hit,
+    .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+  ) > .rpg-relief-ombre { opacity: .7; }
+}
+.rpg-battle.is-reduced :is(.rpg-lumiere-invocation, .rpg-lumiere-sort, .rpg-impact-ombre, .rpg-impact-onde) { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.rpg-lumiere-invocation, .rpg-lumiere-sort, .rpg-impact-ombre, .rpg-impact-onde) { display: none; }
+}
