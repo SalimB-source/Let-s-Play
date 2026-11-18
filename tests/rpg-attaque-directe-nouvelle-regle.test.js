@@ -29,7 +29,11 @@ for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
     const choix = () => rpgCiblesIndividuellesClassique(d, side, a.id);
     assert.equal(choix().directe, true);
     const c = poser(enemy); c.envol = true; c.gelToursRestants = 1; c.attaquee = true;
-    assert.equal(choix().directe, false, 'une créature inaccessible ou engagée protège aussi');
+    // Une volante seule face à un attaquant au sol : aucune cible atteignable,
+    // le sorcier est donc à découvert (règle « rien d'atteignable »).
+    assert.equal(choix().directe, true, 'une volante hors de portée ne protège plus le sorcier');
+    assert.deepEqual(choix().cibles, [], 'elle reste hors de portée de cet attaquant');
+    c.gelToursRestants = 0;
     a.coupRapide = true; a.infiltration = true;
     assert.equal(choix().directe, false, 'Infiltration et Attaque ciblée ne contournent pas la règle');
     assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null).raison, 'cible');
@@ -220,42 +224,57 @@ test('PvP : l’intention distante déclare et résout la frappe contre l’infi
 });
 
 for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
-  test(`${side} ${pvp ? 'PvP' : 'classique'} : Envol adverse bloque même une unique infiltrée`, () => {
+  test(`${side} ${pvp ? 'PvP' : 'classique'} : Envol adverse et unique infiltrée`, () => {
     const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
-    const { d, poser } = classique(side, pvp), a = poser(side), c = poser(enemy);
-    c.infiltration = true; c.envol = true;
     for (const envol of [false, true]) for (const rapide of [false, true]) {
+      const { d, poser } = classique(side, pvp), a = poser(side), c = poser(enemy);
+      c.infiltration = true; c.envol = true;
       a.envol = envol; a.coupRapide = rapide; a.infiltration = true;
-      assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, false);
-      assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null).raison, 'cible');
+      // Sans Attaque ciblée, la volante infiltrée est hors de portée : la frappe
+      // directe est la seule action possible. Avec Attaque ciblée elle redevient
+      // une cible réelle, et le vol interdit alors de l'ignorer.
+      assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, !rapide);
+      const declaration = rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null);
+      if (rapide) {
+        assert.equal(declaration.raison, 'cible');
+        assert.equal(rpgAttaquerSorcier(d, side, a.id).raison, 'cible-obligatoire');
+      } else {
+        assert.ok(declaration.ok, JSON.stringify(declaration));
+      }
     }
-    assert.equal(rpgAttaquerSorcier(d, side, a.id).raison, 'cible-obligatoire');
   });
 }
 
-test('un Envol acquis en réponse annule une attaque directe déjà annoncée', () => {
+test('un Envol acquis en réponse laisse une attaque directe déjà annoncée aboutir', () => {
   const { d, poser } = classique('joueur'), a = poser('joueur'), c = poser('sorcier');
   c.infiltration = true;
   assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  // L'adversaire gagne Envol pendant la réponse : la créature s'éloigne hors de
+  // portée, elle ne devient pas une cible obligatoire. La frappe reste légale.
   c.envol = true; const pv = d.sorcier.pv;
-  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').annule);
-  assert.equal(d.sorcier.pv, pv);
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').ok);
+  assert.equal(d.sorcier.pv, pv - a.atk);
+  assert.ok(d.sorcier.creatures.includes(c), 'la volante survit, elle n’était pas visée');
 });
 
-for (const side of ['joueur', 'sorcier']) test(`${side} Conquête : le volant empêche la frappe dans sa voie seulement`, () => {
-  const { d, a, c } = moba(side); a.envol = true; c.envol = true; c.infiltration = true;
-  assert.equal(rpgMobaCiblesIndividuelles(d, side, a.id, 'left').directe, false);
+for (const side of ['joueur', 'sorcier']) test(`${side} Conquête : le volant atteignable ferme sa voie seulement`, () => {
+  const { d, a, c } = moba(side); a.envol = true; c.envol = true;
+  assert.equal(rpgMobaCiblesIndividuelles(d, side, a.id, 'left').directe, false, 'un volant de la voie peut intercepter');
   assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, side, a.id, null, 'left').raison, 'cible');
   c.mobaLane = 'right';
   assert.equal(rpgMobaCiblesIndividuelles(d, side, a.id, 'left').directe, true);
+  // Volante mais infiltrée : hors de portée, elle ne ferme plus sa voie.
+  c.mobaLane = 'left'; c.infiltration = true;
+  assert.equal(rpgMobaCiblesIndividuelles(d, side, a.id, 'left').directe, true);
 });
 
-test('Conquête : un Envol acquis en réponse annule la frappe', () => {
-  const { d, a, c } = moba('joueur'); c.infiltration = true;
+test('Conquête : un Envol acquis en réponse laisse la frappe directe aboutir', () => {
+  const { d, a, c, enemy } = moba('joueur'); c.infiltration = true;
   assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null, 'left').ok);
-  c.envol = true; const pv = mobaVoie(d.moba, 'left').hp.sorcier;
-  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').annule);
-  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, pv);
+  c.envol = true; const pv = mobaVoie(d.moba, 'left').hp[enemy];
+  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').ok);
+  assert.equal(mobaVoie(d.moba, 'left').hp[enemy], pv - a.atk);
+  assert.ok(d[enemy].creatures.includes(c));
 });
 
 

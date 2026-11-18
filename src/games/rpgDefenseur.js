@@ -30,11 +30,23 @@ export function ciblesDefenseur(cibles = [], attaquant = null) {
   return defenseurs.length ? defenseurs : cibles;
 }
 
-/** Une créature adverse avec Envol interdit toute frappe directe, quelle que
- * soit la capacité de l'attaquant, y compris contre une infiltrée volante.
+/** Une créature adverse avec Envol interdit la frappe directe *tant qu'une
+ * cible reste atteignable* : le vol ne protège plus le sorcier, il protège
+ * seulement les créatures qu'il rend intouchables. L'appelant fournit les
+ * créatures du champ ou de la voie, sans Sites.
+ *
+ * `ciblesAtteignables` (facultatif) est la liste des créatures que CET
+ * attaquant peut réellement viser, tous filtres déjà appliqués. Fournie et
+ * vide, elle rend la frappe directe légale même face à un champ peuplé :
+ * l'attaquant n'a plus aucune créature à portée, frapper le sorcier est sa
+ * seule action. ABSENTE, la règle historique s'applique (une créature volante
+ * suffit à interdire la frappe directe) pour les appelants qui n'ont pas
+ * encore calculé l'atteignabilité.
+ *
  * Sinon, champ vide, unique infiltrée ou Envol sans Défenseur autorisent la
- * frappe. L'appelant fournit les créatures du champ ou de la voie, sans Sites. */
-export function attaqueDirectePermise(attaquant, creaturesAdverses = []) {
+ * frappe. */
+export function attaqueDirectePermise(attaquant, creaturesAdverses = [], ciblesAtteignables = null) {
+  if (Array.isArray(ciblesAtteignables) && ciblesAtteignables.length === 0) return true;
   if (creaturesAdverses.some((creature) => creature?.envol)) return false;
   return creaturesAdverses.length === 0
     || (creaturesAdverses.length === 1 && Boolean(creaturesAdverses[0]?.infiltration))

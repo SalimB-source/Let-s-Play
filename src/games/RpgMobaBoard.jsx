@@ -34,6 +34,7 @@ import { rpgMobaSorties, rpgMobaSortieRemplacee } from './rpgMobaSorties.js';
 import { rpgMobaMouvementsCartes, rpgMobaTrajetCarte } from './rpgMobaCartesFx.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaArrowTarget, rpgMobaCombatIndicators } from './rpgMobaCombatIndicators.js';
+import { rpgAttaqueTousMobaDisponible, rpgVagueDirecteMoba } from './rpgAttaqueTous.js';
 import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgSouffreMalInvocation, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgNombreBlessures, rpgBlessuresDepuis, rpgRenvoisEnMain, rpgExils, rpgConsommerSoins, rpgConsommerPresentations, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
 import {
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, MOBA_DECKS, rpgMobaValiderDeck, MOBA_ARMES, MOBA_CONTRESORTS, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_HOSTILES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_NEUTRES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_VOIES, MOBA_MAGIES_SOINS, MOBA_MAGIES_PRIX, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_ZONE_REPONSE, MOBA_MAGIES_ZONE_TOTALE_REPONSE, MOBA_MAGIES_RENFORT_REPONSE, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCiblesPrise, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaCiblesAttaque, rpgMobaDeclarerAttaque, rpgMobaDeclarerBlocages, rpgMobaDefausser, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaJouerCreature, rpgMobaJouerArme,
@@ -419,6 +420,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     },
   });
   const sequenceFx = useRef(0);
+  // « Attaquer avec tous » : file des frappes directes restant à déclarer.
+  const fileAttaqueTousRef = useRef([]);
   // Un même effet peut soigner à la fois une voie et plusieurs créatures.
   const soinSonJoue = useRef(false);
   const jouerSonSoin = () => {
@@ -1255,6 +1258,30 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     setAttaquants(ids); setCiblesRapides(cibles); setCibleRapideEnCours(null); setCibleVoieEnCours(null);
     setCarte(null); setEtape('blocage'); setCible(cibleId ? null : attaquantId);
   };
+  /** « Attaquer avec tous » : les créatures prêtes frappent directement le
+   * sorcier, l'une après l'autre. Chaque frappe garde sa propre réponse et sa
+   * propre résolution : la vague n'ouvre jamais un combat de groupe. */
+  const lancerAttaqueTous = () => {
+    if (!vagueAttaqueTous.length) return;
+    onPlaySfx?.('attackers_confirm');
+    fileAttaqueTousRef.current = vagueAttaqueTous.slice(1);
+    declarer(vagueAttaqueTous[0].id, null, vagueAttaqueTous[0].voie);
+  };
+
+  /** Enchaîne la vague une fois la frappe précédente résolue. Une cible
+   * redevenue atteignable, une créature engagée ou une fin de tour vident la
+   * file : la suite du combat reprend la main. */
+  const poursuivreAttaqueTous = () => {
+    if (!fileAttaqueTousRef.current.length) return;
+    if (etape !== 'tour' || carte || defausse || fini || cibleRapideEnCours || duel.combatDeclare) return;
+    const prochaine = fileAttaqueTousRef.current[0];
+    fileAttaqueTousRef.current = fileAttaqueTousRef.current.slice(1);
+    const entity = getEntity(actif, prochaine.id);
+    const choix = entity ? rpgMobaCiblesIndividuelles(duel, actif, prochaine.id, prochaine.voie) : null;
+    if (!entity || !rpgPeutAttaquer(entity) || !choix?.directe || choix.cibles.length) return;
+    declarer(prochaine.id, null, prochaine.voie);
+  };
+
   const nouvellePartie = (partie = null) => { rituelSacrificeRef.current = null; setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setChoixCoutDemande(null); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerSecousseEcran(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
   const demarrerHistoire = () => {
     const deck = modeHistoire && deckCampagneRef.current ? deckCampagneRef.current : deckPour('joueur');
@@ -1387,6 +1414,13 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   // L'attaque individuelle ne demande aucun choix de bloqueur. Si le joueur
   // n'a plus de réponse légale, résoudre par la même voie que le bouton Passer,
   // après un bref délai pour laisser apparaître l'annonce et ses animations.
+  // Frappe directe en vague : chaque créature prête n'a plus aucune cible
+  // atteignable dans ses voies, le sorcier est donc à découvert pour toutes.
+  // Une seule cible atteignable suffit à fermer le raccourci.
+  const vagueAttaqueTous = rpgVagueDirecteMoba(duel, actif);
+  const attaqueTousDisponible = etape === 'tour' && !carte && !defausse && !fini && !cibleRapideEnCours
+    && !camp.manaChoixEnAttente && rpgAttaqueTousMobaDisponible(duel, actif);
+
   const resolutionAutomatique = Boolean(etape === 'blocage' && actif === 'sorcier' && defenseur === 'joueur'
     && duel.combatDeclare?.cibleIndividuelle && !fini && !carte && !destruction && !recherche && !site && !defausse
     && !duel.arriveeEnAttente && !duel.effetCreatureEnAttente && !duel.mobaCreatureEnAttente && !duel.mobaSortEnAttente
@@ -1401,6 +1435,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     }, 450);
     return () => window.clearTimeout(timer);
   }, [duel, version, resolutionAutomatique]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    poursuivreAttaqueTous();
+  });
 
   const phaseVisuelle = etape === 'blocage' ? 'blocage' : etape === 'fin' ? 'fin' : 'principale';
   const soinsParVoie = rpgMobaSoinsVoies(soinsVoies);
@@ -1689,7 +1727,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {annonceSort && rendu?.SpellAnnouncement && <div className="rpg-spell-played-stack moba__spell-stack" key={annonceSort.token}><rendu.SpellAnnouncement annonce={annonceSort} camp={annonceSort.camp} nomLanceur={noms[annonceSort.camp]} /></div>}
     <div className="moba__controls" inert={selectionAscension.rituel ? true : undefined}><div className="moba__phase"><span>✦</span><div><small>VOTRE STRATÉGIE</small><strong>{etape === 'arrivee' ? 'Choix de la cible' : etape === 'reponse-creature' ? 'Réponse à la créature' : etape === 'reponse-sort' ? 'Réponse au sort' : etape === 'reponse-arrivee' ? 'Réponse à la capacité' : etape === 'fin' ? 'Réponse de fin de tour' : etape === 'blocage' ? 'Réponse à l’attaque' : defausse ? 'Défausse' : duel.attaqueJouee === actif ? 'Après le combat' : 'Phase principale'}</strong></div></div>{duel.brouillardCombat && <abbr className="moba__fog" title="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour." aria-label="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour">☁<span> Voile</span></abbr>}{camp.prochaineArriveeAbordage && <abbr className="moba__boarding" title="La prochaine créature jouée ce tour a Abordage." aria-label="La prochaine créature jouée ce tour a Abordage">⚓<span> Abordage</span></abbr>}{rendu?.PhaseTrack && <div className="moba__phase-track"><rendu.PhaseTrack current={phaseVisuelle} jouees={[]} steps={MOBA_PHASE_STEPS} ariaLabel="Repères du tour MOBA" currentSuffix="repère actuel" /></div>}<div className="moba__buttons">
       {annonceRepondable && !apercuAnnonceOuvert && <button type="button" ref={boutonRevoirAnnonce} aria-label={`Voir l’annonce de ${carteAnnonce.name}`} onClick={() => setAnnoncesApercues((anciennes) => anciennes.filter((item) => item !== attenteAnnonce))}>Voir l’annonce</button>}
-      {destruction || site ? null : etape === 'tour' ? <>{cibleRapideEnCours && cibleVoieEnCours && <div role="group" aria-label="Choisir la voie de l’attaque"><span>Choisissez la voie de cette attaque :</span>{mobaVoiesCombat(duel.moba, getEntity(actif, cibleRapideEnCours)?.mobaLane).filter((voie) => rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, voie).cibles.includes(cibleVoieEnCours)).map((voie) => <button key={voie} type="button" onClick={() => declarer(cibleRapideEnCours, cibleVoieEnCours, voie)}>{voies[voie]}</button>)}<button type="button" onClick={() => setCibleVoieEnCours(null)}>Changer de cible</button></div>}
+      {destruction || site ? null : etape === 'tour' ? <>{attaqueTousDisponible && <button type="button" className="moba__attack-all" data-attaque-directe="tous" onClick={lancerAttaqueTous}>Attaquer avec tous ({vagueAttaqueTous.length})</button>}{cibleRapideEnCours && cibleVoieEnCours && <div role="group" aria-label="Choisir la voie de l’attaque"><span>Choisissez la voie de cette attaque :</span>{mobaVoiesCombat(duel.moba, getEntity(actif, cibleRapideEnCours)?.mobaLane).filter((voie) => rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, voie).cibles.includes(cibleVoieEnCours)).map((voie) => <button key={voie} type="button" onClick={() => declarer(cibleRapideEnCours, cibleVoieEnCours, voie)}>{voies[voie]}</button>)}<button type="button" onClick={() => setCibleVoieEnCours(null)}>Changer de cible</button></div>}
       {cibleRapideEnCours && !cibleVoieEnCours && (() => {
         const voiesAttaque = mobaVoiesCombat(duel.moba, getEntity(actif, cibleRapideEnCours)?.mobaLane);
         return voiesAttaque.filter((voie) => rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, voie).directe).map((voie) => <button key={voie} type="button" onClick={() => declarer(cibleRapideEnCours, null, voie)}>{voiesAttaque.length > 1 ? `Attaquer directement ${voies[voie].toLowerCase()}` : 'Attaquer directement la voie'}</button>);

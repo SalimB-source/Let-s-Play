@@ -402,6 +402,11 @@
 .moba__controls { position: absolute; z-index: 8; top: 55%; right: 1%; width: 17%; display: grid; gap: 5px; margin: 0; padding: 8px; border: 1px solid #a8895a; border-radius: 8px; background: #17130fea; }
 .moba__phase > span, .moba__phase small { display: none; }.moba__phase strong { font-size: 12px; }
 .moba__buttons { width: 100%; display: grid; gap: 4px; }.moba__buttons button { min-height: 32px; padding: 6px; font-size: 11px; }
+/* « Attaquer avec tous » : commande secondaire de la phase principale, elle
+   garde le gabarit des autres boutons et n'emprunte pas l'aplat de la
+   commande principale (« Fin du tour »). */
+.moba__buttons .moba__attack-all { border-color: rgba(242, 106, 97, .56); }
+.moba__buttons .moba__attack-all:hover:not(:disabled) { border-color: #f58a83; }
 .moba__hand { position: absolute; z-index: 9; left: 17%; right: 18%; bottom: 0; height: 21%; max-width: none; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .moba__handhead { position: absolute; left: 0; right: 0; top: -18px; display: flex; justify-content: center; gap: 12px; margin: 0; color: white; text-shadow: 0 1px 4px #000; }
 .moba__handhead > div:not(.moba__hand-pages), .moba__handhead h2 { display: none; }
