@@ -110,7 +110,7 @@ export const dailyStories = {
     "p2": "Complètent la sélection 007 First Light (IO Interactive), Control Resonant (Remedy / Annapurna) et The Legend of Zelda: Ocarina of Time (Nintendo). Chaque studio est cité avec son jeu : ce sont les seuls crédits à retenir pour cette catégorie.",
     "h2b": "VOTER AVANT LE 9 DÉCEMBRE",
     "p3": "Le bulletin officiel invite à finaliser ses choix avant le 9 décembre à 21 h heure de l’Est, soit 3 h du matin le 10 décembre en Algérie. Passé ce délai, les votes enregistrés ne peuvent plus être modifiés : vérifiez votre sélection avant de valider.",
-    "p4": "La couverture de cet article est une composition éditoriale Let’s Play réalisée à partir des affiches fournies des six nommés ; ce n’est pas un visuel officiel de The Game Awards. La révélation officielle des nommés du 17 novembre est intégrée ci-dessus.",
+    "p4": "La couverture et les six visuels de cet article sont des compositions éditoriales Let’s Play réalisées à partir des affiches fournies des six nommés ; ce ne sont pas des visuels officiels de The Game Awards. La révélation officielle des nommés du 17 novembre est intégrée ci-dessus.",
     "takeText": "Six jeux en lice pour le Jeu de l’année 2026, annoncés le 17 novembre. Cérémonie le 10 décembre à Los Angeles, votes ouverts jusqu’au 9 décembre sur le site officiel.",
     "cover": "GAME AWARDS 2026",
     "credit": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards.",

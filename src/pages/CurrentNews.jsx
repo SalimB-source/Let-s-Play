@@ -1253,7 +1253,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
   const copy = t?.article || {};
   const sentimentId = inferSentimentForStory(story);
   const meta = { ...sentimentMeta(sentimentId), label: copy.sentiment?.[sentimentId] || sentimentMeta(sentimentId).label };
-  const gallery = story.gallery || getArticleGallery(key);
+  const gallery = story.gallery || getArticleGallery(key, lang);
   // Bandes-annonces et teasers officiels des actus cinéma : la liste vit dans
   // src/articleTrailers.js, comme les galeries de captures. Une actu sans
   // vidéo officielle rend la mention « aucune bande-annonce » plutôt qu'un

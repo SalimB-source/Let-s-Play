@@ -920,11 +920,76 @@ export const articleGalleries = {
       { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=8NqnTzVh5O0' },
     ],
   },
+  // ---- Édition du mercredi 18.11.2026 — The Game Awards 2026 -----------------
+  'game-awards-2026-les-6-nommes-jeu-annee': {
+    label: 'GAME AWARDS 2026',
+    meta: 'CARROUSEL LET’S PLAY · 6 NOMMÉS',
+    kind: 'visuals',
+    layout: 'portrait',
+    items: [
+      { src: 'screenshots/game-awards-2026/01-grand-theft-auto-vi.webp', alt: 'Visuel éditorial Let’s Play — Grand Theft Auto VI (Rockstar Games), nommé au Jeu de l’année aux Game Awards 2026', caption: '01 / Grand Theft Auto VI — Rockstar Games' },
+      { src: 'screenshots/game-awards-2026/02-resident-evil-requiem.webp', alt: 'Visuel éditorial Let’s Play — Resident Evil Requiem (Capcom), nommé au Jeu de l’année aux Game Awards 2026', caption: '02 / Resident Evil Requiem — Capcom' },
+      { src: 'screenshots/game-awards-2026/03-phantom-blade-zero.webp', alt: 'Visuel éditorial Let’s Play — Phantom Blade Zero (S-Game), nommé au Jeu de l’année aux Game Awards 2026', caption: '03 / Phantom Blade Zero — S-Game' },
+      { src: 'screenshots/game-awards-2026/04-007-first-light.webp', alt: 'Visuel éditorial Let’s Play — 007 First Light (IO Interactive), nommé au Jeu de l’année aux Game Awards 2026', caption: '04 / 007 First Light — IO Interactive' },
+      { src: 'screenshots/game-awards-2026/05-control-resonant.webp', alt: 'Visuel éditorial Let’s Play — Control Resonant (Remedy / Annapurna), nommé au Jeu de l’année aux Game Awards 2026', caption: '05 / Control Resonant — Remedy / Annapurna' },
+      { src: 'screenshots/game-awards-2026/06-the-legend-of-zelda-ocarina-of-time.webp', alt: 'Visuel éditorial Let’s Play — The Legend of Zelda: Ocarina of Time (Nintendo), nommé au Jeu de l’année aux Game Awards 2026', caption: '06 / Zelda: Ocarina of Time — Nintendo' },
+    ],
+    credit: 'Carrousel éditorial Let’s Play (4:5) réalisé à partir des affiches officielles des six nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Les numéros indiquent l’ordre de lecture du carrousel, pas un classement.',
+    creditSources: [
+      { label: 'la liste officielle des nommés', href: 'https://thegameawards.com/nominees' },
+    ],
+  },
+};
+
+const localizedArticleGalleries = {
+  en: {
+    'game-awards-2026-les-6-nommes-jeu-annee': {
+      label: 'GAME AWARDS 2026',
+      meta: 'LET’S PLAY CAROUSEL · 6 NOMINEES',
+      kind: 'visuals',
+      layout: 'portrait',
+      items: [
+        { src: 'screenshots/game-awards-2026/en/01-grand-theft-auto-vi.webp', alt: 'Let’s Play editorial visual — Grand Theft Auto VI (Rockstar Games), Game of the Year nominee at The Game Awards 2026', caption: '01 / Grand Theft Auto VI — Rockstar Games' },
+        { src: 'screenshots/game-awards-2026/en/02-resident-evil-requiem.webp', alt: 'Let’s Play editorial visual — Resident Evil Requiem (Capcom), Game of the Year nominee at The Game Awards 2026', caption: '02 / Resident Evil Requiem — Capcom' },
+        { src: 'screenshots/game-awards-2026/en/03-phantom-blade-zero.webp', alt: 'Let’s Play editorial visual — Phantom Blade Zero (S-Game), Game of the Year nominee at The Game Awards 2026', caption: '03 / Phantom Blade Zero — S-Game' },
+        { src: 'screenshots/game-awards-2026/en/04-007-first-light.webp', alt: 'Let’s Play editorial visual — 007 First Light (IO Interactive), Game of the Year nominee at The Game Awards 2026', caption: '04 / 007 First Light — IO Interactive' },
+        { src: 'screenshots/game-awards-2026/en/05-control-resonant.webp', alt: 'Let’s Play editorial visual — Control Resonant (Remedy / Annapurna), Game of the Year nominee at The Game Awards 2026', caption: '05 / Control Resonant — Remedy / Annapurna' },
+        { src: 'screenshots/game-awards-2026/en/06-the-legend-of-zelda-ocarina-of-time.webp', alt: 'Let’s Play editorial visual — The Legend of Zelda: Ocarina of Time (Nintendo), Game of the Year nominee at The Game Awards 2026', caption: '06 / Zelda: Ocarina of Time — Nintendo' },
+      ],
+      credit: 'Let’s Play editorial carousel (4:5) composed from the official posters of the six nominees (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Numbers indicate carousel reading order, not a ranking.',
+      creditSources: [
+        { label: 'the official nominees list', href: 'https://thegameawards.com/nominees' },
+      ],
+    },
+  },
+  ar: {
+    'game-awards-2026-les-6-nommes-jeu-annee': {
+      label: 'جوائز الألعاب 2026',
+      meta: 'بطاقات LET’S PLAY · المرشحون الستة',
+      kind: 'visuals',
+      layout: 'portrait',
+      items: [
+        { src: 'screenshots/game-awards-2026/en/01-grand-theft-auto-vi.webp', alt: 'بطاقة تحريرية من Let’s Play — Grand Theft Auto VI (Rockstar Games)، مرشحة لجائزة لعبة السنة في جوائز الألعاب 2026', caption: '01 / Grand Theft Auto VI — Rockstar Games' },
+        { src: 'screenshots/game-awards-2026/en/02-resident-evil-requiem.webp', alt: 'بطاقة تحريرية من Let’s Play — Resident Evil Requiem (Capcom)، مرشحة لجائزة لعبة السنة في جوائز الألعاب 2026', caption: '02 / Resident Evil Requiem — Capcom' },
+        { src: 'screenshots/game-awards-2026/en/03-phantom-blade-zero.webp', alt: 'بطاقة تحريرية من Let’s Play — Phantom Blade Zero (S-Game)، مرشحة لجائزة لعبة السنة في جوائز الألعاب 2026', caption: '03 / Phantom Blade Zero — S-Game' },
+        { src: 'screenshots/game-awards-2026/en/04-007-first-light.webp', alt: 'بطاقة تحريرية من Let’s Play — 007 First Light (IO Interactive)، مرشحة لجائزة لعبة السنة في جوائز الألعاب 2026', caption: '04 / 007 First Light — IO Interactive' },
+        { src: 'screenshots/game-awards-2026/en/05-control-resonant.webp', alt: 'بطاقة تحريرية من Let’s Play — Control Resonant (Remedy / Annapurna)، مرشحة لجائزة لعبة السنة في جوائز الألعاب 2026', caption: '05 / Control Resonant — Remedy / Annapurna' },
+        { src: 'screenshots/game-awards-2026/en/06-the-legend-of-zelda-ocarina-of-time.webp', alt: 'بطاقة تحريرية من Let’s Play — The Legend of Zelda: Ocarina of Time (Nintendo)، مرشحة لجائزة لعبة السنة في جوائز الألعاب 2026', caption: '06 / Zelda: Ocarina of Time — Nintendo' },
+      ],
+      credit: 'بطاقات تحريرية من Let’s Play (4:5) أُنجزت انطلاقًا من الملصقات الرسمية للمرشحين الستة (Rockstar Games وCapcom وS-Game وIO Interactive وRemedy / Annapurna وNintendo). تشير الأرقام إلى ترتيب العرض لا إلى تصنيف تفضيلي.',
+      creditSources: [
+        { label: 'القائمة الرسمية للمرشحين', href: 'https://thegameawards.com/nominees' },
+      ],
+    },
+  },
 };
 
 // Récupère la galerie d’un article (undefined si l’article n’en a pas).
 articleGalleries['physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de'] = articleGalleries['physint-budget-400-millions-xbox'];
 
-export function getArticleGallery(key) {
+export function getArticleGallery(key, lang) {
+  if (lang && localizedArticleGalleries[lang]?.[key]) {
+    return localizedArticleGalleries[lang][key];
+  }
   return articleGalleries[key];
 }
