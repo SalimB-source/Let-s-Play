@@ -40,8 +40,9 @@ try {
   const duel = rpgNouveauDuel({
     joueurDeck: [], sorcierDeck: [], modeMana: RPG_MODE_MANA_ESSAI,
     joueurCouleurs: ['braise'], sorcierCouleurs: ['neige'], rng: () => .9, pvp: true,
+    lignes: true,
   });
-  duel.lignes = true;
+  if (duel.lignes !== true) throw new Error('la fabrique n’a pas gardé le drapeau des lignes');
   duel.mulliganFait = { joueur: true, sorcier: true };
   duel.manaEssaiDemarre = true;
   for (const camp of ['joueur', 'sorcier']) duel[camp].mana = Object.fromEntries(RPG_ELEMENTS.map((e) => [e, 40]));
