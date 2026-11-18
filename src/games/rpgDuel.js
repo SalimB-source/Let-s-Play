@@ -1,3 +1,5 @@
+import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
+export { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
@@ -5578,6 +5580,7 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
   const entite = camp?.creatures.find((candidate) => candidate.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
   if (estSite(entite)) return { ok: false, raison: 'indestructible' };
+  if (entite.attaquee) return { ok: false, raison: 'sacrifice-engage' };
   duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${entite.name} pour libérer un emplacement.`);
   sacrifierCreature(duel, cote, entite);
   rafraichirAuras(duel);
@@ -6538,6 +6541,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       || new Set(idsDemandes).size !== idsDemandes.length) return { ok: false, raison: 'sacrifice', nombreSacrifices };
     sacrifices = idsDemandes.map(id => camp.creatures.find(e => e.id === id));
     if (sacrifices.some(e => !e || estSite(e))) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+    if (sacrifices.some(e => e.attaquee)) return { ok: false, raison: 'sacrifice-engage', nombreSacrifices };
   } else if (nombreSacrifices) {
     if (cote !== 'sorcier' || duel.pvp) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
     const disponibles = (ascension ? (combinaisonsAscension(camp, carte)[0] ?? []) : victimesInvocation(camp)).sort((a, b) =>
@@ -7380,7 +7384,6 @@ export function rpgModesArme(duel, cote, entiteId) {
 // Mur (Tours de défense) et `nePeutPasAttaquer` (le Drakkar) : ne peuvent
 // jamais attaquer, même prêts — seul le Mur interdit aussi l'équipement.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
-export const rpgSouffreMalInvocation = (entite) => Boolean(entite?.malInvocation && !entite.rapidite && !entite.rapiditeAccordee);
 export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
   && entite.ready && !entite.attaquee && !rpgSouffreMalInvocation(entite) && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;

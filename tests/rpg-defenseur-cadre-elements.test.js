@@ -56,7 +56,7 @@ test('les styles Défenseur gardent la carte rectangulaire et font pulser la pie
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|rpg-card__liseret-garde|rpg-card__ombre-garde/);
   assert.doesNotMatch(css, /--rpg-cadre-decoupe|cadre-le-sablier/);
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s);
+  assert.doesNotMatch(css, /--rpg-defenseur-echelle/);
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/);
   assert.match(css, /box-shadow: 0 10px 12px/);
   assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre/s);

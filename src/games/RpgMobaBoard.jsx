@@ -14,6 +14,7 @@ import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import { rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { estDefenseur } from './rpgDefenseur.js';
 import './rpg-bouclier.css';
+import './rpg-etats-cartes.css';
 import { rpgCartesRenfortChoisi } from './rpgDuel.js';
 import { rpgMobaPeutRepondreAttaque } from './rpgMobaReponseAttaque.js';
 import { rpgMobaCartePourApercu, rpgMobaNotesCarte } from './rpgMobaPresentation.js';
@@ -120,7 +121,7 @@ const autre = (side) => side === 'joueur' ? 'sorcier' : 'joueur';
 
 const message = {
   ...ERREURS_ASCENSION,
-  mana: 'Carte impossible à jouer.', 'creature-limite': 'Une seule créature normale peut être jouée par camp et par tour.', 'sort-limite': 'Un seul sort peut être joué par camp et par tour.', 'arme-limite': 'Une seule arme peut être jouée par camp et par tour.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
+  mana: 'Carte impossible à jouer.', 'creature-limite': 'Une seule créature normale peut être jouée par camp et par tour.', 'sort-limite': 'Un seul sort peut être joué par camp et par tour.', 'arme-limite': 'Une seule arme peut être jouée par camp et par tour.', 'sacrifice-engage': 'Une créature engagée ne peut pas être sacrifiée.', 'sacrifice-limite': 'Une seule créature nécessitant un sacrifice peut être jouée par camp et par tour.', 'petite-creature-limite': 'Une seule créature de coût 1 à 4 peut être jouée par camp et par tour.', 'pas-pret': 'Cette créature ne peut pas encore attaquer.',
   'blocage-force': 'Les créatures marquées doivent bloquer si elles le peuvent dans leur voie.',
   'attaque-jouee': 'La phase d’attaque est déjà terminée.', 'cible-obligatoire': 'Choisissez une cible légale pour chaque attaquant ciblé.', emplacement: 'Cet emplacement n’est pas libre.', 'emplacement-sacrifice': 'La créature doit prendre la place d’une victime choisie.',
   'blocage-indisponible-moba': 'Ce sort impose un blocage et ne peut pas être joué en MOBA.',
@@ -190,7 +191,7 @@ function etatsCreature(entity) {
   if (entity.site) etats.push('Site indestructible : ne peut ni attaquer ni bloquer');
   if (rpgSouffreMalInvocation(entity)) etats.push('Mal d’invocation : ne peut pas attaquer avant le prochain tour de son camp, mais peut défendre');
   if (entity.gelToursRestants > 0) etats.push('Gelée');
-  else if (entity.attaquee) etats.push('A attaqué');
+  if (entity.attaquee) etats.push('Engagée : ne peut pas être sacrifiée');
   else if (!entity.ready) etats.push('Non prête');
   if (entity.coupRapide) etats.push('Attaque ciblée');
   if (estDefenseur(entity)) etats.push('Défenseur');
@@ -979,7 +980,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (victimes.length && victimes.length === attente.sacrificeIds.length
       && lane && mobaVoieJouable(duel.moba, attente.cote, lane.id)
       && attente.sacrificeIds.includes(lane.slots[attente.cote][attente.slot])
-      && victimes.every((victime) => victime.side === attente.cote)
+      && victimes.every((victime) => victime.side === attente.cote && getEntity(attente.cote, victime.entityId) && !getEntity(attente.cote, victime.entityId).attaquee)
       && new Set(attente.sacrificeIds).size === attente.sacrificeIds.length) {
       const cercles = victimes.map((entite) => ({ ...entite,
         effectId: `invocation-moba-${++sequenceFx.current}-${entite.entityId}` }));
@@ -1133,7 +1134,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (sacrificesChoisis.length === nombre && sacrificesChoisis.includes(position.id)) return sacrificesChoisis;
     const victime = getEntity('joueur', position.id);
     return sacrificesChoisis.length === nombre - 1 && victime && !sacrificesChoisis.includes(victime.id)
-      && cardById(victime.carteId)?.kind !== 'site' ? [...sacrificesChoisis, victime.id] : null;
+      && !victime.attaquee && cardById(victime.carteId)?.kind !== 'site' ? [...sacrificesChoisis, victime.id] : null;
   };
   const peutDeposer = (drag, position) => {
     if (!drag || !position || fini || iaAgit || destruction || site || apercu || confirmerSortie || parametresOuverts || cimetiere || recherche || defausse) return false;
@@ -1530,7 +1531,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
           : etape === 'fin' ? 'Jouez une magie rapide si vous le souhaitez, puis passez pour commencer votre tour.'
             : etape === 'blocage' && duel.combatDeclare?.cibleIndividuelle ? 'Répondez avec une Magie Rapide, ou passez pour résoudre l’attaque.'
             : etape === 'blocage' ? 'Répondez avec une Magie Rapide, ou passez pour résoudre l’attaque.'
-            : carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > sacrificesChoisis.length ? 'Choisissez vos créatures à sacrifier pour invoquer.'
+            : carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > sacrificesChoisis.length ? 'Choisissez vos créatures dégagées à sacrifier pour invoquer.'
             : carte ? 'Choisissez une case illuminée pour invoquer votre créature.'
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
   const reserveAscensionDisponible = etape === 'tour' && mainSide === 'joueur' && !iaAgit && !fini && !carte;
@@ -1566,7 +1567,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         <p>Trois voies indépendantes : 20 / 15 / 20 PV par camp et 2 / 1 / 2 emplacements. Conquérir deux voies remporte la partie.</p>
         <p>Chaque créature peut attaquer une fois par tour, individuellement. La cible est choisie à l’annonce, puis l’adversaire peut répondre par une Magie Rapide avant les dégâts. Il n’y a pas de choix de bloqueurs : la créature visée par une attaque normale déclenche ses effets « au blocage ». Les dégâts des effets « à l’attaque » et « au blocage » frappent juste avant le duel, puis les créatures encore en jeu échangent leurs dégâts simultanément ; les effets imprimés « après les blessures » se résolvent ensuite. Une créature peut frapper directement une voie vide de créatures adverses ou occupée par une seule créature adverse avec Infiltration et sans Envol. Avec Envol, elle peut aussi frapper directement s’il n’y a aucun Défenseur ni créature avec Envol dans la voie. Une créature adverse avec Envol interdit toujours l’attaque directe dans sa voie. Envol permet de viser les créatures volantes. Infiltration protège des attaques normales et ignore la priorité des Défenseurs pour viser une créature, mais ne change pas la règle d’attaque directe. L’Attaque ciblée peut viser une créature de n’importe quelle voie, sans riposte ordinaire, ou frapper directement selon la même règle. Défenseur impose une cible accessible dans la voie de l’attaquant, sauf si celui-ci a Infiltration.</p>
         <p>Après la conquête du centre, le vainqueur conserve sa case centrale et peut y jouer. Les créatures centrales participent aux deux voies latérales actives ; les PV restants du centre disparaissent.</p>
-        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Sans Rapidité, une créature ne peut pas attaquer avant le début du prochain tour de son camp, mais elle peut défendre dès son arrivée. Rapidité permet d’attaquer dès l’arrivée, sous réserve des autres restrictions. En MOBA, certaines créatures avec Rapidité ont aussi une Invocation spéciale propre à chacune, indiquée sur leur fiche : elles peuvent être invoquées spécialement si leur condition est remplie, pendant votre phase principale. Les Sandales de Tislit donnent +1/+1 en MOBA et s’attachent uniquement pendant votre tour ; les jetons ne se jouent pas depuis la main, mais Tarek et Kusayla peuvent être invoqués spécialement. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Invocation spéciale se joue si sa condition est remplie pendant votre phase principale : elle ne demande ni sacrifice ni quota et ne consomme pas la pose normale. Si sa condition manque, la créature peut être invoquée normalement pendant votre tour. Ses conditions portent sur tout le plateau, parfois aussi sur votre main ou votre cimetière. Les sorts et les armes ne sont pas limités en nombre par tour. Toute invocation normale annoncée compte même si elle est contrée. Choisissez les victimes parmi vos créatures (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
+        <p>Il n’y a pas de mana : les cartes se jouent sans coût de mana. Sans Rapidité, une créature ne peut pas attaquer avant le début du prochain tour de son camp, mais elle peut défendre dès son arrivée. Rapidité permet d’attaquer dès l’arrivée, sous réserve des autres restrictions. En MOBA, certaines créatures avec Rapidité ont aussi une Invocation spéciale propre à chacune, indiquée sur leur fiche : elles peuvent être invoquées spécialement si leur condition est remplie, pendant votre phase principale. Les Sandales de Tislit donnent +1/+1 en MOBA et s’attachent uniquement pendant votre tour ; les jetons ne se jouent pas depuis la main, mais Tarek et Kusayla peuvent être invoqués spécialement. Chaque camp peut annoncer une créature par tour, quel que soit son coût. Les créatures de coût 1 à 4 ne demandent aucun sacrifice ; celles de coût 5 ou 6 en demandent un, et celles de coût 7 ou plus en demandent deux. Une Invocation spéciale se joue si sa condition est remplie pendant votre phase principale : elle ne demande ni sacrifice ni quota et ne consomme pas la pose normale. Si sa condition manque, la créature peut être invoquée normalement pendant votre tour. Ses conditions portent sur tout le plateau, parfois aussi sur votre main ou votre cimetière. Les sorts et les armes ne sont pas limités en nombre par tour. Toute invocation normale annoncée compte même si elle est contrée. Une créature engagée ne peut pas être sacrifiée. Choisissez les victimes parmi vos créatures dégagées (hors Sites) : la dernière choisie est la case de la nouvelle créature, sans second appui.</p>
         <p>Un deck vide ne provoque pas de fatigue. Certaines cartes et fenêtres de réponse ne sont pas encore disponibles.</p>
       </div></details>
     </div>
@@ -1610,7 +1611,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       {cardById(carte).ascension ? <>
         Ascension prête pour {cardById(carte).name} : choisissez la place de l’un des sacrifices sélectionnés. Les sacrifices seront payés à la résolution.
         <button type="button" onClick={() => { setCarte(null); setSacrificesChoisis([]); ouvrirReserveAscension('joueur'); }}>Modifier les sacrifices</button>
-      </> : <>Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte))}. {rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) === 1 ? "Touchez une créature à sacrifier : la nouvelle prendra sa place immédiatement." : "Touchez les créatures à sacrifier : la dernière choisie sera remplacée immédiatement."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></>}
+      </> : <>Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte))}. {rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) === 1 ? "Touchez une créature dégagée à sacrifier : la nouvelle prendra sa place immédiatement." : "Touchez les créatures dégagées à sacrifier : la dernière choisie sera remplacée immédiatement."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></>}
     </div>}
     {/* Chaque voie conquise révèle uniquement son calque de ruines, à la même
         projection que la carte. Le centre garde sa case au camp vainqueur. */}
@@ -1677,9 +1678,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             const carteTransfert = carte && MOBA_MAGIES_TRANSFERT.includes(carte);
             const nombreSacrifices = rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte));
             const maySacrifice = (etape === 'tour' && side === actif) && entity && carte && nombreSacrifices > 0
-              && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && cardById(entity.carteId)?.kind !== 'site'
+              && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && !entity.attaquee && cardById(entity.carteId)?.kind !== 'site'
               && mobaVoieJouable(duel.moba, side, lane.id) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
-            const sacrificeCible = Boolean(entity && sacrificesChoisis.includes(id));
+            const sacrificeCible = Boolean(entity && !entity.attaquee && sacrificesChoisis.includes(id));
             const mayPlace = ((etape === 'tour' && side === actif) || (side === mainSide && rpgMobaPeutEmbuscade(duel, mainSide, carte))) && (nombreSacrifices > 0 ? sacrificeCible : !id) && mobaVoieJouable(duel.moba, side, lane.id) && carte
               && sacrificesChoisis.length === nombreSacrifices && (!carteCiblee || carteArmeVivante) && !carteSoin && !cartePrix && !carteTransfert && !MOBA_MAGIES_SPATIALES.includes(carte) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
             const campCibleMagie = MOBA_ARMES.includes(carte) || MOBA_MAGIES_ALLIEES.includes(carte) || (carte === 'defi-du-jarl' && !cibleSortPrimaire) ? mainSide : autre(mainSide);
@@ -1753,7 +1754,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
                 : carteReanimation ? ['RÉANIMER', 'RANIMER']
                   : carteArmeVivante ? ['CRÉER LE CHIEN', 'CHIEN']
                     : carteSite ? ['INSTALLER', 'SITE'] : ['INVOQUER', 'POSER'];
-            const slot = <button type="button" data-ascension-material={ascensionSelection?.eligible ? entity.id : undefined} data-ascension-order={ascensionSelection?.numero || undefined} aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : undefined} aria-label={ascensionSelection?.label ?? label} title={entity ? cardById(entity.carteId)?.text || entity.name : undefined} className={`moba__slot${entity ? ' has-creature' : ' is-empty'}${rpgSouffreMalInvocation(entity) ? ' is-summoning-sick' : ''}${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${(cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id)) && id ? ' is-target' : ''}`} disabled={selectionAscension.rituel ? !ascensionSelection?.cliquable : destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur)} draggable={Boolean(!destruction && peutGlisserBloqueur)} onPointerDown={!destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined} onDragStart={!destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined} onDragEnd={finGlissement} onClick={action}>
+            const slot = <button type="button" data-ascension-material={ascensionSelection?.eligible ? entity.id : undefined} data-ascension-order={ascensionSelection?.numero || undefined} aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : undefined} aria-label={ascensionSelection?.label ?? label} title={entity ? cardById(entity.carteId)?.text || entity.name : undefined} className={`moba__slot${entity ? ' has-creature' : ' is-empty'}${rpgSouffreMalInvocation(entity) ? ' is-summoning-sick' : ''}${entity?.attaquee ? ' is-attacked' : ''}${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${(cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id)) && id ? ' is-target' : ''}`} disabled={selectionAscension.rituel ? !ascensionSelection?.cliquable : destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur)} draggable={Boolean(!destruction && peutGlisserBloqueur)} onPointerDown={!destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined} onDragStart={!destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined} onDragEnd={finGlissement} onClick={action}>
               {entity ? <><RpgLueurArme key={entity.id} armes={armesPortees(entity)} token={armesAjoutees[`${side}:${entity.id}`]} autonome /><img src={cardArtEntite(entity)} alt="" /><RpgCadreCarte carte={cardById(entity.carteId)} /><span className="moba__slot-label"><b>{entity.name}</b><small><em>⚔ {entity.atk}</em><em>◆ {entity.pv}/{entity.pvMax}</em></small>{etats.length > 0 && <span className="moba__slot-states">{etats.join(' · ')}</span>}</span>{isAttacker && <span className="moba__slot-tag">ATTAQUE</span>}{isBlocked && <span className="moba__slot-tag">BLOQUE</span>}{isRapidTarget && <span className="moba__slot-tag">CIBLÉE</span>}</> : <span className="moba__empty-label" aria-hidden="true"><i>{mayPlace ? '+' : '◇'}</i><span className="moba__empty-label-long">{libelleCase[0]}</span><span className="moba__empty-label-short">{libelleCase[1]}</span></span>}
               {entity && combatFeedback?.critiques[id] && <RpgCritiqueVisuel key={combatFeedback.critiques[id].token} fois={combatFeedback.critiques[id].fois} />}
             </button>;

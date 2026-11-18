@@ -55,7 +55,7 @@ export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, s
   } else if (!(specialeFixee ?? embuscade(duel, cote, carte, specialeMoba))) duel[cote].invocationNormaleJouee = true;
 }
 export function victimesInvocation(camp) {
-  return (camp?.creatures ?? []).filter(e => cardById(e.carteId)?.kind !== 'site');
+  return (camp?.creatures ?? []).filter(e => !e.attaquee && cardById(e.carteId)?.kind !== 'site');
 }
 export function invocationPossible(duel, cote, carte, specialeMoba = false) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;

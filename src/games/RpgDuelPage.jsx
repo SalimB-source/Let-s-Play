@@ -52,6 +52,7 @@ import './rpg-soins.css';
 import './rpg-vie-compteurs.css';
 import './rpg-avatars-plateau.css';
 import './rpg-bouclier.css';
+import './rpg-etats-cartes.css';
 import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
@@ -83,7 +84,7 @@ import {
   adversaireManaEssai,
   deckManaEssaiParId,
 } from './rpgManaEssai.js';
-import { armesPortees, groupEntitesParCarte, trierCartesMainParCout, trierMainAvecRenvois } from './rpgCardStacks.js';
+import { armesPortees, groupEntitesParCarte, rpgEtatVisuelPile, trierCartesMainParCout, trierMainAvecRenvois } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
 import {
   RPG_VITESSES_ANIMATION,
@@ -12461,7 +12462,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     // Choix des victimes d’invocation : aucune ne meurt avant la sélection complète.
     if (sacrificeEnCours) {
-      if (cardById(entite.carteId)?.kind === 'site') {
+      if (entite.attaquee || cardById(entite.carteId)?.kind === 'site') {
         jouerSfx('erreur');
         force();
         return;
@@ -13675,11 +13676,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
   });
   const clePile = (cote, carteId) => `${cote}:${carteId}`;
-  // Une pile homonyme se garde par son nom et son engagement ; une créature armée, seule dans sa
+  // Une pile homonyme se garde par son nom et son état visuel ; une créature armée, seule dans sa
   // pile, par son identifiant — deux créatures armées identiques restent deux
   // clés distinctes.
   const clePileRendu = (pile) => (empilerCartes && !armesPortees(pile.entites[0]).length
-    ? `${pile.carteId}:${pile.entites[0].attaquee ? "engagee" : "degagee"}`
+    ? `${pile.carteId}:${rpgEtatVisuelPile(pile.entites[0])}`
     : pile.entites[0].id);
   const basculerPile = (cle) => {
     jouerSfx('pile');
@@ -13757,7 +13758,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? {
         cle: `sacrifice:${sacrificeEnCours}`,
         classe: 'rpg-sacrifice-prompt',
-        texte: `Invocation — choisissez ${sacrificesInvocation(cardById(sacrificeEnCours), duel, 'joueur')} sacrifice(s) pour ${cardById(sacrificeEnCours)?.name ?? 'cette carte'} (${sacrificesChoisis.length} choisi(s)). Recliquez pour désélectionner.`,
+        texte: `Invocation — choisissez ${sacrificesInvocation(cardById(sacrificeEnCours), duel, 'joueur')} sacrifice(s) parmi vos créatures dégagées pour ${cardById(sacrificeEnCours)?.name ?? 'cette carte'} (${sacrificesChoisis.length} choisi(s)). Recliquez pour désélectionner.`,
       }
       : poseEnCours
         ? {
@@ -14526,7 +14527,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
                       canTarget={Boolean(idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id)
-                        || (sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')
+                        || (sacrificeEnCours && !entite.attaquee && cardById(entite.carteId)?.kind !== 'site')
                         || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
                           // La créature qui vient d'arriver n'est jamais sa
                           // propre cible, sauf quand l'arrivée l'autorise
@@ -14540,7 +14541,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
                       sacrificeEnAnimation={Boolean(sacrificeFx?.victimes.some(v => v.entityId === entite.id))}
-                      sacrificeTarget={Boolean(sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')}
+                      sacrificeTarget={Boolean(sacrificeEnCours && !entite.attaquee && cardById(entite.carteId)?.kind !== 'site')}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive
                         && (activationEnCours === entite.id || rpgPeutActiverCapacite(duel, 'joueur', entite.id)))}
@@ -15570,7 +15571,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <p id="rpg-sacrifice-texte">
               Pour invoquer <strong>{cardById(sacrificeDemande.carteId)?.name ?? 'cette créature'}</strong>,
               choisissez {sacrificesInvocation(cardById(sacrificeDemande.carteId), duel, 'joueur')} créature(s)
-              à sacrifier sur la table. Rien n’est sacrifié
+              dégagée(s) à sacrifier sur la table. Une créature engagée ne peut pas être sacrifiée. Rien n’est sacrifié
               avant la validation de toutes les victimes ; vous pouvez annuler.
             </p>
             <div className="rpg-sacrifice-choix__actions">
