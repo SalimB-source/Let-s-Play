@@ -316,7 +316,7 @@ export const frenchSiteDictionary = {
     "h1a": "TOUTE L’ACTU",
     "h1b": "GAMING, TECH ET CINÉMA.",
     "heroText": "Tests, avant-premières, e-sport, tech et pop culture — l’émission de la communauté qui n’a jamais arrêté de jouer. Chaque sortie, chaque round, chaque histoire qui mérite d’être jouée.",
-    "watchEpisodes": "Regarder les épisodes",
+    "watchEpisodes": "Regarder les épisodes","countdown": {"eyebrow": "Compte à rebours","title": "Grand Theft Auto VI","date": "Sortie mondiale le 19 novembre 2026 · PS5 / Xbox Series","units": {"days":"JRS","hours":"HRS","minutes":"MIN","seconds":"SEC"},"out":"DISPONIBLE MAINTENANT"},
     "enterShow": "Voir les actus",
     "hud": {
       "subs": "ABONNÉS YOUTUBE",

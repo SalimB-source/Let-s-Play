@@ -11,6 +11,7 @@ import '../home-live.css';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
+import { countdownParts, gameReleases } from '../releasesData';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-18';
 import { viceHeroImage, viceHeroPortraitImage } from '../theme/viceTheme';
 
@@ -21,6 +22,21 @@ const HomeQuizBand = lazy(() => import('./HomeQuizBand'));
 // Le paramètre d'URL `?at=` (horloge simulée du bandeau « le plus attendu »)
 // est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
+// Compte à rebours GTA VI dans le héros : cible le 19 novembre 2026
+// (minuit, fuseau du visiteur — la date Rockstar n'ayant pas d'horaire annoncé).
+const GTA6_RELEASE = gameReleases.find((r) => r.slug === 'grand-theft-auto-vi');
+const useGta6Countdown = (offset) => {
+  const [now, setNow] = useState(() => new Date(Date.now() + offset));
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(new Date(Date.now() + offset)), 1000);
+    return () => window.clearInterval(t);
+  }, [offset]);
+  if (!GTA6_RELEASE) return { parts: null, out: false };
+  const target = new Date(GTA6_RELEASE.year ?? 2026, (GTA6_RELEASE.month ?? 11) - 1, GTA6_RELEASE.day ?? 19, 0, 0, 0);
+  const out = now.getTime() >= target.getTime();
+  return { parts: out ? null : countdownParts(GTA6_RELEASE, now), out };
+};
+
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -209,6 +225,10 @@ export default function Home() {
   const labelParts = (t.home.featured.label1 || 'ÉPISODES À LA UNE').split(' / ');
   const labelTitle = labelParts[1] || labelParts[0] || 'ÉPISODES À LA UNE';
 
+  const gta = useGta6Countdown(0);
+  const ctaCountdown = t.home.countdown || {};
+  const ctaUnits = ctaCountdown.units || { days:'JRS', hours:'HRS', minutes:'MIN', seconds:'SEC' };
+
   return (
     <>
       <section className="hero" id="top">
@@ -235,6 +255,23 @@ export default function Home() {
           <p className="eyebrow"><span className="live-dot" /> {t.home.eyebrow}</p>
           <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
           <p className="hero-text">{t.home.heroText}</p>
+          {gta.parts || gta.out ? (
+            <div className={`hero-countdown${gta.out ? ' is-out' : ''}`} role="timer" aria-label={ctaCountdown.eyebrow || 'Countdown'}>
+              <p className="hero-countdown-eyebrow">
+                <span className="live-dot" aria-hidden="true" /> {ctaCountdown.eyebrow} · GTA VI
+              </p>
+              <div className="hero-countdown-grid">
+                {gta.out
+                  ? <strong className="hero-countdown-out">{ctaCountdown.out}</strong>
+                  : [['days', ctaUnits.days], ['hours', ctaUnits.hours], ['minutes', ctaUnits.minutes], ['seconds', ctaUnits.seconds]].map(([k, lbl]) => (
+                      <span className="hero-countdown-unit" key={k}>
+                        <b>{String(gta.parts[k]).padStart(2,'0')}</b><i>{lbl}</i>
+                      </span>
+                    ))}
+              </div>
+              <p className="hero-countdown-meta">{ctaCountdown.date}</p>
+            </div>
+          ) : null}
           {isLive && (
             <div className="hero-live-notice">
               <p className="hero-live-status" role="status"><span aria-hidden="true" /> {liveHeroCopy.status}</p>

@@ -12,18 +12,19 @@
  * par ce retrait.
  *
  * ⚠️ Hommage NON OFFICIEL : Let's Play n'est affilié ni à Rockstar Games ni à
- * Take-Two. Les visuels sont fournis par le propriétaire du site (Jason et Lucia
- * devant la station-service, avant eux la vue nocturne de Vice City) : ce ne
- * sont pas des images générées, et il ne faut pas les remplacer par une vue de
- * jour produite pour un skin (essayé, puis retiré à sa demande).
+ * Take-Two. Les visuels sont fournis par le propriétaire du site (couple GTA 6
+ * sur la voiture rouge, avant la station-service puis la vue nocturne de Vice
+ * City) : ce ne sont pas des images générées, et il ne faut pas les remplacer
+ * par une vue de jour produite pour un skin (essayé, puis retiré à sa demande).
  *
  * Pour tout retirer : repointer `Home.jsx` sur `defaultHeroImage`, supprimer ce
  * fichier et `public/gta6-jason-lucia-hero.jpg`.
  */
 
 /**
- * Clé d'art du héros : Jason et Lucia devant la station-service, au crépuscule
- * (visuel fourni par le propriétaire du site). C'est l'image de communication
+ * Clé d'art du héros : Jason et Lucia assis sur la voiture rouge au coucher
+ * de soleil (visuel fourni par le propriétaire du site, version « Lock and
+ * Load » — palmiers, avion et sac de sport). C'est l'image de communication
  * de GTA 6, pas une capture de jeu.
  *
  * Le voile et la géométrie du héros sont ceux du site (voir `styles.css`,
