@@ -1041,16 +1041,24 @@
    et le wrapper de prison suivent la carte qu'ils portent. */
 .rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   grid-column: var(--case-col, auto);
+  /* La règle des cinq colonnes pose `grid-row: 1` sur **toutes** les cartes du
+     champ. Sans cette remise à zéro, et malgré les règles de rangée plus bas,
+     le fond se dessinerait dans la rangée du front : une archère viendrait se
+     poser sur la première case, par-dessus le corps à corps qui l'occupe. */
+  grid-row: auto;
   width: min(100%, var(--essai-colonne));
 }
 .card-row[data-lignes="true"] > .rpg-card-stack > .rpg-card,
 .card-row[data-lignes="true"] > .rpg-card-prison > .rpg-card {
   width: 100%;
 }
-.card-row--equipe[data-lignes="true"] > [data-ligne="front"] { grid-row: 1; }
-.card-row--equipe[data-lignes="true"] > [data-ligne="fond"] { grid-row: 2; }
-.card-row--ennemi[data-lignes="true"] > [data-ligne="front"] { grid-row: 2; }
-.card-row--ennemi[data-lignes="true"] > [data-ligne="fond"] { grid-row: 1; }
+/* Les rangées, avec la même force que la règle qui pose `grid-row: 1` sur
+   toutes les cartes (`.rpg-battle[data-mode-mana] .card-row > :is(...)`) :
+   une sélection plus faible perdrait, quel que soit l'ordre du fichier. */
+.rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] > [data-ligne="front"] { grid-row: 1; }
+.rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] > [data-ligne="fond"] { grid-row: 2; }
+.rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] > [data-ligne="front"] { grid-row: 2; }
+.rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] > [data-ligne="fond"] { grid-row: 1; }
 
 /* Les cases dessinées suivent exactement la même grille : cinq colonnes, deux
    rangées, la même gouttière. Elles sont posées en absolu sur toute la
@@ -1065,10 +1073,10 @@
   width: min(100%, var(--essai-colonne));
   max-width: none;
 }
-.card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 1; }
-.card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 2; }
-.card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 2; }
-.card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 1; }
+.rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 1; }
+.rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 2; }
+.rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 2; }
+.rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 1; }
 
 /* Le fond protégé : un voile doré discret sur ses cases, et la ligne reste
    un peu en retrait — c'est une ligne plus lointaine, pas une seconde

@@ -73,7 +73,10 @@ try {
   const feuilles = ['rpg-battle', 'rpg-relief-visuel', 'rpg-mobile', 'rpg-story', 'rpg-deckbox',
     'rpg-mana-essai', 'rpg-soins', 'rpg-vie-compteurs', 'rpg-avatars-plateau', 'rpg-bouclier',
     'rpg-cadre-carte', 'effet-icons'];
-  const liens = feuilles.map((nom) => `  <link rel="stylesheet" href="../src/games/${nom}.css">`).join('\n');
+  // La feuille globale d'abord : c'est elle qui pose `* { box-sizing: border-box }`,
+  // sans quoi les cartes de l'aperçu seraient plus grandes que dans le jeu.
+  const liens = ['  <link rel="stylesheet" href="../src/styles.css">',
+    ...feuilles.map((nom) => `  <link rel="stylesheet" href="../src/games/${nom}.css">`)].join('\n');
   const page = `<!doctype html>
 <html lang="fr">
 <head>
