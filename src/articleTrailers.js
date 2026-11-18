@@ -132,6 +132,13 @@ export const articleTrailers = {
     "items": [],
     "credit": "Illustration officielle des nouveautés Google Home publiée le 17 novembre 2026. © Google. Visuel promotionnel, pas un test de la rédaction.",
     "pending": "Aucune vidéo officielle dédiée à ce lot de mises à jour n’a été vérifiée. Le visuel du billet Google illustre l’article, sans vidéo générique de remplacement."
+  },
+  "game-awards-2026-les-6-nommes-jeu-annee": {
+    "label": "GAME AWARDS 2026",
+    "meta": "THE GAME AWARDS",
+    "items": [],
+    "credit": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards.",
+    "pending": "Aucune vidéo officielle de l’annonce des nommés n’a été vérifiée pour être intégrée ici. La couverture éditoriale illustre l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
   }
 ,
 "gta-6-discord-theme-vice-city": {

@@ -18,6 +18,9 @@ const officialDomains = [
   'bethesda.net',
   'dropbox.com', 'press.disney.co.uk',
   'longcat.ai', 'st.com', 'lightyearfrontier.com',
+  // Official The Game Awards site, verified for the 18 November 2026 edition
+  // (nominees announced 17 November, ceremony 10 December).
+  'thegameawards.com',
 ];
 
 export function officialSourceUrl(value) {

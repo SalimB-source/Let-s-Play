@@ -59,6 +59,14 @@ export const listings = {
     "category": "ألعاب · ID SOFTWARE",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/game-awards-2026-les-6-nommes-jeu-annee": {
+    "title": "جوائز الألعاب 2026",
+    "accent": "المرشحون الستة.",
+    "dek": "تكشف جوائز الألعاب 2026 عن ستة مرشحين لجائزة لعبة السنة: GTA VI وResident Evil Requiem وPhantom Blade Zero و007 First Light وControl Resonant وZelda: Ocarina of Time. وحدّدت الحفل في 10 ديسمبر في لوس أنجلوس.",
+    "imageAlt": "غلاف تحريري من Let's Play مكوَّن من الملصقات الرسمية للمرشحين الستة (Rockstar Games وCapcom وS-Game وIO Interactive وRemedy / Annapurna وNintendo). تصميم Let's Play، وليس صورة رسمية من The Game Awards.",
+    "category": "ألعاب · THE GAME AWARDS",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/god-of-war-laufey-report-20-mai-2027": {
     "title": "GOD OF WAR LAUFEY",
     "accent": "فاي ستنتظر مايو.",
