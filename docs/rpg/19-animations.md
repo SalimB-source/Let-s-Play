@@ -631,7 +631,7 @@ pilote toute la scène.
 | Ce qui a été livré | Déclencheur | Où |
 | --- | --- | --- |
 | Attribut `data-vainqueur` sur `.card-table` (posé avec `data-territoire-termine`), sans nouvel état ni porte | le moteur continue de décider seul via `rpgVainqueur(duel)` ; la page ne fait que relayer son résultat | `RpgDuelPage.jsx` |
-| Camp vaincu : affaissement d'une seconde (`rpg-victoire-sable`, fin `opacity: .22`, `translateY(12px) scale(.96)`), le gagnant reste en place | sélecteurs `.card-table[data-vainqueur="…"] .card-row--…` / `.rpg-wizard-plate--…` pour les deux camps | `rpg-battle.css`, zone FX de la victoire |
+| Camp vaincu : affaissement d'une seconde (`rpg-victoire-sable`, fin `opacity: .22`, `translateY(12px) scale(.96)`), le gagnant reste en place | sélecteurs `.card-table[data-vainqueur="…"] .card-row--…` pour les deux camps (les plaques d'avatar ont reçu depuis leur propre geste, voir 5 undecies) | `rpg-battle.css`, zone FX de la victoire |
 | Astrolabe figé en 550 ms (`rpg-victoire-indicateur`, libellé « DUEL TERMINÉ ») et bilan en panneau borné (480 ms + 120 ms de silence de mise en scène), voile plein cadre pour la défaite | `.rpg-turn-indicator.is-finished`, `.rpg-overlay--win` / `--loss` ; le centrage `translate(-50%,-50%)` du panneau de victoire reste assuré par sa règle statique | `rpg-battle.css` |
 | Mouvement réduit : pas d'affaissement, une atténuation statique `opacity: .35` désigne le vaincu ; le bilan ne fait pas d'entrée en scène | bloc `prefers-reduced-motion` dédié et surcharge `.is-reduced` (fondu de 120 ms pour les panneaux) | `rpg-battle.css` |
 | Vérifications | attributs et libellé, keyframes sans propriété de layout, deux camps, centrage conservé, moteur vérifié vierge de `data-vainqueur` et de `rpg-victoire` | `scripts/rpg-victoire-table-check.mjs` (`npm run check:rpg-victoire-table`), en bout de chaîne `check:rpg-ui` |
@@ -689,6 +689,44 @@ Décisions :
    reste strictement vierge de tout nom de réglage ou de classe visuelle.
 
 ---
+
+## 5 undecies. Livré — l'éclatement de l'avatar ouvre la fin de duel (novembre 2026)
+
+La fin de duel empilait ses trois gestes dans le même souffle : l'avatar du
+perdant éclatait, le territoire du gagnant s'étendait et le bilan montait
+pendant que les éclats volaient encore. Deux défauts visibles en découlaient :
+le plateau « grandissait » en même temps que l'explosion, et la plaque du
+perdant glissait sur le côté — son animation d'affaissement réécrivait le
+`transform` de centrage (`translateX(-50%)`) et la décalait d'une demi-largeur.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| La fin se lit en trois temps jamais superposés : éclatement → extension du territoire + atténuation du vaincu → bilan | `data-eclat-actif` posé sur `.card-table` avec `data-vainqueur` quand `eclatementActif` | `RpgDuelPage.jsx`, `rpg-battle.css` |
+| Le territoire du gagnant ne s'étend qu'une fois le dernier éclat retombé : `transition-delay` sur `--rpg-frontiere` (et sur le filet doré de la frontière) égal à `--rpg-eclat-maxi` | `--rpg-eclat-maxi` = `DUREE_ECLATEMENT_MAX` (1 900 ms), posée en style sur la coquille à côté de `--rpg-anim-scale` | `RpgDuelPage.jsx`, `rpg-battle.css` |
+| Le bilan arrive après l'éclatement plus une courte pause (380 ms), et non plus à 1 420 ms en plein vol des éclats | `.rpg-overlay--apres-eclat` avec `calc((var(--rpg-eclat-maxi, 1900ms) + 380ms) * var(--rpg-anim-scale, 1))` | `rpg-avatar-eclatement.css` |
+| Les plaques d'avatar ont leur propre geste d'opacité (`rpg-victoire-plateau-sable`, 1 → .22) : plus aucun `transform`, donc plus de décalage latéral ; les rangées gardent l'affaissement `rpg-victoire-sable` | sélecteurs séparés `.card-row--…` / `.rpg-wizard-plate--…` | `rpg-battle.css`, zone FX de la victoire |
+| Le camp vaincu ne pâlit qu'après l'éclatement (`animation-delay`) : sa plaque et sa rangée restent intactes pendant le vol | règle `.card-table[data-eclat-actif][data-vainqueur="…"]` | `rpg-battle.css` |
+| Les avatars du plateau sont agrandis d'un cran : plaque `clamp(84px, 10.4vw, 140px)` (bureau) et `--rpg-avatar-height: clamp(56px, calc(var(--duel-card) * 1.2), 96px)` (tactile), portrait à 82 % de la plaque, disque d'éclatement recalculé sur la même variable | une seule variable `--rpg-avatar-plateau` pour la plaque, la main et le calque d'éclatement | `rpg-avatars-plateau.css` |
+| Le vol des éclats suit désormais le réglage de vitesse (`calc(var(--duree) * var(--rpg-anim-scale, 1))`) et le minuteur de démontage passe par `dureeAnimation` : les trois temps restent alignés à ×0,5 et ×2 | `RpgAvatarEclatement.jsx`, `rpg-avatar-eclatement.css` | `rpg-avatar-eclatement.css`, `RpgAvatarEclatement.jsx` |
+| Mouvement réduit : ni éclats ni délais, l'atténuation statique et le bilan arrivent tout de suite (inchangé) | la classe `.rpg-overlay--apres-eclat` et `data-eclat-actif` ne sont pas posés quand `rpgAnimationsReduites` est vrai | `RpgDuelPage.jsx` |
+| Vérifications | trois temps et délais, plaque sans `transform`, tailles d'avatar, minuteur à l'échelle | `tests/rpg-avatar-eclatement.test.js`, `scripts/rpg-victoire-table-check.mjs` |
+
+Décisions :
+
+1. **Un seul temps de référence, publié par la page.** La durée de
+   l'éclatement vit depuis toujours dans `rpgAvatarEclats.js` (le minuteur qui
+   démonte les éclats) ; elle est maintenant exposée en `--rpg-eclat-maxi` pour
+   que la feuille n'invente pas un second chiffre. Une durée, un délai, un
+   nettoyage : impossible de désynchroniser les trois.
+2. **Les plaques ne bougent plus, les rangées si.** Le centrage d'une plaque
+   est un `transform` : n'importe quelle animation de `transform` l'écrase.
+   L'atténuation du vaincu se contente donc d'`opacity`, et l'affaissement
+   « sable » reste réservé aux rangées, qui n'ont pas de transform de base.
+3. **Un temps mort, pas un ralenti.** L'éclatement garde sa durée ; c'est
+   l'extension du plateau qui attend. Le bilan se pose ensuite sur une table
+   déjà en train de s'étendre, pour que le joueur voie le plateau changer
+   d'échelle au lieu de le découvrir figé derrière le panneau.
+
 
 ## 6. Annexe — récapitulatif
 

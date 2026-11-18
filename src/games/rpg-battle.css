@@ -2893,6 +2893,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--decoupee {
   transition: --rpg-frontiere 900ms cubic-bezier(.22, .61, .36, 1);
 }
+/* Fin de duel : l'extension du territoire attend que l'avatar du perdant ait
+   fini d'éclater. Sans ce temps mort, le plateau s'agrandissait pendant que les
+   éclats volaient encore — les deux gestes se mélangeaient. Le filet doré
+   s'efface au même instant, pour que la frontière bouge encore visible. */
+.card-table--decoupee[data-eclat-actif] {
+  transition-delay: calc(var(--rpg-eclat-maxi, 1900ms) * var(--rpg-anim-scale, 1));
+}
+.card-table[data-eclat-actif] .rpg-plateau-lisere {
+  transition-delay: calc(var(--rpg-eclat-maxi, 1900ms) * var(--rpg-anim-scale, 1));
+}
 /* Le double agrandi du sanctuaire ne doit pas dépasser les territoires. */
 .card-table--decoupee.card-table--plateau-cour-de-l-empereur::before { content: none; }
 .rpg-plateau-moitie {
@@ -7203,17 +7213,47 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    perdant s'affaisse et pâlit comme du sable qui se dépose, le camp gagnant
    reste en place, l'indicateur de tour se fige sur « DUEL TERMINÉ » et le
    panneau de bilan s'ouvre par-dessus sans couper la scène. Transform et
-   opacity seulement, aucune porte : le bilan garde toute la main. */
+   opacity seulement, aucune porte : le bilan garde toute la main.
+
+   La fin de duel se lit en trois temps, jamais superposés :
+     1. l'avatar du perdant éclate en morceaux (`RpgAvatarEclatement`) ;
+     2. le dernier éclat retombé, le camp vaincu pâlit et le territoire du
+        gagnant s'étend sur toute la table (le plateau « s'agrandit ») ;
+     3. le bilan se pose par-dessus, une fois l'extension commencée.
+   La durée du temps 1 vient de `DUREE_ECLATEMENT_MAX`, posée en variable
+   `--rpg-eclat-maxi` par la page : les délais restent donc synchronisés avec
+   le minuteur qui démonte les éclats. */
+
+/* Les rangées n'ont aucun transform de base : elles peuvent s'affaisser. */
 .card-table[data-vainqueur="joueur"] .card-row--ennemi,
-.card-table[data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
-.card-table[data-vainqueur="sorcier"] .card-row--equipe,
-.card-table[data-vainqueur="sorcier"] .rpg-wizard-plate--joueur {
+.card-table[data-vainqueur="sorcier"] .card-row--equipe {
   animation: rpg-victoire-sable calc(1s * var(--rpg-anim-scale, 1)) cubic-bezier(.4, .1, .6, 1) both;
 }
 @keyframes rpg-victoire-sable {
   0% { opacity: 1; transform: translateY(0) scale(1); }
   55% { opacity: .6; }
   100% { opacity: .22; transform: translateY(12px) scale(.96); }
+}
+/* Les plaques d'avatar, elles, ne bougent plus d'un pixel : leur centrage est
+   un `transform: translateX(-50%)`, qu'une animation de transform écraserait —
+   le médaillon sautait alors sur le côté. Le camp vaincu s'atténue donc sur
+   place, opacité seule, sans translate ni scale. */
+.card-table[data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
+.card-table[data-vainqueur="sorcier"] .rpg-wizard-plate--joueur {
+  animation: rpg-victoire-plateau-sable calc(1s * var(--rpg-anim-scale, 1)) cubic-bezier(.4, .1, .6, 1) both;
+}
+@keyframes rpg-victoire-plateau-sable {
+  0% { opacity: 1; }
+  55% { opacity: .6; }
+  100% { opacity: .22; }
+}
+/* Le temps 1 garde la table intacte : tant que les éclats volent, ni la plaque
+   du perdant ni sa rangée ne s'effacent. */
+.card-table[data-eclat-actif][data-vainqueur="joueur"] .card-row--ennemi,
+.card-table[data-eclat-actif][data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
+.card-table[data-eclat-actif][data-vainqueur="sorcier"] .card-row--equipe,
+.card-table[data-eclat-actif][data-vainqueur="sorcier"] .rpg-wizard-plate--joueur {
+  animation-delay: calc(var(--rpg-eclat-maxi, 1900ms) * var(--rpg-anim-scale, 1));
 }
 /* L'Astrolabe s'arrête : l'indicateur se fige d'un dernier mouvement sec. */
 .rpg-turn-indicator.is-finished {

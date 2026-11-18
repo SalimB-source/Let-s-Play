@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './rpg-avatar-eclatement.css';
 import { DUREE_ECLATEMENT_MAX, ECLATS_AVATAR, GRILLE_ECLATS } from './rpgAvatarEclats.js';
+import { dureeAnimation } from './rpgAnimations.js';
 
 /** Éclatement de l'avatar du camp PERDANT, à la fin du duel.
  *
@@ -20,7 +21,9 @@ export default function RpgAvatarEclatement({ image, camp = 'joueur' }) {
   useEffect(() => {
     setTermine(false);
     if (!image) return undefined;
-    const timer = setTimeout(() => setTermine(true), DUREE_ECLATEMENT_MAX);
+    // Même réglage de vitesse que la feuille : les éclats ne sont démontés
+    // qu'une fois le dernier morceau retombé.
+    const timer = setTimeout(() => setTermine(true), dureeAnimation(DUREE_ECLATEMENT_MAX));
     return () => clearTimeout(timer);
   }, [image]);
 
