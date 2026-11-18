@@ -14459,7 +14459,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-card-stack"
                       key={entite.id}
                       data-entites-pile={pile.entites.map((membre) => membre.id).join(' ')}
-                      data-ligne={casesEnnemi?.get(entite.id) ? ligneDeCase(casesEnnemi.get(entite.id) - 1) : undefined}
+                      data-ligne={casesEnnemi ? (casesEnnemi.get(entite.id) ? ligneDeCase(casesEnnemi.get(entite.id) - 1) : ligneObligee(cardById(entite.carteId))) : undefined}
                       style={{
                         ...cardFrameStyle(cardById(pile.carteId)),
                         ...(casesEnnemi?.get(entite.id) ? {
@@ -14582,7 +14582,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-card-stack"
                       key={entite.id}
                       data-entites-pile={pile.entites.map((membre) => membre.id).join(' ')}
-                      data-ligne={casesJoueur?.get(entite.id) ? ligneDeCase(casesJoueur.get(entite.id) - 1) : undefined}
+                      data-ligne={casesJoueur ? (casesJoueur.get(entite.id) ? ligneDeCase(casesJoueur.get(entite.id) - 1) : ligneObligee(cardById(entite.carteId))) : undefined}
                       style={{
                         ...cardFrameStyle(cardById(pile.carteId)),
                         ...(casesJoueur?.get(entite.id) ? {

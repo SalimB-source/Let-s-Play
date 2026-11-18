@@ -5,7 +5,7 @@ import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { attaqueDirectePermise, ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
-import { caseAutorisee, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase } from './rpgLignes.js';
+import { caseAutorisee, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -5983,19 +5983,32 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
  */
 export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX) {
   const cases = Array.from({ length: maximum }, () => null);
-  const sansCase = [];
+  // Sur deux lignes, la case d'une créature doit être **de sa ligne**. Une carte
+  // « À distance » retrouvée sur une case du front — partie reprise d'avant les
+  // deux lignes, créature ranimée alors que son fond était plein, case perdue —
+  // se redessine au fond. Sans cette remise dans sa ligne, la carte, sa case et
+  // les règles la voyaient devant : une archère au corps à corps.
+  const deuxLignes = maximum > RPG_LIGNES_CASES;
+  const restants = [];
   for (const entite of camp?.creatures ?? []) {
     const index = entite?.emplacement;
-    if (Number.isInteger(index) && index >= 0 && index < maximum && !cases[index]) {
+    const carte = duelCardById(entite?.carteId) ?? entite;
+    if (Number.isInteger(index) && index >= 0 && index < maximum && !cases[index]
+      && (!deuxLignes || caseAutorisee(carte, index))) {
       cases[index] = entite;
     } else {
-      sansCase.push(entite);
+      restants.push({ entite, carte });
     }
   }
-  for (const entite of sansCase) {
-    const libre = cases.indexOf(null);
-    if (libre < 0) break;
-    cases[libre] = entite;
+  for (const { entite, carte } of restants) {
+    // D'abord une place libre **de sa ligne**, puis n'importe laquelle : une
+    // créature sans case ne disparaît jamais de la table.
+    const libre = deuxLignes
+      ? cases.findIndex((occupant, index) => !occupant && caseAutorisee(carte, index))
+      : -1;
+    const place = libre >= 0 ? libre : cases.indexOf(null);
+    if (place < 0) break;
+    cases[place] = entite;
   }
   return cases;
 }
