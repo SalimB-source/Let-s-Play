@@ -81,7 +81,7 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'Elle tient la lame et le lin d’un geste appris avant qu’elle ne parle.',
   }),
   carte({
-    id: 'scribe-des-feuillets',
+    id: 'scribe-des-feuillets', distance: true,
     name: 'Scribe des feuillets',
     cost: 2,
     atk: 2,
@@ -94,6 +94,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'pretre-de-la-bouche',
+    distance: true,
     name: 'Prêtre de la bouche',
     cost: 2,
     atk: 2,
@@ -101,11 +102,11 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'inhabituelle',
     arrivee: { type: 'transfert', amount: 1 },
     typeLine: 'Créature — Humain · Prêtre',
-    text: 'Quand Prêtre de la bouche arrive : le sorcier adverse perd 1 PV et vous en gagnez 1.',
+    text: 'À distance — Sa sentence porte sans contact. Quand Prêtre de la bouche arrive : le sorcier adverse perd 1 PV et vous en gagnez 1.',
     flavor: 'L’ouverture de la bouche rend la parole ; ici, elle rend autre chose.',
   }),
   carte({
-    id: 'ureus-du-seuil',
+    id: 'ureus-du-seuil', distance: true,
     name: 'Uræus du seuil',
     cost: 3,
     atk: 2,
@@ -219,7 +220,7 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'La porte n’a plus besoin de clé tant qu’il veille.',
   }),
   carte({
-    id: 'lecteur-du-dernier-nom', name: 'Lecteur du dernier nom',
+    id: 'lecteur-du-dernier-nom', distance: true, name: 'Lecteur du dernier nom',
     cost: 5, atk: 3, def: 4, rarity: 'rare',
     arrivee: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
     typeLine: 'Créature — Humain · Scribe',
@@ -242,7 +243,7 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'Il connaît le poids de chaque cœur avant même que l’aiguille ne bouge.',
   }),
   carte({
-    id: 'maitre-des-hieroglyphes',
+    id: 'maitre-des-hieroglyphes', distance: true,
     name: 'Le Maître des hiéroglyphes',
     element: 'tenebres',
     cost: 5,
@@ -257,7 +258,7 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'Son calame note le verdict sans trembler, et le fleuve lui-même attend qu’il ait fini la ligne.',
   }),
   carte({
-    id: 'faucon-du-zenith',
+    id: 'faucon-du-zenith', distance: true,
     name: 'Le Faucon du zénith',
     element: 'sable',
     cost: 5,
@@ -292,7 +293,7 @@ export const RPG_TENEBRES_CREATURES = [
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({
-    id: 'dame-aux-ailes-d-or',
+    id: 'dame-aux-ailes-d-or', distance: true,
     name: 'La Dame aux ailes d’or',
     element: 'sable',
     cost: 5,

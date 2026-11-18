@@ -165,6 +165,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Le Takouba des pistes confère Infiltration : son porteur peut choisir une autre créature malgré un Défenseur, mais doit respecter les règles d’attaque directe. Une attaque normale ne peut pas le viser, mais une Attaque ciblée le peut. S’il est la seule créature de son camp et n’a pas Envol, l’adversaire peut attaquer directement. Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
   },
   {
+    id: 'a-distance',
+    section: 'Capacités des créatures',
+    cardIds: ['archere-viking-du-givre', 'tislit-des-aures', 'djinn-de-foudre', 'maitre-des-hieroglyphes'],
+    title: '« À distance » tient la ligne du fond',
+    text: 'Le champ se lit en deux lignes : les corps à corps tiennent le front, et les créatures marquées « À distance » — archères, guetteurs, djinns, scribes, artilleurs — se tiennent derrière. Tant qu’une créature alliée reste devant, une attaque de mêlée adverse ne peut pas viser le fond : il faut d’abord abattre la ligne de front. Deux attaquants passent la ligne : l’Attaque ciblée, qui choisit déjà sa cible, et l’Infiltration. Dès que le front tombe, le fond redevient une cible ordinaire — une armée réduite à ses archers reste attaquable. Les sorts, eux, ne sont jamais arrêtés par la ligne.',
+  },
+  {
     id: 'infiltration-tin-hinan',
     section: 'Capacités des créatures',
     cardIds: ['tin-hinan'],

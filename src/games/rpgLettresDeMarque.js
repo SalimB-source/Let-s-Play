@@ -152,7 +152,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     flavor: 'Une voile, une mèche, une promesse.',
   }),
   carte({
-    id: 'tercio-de-cuivre',
+    id: 'tercio-de-cuivre', distance: true,
     name: 'Tercio de cuivre',
     cost: 3,
     atk: 1,
@@ -209,7 +209,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     flavor: 'Il ne vend pas les captifs. Il vend la signature qui les rend.',
   }),
   carte({
-    id: 'galion-de-la-flotte',
+    id: 'galion-de-la-flotte', distance: true,
     name: 'Galion de la flotte',
     element: 'sable',
     colors: ['sable', 'eau'],
@@ -229,7 +229,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   // la carte jadis nommée « La Vengeance de la reine Anne » est devenue le
   // vaisseau fantôme bleu translucent de la légende.
   carte({
-    id: 'la-vengeance-de-la-reine-anne',
+    id: 'la-vengeance-de-la-reine-anne', distance: true,
     name: 'La légende du Hollandais volant',
     element: 'sable',
     colors: ['sable', 'eau'],
@@ -246,7 +246,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     flavor: 'Il ne cherche plus un port : il embarque ceux que la mer a oublié de rendre.',
   }),
   carte({
-    id: 'le-chasseur-d-ocracoke',
+    id: 'le-chasseur-d-ocracoke', distance: true,
     name: 'Le Chasseur d’Ocracoke',
     element: 'sable',
     colors: ['sable', 'eau'],

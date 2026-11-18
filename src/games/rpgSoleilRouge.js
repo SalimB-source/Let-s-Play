@@ -74,10 +74,10 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Sans armure, sans hésitation : les cimes ne sont qu’un autre chemin.',
   }),
   carte({
-    id: 'ashigaru-des-braises', name: 'Ashigaru des braises', honneur: 0,
+    id: 'ashigaru-des-braises', distance: true, name: 'Ashigaru des braises', honneur: 0,
     cost: 1, atk: 1, def: 1, rarity: 'commune',
     typeLine: 'Créature — Humain · Ashigaru · Samouraï',
-    text: '—',
+    text: 'À distance — Il tire à l’arquebuse, depuis la ligne du fond.',
     flavor: 'Avant les noms gravés dans les chroniques, il y eut ceux qui tinrent la ligne.',
   }),
   carte({
@@ -107,12 +107,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
-    id: 'tengu-du-mont-ardent', name: 'Tengu du mont ardent',
+    id: 'tengu-du-mont-ardent', distance: true, name: 'Tengu du mont ardent',
     cost: 4, atk: 2, def: 3, rarity: 'rare', envol: true,
     typeLine: 'Créature — Yōkai · Tengu',
     resonance: 1,
     resonanceTribu: 'samourai',
-    text: 'Résonance samouraï — Tant qu’il est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1. Envol — Ne peut être bloqué que par une créature avec Envol.',
+    text: 'À distance — Il frappe de loin, porté par les courants du mont. Résonance samouraï — Tant qu’il est en jeu, toutes les créatures de type Samouraï de la table, dans les deux camps, gagnent +1/+1. Envol — Ne peut être bloqué que par une créature avec Envol.',
     flavor: 'La montagne enseigne à ceux qui savent écouter ses ailes.',
   }),
   carte({
@@ -124,7 +124,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Même tombée, sa massue fait trembler la forge.',
   }),
   carte({
-    id: 'kagutsuchi-flamme-originelle', name: 'Kagutsuchi, Flamme originelle', honneur: 0,
+    id: 'kagutsuchi-flamme-originelle', distance: true, name: 'Kagutsuchi, Flamme originelle', honneur: 0,
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,

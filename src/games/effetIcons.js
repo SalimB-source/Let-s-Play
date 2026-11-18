@@ -31,6 +31,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
   <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
+  <symbol id="i-distance" viewBox="0 0 24 24"><path d="M8 3a11 11 0 0 1 0 18"/><path d="M8 3v18"/><path d="M3 12h16"/><path d="M15.5 8.5 22 12l-6.5 3.5"/></symbol>
   <symbol id="i-traque" viewBox="0 0 24 24"><path d="M2 12C4.5 7.2 8.2 4.6 12 4.5c3.8.1 7.5 2.7 10 7.5-2.5 4.8-6.2 7.4-10 7.5-3.8-.1-7.5-2.7-10-7.5Z"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v1.8M12 13.6v1.8M8.6 12h1.8M13.6 12h1.8"/></symbol>
   <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
   <symbol id="i-blocage" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M7 13l3 3 7-7"/></symbol>
@@ -111,6 +112,7 @@ export const EFFET_ICONE = {
   envol: 'i-envol',
   rapidite: 'i-rapidite',
   coupRapide: 'i-coup-rapide',
+  distance: 'i-distance',
   coupCritique: 'i-coup-critique',
   traque: 'i-traque',
   traquePirates: 'i-traque',
@@ -187,7 +189,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'defenseur', 'blocage', 'overkill', 'furie', 'esquive',
+  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'distance', 'coupCritique', 'traquePirates', 'defenseur', 'blocage', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement', 'poison',
@@ -232,6 +234,7 @@ export const EFFET_LIBELLES = {
   envol: 'Envol',
   rapidite: 'Rapidité',
   coupRapide: 'Attaque ciblée',
+  distance: 'À distance',
   coupCritique: 'Coup critique',
   traque: 'Traque',
   traquePirates: 'Traque',
@@ -315,6 +318,9 @@ export function pastillesPourCarte(carte) {
   if (carte.volDeVie || carte.donne?.volDeVie || carte.effet?.volDeVie) ajouter('volDeVie', 'Vol de vie');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
+  // La ligne d'une créature : « À distance » la pose au fond du champ,
+  // derrière la ligne de front (`rpgLignes.js`).
+  if (carte.distance) ajouter('distance', 'À distance');
   if (carte.coupCritique || carte.effet?.coupCritique || carte.donne?.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (estDefenseur(carte)) ajouter('defenseur', 'Défenseur');
@@ -514,6 +520,7 @@ const MOTIFS_LIGNE = [
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\battaque ciblée/iu],
+  ['distance', /\bà distance\b/iu],
   ['coupCritique', /\bcoup critique/iu],
   ['defenseur', /\bd[ée]fenseur/iu],
   ['blocage', /\bblocage\b/iu],
@@ -656,6 +663,7 @@ export const EFFET_DEFINITIONS = {
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   furtif: 'Cette créature est détruite à la fin du tour où elle arrive en jeu.',
+  distance: 'Cette créature se tient sur la ligne du fond, derrière la ligne de front. Tant qu’une créature alliée tient le front, une attaque de mêlée adverse ne peut pas la viser ; l’Attaque ciblée et l’Infiltration passent la ligne. Front tombé, elle redevient une cible ordinaire.',
   coupRapide: 'Peut attaquer une créature adverse ou directement selon les règles d’attaque directe. Contre une créature, inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater sauf effet contraire ; certaines capacités peuvent riposter.',
   coupCritique: 'En combat, 25 % de chances de multiplier les dégâts contre une créature ou l’adversaire : ×4 pour Kagutsuchi, ×2 pour les autres créatures, les armes et le Serment de la forge. Contre une créature déjà blessée, le critique est garanti : aucun tirage n’est fait.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,

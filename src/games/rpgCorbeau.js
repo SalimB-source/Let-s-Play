@@ -48,7 +48,7 @@ export const RPG_CORBEAU_CREATURES = [
     flavor: 'Il se pose sur l’épaule, et le bras qui le porte ne se relève plus.',
   }),
   carte({
-    id: 'veilleuse-au-corbeau-noir',
+    id: 'veilleuse-au-corbeau-noir', distance: true,
     name: 'Veilleuse au corbeau noir',
     cost: 3,
     atk: 2,

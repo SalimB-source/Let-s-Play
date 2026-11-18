@@ -41,11 +41,12 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 42 symboles validés, un par effet', () => {
+test('le sprite porte les 43 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 42);
+  // 43 depuis l'arc de la ligne « À distance » (les deux lignes du champ).
+  assert.equal(symboles.length, 43);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -108,8 +109,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Défenseur', 'Blocage', 'Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
-  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
-    'Tiziri ne produit plus de mana et ne porte pas de pastille de mana');
+  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['À distance'],
+    'Tiziri ne produit plus de mana ; sa voix porte, elle tient le fond');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
