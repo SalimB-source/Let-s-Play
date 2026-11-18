@@ -1749,6 +1749,10 @@ function creerEntiteCreature(carte, duel) {
     malInvocation: carte.kind !== 'site',
     rapiditeAccordee: false,
     coupRapide: Boolean(carte.coupRapide),
+    // « À distance » : la créature se bat au fond du champ et frappe à
+    // portée — elle rend son coup sans en recevoir (voir l'échange de
+    // combat). La ligne, elle, se lit sur la case (`rpgLignes.js`).
+    distance: Boolean(carte.distance),
     blocage: carte.blocage ? { ...carte.blocage } : null,
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
     envol: Boolean(carte.envol),
@@ -9140,11 +9144,18 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     const cibleAvant = { ...cible };
     const rate = ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable
       && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    // **Le contact.** Une attaque de mêlée est un duel : les deux créatures
+    // frappent ensemble, la cible déclenche ses capacités « au blocage », et
+    // son porteur peut geler ou renvoyer l'attaquant. Un tir n'a pas de
+    // contact : l'Attaque ciblée n'en a jamais eu, et « À distance » non plus
+    // depuis les deux lignes — elle frappe de loin, sans recevoir de coup en
+    // retour, mais elle ne voit pas le fond adverse (voir `rpgLignes.js`).
+    const auContact = !ciblee && !attaquant.distance;
     // En MOBA, une attaque normale contre une créature est l'unique duel :
     // la cible y déclenche ses effets « au blocage », sans phase de blocage
     // séparée. Les deux capacités frappent ensemble AVANT l'échange normal.
     // Une Attaque ciblée n'est pas un duel et ne déclenche pas ces effets.
-    if (!ciblee) {
+    if (auContact) {
       const coupsAvantCombat = [];
       if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(coupsAvantCombat, cote, duelCardById(attaquant.carteId), cible, attaquant, 'attaque-bloquee');
       if (!estGelee(cible)) ajouterDegatsCapaciteAvantCombat(coupsAvantCombat, adv, duelCardById(cible.carteId), attaquant, cible, 'blocage');
@@ -9177,7 +9188,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       cible = duel[adv].creatures.find((e) => e.id === cibleId);
       if (!rate) {
         gelerAdversaireDePorteur(duel, attaquant, cible);
-        if (!ciblee) gelerAdversaireDePorteur(duel, cible, attaquant);
+        if (auContact) gelerAdversaireDePorteur(duel, cible, attaquant);
       }
       // Le gel se résout avant les blessures des deux côtés, sans favoriser
       // l'attaquant ; les deux forces sont ensuite déterminées avant l'échange.
@@ -9191,7 +9202,8 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
         const coup = { cote: adv, entiteId: cible.id, amount: force - exces,
           sourceElement: cardColors(duelCardById(attaquant.carteId)), sourceType: 'attaque', sourceCote: cote, sourceId: attaquant.id, voieCombat: lane, rapide: ciblee };
         const coups = [coup];
-        if (!ciblee) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, 0, attaquant),
+        // La riposte de la créature visée : un duel, pas un tir.
+        if (auContact) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, 0, attaquant),
           sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id, voieCombat: lane });
         let touche = false;
         const esquives = appliquerDegatsDeCombatSimultanes(duel, coups, {
@@ -9225,7 +9237,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
         }
         // Les renvois « après les blessures » suivent l'échange ordinaire en
         // Duel comme en MOBA, même si le bloqueur a été détruit par ce coup.
-        if (!ciblee && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
+        if (auContact && !duel.moba?.winner) resoudreCapaciteBlocage(duel, adv, cibleId, attaquantId, true, cibleAvant);
       } else if (ciblee) riposteSurAttaqueCiblee(duel, cibleAvant, cote, attaquantId);
     }
   } else if (!duel.brouillardCombat && !duel.brouillardCombatVoies?.includes(lane)) {

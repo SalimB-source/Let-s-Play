@@ -149,3 +149,23 @@ test('le duel en ligne ouvre aussi les deux lignes, dès l’état initial', () 
   assert.equal(etat.lignes, true);
   assert.equal(champMax(etat), 10);
 });
+
+test('« À distance » tire sans riposte mais ne voit pas le fond : l’Attaque ciblée seule passe', () => {
+  const { d, poserOk } = table();
+  d.tour = 'joueur';
+  const mur = poserOk('joueur', MELEE);
+  const fond = poserOk('joueur', DISTANCE);
+  d.tour = 'sorcier';
+  // Un tireur « À distance » qui n'a **pas** l'Attaque ciblée : c'est le trait
+  // de ligne seul qui est jugé ici.
+  const tireur = poserOk('sorcier', 'ashigaru-des-braises');
+  assert.equal(tireur.distance, true);
+  assert.equal(tireur.coupRapide, false);
+  const cibles = () => rpgCiblesIndividuellesClassique(d, 'sorcier', tireur.id).cibles;
+  assert.ok(cibles().includes(mur.id), 'le tireur voit le front');
+  assert.equal(cibles().includes(fond.id), false,
+    'tirer de loin ne fait pas traverser la ligne : le fond reste couvert');
+  // Le privilège de la ligne reste à l’Attaque ciblée (et à l’Infiltration).
+  tireur.coupRapide = true;
+  assert.ok(cibles().includes(fond.id), 'l’Attaque ciblée passe le front');
+});

@@ -1798,7 +1798,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             <span className="rpg-hand__title"><ManaCost carte={card} showElement={false} /></span>
             {magieFamille(card) && <SortSceau carte={card} className="rpg-hand__sceau" />}
             <IconesCarte carte={card} className="rpg-card-icones--colonne rpg-card-icones--main" />
-            {creature && <span className="rpg-hand__stats" aria-hidden="true"><span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={card.coupRapide} /><span className="rpg-stat-value">{card.atk}</span></span><span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{card.def}</span></span></span>}
+            {creature && <span className="rpg-hand__stats" aria-hidden="true"><span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={card.coupRapide} distance={card.distance} /><span className="rpg-stat-value">{card.atk}</span></span><span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{card.def}</span></span></span>}
             <span className="moba__sr-only">{card.name}</span>
           </button>
           {reception && <span className="moba__hand-receipt" aria-hidden="true">{reception.type === 'recherche' ? 'TROUVÉE' : 'PIOCHÉE'}</span>}

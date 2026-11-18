@@ -38,7 +38,11 @@ test('les faces du mulligan reprennent les repères de la main et restent sélec
       if (carte.kind === 'creature' || carte.kind === 'hero') {
         assert.equal(stats.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, String(carte.atk));
         assert.equal(stats.querySelector('.rpg-card__pt .rpg-stat-value').textContent, String(carte.def));
-        assert.equal(stats.querySelector('[data-stat-icon="arc"]') !== null, Boolean(carte.coupRapide));
+        // L'arc de l'ATQ dit la portée : Attaque ciblée, et « À distance » —
+        // la ligne de la carte n'a pas d'icône d'effet, c'est l'attaque qui parle.
+        const arc = stats.querySelector('[data-stat-icon="arc"]');
+        assert.equal(arc !== null, Boolean(carte.coupRapide || carte.distance), id);
+        if (arc) assert.equal(arc.dataset.statArc, carte.coupRapide ? 'ciblee' : 'distance', id);
       } else if (id === 'jitte-d-amayas') {
         const bonus = bonusArme(carte), signer = n => n >= 0 ? `+${n}` : `${n}`;
         assert.equal(stats.querySelector('.rpg-card__stat--atk .rpg-stat-value').textContent, signer(bonus.atk ?? 0));

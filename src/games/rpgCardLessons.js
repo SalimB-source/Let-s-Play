@@ -167,9 +167,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'a-distance',
     section: 'Capacités des créatures',
-    cardIds: ['archere-viking-du-givre', 'tislit-des-aures', 'djinn-de-foudre', 'maitre-des-hieroglyphes'],
-    title: '« À distance » tient la ligne du fond',
-    text: 'Le champ se lit en deux lignes : les corps à corps tiennent le front, et les créatures marquées « À distance » — archères, guetteurs, djinns, scribes, artilleurs — se tiennent derrière. Tant qu’une créature alliée reste devant, une attaque de mêlée adverse ne peut pas viser le fond : il faut d’abord abattre la ligne de front. Deux attaquants passent la ligne : l’Attaque ciblée, qui choisit déjà sa cible, et l’Infiltration. Dès que le front tombe, le fond redevient une cible ordinaire — une armée réduite à ses archers reste attaquable. Les sorts, eux, ne sont jamais arrêtés par la ligne.',
+    cardIds: ['tiziri-du-djurdjura', 'guetteur-du-beffroi', 'scalde-des-runes', 'archere-viking-du-givre'],
+    title: '« À distance » tient le fond et frappe sans riposte',
+    text: 'Le champ se lit en deux lignes : les corps à corps tiennent le front, et les créatures marquées « À distance » — archères, guetteurs, djinns, scribes, artilleurs — se rangent derrière. Une créature à distance frappe sans recevoir de coup en retour : la créature visée ne la rejoint pas, elle ne rend donc pas son coup. Mais tirer de loin ne fait pas traverser la ligne : tant qu’une créature alliée tient le front, rien — pas même une flèche — ne peut viser le fond. Ce passage reste le privilège de l’Attaque ciblée et de l’Infiltration. Dès que le front tombe, le fond redevient une cible ordinaire : une armée réduite à ses archers reste attaquable. Les sorts, eux, ne sont jamais arrêtés par la ligne.',
   },
   {
     id: 'infiltration-tin-hinan',
