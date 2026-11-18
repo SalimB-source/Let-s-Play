@@ -55,6 +55,116 @@
 .rpg-avatar-eclatement__eclat--2 { clip-path: polygon(0 8%, 98% 0, 100% 100%, 6% 94%); }
 .rpg-avatar-eclatement__eclat--3 { clip-path: polygon(0 0, 96% 0, 100% 92%, 4% 100%); }
 
+/* ── LA RÉPLIQUE, AVANT L'ÉCLATEMENT ────────────────────────────────────────
+   Le condamné parle encore debout : une bulle sobre, posée du côté libre de la
+   table. Le camp adverse occupe le haut du plateau — sa bulle descend donc sous
+   le médaillon (sous sa jauge de vie) ; celui du joueur est en bas, sa bulle
+   monte. Aucune des deux ne recouvre le visage ni les PV.
+
+   La bulle vit exactement `--rpg-replique-delai` (× le réglage de vitesse) :
+   elle apparaît, tient, s'efface sur la fin — et le composant la démonte à
+   l'instant où les éclats prennent le relais. Rien à nettoyer côté page. */
+.rpg-avatar-eclatement__replique {
+  position: absolute;
+  left: 50%;
+  z-index: 6;
+  max-width: min(230px, 46vw);
+  padding: 7px 11px 8px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(215, 173, 97, .55);
+  border-radius: 12px;
+  background: rgba(8, 6, 9, .93);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .55), inset 0 1px rgba(255, 232, 190, .09);
+  color: #ffe9c2;
+  font: 500 11px/1.35 var(--sans, system-ui, sans-serif);
+  letter-spacing: .01em;
+  text-align: left;
+  text-wrap: balance;
+  pointer-events: none;
+  animation: rpg-avatar-replique-vie calc(var(--rpg-replique-delai, 1600ms) * var(--rpg-anim-scale, 1)) ease-out both;
+}
+/* La queue de la bulle, tournée vers le médaillon. */
+.rpg-avatar-eclatement__replique::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  border: 1px solid rgba(215, 173, 97, .55);
+  background: rgba(8, 6, 9, .93);
+}
+/* Camp adverse (haut du plateau) : la bulle descend, sous la jauge de vie. */
+.rpg-avatar-eclatement[data-camp="ennemi"] .rpg-avatar-eclatement__replique { top: calc(100% + 26px); }
+.rpg-avatar-eclatement[data-camp="ennemi"] .rpg-avatar-eclatement__replique::after {
+  top: -6px;
+  border-right: none;
+  border-bottom: none;
+}
+/* Camp du joueur (bas du plateau) : la bulle monte. */
+.rpg-avatar-eclatement[data-camp="joueur"] .rpg-avatar-eclatement__replique { bottom: calc(100% + 6px); }
+.rpg-avatar-eclatement[data-camp="joueur"] .rpg-avatar-eclatement__replique::after {
+  bottom: -6px;
+  border-left: none;
+  border-top: none;
+}
+
+@keyframes rpg-avatar-replique-vie {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(6px) scale(.94); }
+  10%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  84%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-4px) scale(.98); }
+}
+
+/* ── LE CRATÈRE, SOUS L'AVATAR ──────────────────────────────────────────────
+   Une fois le personnage brisé, il reste au sol une marque ronde : l'anneau
+   brûlé qui s'élargit avec l'éclair, un creux noir au centre, des braises sur
+   le bord. Le calque vit dans le conteneur du disque (mêmes coordonnées que
+   les éclats), donc il occupe exactement la place de l'avatar disparu, et il
+   survit aux éclats jusqu'au démontage : c'est lui, la trace du perdant. */
+.rpg-avatar-eclatement__cratere {
+  position: absolute;
+  left: 50%;
+  bottom: -6%;
+  /* Sous l'éclair (-1) et sous les éclats : le cratère est le sol, pas la
+     lumière. Le calque reste dans le contexte d'empilement du conteneur
+     (`isolation: isolate`), donc ces z-index négatifs ne partent nulle part. */
+  z-index: -2;
+  width: 138%;
+  height: 46%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 44%,
+      rgba(6, 4, 4, .97) 0%,
+      rgba(16, 11, 8, .95) 34%,
+      rgba(38, 24, 13, .88) 56%,
+      rgba(96, 58, 22, .42) 76%,
+      rgba(126, 80, 30, .12) 88%,
+      transparent 96%);
+  box-shadow:
+    0 0 0 1px rgba(215, 173, 97, .16),
+    0 6px 18px rgba(0, 0, 0, .5),
+    inset 0 0 14px rgba(0, 0, 0, .9),
+    inset 0 0 26px rgba(255, 152, 62, .12);
+  animation: rpg-avatar-cratere-nait calc(560ms * var(--rpg-anim-scale, 1)) cubic-bezier(.2, .7, .3, 1) both;
+}
+/* Deux braises qui tiennent sur le bord intérieur : la chaleur du choc. */
+.rpg-avatar-eclatement__cratere::after {
+  content: "";
+  position: absolute;
+  inset: 18% 12% 26%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 176, 88, .22);
+  box-shadow: inset 0 0 12px rgba(255, 140, 52, .18);
+}
+
+@keyframes rpg-avatar-cratere-nait {
+  0%   { opacity: 0; transform: translateX(-50%) scale(.32); }
+  55%  { opacity: 1; transform: translateX(-50%) scale(1.08); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
 /* Le choc initial : un éclair doré, bref, qui ne masque pas les éclats. */
 .rpg-avatar-eclatement__flash {
   position: absolute;
@@ -86,14 +196,16 @@
 .rpg-overlay--apres-eclat {
   visibility: hidden;
   opacity: 0;
-  animation: rpg-overlay-apres-eclat calc(380ms * var(--rpg-anim-scale, 1)) ease-out calc((var(--rpg-eclat-maxi, 1900ms) + 380ms) * var(--rpg-anim-scale, 1)) both;
+  animation: rpg-overlay-apres-eclat calc(380ms * var(--rpg-anim-scale, 1)) ease-out calc((var(--rpg-replique-delai, 0ms) + var(--rpg-eclat-maxi, 1900ms) + 380ms) * var(--rpg-anim-scale, 1)) both;
 }
 @keyframes rpg-overlay-apres-eclat {
   from { opacity: 0; visibility: hidden; }
   to   { opacity: 1; visibility: visible; }
 }
 
-/* Mouvement réduit : aucun éclat, l'écran de fin apparaît immédiatement. */
+/* Mouvement réduit : aucun éclat, l'écran de fin apparaît immédiatement. Le
+   composant n'est d'ailleurs pas monté dans ce cas (aucune réplique, aucun
+   cratère) : ces règles ne servent qu'à la démo autonome. */
 @media (prefers-reduced-motion: reduce) {
   .rpg-avatar-eclatement { display: none; }
   .rpg-overlay--apres-eclat { animation: none; opacity: 1; visibility: visible; }

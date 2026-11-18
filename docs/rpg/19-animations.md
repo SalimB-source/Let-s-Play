@@ -728,6 +728,49 @@ Décisions :
    d'échelle au lieu de le découvrir figé derrière le panneau.
 
 
+## 5 duodecies. Livré — la dernière phrase et le cratère (novembre 2026)
+
+L'avatar du perdant éclatait sans un mot et sans laisser de trace. Il parle
+maintenant **avant** de se briser, puis il reste de lui une marque ronde au
+sol. La fin de duel compte donc quatre temps au lieu de trois :
+
+| Temps | Ce qui se passe | Durée |
+| --- | --- | --- |
+| 1 | le personnage dit sa réplique, encore entier | `DUREE_REPLIQUE` = 1 600 ms |
+| 2 | il éclate en 156 morceaux, sous l'éclair doré | `DUREE_ECLATEMENT_MAX` = 1 900 ms |
+| 3 | le camp vaincu pâlit, le territoire du gagnant s'étend | 900 ms |
+| 4 | le bilan se pose par-dessus | 380 ms (+ 380 ms de pause) |
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| **Une réplique par avatar**, courte (20 à 70 caractères), fidèle à la fonction du personnage : la porte, le registre, la balance, la cloche… | `repliqueDefaite(idAvatar)`, repli sur une phrase générique pour un avatar inconnu (profil PvP, figure sans réplique) | `rpgRepliquesDefaite.js` |
+| Une **bulle** discrète, posée du côté libre du plateau : sous la jauge de vie pour le camp adverse (haut de la table), au-dessus du médaillon pour le joueur (bas de la table) ; queue tournée vers le visage | `data-camp` du calque d'éclatement, animation `rpg-avatar-replique-vie` | `rpg-avatar-eclatement.css` |
+| Le **cratère** : anneau brûlé, creux noir, braises sur le bord, qui naît avec l'éclair et **survit aux éclats** jusqu'à la relance | `__cratere`, monté avec l'explosion, conservé quand les éclats sont démontés (`data-phase="cratere"`) | `RpgAvatarEclatement.jsx`, `rpg-avatar-eclatement.css` |
+| Le portrait **reste entier pendant la phrase** : le masque du médaillon n'arrive qu'au premier éclat (`rpg-avatar-efface-coup`, 140 ms) | `--rpg-replique-delai`, publiée par la page depuis `DUREE_REPLIQUE` | `rpg-avatars-plateau.css`, `RpgDuelPage.jsx` |
+| Les temps 3 et 4 sont **décalés d'autant** : atténuation du camp vaincu, extension du territoire, filet de frontière et ouverture du bilan additionnent la réplique à l'éclatement | `calc((var(--rpg-replique-delai) + var(--rpg-eclat-maxi)) * var(--rpg-anim-scale, 1))` | `rpg-battle.css`, `rpg-avatar-eclatement.css` |
+| Les deux minuteurs du composant (passage aux éclats, démontage) passent par `dureeAnimation` : les quatre temps restent alignés à ×0,5 et ×2 | `RpgAvatarEclatement.jsx` | `RpgAvatarEclatement.jsx` |
+| Mouvement réduit : ni réplique, ni éclats, ni cratère, ni délai — le bilan arrive tout de suite | `eclatementActif` faux ⇒ composant non monté | `RpgDuelPage.jsx` |
+| Vérifications | registre complet, longueurs, repli, bulle et cratère en CSS, rendu statique des deux phases, cratère conservé après le vol, minuteurs, délais | `tests/rpg-avatar-eclatement.test.js`, `scripts/rpg-victoire-table-check.mjs` |
+
+Décisions :
+
+1. **Une phrase, pas un monologue.** 1 600 ms à l'écran, 70 caractères au
+   maximum : la réplique se lit d'un coup d'œil, sans retarder la lecture du
+   bilan ni la relance. Une réplique plus longue aurait exigé une attente plus
+   longue, et la fin de duel se serait mise à traîner.
+2. **Le texte appartient au personnage, pas au camp.** La réplique est indexée
+   sur l'identifiant de l'avatar — celui du récit dans la tour, celui du profil
+   en PvP —, jamais sur « joueur » ou « sorcier ». Le même avatar dit donc la
+   même chose des deux côtés de la table.
+3. **Le cratère survit au composant.** Les éclats sont démontés à la fin du
+   vol, la marque non : elle reste jusqu'au démontage complet (relance, retour
+   au menu). C'est la seule trace durable de la fin de duel sur le plateau, et
+   elle s'atténue avec son camp quand la table se dépose en sable.
+4. **La bulle évite le visage et les PV.** Placée sous la jauge pour le camp
+   adverse, au-dessus du médaillon pour le joueur : dans les deux cas elle
+   occupe la zone libre de la table, jamais le portrait qui vient d'éclater.
+
+
 ## 6. Annexe — récapitulatif
 
 | Scène | Nombre d'idées | Dont P0 |

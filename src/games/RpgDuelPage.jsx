@@ -115,7 +115,8 @@ import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
 import RpgAvatarEclatement from './RpgAvatarEclatement.jsx';
-import { DUREE_ECLATEMENT_MAX } from './rpgAvatarEclats.js';
+import { DUREE_ECLATEMENT_MAX, DUREE_REPLIQUE } from './rpgAvatarEclats.js';
+import { repliqueDefaite } from './rpgRepliquesDefaite.js';
 import {
   RpgMainThemeMusic,
   RPG_PLATEAUX_MUSICAUX,
@@ -10019,6 +10020,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ?? avatarDuel('ifrit-ergs', import.meta.env.BASE_URL);
   const avatarPlateauJoueur = avatarDuel(avatarDeProfil(profilJoueur)?.id, import.meta.env.BASE_URL)
     ?? avatarDuel('salem', import.meta.env.BASE_URL);
+  // La dernière phrase de chaque camp, dite avant l'éclatement de son avatar.
+  // Mêmes identifiants que les têtes détourées : le personnage du récit, ou
+  // l'Ifrit de service ; côté joueur, son avatar de profil, sinon Salem.
+  const repliqueAdverse = repliqueDefaite(personnageSorcier ?? 'ifrit-ergs');
+  const repliqueJoueur = repliqueDefaite(avatarDeProfil(profilJoueur)?.id ?? 'salem');
   const cibleAnnoncee = carteAnnoncee?.kind === 'magie'
     ? describeAnnouncedMagicTarget(carteAnnoncee, duel.annonce.cibleId, duel, sorcierArtId, portraitSorcierAdverse)
     : carteAnnoncee?.kind === 'arme'
@@ -13705,7 +13711,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       style={{ ...DOS_DE_CARTE_STYLE, '--rpg-anim-scale': String(vitesseAnim),
         // Durée de l'éclatement du perdant : la feuille s'en sert pour retarder
         // l'extension du plateau et l'arrivée du bilan (voir rpg-battle.css).
-        '--rpg-eclat-maxi': `${DUREE_ECLATEMENT_MAX}ms` }}
+        '--rpg-eclat-maxi': `${DUREE_ECLATEMENT_MAX}ms`,
+        // Temps de la réplique dite avant l'éclatement : la feuille retarde
+        // d'autant le masque du médaillon, l'atténuation du camp perdant,
+        // l'extension du plateau et l'ouverture du bilan.
+        '--rpg-replique-delai': `${DUREE_REPLIQUE}ms` }}
       onClickCapture={selectionAscension.intercepterClick}
       onPointerDownCapture={selectionAscension.intercepterPointer}
       onContextMenuCapture={selectionAscension.intercepterContexte}
@@ -14088,7 +14098,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
           title={modePvp ? nomSorcierAdverse : 'Le sorcier adverse'}
           aria-label={`${nomSorcierAdverse} : ${duel.sorcier.pv} points de vie${duel.sorcier.bouclier ? `, ${duel.sorcier.bouclier} de bouclier` : ''}`}>
-          <span className={`rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi${eclatementPlateauEnnemi ? ' is-eclatant' : ''}`} data-scene-avatar="ennemi" aria-hidden="true"><img src={avatarPlateauAdverse} data-personnage={personnageSorcier ?? undefined} alt="" />{eclatementPlateauEnnemi && <RpgAvatarEclatement image={avatarPlateauAdverse} camp="ennemi" />}</span>
+          <span className={`rpg-wizard-plate__avatar rpg-wizard-plate__avatar--ennemi${eclatementPlateauEnnemi ? ' is-eclatant' : ''}`} data-scene-avatar="ennemi" aria-hidden="true"><img src={avatarPlateauAdverse} data-personnage={personnageSorcier ?? undefined} alt="" />{eclatementPlateauEnnemi && <RpgAvatarEclatement image={avatarPlateauAdverse} camp="ennemi" replique={repliqueAdverse} />}</span>
           <span className="rpg-wizard-plate__enemy-name">{nomSorcierAdverse}</span>
           <span className="rpg-wizard-plate__identity">
             <strong>{modePvp ? nomSorcierAdverse : etageHistoire ? etageHistoire.nom : tutorielActif ? 'SORCIER D’ENTRAÎNEMENT' : 'LE SORCIER'}</strong>
@@ -14640,7 +14650,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           className={`rpg-wizard-plate rpg-wizard-plate--joueur${sortJoue?.cible.targetPlate === 'joueur' || annonceViseVotrePlate ? ' is-spell-target' : ''}${classeSoinPlaque(soinJoueur)}`} title="Vous"
           data-soin={soinJoueur ? soinJoueur.montant : undefined}
           data-tutorial-target={cibleTutoriel('player-health') ? 'player-health' : undefined}>
-          <span className={`rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur${eclatementPlateauJoueur ? ' is-eclatant' : ''}`} data-scene-avatar="joueur" aria-hidden="true"><img src={avatarPlateauJoueur} alt="" />{eclatementPlateauJoueur && <RpgAvatarEclatement image={avatarPlateauJoueur} camp="joueur" />}</span>
+          <span className={`rpg-wizard-plate__avatar rpg-wizard-plate__avatar--joueur${eclatementPlateauJoueur ? ' is-eclatant' : ''}`} data-scene-avatar="joueur" aria-hidden="true"><img src={avatarPlateauJoueur} alt="" />{eclatementPlateauJoueur && <RpgAvatarEclatement image={avatarPlateauJoueur} camp="joueur" replique={repliqueJoueur} />}</span>
           <span className="rpg-wizard-plate__profile-name">{nomJoueurAffiche}</span>
           <span className="rpg-wizard-plate__identity"><strong>{modePvp ? nomJoueurAffiche : 'VOUS'}</strong><small>{deckJoueurAffiche.name} · {deckColorGlyph(deckJoueurAffiche)} {deckColorLabel(deckJoueurAffiche)}</small></span>
           <PlaqueVie
