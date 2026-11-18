@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { rpgAnimationsReduites } from './rpgAnimations.js';
 import './chargement-duel.css';
 
 /** Une importation peut rester en attente sans jamais rejeter. On laisse le
@@ -10,14 +11,19 @@ export default function ChargementDuel() {
     return () => window.clearTimeout(timer);
   }, []);
   return (
-    <div className="chargement-duel" role="status" aria-live="polite">
-      <p>Chargement du duel…</p>
-      {lent && (
-        <div className="chargement-duel__aide">
-          <p>Le chargement prend plus de temps que prévu. Vérifiez votre connexion ou rechargez la page.</p>
-          <button type="button" onClick={() => window.location.reload()}>Recharger la page</button>
-        </div>
-      )}
+    <div className={`chargement-duel${rpgAnimationsReduites() ? ' is-reduced' : ''}`} role="status" aria-live="polite">
+      <span className="chargement-duel__sable" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+      <div className="chargement-duel__contenu">
+        <span className="chargement-duel__sur-titre">Le Sablier</span>
+        <p className="chargement-duel__titre">Chargement du duel…</p>
+        <p className="chargement-duel__astuce"><b>Astuce</b> Consultez les cartes et leurs capacités avant de choisir vos cibles.</p>
+        {lent && (
+          <div className="chargement-duel__aide">
+            <p>Le chargement prend plus de temps que prévu. Vérifiez votre connexion ou rechargez la page.</p>
+            <button type="button" onClick={() => window.location.reload()}>Recharger la page</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

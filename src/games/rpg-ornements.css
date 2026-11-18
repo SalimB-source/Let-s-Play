@@ -1,0 +1,38 @@
+/* Toujours sur les marges et jamais dans le flux ni au-dessus des contrôles. */
+.rpg-bordure { position: absolute; inset: 0; z-index: 1; pointer-events: none; border: 5px solid transparent; border-image: repeating-linear-gradient(125deg, var(--bord-sombre), var(--bord-clair) 5px, var(--bord-sombre) 10px, var(--bord-milieu) 16px) 5; box-shadow: inset 0 0 0 1px #d9ba7a55, inset 0 0 12px #000a; }
+.rpg-bordure--pierre { --bord-sombre: #292725; --bord-clair: #796d59; --bord-milieu: #4d4841; }
+.rpg-bordure--metal { --bord-sombre: #292323; --bord-clair: #a08252; --bord-milieu: #514437; }
+.rpg-bordure--bois { --bord-sombre: #201511; --bord-clair: #765335; --bord-milieu: #39291e; }
+.rpg-bordure--adverse { bottom: calc(100% - var(--rpg-frontiere, 50%)); border-bottom: 0; }
+.rpg-bordure--joueur { top: var(--rpg-frontiere, 50%); border-top: 0; }
+
+/* Sceau sous le pied de la carte, indépendant de son animation de pose. */
+.rpg-portail { --portail: #edc478; position: absolute; z-index: 1; pointer-events: none; left: -12%; right: -12%; bottom: -12%; height: 30%; border: 2px solid var(--portail); border-radius: 50%; box-shadow: 0 0 12px var(--portail), inset 0 0 10px var(--portail); background: radial-gradient(ellipse, transparent 25%, color-mix(in srgb, var(--portail) 35%, transparent) 65%, transparent 75%); animation: rpg-portail-apparition calc(.62s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-portail--braise { --portail: #ff8d55; }
+.rpg-portail--givre { --portail: #a5eaff; }
+.rpg-portail i { position: absolute; inset: 18% 10%; border: 1px dashed var(--portail); border-radius: 50%; transform: rotate(-8deg); }
+.rpg-portail i + i { inset: 36% 26%; border-style: solid; transform: rotate(8deg); }
+@keyframes rpg-portail-apparition { 0% { opacity: 0; transform: scale(.45); } 30% { opacity: .95; } 100% { opacity: 0; transform: scale(1.12); } }
+
+.rpg-brume-cimetiere { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: visible; }
+.rpg-brume-cimetiere__voile { position: absolute; inset: 15% -15%; border-radius: 50%; background: radial-gradient(ellipse, #b8c6c842, transparent 70%); animation: rpg-brume-flotte 4s ease-in-out infinite alternate; }
+.rpg-brume-cimetiere__grains { position: absolute; inset: 0; animation: rpg-grains-disparition calc(1s * var(--rpg-anim-scale, 1)) ease-out forwards; }
+.rpg-brume-cimetiere__grains i { position: absolute; bottom: 30%; left: 25%; width: 3px; height: 3px; border-radius: 50%; background: #e5d4ab; box-shadow: 0 0 5px #efdaae; animation: rpg-grain-monte calc(1s * var(--rpg-anim-scale, 1)) ease-out forwards; }
+.rpg-brume-cimetiere__grains i:nth-child(2) { left: 45%; animation-delay: .08s; }
+.rpg-brume-cimetiere__grains i:nth-child(3) { left: 65%; animation-delay: .16s; }
+.rpg-brume-cimetiere__grains i:nth-child(4) { left: 80%; animation-delay: .05s; }
+@keyframes rpg-brume-flotte { from { opacity: .4; transform: translateX(-3px); } to { opacity: .8; transform: translateX(3px); } }
+@keyframes rpg-grains-disparition { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rpg-grain-monte { to { transform: translate(5px, -30px); } }
+.rpg-card-pile--graveyard, .moba__pile-fallback[data-moba-pile="cimetiere"], .rpg-wizard-plate__zone { position: relative; }
+
+.rpg-arme-eclat { position: absolute; z-index: 13; pointer-events: none; top: 0; left: 50%; width: 34%; aspect-ratio: 1; transform: translate(-50%, -50%); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); overflow: hidden; }
+.rpg-arme-eclat--autonome { width: 24%; min-width: 20px; background: #d4b57a; }
+.rpg-arme-eclat--autonome img { width: 100%; height: 100%; object-fit: cover; }
+.rpg-arme-eclat i { position: absolute; inset: -50%; background: linear-gradient(110deg, transparent 42%, #fff8dd 49%, #fff 50%, transparent 57%); animation: rpg-arme-balayage calc(.8s * var(--rpg-anim-scale, 1)) ease-out both; }
+@keyframes rpg-arme-balayage { from { transform: translateX(-55%); opacity: 0; } 25% { opacity: .95; } to { transform: translateX(55%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rpg-portail, .rpg-brume-cimetiere__voile, .rpg-brume-cimetiere__grains, .rpg-brume-cimetiere__grains i, .rpg-arme-eclat i { animation: none !important; } .rpg-portail, .rpg-brume-cimetiere__grains, .rpg-arme-eclat i { display: none; } }
+.is-reduced .rpg-portail, .is-reduced .rpg-brume-cimetiere__grains, .is-reduced .rpg-arme-eclat i { display: none; }
+.is-reduced .rpg-brume-cimetiere__voile { animation: none; }
+/* Le rendu autonome rogne la case : garder la vignette à l'intérieur. */
+.rpg-arme-eclat--autonome { top: 3%; transform: translateX(-50%); }
