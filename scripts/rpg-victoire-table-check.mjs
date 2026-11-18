@@ -40,8 +40,10 @@ assert.match(page, /const indicateurTour = vainqueur\s*\?\s*'DUEL TERMINÉ'/,
   'l’Astrolabe affiche « DUEL TERMINÉ » au tour exact de la victoire');
 assert.match(page, /const classeIndicateurTour = vainqueur \? 'is-finished'/,
   'l’indicateur prend sa classe de fin, support du geste de figeage');
-assert.match(page, /className=\{`rpg-overlay\$\{vainqueur === 'joueur' \? ' rpg-overlay--win' : ' rpg-overlay--loss'\}`\}/,
+assert.match(page, /className=\{`rpg-overlay\$\{vainqueur === 'joueur' \? ' rpg-overlay--win' : ' rpg-overlay--loss'\}\$\{eclatementActif \? ' rpg-overlay--apres-eclat' : ''\}`\}/,
   'le bilan s’ouvre en panneau de victoire ou en voile de défaite, par-dessus la table');
+assert.match(page, /data-eclat-actif=\{eclatementActif \? 'true' : undefined\}/,
+  'la table sait qu’un avatar est en train d’éclater, sans nouvel état de jeu');
 
 // ── 2. La feuille : le camp vaincu s'affaisse, le gagnant reste ────────────
 const positionBloc = css.indexOf('.card-table[data-vainqueur="joueur"]');
@@ -49,22 +51,45 @@ assert.ok(positionBloc > css.indexOf("Les flèches d'attaque et de blocage"),
   'le bloc est dans la zone FX gardée, après les flèches');
 assert.ok(positionBloc < css.indexOf('LA TEMPÊTE DE SABLE'),
   'et avant la tempête, hors des slices des autres checks');
-const selecteursPerdants = css.slice(positionBloc, css.indexOf('@keyframes rpg-victoire-sable'));
-assert.match(selecteursPerdants, /\.card-table\[data-vainqueur="joueur"\] \.card-row--ennemi,/,
+const selecteursRangees = css.slice(positionBloc, css.indexOf('@keyframes rpg-victoire-sable'));
+assert.match(selecteursRangees, /\.card-table\[data-vainqueur="joueur"\] \.card-row--ennemi,/,
   'quand le joueur gagne, la rangée ennemie s’efface');
-assert.match(selecteursPerdants, /\.card-table\[data-vainqueur="joueur"\] \.rpg-wizard-plate--ennemi,/,
-  'et la plaque du sorcier avec elle');
-assert.match(selecteursPerdants, /\.card-table\[data-vainqueur="sorcier"\] \.card-row--equipe,/,
+assert.match(selecteursRangees, /\.card-table\[data-vainqueur="sorcier"\] \.card-row--equipe \{/,
   'quand le sorcier gagne, c’est votre rangée qui se dépose en sable');
-assert.match(selecteursPerdants, /\.card-table\[data-vainqueur="sorcier"\] \.rpg-wizard-plate--joueur\s*\{/,
-  'et votre plaque (dernier sélecteur de la règle)');
-assert.match(selecteursPerdants, /animation:\s*rpg-victoire-sable calc\(1s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.4, \.1, \.6, 1\) both;/,
+assert.doesNotMatch(selecteursRangees, /rpg-wizard-plate/,
+  'les plaques d’avatar ne sont plus dans la règle qui se déplace (leur centrage tient au transform)');
+assert.match(selecteursRangees, /animation:\s*rpg-victoire-sable calc\(1s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.4, \.1, \.6, 1\) both;/,
   'l’affaissement dure une seconde, en une seule fois');
 const keyframesSable = extraireBloc(css, '@keyframes rpg-victoire-sable');
 assert.doesNotMatch(keyframesSable, /(top|left|right|bottom|width|height|margin|padding):/,
   'l’effacement n’anime aucune propriété de mise en page');
 assert.match(keyframesSable, /100% \{ opacity: \.22; transform: translateY\(12px\) scale\(\.96\); \}/,
   'le camp perdant se tasse vers le bas et pâlit, il ne s’envole pas');
+
+// ── 2 bis. Les plaques d'avatar s'atténuent sur place ──────────────────────
+// Leur position est tenue par `transform: translateX(-50%)` : une animation de
+// transform l'écrasait et le médaillon partait sur le côté. Elles ont donc leur
+// propre geste, opacité seule.
+const selecteursPlaques = css.slice(
+  css.indexOf('.card-table[data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,'),
+  css.indexOf('@keyframes rpg-victoire-plateau-sable'));
+assert.match(selecteursPlaques, /\.card-table\[data-vainqueur="joueur"\] \.rpg-wizard-plate--ennemi,/,
+  'la plaque du sorcier s’atténue quand le joueur gagne');
+assert.match(selecteursPlaques, /\.card-table\[data-vainqueur="sorcier"\] \.rpg-wizard-plate--joueur \{/,
+  'et la vôtre quand le sorcier gagne');
+assert.match(selecteursPlaques, /animation:\s*rpg-victoire-plateau-sable calc\(1s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.4, \.1, \.6, 1\) both;/);
+const keyframesPlaque = extraireBloc(css, '@keyframes rpg-victoire-plateau-sable');
+assert.doesNotMatch(keyframesPlaque, /transform|translate|scale|rotate|top|left|width|height/,
+  'aucun déplacement du médaillon : il reste exactement à sa place');
+assert.match(keyframesPlaque, /100% \{ opacity: \.22; \}/, 'seule l’opacité baisse');
+
+// ── 2 ter. L'éclatement ouvre la fin de duel, le reste attend ──────────────
+assert.match(page, /'--rpg-eclat-maxi': `\$\{DUREE_ECLATEMENT_MAX\}ms`/,
+  'la page publie la durée de l’éclatement, la même que celle du minuteur des éclats');
+assert.match(css, /\.card-table--decoupee\[data-eclat-actif\] \{[^}]*transition-delay: calc\(var\(--rpg-eclat-maxi, 1900ms\) \* var\(--rpg-anim-scale, 1\)\);/s,
+  'le territoire du gagnant ne s’étend qu’une fois les éclats retombés');
+assert.match(css, /\[data-vainqueur="sorcier"\] \.rpg-wizard-plate--joueur \{\s*animation-delay: calc\(var\(--rpg-eclat-maxi, 1900ms\) \* var\(--rpg-anim-scale, 1\)\);/,
+  'et le camp vaincu ne pâlit qu’à ce moment-là');
 
 // ── 3. L'Astrolabe se fige, puis le bilan entre en scène ───────────────────
 // Plusieurs règles portent ces sélecteurs : la règle statique historique, celle

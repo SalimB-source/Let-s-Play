@@ -141,7 +141,7 @@ assert.match(page, /<div className="rpg-settings__speed" role="group"[\s\S]*?vit
 // La coquille .rpg-battle porte la classe et la variable ; la table, les attributs.
 assert.match(page, /rpg-battle\$\{[\s\S]*?\}\$\{rpgAnimationsReduites\(animReduite\) \? ' is-reduced' : ''\}['`]/,
   'la coquille reçoit is-reduced dès que le mode réduit est effectif');
-assert.match(page, /style=\{\{ \.\.\.DOS_DE_CARTE_STYLE, '--rpg-anim-scale': String\(vitesseAnim\) \}\}/,
+assert.match(page, /style=\{\{ \.\.\.DOS_DE_CARTE_STYLE, '--rpg-anim-scale': String\(vitesseAnim\),[\s\S]*?'--rpg-eclat-maxi': `\$\{DUREE_ECLATEMENT_MAX\}ms` \}\}/,
   'la variable --rpg-anim-scale est posée sur la coquille, donc héritée par toute la table');
 assert.match(page, /data-anim-vitesse=\{String\(vitesseAnim\)\}/, 'la vitesse est aussi exposée en attribut');
 assert.match(page, /data-anim-reduite=\{rpgAnimationsReduites\(animReduite\) \? 'true' : undefined\}/,

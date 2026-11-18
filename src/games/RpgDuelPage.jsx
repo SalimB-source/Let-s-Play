@@ -115,6 +115,7 @@ import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
 import RpgAvatarEclatement from './RpgAvatarEclatement.jsx';
+import { DUREE_ECLATEMENT_MAX } from './rpgAvatarEclats.js';
 import {
   RpgMainThemeMusic,
   RPG_PLATEAUX_MUSICAUX,
@@ -13701,7 +13702,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ref={shellRef}
       className={`rpg-battle${selectionAscension.rituel ? ' is-ascension-selecting' : ''}${viewport.mobile ? ' rpg-battle--touch' : ''}${pleinEcran ? ' is-immersive' : ''}${rpgAnimationsReduites(animReduite) ? ' is-reduced' : ''}`}
       data-scene="duel"
-      style={{ ...DOS_DE_CARTE_STYLE, '--rpg-anim-scale': String(vitesseAnim) }}
+      style={{ ...DOS_DE_CARTE_STYLE, '--rpg-anim-scale': String(vitesseAnim),
+        // Durée de l'éclatement du perdant : la feuille s'en sert pour retarder
+        // l'extension du plateau et l'arrivée du bilan (voir rpg-battle.css).
+        '--rpg-eclat-maxi': `${DUREE_ECLATEMENT_MAX}ms` }}
       onClickCapture={selectionAscension.intercepterClick}
       onPointerDownCapture={selectionAscension.intercepterPointer}
       onContextMenuCapture={selectionAscension.intercepterContexte}
@@ -13777,6 +13781,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         data-territoire-dominant={territoire.dominant}
         data-territoire-termine={vainqueur ? 'true' : undefined}
         data-vainqueur={vainqueur ?? undefined}
+        data-eclat-actif={eclatementActif ? 'true' : undefined}
         data-apercu-carte={apercuCarte ?? undefined}
         aria-busy={carteEnVol ? 'true' : undefined}
         style={{

@@ -7,9 +7,9 @@
   left: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2);
   right: auto;
   display: block;
-  width: clamp(76px, 9.5vw, 128px);
+  width: var(--rpg-avatar-plateau, clamp(84px, 10.4vw, 140px));
   max-width: none;
-  height: clamp(76px, 9.5vw, 128px);
+  height: var(--rpg-avatar-plateau, clamp(84px, 10.4vw, 140px));
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -83,14 +83,17 @@
 .rpg-battle[data-scene="duel"] {
   --rpg-vie-bar-width: clamp(90px, 10vw, 140px);
   --rpg-vie-bar-height: clamp(20px, 1.7vw, 24px);
+  /* Diamètre du médaillon, partagé par la plaque et par le disque doré : une
+     seule valeur à changer pour agrandir l'avatar partout. */
+  --rpg-avatar-plateau: clamp(84px, 10.4vw, 140px);
   /* Diamètre du disque doré, repris par le calque d'éclatement : 82 % de la
      hauteur de la plaque, comme le `::before` du médaillon. */
-  --rpg-eclat-portee: calc(clamp(76px, 9.5vw, 128px) * .82);
+  --rpg-eclat-portee: calc(var(--rpg-avatar-plateau) * .82);
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table {
   --rpg-vie-bar-width: clamp(64px, calc(var(--duel-card) * 1.25), 108px);
   --rpg-vie-bar-height: 20px;
-  --rpg-eclat-portee: calc(clamp(52px, calc(var(--duel-card) * 1.2), 96px) * .82);
+  --rpg-eclat-portee: calc(var(--rpg-avatar-height) * .82);
 }
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-jauge-vie__rond,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate .rpg-jauge-vie__rond {
@@ -167,9 +170,9 @@
   position: absolute;
   left: calc(50% + (var(--rpg-touch-left) - var(--rpg-touch-controls)) / 2);
   right: auto;
-  width: clamp(44px, calc(var(--duel-card) * 1.05), 84px);
+  width: clamp(48px, calc(var(--duel-card) * 1.12), 88px);
   max-width: none;
-  height: clamp(52px, calc(var(--duel-card) * 1.2), 96px);
+  height: clamp(56px, calc(var(--duel-card) * 1.2), 96px);
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -240,7 +243,7 @@
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
   --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .82));
   --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.38 + env(safe-area-inset-bottom, 0px));
-  --rpg-avatar-height: clamp(52px, calc(var(--duel-card) * 1.13), 90px);
+  --rpg-avatar-height: clamp(56px, calc(var(--duel-card) * 1.2), 96px);
   --rpg-avatar-vie: var(--rpg-vie-bar-height);
   --rpg-avatar-nav: calc(var(--rpg-avatar-height) + var(--rpg-avatar-vie) + 4px);
   --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(34px, calc((50dvh - var(--rpg-avatar-height) - var(--rpg-avatar-vie) - 18px - env(safe-area-inset-bottom, 0px)) * .8)));
@@ -340,7 +343,7 @@
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: flex-start; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
   padding-left: calc(clamp(8px, 1.5vw, 24px) + 12px);
-  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - max(clamp(76px, 9.5vw, 128px), var(--rpg-vie-bar-width)) / 2 - 28px);
+  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - max(var(--rpg-avatar-plateau), var(--rpg-vie-bar-width)) / 2 - 28px);
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }
 

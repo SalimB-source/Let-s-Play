@@ -41,7 +41,10 @@
   background-position:
     calc(var(--col) * var(--rpg-eclat-position)) calc(var(--ligne) * var(--rpg-eclat-position));
   backface-visibility: hidden;
-  animation: rpg-avatar-eclat-vol var(--duree) cubic-bezier(.16, .68, .32, 1) var(--d) both;
+  /* Durées et retards suivent le réglage de vitesse comme le reste de la
+     table : l'éclatement garde ainsi la même longueur relative que les gestes
+     qui l'attendent (`--rpg-eclat-maxi`). */
+  animation: rpg-avatar-eclat-vol calc(var(--duree) * var(--rpg-anim-scale, 1)) cubic-bezier(.16, .68, .32, 1) calc(var(--d, 0ms) * var(--rpg-anim-scale, 1)) both;
 }
 
 /* Quatre découpes légèrement différentes : à l'instant 0 le disque paraît
@@ -59,7 +62,7 @@
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 248, 214, .9) 0%, rgba(255, 205, 110, .42) 36%, transparent 72%);
-  animation: rpg-avatar-eclat-flash 560ms ease-out both;
+  animation: rpg-avatar-eclat-flash calc(560ms * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
 @keyframes rpg-avatar-eclat-vol {
@@ -73,13 +76,17 @@
   100% { opacity: 0; scale: 1.55; }
 }
 
-/* L'écran de fin attend la fin de l'éclatement (≈ 1,5 s) avant d'arriver.
+/* L'écran de fin attend la fin de l'éclatement avant d'arriver.
    `visibility: hidden` pendant le délai évite que son voile floute la table
-   ou intercepte un clic pendant que les éclats volent. */
+   ou intercepte un clic pendant que les éclats volent. Le délai suit
+   `--rpg-eclat-maxi` (la durée que `RpgAvatarEclatement` attend avant de
+   démonter ses éclats, posée en style par la page), puis laisse une courte
+   pause : le territoire a commencé à s'étendre sous le panneau, on le voit
+   encore autour de lui. */
 .rpg-overlay--apres-eclat {
   visibility: hidden;
   opacity: 0;
-  animation: rpg-overlay-apres-eclat 380ms ease-out 1420ms both;
+  animation: rpg-overlay-apres-eclat calc(380ms * var(--rpg-anim-scale, 1)) ease-out calc((var(--rpg-eclat-maxi, 1900ms) + 380ms) * var(--rpg-anim-scale, 1)) both;
 }
 @keyframes rpg-overlay-apres-eclat {
   from { opacity: 0; visibility: hidden; }
