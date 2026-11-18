@@ -46,6 +46,7 @@
     "check:rpg-invocation-renforts": "node --test tests/rpg-sorts-invocation.test.js tests/rpg-renfort-funebre.test.js tests/rpg-choix-cimetiere.test.js",
     "check:rpg-choix-cout-invocation": "node --test tests/rpg-invocations-tenebres-cimetiere.test.js tests/rpg-choix-cout-invocation-ui.test.js",
     "check:rpg-choix-cout-visuel": "node scripts/rpg-choix-cout-visuel-check.mjs",
+    "check:rpg-ornements": "node --test tests/rpg-ornements.test.js && node scripts/rpg-ornements-check.mjs",
     "check:rpg-cimetiere-vols": "node --test tests/rpg-cimetiere-vols.test.js tests/rpg-cimetiere-vols-duel-ui.test.js tests/rpg-cimetiere-vols-pvp-ui.test.js",
     "check:rpg-ascension": "node --test tests/rpg-textes-ascension.test.js tests/rpg-ascension.test.js tests/rpg-ascension-duo.test.js tests/rpg-decks-ascension.test.js tests/rpg-arrivee-cimetiere-ascension-auto.test.js tests/rpg-ascension-nouvelles-illustrations.test.js tests/rpg-invocation-interface.test.js tests/rpg-sacrifice-animation.test.js tests/rpg-sacrifice-arrivee-ui.test.js && node scripts/rpg-ascension-ui-check.mjs",
     "check:rpg-ascension-browser": "node scripts/rpg-ascension-browser-check.mjs",

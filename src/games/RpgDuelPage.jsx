@@ -1,3 +1,4 @@
+import { RpgBordurePlateau, RpgPortailInvocation, RpgBrumeCimetiere, RpgLueurArme, useArmesAjoutees } from './RpgOrnements.jsx';
 import { RpgFissureImpact, RpgVagueTour } from './RpgEffetsComplementaires.jsx';
 import { RpgEntreeLegendaire, rpgEstLegendaire, RpgGuideCibles, RpgTempsForts, RpgVerdictScene } from './RpgMiseEnScene.jsx';
 import { rpgTempsForts } from './rpgTempsForts.js';
@@ -1361,7 +1362,7 @@ function FaceDownHand({ count, drawAnimations = [] }) {
   );
 }
 
-function CardPile({ count, label, variant, topCard = null, drawing = false, drawToken = null, onHoverCard, onLeaveHoverCard, onClick }) {
+function CardPile({ count, label, variant, cartes = [], topCard = null, drawing = false, drawToken = null, onHoverCard, onLeaveHoverCard, onClick }) {
   const carteDuDessus = topCard ? cardById(topCard) : null;
   const cliquable = Boolean(onClick && count);
   return (
@@ -1379,6 +1380,7 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         }
       } : undefined}
     >
+      {variant === 'graveyard' && <RpgBrumeCimetiere cartes={cartes} />}
       <span className="rpg-card-pile__stack" aria-hidden="true">
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
@@ -2896,6 +2898,7 @@ export function TableCard({
   // `{ montant, restant, lumiere, token }` le temps du choc d'un bouclier qui
   // vient de bloquer un sort (`ImpactBouclier`), sinon null.
   bouclierFx = null,
+  armeFx = null,
   playerTurn = false,
   activationDispo = false,
   onActiver = null,
@@ -3132,7 +3135,8 @@ export function TableCard({
       aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : Boolean(selected || selectedBlocker)}
     >
       <span className="rpg-relief-ombre" aria-hidden="true" />
-      {lumiereEntree && !entreeDifferee && !reserveAscension && <span className="rpg-lumiere-invocation" aria-hidden="true" />}
+      {lumiereEntree && !entreeDifferee && !reserveAscension && <><span className="rpg-lumiere-invocation" aria-hidden="true" />{!estSite && !armeFx && <RpgPortailInvocation carte={carte} />}</>}
+      <RpgLueurArme armes={armes} token={armeFx} />
       {lumiereEntree && !entreeDifferee && !reserveAscension && rpgEstLegendaire(carte) && <RpgEntreeLegendaire />}
       {actionFx?.impactVerifie && <RpgFissureImpact key={actionFx.token ?? actionFx.type} />}
       <img
@@ -8761,6 +8765,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const duel = duelRef.current;
+  const armesAjoutees = useArmesAjoutees(duel, modePvp ? `pvp:${pvp?.code ?? ''}` : duel);
   const volsCimetiere = useCimetiereVols({ duel, session: modePvp ? `pvp:${pvp?.code ?? ''}` : duel,
     rootRef: tableRef, actif: ecran === 'partie', pvp: modePvp });
   const vainqueurPvp = modePvp && (pvp?.statut === 'terminee' || duel?.fin?.gagnant)
@@ -13941,6 +13946,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             pointeur : c'est un fond, pas un voile. Voir « La vignette du
             plateau » dans `rpg-battle.css`. */}
         <span className="rpg-plateau-vignette" aria-hidden="true" />
+        {plateauDecoupe ? <><RpgBordurePlateau plateau={plateauAdverse.id} cote="adverse" /><RpgBordurePlateau plateau={plateau.id} cote="joueur" /></> : <RpgBordurePlateau plateau={plateau.id} />}
         {/* Les peintures restent plein cadre : la découpe franche du terrain
             adverse suit la frontière du territoire, marquée par un trait doré.
             Aucun déplacement des cartes, des zones de dépôt ou des commandes. */}
@@ -14213,6 +14219,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             count={duel.sorcier.cimetiere.length}
             label="Cimetière"
             variant="graveyard"
+            cartes={duel.sorcier.cimetiere}
             topCard={duel.sorcier.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
             onLeaveHoverCard={quitterCarteSurvol}
@@ -14246,7 +14253,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <i /> {modePvp ? `${nomSorcierAdverse} réfléchit…` : 'Le sorcier réfléchit…'}
             </span>
           )}
-          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {nbMainAdverse}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckAdverse}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}</span></span></span>
+          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {nbMainAdverse}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckAdverse}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.sorcier.cimetiere.length}<RpgBrumeCimetiere cartes={duel.sorcier.cimetiere} /></span></span></span>
           {soinSorcier && <EclatSoin key={soinSorcier.token} />}
         </button>
         <div className="rpg-table-zones rpg-table-zones--ennemi" role="group" aria-label={`Zones adverses : main ${nbMainAdverse}, paquet ${nbDeckAdverse}, cimetière ${duel.sorcier.cimetiere.length}`}>
@@ -14315,6 +14322,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <TableCard
                       key={entite.id}
                       entite={entite}
+                      armeFx={armesAjoutees[`sorcier:${entite.id}`]}
                       cote="ennemi"
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
@@ -14429,6 +14437,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     <TableCard
                       key={entite.id}
                       entite={entite}
+                      armeFx={armesAjoutees[`joueur:${entite.id}`]}
                       cote="joueur"
                       lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
@@ -14769,6 +14778,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             count={duel.joueur.cimetiere.length}
             label="Cimetière"
             variant="graveyard"
+            cartes={duel.joueur.cimetiere}
             topCard={duel.joueur.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
             onLeaveHoverCard={quitterCarteSurvol}
@@ -14793,7 +14803,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             base={RPG_PV_JOUEUR}
           />
 
-          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}</span></span></span>
+          <span className="rpg-wizard-plate__zones"><span className="rpg-wizard-plate__zone">Main · {duel.joueur.main.length}</span><span className="rpg-mobile-zones"><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Paquet {nbDeckJoueur}</span><span className="rpg-wizard-plate__zone-sep"> · </span><span className="rpg-wizard-plate__zone">Cimetière {duel.joueur.cimetiere.length}<RpgBrumeCimetiere cartes={duel.joueur.cimetiere} /></span></span></span>
           {soinJoueur && <EclatSoin key={soinJoueur.token} />}
         </div>
         <div className="rpg-table-zones rpg-table-zones--joueur" role="group" aria-label={`Vos zones : main ${duel.joueur.main.length}, paquet ${nbDeckJoueur}, cimetière ${duel.joueur.cimetiere.length}`}>
