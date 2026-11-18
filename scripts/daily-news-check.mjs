@@ -418,7 +418,7 @@ for (const [key, story] of Object.entries(gamingStories20261029)) {
 }
 const home = pages.get('/').querySelector('.home-news-card');
 assert.equal(home.querySelector('.daily-news-copy').getAttribute('href'), `/news/${currentGamingStory[0]}`);
-assert.equal(home.querySelector('img').getAttribute('src'), currentGamingStory[1].thumbnail);
+assert.equal(home.querySelector('img').getAttribute('src'), imageUrl(currentGamingStory[1].thumbnail));
 assert.ok(home.querySelector('.news-kicker').textContent.includes(currentEditionDate));
 
 // EN et AR conservent aussi la date de publication et toutes les cartes de

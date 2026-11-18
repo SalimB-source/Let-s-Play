@@ -648,6 +648,14 @@ export const dailySeoEntries = {
     "published": "2026-11-17",
     "section": "Actualités tech"
   },
+  "/news/game-awards-2026-les-6-nommes-jeu-annee": {
+    "title": "GAME AWARDS 2026 LES 6 NOMMÉS. — Let’s Play",
+    "description": "The Game Awards 2026 dévoilent leurs six nommés pour le Jeu de l’année : GTA VI, Resident Evil Requiem, Phantom Blade Zero, 007 First Light, Control Resonant et Zelda: Ocarina of Time. La cérémonie est fixée au 10 décembre à Los Angeles.",
+    "image": "news/2026-11-18/game-awards-2026-les-6-nommes.jpg",
+    "type": "article",
+    "published": "2026-11-18",
+    "section": "Actualités gaming"
+  },
   "/news/gta-6-miami-heat-night-vice-city-18-novembre": {
     "title": "GTA VI VICE CITY ENTRE SUR LE PARQUET. — Let’s Play",
     "description": "Le Miami HEAT programme « A Night in Vice City » le 18 novembre face aux Milwaukee Bucks. Un parquet spécial, des tenues et des animations GTA VI accompagnent cette soirée au Kaseya Center.",
@@ -671,13 +679,5 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-18",
     "section": "Actualités tech"
-  },
-  "/news/game-awards-2026-les-6-nommes-jeu-annee": {
-    "title": "GAME AWARDS 2026 LES 6 NOMMÉS. — Let’s Play",
-    "description": "The Game Awards 2026 dévoilent leurs six nommés pour le Jeu de l’année : GTA VI, Resident Evil Requiem, Phantom Blade Zero, 007 First Light, Control Resonant et Zelda: Ocarina of Time. La cérémonie est fixée au 10 décembre à Los Angeles.",
-    "image": "news/2026-11-18/game-awards-2026-les-6-nommes.jpg",
-    "type": "article",
-    "published": "2026-11-18",
-    "section": "Actualités gaming"
   }
 };
