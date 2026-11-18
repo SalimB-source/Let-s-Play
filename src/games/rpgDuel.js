@@ -9257,7 +9257,16 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   } else if (cibleCreatureId) {
     return { ok: false, raison: 'cible' };
   }
-  if (!attaqueDirectePermise(attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)))) {
+  // Ce que cette créature peut réellement viser : une créature volante sans
+  // Envol (ou inversement), une infiltrée ou une protégée n'est pas une cible.
+  // S'il n'en reste aucune, le sorcier est à découvert et la frappe directe
+  // reste légale, même derrière une créature avec Envol.
+  const couleur = cardColors(carte);
+  const ciblee = Boolean(attaquant.coupRapide);
+  const atteignables = duel[autre(cote)].creatures.filter((e) => !estSite(e)
+    && !rpgEstProtegee(e, couleur)
+    && (ciblee || (!e.infiltration && (attaquant.envol || !e.envol))));
+  if (!attaqueDirectePermise(attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)), atteignables)) {
     return { ok: false, raison: 'cible-obligatoire' };
   }
   // Ce raccourci suppose une attaque non bloquée : un bloqueur forcé capable

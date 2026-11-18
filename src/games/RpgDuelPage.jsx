@@ -4,6 +4,7 @@ import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
 import { CimetiereVols, useCimetiereVols } from './RpgCimetiereVols.jsx';
 import { ascensionDisponible, validerMateriauxAscension } from './rpgAscension.js';
+import { rpgAttaqueTousDisponible, rpgVagueDirecteClassique } from './rpgAttaqueTous.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from './rpgCombatIndividuelClassique.js';
 import { TourbillonEau } from './TourbillonEau.jsx';
 export { TourbillonEau } from './TourbillonEau.jsx';
@@ -8019,7 +8020,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // frappée par son Ghul des cendres : la suite reprend après son clic.
   const repriseSorcierRef = useRef(null);
   const [attaquants, setAttaquants] = useState([]);
+  // File d'attente de « Attaquer avec tous » en combat individuel : les
+  // créatures frappent le sorcier l'une après l'autre, jamais d'un seul bloc.
+  const fileAttaqueTousRef = useRef([]);
+  // Enchaîneur de la vague, posé pendant le rendu de l'écran « partie » : les
+  // écrans qui sortent plus tôt ne l'instancient pas, l'effet ci-dessous reste
+  // donc muet chez eux (aucune lecture d'une liaison encore non initialisée).
+  const poursuiteVagueRef = useRef(null);
   const [ciblesAttaque, setCiblesAttaque] = useState({});
+  // Chaque rendu tente d'enchaîner la vague directe : file vide, rien ne se
+  // passe ; file pleine, la frappe suivante part dès que la table est au repos.
+  useEffect(() => {
+    poursuiteVagueRef.current?.();
+  });
   const [combatEntrant, setCombatEntrant] = useState(null);
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
@@ -10155,6 +10168,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             ? 'debut'
             : duel.phase ?? 'principale';
   const prets = duel.joueur.creatures.filter((e) => rpgPeutAttaquer(e));
+  // Frappe directe en vague : aucune créature adverse n'est atteignable par les
+  // créatures prêtes, le sorcier est donc à découvert pour toutes — y compris
+  // quand le champ adverse ne porte que des volantes ou des infiltrées hors de
+  // portée. Une seule cible atteignable suffit à fermer le raccourci : on garde
+  // alors le combat contre l'atteignable.
+  const vagueDirecte = combatCollectif ? [] : rpgVagueDirecteClassique(duel, 'joueur');
+  const attaqueTousDisponible = combatCollectif
+    ? prets.length > 0
+    : rpgAttaqueTousDisponible(duel, 'joueur');
   const calculerPuissanceAssaut = (entites) => {
     if (!entites.length) return 0;
     const bonusBanniere = entites.reduce((somme, entite) => somme + Math.max(0, Number(cardById(entite.carteId)?.banniere) || 0), 0);
@@ -12370,11 +12392,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         force();
         return;
       }
-      // Si le camp adverse n'a aucune créature, il n'y a aucune cible à
-      // choisir : un seul clic déclare directement l'attaque contre le sorcier.
+      // Si aucune créature adverse n'est atteignable (champ vide, volantes ou
+      // infiltrées hors de portée), il n'y a aucune cible à choisir : un seul
+      // clic déclare directement l'attaque contre le sorcier.
       if (!combatCollectif && rpgPeutAttaquer(entite)
-        && !duel.sorcier.creatures.some((e) => cardById(e.carteId)?.kind !== 'site')
-        && rpgCiblesIndividuellesClassique(duel, 'joueur', entite.id).directe) {
+        && ((choix) => choix.directe && !choix.cibles.length)(rpgCiblesIndividuellesClassique(duel, 'joueur', entite.id))) {
         signalerTutoriel('attaque-declaree', { entiteId: entite.id });
         lancerAttaque('sorcier', entite.id);
         return;
@@ -12609,6 +12631,49 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setAttaquants(ids);
     setCiblesAttaque({});
     force();
+  };
+
+  /** « Attaquer avec tous » en combat individuel : le sorcier est à découvert,
+   * chaque créature prête frappe donc directement, l'une après l'autre. Chaque
+   * frappe garde sa propre déclaration et sa propre résolution : la vague
+   * n'ouvre jamais un combat de groupe. */
+  const lancerVagueDirecte = () => {
+    const ids = vagueDirecte.map((entite) => entite.id);
+    if (!ids.length || phase || combatEntrant || !monTour || vainqueur) { jouerSfx('erreur'); return; }
+    // Une vague d'archers ne lève pas de lames : la flèche parlera à la
+    // résolution (`rpgAttackAudio.js`), comme pour l'attaque de groupe.
+    const tousAuxArcs = ids.every((id) => duel.joueur.creatures
+      .find((entite) => entite.id === id)?.coupRapide);
+    if (!tousAuxArcs) jouerSfx('attackers_confirm');
+    signalerTutoriel('attaque-declaree', { entites: ids });
+    fileAttaqueTousRef.current = ids.slice(1);
+    lancerAttaque('sorcier', ids[0]);
+  };
+
+  /** Enchaîne la vague après chaque frappe. Appelée à chaque rendu : la file
+   * vide ne coûte rien, et la file se vide d'elle-même dès qu'une cible
+   * redevient atteignable, qu'une créature n'est plus prête ou que le tour
+   * bascule — un Envol gagné en réponse arrête la suite, pas la frappe en
+   * cours. */
+  const poursuivreVagueDirecte = () => {
+    if (!fileAttaqueTousRef.current.length) return;
+    if (modePvp && pvpEnVolCountRef.current > 0) return;
+    if (!monTour || vainqueur || phase || combatEntrant || duel.combatDeclare || duel.fenetreReponse) return;
+    const id = fileAttaqueTousRef.current[0];
+    const entite = duel.joueur.creatures.find((e) => e.id === id);
+    const choix = entite ? rpgCiblesIndividuellesClassique(duel, 'joueur', id) : null;
+    if (!entite || !rpgPeutAttaquer(entite) || !choix?.directe || choix.cibles.length) {
+      fileAttaqueTousRef.current = [];
+      return;
+    }
+    fileAttaqueTousRef.current = fileAttaqueTousRef.current.slice(1);
+    lancerAttaque('sorcier', id);
+  };
+  poursuiteVagueRef.current = poursuivreVagueDirecte;
+
+  const attaquerAvecTous = () => {
+    if (combatCollectif) { declarerAttaqueAvecTous(); return; }
+    lancerVagueDirecte();
   };
 
   const annulerAttaque = () => {
@@ -14949,16 +15014,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
           <PhaseTrack current={phaseDuelActive} jouees={attaqueJouee ? ['attaque'] : []} />
           <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
-            {combatCollectif && !phase && (
+            {!phase && (combatCollectif || attaqueTousDisponible) && (
                   <button
                     type="button"
                     className={`rpg-btn rpg-btn--attaque rpg-btn--attaque-tous${attaqueJouee ? ' is-jouee' : ''}`}
                     data-tutorial-target={cibleTutoriel('attack-all') ? 'attack-all' : undefined}
                     data-key-hint={attaqueJouee ? undefined : 'A'}
+                    data-attaque-directe={!combatCollectif ? 'tous' : undefined}
                     data-attaque-totale={!attaqueJouee && puissancePrets > 0 ? puissancePrets : undefined}
                     title={attaqueJouee ? undefined : `Puissance prête : ${puissancePrets} ATQ · Raccourci : A`}
                     disabled={!monTour || attaqueJouee || !prets.length || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || defausseOuverte}
-                    onClick={declarerAttaqueAvecTous}
+                    onClick={attaquerAvecTous}
                   >
                     <CombatActionIcon type="attack-all" /> {attaqueJouee ? 'Attaque jouée ce tour' : `Attaquer avec tous (${prets.length})`}
                   </button>

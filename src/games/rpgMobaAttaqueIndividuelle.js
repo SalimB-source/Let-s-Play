@@ -35,7 +35,9 @@ export function rpgMobaCiblesIndividuelles(duel, side, attackerId, voieAttaque =
   const adversairesVoie = duel[autre(side)].creatures.filter((e) => creature(e) && mobaPartageVoie(duel.moba, e.mobaLane, voie));
   return {
     cibles: (prioritaires.length ? prioritaires : possibles).map((e) => e.id),
-    directe: attaqueDirectePermise(attaquant, adversairesVoie),
+    // Rien d'atteignable dans cette voie ⇒ le sorcier est à découvert, même
+    // derrière une créature volante (règle symétrique du duel classique).
+    directe: attaqueDirectePermise(attaquant, adversairesVoie, possibles),
   };
 }
 
@@ -45,7 +47,11 @@ export function rpgMobaCibleIndividuelleEncoreLegale(duel, side, attackerId, cib
   const attaquant = duel[side]?.creatures.find((e) => e.id === attackerId);
   if (!creature(attaquant) || !mobaVoiesCombat(duel.moba, attaquant.mobaLane).includes(voieAnnoncee) || !mobaVoie(duel.moba, voieAnnoncee)?.active) return false;
   if (cibleeAnnoncee && !attaquant.coupRapide) return false;
-  if (cibleId === null) return attaqueDirectePermise(attaquant, duel[autre(side)].creatures.filter((e) => creature(e) && mobaPartageVoie(duel.moba, e.mobaLane, voieAnnoncee)));
+  if (cibleId === null) {
+    const adversaires = duel[autre(side)].creatures.filter((e) => creature(e) && mobaPartageVoie(duel.moba, e.mobaLane, voieAnnoncee));
+    const possibles = adversaires.filter((e) => cibleAccessible(duel, attaquant, e, Boolean(cibleeAnnoncee), voieAnnoncee));
+    return attaqueDirectePermise(attaquant, adversaires, possibles);
+  }
   const cible = duel[autre(side)]?.creatures.find((e) => e.id === cibleId);
   return cibleAccessible(duel, attaquant, cible, Boolean(cibleeAnnoncee), voieAnnoncee);
 }

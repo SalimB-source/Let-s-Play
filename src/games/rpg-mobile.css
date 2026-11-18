@@ -1393,6 +1393,8 @@
     background: rgba(14, 10, 8, .94);
   }
   .rpg-battle--touch .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
+  /* La vague directe du rail garde le fond sombre des commandes en retrait. */
+  .rpg-battle--touch .rpg-actions__turn .rpg-btn--attaque-tous { background: rgba(4, 3, 3, .9); }
 }
 
 /* ── Bordure CSS de repli, au doigt : le cadre SVG reste sélectif ────────────

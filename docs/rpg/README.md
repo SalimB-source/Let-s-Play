@@ -54,6 +54,9 @@ dépôt, pour trancher sur du concret plutôt que sur du texte :
 - `src/games/rpgContent.js` — les données de la démo (équipe, ennemis, vagues)
 - `src/games/RpgBattlePage.jsx` — la page jouable, route `/jeu/sablier-de-bab-el`
 - `tests/rpg-combat.test.js` — les règles vérifiées (`npm run check:rpg`)
+- `docs/rpg/34-frappe-directe-et-attaque-avec-tous.md` — la frappe directe
+  (Envol, Infiltration, champ vide) et « Attaquer avec tous », dans les trois
+  formats
 - `scripts/rpg-battle-ui-check.mjs` — la page montée dans jsdom (`npm run check:rpg-ui`)
 
 Le moteur est volontairement **agnostique** : il ne connaît ni les noms ni

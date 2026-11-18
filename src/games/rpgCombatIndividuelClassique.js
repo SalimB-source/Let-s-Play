@@ -23,11 +23,9 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
   const possibles = adversaires.filter((e) => accessible(attaquant, e, ciblee));
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
-  if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe: attaqueDirectePermise(attaquant, adversaires) };
-  return {
-    cibles: possibles.map((e) => e.id),
-    directe: attaqueDirectePermise(attaquant, adversaires),
-  };
+  const directe = attaqueDirectePermise(attaquant, adversaires, possibles);
+  if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe };
+  return { cibles: possibles.map((e) => e.id), directe };
 }
 
 /** La cible annoncée reste fixée : l'arrivée d'un Défenseur ne la redirige pas. */
@@ -35,7 +33,11 @@ export function rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantI
   if (!soloClassique(duel, cote) || rpgVainqueur(duel)) return false;
   const attaquant = duel[cote]?.creatures.find((e) => e.id === attaquantId);
   if (!creature(attaquant) || (cibleeAnnoncee && !attaquant.coupRapide)) return false;
-  if (cibleId === null) return attaqueDirectePermise(attaquant, (duel[autre(cote)]?.creatures ?? []).filter(creature));
+  if (cibleId === null) {
+    const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
+    const possibles = adversaires.filter((e) => accessible(attaquant, e, cibleeAnnoncee));
+    return attaqueDirectePermise(attaquant, adversaires, possibles);
+  }
   return accessible(attaquant, duel[autre(cote)]?.creatures.find((e) => e.id === cibleId), Boolean(cibleeAnnoncee));
 }
 

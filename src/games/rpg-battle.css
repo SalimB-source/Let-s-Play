@@ -9367,6 +9367,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-color: #f58a83;
   box-shadow: 0 0 8px rgba(242, 106, 97, .16);
 }
+/* Quand le sorcier est à découvert, le raccourci vit dans le rail du tour, à
+   côté de « Fin du tour » : même teinte discrète que dans la barre de combat. */
+.rpg-actions__turn .rpg-btn--attaque-tous { border-color: rgba(242, 106, 97, .56); }
+.rpg-actions__turn .rpg-btn--attaque-tous:hover:not(:disabled) {
+  border-color: #f58a83;
+  box-shadow: 0 0 8px rgba(242, 106, 97, .16);
+}
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--attaque-tous { background: rgba(4, 3, 3, .9); }
+.rpg-battle:not(.rpg-battle--touch) .rpg-actions__turn .rpg-btn--attaque-tous:hover:not(:disabled) {
+  background: rgba(14, 10, 8, .94);
+}
 /* Le fond sombre des commandes en retrait : « Annuler la dernière action »,
    « Attaquer avec tous » et « Annuler l'attaque » restent des boutons discrets
    posés sur la peinture du plateau. Les commandes principales — Confirmer
