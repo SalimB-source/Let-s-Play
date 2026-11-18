@@ -46,7 +46,7 @@ for (const complet of [false, true]) for (const capacite of ['envol', 'infiltrat
       ennemi.defenseur = true; await render();
       assert.equal(health.querySelector('.moba__attack-direct'), null, 'un Défenseur bloque aussi Envol et Infiltration');
       ennemi.defenseur = false; ennemi.envol = true; await render();
-      assert.ok(health.querySelector('.moba__attack-direct'), 'Envol passe au-dessus d’une autre créature volante non Défenseur');
+      assert.equal(health.querySelector('.moba__attack-direct'), null, 'une créature volante interdit la frappe directe');
       ennemi.envol = false;
       await render();
       await click(document.querySelector('.moba__cancel-choice'));

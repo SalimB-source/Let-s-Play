@@ -52,6 +52,7 @@ export const PLAQUE_FORMES = Object.freeze({
  * néon.
  */
 export const PLAQUE_PIERRES = Object.freeze({
+  orange: Object.freeze({ encre: '#291006', creux: '#763008', fond: '#e87519', lueur: '#ffc673' }),
   braise: Object.freeze({ encre: '#1b0609', creux: '#5d1116', fond: '#a8282d', lueur: '#ff9c72' }),
   or: Object.freeze({ encre: '#1c1204', creux: '#5d3f13', fond: '#c1922c', lueur: '#ffe6a6' }),
   tenebres: Object.freeze({ encre: '#11061f', creux: '#331356', fond: '#7a3cb2', lueur: '#d9b4ff' }),
@@ -170,7 +171,7 @@ const PIERRE_SPECIALE_PAR_SYMBOLE = Object.freeze({
   'i-rebond': 'braise',
   'i-vol-de-vie': 'braise',
   'i-exil': 'braise',
-  'i-defenseur': 'braise',
+  'i-defenseur': 'orange',
   'i-bouclier': 'tenebres',
   'i-invocation-speciale': 'or',
   'i-recherche': 'azur',

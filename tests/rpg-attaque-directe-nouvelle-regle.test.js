@@ -5,7 +5,7 @@ import { rpgNouveauDuel, rpgJouerCreature, rpgMulligan, rpgDemarrerManaEssai, rp
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique, rpgChoisirAttaqueIndividuelleClassiqueIA } from '../src/games/rpgCombatIndividuelClassique.js';
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaCiblesIndividuelles } from '../src/games/rpgMobaAttaqueIndividuelle.js';
-import { mobaVoie } from '../src/games/rpgMoba.js';
+import { mobaInfliger, mobaVoie } from '../src/games/rpgMoba.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 
 function classique(side, pvp = false) {
@@ -34,7 +34,8 @@ for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
     assert.equal(choix().directe, false, 'Infiltration et Attaque ciblée ne contournent pas la règle');
     assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null).raison, 'cible');
     a.envol = true;
-    assert.equal(choix().directe, true, 'un ennemi volant ne bloque pas Envol');
+    assert.equal(choix().directe, false, 'un ennemi volant bloque même un attaquant avec Envol');
+    c.envol = false; assert.equal(choix().directe, true, 'un ennemi au sol ne bloque pas Envol');
     c.defenseurAccorde = true;
     assert.equal(choix().directe, false, 'tout Défenseur bloque, même inaccessible et contre Infiltration');
     assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null).raison, 'cible');
@@ -88,7 +89,8 @@ for (const side of ['joueur', 'sorcier']) {
     a.infiltration = true; a.coupRapide = true;
     assert.equal(choix().directe, false);
     a.envol = true; c.envol = true;
-    assert.equal(choix().directe, true);
+    assert.equal(choix().directe, false, 'un volant dans la voie interdit la frappe directe');
+    c.envol = false; assert.equal(choix().directe, true);
     c.defenseurAccorde = true;
     assert.equal(choix().directe, false);
     assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, side, a.id, null, 'left').raison, 'cible');
@@ -128,7 +130,7 @@ for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
   const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
   test(`${side} ${pvp ? 'PvP' : 'duel'} : une unique créature avec Infiltration laisse passer la frappe`, () => {
     const { d, poser } = classique(side, pvp), a = poser(side), c = poser(enemy);
-    c.infiltration = true; c.envol = true; c.attaquee = true;
+    c.infiltration = true; c.attaquee = true;
     for (const rapide of [false, true]) {
       a.coupRapide = rapide;
       assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, true);
@@ -215,4 +217,54 @@ test('PvP : l’intention distante déclare et résout la frappe contre l’infi
   const resolution = rpgPvpAppliquer(d, 'sorcier', { type: 'bloquer', blocages: {} });
   assert.ok(resolution.ok, JSON.stringify(resolution));
   assert.equal(d.sorcier.pv, pv - a.atk);
+});
+
+for (const side of ['joueur', 'sorcier']) for (const pvp of [false, true]) {
+  test(`${side} ${pvp ? 'PvP' : 'classique'} : Envol adverse bloque même une unique infiltrée`, () => {
+    const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+    const { d, poser } = classique(side, pvp), a = poser(side), c = poser(enemy);
+    c.infiltration = true; c.envol = true;
+    for (const envol of [false, true]) for (const rapide of [false, true]) {
+      a.envol = envol; a.coupRapide = rapide; a.infiltration = true;
+      assert.equal(rpgCiblesIndividuellesClassique(d, side, a.id).directe, false);
+      assert.equal(rpgDeclarerAttaqueIndividuelleClassique(d, side, a.id, null).raison, 'cible');
+    }
+    assert.equal(rpgAttaquerSorcier(d, side, a.id).raison, 'cible-obligatoire');
+  });
+}
+
+test('un Envol acquis en réponse annule une attaque directe déjà annoncée', () => {
+  const { d, poser } = classique('joueur'), a = poser('joueur'), c = poser('sorcier');
+  c.infiltration = true;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', a.id).ok);
+  c.envol = true; const pv = d.sorcier.pv;
+  assert.ok(rpgResoudreAttaqueIndividuelleClassique(d, 'joueur').annule);
+  assert.equal(d.sorcier.pv, pv);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`${side} Conquête : le volant empêche la frappe dans sa voie seulement`, () => {
+  const { d, a, c } = moba(side); a.envol = true; c.envol = true; c.infiltration = true;
+  assert.equal(rpgMobaCiblesIndividuelles(d, side, a.id, 'left').directe, false);
+  assert.equal(rpgMobaDeclarerAttaqueIndividuelle(d, side, a.id, null, 'left').raison, 'cible');
+  c.mobaLane = 'right';
+  assert.equal(rpgMobaCiblesIndividuelles(d, side, a.id, 'left').directe, true);
+});
+
+test('Conquête : un Envol acquis en réponse annule la frappe', () => {
+  const { d, a, c } = moba('joueur'); c.infiltration = true;
+  assert.ok(rpgMobaDeclarerAttaqueIndividuelle(d, 'joueur', a.id, null, 'left').ok);
+  c.envol = true; const pv = mobaVoie(d.moba, 'left').hp.sorcier;
+  assert.ok(rpgMobaResoudreAttaqueIndividuelle(d, 'joueur').annule);
+  assert.equal(mobaVoie(d.moba, 'left').hp.sorcier, pv);
+});
+
+
+test('Conquête : un volant au centre conquis protège les deux flancs actifs', () => {
+  const { d, a, c, enemy } = moba('joueur', 'center');
+  assert.ok(mobaInfliger(d.moba, enemy, 'center', 15).conquered);
+  a.envol = true; c.envol = true;
+  assert.equal(rpgMobaCiblesIndividuelles(d, 'joueur', a.id, 'left').directe, false);
+  // La même créature centrale participe aussi à la voie droite.
+  a.mobaLane = 'right';
+  assert.equal(rpgMobaCiblesIndividuelles(d, 'joueur', a.id, 'right').directe, false);
 });

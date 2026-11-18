@@ -130,7 +130,7 @@ La recette exige le Berserk des trois hivers (3) et le Jarl au marteau de guerre
 1. Le Viking des neiges peut payer la pose du Jarl au marteau. Ne sacrifiez pas votre unique Berserk.
 2. La Valkyrie au corbeau pioche un Viking au hasard dans le deck ; elle augmente l’accès aux matériaux sans garantir un coût précis. La recherche est aléatoire et peut trouver un autre Viking.
 3. Ralliement des neiges peut invoquer le Jarl de coût 5 depuis la main ; réunissez-le avec le Berserk pour réaliser l’Ascension. Retour des ensevelis relève d’autres Vikings Ténèbres, mais pas le Berserk uniquement Neige.
-4. Les deux Vikings hybrides 3 ont une Embuscade conditionnelle. Le Guerrier au bouclier rond défend la ligne avec Défenseur et Blocage (15 % de chances de gagner +2 DEF jusqu’à la fin du tour quand une attaque le cible), Poigne de givre retient une menace et les soins prolongent les corps nécessaires. Leurs coûts imprimés ne changent pas même blessés ou équipés.
+4. Les deux Vikings hybrides 3 ont une Embuscade conditionnelle. Le Guerrier au bouclier rond défend la ligne avec Défenseur et Blocage (25 % de chances de gagner +2 DEF jusqu’à la fin du tour quand une attaque le cible), Poigne de givre retient une menace et les soins prolongent les corps nécessaires. Leurs coûts imprimés ne changent pas même blessés ou équipés.
 
 **Exemple de préparation :** Berserk des trois hivers 3 déjà en jeu → Ralliement invoque le Jarl au marteau 5 depuis la main → Jarl du Dernier Rempart.
 

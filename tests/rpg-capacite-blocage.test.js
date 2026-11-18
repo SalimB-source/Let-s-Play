@@ -30,21 +30,21 @@ function classique(id = ids[0], side = 'joueur') {
 for (const id of ids) {
   test(`${id} : fiche et entité gardent leurs autres capacités`, () => {
     const c = cardById(id), { cible } = classique(id);
-    assert.deepEqual(c.blocage, { chance: .15, def: 2 });
+    assert.deepEqual(c.blocage, { chance: .25, def: 2 });
     assert.deepEqual(cible.blocage, c.blocage); assert.ok(c.defenseur);
-    assert.match(c.text, /Blocage.*15 %.*\+2 DEF.*fin du tour/);
+    assert.match(c.text, /Blocage.*25 %.*\+2 DEF.*fin du tour/);
     assert.ok(pastillesPourCarte(c).some(p => p.cle === 'blocage'));
     assert.ok(effetsDetailles(c).pastilles.some(p => p.cle === 'blocage' && p.description));
     if (id.startsWith('onna')) { assert.ok(c.esquive && c.honneur && cible.esquive); }
   });
-  for (const jet of [.149, .15]) test(`${id} : jet ${jet} à l’annonce classique`, () => {
+  for (const jet of [.249, .25]) test(`${id} : jet ${jet} à l’annonce classique`, () => {
     const { d, a, cible, side } = classique(id); let jets = 0;
     rpgReglerHasard(d, () => { jets++; return jet; });
     const base = cible.pv;
     assert.ok(declarer(d, side, a.id, cible.id).ok);
-    assert.equal(jets, 1); assert.equal(cible.pv, base + (jet < .15 ? 2 : 0));
-    assert.equal(cible.pvMax, base + (jet < .15 ? 2 : 0));
-    assert.equal(cible.def, base + (jet < .15 ? 2 : 0));
+    assert.equal(jets, 1); assert.equal(cible.pv, base + (jet < .25 ? 2 : 0));
+    assert.equal(cible.pvMax, base + (jet < .25 ? 2 : 0));
+    assert.equal(cible.def, base + (jet < .25 ? 2 : 0));
     assert.ok(resoudre(d, side).ok);
   });
 }
@@ -167,4 +167,22 @@ test('Esquive et Blocage font chacun leur jet indépendant', () => {
   assert.ok(declarer(d, side, a.id, cible.id).ok);
   assert.ok(resoudre(d, side).ok);
   assert.equal(n, 3); assert.equal(cible.pv, 5);
+});
+
+test('une ancienne partie avec le Blocage imprimé à 15 % utilise le nouveau taux', () => {
+  for (const jet of [.249, .25]) {
+    const { d, a, cible, side } = classique();
+    cible.blocage = { chance: .15, def: 2 }; // copie sérialisée avant la mise à jour
+    const base = cible.pv;
+    rpgReglerHasard(d, () => jet);
+    assert.ok(declarer(d, side, a.id, cible.id).ok);
+    assert.equal(cible.pv, base + (jet < .25 ? 2 : 0));
+  }
+});
+
+test('les valeurs de Blocage explicitement différentes restent inchangées', () => {
+  const { d, a, cible, side } = classique(); cible.blocage = { chance: .1, def: 2 };
+  const base = cible.pv; rpgReglerHasard(d, () => .2);
+  assert.ok(declarer(d, side, a.id, cible.id).ok);
+  assert.equal(cible.pv, base);
 });

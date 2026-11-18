@@ -238,9 +238,9 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'momie-de-lin', name: 'Momie de lin',
     cost: 3, atk: 2, def: 4, rarity: 'commune',
     destruction: { type: 'jetons', jeton: 'shabti', nombre: 1 },
-    defenseur: true, blocage: { chance: 0.15, def: 2 },
+    defenseur: true, blocage: { chance: 0.25, def: 2 },
     typeLine: 'Créature — Momie',
-    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1.',
+    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Quand Momie de lin meurt, créez une créature-jeton « Shabti » 1/1.',
     flavor: 'Le lin tient ce que les os ne tiennent plus.',
   }),
   carte({

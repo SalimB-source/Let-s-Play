@@ -378,7 +378,7 @@
 .moba__lanes { width: 100%; height: 100%; grid-template-columns: 2fr 1fr 2fr; gap: 0; }
 .moba .moba__lane, .moba .moba__lane.is-conquered { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0 5px; border: 0; background: none; box-shadow: none; }
 /* Un léger intervalle sépare les emplacements des deux camps. */
-.moba .moba__lane { gap: clamp(8px, 1.5vh, 12px); }
+.moba .moba__lane { gap: clamp(12px, 2.5vh, 20px); }
 .moba .moba__lane + .moba__lane { border-left: 1px solid #f4deb27a; }
 .moba__lanehead { position: absolute; top: -16px; left: 0; right: 0; display: flex; justify-content: center; min-height: 0; padding: 0; border: 0; text-shadow: 0 1px 4px #000; }
 .moba__lane-number { display: none; }.moba__lanehead strong { padding: 0; color: #fff1d5; font-size: 10px; }.moba__lane-state { display: none; }

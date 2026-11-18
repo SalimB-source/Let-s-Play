@@ -79,7 +79,7 @@ test('les fiches conservent leurs capacités et affichent les nouveautés', () =
   assert.ok(sus.esquive && sus.arrivee.type === 'exil' && sus.honneur);
   assert.ok(cav.rapidite && !cav.overkill && cav.honneur); assert.deepEqual(cav.coupCritique, { chance: .25, fois: 2 });
   assert.ok(ibis.envol && ibis.arrivee.type === 'pioche-defausse'); assert.equal(ibis.tribut, 1);
-  assert.ok(momie.defenseur && momie.destruction.type === 'jetons'); assert.deepEqual(momie.blocage, { chance: .15, def: 2 });
+  assert.ok(momie.defenseur && momie.destruction.type === 'jetons'); assert.deepEqual(momie.blocage, { chance: .25, def: 2 });
   for (const [carte, cle] of [[sus, 'esquive'], [cav, 'coupCritique'], [ibis, 'tribut'], [momie, 'blocage'], [momie, 'defenseur']]) assert.ok(pastillesPourCarte(carte).some(p => p.cle === cle), `${carte.id}: ${cle}`);
 });
 test('la Momie gagne +2 DEF en étant ciblée et conserve son Shabti', () => {

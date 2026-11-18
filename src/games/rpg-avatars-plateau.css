@@ -280,7 +280,7 @@
 /* Les cases et les cartes partagent toujours la même grille et le même haut. */
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--equipe {
   align-items: start;
-  top: 4px;
+  top: 7px;
 }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row--equipe .rpg-creature-slots {
   align-items: start;
@@ -315,21 +315,21 @@
   align-items: start;
 }
 /* Reculer les deux camps de la même distance tout en gardant la ligne neutre. */
-.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi { top: -4px; }
-.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi::after { bottom: -4px; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi { top: -7px; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi::after { bottom: -7px; }
 
 /* À la souris, les deux rangées s'ancrent de part et d'autre de la ligne
    neutre. Les cartes et les cases partagent le même bord, aussi avec terrains. */
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .card-row--ennemi,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .card-row--ennemi {
   top: auto;
-  bottom: calc(50% + 10px);
+  bottom: calc(50% + 16px);
   padding-block: 0;
   align-items: end;
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-row--ennemi .rpg-creature-slots { align-items: end; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .card-row--equipe {
-  top: calc(50% + 10px);
+  top: calc(50% + 16px);
   bottom: auto;
   padding-block: 0;
   align-items: start;

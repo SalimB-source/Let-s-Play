@@ -155,14 +155,14 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['anqa-des-braises', 'valkyrie-au-corbeau'],
     title: 'Envol survole les créatures',
-    text: 'Une créature avec Envol peut attaquer les créatures au sol ou en vol et frapper directement le sorcier même si des créatures adverses sont présentes, à condition qu’aucun Défenseur ne soit en jeu. Si la seule créature adverse a Infiltration, l’attaque directe est toujours possible. En Conquête, ces conditions concernent la voie attaquée.',
+    text: 'Une créature avec Envol peut attaquer les créatures au sol ou en vol et frapper directement le sorcier même si des créatures adverses sont présentes, à condition qu’aucun Défenseur ni créature avec Envol ne soit en jeu. Si la seule créature adverse a Infiltration et n’a pas Envol, l’attaque directe reste possible. En Conquête, ces conditions concernent la voie attaquée.',
   },
   {
     id: 'infiltration',
     section: 'Capacités des créatures',
     cardIds: ['takouba-des-pistes'],
     title: 'Infiltration contourne les Défenseurs',
-    text: 'Le Takouba des pistes confère Infiltration : son porteur peut choisir une autre créature malgré un Défenseur, mais doit respecter les règles d’attaque directe. Une attaque normale ne peut pas le viser, mais une Attaque ciblée le peut. S’il est la seule créature de son camp, l’adversaire peut attaquer directement. Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
+    text: 'Le Takouba des pistes confère Infiltration : son porteur peut choisir une autre créature malgré un Défenseur, mais doit respecter les règles d’attaque directe. Une attaque normale ne peut pas le viser, mais une Attaque ciblée le peut. S’il est la seule créature de son camp et n’a pas Envol, l’adversaire peut attaquer directement. Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
   },
   {
     id: 'infiltration-tin-hinan',

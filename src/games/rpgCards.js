@@ -445,8 +445,8 @@ export const RPG_CREATURE_CARDS = [
     id: 'gardienne-des-portes-de-sable', name: 'Gardienne des portes de sable',
     element: 'sable', cost: 2, atk: 1, def: 4, rarity: 'commune',
     typeLine: 'Créature — Humaine · Gardienne', defenseur: true,
-    blocage: { chance: 0.15, def: 2 },
-    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    blocage: { chance: 0.25, def: 2 },
+    text: 'Défenseur. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'La tempête tombe ; son bouclier demeure.',
   },
   {
@@ -596,8 +596,8 @@ export const RPG_CREATURE_CARDS = [
     atk: 2,
     def: 2,
     rarity: 'commune',
-    blocage: { chance: 0.15, def: 2 },
-    typeLine: 'Créature — Chien', butin: true, text: 'Blocage — Quand elle est ciblée par une attaque, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+    blocage: { chance: 0.25, def: 2 },
+    typeLine: 'Créature — Chien', butin: true, text: 'Blocage — Quand elle est ciblée par une attaque, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Il n’aboie pas. Il compte.',
   },
   {
@@ -1041,8 +1041,8 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
     defenseur: true,
-    blocage: { chance: 0.15, def: 2 },
-    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    blocage: { chance: 0.25, def: 2 },
+    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -1455,8 +1455,8 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Humain · Archer',
     coupRapide: true,
     coupCritique: { chance: 0.25, fois: 2 },
-    blocage: { chance: 0.15, def: 2 },
-    text: 'Attaque ciblée — Il peut viser une créature adverse : il lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Blocage — Quand une attaque adverse le cible, 15 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    blocage: { chance: 0.25, def: 2 },
+    text: 'Attaque ciblée — Il peut viser une créature adverse : il lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Sous ses flèches, le désert avance à pas de géant.',
   },
   {
