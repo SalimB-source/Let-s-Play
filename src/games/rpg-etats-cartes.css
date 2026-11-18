@@ -1,10 +1,11 @@
-/* La face entière, son cadre et tous ses repères sont grisés ensemble. Ces
-   états n'enlèvent aucun clic : une créature atteinte du mal peut bloquer. */
-.rpg-card:is(.is-attacked, .is-summoning-sick),
-.moba__slot.has-creature:is(.is-attacked, .is-summoning-sick),
-.rpg-terrain.is-tapped {
-  filter: grayscale(1) brightness(.78) !important;
+/* Seule l'illustration des créatures engagées ou souffrant du mal
+   d'invocation est grisée. Les icônes, valeurs, cadres et effets gardent leurs
+   couleurs ; aucun clic n'est supprimé (une créature malade peut bloquer). */
+.rpg-card:is(.is-attacked, .is-summoning-sick) > .rpg-card__img,
+.moba__slot.has-creature:is(.is-attacked, .is-summoning-sick):not(.rpg-card) > img {
+  filter: grayscale(1) brightness(.78);
 }
-/* Le filtre global suffit : éviter d'assombrir deux fois l'illustration. */
-.rpg-card:is(.is-attacked, .is-summoning-sick) :is(.rpg-card__img, .rpg-card__title, .rpg-card__type, .rpg-card__stat--atk, .rpg-card__pt, .rpg-card-element-badge),
+
+/* Les terrains engagés gardent leur traitement existant. */
+.rpg-terrain.is-tapped { filter: grayscale(1) brightness(.78) !important; }
 .rpg-terrain.is-tapped img { filter: none; }

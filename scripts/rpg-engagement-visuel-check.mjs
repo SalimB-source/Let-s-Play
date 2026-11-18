@@ -15,6 +15,22 @@ const probe = { name: 'engagement-probe', enforce: 'pre', transform(code, id) {
   }
   return null;
 } };
+/** Le filtre ne doit pas atteindre la carte, ses icônes ou ses valeurs. */
+async function verifierIllustration(carte, gris = true) {
+  const infos = await carte.evaluate((el) => {
+    const portrait = el.matches('.rpg-card') ? el.querySelector(':scope > .rpg-card__img') : el.querySelector(':scope > img');
+    const elements = [...el.querySelectorAll('.rpg-card-icone, .rpg-effet-icone, .rpg-card__stat--atk, .rpg-card__pt, .rpg-card-element-badge, .moba__slot-label')];
+    return { portrait: portrait && getComputedStyle(portrait).filter, carte: getComputedStyle(el).filter,
+      indicateurs: elements.map((item) => getComputedStyle(item).filter) };
+  });
+  assert.ok(infos.portrait !== null, 'portrait présent');
+  if (gris) assert.match(infos.portrait, /grayscale\(1\)/, 'portrait entièrement grisé');
+  else assert.doesNotMatch(infos.portrait, /grayscale/, 'portrait dégagé en couleur');
+  assert.doesNotMatch(infos.carte, /grayscale/, 'carte non désaturée');
+  assert.ok(infos.indicateurs.length, 'indicateurs présents');
+  for (const filtre of infos.indicateurs) assert.doesNotMatch(filtre, /grayscale/, 'icône ou valeur en couleur');
+}
+
 const server = await createServer({ configFile: false, plugins: [probe, (await import('@vitejs/plugin-react')).default()], server: { host: '127.0.0.1', port: 0 }, logLevel: 'error' });
 let browser;
 try {
@@ -40,7 +56,7 @@ try {
     const select = (id) => page.locator(`[data-moba-entity="${id}"] .moba__slot`).first();
     const a = select(ids[0]), b = select(ids[1]);
     await a.waitFor({ state: 'attached' });
-    for (const c of [a, b]) assert.match(await c.evaluate(el => getComputedStyle(el).filter), /grayscale\(1\)/);
+    for (const c of [a, b]) await verifierIllustration(c);
     assert.ok(await a.evaluate(el => el.classList.contains('is-attacked')));
     assert.ok(await b.evaluate(el => el.classList.contains('is-summoning-sick')));
     await page.waitForTimeout(800);
@@ -51,7 +67,7 @@ try {
     assert.equal(await a.isDisabled(), true, 'engagée non sélectionnable pour le sacrifice');
     assert.equal(await b.isDisabled(), false, 'mal d’invocation ne bloque pas le sacrifice');
     await page.evaluate(() => { const d = window.__etatTest; d.joueur.creatures.forEach(e => { e.attaquee = false; e.malInvocation = false; }); window.__forceTest(); });
-    for (const c of [a, b]) assert.doesNotMatch(await c.evaluate(el => getComputedStyle(el).filter), /grayscale\(1\)/);
+    for (const c of [a, b]) await verifierIllustration(c, false);
     await page.close(); console.log(`${width}×${height} Conquête ${autonome ? 'autonome' : 'partagé'} : états, taille et sacrifice vérifiés`);
   }
   for (const [width, height] of [[1440, 900], [844, 390]]) {
@@ -78,7 +94,7 @@ try {
     });
     const a = page.locator(`[data-entity-id="${ids[0]}"]`), b = page.locator(`[data-entity-id="${ids[1]}"]`);
     await a.waitFor({ state: 'attached' }); await b.waitFor({ state: 'attached' });
-    for (const c of [a,b]) assert.match(await c.evaluate(el => getComputedStyle(el).filter), /grayscale\(1\)/);
+    for (const c of [a, b]) await verifierIllustration(c);
     await page.waitForTimeout(800);
     const tailles = await Promise.all([a,b].map(c => c.evaluate(el => ({ width: el.offsetWidth, height: el.offsetHeight, scale: getComputedStyle(el).scale }))));
     assert.ok(Math.abs(tailles[0].width - tailles[1].width) < 1 && Math.abs(tailles[0].height - tailles[1].height) < 1);
