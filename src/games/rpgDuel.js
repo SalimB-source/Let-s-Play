@@ -786,7 +786,7 @@ export function rpgPiocher(duel, cote) {
  * dessus suivie d'un tri : s'il ne reste aucune carte du type demandé, rien
  * ne rejoint la main. Le reste du deck garde son ordre.
  */
-function piocherCarteDeType(duel, cote, type, typeCarte = null) {
+function piocherCarteDeType(duel, cote, type, typeCarte = null, typePresentation = 'pioche') {
   const camp = duel?.[cote];
   if (!camp?.deck?.length || !type) return null;
   const candidates = [];
@@ -801,7 +801,7 @@ function piocherCarteDeType(duel, cote, type, typeCarte = null) {
   );
   const [carte] = camp.deck.splice(candidates[choix], 1);
   camp.main.push(carte);
-  presenter(duel, { type: 'pioche', cote, carteId: carte });
+  presenter(duel, { type: typePresentation, cote, carteId: carte });
   return carte;
 }
 
@@ -3822,6 +3822,7 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
     if (!choix) return { ok: false, raison: 'cible' };
     const [id] = camp.deck.splice(index, 1);
     camp.main.push(id);
+    presenter(duel, { type: 'recherche', cote, carteId: id });
     duel.renfortChoixEnAttente = null;
     duel.log.push(`${carteSource.name} trouve une carte dans son deck et l’ajoute à sa main.`);
     activerProchainRenfortChoisi(duel);
@@ -5409,6 +5410,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       } else {
         const [id] = camp.deck.splice(index, 1);
         camp.main.push(id);
+        presenter(duel, { type: 'recherche', cote, carteId: id });
         duel.log.push(`${source} trouve ${cardById(id)?.name ?? id} dans le deck et l’ajoute à la main.`);
       }
       return;
@@ -5424,7 +5426,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         duel.mobaRechercheEnAttente = { cote, sourceCarteId };
         return;
       }
-      const piochee = piocherCarteDeType(duel, cote, type, effet.typeCarte);
+      const piochee = piocherCarteDeType(duel, cote, type, effet.typeCarte, 'recherche');
       const source = cardById(sourceCarteId)?.name ?? 'La capacité';
       duel.log.push(piochee
         ? `${source} trouve une carte de type ${type} dans le deck : elle rejoint la main.`

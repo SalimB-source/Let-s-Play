@@ -1,0 +1,35 @@
+/* Fissure courte, sur l'illustration, loin des statistiques et sans second cadre. */
+.rpg-fissure-impact { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 8; pointer-events: none; fill: none; stroke: #ffe9be; stroke-width: .8; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px #f0b473); opacity: 0; animation: rpg-fissure-impact calc(.55s * var(--rpg-anim-scale, 1)) ease-out both; }
+@keyframes rpg-fissure-impact { 0% { opacity: 0; } 18% { opacity: .9; } 100% { opacity: 0; } }
+
+/* Une bande basse en contraste traverse la table vers le camp actif. */
+.rpg-vague-tour { position: absolute; z-index: 3; left: 0; top: 0; width: 100%; height: 20%; overflow: hidden; pointer-events: none; background: linear-gradient(to bottom, transparent, #e6c1831c, transparent); opacity: 0; animation: rpg-vague-vers-joueur calc(.85s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-vague-tour.is-sorcier { animation-name: rpg-vague-vers-sorcier; }
+.rpg-vague-tour i { position: absolute; left: 18%; top: 40%; width: 32%; height: 1px; background: linear-gradient(90deg, transparent, #ebd09c88, transparent); }
+.rpg-vague-tour i:nth-child(2) { left: 48%; top: 55%; width: 28%; }
+.rpg-vague-tour i:nth-child(3) { left: 70%; top: 25%; width: 18%; }
+@keyframes rpg-vague-vers-joueur { 0% { opacity: 0; transform: translateY(-100%); } 25% { opacity: .65; } 100% { opacity: 0; transform: translateY(500%); } }
+@keyframes rpg-vague-vers-sorcier { 0% { opacity: 0; transform: translateY(500%); } 25% { opacity: .65; } 100% { opacity: 0; transform: translateY(-100%); } }
+
+/* Repli autonome : six éclats, uniquement lorsqu'une parade a épuisé l'égide. */
+.rpg-eclats-bouclier-autonome { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+.rpg-eclats-bouclier-autonome i { position: absolute; left: 50%; top: 45%; width: 7px; height: 12px; background: #d8f7ffbd; clip-path: polygon(50% 0, 100% 40%, 65% 100%, 0 70%); opacity: 0; animation: rpg-eclat-autonome calc(.65s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-eclats-bouclier-autonome i:nth-child(1) { --dx: -24px; --dy: -25px; } .rpg-eclats-bouclier-autonome i:nth-child(2) { --dx: 1px; --dy: -36px; } .rpg-eclats-bouclier-autonome i:nth-child(3) { --dx: 27px; --dy: -22px; }
+.rpg-eclats-bouclier-autonome i:nth-child(4) { --dx: 30px; --dy: 22px; } .rpg-eclats-bouclier-autonome i:nth-child(5) { --dx: -4px; --dy: 32px; } .rpg-eclats-bouclier-autonome i:nth-child(6) { --dx: -30px; --dy: 20px; }
+@keyframes rpg-eclat-autonome { 0% { opacity: 0; transform: translate(0, 0) scale(.5); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(75deg); } }
+
+/* La trace suit l'animation de la vraie carte recherchée, pas une pioche normale. */
+.rpg-trace-recherche { position: absolute; z-index: 8; inset: 7% 15%; pointer-events: none; background: linear-gradient(110deg, transparent 25%, #f5d38c9c 48%, transparent 68%); opacity: 0; animation: rpg-trace-recherche calc(.9s * var(--rpg-anim-scale, 1)) ease-out both; }
+@keyframes rpg-trace-recherche { 0% { opacity: 0; transform: translateX(-35%); } 25% { opacity: .7; } 100% { opacity: 0; transform: translateX(35%); } }
+.moba__card-flight--recherche .rpg-trace-recherche { inset: 0; }
+
+/* L'ancien voile de danger reste discret ; la jauge elle-même respire. */
+.rpg-jauge-vie.is-danger::after, .moba__health-bar.is-danger::after { content: ''; position: absolute; inset: -3px; border-radius: inherit; pointer-events: none; box-shadow: 0 0 0 1px #f29a73a0, 0 0 8px #d7503b99; animation: rpg-danger-jauge calc(2.6s * var(--rpg-anim-scale, 1)) ease-in-out infinite; }
+.moba__health-bar.is-danger { position: relative; overflow: visible; }
+@keyframes rpg-danger-jauge { 0%, 100% { opacity: .35; } 50% { opacity: .85; } }
+.rpg-battle.is-reduced :is(.rpg-fissure-impact, .rpg-vague-tour, .rpg-eclats-bouclier-autonome, .rpg-trace-recherche) { display: none; }
+.rpg-battle.is-reduced :is(.rpg-jauge-vie.is-danger, .moba__health-bar.is-danger)::after { animation: none; opacity: .55; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.rpg-fissure-impact, .rpg-vague-tour, .rpg-eclats-bouclier-autonome, .rpg-trace-recherche) { display: none; }
+  :is(.rpg-jauge-vie.is-danger, .moba__health-bar.is-danger)::after { animation: none; opacity: .55; }
+}
