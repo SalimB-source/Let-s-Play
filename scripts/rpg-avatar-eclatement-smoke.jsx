@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgAvatarEclatement from '../src/games/RpgAvatarEclatement.jsx';
 import { NOMBRE_ECLATS } from '../src/games/rpgAvatarEclats.js';
+import { repliqueDefaite } from '../src/games/rpgRepliquesDefaite.js';
 import '../src/games/rpg-avatars-plateau.css';
 import '../src/games/rpg-avatar-eclatement.css';
 
@@ -29,7 +30,7 @@ function Demo() {
         l’avatar du perdant se brise en {NOMBRE_ECLATS} éclats, le gagnant reste intact.
       </p>
       <div className="scene">
-        <div className="rpg-battle" data-scene="duel" style={{ '--rpg-eclat-portee': '105px' }}>
+        <div className="rpg-battle" data-scene="duel" style={{ '--rpg-eclat-portee': '105px', '--rpg-replique-delai': '1600ms' }}>
           <div className="card-table">
             <div className="rpg-wizard-plate rpg-wizard-plate--ennemi">
               <span className="rpg-wizard-plate__avatar" data-scene-avatar="ennemi" aria-hidden="true">
@@ -39,7 +40,7 @@ function Demo() {
             <div className="rpg-wizard-plate rpg-wizard-plate--joueur">
               <span className={`rpg-wizard-plate__avatar${eclate ? ' is-eclatant' : ''}`} data-scene-avatar="joueur" aria-hidden="true">
                 <img src={portrait} alt="" />
-                {eclate && <RpgAvatarEclatement key={cle} image={portrait} camp="joueur" />}
+                {eclate && <RpgAvatarEclatement key={cle} image={portrait} camp="joueur" replique={repliqueDefaite('salem')} />}
               </span>
             </div>
           </div>

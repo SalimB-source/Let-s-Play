@@ -392,5 +392,11 @@
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar.is-eclatant > img,
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar.is-eclatant::before,
 .rpg-battle[data-scene="duel"] .rpg-wizard-plate .rpg-wizard-plate__avatar.is-eclatant::after {
-  opacity: 0;
+  /* Le portrait reste entier pendant la réplique (`--rpg-replique-delai`) puis
+     s'efface d'un coup sec, à l'instant exact où le premier éclat s'envole. */
+  animation: rpg-avatar-efface-coup calc(140ms * var(--rpg-anim-scale, 1)) linear calc(var(--rpg-replique-delai, 0ms) * var(--rpg-anim-scale, 1)) both;
+}
+@keyframes rpg-avatar-efface-coup {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

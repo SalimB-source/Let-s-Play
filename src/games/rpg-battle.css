@@ -2898,10 +2898,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    éclats volaient encore — les deux gestes se mélangeaient. Le filet doré
    s'efface au même instant, pour que la frontière bouge encore visible. */
 .card-table--decoupee[data-eclat-actif] {
-  transition-delay: calc(var(--rpg-eclat-maxi, 1900ms) * var(--rpg-anim-scale, 1));
+  transition-delay: calc((var(--rpg-replique-delai, 0ms) + var(--rpg-eclat-maxi, 1900ms)) * var(--rpg-anim-scale, 1));
 }
 .card-table[data-eclat-actif] .rpg-plateau-lisere {
-  transition-delay: calc(var(--rpg-eclat-maxi, 1900ms) * var(--rpg-anim-scale, 1));
+  transition-delay: calc((var(--rpg-replique-delai, 0ms) + var(--rpg-eclat-maxi, 1900ms)) * var(--rpg-anim-scale, 1));
 }
 /* Le double agrandi du sanctuaire ne doit pas dépasser les territoires. */
 .card-table--decoupee.card-table--plateau-cour-de-l-empereur::before { content: none; }
@@ -7215,14 +7215,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    panneau de bilan s'ouvre par-dessus sans couper la scène. Transform et
    opacity seulement, aucune porte : le bilan garde toute la main.
 
-   La fin de duel se lit en trois temps, jamais superposés :
-     1. l'avatar du perdant éclate en morceaux (`RpgAvatarEclatement`) ;
-     2. le dernier éclat retombé, le camp vaincu pâlit et le territoire du
+   La fin de duel se lit en quatre temps, jamais superposés :
+     1. le perdant dit sa dernière phrase (`--rpg-replique-delai`) ;
+     2. il éclate en morceaux (`RpgAvatarEclatement`) et laisse un cratère ;
+     3. le dernier éclat retombé, le camp vaincu pâlit et le territoire du
         gagnant s'étend sur toute la table (le plateau « s'agrandit ») ;
-     3. le bilan se pose par-dessus, une fois l'extension commencée.
-   La durée du temps 1 vient de `DUREE_ECLATEMENT_MAX`, posée en variable
-   `--rpg-eclat-maxi` par la page : les délais restent donc synchronisés avec
-   le minuteur qui démonte les éclats. */
+     4. le bilan se pose par-dessus, une fois l'extension commencée.
+   Les durées des temps 1 et 2 viennent de la page (`DUREE_REPLIQUE` et
+   `DUREE_ECLATEMENT_MAX`, posées en `--rpg-replique-delai` et
+   `--rpg-eclat-maxi`) : les délais restent donc synchronisés avec les
+   minuteurs qui font parler l'avatar et démontent ses éclats. */
 
 /* Les rangées n'ont aucun transform de base : elles peuvent s'affaisser. */
 .card-table[data-vainqueur="joueur"] .card-row--ennemi,
@@ -7253,7 +7255,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table[data-eclat-actif][data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
 .card-table[data-eclat-actif][data-vainqueur="sorcier"] .card-row--equipe,
 .card-table[data-eclat-actif][data-vainqueur="sorcier"] .rpg-wizard-plate--joueur {
-  animation-delay: calc(var(--rpg-eclat-maxi, 1900ms) * var(--rpg-anim-scale, 1));
+  animation-delay: calc((var(--rpg-replique-delai, 0ms) + var(--rpg-eclat-maxi, 1900ms)) * var(--rpg-anim-scale, 1));
 }
 /* L'Astrolabe s'arrête : l'indicateur se fige d'un dernier mouvement sec. */
 .rpg-turn-indicator.is-finished {

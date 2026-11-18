@@ -86,9 +86,9 @@ assert.match(keyframesPlaque, /100% \{ opacity: \.22; \}/, 'seule l’opacité b
 // ── 2 ter. L'éclatement ouvre la fin de duel, le reste attend ──────────────
 assert.match(page, /'--rpg-eclat-maxi': `\$\{DUREE_ECLATEMENT_MAX\}ms`/,
   'la page publie la durée de l’éclatement, la même que celle du minuteur des éclats');
-assert.match(css, /\.card-table--decoupee\[data-eclat-actif\] \{[^}]*transition-delay: calc\(var\(--rpg-eclat-maxi, 1900ms\) \* var\(--rpg-anim-scale, 1\)\);/s,
-  'le territoire du gagnant ne s’étend qu’une fois les éclats retombés');
-assert.match(css, /\[data-vainqueur="sorcier"\] \.rpg-wizard-plate--joueur \{\s*animation-delay: calc\(var\(--rpg-eclat-maxi, 1900ms\) \* var\(--rpg-anim-scale, 1\)\);/,
+assert.match(css, /\.card-table--decoupee\[data-eclat-actif\] \{[^}]*transition-delay: calc\(\(var\(--rpg-replique-delai, 0ms\) \+ var\(--rpg-eclat-maxi, 1900ms\)\) \* var\(--rpg-anim-scale, 1\)\);/s,
+  'le territoire du gagnant ne s’étend qu’une fois la réplique dite et les éclats retombés');
+assert.match(css, /\[data-vainqueur="sorcier"\] \.rpg-wizard-plate--joueur \{\s*animation-delay: calc\(\(var\(--rpg-replique-delai, 0ms\) \+ var\(--rpg-eclat-maxi, 1900ms\)\) \* var\(--rpg-anim-scale, 1\)\);/,
   'et le camp vaincu ne pâlit qu’à ce moment-là');
 
 // ── 3. L'Astrolabe se fige, puis le bilan entre en scène ───────────────────

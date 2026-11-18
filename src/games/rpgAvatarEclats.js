@@ -17,6 +17,13 @@ export const GRILLE_ECLATS = 14;
 // Le dernier morceau finit avant 1600 ms de vol + 230 ms de retard.
 export const DUREE_ECLATEMENT_MAX = 1900;
 
+/** Le temps de la réplique, AVANT l'éclatement : l'avatar parle encore debout.
+ * Court par construction — une phrase de quelques mots se lit en une seconde et
+ * demie, et la fin de duel ne doit pas s'éterniser. La page publie cette durée
+ * en `--rpg-replique-delai` pour que la feuille retarde le masque du médaillon,
+ * l'atténuation du camp perdant et l'ouverture du bilan d'autant. */
+export const DUREE_REPLIQUE = 1600;
+
 /** Un nombre pseudo-aléatoire stable dans [0, 1[ pour une case et un grain. */
 function hasard(col, ligne, grain) {
   let h = Math.imul(col + 1, 0x9e3779b1)
