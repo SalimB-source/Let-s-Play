@@ -32,6 +32,7 @@ import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArm
 import {
   RPG_ELEMENTS,
   armeById,
+  cardById,
   carteEstArme,
   cardColorCost,
   cardColors,
@@ -1851,11 +1852,12 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       }
     }
     if (arrivee.type === 'recherche-deck') {
-      // Le Pilote : un tuteur qui ne sert que si le type cherché est encore
-      // au paquet — sinon la pose brûle son mana sans rien rapporter.
+      // Le Pilote et la Chercheuse : valoriser la recherche seulement si
+      // une carte éligible reste au paquet, comme dans le moteur.
       const type = arrivee.typeImprime ?? 'Navire';
-      const resteTuteur = camp.deck.some((carteId) => arrivee.typeCarte
-        ? duelCardById(carteId)?.kind === arrivee.typeCarte : cardHasPrintedType(carteId, type));
+      const resteTuteur = camp.deck.some((carteId) => arrivee.typeCarte === 'arme'
+        ? carteEstArme(cardById(carteId))
+        : arrivee.typeCarte ? cardById(carteId)?.kind === arrivee.typeCarte : cardHasPrintedType(carteId, type));
       score += resteTuteur ? 2.5 + (camp.main.length <= 3 ? 1.5 : 0) : 0;
     }
     if (arrivee.type === 'mue-mondiale') {

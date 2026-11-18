@@ -6,7 +6,7 @@ import { cardById, RPG_CREATURE_CARDS, RPG_HERO_CARDS, RPG_TOUR_CARDS, RPG_MAGIE
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgLancerAttaque,
   rpgBlesserCreature, rpgFinDeTour, rpgReglerHasard, rpgResoudreContresortBoualem,
-  rpgResoudreArriveeCiblee, arriveeCiblePortee,
+  rpgResoudreArriveeCiblee, arriveeCiblePortee, rpgConsommerPresentations,
 } from '../src/games/rpgDuel.js';
 import { choisirCarteIA } from '../src/games/rpgAI.js';
 import { COLLECTION_DEPART } from '../src/games/rpgCollection.js';
@@ -252,11 +252,49 @@ test('Chercheuse Sable et Braise : récupère une arme au hasard à son arrivée
   assert.deepEqual([c.cost, c.atk, c.def, c.colors], [3, 2, 2, ['sable', 'braise']]);
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 });
   for (const cote of ['joueur', 'sorcier']) {
-    const d = duel(); d[cote].deck = ['chien-du-guet', 'sabre-maudit', 'hache-de-la-banquise'];
+    const d = duel(); d.tour = cote; d[cote].deck = ['chien-du-guet', 'sabre-maudit', 'hache-de-la-banquise'];
     const avant = [...d[cote].deck]; poser(d, cote, c.id);
     assert.deepEqual(d[cote].main, ['hache-de-la-banquise']);
     assert.deepEqual(d[cote].deck, avant.slice(0, 2));
   }
+});
+
+test('Chercheuse : le Sabre maudit est trouvé comme arme sans changer son type de sort', () => {
+  assert.equal(cardById('sabre-maudit').kind, 'magie');
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const [jet, attendu] of [[0, 'sabre-maudit'], [0.99, 'hache-de-la-banquise']]) {
+      const d = duel(); d.tour = cote;
+      d[cote].deck = ['chien-du-guet', 'sabre-maudit', 'trait-de-braise', 'hache-de-la-banquise'];
+      let appels = 0;
+      rpgReglerHasard(d, () => { appels += 1; return jet; });
+      poser(d, cote, 'chercheuse-des-armes-ensevelies');
+      assert.deepEqual(d[cote].main, [attendu]);
+      assert.deepEqual(d[cote].deck, ['chien-du-guet', 'sabre-maudit', 'trait-de-braise', 'hache-de-la-banquise'].filter(id => id !== attendu));
+      assert.equal(appels, 1);
+      assert.ok(rpgConsommerPresentations(d).some(e => e.type === 'recherche' && e.cote === cote && e.carteId === attendu));
+    }
+  }
+});
+
+test('Chercheuse : récupère le seul Sabre du deck puis peut le porter', () => {
+  const d = duel();
+  d.joueur.deck = ['chien-du-guet', 'sabre-maudit', 'trait-de-braise'];
+  const chercheuse = poser(d, 'joueur', 'chercheuse-des-armes-ensevelies');
+  assert.deepEqual(d.joueur.main, ['sabre-maudit']);
+  assert.deepEqual(d.joueur.deck, ['chien-du-guet', 'trait-de-braise']);
+  assert.equal(rpgLancerMagie(d, 'joueur', 'sabre-maudit', chercheuse.id).ok, true);
+  assert.deepEqual(chercheuse.armes, ['sabre-maudit']);
+  assert.equal(chercheuse.volDeVie, true);
+});
+
+test('Chercheuse : l’IA valorise le Sabre comme les autres armes', () => {
+  const score = (carteId) => {
+    const d = duel(); d.tour = 'sorcier';
+    d.sorcier.main = ['chercheuse-des-armes-ensevelies']; d.sorcier.deck = [carteId];
+    return choisirCarteIA(d, 'sorcier', { profil: { profondeur: 0, tauxErreur: 0, style: 'equilibre' }, rng: () => 0.5 }).score;
+  };
+  assert.equal(score('sabre-maudit'), score('hache-de-la-banquise'));
+  assert.ok(score('sabre-maudit') > score('trait-de-braise'));
 });
 
 test('Chercheuse : aucun changement au deck si aucune arme ne reste', () => {

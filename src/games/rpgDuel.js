@@ -791,14 +791,17 @@ export function rpgPiocher(duel, cote) {
  * Pioche une carte d'un type imprimé donné, choisie uniformément au hasard
  * parmi les exemplaires encore dans le deck. Ce n'est pas une pioche du
  * dessus suivie d'un tri : s'il ne reste aucune carte du type demandé, rien
- * ne rejoint la main. Le reste du deck garde son ordre.
+ * ne rejoint la main. Le reste du deck garde son ordre. Pour les armes, les
+ * armes-sorts comme le Sabre maudit sont incluses, sans changer leur timing.
  */
 function piocherCarteDeType(duel, cote, type, typeCarte = null, typePresentation = 'pioche') {
   const camp = duel?.[cote];
   if (!camp?.deck?.length || !type) return null;
   const candidates = [];
   camp.deck.forEach((carteId, index) => {
-    if (typeCarte ? cardById(carteId)?.kind === typeCarte : cardHasPrintedType(carteId, type)) candidates.push(index);
+    const fiche = typeCarte ? cardById(carteId) : null;
+    if (typeCarte === 'arme' ? carteEstArme(fiche)
+      : typeCarte ? fiche?.kind === typeCarte : cardHasPrintedType(carteId, type)) candidates.push(index);
   });
   if (!candidates.length) return null;
   const rng = hasardParDuel.get(duel) ?? Math.random;
