@@ -1,3 +1,6 @@
+import { RpgFissureImpact, RpgVagueTour } from './RpgEffetsComplementaires.jsx';
+import { RpgEntreeLegendaire, rpgEstLegendaire, RpgGuideCibles, RpgTempsForts, RpgVerdictScene } from './RpgMiseEnScene.jsx';
+import { rpgTempsForts } from './rpgTempsForts.js';
 import { RpgAmbiancePlateau, RpgDangerVie } from './RpgAmbiancePlateau.jsx';
 import { rpgVieCritique, rpgElementParticule } from './rpgAmbianceVisuelle.js';
 import { rpgLumiereElementaire, rpgSurvolRelief, rpgEffacerRelief } from './rpgReliefVisuel.js';
@@ -3130,6 +3133,8 @@ export function TableCard({
     >
       <span className="rpg-relief-ombre" aria-hidden="true" />
       {lumiereEntree && !entreeDifferee && !reserveAscension && <span className="rpg-lumiere-invocation" aria-hidden="true" />}
+      {lumiereEntree && !entreeDifferee && !reserveAscension && rpgEstLegendaire(carte) && <RpgEntreeLegendaire />}
+      {actionFx?.impactVerifie && <RpgFissureImpact key={actionFx.token ?? actionFx.type} />}
       <img
         key={entite.furieDeclenchee ? `${carte?.id}-furie` : cardArtEntite(entite)}
         className={`rpg-card__img${estSite ? ' rpg-card__img--site-stage' : ''}`}
@@ -7689,19 +7694,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sequenceGelMasseRef = useRef(0);
   const timerGelMasseRef = useRef(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
+  const [rechercheVisuelle, setRechercheVisuelle] = useState(null);
+  const sequenceRechercheVisuelle = useRef(0);
   const instantanePiocheRef = useRef(null);
   const presentationDuelRef = useRef(null);
   const transitionTourRef = useRef(false);
-  // Ne plus ouvrir d’aperçu automatique quand une capacité s’active.
-  // Vider le journal sans toucher aux annonces de sorts ni aux aperçus manuels.
+  // Pas d'aperçu automatique : seul le trajet d'une recherche effectivement
+  // résolue est signalé, sans révéler la main adverse ni modifier le moteur.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (presentationDuelRef.current !== duelCourant || ecran !== 'partie') {
+    const nouvellePartie = presentationDuelRef.current !== duelCourant || ecran !== 'partie';
+    if (nouvellePartie) {
       presentationDuelRef.current = duelCourant;
       transitionTourRef.current = false;
+      if (rechercheVisuelle) setRechercheVisuelle(null);
     }
-    if (duelCourant) rpgConsommerPresentations(duelCourant);
+    const evenements = duelCourant ? rpgConsommerPresentations(duelCourant) : [];
+    if (nouvellePartie) return;
+    const recherche = evenements.filter((event) => event.type === 'recherche' && event.cote === 'joueur').at(-1);
+    const index = recherche ? duelCourant.joueur.main.lastIndexOf(recherche.carteId) : -1;
+    if (index >= 0) setRechercheVisuelle({ carteId: recherche.carteId, index, token: ++sequenceRechercheVisuelle.current });
   });
+  useEffect(() => {
+    if (!rechercheVisuelle) return undefined;
+    const timer = window.setTimeout(() => setRechercheVisuelle(null), dureeAnimation(1100));
+    return () => window.clearTimeout(timer);
+  }, [rechercheVisuelle]);
 
   // ── Soins : chaque gain de vie se voit et s'entend ────────────────────────
   // Le moteur note chaque gain de vie réel (`rpgConsommerSoins`) — magie,
@@ -10322,14 +10340,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animationsVisuellesTimersRef.current.push(timer);
   };
 
-  const animerEntites = (ids, type, duree = 720, statsUpIds = []) => {
+  const animerEntites = (ids, type, duree = 720, statsUpIds = [], blessuresIds = []) => {
     const entites = [...new Set((ids ?? []).filter(Boolean))];
     if (!entites.length) return;
     const statsAugmentees = new Set(statsUpIds);
+    const blessures = new Set(blessuresIds);
     const token = ++sequenceAnimationRef.current;
     setAnimationsEntites((current) => ({
       ...current,
-      ...Object.fromEntries(entites.map((id) => [id, { type, token, statsUp: statsAugmentees.has(id) }])),
+      ...Object.fromEntries(entites.map((id) => [id, { type, token, statsUp: statsAugmentees.has(id), impactVerifie: type === 'combat-impact' || blessures.has(id) }])),
     }));
     programmerNettoyageVisuel(() => {
       setAnimationsEntites((current) => {
@@ -10384,6 +10403,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...courant,
       ...Object.fromEntries(cibles.map((entree) => [entree.entiteId, {
         fois: entree.fois ?? 2,
+        name: cardById(entree.carteId)?.name,
         position: positions.find((position) => position.entityId === entree.entiteId),
         token,
       }])),
@@ -11129,11 +11149,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animerEntites(attaquesVivantes, 'attack', 650);
     declencherImpactsBouclier(impactsBouclier);
     if (bouclierBrise) jouerSfx(RPG_WEAPON_BREAK_SFX);
-    animerEntites(touches, 'hit', 620);
+    const blessuresReelles = blessuresNouvelles.filter((blessure) => blessure.recus > 0).map((blessure) => blessure.entityId);
+    animerEntites(touches, 'hit', 620, [], blessuresReelles);
     // La vibration de l'impact remplace le clignotement ordinaire sur les
     // bloqueurs et les cibles d'Attaque ciblée encore présents sur la table.
     if (!mouvementReduit) animerEntites([...impactsCombat].filter((id) => vivants.has(id)), 'combat-impact', 560);
-    animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU);
+    animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU, [], blessuresReelles);
     animerEntites(renforcees, 'glow', 1100, statsAugmentees);
   };
 
@@ -13903,6 +13924,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         onDrop={deposerCarteSurTable}
       >
         <CombatFeed events={duel.combatFeed} />
+        <RpgTempsForts evenements={rpgTempsForts({ combatFeed: duel.combatFeed, critiques: critiquesVisibles })} />
+        <RpgGuideCibles surfaceRef={tableRef} actif={Boolean(!vainqueur && (cibleEnCours || cibleAttaqueEnCours || activationEnCours))}
+          sourceId={cibleAttaqueEnCours ?? activationEnCours ?? (duel.arriveeEnAttente?.carteId === cibleEnCours ? duel.arriveeEnAttente.entiteId : null)} />
+        <RpgVerdictScene vainqueur={vainqueur} />
         {/* Le jumeau de la peinture : le flou d'un aperçu ne peut pas être posé
             sur `.card-table` (il emporterait l'aperçu lui-même), ni sur sa
             `background-image`. Ce calque en reprend donc la peinture par
@@ -14132,6 +14157,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {/* Bandeau d'ouverture de tour : le camp qui prend la main se nomme au
             centre de la table pendant 1,5 s, puis s'efface (`AnnonceTour`). */}
         <AnnonceTour annonce={annonceTour} />
+        <RpgVagueTour annonce={!vainqueur ? annonceTour : null} />
         <AnnonceActionJoueur invite={inviteActionJoueur} decalee={Boolean(annonceTour)} />
         {/* Les sorts qui viennent d'être joués : la fiche rectangulaire se pose
             au milieu du plateau, que le lanceur soit le joueur (turquoise) ou
@@ -14209,6 +14235,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <PlaqueVie
             pv={duel.sorcier.pv}
             pvMax={duel.sorcier.pvMax}
+            danger={!vainqueur && rpgVieCritique(duel.sorcier.pv, duel.sorcier.pvMax)}
             bouclier={duel.sorcier.bouclier}
             soin={soinSorcier}
             base={RPG_PV_SORCIER_BASE}
@@ -14760,6 +14787,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <PlaqueVie
             pv={duel.joueur.pv}
             pvMax={duel.joueur.pvMax}
+            danger={!vainqueur && rpgVieCritique(duel.joueur.pv, duel.joueur.pvMax)}
             bouclier={duel.joueur.bouclier}
             soin={soinJoueur}
             base={RPG_PV_JOUEUR}
@@ -15226,6 +15254,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${texteCombatIndividuel(carte)}` : ''}${sacrificesInvocation(carte, duel, 'joueur') ? ` — invocation : ${sacrificesInvocation(carte, duel, 'joueur')} sacrifice(s)` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'lancer le sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? `${embuscadeJouable ? ', Invocation spéciale disponible' : ', jouable'} (ou glisser-déposer sur une case)` : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+                  {rechercheVisuelle?.carteId === carteId && groupe.indices.includes(rechercheVisuelle.index) && <span key={rechercheVisuelle.token} className="rpg-trace-recherche" aria-hidden="true" />}
                   <RpgCadreCarte carte={carte} />
 
                   <span className="rpg-hand__title">

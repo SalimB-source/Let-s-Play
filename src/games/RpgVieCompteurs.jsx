@@ -185,7 +185,7 @@ function useValeurRoulee(valeur, reduit) {
  * `base` est le seuil du rond plein (25 PV). Le record `pvMax` n'en change
  * ni le remplissage ni le diamètre, et n'est pas ajouté au chiffre.
  */
-export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25 }) {
+export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25, danger = false }) {
   const reduit = useMouvementReduit();
   const { sens, token } = useVariation(pv, reduit, { duree: RPG_VIE_DUREE });
   const affichee = useValeurRoulee(pv, reduit);
@@ -197,6 +197,7 @@ export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25 }) {
     'rpg-jauge-vie',
     sens === 'stable' ? '' : classesVariation(sens, token),
     jauge.critique ? 'is-critique' : '',
+    danger ? 'is-danger' : '',
     jauge.vide ? 'is-vide' : '',
     roule ? 'is-roulage' : '',
   ].filter(Boolean).join(' ');

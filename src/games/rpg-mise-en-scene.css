@@ -1,0 +1,34 @@
+/* Aucun cadre ajouté à l'illustration : poussière et ombre éphémères seulement. */
+.rpg-entree-legendaire { position: absolute; inset: -14px; z-index: 1; pointer-events: none; animation: rpg-entree-legendaire calc(.6s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-entree-legendaire::before { content: ''; position: absolute; left: 5%; right: 5%; bottom: -3px; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, #000a, transparent 72%); animation: rpg-ombre-legendaire calc(.6s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-entree-legendaire i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #ffdc89; box-shadow: 0 0 5px #e9ad58; animation: rpg-poussiere-legendaire calc(.6s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-entree-legendaire i:nth-child(1) { left: 4%; top: 67%; } .rpg-entree-legendaire i:nth-child(2) { left: 17%; top: 83%; } .rpg-entree-legendaire i:nth-child(3) { left: 34%; top: 92%; }
+.rpg-entree-legendaire i:nth-child(4) { right: 34%; top: 92%; } .rpg-entree-legendaire i:nth-child(5) { right: 17%; top: 83%; } .rpg-entree-legendaire i:nth-child(6) { right: 4%; top: 67%; }
+@keyframes rpg-entree-legendaire { 0%, 100% { opacity: 0; } 35% { opacity: .8; } }
+@keyframes rpg-ombre-legendaire { from { transform: scaleX(.55); } to { transform: scaleX(1.25); } }
+@keyframes rpg-poussiere-legendaire { from { transform: translateY(4px) scale(.5); } to { transform: translateY(-25px) scale(.9); } }
+.rpg-temps-forts { position: absolute; z-index: 46; left: 2%; bottom: 16%; display: grid; justify-items: start; gap: 4px; max-width: min(300px, 42%); pointer-events: none; }
+.rpg-temps-forts__fait { display: flex; gap: 6px; align-items: center; padding: 5px 8px; border-radius: 5px; background: #211a17e8; color: #f8e6c1; font: 700 11px/1.25 system-ui, sans-serif; box-shadow: 0 3px 8px #0008; animation: rpg-fait-apparition calc(.2s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-temps-forts__fait b { color: #f1bf68; } .rpg-temps-forts__fait.is-mort b { color: #ef9a82; } .rpg-temps-forts__fait.is-conquete b { color: #a7ded1; }
+@keyframes rpg-fait-apparition { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.rpg-guide-cibles { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; overflow: visible; pointer-events: none; }
+.rpg-guide-cibles line { stroke: #f2d28a; stroke-width: 1.4; stroke-opacity: .58; stroke-dasharray: 4 6; vector-effect: non-scaling-stroke; }
+.rpg-verdict-scene { position: absolute; inset: 0; z-index: 75; pointer-events: none; opacity: 0; animation: rpg-verdict-voile calc(1.25s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-verdict-scene.is-victoire { background: radial-gradient(ellipse at center, transparent 24%, #d5a14345 100%); }
+.rpg-verdict-scene.is-defaite { background: radial-gradient(ellipse at center, transparent 20%, #151326a6 100%); }
+.rpg-verdict-scene.is-nul { background: radial-gradient(ellipse at center, transparent 20%, #887d744d 100%); }
+.rpg-verdict-scene i { position: absolute; left: 20%; top: 20%; width: 4px; height: 4px; border-radius: 50%; background: #e7c27f; animation: rpg-verdict-poussiere calc(1.25s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-verdict-scene i:nth-child(2) { left: 78%; top: 38%; } .rpg-verdict-scene i:nth-child(3) { left: 62%; top: 70%; }
+.rpg-verdict-scene.is-defaite i { background: #a6b2d1; }
+@keyframes rpg-verdict-voile { 0%, 100% { opacity: 0; } 35% { opacity: .8; } }
+@keyframes rpg-verdict-poussiere { from { transform: translateY(10px); } to { transform: translateY(-20px); } }
+.moba > .rpg-verdict-scene { z-index: 9998; }
+.moba__end-panel.rpg-overlay--loss, .card-table > .rpg-overlay--loss:not(.rpg-overlay--apres-eclat) { animation: rpg-victoire-panneau-loss calc(.48s * var(--rpg-anim-scale, 1)) cubic-bezier(.25, .7, .3, 1) calc(.12s * var(--rpg-anim-scale, 1)) both, rpg-bilan-voile calc(1.25s * var(--rpg-anim-scale, 1)) ease-out both; }
+@keyframes rpg-bilan-voile { from { background-color: transparent; backdrop-filter: none; } to { background-color: rgba(4, 4, 10, .86); backdrop-filter: blur(2px); } }
+@media (max-width: 850px) { .rpg-temps-forts { bottom: 19%; max-width: 42%; } .rpg-temps-forts__fait { font-size: 9px; padding: 3px 5px; } }
+.rpg-battle.is-reduced :is(.rpg-entree-legendaire, .rpg-verdict-scene) { display: none; }
+.rpg-battle.is-reduced :is(.rpg-temps-forts__fait, .moba__end-panel.rpg-overlay--loss, .card-table > .rpg-overlay--loss:not(.rpg-overlay--apres-eclat)) { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.rpg-entree-legendaire, .rpg-verdict-scene) { display: none; }
+  :is(.rpg-temps-forts__fait, .moba__end-panel.rpg-overlay--loss, .card-table > .rpg-overlay--loss:not(.rpg-overlay--apres-eclat)) { animation: none; }
+}
