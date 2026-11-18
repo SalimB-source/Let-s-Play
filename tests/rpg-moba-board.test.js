@@ -50,7 +50,7 @@ test('the player can edit an audited deck, with live size, colour and copy valid
     assert.match(document.querySelector('[aria-label="Ajouter Sphère de rotation"]').closest('.moba__editor-card').textContent, /après deux attaques ou défenses.*renvoi.*défense.*Attaque ciblée/);
     const chercheuse = document.querySelector('[aria-label="Ajouter Chercheuse des armes ensevelies"]');
     assert.ok(chercheuse);
-    assert.match(chercheuse.closest('.moba__editor-card').textContent, /armes imprimées auditées.*Sabre maudit est une magie/);
+    assert.match(chercheuse.closest('.moba__editor-card').textContent, /recherche inclut aussi le Sabre maudit.*reste une magie/);
     assert.match(document.querySelector('[aria-label="Ajouter Javelot du beffroi"]').closest('.moba__editor-card').textContent, /se brise après une attaque ou une défense/);
     assert.match(document.querySelector('[aria-label="Ajouter Cuirasse de sel"]').closest('.moba__editor-card').textContent, /après deux attaques ou défenses/);
     assert.ok(document.querySelector('[aria-label="Ajouter Braise et sable"]'));
@@ -3988,7 +3988,7 @@ test('Ghul : l’écho de début de tour suspend l’IA avant ses décisions', a
   } finally {if(root)await act(async()=>root.unmount());await server.close();dom.window.close();globalThis.window=oldWindow;globalThis.document=oldDocument;delete globalThis.IS_REACT_ACT_ENVIRONMENT;}
 });
 
-test('Chercheuse : annonce et arrivée au plateau sans choix d’arme indisponible', async () => {
+test('Chercheuse : annonce et recherche automatique du Sabre au plateau', async () => {
   const server=await createServer({server:{middlewareMode:true,hmr:false},appType:'custom'});const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});
   const oldWindow=globalThis.window,oldDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.IS_REACT_ACT_ENVIRONMENT=true;let root;
   try {
@@ -3998,7 +3998,7 @@ test('Chercheuse : annonce et arrivée au plateau sans choix d’arme indisponib
     await click(document.querySelector('.moba__mulligan .moba__primary'));duel.joueur.main=['chercheuse-des-armes-ensevelies'];duel.joueur.deck=['sabre-maudit'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.sorcier.main=[];await act(async()=>root.render(React.createElement(Board,props)));
     await click([...document.querySelectorAll('.moba__card')].find(x=>x.textContent.includes('Chercheuse des armes ensevelies')));await click(document.querySelector('button[aria-label="Voie droite, Vous, emplacement 1, invoquer"]'));
     assert.equal(duel.mobaCreatureEnAttente?.carteId,'chercheuse-des-armes-ensevelies');await act(async()=>new Promise(resolve=>setTimeout(resolve,520)));
-    const chercheuse=duel.joueur.creatures.find(entity=>entity.carteId==='chercheuse-des-armes-ensevelies');assert.ok(chercheuse);assert.ok(document.querySelector(`[data-moba-entity="${chercheuse.id}"]`));assert.deepEqual(duel.joueur.deck,['sabre-maudit']);assert.ok(!duel.mobaRechercheEnAttente);assert.ok(!duel.arriveeEnAttente);assert.ok([...document.querySelectorAll('.moba__controls button')].some(b=>b.textContent.includes('Fin du tour')));assert.equal(e.rpgMobaPlacementCoherent(duel),true);
+    const chercheuse=duel.joueur.creatures.find(entity=>entity.carteId==='chercheuse-des-armes-ensevelies');assert.ok(chercheuse);assert.ok(document.querySelector(`[data-moba-entity="${chercheuse.id}"]`));assert.deepEqual(duel.joueur.deck,[]);assert.deepEqual(duel.joueur.main,['sabre-maudit']);assert.ok([...document.querySelectorAll('.moba__card')].some(card=>card.textContent.includes('Sabre maudit')));assert.ok(!duel.mobaRechercheEnAttente);assert.ok(!duel.arriveeEnAttente);assert.ok([...document.querySelectorAll('.moba__controls button')].some(b=>b.textContent.includes('Fin du tour')));assert.equal(e.rpgMobaPlacementCoherent(duel),true);
   } finally {if(root)await act(async()=>root.unmount());await server.close();dom.window.close();globalThis.window=oldWindow;globalThis.document=oldDocument;delete globalThis.IS_REACT_ACT_ENVIRONMENT;}
 });
 

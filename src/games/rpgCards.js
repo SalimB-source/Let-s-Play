@@ -125,7 +125,8 @@ const CARD_FRAME_FALLBACK_KEY = 'hybride-braise-eau-sable-neige-tenebres';
 const CARD_FRAME_COLOR_ORDER = RPG_ELEMENTS;
 
 /**
- * Une arme, pour la présentation : une carte `kind: 'arme'` (le prototype), ou
+ * Une arme pour la présentation et les recherches d'armes : une carte
+ * `kind: 'arme'` (le prototype), ou
  * une magie dont l'effet est « arme » (le Sabre maudit). Le moteur garde le
  * Sabre parmi les magies (ciblage, `porteur.armes`) ; la carte, elle, doit
  * porter le même cadre, la même ligne de type et les mêmes stats de porteur

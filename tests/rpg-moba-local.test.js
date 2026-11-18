@@ -7465,15 +7465,15 @@ test('Ghul MOBA : sa prise en cale ne déclenche pas sa mort', () => {
   const rousse=rpgMobaPasserCreature(duel,'joueur').entite;assert.equal(rpgMobaResoudreArrivee(duel,'sorcier',ghul.id).ok,true);assert.equal(rousse.enCale.entite.id,ghul.id);assert.ok(!duel.destructionsEnAttente?.length);assert.ok(!duel.joueur.cimetiere.includes('ghul-des-cendres'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Chercheuse MOBA : recherche classique sans arme imprimée, même en présence du Sabre maudit', () => {
+test('Chercheuse MOBA : recherche automatique du Sabre maudit pour les deux camps', () => {
   assert.ok(MOBA_CARTES_AUTORISEES.includes('chercheuse-des-armes-ensevelies'));
   assert.deepEqual(MOBA_CARTES_AUTORISEES.filter((id) => cardById(id)?.kind === 'arme'), ['javelot-du-beffroi', 'cuirasse-de-sel', 'braise-et-sable', 'takouba-des-pistes', 'armure-de-cendres', 'sabre-du-croissant-noir', 'hache-de-la-banquise', 'lance-de-givre', 'khopesh-d-or', 'licou-du-chien-de-sable', 'harnais-du-mehari', 'masque-du-guetteur', 'jitte-d-amayas', 'lance-de-la-lune-givree', 'sandales-de-tislit', 'grappin-d-abordage', 'baton-des-citernes', 'lame-des-ergs', 'takouba-de-tin-hinan', 'sphere-de-rotation'], 'réauditer la recherche quand une autre arme imprimée est autorisée');
   assert.equal(cardById('sabre-maudit').kind, 'magie');
   for (const side of ['joueur','sorcier']) {
     const duel=partie();if(side==='sorcier')rpgFinDeTour(duel);
     duel[side].main=['chercheuse-des-armes-ensevelies'];duel[side].deck=['sabre-maudit','trait-de-braise','gardienne-des-portes-de-sable'];duel[side].mana.sable=20;duel[side].mana.braise=20;
-    let appels=0;rpgReglerHasard(duel,()=>{appels++;return .5;});const deck=[...duel[side].deck];const result=rpgMobaJouerCreature(duel,side,'chercheuse-des-armes-ensevelies','right',1);
-    assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.entite.mobaLane,'right');assert.deepEqual(duel[side].deck,deck);assert.deepEqual(duel[side].main,[]);assert.equal(appels,0);assert.ok(!duel.mobaRechercheEnAttente);assert.match(duel.log.at(-1),/ne trouve aucune carte de type Arme/);assert.equal(rpgMobaPlacementCoherent(duel),true);
+    let appels=0;rpgReglerHasard(duel,()=>{appels++;return .5;});const result=rpgMobaJouerCreature(duel,side,'chercheuse-des-armes-ensevelies','right',1);
+    assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.entite.mobaLane,'right');assert.deepEqual(duel[side].deck,['trait-de-braise','gardienne-des-portes-de-sable']);assert.deepEqual(duel[side].main,['sabre-maudit']);assert.equal(appels,1);assert.ok(!duel.mobaRechercheEnAttente);assert.match(duel.log.at(-1),/trouve une carte de type Arme/);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
 
@@ -7482,14 +7482,15 @@ test('Chercheuse MOBA : l’annonce contrecarrée ne cherche pas, Réanimation r
   assert.equal(rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','right',0,{ouvrirReponse:true}).creatureEnAttente,true);
   assert.equal(rpgMobaLancerMagie(duel,'sorcier','ecueil').contre,true);assert.deepEqual(duel.joueur.deck,['sabre-maudit']);assert.ok(duel.joueur.cimetiere.includes('chercheuse-des-armes-ensevelies'));assert.ok(!duel.joueur.creatures.length);
   duel.joueur.main=['reanimation'];const avant=duel.log.length;const retour=rpgMobaLancerMagie(duel,'joueur','reanimation',null,'left',null,{emplacementReanimation:0});assert.equal(retour.ok,true,JSON.stringify(retour));
-  assert.equal(duel.joueur.creatures[0].carteId,'chercheuse-des-armes-ensevelies');assert.equal(duel.joueur.creatures[0].mobaLane,'left');assert.deepEqual(duel.joueur.deck,['sabre-maudit']);assert.ok(duel.log.slice(avant).some(line=>line.includes('ne trouve aucune carte de type Arme')));assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.equal(rpgMobaResoudreRecherche(duel,'joueur','chercheuse-des-armes-ensevelies').ok,true);
+  assert.equal(duel.joueur.creatures[0].carteId,'chercheuse-des-armes-ensevelies');assert.equal(duel.joueur.creatures[0].mobaLane,'left');assert.deepEqual(duel.joueur.deck,[]);assert.deepEqual(duel.joueur.main,['sabre-maudit']);assert.ok(duel.log.slice(avant).some(line=>line.includes('trouve une carte de type Arme')));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Chercheuse MOBA : Lettre de marque choisit une prise sans remplacer la recherche', () => {
-  const duel=partie();rpgFinDeTour(duel);duel.sorcier.main=['mousse-des-galiotes'];duel.sorcier.mana.sable=30;const proie=rpgMobaJouerCreature(duel,'sorcier','mousse-des-galiotes','left',0).entite;rpgFinDeTour(duel);
+  const duel=partie();rpgFinDeTour(duel);duel.sorcier.main=['mousse-des-galiotes'];duel.sorcier.mana.sable=30;const proie=rpgMobaJouerCreature(duel,'sorcier','mousse-des-galiotes','right',0).entite;rpgFinDeTour(duel);
   duel.joueur.main=['lettre-de-marque','chercheuse-des-armes-ensevelies'];duel.joueur.deck=['sabre-maudit','gardienne-des-portes-de-sable'];duel.joueur.mana.eau=30;duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;
   assert.equal(rpgMobaLancerMagie(duel,'joueur','lettre-de-marque').ok,true);const deck=[...duel.joueur.deck];const pose=rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','right',0,{ouvrirReponse:true});assert.equal(pose.creatureEnAttente,true);
-  const result=rpgMobaPasserCreature(duel,'sorcier');assert.equal(result.ok,true,JSON.stringify(result));assert.deepEqual(duel.joueur.deck,deck);assert.equal(rpgMobaResoudreArrivee(duel,'joueur',proie.id).ok,true);assert.equal(result.entite.enCale.entite.id,proie.id);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  const result=rpgMobaPasserCreature(duel,'sorcier');assert.equal(result.ok,true,JSON.stringify(result));assert.deepEqual(duel.joueur.deck,deck.filter(id=>id!=='sabre-maudit'));assert.ok(duel.joueur.main.includes('sabre-maudit'));assert.equal(rpgMobaResoudreArrivee(duel,'joueur',proie.id).ok,true);assert.equal(result.entite.enCale.entite.id,proie.id);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Chercheuse MOBA : coût bicolore et conquête en réponse respectent la réservation', () => {
@@ -7501,7 +7502,7 @@ test('Chercheuse MOBA : coût bicolore et conquête en réponse respectent la r�
   const result=rpgMobaPasserCreature(duel,'sorcier');assert.equal(result.ok,true,JSON.stringify(result));assert.equal(result.dissipe,true);assert.ok(duel.joueur.cimetiere.includes('chercheuse-des-armes-ensevelies'));assert.ok(!duel.joueur.creatures.some(e=>e.carteId==='chercheuse-des-armes-ensevelies'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Javelot MOBA : la Chercheuse trouve une arme imprimée au hasard, jamais le Sabre', () => {
+test('Javelot MOBA : la Chercheuse choisit au hasard parmi tous les exemplaires d’armes', () => {
   for (const side of ['joueur','sorcier']) {
     const duel=partie();if(side==='sorcier')rpgFinDeTour(duel);duel[side].main=['chercheuse-des-armes-ensevelies'];duel[side].deck=['sabre-maudit','javelot-du-beffroi','trait-de-braise','javelot-du-beffroi'];duel[side].mana.sable=20;duel[side].mana.braise=20;
     let appels=0;rpgReglerHasard(duel,()=>{appels++;return .99;});const result=rpgMobaJouerCreature(duel,side,'chercheuse-des-armes-ensevelies','right',0);
@@ -7618,10 +7619,10 @@ test('Braise et sable MOBA : coût bicolore, Lien intervoies, critique et endura
   let n=0;rpgReglerHasard(duel,()=>[.5,.1][Math.min(n++,1)]);assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id],{[porteur.id]:cible.id}).ok,true);const result=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));assert.ok(!duel.sorcier.creatures.includes(cible));assert.equal(porteur.arme,null);assert.equal(porteur.atk,1);assert.equal(porteur.coupRapide,false);assert.equal(porteur.coupCritique,null);assert.ok(duel.joueur.cimetiere.includes('braise-et-sable'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Chercheuse MOBA : le tirage choisit parmi les trois armes auditées sans inclure le Sabre', () => {
-  for (const [jet,attendu] of [[0,'javelot-du-beffroi'],[.5,'cuirasse-de-sel'],[.99,'braise-et-sable']]) {
+test('Chercheuse MOBA : le tirage inclut le Sabre et les armes auditées', () => {
+  for (const [jet,attendu] of [[0,'sabre-maudit'],[.25,'javelot-du-beffroi'],[.5,'cuirasse-de-sel'],[.99,'braise-et-sable']]) {
     const duel=partie();duel.joueur.main=['chercheuse-des-armes-ensevelies'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.deck=['sabre-maudit','javelot-du-beffroi','cuirasse-de-sel','braise-et-sable'];let appels=0;rpgReglerHasard(duel,()=>{appels++;return jet;});
-    const result=rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','center',0);assert.equal(result.ok,true,JSON.stringify(result));assert.deepEqual(duel.joueur.main,[attendu]);assert.equal(appels,1);assert.ok(duel.joueur.deck.includes('sabre-maudit'));assert.ok(!duel.mobaRechercheEnAttente);assert.equal(rpgMobaPlacementCoherent(duel),true);
+    const result=rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','center',0);assert.equal(result.ok,true,JSON.stringify(result));assert.deepEqual(duel.joueur.main,[attendu]);assert.equal(appels,1);assert.equal(duel.joueur.deck.includes('sabre-maudit'),attendu!=='sabre-maudit');assert.ok(!duel.mobaRechercheEnAttente);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
 
@@ -7694,11 +7695,11 @@ test('Lance de givre MOBA : gel avant blessure ciblée et rupture, sans gel hors
   let jets=0;rpgReglerHasard(duel,()=>jets++ === 0 ? .9 : .1);assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id],{[porteur.id]:cible.id}).ok,true);const result=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));assert.ok(cible.gelToursRestants>0);assert.equal(autre.gelToursRestants,0);assert.equal(cible.pv,2);assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,false);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Chercheuse MOBA : chacune des armes auditées est recherchée sans inclure le Sabre maudit', () => {
-  const armes=['javelot-du-beffroi','cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit','grappin-d-abordage','baton-des-citernes','lame-des-ergs','takouba-de-tin-hinan','sphere-de-rotation'];
+test('Chercheuse MOBA : chacune des armes auditées et le Sabre maudit sont recherchés', () => {
+  const armes=['sabre-maudit','javelot-du-beffroi','cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit','grappin-d-abordage','baton-des-citernes','lame-des-ergs','takouba-de-tin-hinan','sphere-de-rotation'];
   for(let i=0;i<armes.length;i++){
-    const duel=partie();duel.joueur.main=['chercheuse-des-armes-ensevelies'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.deck=['sabre-maudit',...armes];let appels=0;rpgReglerHasard(duel,()=>{appels++;return (i+.5)/armes.length;});
-    assert.equal(rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','center',0).ok,true);assert.deepEqual(duel.joueur.main,[armes[i]]);assert.equal(appels,1);assert.ok(duel.joueur.deck.includes('sabre-maudit'));assert.equal(rpgMobaPlacementCoherent(duel),true);
+    const duel=partie();duel.joueur.main=['chercheuse-des-armes-ensevelies'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.deck=[...armes];let appels=0;rpgReglerHasard(duel,()=>{appels++;return (i+.5)/armes.length;});
+    assert.equal(rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','center',0).ok,true);assert.deepEqual(duel.joueur.main,[armes[i]]);assert.equal(appels,1);assert.equal(duel.joueur.deck.includes('sabre-maudit'),armes[i]!=='sabre-maudit');assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
 });
 
