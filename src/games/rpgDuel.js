@@ -560,13 +560,17 @@ export function rpgDeclencherBlocage(duel, cote, cible) {
  * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
  * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], joueurReserveAscension = undefined, sorcierReserveAscension = undefined, sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false, sorcierAtouts = null } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], joueurReserveAscension = undefined, sorcierReserveAscension = undefined, sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false, sorcierAtouts = null, lignes = false } = {}) {
   const essaiMana = modeMana === RPG_MODE_MANA_ESSAI;
   const identiteJoueur = essaiMana ? couleursManaEssai(joueurDeck, joueurCouleurs) : null;
   const identiteSorcier = essaiMana ? couleursManaEssai(sorcierDeck, sorcierCouleurs) : null;
   const atouts = pvp ? rpgAtoutsSorcier(null) : rpgAtoutsSorcier(sorcierAtouts);
   const duel = {
     ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
+    // Les deux lignes du champ (`rpgLignes.js`) : dix cases, front et fond.
+    // Le drapeau vient de la fabrique — la page le demande, une partie
+    // sauvegardée le retrouve, et l'arbitre en ligne le pose aussi.
+    ...(essaiMana && lignes ? { lignes: true } : {}),
     ...(pvp ? { pvp: true } : {}),
     tour: 'joueur',
     joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, degatsRecus: 0, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck.filter((id) => !estCarteAscension(id)), rng), reserveAscension: reserveAscensionInitiale(joueurReserveAscension), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },

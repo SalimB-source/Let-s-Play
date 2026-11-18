@@ -37,8 +37,9 @@ test('le plateau dessine les deux lignes : dix cases, le fond derrière', async 
     const duel = rpgNouveauDuel({
       joueurDeck: [], sorcierDeck: [], modeMana: RPG_MODE_MANA_ESSAI,
       joueurCouleurs: ['braise'], sorcierCouleurs: ['neige'], rng: () => .9, pvp: true,
+      lignes: true,
     });
-    duel.lignes = true;
+    assert.equal(duel.lignes, true, 'la fabrique garde le drapeau des lignes');
     duel.mulliganFait = { joueur: true, sorcier: true };
     duel.manaEssaiDemarre = true;
     for (const camp of ['joueur', 'sorcier']) duel[camp].mana = Object.fromEntries(RPG_ELEMENTS.map((e) => [e, 40]));

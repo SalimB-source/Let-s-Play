@@ -5,6 +5,7 @@ import { rpgNouveauDuel, rpgJouerCreature, rpgEmplacementsChamp } from '../src/g
 import { rpgCiblesIndividuellesClassique } from '../src/games/rpgCombatIndividuelClassique.js';
 import { champMax, ligneDe, frontTient, RPG_LIGNE_FRONT, RPG_LIGNE_FOND } from '../src/games/rpgLignes.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
+import { etatInitial } from '../src/server/sablierArbitre.js';
 
 // Deux cartes du catalogue, une par ligne : le Viking est un corps à corps,
 // l'archère porte le trait « À distance » (l'ashigaru aussi, depuis qu'il tire
@@ -15,11 +16,13 @@ const DISTANCE = 'archere-viking-du-givre';
 function table(lignes = true) {
   // Le mode sans terrains est celui qui tient les cases : c'est lui qui pose
   // les créatures sur le champ (`emplacement`).
+  // Le drapeau passe par la **fabrique** : c'est elle que la page appelle.
+  // Le forcer après coup masquerait une régression (la fabrique avalait
+  // `lignes` sans le recopier, et le plateau restait à cinq cases).
   const d = rpgNouveauDuel({
     joueurDeck: [], sorcierDeck: [], modeMana: RPG_MODE_MANA_ESSAI,
-    joueurCouleurs: ['braise'], sorcierCouleurs: ['neige'], rng: () => .9,
+    joueurCouleurs: ['braise'], sorcierCouleurs: ['neige'], rng: () => .9, lignes,
   });
-  if (lignes) d.lignes = true;
   for (const camp of ['joueur', 'sorcier']) d[camp].mana = Object.fromEntries(RPG_ELEMENTS.map((e) => [e, 40]));
   d.pvp = true;
   d.tour = 'joueur';
@@ -45,6 +48,7 @@ function table(lignes = true) {
 
 test('les deux lignes ouvrent dix cases ; la carte choisit sa ligne', () => {
   const { d, poserOk } = table();
+  assert.equal(d.lignes, true, 'la fabrique garde le drapeau des lignes');
   assert.equal(champMax(d), 10);
   const melee = poserOk('joueur', MELEE);
   const archiere = poserOk('joueur', DISTANCE);
@@ -136,4 +140,12 @@ test('sans le drapeau des lignes, rien ne change : cinq cases, tout le monde dev
   assert.equal(ligneDe(archiere), RPG_LIGNE_FRONT, 'hors lignes, la ligne du fond n’existe pas');
   assert.equal(ligneDe(melee), RPG_LIGNE_FRONT);
   assert.ok(archiere.emplacement < 5 && melee.emplacement < 5);
+});
+
+test('le duel en ligne ouvre aussi les deux lignes, dès l’état initial', () => {
+  // L'arbitre crée ses duels de son côté : sans le drapeau, la première pose
+  // d'un joueur partirait sur une rangée que l'autre ne voit pas.
+  const etat = etatInitial([MELEE, DISTANCE], [MELEE], 'graine-des-deux-lignes');
+  assert.equal(etat.lignes, true);
+  assert.equal(champMax(etat), 10);
 });

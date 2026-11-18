@@ -162,6 +162,10 @@ export function etatInitial(deckHote, deckInvite, graine) {
     sorcierIA: null,
     modeMana: RPG_MODE_MANA_ESSAI,
     pvp: true,
+    // Le plateau à deux lignes, comme la page : l'arbitre et le client
+    // doivent compter les mêmes cases, sinon la première pose en ligne part
+    // sur une rangée que l'adversaire ne voit pas.
+    lignes: true,
     rng,
   });
   etat.hasard = { graine, compteur: consommes };
