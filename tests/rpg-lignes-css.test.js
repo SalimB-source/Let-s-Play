@@ -70,6 +70,26 @@ test('la colonne vient de la case : deux lignes, les mêmes cinq colonnes', () =
   }
 });
 
+test('la bande adverse se range contre la ligne médiane, l’équipe juste en dessous', () => {
+  // La bande du sorcier est ancrée par le bas (`bottom: calc(50% + 16px)`), celle
+  // du joueur par le haut (`top: calc(50% + 16px)`). Les deux doivent donc se
+  // ranger **vers la médiane** : `start` côté équipe, `end` côté ennemi. Avec
+  // `start` des deux côtés, les rangées adverses restaient collées au haut de
+  // leur bande et le front ennemi flottait loin de la ligne neutre.
+  const alignement = (selecteur) => {
+    const element = dom.window.document.querySelector(selecteur);
+    assert.ok(element, `élément introuvable : ${selecteur}`);
+    return dom.window.getComputedStyle(element).alignContent;
+  };
+  assert.equal(alignement('.card-row--ennemi[data-lignes="true"]'), 'end',
+    'les deux rangées adverses viennent contre la médiane');
+  assert.equal(alignement('.card-row--ennemi .rpg-creature-slots'), 'end',
+    'les cases dessinées suivent les cartes qu’elles portent');
+  assert.equal(alignement('.card-row--equipe[data-lignes="true"]'), 'start',
+    'l’équipe s’ancre par le haut de sa bande, donc près de la médiane aussi');
+  assert.equal(alignement('.card-row--equipe .rpg-creature-slots'), 'start');
+});
+
 test('sans le drapeau des lignes, rien de tout cela ne s’applique', () => {
   const simple = new JSDOM(`<!doctype html><div class="rpg-battle" data-mode-mana="essai">
     <div class="card-table"><div class="card-row card-row--equipe">

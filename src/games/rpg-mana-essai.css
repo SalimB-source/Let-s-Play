@@ -1078,6 +1078,22 @@
 .rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 2; }
 .rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 1; }
 
+/* La bande adverse est ancrée **par le bas**, juste au-dessus de la ligne
+   médiane (`bottom: calc(50% + 16px)`). Ses deux rangées doivent donc s'y
+   ranger : avec `align-content: start` elles restaient collées au haut de la
+   bande et laissaient un vide du côté du centre — le front ennemi flottait à
+   mi-table, plus loin de la médiane que celui du joueur. `end` colle le front
+   adverse à la ligne médiane, le fond juste au-dessus, en vis-à-vis exact de
+   l'équipe. Les cases dessinées suivent, sinon elles se désolidarisent des
+   cartes qu'elles portent. */
+/* Même préfixe que la règle de rangée (`…[data-mode-mana="essai"] .card-row[…]`,
+   trois classes) : sans lui, cette sélection plus faible perdrait, comme la
+   règle des cinq colonnes l'avait fait pour `grid-row`. */
+.rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"],
+.rpg-battle[data-mode-mana="essai"] .card-row--ennemi[data-lignes="true"] .rpg-creature-slots {
+  align-content: end;
+}
+
 /* Le fond protégé : un voile doré discret sur ses cases, et la ligne reste
    un peu en retrait — c'est une ligne plus lointaine, pas une seconde
    rangée de mêlée. */
