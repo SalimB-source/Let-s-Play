@@ -386,7 +386,7 @@
   overflow: hidden;
   --rpg-card-marker-size: 24px;
   border-width: 0;
-  border-radius: 12px 12px 7px 7px;
+  border-radius: var(--rpg-card-radius, 0px);
   background: #171218;
 }
 .rpg-atelier__carte-art > img {
@@ -2030,7 +2030,7 @@
     /* Le coût et les pierres d'effet débordent d'environ 36 % de leur taille.
        Une marge intérieure les garde dans chaque case, sans perdre de colonne. */
     padding: 0 12px 54px;
-    border-radius: 8px;
+    border-radius: var(--rpg-card-radius, 0px);
     background: #17151e;
     overflow: visible;
   }

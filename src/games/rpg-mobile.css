@@ -102,13 +102,12 @@
   /* La marge qui tient les terrains hors du cadre illustré — le cadre peint
      occupe ~4,2 % de la largeur de la table, quelle que soit la taille. */
   --terrain-inset: clamp(24px, 4.2vw, 160px);
-  /* Plus d'épaisseur de cadre, au doigt comme au clavier (voir les gabarits,
-     à zéro, en tête de `rpg-battle.css`) : ces deux variables restent, à zéro,
-     pour les `border: var(…)` de la feuille tactile. */
+  /* Même au doigt, les faces gardent leurs coins droits : les rayons et
+     l'épaisseur du cadre restent nuls pour les règles tactiles ci-dessous. */
   --rpg-card-border: 0px;
   --rpg-card-border-strong: 0px;
-  --rpg-card-radius: clamp(7px, 1.1vw, 12px);
-  --rpg-card-radius-sm: clamp(6px, 0.9vw, 10px);
+  --rpg-card-radius: 0px;
+  --rpg-card-radius-sm: 0px;
   /* Les repères de la grille, nommés une fois — le rail du tour et la barre de
      combat s'y accrochent aussi (voir plus bas). */
   --rpg-touch-pad: 6px;
@@ -274,7 +273,7 @@
   flex: none;
   margin-left: calc(var(--rpg-hidden-card-w) * -.4);
   border-width: clamp(1px, calc(var(--rpg-hidden-card-w) * .05), 2px);
-  border-radius: clamp(2px, calc(var(--rpg-hidden-card-w) * .16), 6px);
+  border-radius: var(--rpg-card-radius-sm, 0px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(236, 199, 117, .55);
 }
 .rpg-battle--touch .rpg-hidden-hand__card:first-child { margin-left: 0; }
@@ -594,7 +593,7 @@
 /* Les terrains restent sur le petit gabarit de `rpg-battle.css`
    (`--rpg-card-border-small`, zéro) : pas d'anneau non plus au doigt, seule la
    vignette rétrécit. */
-.rpg-battle--touch .rpg-terrain { flex: 0 0 var(--rpg-terrain-w); width: var(--rpg-terrain-w); height: var(--rpg-terrain-h); border-radius: var(--rpg-card-radius-sm, 8px); }
+.rpg-battle--touch .rpg-terrain { flex: 0 0 var(--rpg-terrain-w); width: var(--rpg-terrain-w); height: var(--rpg-terrain-h); border-radius: var(--rpg-card-radius-sm, 0px); }
 /* Les deux rangées se rapprochent symétriquement de la ligne médiane ; les
    cases et les zones tactiles se déplacent avec elles. */
 .rpg-battle--touch .card-table {
@@ -659,7 +658,7 @@
 .rpg-battle--touch .card-row .rpg-card-prison > .rpg-card,
 .rpg-battle--touch .card-row .rpg-card-stack > .rpg-card-prison > .rpg-card { width: 100%; }
 .rpg-battle--touch .card-row .rpg-card-stack > .rpg-card-prison { width: 100%; }
-.rpg-battle--touch .card-row .rpg-card { min-width: 0; min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 10px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.rpg-battle--touch .card-row .rpg-card { min-width: 0; min-height: 0; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius, 0px); touch-action: pan-x; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .rpg-battle--touch .card-row .rpg-card.is-selected { outline: 2px solid #ffe082; outline-offset: 2px; }
 .rpg-battle--touch .card-row .rpg-card.is-declared-attacker,
 .rpg-battle--touch .card-row .rpg-card.is-selected.is-declared-attacker {
@@ -981,7 +980,7 @@
   /* Les cartes de la main restent devant les terrains aux zones de chevauchement. */
   z-index: 42;
 }
-.rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 8px); touch-action: pan-x; -webkit-touch-callout: none; }
+.rpg-battle--touch .rpg-hand .rpg-hand__card { width: var(--duel-card); flex: 0 0 var(--duel-card); min-height: 0; height: auto; transform: none; border-width: var(--rpg-card-border, 2.5px); border-radius: var(--rpg-card-radius-sm, 0px); touch-action: pan-x; -webkit-touch-callout: none; }
 .rpg-battle--touch .rpg-hand .rpg-hand__card:hover:not(:disabled) { transform: none; }
 /* L'éventail de la souris est mis à zéro au doigt (voir « L'éventail de la
    main » dans `rpg-battle.css`) : les trois repères valent alors 0 et les
@@ -1104,7 +1103,7 @@
   flex: 0 0 48px;
   width: 48px;
   height: 60px;
-  border-radius: var(--rpg-card-radius-sm, 8px);
+  border-radius: var(--rpg-card-radius-sm, 0px);
 }
 
 /* Une pile visible par nom de carte, au doigt seulement : quand la main ou un
@@ -1122,10 +1121,10 @@
 }
 /* Les états de la carte pilotent leur propre `box-shadow` (halo de jouabilité,
    bleu pour ce qui se pose et teinté de la famille pour un sort, halo de
-   cible) : le bloc de la pile ne peint donc plus rien par-dessus. Il garde
-   seulement le rayon de la carte, pour que son contenu reste découpé rond. */
+   cible) : le bloc de la pile ne peint donc plus rien par-dessus. Il suit
+   seulement le contour carré de la carte, sans la découper en arrondi. */
 .rpg-card-stack {
-  border-radius: 12px;
+  border-radius: var(--rpg-card-radius, 0px);
 }
 .rpg-hand__pile-count,
 .rpg-card-stack__count,
@@ -1181,11 +1180,11 @@
    les cartes au-delà de l'écran et faisaient déborder la table. */
 /* Cartes en pile et cimetière : cadres cohérents */
 .rpg-battle--touch .rpg-card-stack {
-  border-radius: var(--rpg-card-radius, 10px);
+  border-radius: var(--rpg-card-radius, 0px);
 }
 .rpg-battle--touch .rpg-card-stack .rpg-card {
   border-width: var(--rpg-card-border, 2.5px);
-  border-radius: var(--rpg-card-radius, 10px);
+  border-radius: var(--rpg-card-radius, 0px);
 }
 
 /* Une main lisible : une carte = une cible, jamais deux cartes sous le doigt.
