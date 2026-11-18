@@ -59,6 +59,14 @@ export const listings = {
     "category": "GAMING · ID SOFTWARE",
     "readTime": "3 MIN READ"
   },
+  "/news/game-awards-2026-les-6-nommes-jeu-annee": {
+    "title": "GAME AWARDS 2026",
+    "accent": "THE 6 NOMINEES.",
+    "dek": "The Game Awards 2026 reveal their six Game of the Year nominees: GTA VI, Resident Evil Requiem, Phantom Blade Zero, 007 First Light, Control Resonant and Zelda: Ocarina of Time. The ceremony is set for 10 December in Los Angeles.",
+    "imageAlt": "Editorial Let’s Play cover composed from the six official nominee posters (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Layout by Let’s Play, not an official The Game Awards visual.",
+    "category": "GAMING · THE GAME AWARDS",
+    "readTime": "3 MIN READ"
+  },
   "/news/god-of-war-laufey-report-20-mai-2027": {
     "title": "GOD OF WAR LAUFEY",
     "accent": "FAYE WILL WAIT FOR MAY.",

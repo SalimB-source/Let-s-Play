@@ -97,6 +97,38 @@ export const dailyStories = {
     "sentiment": "mixed",
     "fallbackImage": "news/2026-11-18/google-home-nouveautes-novembre-2026.svg",
     "keywords": "GOOGLE HOME LA MAISON AJOUTE DES OPTIONS. Google détaille ses mises à jour Home du 17 novembre : clés numériques, descriptions sonores d’événements caméra et améliorations Gemini. Les fonctions ne partagent pas toutes les mêmes conditions d’accès."
+  },
+  "game-awards-2026-les-6-nommes-jeu-annee": {
+    "title": "GAME AWARDS 2026",
+    "accent": "LES 6 NOMMÉS.",
+    "category": "GAMING · THE GAME AWARDS",
+    "dek": "The Game Awards 2026 dévoilent leurs six nommés pour le Jeu de l’année : GTA VI, Resident Evil Requiem, Phantom Blade Zero, 007 First Light, Control Resonant et Zelda: Ocarina of Time. La cérémonie est fixée au 10 décembre à Los Angeles.",
+    "lead": "L’annonce officielle du 17 novembre ouvre la course au titre suprême. Notre édition du 18 revient sur la liste complète, sans ajouter de pronostic ni de classement : les six jeux sont présentés tels que publiés par l’organisation.",
+    "intro": "Les votes sont ouverts sur le site officiel jusqu’au 9 décembre à 21 h heure de l’Est. La soirée se tiendra le 10 décembre au Peacock Theater de Los Angeles, avec une diffusion en direct sur toutes les plateformes.",
+    "h2": "LES SIX NOMMÉS POUR LE JEU DE L’ANNÉE",
+    "p1": "La liste comprend Grand Theft Auto VI (Rockstar Games), Resident Evil Requiem (Capcom) et Phantom Blade Zero (S-Game). Ces trois titres concentrent une large part de l’attention, mais l’organisation ne publie aucun ordre de préférence entre eux.",
+    "p2": "Complètent la sélection 007 First Light (IO Interactive), Control Resonant (Remedy / Annapurna) et The Legend of Zelda: Ocarina of Time (Nintendo). Chaque studio est cité avec son jeu : ce sont les seuls crédits à retenir pour cette catégorie.",
+    "h2b": "VOTER AVANT LE 9 DÉCEMBRE",
+    "p3": "Le bulletin officiel invite à finaliser ses choix avant le 9 décembre à 21 h heure de l’Est, soit 3 h du matin le 10 décembre en Algérie. Passé ce délai, les votes enregistrés ne peuvent plus être modifiés : vérifiez votre sélection avant de valider.",
+    "p4": "La couverture de cet article est une composition éditoriale Let’s Play réalisée à partir des affiches fournies des six nommés ; ce n’est pas un visuel officiel de The Game Awards. Aucune vidéo officielle de l’annonce n’a été vérifiée pour être intégrée ici.",
+    "takeText": "Six jeux en lice pour le Jeu de l’année 2026, annoncés le 17 novembre. Cérémonie le 10 décembre à Los Angeles, votes ouverts jusqu’au 9 décembre sur le site officiel.",
+    "cover": "GAME AWARDS 2026",
+    "credit": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards.",
+    "imageAlt": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards.",
+    "imageCredit": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards.",
+    "readTime": "3 MIN DE LECTURE",
+    "take": "À RETENIR",
+    "sourceDetail": "Consulter la source officielle",
+    "source": "Source officielle : THE GAME AWARDS.",
+    "sourceName": "THE GAME AWARDS",
+    "sourceUrl": "https://thegameawards.com/nominees",
+    "sourceDate": "2026-11-17",
+    "image": "news/2026-11-18/game-awards-2026-les-6-nommes.jpg",
+    "thumbnail": "news/2026-11-18/game-awards-2026-les-6-nommes.jpg",
+    "date": "18.11.2026",
+    "sentiment": "mixed",
+    "fallbackImage": "news/2026-11-18/game-awards-2026-les-6-nommes.svg",
+    "keywords": "GAME AWARDS 2026 LES 6 NOMMÉS. The Game Awards 2026 dévoilent leurs six nommés pour le Jeu de l’année : GTA VI, Resident Evil Requiem, Phantom Blade Zero, 007 First Light, Control Resonant et Zelda: Ocarina of Time. La cérémonie est fixée au 10 décembre à Los Angeles."
   }
 };
 export const dailyNewsListing = Object.entries(dailyStories).map(([key, story]) => ({
