@@ -1,4 +1,5 @@
 import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
+import { champMax, filtreLigne, lignesActives } from './rpgLignes.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -21,7 +22,12 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
-  const possibles = adversaires.filter((e) => accessible(attaquant, e, ciblee));
+  // Le fond adverse est retiré des cibles tant qu'une créature tient le front ;
+  // Attaque ciblée et Infiltration passent la ligne (`rpgLignes.js`).
+  const atteignables = adversaires.filter((e) => accessible(attaquant, e, ciblee));
+  const possibles = lignesActives(duel)
+    ? filtreLigne(attaquant, adversaires, atteignables)
+    : atteignables;
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
   const directe = attaqueDirectePermise(attaquant, adversaires, possibles);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe };
@@ -33,12 +39,17 @@ export function rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantI
   if (!soloClassique(duel, cote) || rpgVainqueur(duel)) return false;
   const attaquant = duel[cote]?.creatures.find((e) => e.id === attaquantId);
   if (!creature(attaquant) || (cibleeAnnoncee && !attaquant.coupRapide)) return false;
-  if (cibleId === null) {
-    const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
-    const possibles = adversaires.filter((e) => accessible(attaquant, e, cibleeAnnoncee));
-    return attaqueDirectePermise(attaquant, adversaires, possibles);
-  }
-  return accessible(attaquant, duel[autre(cote)]?.creatures.find((e) => e.id === cibleId), Boolean(cibleeAnnoncee));
+  const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
+  const atteignables = adversaires.filter((e) => accessible(attaquant, e, Boolean(cibleeAnnoncee)));
+  const possibles = lignesActives(duel)
+    ? filtreLigne(attaquant, adversaires, atteignables)
+    : atteignables;
+  if (cibleId === null) return attaqueDirectePermise(attaquant, adversaires, possibles);
+  const cible = adversaires.find((e) => e.id === cibleId);
+  if (!cible) return false;
+  // Une cible annoncée dans le fond cesse d'être légale dès que le front tombe
+  // (ou l'inverse) : la légalité se relit toujours à l'état présent.
+  return possibles.includes(cible);
 }
 
 /** Déclare une attaque et ouvre la réponse adverse sans choisir de bloqueur. */
@@ -238,7 +249,7 @@ function perteSansGain(duel, probe, cote, attaquant) {
   const carte = duelCardById(attaquant.carteId);
   if (carte?.destruction || carte?.tenacite || attaquant.tenaciteDisponible
     // Sur un champ plein, libérer une place peut avoir une valeur ultérieure.
-    || (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote].creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX)
+    || (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote].creatures.length >= champMax(duel))
     || probe[cote].creatures.some((e) => e.id === attaquant.id) || rpgVainqueur(probe)) return false;
   const vueDuel = (etat) => {
     const { joueur, sorcier, log, combatDeclare, combatFeed, combatAnimations, combatAnimationSeq, ...visible } = etat;
