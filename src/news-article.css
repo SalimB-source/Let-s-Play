@@ -549,6 +549,11 @@
 .article-gallery-item figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 16px 13px;background:linear-gradient(transparent,rgba(5,6,15,.92));font:500 10px var(--mono);letter-spacing:.15em;color:#ffd619;text-transform:uppercase;text-align:left;pointer-events:none}
 .article-gallery-credit{margin-top:10px;font:400 11px/1.55 var(--body);color:var(--dim);letter-spacing:0;text-transform:none}
 [dir='rtl'] .article-gallery-item figcaption{text-align:right}
+.article-gallery-portrait .article-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.article-gallery-portrait .article-gallery-item{display:flex;flex-direction:column}
+.article-gallery-portrait .article-gallery-item:first-child:nth-last-child(n+3){grid-column:auto}
+.article-gallery-portrait .article-gallery-item img{aspect-ratio:4/5;object-fit:contain;background:#09081a;filter:none}
+.article-gallery-portrait .article-gallery-item figcaption{position:static;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line);line-height:1.4;letter-spacing:.11em}
 
 /* Chaque capture est un bouton : elle ouvre la visionneuse. Le bouton n'est
    qu'une enveloppe transparente — le cadre, l'ombre et le zoom au survol
@@ -621,6 +626,8 @@
   .article-gallery{margin:32px 0 28px}
   .article-gallery-grid{grid-template-columns:1fr;gap:12px}
   .article-gallery-item:first-child:nth-last-child(n+3){grid-column:auto}
+  .article-gallery-portrait .article-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .article-gallery-portrait .article-gallery-item figcaption{padding:8px 9px;font-size:9px;letter-spacing:.08em}
   /* Pas de survol au doigt : la loupe reste visible en permanence. */
   .article-gallery-zoom{opacity:1;transform:none}
   .article-lightbox{padding:12px}

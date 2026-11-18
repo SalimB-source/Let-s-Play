@@ -29,7 +29,7 @@ const pad = (value) => String(value).padStart(2, '0');
 // verrouillé, et les lecteurs vidéo de la page mis en pause à l'ouverture
 // (règle « une seule vidéo à la fois »). S'y ajoutent la navigation au clavier
 // (flèches, Début / Fin) et le balayage au doigt sur téléphone.
-export default function ArticleGallery({ label, meta, items = [], credit, creditSources = [] }) {
+export default function ArticleGallery({ label, meta, kind = 'captures', layout, items = [], credit, creditSources = [] }) {
   // Libellés d'interface (en-tête, visionneuse, commandes) traduits : les
   // légendes et crédits, eux, sont des DONNÉES éditoriales et restent tels quels.
   const { t: ui } = useLanguage();
@@ -100,11 +100,12 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
   if (!total) return null;
 
   const current = isOpen ? items[openIndex] : null;
+  const headingWord = kind === 'visuals' ? text('visuals', 'VISUELS') : text('captures', 'CAPTURES');
 
   return (
-    <figure className="article-gallery">
+    <figure className={`article-gallery${layout === 'portrait' ? ' article-gallery-portrait' : ''}`}>
       <div className="section-label">
-        <span><b>{text('captures', 'CAPTURES')}</b> / {label}</span>
+        <span><b>{headingWord}</b> / {label}</span>
         {meta ? <span>{meta}</span> : null}
       </div>
       <div className="article-gallery-grid">
@@ -159,7 +160,7 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
           >
             <div className="article-lightbox-head">
               <div>
-                <span className="article-lightbox-kicker">{text('captures', 'CAPTURES')} / {label}</span>
+                <span className="article-lightbox-kicker">{headingWord} / {label}</span>
                 {meta ? <strong>{meta}</strong> : null}
               </div>
               <button type="button" ref={closeRef} className="article-lightbox-close" onClick={close} aria-label={text('closeViewer', 'Fermer la visionneuse')}>✕</button>
