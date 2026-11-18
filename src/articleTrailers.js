@@ -136,9 +136,17 @@ export const articleTrailers = {
   "game-awards-2026-les-6-nommes-jeu-annee": {
     "label": "GAME AWARDS 2026",
     "meta": "THE GAME AWARDS",
-    "items": [],
-    "credit": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards.",
-    "pending": "Aucune vidéo officielle de l’annonce des nommés n’a été vérifiée pour être intégrée ici. La couverture éditoriale illustre l’article ; aucune vidéo générique ou republication non officielle n’est substituée."
+    "items": [
+      {
+        "id": "_e0oJSfmIFU",
+        "kind": "presentation",
+        "title": "THE GAME AWARDS: 2026 Nominee Reveal! (Game of the Year)",
+        "channel": "The Game Awards",
+        "note": "Présentation officielle des nommés publiée le 17 novembre 2026 par The Game Awards, animée par Geoff Keighley. Elle révèle les nommés dans plus de 30 catégories, dont les six du Jeu de l’année ; durée 11 min 23.",
+        "verified": "18.11.2026"
+      }
+    ],
+    "credit": "Couverture éditoriale Let’s Play composée à partir des six affiches officielles des nommés (Rockstar Games, Capcom, S-Game, IO Interactive, Remedy / Annapurna, Nintendo). Mise en page Let’s Play, pas un visuel officiel de The Game Awards."
   }
 ,
 "gta-6-discord-theme-vice-city": {

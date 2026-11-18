@@ -207,6 +207,11 @@ const OFFICIAL_CHANNELS = new Set([
   'Octopus Panic',
   'DCM - Romandie',
   'Warner Bros. France',
+  // Chaîne vérifiée sur la page YouTube publique le 18.11.2026 pour l'édition
+  // du 18 novembre : « THE GAME AWARDS: 2026 Nominee Reveal! (Game of the
+  // Year) » (_e0oJSfmIFU), upload de @thegameawards, révélation officielle
+  // des nommés du 17 novembre 2026 animée par Geoff Keighley.
+  'The Game Awards',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
