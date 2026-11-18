@@ -8,7 +8,7 @@ import { JSDOM } from 'jsdom';
 // colonnes pose `grid-row: 1` sur toutes les cartes du champ ; une règle de
 // rangée plus faible perdait, le fond se dessinait dans la rangée du front et
 // une archère venait se poser sur la case d'un corps à corps.
-const feuilles = ['rpg-battle', 'rpg-mobile', 'rpg-mana-essai'];
+const feuilles = ['rpg-battle', 'rpg-mobile', 'rpg-mana-essai', 'rpg-avatars-plateau'];
 const css = feuilles.map((nom) => readFileSync(new URL(`../src/games/${nom}.css`, import.meta.url), 'utf8')).join('\n');
 
 function plateau(cote) {
@@ -88,6 +88,45 @@ test('la bande adverse se range contre la ligne médiane, l’équipe juste en d
   assert.equal(alignement('.card-row--equipe[data-lignes="true"]'), 'start',
     'l’équipe s’ancre par le haut de sa bande, donc près de la médiane aussi');
   assert.equal(alignement('.card-row--equipe .rpg-creature-slots'), 'start');
+});
+
+test('cartes et cases partagent exactement les deux mêmes rangées', () => {
+  // Une carte fait 4/5 de sa largeur : ses deux rangées mesurent 1,25 × la
+  // colonne, et les cases dessinées doivent se poser sur ces rangées-là. Deux
+  // grilles en `min-content` dérivaient l'une de l'autre — les cases tombaient
+  // entre deux rangées de cartes.
+  const rangées = (selecteur) => {
+    const element = dom.window.document.querySelector(selecteur);
+    assert.ok(element, `élément introuvable : ${selecteur}`);
+    return dom.window.getComputedStyle(element).gridTemplateRows;
+  };
+  for (const selecteur of ['.card-row--equipe', '.card-row--equipe .rpg-creature-slots',
+    '.card-row--ennemi', '.card-row--ennemi .rpg-creature-slots']) {
+    assert.equal(rangées(selecteur), 'repeat(2, calc(var(--essai-colonne) * 1.25))', selecteur);
+  }
+});
+
+test('au doigt, chaque bande du champ prend au moins la hauteur de ses deux rangées', () => {
+  // La bande du sorcier vaut la moitié de la table moins le bandeau d'avatar.
+  // Sur un écran court, deux rangées n'y tiennent pas : le contenu débordait de
+  // sa bande et, la bande adverse se rangeant par le bas, ses cases venaient
+  // s'entrelacer avec celles du joueur.
+  const monter = (lignes) => {
+    const page = new JSDOM(`<!doctype html><div class="rpg-battle rpg-battle--touch"
+      data-mode-mana="essai" data-scene="duel"><div class="card-table">
+      <div class="card-row card-row--equipe"${lignes ? ' data-lignes="true"' : ''}>
+        <div class="rpg-creature-slots"></div>
+      </div></div></div>`, { pretendToBeVisual: true });
+    const feuille = page.window.document.createElement('style');
+    feuille.textContent = css;
+    page.window.document.head.appendChild(feuille);
+    return page.window.getComputedStyle(page.window.document.querySelector('.card-table')).gridTemplateRows;
+  };
+  const deuxLignes = monter(true);
+  assert.equal((deuxLignes.match(/minmax\(min-content/g) ?? []).length, 2,
+    'les deux bandes du champ ont un plancher de contenu');
+  assert.equal(monter(false).includes('min-content'), false,
+    'une seule rangée : la grille mobile du champ ne change pas');
 });
 
 test('sans le drapeau des lignes, rien de tout cela ne s’applique', () => {
