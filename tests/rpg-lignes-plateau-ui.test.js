@@ -79,6 +79,21 @@ test('le plateau dessine les deux lignes : dix cases, le fond derrière', async 
     assert.equal(carteArchiere.dataset.ligne, 'fond', 'l’archère est derrière');
     assert.equal(carteArchiere.style.getPropertyValue('--case-col'), '1');
     assert.ok(rangees.length >= 2);
+
+    // Une carte « À distance » égarée sur une case du front — partie reprise
+    // d'avant les deux lignes, créature ranimée sans place dans son fond — se
+    // redessine au fond. Ni la carte ni sa case ne doivent la montrer devant.
+    archiere.entite.emplacement = 2;
+    await act(async () => root.render(React.createElement(Page, {
+      pvp: { vue: duel, seq: 2, onIntention: async () => ({ ok: true }), onQuitter() {}, onAbandon() {} },
+    })));
+    const egaree = document.querySelector(`.rpg-card[data-entity-id="${archiere.entite.id}"]`);
+    assert.ok(egaree, 'la créature reste sur la table');
+    assert.equal(egaree.dataset.ligne, 'fond', 'l’archère reste derrière, même mal placée');
+    const caseEgaree = document.querySelector(`.rpg-creature-slot[data-creature-slot-occupe="true"].is-fond`);
+    assert.ok(caseEgaree, 'sa case est celle du fond');
+    assert.equal(joueur.querySelectorAll('.rpg-creature-slot.is-front.is-occupied').length, 1,
+      'le front ne garde que la mêlée');
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close();

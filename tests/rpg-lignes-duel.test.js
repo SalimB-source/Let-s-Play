@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgEmplacementsChamp } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique } from '../src/games/rpgCombatIndividuelClassique.js';
-import { champMax, ligneDe, frontTient, RPG_LIGNE_FRONT, RPG_LIGNE_FOND } from '../src/games/rpgLignes.js';
+import { champMax, ligneDe, ligneDeCase, frontTient, RPG_LIGNE_FRONT, RPG_LIGNE_FOND, RPG_LIGNES_CASES } from '../src/games/rpgLignes.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { etatInitial } from '../src/server/sablierArbitre.js';
 
@@ -168,4 +168,39 @@ test('« À distance » tire sans riposte mais ne voit pas le fond : l’Attaque
   // Le privilège de la ligne reste à l’Attaque ciblée (et à l’Infiltration).
   tireur.coupRapide = true;
   assert.ok(cibles().includes(fond.id), 'l’Attaque ciblée passe le front');
+});
+
+test('une carte à distance retrouvée sur une case du front se redessine au fond', () => {
+  const { d, poserOk } = table();
+  d.tour = 'joueur';
+  const melee = poserOk('joueur', MELEE);
+  const archiere = poserOk('joueur', DISTANCE);
+  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
+  // Partie reprise : la case de l'archère est celle d'un corps à corps.
+  archiere.emplacement = 2;
+  const cases = rpgEmplacementsChamp(d.joueur, champMax(d));
+  const place = cases.findIndex((entite) => entite?.id === archiere.id);
+  assert.equal(ligneDeCase(place), RPG_LIGNE_FOND, 'elle réapparaît derrière, jamais au front');
+  assert.equal(cases[2]?.id, undefined, 'la case 2 du front reste libre');
+  assert.equal(cases.findIndex((entite) => entite?.id === melee.id), melee.emplacement,
+    'la mêlée garde sa case');
+  // Une mêlée égarée au fond remonte de la même façon.
+  melee.emplacement = 7;
+  const apres = rpgEmplacementsChamp(d.joueur, champMax(d));
+  assert.equal(ligneDeCase(apres.findIndex((entite) => entite?.id === melee.id)), RPG_LIGNE_FRONT);
+});
+
+test('hors deux lignes, une créature garde sa case, quel que soit son trait', () => {
+  // Le champ d'une seule ligne (cinq cases) ne réordonne rien : la remise dans
+  // la ligne ne s'applique qu'au plateau à deux lignes.
+  const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], modeMana: RPG_MODE_MANA_ESSAI,
+    joueurCouleurs: ['braise'], sorcierCouleurs: ['neige'], rng: () => .9 });
+  d.joueur.creatures = [
+    { id: 'a', carteId: DISTANCE, emplacement: 0 },
+    { id: 'b', carteId: MELEE, emplacement: 2 },
+  ];
+  const cases = rpgEmplacementsChamp(d.joueur, RPG_LIGNES_CASES);
+  assert.equal(cases[0]?.id, 'a');
+  assert.equal(cases[2]?.id, 'b');
+  assert.equal(cases.filter(Boolean).length, 2);
 });
