@@ -11,6 +11,14 @@ export const listings = {
     "category": "سينما ومسلسلات · نتفليكس",
     "readTime": "قراءة دقيقتين"
   },
+  "/news/cinema/gentle-monster-netflix-18-novembre": {
+    "title": "GENTLE MONSTER",
+    "accent": "الثقة تبدأ بالتصدع.",
+    "dek": "فيلم Gentle Monster من كتابة وإخراج ماري كرويتزر معلن على نتفليكس في 18 نوفمبر ضمن خمس أسواق محددة. تؤدي ليا سيدو دور عازفة بيانو تقلب زيارة الشرطة حياتها العائلية.",
+    "imageAlt": "صورة رسمية لفيلم Gentle Monster نشرتها Netflix Tudum. تصوير: فريديريك باتييه. © أصحاب الحقوق / Netflix.",
+    "category": "سينما · نتفليكس",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/cinema/godzilla-minus-zero-sortie-france-4-novembre-2026": {
     "title": "غودزيلا مينوس زيرو",
     "accent": "يصل إلى فرنسا.",
@@ -75,6 +83,14 @@ export const listings = {
     "category": "ألعاب · GTA VI وديسكورد",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/gta-6-miami-heat-night-vice-city-18-novembre": {
+    "title": "GTA VI",
+    "accent": "فايس سيتي تدخل الملعب.",
+    "dek": "يبرمج ميامي هيت أمسية A Night in Vice City أمام ميلووكي باكس في 18 نوفمبر. ويرافق الحدث في Kaseya Center ملعب خاص وأزياء وأنشطة مرتبطة بلعبة GTA VI.",
+    "imageAlt": "صورة رسمية لأمسية A Night in Vice City من ميامي هيت. © Miami HEAT / Rockstar Games. رسم ترويجي، لا لقطة لعب.",
+    "category": "ألعاب · GTA VI وNBA",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/gta-6-precommandes-estimations-sensor-tower-novembre": {
     "title": "GTA VI",
     "accent": "طلبات مسبقة تُقدَّر بـ751 مليون دولار.",
@@ -105,6 +121,14 @@ export const listings = {
     "dek": "تعلن غوغل أن Gemini Notebook يستطيع تحويل مصادر دفتر إلى مواقع تفاعلية: مواد للمراجعة ولوحات بيانات وأدوات لتتبّع المشاريع. يبدأ الإطلاق على الويب للمستخدمين من عمر 18 عاماً فما فوق.",
     "imageAlt": "رسم رسمي من غوغل لجدول دوري تفاعلي في Gemini Notebook، نُشر في 16 نوفمبر 2026. عرض توضيحي من المورّد، لا نتيجة أنتجها فريقنا.",
     "category": "تقنية · GOOGLE LABS",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/google-home-nouveautes-novembre-2026": {
+    "title": "GOOGLE HOME",
+    "accent": "خيارات إضافية للمنزل.",
+    "dek": "تفصّل غوغل تحديثات Home ليوم 17 نوفمبر: مفاتيح رقمية وأوصاف صوتية لأحداث الكاميرا وتحسينات Gemini. ولا تتشارك كل الوظائف شروط الوصول نفسها.",
+    "imageAlt": "رسم رسمي لتحديثات Google Home نُشر في 17 نوفمبر 2026. © Google. صورة ترويجية، لا اختبار أجراه فريقنا.",
+    "category": "تقنية · GOOGLE NEST",
     "readTime": "قراءة في 3 دقائق"
   },
   "/news/tech/openai-pierre-acquisition-codex-5-novembre": {

@@ -647,5 +647,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-17",
     "section": "Actualités tech"
+  },
+  "/news/gta-6-miami-heat-night-vice-city-18-novembre": {
+    "title": "GTA VI VICE CITY ENTRE SUR LE PARQUET. — Let’s Play",
+    "description": "Le Miami HEAT programme « A Night in Vice City » le 18 novembre face aux Milwaukee Bucks. Un parquet spécial, des tenues et des animations GTA VI accompagnent cette soirée au Kaseya Center.",
+    "image": "https://cdn.nba.com/teams/static/heat/images/global/opengraph/vice-city-night.jpg",
+    "type": "article",
+    "published": "2026-11-18",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/gentle-monster-netflix-18-novembre": {
+    "title": "GENTLE MONSTER LA CONFIANCE SE FISSURE. — Let’s Play",
+    "description": "Gentle Monster, écrit et réalisé par Marie Kreutzer, est annoncé sur Netflix le 18 novembre dans cinq marchés précis. Léa Seydoux incarne une pianiste dont la vie familiale bascule après une visite de la police.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQVqBm38uZXz5gOG00I1lCWWC1B68b7bX4-8-wuCA7mpDWVW2P1Z0MHcYEyulz3dunRXwMYvL419Td91SV8K902yAQx84bodQ_3JbqsQ2rTtUes3uLSGYEce3JgAOW3AYzcYa49aC_0w6qm_M3HYFAzp6lEg.jpg?r=975",
+    "type": "article",
+    "published": "2026-11-18",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/google-home-nouveautes-novembre-2026": {
+    "title": "GOOGLE HOME LA MAISON AJOUTE DES OPTIONS. — Let’s Play",
+    "description": "Google détaille ses mises à jour Home du 17 novembre : clés numériques, descriptions sonores d’événements caméra et améliorations Gemini. Les fonctions ne partagent pas toutes les mêmes conditions d’accès.",
+    "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/resized_S0_Hero_-_Desktop_copy.max-1440x810.png",
+    "type": "article",
+    "published": "2026-11-18",
+    "section": "Actualités tech"
   }
 };

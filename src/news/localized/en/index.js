@@ -11,6 +11,14 @@ export const listings = {
     "category": "CINEMA & SERIES · NETFLIX",
     "readTime": "2 MIN READ"
   },
+  "/news/cinema/gentle-monster-netflix-18-novembre": {
+    "title": "GENTLE MONSTER",
+    "accent": "TRUST BEGINS TO CRACK.",
+    "dek": "Gentle Monster, written and directed by Marie Kreutzer, is announced on Netflix for 18 November in five specified markets. Léa Seydoux plays a pianist whose family life is shattered by a police visit.",
+    "imageAlt": "Official Gentle Monster photograph published by Netflix Tudum. Photography: Frédéric Batier. © Rights holders / Netflix.",
+    "category": "CINEMA · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
   "/news/cinema/godzilla-minus-zero-sortie-france-4-novembre-2026": {
     "title": "GODZILLA MINUS ZERO",
     "accent": "OPENS IN FRANCE.",
@@ -75,6 +83,14 @@ export const listings = {
     "category": "GAMING · GTA VI & DISCORD",
     "readTime": "3 MIN READ"
   },
+  "/news/gta-6-miami-heat-night-vice-city-18-novembre": {
+    "title": "GTA VI",
+    "accent": "VICE CITY TAKES THE COURT.",
+    "dek": "The Miami HEAT schedules A Night in Vice City against the Milwaukee Bucks on 18 November. A special court, uniforms and GTA VI activities accompany the event at Kaseya Center.",
+    "imageAlt": "Official Miami HEAT A Night in Vice City visual. © Miami HEAT / Rockstar Games. Promotional illustration, not a gameplay screenshot.",
+    "category": "GAMING · GTA VI & NBA",
+    "readTime": "3 MIN READ"
+  },
   "/news/gta-6-precommandes-estimations-sensor-tower-novembre": {
     "title": "GTA VI",
     "accent": "PRE-ORDERS ESTIMATED AT $751M.",
@@ -105,6 +121,14 @@ export const listings = {
     "dek": "Google says Gemini Notebook can turn a notebook’s sources into interactive sites: study aids, dashboards or project trackers. The rollout starts on the web for users aged 18 and over.",
     "imageAlt": "Official Google illustration of an interactive periodic table for Gemini Notebook, published on 16 November 2026. Supplier demonstration, not a result produced by our team.",
     "category": "TECH · GOOGLE LABS",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/google-home-nouveautes-novembre-2026": {
+    "title": "GOOGLE HOME",
+    "accent": "MORE OPTIONS FOR THE HOME.",
+    "dek": "Google details its 17 November Home updates: digital keys, audio descriptions of camera events and Gemini improvements. The features do not all have the same access conditions.",
+    "imageAlt": "Official Google Home updates illustration published on 17 November 2026. © Google. Promotional visual, not an editorial test.",
+    "category": "TECH · GOOGLE NEST",
     "readTime": "3 MIN READ"
   },
   "/news/tech/openai-pierre-acquisition-codex-5-novembre": {

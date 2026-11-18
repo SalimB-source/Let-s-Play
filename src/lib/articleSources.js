@@ -26,6 +26,8 @@ export function officialSourceUrl(value) {
     if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
     const host = url.hostname.toLowerCase();
     // Only these individually reviewed pages, never the whole hosting platform.
+    // Official Miami HEAT event page reviewed for the 18 November edition.
+    if (url.href === 'https://www.nba.com/heat/uniforms/2627-heat-vice-city-uniform-collection') return url.href;
     // Official Discord product announcement, not a community server or user content.
     if (url.href === 'https://discord.com/blog/vice-city-theme-available-in-discord') return url.href;
     if (url.href === 'https://www.facebook.com/photo/?fbid=1787284180064227&set=pb.100063479863011.-2207520000') return url.href;

@@ -111,6 +111,29 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+
+  "gta-6-miami-heat-night-vice-city-18-novembre": {
+    "label": "GTA VI",
+    "meta": "MIAMI HEAT",
+    "items": [],
+    "credit": "Visuel officiel « A Night in Vice City » du Miami HEAT. © Miami HEAT / Rockstar Games. Illustration promotionnelle, pas une capture de gameplay.",
+    "pending": "Aucune vidéo officielle propre à cette soirée n’a été vérifiée. Le visuel de l’organisateur illustre l’événement ; aucun ancien trailer GTA VI n’est présenté comme sa vidéo."
+  },
+  "cinema/gentle-monster-netflix-18-novembre": {
+    "label": "GENTLE MONSTER",
+    "meta": "NETFLIX TUDUM",
+    "items": [],
+    "credit": "Photographie officielle de Gentle Monster publiée par Netflix Tudum. Photographie : Frédéric Batier. © Ayants droit / Netflix.",
+    "pending": "Le trailer est accessible depuis la fiche officielle Netflix Tudum. Aucun upload YouTube officiel n’a été vérifié pour intégration ; aucune copie non officielle ne le remplace."
+  },
+  "tech/google-home-nouveautes-novembre-2026": {
+    "label": "GOOGLE HOME",
+    "meta": "GOOGLE",
+    "items": [],
+    "credit": "Illustration officielle des nouveautés Google Home publiée le 17 novembre 2026. © Google. Visuel promotionnel, pas un test de la rédaction.",
+    "pending": "Aucune vidéo officielle dédiée à ce lot de mises à jour n’a été vérifiée. Le visuel du billet Google illustre l’article, sans vidéo générique de remplacement."
+  }
+,
 "gta-6-discord-theme-vice-city": {
   "label": "GTA VI",
   "meta": "DISCORD",

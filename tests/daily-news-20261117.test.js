@@ -35,7 +35,7 @@ test('17 novembre : trois articles complets et officiels sans collision', () => 
 });
 
 test('édition du 17 en une, GTA en tête et archives conservées', () => {
-  for (const page of ['Home', 'News']) assert.ok(read(`src/pages/${page}.jsx`).includes("from '../news/daily/2026-11-17'"));
+  for (const page of ['Home', 'News']) assert.ok(read(`src/pages/${page}.jsx`).includes("from '../news/daily/2026-11-18'"));
   for (const file of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/search/searchIndex.js']) {
     const text = read(file);
     for (const day of ['17', '16', '15', '14', '13', '12']) assert.ok(text.includes(`from '../news/daily/2026-11-${day}'`));
