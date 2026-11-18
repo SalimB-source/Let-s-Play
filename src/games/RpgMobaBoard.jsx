@@ -1,4 +1,9 @@
+import { RpgAdieuAutonome } from './RpgAdieuAutonome.jsx';
+import { RpgAmbiancePlateau, RpgDangerVie } from './RpgAmbiancePlateau.jsx';
+import { rpgVieCritique } from './rpgAmbianceVisuelle.js';
 import RpgCadreCarte from './RpgCadreCarte.jsx';
+import { rpgLumiereElementaire } from './rpgReliefVisuel.js';
+import './rpg-relief-visuel.css';
 import RpgCritiqueVisuel from './RpgCritiqueVisuel.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
@@ -711,7 +716,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     });
     if (!disparues.length && !victimes.length) return;
     onPlaySfx?.(disparues.some((item) => item.bruleeParBraise) ? 'flame_gust' : 'destruction_hit');
-    if (!rpgAnimationsReduites() && rendu?.FantomeCarteDetruite) setFantomes((old) => [...old, ...disparues]);
+    if (!rpgAnimationsReduites()) setFantomes((old) => [...old, ...disparues]);
   };
   const confirmerMulligan = () => {
     const result = rpgMobaMulligan(duel, mulliganSide, mulliganIndices);
@@ -1591,6 +1596,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         aria-hidden="true" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}${plateauMoba.ruines[lane.id]}")` }} />)}
     <div className="moba__field-scroll" role="region" aria-label="Plateau des trois voies" tabIndex={0}>
     <div className="moba__battlefield" ref={terrainRef}>
+    <RpgAmbiancePlateau plateau={plateauMoba.id} />
     {Object.entries(projectilesVisuels).map(([id, tir]) => <span key={id} className={`rpg-projectile-combat rpg-projectile-combat--${tir.variante}`} data-moba-projectile={tir.variante} aria-hidden="true" style={{ left: tir.x, top: tir.y, '--tir-dx': `${tir.dx}px`, '--tir-dy': `${tir.dy}px`, '--tir-angle': `${tir.angle}deg` }}><span className="rpg-projectile-combat__tete" /></span>)}
     {Object.entries(signaturesVisuelles).map(([id, effet]) => {
       const Composant = effet.type === 'feu' ? rendu?.RoueDeFeu : effet.type === 'sable' ? rendu?.TempeteSable : rendu?.EclairDuMarteau;
@@ -1604,6 +1610,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         {!impactIndividuel.tirCible && <line className="moba__impact-trail" x1={impactIndividuel.source.x} y1={impactIndividuel.source.y} x2={impactIndividuel.destination.x} y2={impactIndividuel.destination.y} pathLength="1" />}
       </>}
       {impactIndividuel.impacts.map((impact, index) => impact.point && <g key={`${impact.id}-${index}`} className={`moba__impact-mark${impact.critique ? ' is-critical' : ''}`} transform={`translate(${impact.point.x} ${impact.point.y})`}>
+        <ellipse className="rpg-impact-ombre" cy="18" rx="37" ry="11" />
+        <ellipse className="rpg-impact-onde" cy="18" rx="37" ry="11" />
         <circle className="moba__impact-burst" r="22" />
         <text className="moba__impact-number" x={impact.decalageX || undefined} y="-18" textAnchor="middle">−{impact.montant}</text>
       </g>)}
@@ -1615,6 +1623,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       {duel.moba.lanes.map((lane) => <section key={lane.id} className={`moba__lane${lane.active ? '' : ` is-conquered is-conquered--${lane.conqueredBy}${lane.id !== 'center' ? ' is-sealed' : ' is-center-conquered'}`}`} aria-label={voies[lane.id]}>
         {conquetesVisuelles[lane.id] && <div key={conquetesVisuelles[lane.id].token} className={`moba__conquest-fx moba__conquest-fx--${conquetesVisuelles[lane.id].side}`} aria-hidden="true"><i /><i /><i /></div>}
         {['sorcier', 'joueur'].map((side) => <div className={`moba__side moba__side--${side}${rattachement?.side === side && lane.id === 'center' ? ' is-joined-center' : ''}${rattachement?.side === side && lane.id === rattachement.laneId ? ' is-joined-flank' : ''}${!lane.active && lane.id === 'center' && lane.conqueredBy !== side ? ' is-lost-center' : ''}`} key={side} inert={!mobaVoieJouable(duel.moba, side, lane.id)} aria-hidden={!mobaVoieJouable(duel.moba, side, lane.id)}>
+          {!fini && lane.active && rpgVieCritique(lane.hp[side], mobaVieMaxPourCamp(duel.moba, side, lane.id)) && <RpgDangerVie cote={side} />}
           {side === 'joueur' && <div className="moba__frontline" aria-hidden="true"><span>✦</span></div>}
           {/* Les PV du centre disparaissent ; les deux flancs gardent leurs jauges. */}
           {!(lane.id === 'center' && lane.conqueredBy === side) && <div className="moba__health" data-moba-lane-hp={`@moba:${lane.id}:${side}`}><span>{noms[side]}</span><div className="moba__health-bar" role="progressbar" aria-label={`${voies[lane.id]}, ${noms[side]}`} aria-valuemin={0} aria-valuemax={mobaVieMaxPourCamp(duel.moba, side, lane.id)} aria-valuenow={lane.hp[side]}><i style={{ width: `${lane.hp[side] / mobaVieMaxPourCamp(duel.moba, side, lane.id) * 100}%` }} /></div><strong key={`${lane.id}-${side}-${lane.hp[side]}`} className={events.some((e) => e.laneId === lane.id && e.targetSide === side && e.damage > 0) ? 'is-damaged' : soinsVoies.some((e) => e.laneId === lane.id && e.side === side && e.healing > 0) ? 'is-healed' : ''}>{lane.hp[side]}<small> / {mobaVieMaxPourCamp(duel.moba, side, lane.id)}</small></strong>{soinsParVoie[`${lane.id}:${side}`] > 0 && <span key={soinsVoiesEtat.token} className="moba__lane-heal" aria-hidden="true">+{soinsParVoie[`${lane.id}:${side}`]}</span>}{etape === 'tour' && !iaAgit && !destruction && !site && !defausse && !fini && side === defenseur && lane.active && cibleRapideEnCours && !cibleVoieEnCours && rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, lane.id).directe && <button type="button" className="moba__attack-direct" aria-label={`Attaquer directement ${voies[lane.id].toLowerCase()} de ${noms[side]}`} onClick={() => declarer(cibleRapideEnCours, null, lane.id)}>⚔ Attaquer</button>}</div>}
@@ -1680,12 +1689,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
               // Un retour très rapide met fin à son départ, même dans une autre case.
               && !rpgMobaSortieRemplacee(item, retoursExil));
             const tourbillons = sortiesCase.length > 0 && <div className="moba__departure-zone" aria-hidden="true">{sortiesCase.map((effet) => <TourbillonEau key={effet.effectId} effet={effet} />)}</div>;
-            const fantomesCase = rendu?.FantomeCarteDetruite ? fantomes.filter((item) => item.laneId === lane.id && item.side === side && item.slot === i) : [];
+            const fantomesCase = fantomes.filter((item) => item.laneId === lane.id && item.side === side && item.slot === i);
             const critiquesDisparues = Object.entries(combatFeedback?.critiques ?? {}).filter(([, effet]) => effet.position?.laneId === lane.id && effet.position?.side === side && effet.position?.slot === i)
               .map(([critiqueId, effet]) => <span className="moba__critique-disparue" key={`${critiqueId}-${effet.token}`}><RpgCritiqueVisuel fois={effet.fois} /></span>);
-            const adieux = fantomesCase.map((effet) => <rendu.FantomeCarteDetruite key={effet.effectId} effet={effet} onTermine={(effectId) => setFantomes((old) => old.filter((item) => item.effectId !== effectId))} />);
+            const Fantome = rendu?.FantomeCarteDetruite ?? RpgAdieuAutonome;
+            const adieux = fantomesCase.map((effet) => <Fantome key={effet.effectId} effet={effet} onTermine={(effectId) => setFantomes((old) => old.filter((item) => item.effectId !== effectId))} />);
             const invocationEnCours = Boolean(entity && cerclesSacrifice.some((effet) => effet.entiteArriveeId === id || (rituelSacrificeRef.current && effet.entityId === id)));
             const soutien = entity && <>
+              {entreesVisuelles[id] && !invocationEnCours && !rendu?.TableCard && <span key={`lumiere-${entreesVisuelles[id].token}`} className="rpg-lumiere-invocation rpg-lumiere-invocation--case" style={rpgLumiereElementaire(cardById(entity.carteId))} aria-hidden="true" />}
               {entreesVisuelles[id] && !invocationEnCours && <span key={`entree-${entreesVisuelles[id].token}`} className={`moba__summon-fx${entreesVisuelles[id].origine === 'retour-exil' ? ' moba__summon-fx--retour-exil' : ''}`} aria-hidden="true"><i /><i /><i /></span>}
               {boucliersAjoutes[id] && <span key={`bouclier-${boucliersAjoutes[id]}`} className="moba__shield-fx" aria-hidden="true"><i /></span>}
               {!rendu?.TableCard && soinsCreatures[id] && <span key={`soin-${soinsCreatures[id].token}`} className="moba__creature-heal" aria-hidden="true">+{soinsCreatures[id].montant}</span>}

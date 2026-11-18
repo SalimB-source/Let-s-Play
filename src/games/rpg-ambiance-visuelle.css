@@ -1,0 +1,72 @@
+/* Poussières, neige et reflets restent derrière les cartes, sans WebGL. */
+.rpg-ambiance {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-ambiance--adverse { clip-path: inset(0 0 calc(100% - var(--rpg-frontiere, 50%)) 0); }
+.rpg-ambiance--joueur { clip-path: inset(var(--rpg-frontiere, 50%) 0 0 0); }
+.rpg-ambiance i {
+  position: absolute;
+  left: var(--x); top: var(--y);
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #efd19b;
+  opacity: 0;
+  animation: rpg-ambiance-flotte 9s linear infinite;
+  animation-delay: var(--delai);
+}
+.rpg-ambiance--sable i { background: #f5d28c; width: 5px; height: 2px; }
+.rpg-ambiance--neige i { background: #e1f4ff; width: 4px; height: 4px; animation-name: rpg-ambiance-neige; }
+.rpg-ambiance--eau i { background: #d0ffff; width: 10px; height: 2px; animation-name: rpg-ambiance-reflet; }
+.rpg-ambiance--braise i { background: #ffae62; width: 3px; height: 3px; animation-name: rpg-ambiance-braise; }
+.rpg-ambiance--petales i { background: #f8d6d9; width: 5px; height: 3px; animation-name: rpg-ambiance-neige; }
+.rpg-ambiance--brume i { background: #c9b5db; width: 10px; height: 6px; filter: blur(3px); }
+@keyframes rpg-ambiance-flotte { 0%, 100% { opacity: 0; transform: translate(-8px, 0); } 30%, 70% { opacity: .32; } 100% { transform: translate(18px, -5px); } }
+@keyframes rpg-ambiance-neige { 0%, 100% { opacity: 0; transform: translate(-4px, -10px); } 25%, 75% { opacity: .42; } 100% { transform: translate(9px, 18px); } }
+@keyframes rpg-ambiance-braise { 0%, 100% { opacity: 0; transform: translate(0, 6px); } 35%, 65% { opacity: .5; } 100% { transform: translate(6px, -24px); } }
+@keyframes rpg-ambiance-reflet { 0%, 100% { opacity: 0; transform: scaleX(.5); } 50% { opacity: .35; transform: scaleX(1.4); } }
+
+/* La bande n'occupe que le bord du camp ou de la voie concernée. */
+.rpg-danger-vie {
+  position: absolute;
+  z-index: 1;
+  left: 0; right: 0;
+  height: 24%;
+  pointer-events: none;
+  opacity: .55;
+  animation: rpg-danger-pulsation 3.2s ease-in-out infinite;
+}
+.rpg-danger-vie--adverse, .rpg-danger-vie--sorcier { top: 0; background: linear-gradient(to bottom, #9d231e80, transparent); }
+.rpg-danger-vie--joueur { bottom: 0; background: linear-gradient(to top, #9d231e80, transparent); }
+.moba__side > .rpg-danger-vie { height: 32%; z-index: 1; }
+@keyframes rpg-danger-pulsation { 0%, 100% { opacity: .35; } 50% { opacity: .7; } }
+
+.rpg-adieu-complement { position: absolute; z-index: 56; overflow: visible; pointer-events: none; }
+.rpg-carte-delitee__grain[data-element="braise"] { background: #ffab68; box-shadow: 0 0 6px #f36c35; animation-name: rpg-adieu-braise; }
+.rpg-carte-delitee__grain[data-element="eau"] { width: 5px; height: 8px; border-radius: 65% 35% 65% 35%; background: #9fe8f3; box-shadow: 0 0 5px #65cce0; }
+.rpg-carte-delitee__grain[data-element="neige"] { border-radius: 0; background: #d4f6ff; box-shadow: 0 0 5px #a8dfff; animation-name: rpg-adieu-glace; }
+.rpg-carte-delitee__grain[data-element="tenebres"] { width: 9px; height: 9px; background: #a58abe; filter: blur(2px); box-shadow: 0 0 7px #685278; animation-name: rpg-adieu-brume; }
+@keyframes rpg-adieu-braise { 0% { opacity: 0; transform: scale(.5); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(var(--dx), -45px) scale(.5); } }
+@keyframes rpg-adieu-glace { 0% { opacity: 0; transform: scale(.5); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(110deg) scale(.7); } }
+@keyframes rpg-adieu-brume { 0% { opacity: 0; transform: scale(.5); } 20% { opacity: .65; } 100% { opacity: 0; transform: translate(var(--dx), -30px) scale(1.8); } }
+@media (max-width: 850px) { .rpg-ambiance i:nth-child(even) { display: none; } }
+.rpg-battle.is-reduced .rpg-ambiance { display: none; }
+.rpg-battle.is-reduced .rpg-danger-vie { animation: none; opacity: .3; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-ambiance { display: none; }
+  .rpg-danger-vie { animation: none; opacity: .3; }
+  .rpg-carte-delitee__grain { animation: none; opacity: 0; }
+}
+.rpg-adieu-autonome { position: absolute; inset: 0; z-index: 2; pointer-events: none; animation: rpg-adieu-autonome calc(.72s * var(--rpg-anim-scale, 1)) ease-in both; }
+.rpg-adieu-autonome > img { position: absolute; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.rpg-adieu-autonome > i { position: absolute; left: var(--gx); top: var(--gy); width: 5px; height: 5px; border-radius: 50%; background: #e7c17b; opacity: 0; animation: rpg-adieu-poussiere calc(.7s * var(--rpg-anim-scale, 1)) ease-out both; animation-delay: calc(var(--d) * var(--rpg-anim-scale, 1)); }
+.rpg-adieu-autonome > i[data-element="braise"] { background: #ffab68; animation-name: rpg-adieu-braise; }
+.rpg-adieu-autonome > i[data-element="eau"] { background: #9fe8f3; height: 8px; border-radius: 65% 35% 65% 35%; }
+.rpg-adieu-autonome > i[data-element="neige"] { background: #d4f6ff; border-radius: 0; animation-name: rpg-adieu-glace; }
+.rpg-adieu-autonome > i[data-element="tenebres"] { background: #a58abe; width: 9px; height: 9px; filter: blur(2px); animation-name: rpg-adieu-brume; }
+@keyframes rpg-adieu-autonome { from { opacity: 1; } to { opacity: 0; } }
+@keyframes rpg-adieu-poussiere { 0% { opacity: 0; transform: scale(.5); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.8); } }
+.rpg-battle.is-reduced .rpg-adieu-autonome { display: none; }
+@media (prefers-reduced-motion: reduce) { .rpg-adieu-autonome { display: none; } }

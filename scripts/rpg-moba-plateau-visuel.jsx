@@ -21,6 +21,7 @@ const initialiser = () => {
     render();
   };
   window.conquerir = (lane) => { mobaInfliger(duel.moba, 'joueur', lane, 30); render(); };
+  window.reglerVie = (lane, side, pv) => { duel.moba.lanes.find((item) => item.id === lane).hp[side] = pv; render(); };
   return duel;
 };
 render();

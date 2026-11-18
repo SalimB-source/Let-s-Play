@@ -144,4 +144,4 @@ assert.match(page, /left: `\$\{effet\.left\}px`[\s\S]{0,160}?height: `\$\{effet\
 assert.equal(engine.includes('rpg-carte-delitee'), false, 'aucune classe de délitement dans le moteur');
 assert.equal(engine.includes('GRAINS_DELITEMENT'), false, 'les grains sont un choix de présentation, pas de règle');
 
-console.log('✓ Carte délitée : toute mort générique (hors Braise et hors prise en cale) délite douze grains de sable qui tombent en éventail au plateau en 700 ms, sur un calque frère du fantôme à géométrie partagée — transform/opacity seulement, le fantôme se tasse vers le bas au lieu de s’évaporer, rien en mouvement réduit, moteur vierge de tout visuel');
+console.log('✓ Carte délitée : géométrie, durée, nettoyage, combustion et prises vérifiés ; les particules déclinent désormais les éléments de la carte.');

@@ -7298,14 +7298,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LA CARTE DÉLITÉE — la destruction qui redevient du sable
+   LA CARTE DÉLITÉE — particules de disparition
    ──────────────────────────────────────────────────────────────────────────
-   Quand une créature meurt (hors combustion Braise et hors prise en cale),
-   douze grains s'échappent de son fantôme et tombent en éventail jusqu'au
-   plateau, comme le sable qui s'accumule. Calque frère du fantôme de
-   destruction : même géométrie, vie identique, mais overflow visible pour que
-   les grains passent le bord de la carte. Chute en transform/opacity seulement
-   (translate + scale), avec une courbe qui accélère comme une pesanteur. */
+   Douze particules partagent la géométrie et la vie du fantôme, mais peuvent
+   déborder de la carte. Le sable est le style de repli ; les autres éléments
+   et les hybrides sont déclinés dans `rpg-ambiance-visuelle.css`. Les prises
+   en cale n'utilisent pas ces particules de mort. */
 .rpg-carte-delitee {
   position: absolute;
   z-index: 54;

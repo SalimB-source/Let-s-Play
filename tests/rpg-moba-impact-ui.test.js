@@ -133,6 +133,7 @@ test('le choc entre créatures secoue le plateau MOBA, sauf en mouvement réduit
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
   globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  dom.window.HTMLElement.prototype.getBoundingClientRect = () => ({ left: 0, top: 0, width: 600, height: 400, right: 600, bottom: 400 });
   let root;
   try {
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
@@ -168,6 +169,10 @@ test('le choc entre créatures secoue le plateau MOBA, sauf en mouvement réduit
       assert.equal(document.querySelector('[data-screen-impact="combat"]'), null, 'pas de secousse à la déclaration');
       await act(async () => new Promise((resolve) => setTimeout(resolve, 550)));
       assert.ok(duel.combatAnimations.some((event) => event.type === 'choc-creatures'));
+      const impact = document.querySelector('.moba__impact-cinema');
+      assert.ok(impact?.querySelector('.moba__impact-number'));
+      assert.equal(impact.querySelectorAll('.rpg-impact-ombre').length, impact.querySelectorAll('.moba__impact-number').length);
+      assert.equal(impact.querySelectorAll('.rpg-impact-onde').length, impact.querySelectorAll('.moba__impact-number').length);
       assert.equal(Boolean(document.querySelector('.moba__surface[data-screen-impact="combat"]')), !reduite);
       if (!reduite) {
         assert.ok(document.querySelector('.moba__surface.rpg-combat-screen-shake--a'));

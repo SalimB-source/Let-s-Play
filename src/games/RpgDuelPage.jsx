@@ -1,3 +1,6 @@
+import { RpgAmbiancePlateau, RpgDangerVie } from './RpgAmbiancePlateau.jsx';
+import { rpgVieCritique, rpgElementParticule } from './rpgAmbianceVisuelle.js';
+import { rpgLumiereElementaire, rpgSurvolRelief, rpgEffacerRelief } from './rpgReliefVisuel.js';
 import RpgCadreCarte from './RpgCadreCarte.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
@@ -33,6 +36,7 @@ import { convertirDeckSansTerrain } from './rpgCards.js';
 
 import { Fragment, memo, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
+import './rpg-relief-visuel.css';
 import InvitePaysage from './InvitePaysage.jsx';
 import './rpg-mobile.css';
 import './rpg-story.css';
@@ -1963,10 +1967,9 @@ export function BalanceTenebres({ effet, onTermine = null }) {
 
 const GRAINS_TRIBUT_FIL = Object.freeze([0, 1, 2]);
 
-// La délitement d'une carte détruite : douze grains de sable dont le point de
-// départ et la chute sont figés une fois pour toutes (pas de hasard moteur pour
-// un effet purement visuel). `gx`/`gy` (%) les répartissent sur la carte,
-// `dx`/`dy` (px) leur donnent une chute en éventail vers le sol du plateau.
+// Douze particules de disparition, aux positions déterministes : leur forme
+// et leur trajectoire suivent les éléments de la carte. `gx`/`gy` (%) les
+// répartissent sur la carte, `dx`/`dy` (px) définissent leur éventail.
 const GRAINS_DELITEMENT = Object.freeze([
   { gx: 12, gy: 34, dx: -24, dy: 96, d: 30 },
   { gx: 26, gy: 52, dx: -14, dy: 78, d: 60 },
@@ -2318,10 +2321,9 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
       {prise && vecteur && (
         <ChaineAbordage effet={{ ...effet, abordage: vecteur }} />
       )}
-      {/* La destruction est du sable : hors combustion Braise et hors prise en
-          cale (la carte part alors chez son capteur), la carte se délite en
-          grains qui tombent au sol. Calque frère du fantôme, même géométrie,
-          pour hériter de son cycle de vie sans toucher à son overflow. */}
+      {/* Les particules suivent les éléments de la créature. La prise en cale
+          n'est pas une mort : elle conserve uniquement sa chaîne. Le calque
+          frère partage la géométrie et le cycle de vie du fantôme. */}
       {!prise && !effet.bruleeParBraise && (
         <span
           className="rpg-carte-delitee"
@@ -2332,6 +2334,7 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
             <i
               key={index}
               className="rpg-carte-delitee__grain"
+              data-element={rpgElementParticule(carteDetruite, index)}
               style={{
                 '--gx': `${grain.gx}%`,
                 '--gy': `${grain.gy}%`,
@@ -2340,6 +2343,16 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
                 '--d': `${grain.d}ms`,
               }}
             />
+          ))}
+        </span>
+      )}
+      {/* Conserver les flammes d'une source Braise, mais laisser les autres
+          éléments de la victime se voir au travers, hybrides comprises. */}
+      {!prise && effet.bruleeParBraise && cardColors(carteDetruite).some((element) => element !== 'braise') && (
+        <span className="rpg-adieu-complement" aria-hidden="true" style={geometrie}>
+          {GRAINS_DELITEMENT.map((grain, index) => (
+            <i key={index} className="rpg-carte-delitee__grain" data-element={rpgElementParticule(carteDetruite, index)}
+              style={{ '--gx': `${grain.gx}%`, '--gy': `${grain.gy}%`, '--dx': `${grain.dx}px`, '--dy': `${grain.dy}px`, '--d': `${grain.d}ms` }} />
           ))}
         </span>
       )}
@@ -2936,6 +2949,7 @@ export function TableCard({
   const malInvocation = !estSite && rpgSouffreMalInvocation(entite);
   const [blockDropHover, setBlockDropHover] = useState(false);
   const [entreeEnCours, setEntreeEnCours] = useState(!entreeDifferee);
+  const [lumiereEntree, setLumiereEntree] = useState(!entreeDifferee);
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -2947,6 +2961,13 @@ export function TableCard({
     }
     setEntreeEnCours(true);
     const timer = window.setTimeout(() => setEntreeEnCours(false), 620);
+    return () => window.clearTimeout(timer);
+  }, [entreeDifferee]);
+
+  useEffect(() => {
+    if (entreeDifferee) { setLumiereEntree(false); return undefined; }
+    setLumiereEntree(true);
+    const timer = window.setTimeout(() => setLumiereEntree(false), dureeAnimation(620));
     return () => window.clearTimeout(timer);
   }, [entreeDifferee]);
 
@@ -3057,6 +3078,7 @@ export function TableCard({
         // aucun cadre ni bordure ne vient rogner la peinture pleine page.
         ...(entite.furieDeclenchee ? {} : cardFrameStyle(carte)),
         ...(caseEssai ? { '--case-essai': caseEssai } : {}),
+        ...rpgLumiereElementaire(carte),
         // Chaque créature avec Envol a sa propre durée de lévitation : la
         // feuille anime `translate`, `rotate` et `scale`, et cette durée lui
         // suffit pour que deux voisines ne battent jamais ensemble.
@@ -3089,6 +3111,9 @@ export function TableCard({
       title={moba?.title}
       draggable={ascensionSelection ? false : moba?.draggable ?? canDragBlocker}
       onPointerDown={ascensionSelection ? undefined : moba?.onPointerDown}
+      onPointerMove={(event) => rpgSurvolRelief(event, rpgAnimationsReduites())}
+      onPointerLeave={(event) => rpgEffacerRelief(event.currentTarget)}
+      onPointerCancel={(event) => rpgEffacerRelief(event.currentTarget)}
       onClick={ascensionSelection ? ascensionSelection.onChoisir : onClick}
       onMouseEnter={ascensionSelection ? undefined : (event) => onHoverCard?.(carte, event, armes)}
       onMouseLeave={onLeaveHoverCard}
@@ -3103,6 +3128,8 @@ export function TableCard({
       aria-label={ascensionSelection?.label ?? (reserveAscension ? `Voir l’aperçu de ${nom}` : null) ?? moba?.ariaLabel ?? `${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonanceDefense ?? carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 15 % de chances de rater'} et arrêter là son attaque ; elle peut viser le sorcier selon les règles du combat` : ''}${estDefenseur(entite) ? ', Défenseur : les attaques adverses sans Infiltration doivent le viser en priorité si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${cartesArmes.length ? `, armes équipées : ${cartesArmes.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${carte?.furtif ? ', Furtivité : détruite à la fin du tour où elle arrive en jeu' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ignore la priorité Défenseur' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée sans coût de mana, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? `, esquive : ${Math.round((entite.esquiveChance ?? 0.15) * 100)} % de chance d’esquiver une attaque, un sort ou un effet de créature adverse` : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation : ne peut pas attaquer avant le prochain tour de son camp, mais peut défendre' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${durabiliteArme ? `, son arme porte ${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${sortBloqueParBouclier ? ', ce bouclier bloquera le sort sélectionné puis se brisera' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', sélectionner cette créature comme sacrifice d’invocation' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : Boolean(selected || selectedBlocker)}
     >
+      <span className="rpg-relief-ombre" aria-hidden="true" />
+      {lumiereEntree && !entreeDifferee && !reserveAscension && <span className="rpg-lumiere-invocation" aria-hidden="true" />}
       <img
         key={entite.furieDeclenchee ? `${carte?.id}-furie` : cardArtEntite(entite)}
         className={`rpg-card__img${estSite ? ' rpg-card__img--site-stage' : ''}`}
@@ -4138,12 +4165,14 @@ function SpellAnnouncement({ annonce, camp = 'joueur', nomLanceur = null }) {
     <section
       className={`rpg-spell-played${sorcier ? ' rpg-spell-played--sorcier' : ''}${contre ? ' rpg-spell-played--contre' : ''}${vague ? ' rpg-spell-played--vague' : ''}`}
       role="status"
+      style={rpgLumiereElementaire(carte)}
       aria-label={contre
         ? `Contre : ${carte.name} défait ${annonce.cible.nom}.`
         : vague
           ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
           : `${nomLanceur ? `Magie de ${nomLanceur}` : sorcier ? 'Magie du sorcier' : 'Magie jouée'} : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
+      <span key={annonce.token} className="rpg-lumiere-sort" aria-hidden="true" />
       <span
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
         style={cardFrameStyle(carte)}
@@ -8146,6 +8175,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [surZoneDepot, setSurZoneDepot] = useState(false);
   const [annulationDisponible, setAnnulationDisponible] = useState(false);
   const [sortJoue, setSortJoue] = useState(null);
+  const prochainTokenSortRef = useRef(0);
   // Le sort du sorcier : même fiche au milieu du plateau, bordée de rouge.
   // Même vie que celle du joueur, mais son propre minuteur — les deux camps
   // peuvent lancer un sort dans la même seconde, les deux fiches s'empilent
@@ -11389,6 +11419,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const minuteur = camp === 'sorcier' ? timerSortSorcierRef : timerSortRef;
     if (minuteur.current) window.clearTimeout(minuteur.current);
     poserFiche({
+      token: ++prochainTokenSortRef.current,
       carteId: carte.id,
       cible: cible ?? { nom: 'Champ de bataille', targetPlate: null, targetIds: [] },
       contre,
@@ -13903,6 +13934,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <div className="rpg-plateau-lisere" aria-hidden="true" />
           </>
         )}
+        {plateauDecoupe ? <>
+          <RpgAmbiancePlateau plateau={plateauAdverse.id} cote="adverse" />
+          <RpgAmbiancePlateau plateau={plateau.id} cote="joueur" />
+        </> : <RpgAmbiancePlateau plateau={plateau.id} />}
+        {!vainqueur && rpgVieCritique(duel.sorcier.pv, duel.sorcier.pvMax) && <RpgDangerVie cote="adverse" />}
+        {!vainqueur && rpgVieCritique(duel.joueur.pv, duel.joueur.pvMax) && <RpgDangerVie cote="joueur" />}
         {/* Le décor 3D se met en pause sous un aperçu ou un volet : il est
             masqué ou flouté, et un canvas animé ne vaut pas la peine d'être
             recomposé à chaque image derrière un voile sur mobile. */}
@@ -14545,6 +14582,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               {!impact.tirCible && <line className="moba__impact-trail" x1={impact.source.x} y1={impact.source.y} x2={impact.destination.x} y2={impact.destination.y} pathLength="1" />}
             </>}
             {impact.impacts.map((marque, index) => marque.point && <g key={`${marque.id}-${index}`} className={`moba__impact-mark${marque.critique ? ' is-critical' : ''}`} transform={`translate(${marque.point.x} ${marque.point.y})`}>
+              <ellipse className="rpg-impact-ombre" cy="18" rx="37" ry="11" />
+              <ellipse className="rpg-impact-onde" cy="18" rx="37" ry="11" />
               <circle className="moba__impact-burst" r="22" />
               <text className="moba__impact-number" x={marque.decalageX || undefined} y="-18" textAnchor="middle">−{marque.montant}</text>
             </g>)}
