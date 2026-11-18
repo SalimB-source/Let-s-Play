@@ -10,7 +10,13 @@ function partie() {
   for (const cote of ['joueur', 'sorcier']) duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map((e) => [e, 40]));
   return duel;
 }
-function poser(duel, cote, id = 'ashigaru-des-braises') {
+/**
+ * Pose une créature prête à combattre. Ce plateau de test se bat **au contact** :
+ * l'ashigaru des braises porte « À distance » sur sa face, on le ramène donc à
+ * la mêlée sauf demande explicite (`{ contact: false }`), sinon la riposte du
+ * défenseur disparaîtrait des échanges que ces tests mesurent.
+ */
+function poser(duel, cote, id = 'ashigaru-des-braises', { contact = true } = {}) {
   // Construction de plateau de test, indépendante du quota d'invocation.
   duel[cote].invocationNormaleJouee = false;
   duel[cote].main.push(id);
@@ -22,6 +28,7 @@ function poser(duel, cote, id = 'ashigaru-des-braises') {
   // Plateau préexistant : ces tests portent sur les échanges, pas la pose.
   res.entite.ready = true;
   res.entite.malInvocation = false;
+  if (contact) res.entite.distance = false;
   return res.entite;
 }
 
@@ -529,4 +536,34 @@ test('l’IA classique ne choisit pas de frappe directe derrière un Défenseur'
   d.tour = 'sorcier'; d.joueur.pv = 1;
   const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(d);
   assert.ok(!choix || (choix.attaquantId === a.id && choix.cibleId !== null));
+});
+
+test('une créature « À distance » frappe sans recevoir de coup en retour', () => {
+  // Le tir part de la ligne du fond : la créature visée ne la rejoint pas, donc
+  // elle ne rend pas son coup. La cible encaisse, un point c'est tout.
+  const d = partie(), tireur = poser(d, 'joueur', 'ashigaru-des-braises', { contact: false });
+  const cible = poser(d, 'sorcier');
+  assert.equal(tireur.distance, true, 'la fiche « À distance » devient un trait de la créature');
+  assert.equal(tireur.coupRapide, false, 'aucune Attaque ciblée : c’est bien le trait qui fait la différence');
+  assert.equal(cible.distance, false, 'une mêlée reste une mêlée');
+  tireur.atk = 3; cible.atk = 9;
+  const pvTireur = tireur.pv, pvCible = cible.pv;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', tireur.id, cible.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.equal(r.resume.blessures.length, 1, 'une seule blessure : celle du tir');
+  assert.equal(r.resume.blessures[0].entiteId, cible.id);
+  assert.equal(tireur.pv, pvTireur, 'le tireur n’encaisse aucune riposte');
+  assert.equal(cible.pv, pvCible - 3);
+});
+
+test('le même échange au contact rend les deux coups', () => {
+  const d = partie(), attaquant = poser(d, 'joueur'), cible = poser(d, 'sorcier');
+  attaquant.atk = 3; cible.atk = 9;
+  const pvAttaquant = attaquant.pv;
+  assert.ok(rpgDeclarerAttaqueIndividuelleClassique(d, 'joueur', attaquant.id, cible.id).ok);
+  const r = rpgResoudreAttaqueIndividuelleClassique(d, 'joueur');
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.equal(r.resume.blessures.length, 2, 'mêlée : les deux frappent ensemble');
+  assert.ok(attaquant.pv < pvAttaquant, 'la riposte de la cible touche le corps à corps');
 });

@@ -192,7 +192,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-creature-slots--joueur',
         eyebrow: 'RÈGLE · LE CHAMP',
         title: 'Deux lignes de cinq cases',
-        text: 'Chaque camp dispose de deux lignes de cinq cases, dessinées sous sa rangée : le front, tourné vers l’adversaire, et le fond, derrière. La ligne ne se choisit pas, elle vient de la carte : les corps à corps et les Défenseurs tiennent le front, les créatures marquées « À distance » se rangent derrière. Tant qu’une créature tient le front, la mêlée adverse ne peut pas viser le fond — seules l’Attaque ciblée et l’Infiltration passent. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre de sa ligne — ou vous l’y glissez directement. Cinq créatures par ligne, dix au plus par camp.',
+        text: 'Chaque camp dispose de deux lignes de cinq cases, dessinées sous sa rangée : le front, tourné vers l’adversaire, et le fond, derrière. La ligne ne se choisit pas, elle vient de la carte : les corps à corps et les Défenseurs tiennent le front, les créatures marquées « À distance » se rangent derrière : elles frappent sans recevoir de coup en retour. Tant qu’une créature tient le front, une attaque — même à distance — ne peut pas viser le fond : seules l’Attaque ciblée et l’Infiltration passent. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre de sa ligne — ou vous l’y glissez directement. Cinq créatures par ligne, dix au plus par camp.',
         nextLabel: 'Passer la main',
         side: 'top',
       },

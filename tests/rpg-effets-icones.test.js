@@ -41,12 +41,13 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 43 symboles validés, un par effet', () => {
+test('le sprite porte les 42 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  // 43 depuis l'arc de la ligne « À distance » (les deux lignes du champ).
-  assert.equal(symboles.length, 43);
+  // De retour à 42 : la ligne « À distance » n'est plus un effet, elle n'a
+  // donc plus d'icône — c'est l'arc de l'ATQ qui dit la portée.
+  assert.equal(symboles.length, 42);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -109,8 +110,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Défenseur', 'Blocage', 'Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
-  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['À distance'],
-    'Tiziri ne produit plus de mana ; sa voix porte, elle tient le fond');
+  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
+    'Tiziri ne produit plus de mana ; « À distance » est une place sur le champ, pas un effet — l’arc de son ATQ le dit');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
@@ -119,6 +120,20 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');
+});
+
+test('la ligne « À distance » n’est jamais une pastille : c’est l’arc de l’ATQ qui parle', () => {
+  // Une place sur le champ n'est pas un effet : les quarante créatures qui
+  // portent le trait n'en affichent aucune pastille, et la règle reste écrite
+  // sur la face. Le repère visuel, c'est l'icône d'attaque.
+  const portent = RPG_DUEL_CARDS.filter((carte) => carte.distance);
+  assert.ok(portent.length >= 40, `le trait est répandu (${portent.length} cartes)`);
+  assert.deepEqual(
+    portent.filter((carte) => pastillesPourCarte(carte).some((pastille) => pastille.label === 'À distance')).map((carte) => carte.id),
+    [],
+    'aucune pastille « À distance »',
+  );
+  assert.equal('distance' in EFFET_ICONE, false, 'plus de symbole dédié dans le sprite');
 });
 
 test('les pastilles nomment l’effet signé des sorts', () => {
