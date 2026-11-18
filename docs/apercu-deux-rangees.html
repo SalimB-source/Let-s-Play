@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aperçu — deux rangées sur le plateau du Sablier</title>
+<style>
+  :root {
+    --or: #d8bc86;
+    --or-clair: #f3e0b4;
+    --largeur-carte: 142px;
+    --gouttiere: 16px;
+    --profondeur: .16;      /* la rangée du fond est à 84 % */
+    --rail: 148px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #06060a;
+    color: #e9e2d2;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ── Barre de contrôle ──────────────────────────────────────────────── */
+  .barre {
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center;
+    gap: 10px 22px; padding: 9px 16px;
+    border-bottom: 1px solid rgba(216, 188, 134, .28);
+    background: linear-gradient(#141118, #0a090d);
+    z-index: 30;
+  }
+  .onglets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .onglets button {
+    appearance: none; border: 1px solid rgba(216, 188, 134, .34);
+    background: rgba(216, 188, 134, .07); color: #cdbf9f;
+    font: 700 11px/1 "Segoe UI", sans-serif; letter-spacing: .06em;
+    text-transform: uppercase; padding: 9px 12px; border-radius: 7px;
+    cursor: pointer; transition: background .18s, color .18s, border-color .18s;
+  }
+  .onglets button:hover { background: rgba(216, 188, 134, .16); }
+  .onglets button[aria-pressed="true"] {
+    background: linear-gradient(#f0d69e, #c9a765);
+    border-color: #f6e3b8; color: #1a1409;
+    box-shadow: 0 0 16px rgba(240, 214, 158, .34);
+  }
+  .reglage { display: flex; align-items: center; gap: 9px; font-size: 12px; color: #b7ab92; }
+  .reglage input[type="range"] { width: 150px; accent-color: #d8bc86; }
+  .reglage b { color: #f3e0b4; font-variant-numeric: tabular-nums; }
+  .bilan { margin-left: auto; display: flex; gap: 14px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .bilan span { color: #b7ab92; }
+  .bilan b { color: #f3e0b4; }
+  .bilan .alerte b { color: #ff8f7a; }
+  .bilan .ok b { color: #9fe0a6; }
+
+  /* ── Table ──────────────────────────────────────────────────────────── */
+  .table {
+    position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 55% 50%, rgba(0,0,0,0) 32%, rgba(0,0,0,.74) 100%),
+      url("../public/card-table.jpg") center / cover no-repeat,
+      linear-gradient(#151018, #0b0a0e);
+  }
+  .table::before {
+    content: ""; position: absolute; left: calc(var(--rail) + 10px); right: 4%; top: 50%;
+    height: 1px; pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(216, 188, 134, .5), transparent);
+    box-shadow: 0 0 18px rgba(216, 188, 134, .28);
+  }
+  /* Le rail de gauche : les visages et les PV, à côté des pioches. */
+  .rail {
+    position: absolute; left: 0; top: 0; bottom: 0; width: var(--rail);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 12px 8px; z-index: 8;
+    background: linear-gradient(90deg, rgba(6,5,8,.86), rgba(6,5,8,.34) 72%, rgba(6,5,8,0));
+    border-right: 1px solid rgba(216, 188, 134, .12);
+  }
+  .rail__camp { display: flex; gap: 8px; align-items: flex-start; }
+  .rail__camp--joueur { flex-direction: row-reverse; }
+  .visage {
+    position: relative; width: 62px; flex: 0 0 62px; text-align: center;
+  }
+  .visage__rond {
+    width: 62px; height: 62px; border-radius: 50%; overflow: hidden;
+    border: 2px solid rgba(216, 188, 134, .7);
+    box-shadow: 0 6px 16px rgba(0,0,0,.75), inset 0 0 14px rgba(0,0,0,.6);
+    background: #14111a;
+  }
+  .visage__rond img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .visage__pv {
+    position: relative; margin-top: 3px; height: 9px; border-radius: 5px;
+    background: rgba(12, 10, 14, .9); border: 1px solid rgba(216, 188, 134, .35);
+    overflow: hidden;
+  }
+  .visage__pv i {
+    position: absolute; inset: 0 auto 0 0; width: 100%;
+    background: linear-gradient(90deg, #7d1f22, #d4504c);
+  }
+  .rail__camp--joueur .visage__pv i { background: linear-gradient(90deg, #1f5a7d, #4c9ad4); }
+  .visage__pv b {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font: 800 7px/1 var(--mono, monospace); color: #fff; text-shadow: 0 1px 2px #000;
+  }
+  .pioches { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .pioche {
+    position: relative; width: 46px; aspect-ratio: 4 / 5; border-radius: 6px;
+    border: 1px solid rgba(216, 188, 134, .45);
+    background: url("../public/dos-de-carte.jpg") center / cover no-repeat, #16121b;
+    box-shadow: 0 4px 12px rgba(0,0,0,.7);
+  }
+  .pioche__n {
+    position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+    padding: 1px 5px; border-radius: 6px; background: #0b0910;
+    border: 1px solid rgba(216, 188, 134, .4);
+    font: 800 9px/1 var(--mono, monospace); color: #f3e0b4;
+  }
+  .pioche--vide {
+    width: 46px; aspect-ratio: 4 / 5; border-radius: 6px;
+    border: 1px dashed rgba(216, 188, 134, .3); background: rgba(10,8,12,.5);
+    display: grid; place-items: center; font-size: 15px; color: rgba(216,188,134,.5);
+  }
+  .rail__legende {
+    writing-mode: vertical-rl; text-orientation: mixed; align-self: center;
+    font: 700 9px/1 "Segoe UI", sans-serif; letter-spacing: .22em;
+    text-transform: uppercase; color: rgba(233, 226, 210, .32);
+  }
+
+  .camp {
+    position: absolute; left: var(--rail); right: 0; height: 50%;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .camp--ennemi { top: 0; justify-content: flex-end; padding-bottom: 9px; }
+  .camp--joueur { top: 50%; justify-content: flex-start; padding-top: 9px; }
+
+  .bandeau {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font: 700 10px/1 "Segoe UI", sans-serif; letter-spacing: .22em;
+    text-transform: uppercase; color: rgba(233, 226, 210, .4); white-space: nowrap;
+  }
+  .camp--ennemi .bandeau { top: 2px; }
+  .camp--joueur .bandeau { bottom: 0; }
+
+  .rangee {
+    position: relative;
+    display: grid; grid-template-columns: repeat(5, minmax(0, var(--largeur-carte)));
+    justify-content: center; align-items: center;
+    column-gap: var(--gouttiere);
+    min-height: calc(var(--largeur-carte) * 1.25 * 1.06);
+  }
+  .rangee--fond { min-height: calc(var(--largeur-carte) * 1.25 * (1 - var(--profondeur)) * 1.06); }
+
+  .case {
+    position: relative; width: 100%; aspect-ratio: 4 / 5;
+    border: 2px dashed rgba(240, 214, 150, .3); border-radius: 9px;
+    background: rgba(8, 7, 5, .24); box-shadow: inset 0 0 22px rgba(0, 0, 0, .5);
+    display: grid; place-items: center;
+  }
+  .rangee--front .case { border-color: rgba(240, 214, 150, .46); }
+  .rangee--fond .case { opacity: .6; }
+  .case::after {
+    content: attr(data-numero);
+    font: 800 clamp(11px, 1.2vw, 16px)/1 Georgia, serif; color: rgba(246, 226, 170, .34);
+  }
+  .case.pleine { border: none; background: none; box-shadow: none; opacity: 1; }
+  .case.pleine::after { content: ""; }
+
+  /* ── La carte ───────────────────────────────────────────────────────── */
+  .carte {
+    position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 9px;
+    overflow: hidden; background: #0c0b0e; border: 1px solid #191016;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .72), inset 0 0 0 1px rgba(216, 188, 134, .3);
+    cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .carte:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 18px 34px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(246, 227, 184, .85), 0 0 24px rgba(240, 214, 158, .25);
+    z-index: 6;
+  }
+  .carte img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .carte::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 32%, rgba(0,0,0,.18) 62%, rgba(6,5,8,.94) 100%);
+  }
+  .carte__nom {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+    padding: 3px 5px 4px; margin: 0 3px 3px; border-radius: 4px;
+    background: linear-gradient(#f0dcae, #cbab6d); color: #24180a;
+    font: 700 clamp(7px, .6vw, 10px)/1.1 "Segoe UI", sans-serif;
+    text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 1px 3px rgba(0,0,0,.7);
+  }
+  .carte__cout {
+    position: absolute; top: 4px; left: 4px; z-index: 3;
+    width: clamp(16px, 1.5vw, 22px); height: clamp(16px, 1.5vw, 22px);
+    display: grid; place-items: center; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, #6fa9c9, #0d3550 74%);
+    border: 1px solid rgba(224, 240, 250, .72); color: #eaf6ff;
+    font: 800 clamp(8px, .74vw, 11px)/1 "Segoe UI", sans-serif;
+    box-shadow: 0 1px 4px rgba(0,0,0,.8);
+  }
+  .carte__stats { position: absolute; right: 4px; bottom: 20px; z-index: 3; display: flex; gap: 3px; }
+  .carte__stats b {
+    min-width: clamp(15px, 1.4vw, 20px); padding: 1px 3px; border-radius: 4px;
+    font: 800 clamp(8px, .78vw, 12px)/1.25 "Segoe UI", sans-serif; text-align: center;
+    color: #fff; text-shadow: 0 1px 2px #000;
+    background: rgba(10, 9, 12, .82); border: 1px solid rgba(255, 255, 255, .18);
+  }
+  .carte__stats b:first-child { color: #ffdca8; border-color: rgba(255, 196, 110, .48); }
+  .carte__stats b:last-child { color: #d9f0ff; border-color: rgba(140, 210, 255, .48); }
+
+  .carte--defenseur { box-shadow: 0 10px 22px rgba(0, 0, 0, .78), inset 0 0 0 2px rgba(230, 190, 116, .8), 0 0 16px rgba(230, 190, 116, .18); }
+  .carte__sceau {
+    position: absolute; z-index: 3; top: 4px; right: 4px;
+    width: clamp(14px, 1.3vw, 19px); height: clamp(14px, 1.3vw, 19px);
+    display: grid; place-items: center; border-radius: 50%;
+    font-size: clamp(8px, .74vw, 11px);
+    background: rgba(9, 8, 12, .82); border: 1px solid rgba(255,255,255,.2);
+  }
+  .carte__sceau--distance { color: #ffd9a0; border-color: rgba(255, 196, 110, .55); }
+  /** La règle proposée : le fond est hors de portée des corps à corps tant
+   *  qu'une créature tient la ligne de front. */
+  .rangee--fond .carte { filter: brightness(.9) saturate(.96); }
+  .camp--protege .rangee--fond .carte::before {
+    content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
+    background: linear-gradient(180deg, rgba(246, 214, 150, .16), rgba(246, 214, 150, 0) 46%);
+    box-shadow: inset 0 0 0 2px rgba(246, 214, 150, .5);
+    border-radius: 9px;
+  }
+  .camp--expose .rangee--fond .carte { box-shadow: 0 10px 22px rgba(0,0,0,.72), inset 0 0 0 2px rgba(255, 108, 92, .8), 0 0 18px rgba(255, 86, 68, .3); filter: brightness(1); }
+  .camp--expose .rangee--fond .carte::before {
+    content: "exposée"; position: absolute; z-index: 5; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-8deg);
+    padding: 2px 8px; border-radius: 4px;
+    background: rgba(120, 22, 18, .9); border: 1px solid rgba(255, 140, 120, .8);
+    font: 800 clamp(8px, .7vw, 11px)/1.3 "Segoe UI", sans-serif;
+    letter-spacing: .12em; text-transform: uppercase; color: #ffd9d2;
+  }
+  .camp--protege .rangee--front .case { border-color: rgba(246, 214, 150, .62); }
+
+  .compte {
+    position: absolute; right: 10px; z-index: 7;
+    font: 700 9px/1 "Segoe UI", sans-serif; letter-spacing: .14em;
+    text-transform: uppercase; color: rgba(246, 226, 170, .55);
+  }
+  .camp--ennemi .compte { top: 2px; }
+  .camp--joueur .compte { bottom: 2px; }
+
+  .legende {
+    flex: 0 0 auto; padding: 9px 16px 11px;
+    border-top: 1px solid rgba(216, 188, 134, .2);
+    background: linear-gradient(#0b0a0e, #08070a);
+    font: 12px/1.5 "Segoe UI", sans-serif; color: #cfc4ab;
+  }
+  .legende b { color: #f3e0b4; display: block; margin-bottom: 3px; letter-spacing: .03em; }
+  .legende em { color: #ffb3a4; font-style: normal; }
+  @media (max-width: 1000px), (max-height: 640px) { .legende { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="barre">
+  <p style="margin:0 0 8px;font:12px/1.5 'Segoe UI',sans-serif;color:#cfc4ab">
+    Maquette de travail — le plateau est <b style="color:#f3e0b4">implémenté</b> :
+    <a href="plateau-deux-lignes.html" style="color:#edd4a1">voir le vrai plateau rendu par la page</a>.
+  </p>
+  <div class="onglets" role="group" aria-label="Variante de plateau">
+    <button type="button" data-vue="aujourdhui" aria-pressed="true">Aujourd’hui</button>
+    <button type="button" data-vue="lignes" aria-pressed="false">Mêlée devant · distance derrière</button>
+    <button type="button" data-vue="tombee" aria-pressed="false">La ligne de front tombe</button>
+    <button type="button" data-vue="vide" aria-pressed="false">Le fond vide en jeu</button>
+  </div>
+
+  <label class="reglage">
+    Cartes
+    <input type="range" id="taille" min="86" max="142" step="2" value="142" />
+    <b id="taille-valeur">142 px</b>
+  </label>
+
+  <div class="bilan">
+    <span>hauteur <b id="hauteur-carte">—</b></span>
+    <span id="bilan-place">—</span>
+  </div>
+</div>
+
+<div class="table" id="table">
+  <div class="rail">
+    <div class="rail__camp rail__camp--ennemi">
+      <div class="visage">
+        <div class="visage__rond"><img src="../public/sablier-story/avatars/avatar-boualem.webp" alt="Boualem, sorcier adverse" /></div>
+        <div class="visage__pv"><i style="width:74%"></i><b>22 / 30</b></div>
+      </div>
+      <div class="pioches">
+        <div class="pioche"><span class="pioche__n">18</span></div>
+        <div class="pioche--vide">✕</div>
+      </div>
+    </div>
+
+    <span class="rail__legende">Pioches · visages · PV</span>
+
+    <div class="rail__camp rail__camp--joueur">
+      <div class="visage">
+        <div class="visage__rond"><img src="../public/sablier-story/avatars/avatar-amani.webp" alt="Amani, votre sorcière" /></div>
+        <div class="visage__pv"><i style="width:90%"></i><b>27 / 30</b></div>
+      </div>
+      <div class="pioches">
+        <div class="pioche"><span class="pioche__n">14</span></div>
+        <div class="pioche--vide">✕</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="camp camp--ennemi" id="camp-ennemi">
+    <span class="bandeau">Sorcier — haut de table</span>
+    <div class="camp-ennemi" id="contenu-ennemi"></div>
+    <span class="compte" id="compte-ennemi"></span>
+  </div>
+
+  <div class="camp camp--joueur" id="camp-joueur">
+    <div class="camp-joueur" id="contenu-joueur"></div>
+    <span class="compte" id="compte-joueur"></span>
+    <span class="bandeau">Vous — bas de table</span>
+  </div>
+
+</div>
+
+<div class="legende" id="legende"></div>
+
+<script>
+const CARTES = {
+  // Éclaireurs des pistes — 4 créatures à Attaque ciblée
+  tislit:   { nom: 'Tislit, éclaireuse des Aurès', atk: 1, def: 1, cout: 1, art: '../public/cards/tislit-des-aures.jpg', distance: true },
+  viking:   { nom: 'Viking des neiges', atk: 2, def: 1, cout: 1, art: '../public/cards/viking-des-neiges.jpg' },
+  gardienne:{ nom: 'Gardienne des portes de sable', atk: 1, def: 4, cout: 2, art: '../public/cards/gardienne-des-portes-de-sable.jpg', defenseur: true },
+  bouchra:  { nom: 'Bouchra, guerrière des crêtes', atk: 2, def: 1, cout: 2, art: '../public/cards/bouchra-guerriere-des-cretes.jpg' },
+  gerboise: { nom: 'Gerboise des ruines', atk: 1, def: 1, cout: 2, art: '../public/cards/gerboise-des-ruines.jpg' },
+  bouclier: { nom: 'Guerrier au bouclier rond', atk: 2, def: 3, cout: 2, art: '../public/cards/guerrier-au-bouclier-rond.jpg', defenseur: true },
+  guetteur: { nom: 'Guetteur du beffroi', atk: 1, def: 3, cout: 3, art: '../public/cards/guetteur-du-beffroi.jpg', distance: true },
+  scalde:   { nom: 'Scalde des runes', atk: 1, def: 2, cout: 3, art: '../public/cards/scalde-des-runes.jpg', distance: true },
+  salem:    { nom: 'SALEM', atk: 3, def: 4, cout: 4, art: '../public/cards/salem.jpg' },
+  faucon:   { nom: 'Le Faucon du zénith', atk: 3, def: 3, cout: 5, art: '../public/cards/faucon-du-zenith.jpg', distance: true },
+  jarl:     { nom: 'Jarl au marteau de guerre', atk: 3, def: 5, cout: 5, art: '../public/cards/jarl-au-marteau-de-guerre.jpg' },
+  // Serment du Dernier Rempart — une seule créature à distance
+  fjord:    { nom: 'Gardien viking du fjord', atk: 2, def: 4, cout: 3, art: '../public/cards/gardien-viking-du-fjord.jpg', defenseur: true },
+  trone:    { nom: 'Garde du trône givré', atk: 2, def: 4, cout: 3, art: '../public/cards/garde-du-trone-givre.jpg', defenseur: true },
+  lune:     { nom: 'Veilleuse de la lune givrée', atk: 2, def: 3, cout: 3, art: '../public/cards/veilleuse-de-la-lune-givree.jpg', distance: true },
+  berserk:  { nom: 'Berserk des trois hivers', atk: 2, def: 4, cout: 3, art: '../public/cards/berserk-des-trois-hivers.jpg' },
+  volva:    { nom: 'Völva soigneuse', atk: 2, def: 3, cout: 3, art: '../public/cards/volva-soigneuse.jpg' },
+  valkyrie: { nom: 'Valkyrie au corbeau', atk: 2, def: 4, cout: 4, art: '../public/cards/valkyrie-au-corbeau.jpg' },
+  neufnuits:{ nom: 'Valkyrie des neuf nuits', atk: 3, def: 4, cout: 5, art: '../public/cards/valkyrie-des-neuf-nuits.jpg' },
+};
+
+const VUES = {
+  aujourdhui: {
+    campagne: {
+      ennemi: { ligne: ['fjord', 'bouclier', 'trone', null, 'valkyrie'] },
+      joueur: { ligne: ['gardienne', 'viking', null, 'guetteur', 'salem'] },
+    },
+    legende: {
+      titre: 'Aujourd’hui — une seule rangée, visages au milieu du plateau',
+      texte: `Cinq cases par camp sur la même ligne ; le Défenseur ne se distingue
+        que par son cadre (et +10 % de taille). <em>C’est un plateau plat :</em> aucune
+        profondeur, et rien ne dit qui protège qui.`,
+    },
+  },
+  lignes: {
+    campagne: {
+      ennemi: { front: ['fjord', 'bouclier', 'trone', 'valkyrie', 'berserk'], fond: ['lune', null, null, null, null] },
+      joueur: { front: ['viking', 'gardienne', 'bouchra', 'salem', 'jarl'], fond: ['tislit', 'guetteur', 'scalde', 'faucon', null] },
+    },
+    legende: {
+      titre: 'Mêlée devant · « À distance » derrière',
+      texte: `La ligne vient de la carte : les corps à corps tiennent le front, les
+        créatures marquées <b style="display:inline">À distance</b> (archères, guetteurs,
+        scaldes, djinns, scribes, artilleurs) se rangent derrière. Le fond est
+        <b style="display:inline">protégé</b> tant que le front tient (voile doré).
+        En haut, le Dernier Rempart n’a qu’une veilleuse à distance.`,
+    },
+  },
+  tombee: {
+    campagne: {
+      ennemi: { front: ['fjord', 'bouclier', 'trone', 'valkyrie', 'berserk'], fond: ['lune', null, null, null, null] },
+      joueur: { front: [], fond: ['tislit', 'guetteur', 'scalde', 'faucon', null] },
+    },
+    legende: {
+      titre: 'La ligne de front tombe — le fond est exposé',
+      texte: `Plus une seule créature devant : la protection saute, le fond devient
+        ciblable par les corps à corps et l’adversaire peut frapper le sorcier.
+        C’est ce qui empêche la règle de figer la partie.`,
+    },
+  },
+  vide: {
+    campagne: {
+      ennemi: { front: ['fjord', 'bouclier', 'trone', 'valkyrie', 'berserk'], fond: ['lune', null, null, null, null] },
+      joueur: { front: ['viking', 'gardienne', 'bouchra', 'salem', 'jarl'], fond: [null, null, null, null, null] },
+    },
+    legende: {
+      titre: 'Le fond vide : aucune créature à distance en jeu',
+      texte: `Le fond ne se remplit que des cartes tirées : une main de mêlée laisse la
+        seconde ligne vide, et rien n’oblige à y mettre quelqu’un. Depuis l’ajout,
+        chaque deck en aligne au moins une — la Forge des samouraïs, la Cour du
+        croissant noir et l’Éveil du Dragon Rouge en ont deux chacun (38 créatures
+        sur 149, 26 %).`,
+    },
+  },
+};
+
+const table = document.getElementById('table');
+const contenuEnnemi = document.getElementById('contenu-ennemi');
+const contenuJoueur = document.getElementById('contenu-joueur');
+const campEnnemi = document.getElementById('camp-ennemi');
+const campJoueur = document.getElementById('camp-joueur');
+const compteEnnemi = document.getElementById('compte-ennemi');
+const compteJoueur = document.getElementById('compte-joueur');
+const legende = document.getElementById('legende');
+const taille = document.getElementById('taille');
+const tailleValeur = document.getElementById('taille-valeur');
+const hauteurCarte = document.getElementById('hauteur-carte');
+const bilanPlace = document.getElementById('bilan-place');
+
+let vue = 'aujourdhui';
+
+function carte(cle) {
+  const c = CARTES[cle];
+  const sceau = c.defenseur ? '<span class="carte__sceau" title="Défenseur">🛡</span>'
+    : c.distance ? '<span class="carte__sceau carte__sceau--distance" title="Attaque ciblée">➶</span>' : '';
+  return `<article class="carte${c.defenseur ? ' carte--defenseur' : ''}" title="${c.nom}">
+      <img src="${c.art}" alt="${c.nom}" loading="lazy" />
+      <span class="carte__cout">${c.cout}</span>
+      ${sceau}
+      <span class="carte__stats"><b>${c.atk}</b><b>${c.def}</b></span>
+      <p class="carte__nom">${c.nom}</p>
+    </article>`;
+}
+
+function cases(liste, base, classeRangee) {
+  return liste.map((cle, i) => (cle
+    ? `<div class="case pleine">${carte(cle)}</div>`
+    : `<div class="case" data-numero="${base + i}"></div>`)).join('');
+}
+
+function rangee(liste, base, nom) {
+  return `<div class="rangee${nom ? ' rangee--' + nom : ''}">${cases(liste, base, nom)}</div>`;
+}
+
+function rendre() {
+  const plan = VUES[vue].campagne;
+  const camper = (cote) => {
+    const p = plan[cote];
+    if (p.ligne) return rangee(p.ligne, 1);
+    const front = rangee(p.front, 1, 'front');
+    const fond = rangee(p.fond, 6, 'fond');
+    return cote === 'ennemi' ? fond + front : front + fond;
+  };
+  contenuEnnemi.innerHTML = camper('ennemi');
+  contenuJoueur.innerHTML = camper('joueur');
+
+  // « protégé » dès qu'une créature tient le front ; sinon le fond est exposé.
+  const appliquer = (camp, p) => {
+    if (p.ligne) { camp.classList.remove('camp--protege', 'camp--expose'); return; }
+    const frontTient = p.front.some(Boolean);
+    const fondPeuple = p.fond.some(Boolean);
+    camp.classList.toggle('camp--protege', frontTient && fondPeuple);
+    camp.classList.toggle('camp--expose', !frontTient && fondPeuple);
+  };
+  appliquer(campEnnemi, plan.ennemi);
+  appliquer(campJoueur, plan.joueur);
+
+  const compte = (p) => {
+    if (p.ligne) return `${p.ligne.filter(Boolean).length} / 5`;
+    return `${p.front.filter(Boolean).length} / 5 devant · ${p.fond.filter(Boolean).length} / 5 au fond`;
+  };
+  compteEnnemi.textContent = compte(plan.ennemi);
+  compteJoueur.textContent = compte(plan.joueur);
+
+  const l = VUES[vue].legende;
+  legende.innerHTML = `<b>${l.titre}</b>${l.texte}`;
+}
+
+function contraintes() {
+  // Bande réservée aux deux champs : 21 % → 70 % de la hauteur de la table.
+  const dispo = table.clientHeight * 0.49 - 24;
+  const fond = 1 - 0.16;
+  const facteurs = vue === 'aujourdhui' ? [1, 1] : [fond, 1, 1, fond];
+  const gouttieres = (facteurs.length - 1) * 7;
+  const somme = facteurs.reduce((total, f) => total + f, 0) * 1.06;
+  return { dispo, somme, gouttieres };
+}
+
+function mesurer() {
+  const largeur = Number(taille.value);
+  document.documentElement.style.setProperty('--largeur-carte', largeur + 'px');
+  tailleValeur.textContent = largeur + ' px';
+  const hauteur = Math.round(largeur * 1.25);
+  hauteurCarte.textContent = hauteur + ' px';
+
+  const { dispo, somme, gouttieres } = contraintes();
+  if (!dispo || dispo <= 0) { bilanPlace.className = ''; bilanPlace.textContent = '—'; return; }
+  const ratio = (hauteur * somme + gouttieres) / dispo;
+  const largeurMax = Math.floor((dispo - gouttieres) / (somme * 1.25));
+  bilanPlace.className = ratio > 1 ? 'alerte' : 'ok';
+  bilanPlace.innerHTML = ratio > 1
+    ? `besoin <b>${Math.round(ratio * 100)} %</b> de la place — il faut <b>${Math.max(60, largeurMax)} px</b>`
+    : `tient dans <b>${Math.round(ratio * 100)} %</b> de la place`;
+}
+
+document.querySelectorAll('.onglets button').forEach((bouton) => {
+  bouton.addEventListener('click', () => {
+    vue = bouton.dataset.vue;
+    document.querySelectorAll('.onglets button').forEach((b) => b.setAttribute('aria-pressed', String(b === bouton)));
+    rendre();
+    const { dispo, somme, gouttieres } = contraintes();
+    if (vue === 'aujourdhui') taille.value = '142';
+    else if (dispo > 0) {
+      const largeurMax = Math.floor((dispo - gouttieres) / (somme * 1.25));
+      if (largeurMax < Number(taille.value)) taille.value = String(Math.max(86, largeurMax));
+    }
+    mesurer();
+  });
+});
+taille.addEventListener('input', mesurer);
+window.addEventListener('resize', mesurer);
+rendre();
+mesurer();
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { attaqueDirectePermise, ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
+import { caseAutorisee, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -1193,11 +1194,11 @@ function casesRangee(camp) {
   const positions = new Map();
   creatures.forEach((entite, index) => {
     const caseTrouvee = cases.indexOf(entite);
-    // Une créature hors des cinq cases (sauvegarde incomplète) est mise à
+    // Une créature hors des cases du champ (sauvegarde incomplète) est mise à
     // l'écart plutôt que déclarée voisine d'une case fixe par accident.
     positions.set(entite, caseTrouvee >= 0
-      ? caseTrouvee
-      : RPG_MANA_ESSAI_CHAMP_MAX + index);
+      ? positionDeCase(caseTrouvee)
+      : 1000 + index);
   });
   return positions;
 }
@@ -4562,7 +4563,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const modele = jetonById(effet.jeton);
       if (!modele) return;
       const nombre = effet.remplirChamp
-        ? Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length)
+        ? Math.max(0, champMax(duel) - duel[cote].creatures.length)
         : Math.max(0, Math.floor(Number(effet.nombre) || 1));
       if (!nombre || duel.moba?.winner) return;
       const source = duel[cote].creatures.find((entite) => entite.id === sauf);
@@ -5919,7 +5920,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
 const reservationsInvocation = new WeakMap();
 function placesLibresChamp(duel, cote) {
   if (duel.modeMana !== RPG_MODE_MANA_ESSAI) return Infinity;
-  return Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length - (reservationsInvocation.has(duel[cote]) ? 1 : 0));
+  return Math.max(0, champMax(duel) - duel[cote].creatures.length - (reservationsInvocation.has(duel[cote]) ? 1 : 0));
 }
 
 /**
@@ -5931,35 +5932,47 @@ function placesLibresChamp(duel, cote) {
  */
 function placerDansEmplacement(duel, cote, entite, prefere = null) {
   if (duel.modeMana !== RPG_MODE_MANA_ESSAI || !entite) return;
-  const prises = new Set(rpgEmplacementsChamp(duel[cote])
+  const maximum = champMax(duel);
+  const cases = rpgEmplacementsChamp(duel[cote], maximum);
+  const prises = new Set(cases
     .map((occupant, index) => (occupant && occupant !== entite ? index : null))
     .filter((index) => index !== null));
   const reservee = reservationsInvocation.get(duel[cote]);
   if (Number.isInteger(reservee)) prises.add(reservee);
-  if (Number.isInteger(prefere) && prefere >= 0 && prefere < RPG_MANA_ESSAI_CHAMP_MAX && !prises.has(prefere)) {
+  const libres = [];
+  for (let index = 0; index < maximum; index += 1) if (!prises.has(index)) libres.push(index);
+  if (!libres.length) return;
+  const carte = duelCardById(entite.carteId) ?? entite;
+  if (!lignesActives(duel)) {
+    // Mode historique, une seule ligne : la case demandée, sinon la première.
+    entite.emplacement = Number.isInteger(prefere) && libres.includes(prefere) ? prefere : libres[0];
+    return;
+  }
+  // Les deux lignes : la case demandée compte si elle est libre **et** dans la
+  // ligne de la carte — une mêlée ne recule pas, une archer ne passe pas
+  // devant. Sans choix (jeton, réanimation, IA), la première case de sa ligne.
+  if (Number.isInteger(prefere) && libres.includes(prefere) && caseAutorisee(carte, prefere)) {
     entite.emplacement = prefere;
     return;
   }
-  for (let index = 0; index < RPG_MANA_ESSAI_CHAMP_MAX; index += 1) {
-    if (!prises.has(index)) {
-      entite.emplacement = index;
-      return;
-    }
-  }
+  const choix = caseParDefaut(carte, libres);
+  if (choix !== null && choix !== undefined) entite.emplacement = choix;
 }
 
 /**
- * Les cinq cases d'un camp (`duel.joueur`, `duel.sorcier`) en essai : un tableau de cinq entrées, la créature
- * qui occupe chaque case ou `null`. Une créature sans case connue (partie
- * sauvegardée avant les cases fixes) ou en doublon prend la première case
- * libre, dans l'ordre de la rangée — sans rien modifier de l'état du duel.
+ * Les cases d'un camp (`duel.joueur`, `duel.sorcier`) en essai : un tableau
+ * d'une entrée par case — cinq, ou dix quand les deux lignes sont ouvertes
+ * (`champMax`) —, la créature qui occupe chaque case ou `null`. Une créature
+ * sans case connue (partie sauvegardée avant les cases fixes) ou en doublon
+ * prend la première case libre, dans l'ordre de la rangée — sans rien
+ * modifier de l'état du duel.
  */
-export function rpgEmplacementsChamp(camp) {
-  const cases = Array.from({ length: RPG_MANA_ESSAI_CHAMP_MAX }, () => null);
+export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX) {
+  const cases = Array.from({ length: maximum }, () => null);
   const sansCase = [];
   for (const entite of camp?.creatures ?? []) {
     const index = entite?.emplacement;
-    if (Number.isInteger(index) && index >= 0 && index < RPG_MANA_ESSAI_CHAMP_MAX && !cases[index]) {
+    if (Number.isInteger(index) && index >= 0 && index < maximum && !cases[index]) {
       cases[index] = entite;
     } else {
       sansCase.push(entite);
@@ -6537,22 +6550,35 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (!recette.ok) return recette;
   }
   if (duel.modeMana === RPG_MODE_MANA_ESSAI
-    && camp.creatures.length - sacrifices.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
+    && camp.creatures.length - sacrifices.length >= champMax(duel)) {
+    return { ok: false, raison: 'champ-plein' };
+  }
+  // Deux lignes : c'est **sa** ligne qui doit avoir une place. Cinq mêlées
+  // devant ne laissent pas entrer une sixième, même fond vide.
+  if (lignesActives(duel)
+    && !casesLibresPour(camp, carte, champMax(duel), sacrifices.map((e) => e.id)).length) {
     return { ok: false, raison: 'champ-plein' };
   }
   const sacrifice = sacrifices[0] ?? null;
   // La case choisie se valide tôt, comme le sacrifice : hors du champ ou
   // déjà occupée (par une autre que la victime du sacrifice), la pose est
   // refusée avant paiement et sans rien changer à la table.
-  const emplacementChoisi = duel.modeMana === RPG_MODE_MANA_ESSAI && emplacement !== null && emplacement !== undefined
+  let emplacementChoisi = duel.modeMana === RPG_MODE_MANA_ESSAI && emplacement !== null && emplacement !== undefined
     ? emplacement
     : null;
   if (emplacementChoisi !== null) {
     if (!Number.isInteger(emplacementChoisi)
-      || emplacementChoisi < 0 || emplacementChoisi >= RPG_MANA_ESSAI_CHAMP_MAX) {
+      || emplacementChoisi < 0 || emplacementChoisi >= champMax(duel)) {
       return { ok: false, raison: 'emplacement' };
     }
-    const occupant = rpgEmplacementsChamp(camp)[emplacementChoisi];
+    // Une case hors de la ligne de la carte n'est pas une erreur : elle est
+    // ignorée, et la pose se rabat sur la première case libre de sa ligne
+    // (voir `placerDansEmplacement`). Glisser une archère devant ne la casse
+    // pas, elle se range derrière.
+    if (lignesActives(duel) && !caseAutorisee(carte, emplacementChoisi)) emplacementChoisi = null;
+    const occupant = emplacementChoisi === null
+      ? null
+      : rpgEmplacementsChamp(camp, champMax(duel))[emplacementChoisi];
     if (occupant && !sacrifices.some(e => e.id === occupant.id)) {
       return { ok: false, raison: 'emplacement' };
     }
@@ -6743,7 +6769,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   let caseSacrifice = null;
   if (sacrifice) {
     emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
-    caseSacrifice = rpgEmplacementsChamp(camp).findIndex((occupant) => occupant?.id === sacrifice.id);
+    caseSacrifice = rpgEmplacementsChamp(camp, champMax(duel)).findIndex((occupant) => occupant?.id === sacrifice.id);
     if (duel.modeMana === RPG_MODE_MANA_ESSAI) reservationsInvocation.set(camp, emplacementChoisi ?? caseSacrifice);
     try {
       // Une recette d’Ascension paie tous ses corps simultanément : les
@@ -8241,7 +8267,12 @@ export function rpgLancerAttaque(
       const ciblesLegales = duel[adv].creatures.filter((entite) =>
         (!duel.moba || attaquant.mobaLane === 'center' || entite.mobaLane === attaquant.mobaLane)
         && !rpgEstProtegee(entite, cardColors(duelCardById(attaquant.carteId))));
-      if (!ciblesDefenseur(ciblesLegales, attaquant).some((entite) => entite.id === cible.id)) {
+      // Les deux lignes d'abord : le fond est hors de portée d'une attaque de
+      // mêlée tant que le front adverse tient (`rpgLignes.js`).
+      const atteignables = lignesActives(duel) && !duel.moba
+        ? filtreLigne(attaquant, duel[adv].creatures, ciblesLegales)
+        : ciblesLegales;
+      if (!ciblesDefenseur(atteignables, attaquant).some((entite) => entite.id === cible.id)) {
         return { ok: false, raison: 'defenseur' };
       }
     }

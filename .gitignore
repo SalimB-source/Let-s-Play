@@ -30,3 +30,7 @@ desktop/pack/
 # Démo isolée de la cérémonie du coffret (artefact local, pas livré)
 demo-coffret/bundle.js
 demo-coffret/bundle.css
+
+# Aperçu du plateau figé (artefact généré, pas livré) — se régénère avec
+# `node scripts/apercu-plateau-deux-lignes.mjs`
+docs/plateau-deux-lignes.html

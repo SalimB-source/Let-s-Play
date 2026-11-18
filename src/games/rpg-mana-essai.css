@@ -1004,3 +1004,92 @@
 
 .rpg-battle.is-reduced .rpg-card-tear-fx__half,
 .rpg-battle.is-reduced .rpg-card-tear-fx > b { animation: none !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LES DEUX LIGNES DU CHAMP — le front devant, les distances derrière
+   ──────────────────────────────────────────────────────────────────────────
+   Cinq colonnes, deux rangées. La ligne vient de la carte, jamais du joueur :
+   les corps à corps (et les Défenseurs) tiennent le front, face à
+   l'adversaire, les créatures « À distance » se rangent derrière. La règle
+   vit dans `rpgLignes.js` ; ici, seulement la géométrie.
+
+   Le front est toujours du côté de l'adversaire : en **haut** de chaque camp
+   pour le sorcier (rangée 2), en **bas** pour le joueur (rangée 1). Chaque
+   rangée garde ses cinq colonnes, donc une case reste la même colonne d'une
+   ligne à l'autre.
+
+   Deux hauteurs de carte doivent tenir là où une seule tenait : les cartes
+   du champ passent à ~70 % de leur largeur d'origine, et la rangée du fond
+   porte un voile doré tant que le front tient (`data-front-tient`). Front
+   tombé, le voile s'éteint et le fond redevient une cible ordinaire.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] {
+  /* Deux rangées dans la bande d'une seule : ~70 % de la largeur d'une carte
+     d'origine (142 px au 1080p → 114 px, 92 px au 768p). La colonne reste la
+     mesure commune de la carte et de sa case : elles ne peuvent pas dériver
+     l'une de l'autre. */
+  --essai-colonne: clamp(44px, min(7vw, 10.6vh), 116px);
+  grid-template-rows: repeat(2, min-content);
+  align-content: start;
+  row-gap: clamp(6px, .8vh, 11px);
+  /* Deux hauteurs de carte (ratio 4/5) plus leur gouttière : même vide, la
+     rangée garde ses dix cases à l'écran. */
+  min-height: calc(var(--essai-colonne) * 2.5 + clamp(6px, .8vh, 11px));
+  column-gap: clamp(14px, 1.2vw, 22px);
+}
+/* La carte posée prend sa colonne (1 à 5) et la rangée de sa ligne. La pile
+   et le wrapper de prison suivent la carte qu'ils portent. */
+.rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
+  grid-column: var(--case-col, auto);
+  width: min(100%, var(--essai-colonne));
+}
+.card-row[data-lignes="true"] > .rpg-card-stack > .rpg-card,
+.card-row[data-lignes="true"] > .rpg-card-prison > .rpg-card {
+  width: 100%;
+}
+.card-row--equipe[data-lignes="true"] > [data-ligne="front"] { grid-row: 1; }
+.card-row--equipe[data-lignes="true"] > [data-ligne="fond"] { grid-row: 2; }
+.card-row--ennemi[data-lignes="true"] > [data-ligne="front"] { grid-row: 2; }
+.card-row--ennemi[data-lignes="true"] > [data-ligne="fond"] { grid-row: 1; }
+
+/* Les cases dessinées suivent exactement la même grille : cinq colonnes, deux
+   rangées, la même gouttière. Elles sont posées en absolu sur toute la
+   rangée — leur grille est donc celle du champ, pas celle du flux. */
+.card-row[data-lignes="true"] .rpg-creature-slots {
+  grid-template-rows: repeat(2, min-content);
+  align-content: start;
+  row-gap: clamp(6px, .8vh, 11px);
+}
+.card-row[data-lignes="true"] .rpg-creature-slot {
+  grid-column: var(--case-col, auto);
+  width: min(100%, var(--essai-colonne));
+  max-width: none;
+}
+.card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 1; }
+.card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 2; }
+.card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 2; }
+.card-row--ennemi[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 1; }
+
+/* Le fond protégé : un voile doré discret sur ses cases, et la ligne reste
+   un peu en retrait — c'est une ligne plus lointaine, pas une seconde
+   rangée de mêlée. */
+.card-row[data-lignes="true"] > [data-ligne="fond"] { opacity: .95; }
+.card-row[data-lignes="true"][data-front-tient="true"] .rpg-creature-slot[data-ligne="fond"] {
+  border-color: rgba(246, 211, 122, .42);
+  background: radial-gradient(120% 90% at 50% 100%, rgba(246, 211, 122, .10), rgba(10, 8, 5, .30) 72%);
+  box-shadow: inset 0 0 22px rgba(246, 211, 122, .10), inset 0 0 22px rgba(0, 0, 0, .45);
+}
+/* Front tombé : plus de voile, le fond est à découvert. */
+.card-row[data-lignes="true"][data-front-tient="false"] .rpg-creature-slot[data-ligne="fond"] {
+  border-color: rgba(214, 122, 106, .5);
+  background: radial-gradient(120% 90% at 50% 100%, rgba(214, 122, 106, .10), rgba(10, 8, 5, .30) 72%);
+}
+
+/* Au doigt, les deux rangées se mesurent sur la carte du champ, à 72 % : la
+   bande d'un camp garde deux rangées lisibles sur un téléphone. */
+.rpg-battle--touch[data-mode-mana="essai"] .card-row[data-lignes="true"] {
+  --essai-colonne: calc(var(--rpg-field-card, var(--duel-card, 64px)) * .72);
+  column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
+  row-gap: 4px;
+  min-height: calc(var(--rpg-field-card, var(--duel-card, 64px)) * .72 * 2.5 + 4px);
+}

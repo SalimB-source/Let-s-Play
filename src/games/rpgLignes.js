@@ -1,0 +1,166 @@
+/**
+ * Le Sablier — les **deux lignes** du champ de bataille.
+ *
+ * Le champ de cinq places devient un champ de **deux lignes de cinq cases** :
+ * une ligne de **front**, face à l'adversaire, et une ligne du **fond**,
+ * derrière elle. La ligne n'est pas un choix : elle vient de la **carte**.
+ *
+ * - une créature **À distance** (`carte.distance`) se tient au fond ;
+ * - les autres — les corps à corps — tiennent le front ;
+ * - le **Défenseur** est devant, toujours : c'est le mur, et sa ligne gagne
+ *   sur tout le reste (un Défenseur « à distance » resterait devant).
+ *
+ * `poserCarte(…, emplacement)` peut encore désigner une case précise (glisser
+ * une carte sur une case, raccourci) : la case est refusée si elle n'est pas
+ * dans la ligne de la carte, et la pose se rabat alors sur la première case
+ * libre de cette ligne (`caseParDefaut`).
+ *
+ * ## La règle
+ *
+ * **Tant qu'une créature tient le front, le fond est hors de portée des
+ * attaques de mêlée.** Une attaque de mêlée ne peut pas désigner une créature
+ * du fond : elle doit d'abord abattre la ligne qui la protège. Deux attaquants
+ * passent la ligne :
+ *
+ * - l'**Attaque ciblée** (`coupRapide`), qui choisit déjà sa cible et ignore
+ *   les Défenseurs — l'archer voit le fond ;
+ * - l'**Infiltration** (`infiltration`), qui se glisse derrière les lignes.
+ *
+ * Le **Défenseur** reste devant : sa ligne est imposée (`ligneObligee`), et il
+ * continue d'attirer les attaques — les deux règles se composent, le filtre de
+ * ligne s'applique **avant** la priorité des Défenseurs (voir
+ * `rpgCiblesIndividuellesClassique`).
+ *
+ * ## Ce que la règle ne fait pas
+ *
+ * - **Les sorts ne sont pas concernés** : une magie garde toutes ses cibles.
+ *   Seules les attaques de créature suivent la ligne, sinon le fond serait
+ *   invulnérable.
+ * - **Front tombé, plus de protection** : dès qu'aucune créature ne tient le
+ *   front, le fond redevient une cible ordinaire. C'est ce qui empêche la
+ *   règle de figer une partie — un camp réduit à ses archers reste attaquable.
+ * - **Hors duel à lignes** (`duel.lignes !== true`) : aucune créature n'a de
+ *   case de fond, `ligneDe` rend toujours `front`, et le filtre ne retire rien.
+ *   Les modes historiques, le MOBA et les parties sauvegardées d'avant les
+ *   lignes gardent donc exactement leur comportement.
+ *
+ * ## La géométrie
+ *
+ * Une seule source de vérité : la **case** de la créature (`entite.emplacement`,
+ * 0 à 9, comme avant mais sur dix places). Les cases 0 à 4 sont le front, les
+ * cases 5 à 9 le fond. Rien d'autre n'est stocké : une créature déplacée de
+ * ligne change de case, et une sauvegarde relue retrouve sa ligne toute seule.
+ */
+
+import { estDefenseur } from './rpgDefenseur.js';
+
+export const RPG_LIGNE_FRONT = 'front';
+export const RPG_LIGNE_FOND = 'fond';
+export const RPG_LIGNES = Object.freeze([RPG_LIGNE_FRONT, RPG_LIGNE_FOND]);
+
+/** Cinq cases par ligne, comme le champ d'origine. */
+export const RPG_LIGNES_CASES = 5;
+/** Les dix cases du champ à deux lignes (front 0-4, fond 5-9). */
+export const RPG_LIGNES_CHAMP_MAX = RPG_LIGNES_CASES * 2;
+
+/** Les lignes sont une variante de partie, portée par le duel lui-même —
+ *  comme `duel.moba` ou `duel.modeMana`. Sans ce drapeau, tout est en front. */
+export function lignesActives(duel) {
+  return Boolean(duel?.lignes);
+}
+
+/** La ligne d'une case. Hors bornes (sauvegarde retouchée, case inconnue),
+ *  la case est traitée comme du front : on ne cache jamais une créature
+ *  derrière une protection qu'elle n'a pas. */
+export function ligneDeCase(index) {
+  return Number.isInteger(index) && index >= RPG_LIGNES_CASES && index < RPG_LIGNES_CHAMP_MAX
+    ? RPG_LIGNE_FOND
+    : RPG_LIGNE_FRONT;
+}
+
+/** La ligne d'une créature — `front` par défaut, y compris pour une entité
+ *  sans case (mode historique, jeton pas encore placé). */
+export function ligneDe(entite) {
+  return ligneDeCase(entite?.emplacement);
+}
+
+/** Les cases d'une ligne, dans l'ordre. */
+export function casesDeLigne(ligne) {
+  const debut = ligne === RPG_LIGNE_FOND ? RPG_LIGNES_CASES : 0;
+  return Array.from({ length: RPG_LIGNES_CASES }, (_, index) => debut + index);
+}
+
+/** La ligne d'une carte. **Défenseur** devant, **À distance** derrière, les
+ *  corps à corps devant. Aucune carte n'est libre : le champ se lit d'un coup
+ *  d'œil, et une créature ne se cache jamais là où le joueur ne l'attend pas. */
+export function ligneObligee(carte) {
+  if (estDefenseur(carte)) return RPG_LIGNE_FRONT;
+  return carte?.distance ? RPG_LIGNE_FOND : RPG_LIGNE_FRONT;
+}
+
+/** Une case que cette carte a le droit d'occuper. */
+export function caseAutorisee(carte, index) {
+  return ligneDeCase(index) === ligneObligee(carte);
+}
+
+/** Les cases encore libres pour cette carte : les places non prises **de sa
+ *  ligne**. `sansIds` retire des occupants du calcul — les victimes d'un
+ *  sacrifice libèrent leur case avant que la créature n'arrive. */
+export function casesLibresPour(camp, carte, maximum = RPG_LIGNES_CHAMP_MAX, sansIds = []) {
+  const prises = new Set();
+  for (const entite of camp?.creatures ?? []) {
+    if (sansIds.includes(entite?.id)) continue;
+    const index = entite?.emplacement;
+    if (Number.isInteger(index) && index >= 0 && index < maximum) prises.add(index);
+  }
+  const libres = [];
+  for (let index = 0; index < maximum; index += 1) {
+    if (!prises.has(index) && caseAutorisee(carte, index)) libres.push(index);
+  }
+  return libres;
+}
+
+/** La case qu'une créature prend quand personne n'a choisi : la première case
+ *  libre **de sa ligne**. `null` quand sa ligne est pleine — la créature
+ *  n'entre pas, plutôt que d'aller se cacher derrière la ligne du joueur. */
+export function caseParDefaut(carte, libres = []) {
+  return libres.find((index) => caseAutorisee(carte, index)) ?? null;
+}
+
+/** Une créature vivante tient-elle le front de ce camp ? */
+export function frontTient(creatures = []) {
+  return creatures.some((entite) => ligneDe(entite) === RPG_LIGNE_FRONT);
+}
+
+/** Cette cible est-elle abritée derrière la ligne de son camp, pour cet
+ *  attaquant-là ? Attaque ciblée et Infiltration passent la ligne. */
+export function ligneProtege(attaquant, cible, creaturesCible = []) {
+  if (ligneDe(cible) !== RPG_LIGNE_FOND) return false;
+  if (attaquant?.coupRapide || attaquant?.infiltration) return false;
+  return frontTient(creaturesCible);
+}
+
+/** Les cibles que cet attaquant peut réellement désigner, une fois le fond
+ *  retiré. L'ordre des cibles survivantes est conservé : les appelants
+ *  gardent leurs priorités (Défenseur, voie du MOBA, protection d'élément). */
+export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
+  if (!frontTient(creaturesCible)) return cibles;
+  return cibles.filter((cible) => !ligneProtege(attaquant, cible, creaturesCible));
+}
+
+/** Le nombre de cases du champ de ce duel : dix quand les lignes sont
+ *  ouvertes, cinq sinon. Une seule question à poser partout où le moteur
+ *  compte les places. */
+export function champMax(duel) {
+  return lignesActives(duel) ? RPG_LIGNES_CHAMP_MAX : RPG_LIGNES_CASES;
+}
+
+/** L'ordonnée d'une case pour les règles de **voisinage** (auras de Tarek,
+ *  liens, adjacence) : les deux lignes sont deux rangées séparées, donc la
+ *  case 4 (bout du front) et la case 5 (début du fond) ne sont pas voisines,
+ *  alors qu'elles se suivent dans la numérotation. */
+export function positionDeCase(index) {
+  const ligne = ligneDeCase(index);
+  const colonne = ligne === RPG_LIGNE_FOND ? index - RPG_LIGNES_CASES : index;
+  return ligne === RPG_LIGNE_FOND ? 100 + colonne : colonne;
+}

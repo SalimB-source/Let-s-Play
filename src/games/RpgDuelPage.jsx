@@ -26,6 +26,8 @@ import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
+import { champMax, ligneDeCase, caseAutorisee, ligneObligee, frontTient, lignesActives,
+  RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -911,44 +913,80 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
   );
 }
 
-/** Les cinq emplacements de créatures du mode sans terrains, dessinés sous
- * la rangée de chaque camp : une case par créature jouable, pleine quand elle
+/** Les emplacements de créatures du mode sans terrains, dessinés sous la
+ * rangée de chaque camp : une case par créature jouable, pleine quand elle
  * est occupée, en pointillés quand elle attend encore sa créature.
  *
+ * Sur **deux lignes** (`deuxLignes`, les dix cases du champ), les cases se
+ * lisent comme le champ lui-même : les cinq du front d'un côté, les cinq du
+ * fond derrière, et le fond porte le voile doré tant que le front tient
+ * (`data-front-tient`). Aucune case ne se choisit librement : une carte à
+ * distance n'a que le fond, un corps à corps que le front.
+ *
  * Quand une pose attend sa case (`choixEmplacement`, côté joueur), les cases
- * libres deviennent de vrais boutons : clic, doigt ou clavier (touches 1 à 5)
- * posent la créature en attente sur la case choisie. Une case occupée ne se
- * désigne jamais : échanger une créature contre une autre passe par le
- * sacrifice du plateau plein (`sacrificeEnCours`), pas par ici. */
-export function CreatureSlots({ camp, cote, choixEmplacement = false, nomCartePose = null, onChoisirEmplacement = null, emplacementSurvole = null }) {
+ * libres **de la ligne de la carte** deviennent de vrais boutons : clic,
+ * doigt ou clavier (touches 1 à 5, la colonne) posent la créature en attente
+ * sur la case choisie. Une case occupée ne se désigne jamais : échanger une
+ * créature contre une autre passe par le sacrifice du plateau plein
+ * (`sacrificeEnCours`), pas par ici. */
+export function CreatureSlots({
+  camp,
+  cote,
+  maximum = RPG_MANA_ESSAI_CHAMP_MAX,
+  deuxLignes = false,
+  choixEmplacement = false,
+  ligneChoisissable = null,
+  nomCartePose = null,
+  onChoisirEmplacement = null,
+  emplacementSurvole = null,
+}) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
-  const cases = rpgEmplacementsChamp(camp);
+  const cases = rpgEmplacementsChamp(camp, maximum);
   const occupees = cases.filter(Boolean).length;
+  // Le fond n'est hors de portée que tant qu'une créature tient le front.
+  const fondProtege = deuxLignes && frontTient(camp?.creatures ?? []);
+  const colonnes = deuxLignes ? RPG_LIGNES_CASES : 0;
+  const libelleLigne = (ligne) => (ligne === RPG_LIGNE_FOND ? 'de la ligne du fond' : 'de la ligne de front');
   return (
     <div
       className={`rpg-creature-slots rpg-creature-slots--${cote}${choixEmplacement ? ' is-choix-ouvert' : ''}`}
-      data-creature-slots={RPG_MANA_ESSAI_CHAMP_MAX}
+      data-creature-slots={maximum}
       data-creature-slots-occupes={occupees}
+      data-lignes={deuxLignes ? 'true' : undefined}
+      data-front-tient={deuxLignes ? (fondProtege ? 'true' : 'false') : undefined}
       data-choix-emplacement={choixEmplacement ? 'true' : undefined}
-      aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${RPG_MANA_ESSAI_CHAMP_MAX} occupés`}
+      aria-label={`Emplacements de créatures ${cote === 'joueur' ? 'de votre camp' : 'du sorcier'} : ${occupees} sur ${maximum} occupés`}
       aria-hidden="false"
     >
       {cases.map((occupant, index) => {
-        const classes = `rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}${emplacementSurvole === index ? ' is-survole' : ''}`;
-        if (choixEmplacement && !occupant && onChoisirEmplacement) {
+        const ligne = ligneDeCase(index);
+        // Sur deux lignes, le numéro affiché est la **colonne** : les touches
+        // 1 à 5 désignent une colonne, la ligne étant celle de la carte.
+        const colonne = colonnes ? (index % colonnes) + 1 : index + 1;
+        const classes = `rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`
+          + `${ligne === RPG_LIGNE_FOND ? ' is-fond' : ' is-front'}`
+          + `${emplacementSurvole === index ? ' is-survole' : ''}`;
+        const choisissable = choixEmplacement && !occupant && onChoisirEmplacement
+          && (ligneChoisissable === null || ligneChoisissable === ligne);
+        const style = colonnes ? { '--case-col': colonne } : undefined;
+        if (choisissable) {
           return (
             <button
               type="button"
               key={index}
               className={`${classes} rpg-creature-slot--choix`}
+              style={style}
               data-creature-slot={index + 1}
+              data-creature-slot-col={colonne}
+              data-case-index={index}
+              data-ligne={ligne}
               data-creature-slot-occupe="false"
               data-creature-slot-choix="true"
               onClick={() => onChoisirEmplacement(index)}
-              aria-label={`Poser ${nomCartePose ?? 'la créature choisie'} sur l’emplacement ${index + 1}`}
+              aria-label={`Poser ${nomCartePose ?? 'la créature choisie'} sur la colonne ${colonne} ${libelleLigne(ligne)}`}
             >
-              <span className="rpg-creature-slot__numero">{index + 1}</span>
+              <span className="rpg-creature-slot__numero">{colonne}</span>
             </button>
           );
         }
@@ -956,11 +994,15 @@ export function CreatureSlots({ camp, cote, choixEmplacement = false, nomCartePo
           <span
             key={index}
             className={classes}
+            style={style}
             data-creature-slot={index + 1}
+            data-creature-slot-col={colonne}
+            data-case-index={index}
+            data-ligne={ligne}
             data-creature-slot-occupe={occupant ? 'true' : 'false'}
             aria-hidden="true"
           >
-            <span className="rpg-creature-slot__numero">{index + 1}</span>
+            <span className="rpg-creature-slot__numero">{colonne}</span>
           </span>
         );
       })}
@@ -3080,7 +3122,10 @@ export function TableCard({
         // Quand la créature est en furie, l'illustration occupe tout l'espace :
         // aucun cadre ni bordure ne vient rogner la peinture pleine page.
         ...(entite.furieDeclenchee ? {} : cardFrameStyle(carte)),
-        ...(caseEssai ? { '--case-essai': caseEssai } : {}),
+        ...(caseEssai ? {
+          '--case-essai': caseEssai,
+          '--case-col': ((caseEssai - 1) % RPG_LIGNES_CASES) + 1,
+        } : {}),
         ...rpgLumiereElementaire(carte),
         // Chaque créature avec Envol a sa propre durée de lévitation : la
         // feuille anime `translate`, `rotate` et `scale`, et cette durée lui
@@ -3088,6 +3133,7 @@ export function TableCard({
         ...(entite.envol ? { '--rpg-envol-duree': `${dureeVol(entite)}s` } : {}),
       }}
       data-case-essai={caseEssai ?? undefined}
+      data-ligne={caseEssai ? ligneDeCase(caseEssai - 1) : undefined}
       data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
       data-entity-id={reserveAscension ? undefined : entite.id}
       data-ascension-reserve-card={reserveAscension ? carte?.id : undefined}
@@ -3303,8 +3349,12 @@ export function TableCard({
   return (
     <span
       className="rpg-card-prison"
-      style={caseEssai ? { '--case-essai': caseEssai } : undefined}
+      style={caseEssai ? {
+        '--case-essai': caseEssai,
+        '--case-col': ((caseEssai - 1) % RPG_LIGNES_CASES) + 1,
+      } : undefined}
       data-case-essai={caseEssai ?? undefined}
+      data-ligne={caseEssai ? ligneDeCase(caseEssai - 1) : undefined}
     >
       <span className="rpg-card__prisonniere" aria-hidden="true">
         <span className="rpg-card__prisonniere-nom">{entite.enCale.name}</span>
@@ -8542,6 +8592,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Les autres étages n'en déclarent pas — `rpgAtoutsSorcier` les ramène à zéro.
       sorcierAtouts: modeTutoriel ? null : etageCourant?.atouts ?? null,
       modeMana: RPG_MODE_MANA_ESSAI,
+      // Les deux lignes du champ (`rpgLignes.js`) : dix cases, une ligne de
+      // front et une ligne du fond, dessinées l'une devant l'autre.
+      lignes: true,
       joueurCouleurs: deckEssai?.elements,
       sorcierCouleurs: adversaireEssai?.elements,
       rng,
@@ -9472,7 +9525,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Une créature attend sa case : les touches 1 à 5 désignent alors
       // l'emplacement numéroté (une case occupée n'a pas de bouton).
       const boutonEmplacement = indexChiffre >= 0
-        ? coque.querySelector(`.rpg-creature-slot--choix[data-creature-slot="${indexChiffre + 1}"]`)
+        ? coque.querySelector(`.rpg-creature-slot--choix[data-creature-slot-col="${indexChiffre + 1}"]`)
         : null;
       if (boutonEmplacement) {
         event.preventDefault();
@@ -11948,11 +12001,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   /** Une carte qui prend une des cinq cases du champ quand on la joue. */
   const cartePrendUneCase = (carte) => carte?.kind === 'creature' || carte?.kind === 'hero' || carte?.kind === 'site';
 
-  /** Les numéros (0 à 4) des cases encore libres dans la rangée du joueur. */
-  const casesLibresJoueur = () => (duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? rpgEmplacementsChamp(duel.joueur)
+  /** Les numéros des cases encore libres **dans la ligne de cette carte**
+   *  (0 à 9 quand les deux lignes sont ouvertes) : une archère ne se pose
+   *  jamais devant, un corps à corps jamais derrière. */
+  const casesLibresJoueur = (carte = null) => (duel.modeMana === RPG_MODE_MANA_ESSAI
+    ? rpgEmplacementsChamp(duel.joueur, champMax(duel))
       .map((occupant, index) => (occupant ? null : index))
-      .filter((index) => index !== null)
+      .filter((index) => index !== null && (!carte || caseAutorisee(carte, index)))
     : []);
 
   /**
@@ -12032,7 +12087,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // case libre), la leçon du tutoriel garde son geste unique, et une
       // seule case libre ne laisse rien à choisir.
       if (emplacement === undefined && !tutorielActif && cartePrendUneCase(carte)
-        && casesLibresJoueur().length > 1) {
+        && casesLibresJoueur(carte).length > 1) {
         setPoseEnCours({ carteId, handIndex: index });
         jouerSfx('select');
         force();
@@ -12052,7 +12107,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(pose.carteId);
     const handIndex = Number.isInteger(pose.handIndex) && duel.joueur.main[pose.handIndex] === pose.carteId
       ? pose.handIndex : duel.joueur.main.indexOf(pose.carteId);
-    if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur)[index]) {
+    if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur, champMax(duel))[index]
+      || !caseAutorisee(carte, index)) {
       jouerSfx('erreur');
       force();
       return;
@@ -12074,8 +12130,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const rect = element.getBoundingClientRect();
       if (rect.width && clientX >= rect.left && clientX <= rect.right
         && clientY >= rect.top && clientY <= rect.bottom) {
-        const numero = Number(element.dataset.creatureSlot);
-        return Number.isInteger(numero) ? numero - 1 : null;
+        const numero = Number(element.dataset.caseIndex);
+        return Number.isInteger(numero) ? numero : null;
       }
     }
     return null;
@@ -13675,7 +13731,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const campJoueur = champEnPiles(duel.joueur.creatures);
   // Mode essai : la colonne (1 à 5) de la case de chaque créature.
   const casesParId = (camp) => (duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? new Map(rpgEmplacementsChamp(camp).flatMap((entite, index) => (entite ? [[entite.id, index + 1]] : [])))
+    ? new Map(rpgEmplacementsChamp(camp, champMax(duel)).flatMap((entite, index) => (entite ? [[entite.id, index + 1]] : [])))
     : null);
   const casesEnnemi = casesParId(duel.sorcier);
   const casesJoueur = casesParId(duel.joueur);
@@ -14290,8 +14346,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
 
         <div className="card-row card-row--ennemi" aria-label="Champ du sorcier"
+          data-lignes={lignesActives(duel) ? 'true' : undefined}
+          data-front-tient={lignesActives(duel) ? (frontTient(duel.sorcier.creatures) ? 'true' : 'false') : undefined}
           data-tutorial-target={cibleTutoriel('enemy-field') ? 'enemy-field' : undefined}>
-          {duel.modeMana === RPG_MODE_MANA_ESSAI && <CreatureSlots camp={duel.sorcier} cote="ennemi" />}
+          {duel.modeMana === RPG_MODE_MANA_ESSAI && (
+            <CreatureSlots
+              camp={duel.sorcier}
+              cote="ennemi"
+              maximum={champMax(duel)}
+              deuxLignes={lignesActives(duel)}
+            />
+          )}
           {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
             const cle = clePile('ennemi', pile.carteId);
             const deployee = pileDeployee('ennemi', pile);
@@ -14376,7 +14441,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-card-stack"
                       key={entite.id}
                       data-entites-pile={pile.entites.map((membre) => membre.id).join(' ')}
-                      style={cardFrameStyle(cardById(pile.carteId))}
+                      data-ligne={casesEnnemi?.get(entite.id) ? ligneDeCase(casesEnnemi.get(entite.id) - 1) : undefined}
+                      style={{
+                        ...cardFrameStyle(cardById(pile.carteId)),
+                        ...(casesEnnemi?.get(entite.id) ? {
+                          '--case-essai': casesEnnemi.get(entite.id),
+                          '--case-col': ((casesEnnemi.get(entite.id) - 1) % RPG_LIGNES_CASES) + 1,
+                        } : {}),
+                      }}
                     >
                       {carte}
                       <button
@@ -14395,12 +14467,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           }) : null}
         </div>
         <div className="card-row card-row--equipe" aria-label="Votre champ de bataille"
+          data-lignes={lignesActives(duel) ? 'true' : undefined}
+          data-front-tient={lignesActives(duel) ? (frontTient(duel.joueur.creatures) ? 'true' : 'false') : undefined}
           data-tutorial-target={cibleTutoriel('player-field') ? 'player-field' : undefined}>
           {duel.modeMana === RPG_MODE_MANA_ESSAI && (
             <CreatureSlots
               camp={duel.joueur}
               cote="joueur"
+              maximum={champMax(duel)}
+              deuxLignes={lignesActives(duel)}
               choixEmplacement={Boolean(poseEnCours)}
+              ligneChoisissable={poseEnCours ? ligneObligee(cardById(poseEnCours.carteId)) : null}
               nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
               onChoisirEmplacement={choisirEmplacement}
               emplacementSurvole={emplacementSurvole}
@@ -14486,7 +14563,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-card-stack"
                       key={entite.id}
                       data-entites-pile={pile.entites.map((membre) => membre.id).join(' ')}
-                      style={cardFrameStyle(cardById(pile.carteId))}
+                      data-ligne={casesJoueur?.get(entite.id) ? ligneDeCase(casesJoueur.get(entite.id) - 1) : undefined}
+                      style={{
+                        ...cardFrameStyle(cardById(pile.carteId)),
+                        ...(casesJoueur?.get(entite.id) ? {
+                          '--case-essai': casesJoueur.get(entite.id),
+                          '--case-col': ((casesJoueur.get(entite.id) - 1) % RPG_LIGNES_CASES) + 1,
+                        } : {}),
+                      }}
                     >
                       {carte}
                       <button

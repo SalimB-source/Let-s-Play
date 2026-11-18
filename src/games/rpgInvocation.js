@@ -1,7 +1,8 @@
 import { combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { cardById } from './rpgCards.js';
-import { RPG_MODE_MANA_ESSAI, RPG_MANA_ESSAI_CHAMP_MAX } from './rpgManaEssai.js';
+import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
+import { champMax } from './rpgLignes.js';
 
 /** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
  * Une Invocation spéciale à son tour est sans sacrifice ni quota. */
@@ -32,7 +33,7 @@ export function rpgInvocationSpecialeSurSonTour(duel, cote, carte) {
     || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente || duel.mobaRechercheEnAttente
     || duel.mobaReponseSuspendue || duel.mobaEmbuscadeArrivee || duel.moba?.centerChoice
     || duel.fin?.gagnant || duel.fin?.nul || duel.moba?.winner) return false;
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX) return false;
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= champMax(duel)) return false;
   return rpgConditionEmbuscadeCommune(duel, cote, carte);
 }
 function embuscade(duel, cote, carte, specialeMoba = false) {
@@ -65,5 +66,5 @@ export function invocationPossible(duel, cote, carte, specialeMoba = false) {
   return !limiteInvocationMoba(duel, cote, carte, specialeMoba)
     && victimesInvocation(camp).length >= nombre
     && (duel.modeMana !== RPG_MODE_MANA_ESSAI
-      || camp.creatures.length - nombre < RPG_MANA_ESSAI_CHAMP_MAX);
+      || camp.creatures.length - nombre < champMax(duel));
 }

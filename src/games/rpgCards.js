@@ -514,7 +514,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Son feu protège aussi ceux qu’elle ne connaît pas.',
   },
   {
-    id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
+    id: 'guetteuse-des-marees', distance: true, name: 'Guetteuse des marées', element: 'eau',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
     arrivee: { type: 'exil-temporaire', cible: 'creature-amie', choisirCible: true },
     text: 'À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
@@ -580,7 +580,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'La piqûre est brève ; le désert prend son temps.',
   },
   {
-    id: 'manticore-des-dunes', name: 'Manticore des dunes',
+    id: 'manticore-des-dunes', distance: true, name: 'Manticore des dunes',
     element: 'sable', cost: 6, atk: 3, def: 6, rarity: 'rare',
     typeLine: 'Créature — Manticore', art: 'manticore-des-dunes',
     poison: { degats: 1, tours: 2 },
@@ -613,7 +613,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Deux cruches pleines, une pour la soif, une pour la plaie.',
   },
   {
-    id: 'guetteur-du-beffroi',
+    id: 'guetteur-du-beffroi', distance: true,
     name: 'Guetteur du beffroi',
     element: 'sable',
     cost: 3,
@@ -668,7 +668,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Sa mort est déjà notée. En double exemplaire.',
   },
   {
-    id: 'sonneur-fele',
+    id: 'sonneur-fele', distance: true,
     name: 'Sonneur fêlé',
     element: 'eau',
     cost: 3,
@@ -682,7 +682,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Un seul coup de bâton sur le bronze fêlé, et l’écho chasse l’intrus.',
   },
   {
-    id: 'veilleuse-des-citernes',
+    id: 'veilleuse-des-citernes', distance: true,
     name: 'Veilleuse des citernes',
     element: 'eau',
     cost: 3,
@@ -709,7 +709,7 @@ export const RPG_CREATURE_CARDS = [
   },
   // ── Veilleurs du Désert : personnages originaux inspirés des peuples amazighs d’Algérie ──
   {
-    id: 'tislit-des-aures',
+    id: 'tislit-des-aures', distance: true,
     name: 'Tislit, éclaireuse des Aurès',
     element: 'sable',
     cost: 1,
@@ -726,6 +726,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'tiziri-du-djurdjura',
+    distance: true,
     name: 'Tiziri, voix du Djurdjura',
     element: 'sable',
     cost: 2,
@@ -734,7 +735,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Amazighe kabyle',
     art: 'tiziri-du-djurdjura',
     arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] },
-    text: 'Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main.',
+    text: 'À distance — Son chant porte au-dessus de la mêlée. Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main.',
     flavor: 'Son chant rassemble les villages avant la tempête — et fait descendre l’eau des crêtes.',
   },
   {
@@ -811,7 +812,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Sous la cendre, quelque chose attend la nuit.',
   },
   {
-    id: 'sahir-des-braises',
+    id: 'sahir-des-braises', distance: true,
     name: 'Sahir des braises',
     element: 'braise',
     cost: 3,
@@ -826,7 +827,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Il trace un cercle dans la poussière et écoute le vent répondre.'
   },
   {
-    id: 'anqa-des-braises',
+    id: 'anqa-des-braises', distance: true,
     name: 'Anqa',
     element: 'braise',
     cost: 5,
@@ -846,7 +847,7 @@ export const RPG_CREATURE_CARDS = [
     // parties sauvegardées) ; seule la fiche change : l'Ifrit des ergs est
     // devenu l'Ifrit furtif, 5/3, et sa disparition en fin de tour se nomme
     // désormais le mot-clé Furtif (le moteur lit toujours `ephemere`).
-    id: 'ifrit-des-ergs',
+    id: 'ifrit-des-ergs', distance: true,
     name: 'Ifrit furtif',
     element: 'braise',
     cost: 5,
@@ -863,7 +864,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Les dunes rougissent avant même qu’il apparaisse.',
   },
   {
-    id: 'djinn-des-braises-voilees',
+    id: 'djinn-des-braises-voilees', distance: true,
     name: 'Djinn des braises voilées',
     element: 'braise', cost: 2, atk: 2, def: 1, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-des-braises-voilees',
@@ -872,7 +873,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'L’ombre frappe avant que la braise ne s’éteigne.',
   },
   {
-    id: 'djinn-de-la-flamme-mourante',
+    id: 'djinn-de-la-flamme-mourante', distance: true,
     name: 'Djinn de la flamme mourante',
     element: 'braise', cost: 3, atk: 2, def: 2, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-de-la-flamme-mourante',
@@ -882,7 +883,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Dans sa dernière étincelle, une vérité subsiste.',
   },
   {
-    id: 'djinn-des-cendres-vengeresses',
+    id: 'djinn-des-cendres-vengeresses', distance: true,
     name: 'Djinn des cendres vengeresses',
     element: 'braise', cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-des-cendres-vengeresses',
@@ -891,7 +892,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Chaque cendre de ses compagnons devient une étincelle de vengeance.',
   },
   {
-    id: 'djinn-du-dernier-brasier',
+    id: 'djinn-du-dernier-brasier', distance: true,
     name: 'Djinn du dernier brasier',
     element: 'braise', cost: 4, atk: 4, def: 3, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-du-dernier-brasier',
@@ -900,7 +901,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Il ne laisse derrière lui que la chaleur des ruines.',
   },
   {
-    id: 'djinn-de-la-premiere-etincelle',
+    id: 'djinn-de-la-premiere-etincelle', distance: true,
     name: 'Djinn de la première étincelle',
     element: 'braise', cost: 1, atk: 2, def: 1, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-de-la-premiere-etincelle',
@@ -909,7 +910,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Il frappe avant que le brasier ne prenne.',
   },
   {
-    id: 'djinn-de-la-fleche-ardente',
+    id: 'djinn-de-la-fleche-ardente', distance: true,
     name: 'Djinn de la flèche ardente',
     element: 'braise', cost: 3, atk: 3, def: 1, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-de-la-fleche-ardente',
@@ -954,7 +955,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
   },
   {
-    id: 'djinn-de-foudre',
+    id: 'djinn-de-foudre', distance: true,
     name: 'Djinn de foudre',
     element: 'sable',
     colors: ['sable', 'braise'],
@@ -990,7 +991,7 @@ export const RPG_CREATURE_CARDS = [
     text: '', flavor: 'Il marche le premier dans la neige fraîche.',
   },
   {
-    id: 'archere-viking-du-givre', name: 'Archère viking du givre', element: 'neige',
+    id: 'archere-viking-du-givre', distance: true, name: 'Archère viking du givre', element: 'neige',
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,
@@ -1060,6 +1061,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'volva-soigneuse',
+    distance: true,
     name: 'Völva soigneuse',
     set: 'serment-des-neuf-hivers',
     element: 'neige', cost: 3, atk: 2, def: 3,
@@ -1071,11 +1073,11 @@ export const RPG_CREATURE_CARDS = [
     // l'arrivée ni quand sa Furie s'allume. Sa Furie, elle, reste entière :
     // +2 ATQ tant qu'elle saigne.
     arrivee: { type: 'soin-creatures', amount: 3, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
-    text: 'Quand la Völva arrive : une créature alliée ciblée — ou elle-même — récupère 3 PV. Furie 2.',
+    text: 'À distance — Elle soigne depuis l’arrière, hors de portée des lames. Quand la Völva arrive : une créature alliée ciblée — ou elle-même — récupère 3 PV. Furie 2.',
     flavor: 'Elle chante pour les vivants avant de compter les morts.',
   },
   {
-    id: 'scalde-des-runes',
+    id: 'scalde-des-runes', distance: true,
     name: 'Scalde des runes',
     element: 'neige',
     cost: 3,
@@ -1263,11 +1265,11 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Quand le ciel devient noir, son armée ne laisse que des cendres.',
   },
   {
-    id: 'eclipse-silencieuse', set: 'soldats-de-la-lune', name: 'Éclipse silencieuse',
+    id: 'eclipse-silencieuse', distance: true, set: 'soldats-de-la-lune', name: 'Éclipse silencieuse',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 1, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     arrivee: { type: 'debuff', cible: 'creature', atk: -2, def: 0, tours: 1 },
-    text: 'À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
+    text: 'À distance — Elle frappe depuis l’ombre de la ligne. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
     flavor: 'La lumière s’éteint avant que la lame ne frappe.',
   },
   {
@@ -1288,7 +1290,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Nul ne voit le pas qui l’éloigne.',
   },
   {
-    id: 'sorcier-du-ressac-noir', set: 'soldats-de-la-lune', name: 'Sorcier du ressac noir',
+    id: 'sorcier-du-ressac-noir', distance: true, set: 'soldats-de-la-lune', name: 'Sorcier du ressac noir',
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
     reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
@@ -1316,7 +1318,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Sous son étendard, les ombres tiennent bon.',
   },
   {
-    id: 'veilleuse-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Veilleuse de la lune givrée',
+    id: 'veilleuse-de-la-lune-givree', distance: true, set: 'soldats-de-la-lune', name: 'Veilleuse de la lune givrée',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
     arrivee: { type: 'gel', cible: 'creature' },
@@ -1324,12 +1326,12 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Sa veille fige le dernier souffle de la nuit.',
   },
   {
-    id: 'archonte-du-sablier-noir', name: 'Archonte du sablier noir',
+    id: 'archonte-du-sablier-noir', distance: true, name: 'Archonte du sablier noir',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 5, atk: 4, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
     arrivee: { type: 'buff', atk: 2, def: 0, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
-    text: 'Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
+    text: 'À distance — Il mène le combat sans y entrer. Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
     flavor: 'Il mesure les siècles au nombre des royaumes engloutis.',
   },
   {
@@ -1447,7 +1449,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'On l’abat, et la nuit prend feu.',
   },
   {
-    id: 'archer-du-pachyderme-ardent',
+    id: 'archer-du-pachyderme-ardent', distance: true,
     name: 'Archer du pachyderme ardent',
     element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
     cost: 6, atk: 4, def: 8, rarity: 'rare',
