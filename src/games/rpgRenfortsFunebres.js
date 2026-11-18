@@ -4,9 +4,8 @@ export const RPG_RENFORTS_FUNEBRES = Object.freeze([
     id: 'gardienne-des-derniers-noms', name: 'Gardienne des derniers noms', kind: 'creature',
     element: 'tenebres', set: 'balance-des-heures', art: 'gardienne-des-derniers-noms',
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humaine · Gardienne',
-    defenseur: true,
     destruction: { type: 'renfort-ascension', zone: 'deck', roles: [{ element: 'tenebres', coutMax: 2 }] },
-    text: 'Défenseur. À sa mort : invoquez spécialement la première créature Ténèbres de coût imprimé 2 ou moins depuis le dessus de votre deck.',
+    text: 'À sa mort : invoquez spécialement la première créature Ténèbres de coût imprimé 2 ou moins depuis le dessus de votre deck.',
     flavor: 'Son dernier souffle réveille un nom que la pierre avait oublié.',
   }),
   Object.freeze({

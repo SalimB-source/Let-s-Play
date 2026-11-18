@@ -4,7 +4,7 @@ import { cardById } from '../src/games/rpgCards.js';
 import { pastillesPourCarte } from '../src/games/effetIcons.js';
 import { rpgNouveauDuel, rpgChoisirBloqueurs } from '../src/games/rpgDuel.js';
 
-const anciennes = ['gardien-de-la-porte-ardente', 'garde-du-trone-givre', 'berserk-du-crepuscule', 'colosse-du-verre-ardent', 'la-barbe-noire'];
+const anciennes = ['gardien-de-la-porte-ardente', 'garde-du-trone-givre', 'colosse-du-verre-ardent', 'la-barbe-noire'];
 
 test('les autres anciennes cartes affichent Défenseur une fois, sans ancienne mécanique', () => {
   for (const id of anciennes) {

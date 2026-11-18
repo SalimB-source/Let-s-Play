@@ -67,12 +67,11 @@ export const RPG_CORBEAU_CREATURES = [
     atk: 3,
     def: 5,
     rarity: 'rare',
-    defenseur: true,
     furie: 2,
     overkill: true,
     tribut: 2,
     typeLine: 'Créature — Berserk viking',
-    text: 'Défenseur. Furie 2 — Quand il survit à des blessures, il gagne +2 ATQ. Tribut 2 — Quand il touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
+    text: 'Furie 2 — Quand il survit à des blessures, il gagne +2 ATQ. Tribut 2 — Quand il touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
     flavor: 'Il ne cherche pas la brèche : il l’ouvre, et la nuit passe derrière lui.',
   }),
   carte({

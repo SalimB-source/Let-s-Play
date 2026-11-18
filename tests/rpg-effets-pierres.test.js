@@ -109,7 +109,7 @@ test('les couleurs demandées suivent le symbole sans recolorer les autres effet
   const exceptions = {
     'i-poison': 'venin',
     'i-rapidite': 'braise', 'i-contre-attaque': 'braise',
-    'i-rebond': 'braise', 'i-vol-de-vie': 'braise', 'i-exil': 'braise', 'i-defenseur': 'orange',
+    'i-rebond': 'braise', 'i-vol-de-vie': 'braise', 'i-exil': 'braise', 'i-defenseur': 'bronze',
     'i-bouclier': 'tenebres', 'i-invocation-speciale': 'or',
     'i-recherche': 'azur',
   };
@@ -130,7 +130,7 @@ test('les couleurs demandées suivent le symbole sans recolorer les autres effet
 
 test('les alias de Défenseur, Bouclier, Recherche, Rebond et Poison conservent leur couleur', () => {
   for (const [cles, pierre] of [
-    [['defenseur', 'i-defenseur'], 'orange'],
+    [['defenseur', 'i-defenseur'], 'bronze'],
     [['bouclier', 'bouclier-lumiere', 'i-bouclier'], 'tenebres'],
     [['recherche', 'recherche-deck', 'i-recherche'], 'azur'],
     [['retour-main', 'retour-apres-tours', 'i-rebond'], 'braise'],

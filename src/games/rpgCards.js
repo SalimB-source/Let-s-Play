@@ -516,9 +516,8 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
-    defenseur: true,
     arrivee: { type: 'exil-temporaire', cible: 'creature-amie', choisirCible: true },
-    text: 'Défenseur. À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
+    text: 'À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
     flavor: 'La marée reprend ce qu’elle protège.',
   },
   {

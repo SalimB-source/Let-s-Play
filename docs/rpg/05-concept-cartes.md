@@ -632,13 +632,9 @@ la créature alliée touchée. La Veilleuse donne également Défenseur à cette
 créature tant qu'elle reste en jeu ; sans autre cible légale, elle reçoit elle-même
 les deux effets. Salem reste en `cible: 'soi'` : le sien ne se prête pas.
 
-Défenseur est aussi porté par Amani, la Guetteuse des marées, le Guerrier au
-bouclier rond, la Gardienne de la balance et l’Onna-musha des cendres : leur
-positionnement de gardien ou leur capacité défensive justifie cette priorité.
-S’y ajoutent la Gardienne des sables ensevelis, la Gardienne des derniers noms,
-le Hatamoto des cendres, la Dune marchante et le Veilleur du dernier crépuscule :
-leurs rôles de protection, de garde ou de riposte s’accordent avec Défenseur.
-Ils conservent leurs autres capacités.
+Défenseur est aussi porté par Amani, le Guerrier au bouclier rond, la Gardienne
+de la balance, l’Onna-musha des cendres, la Dune marchante et le Veilleur du
+dernier crépuscule. Ces cartes conservent leurs autres capacités.
 
 La Tour de sable permet aussi de choisir elle-même comme cible (`cibleSoi: true`).
 

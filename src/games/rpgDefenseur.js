@@ -1,5 +1,17 @@
 import { duelCardById } from './rpgCards.js';
 
+// Les anciennes sauvegardes ont pu figer Défenseur (ou Provocation) sur
+// ces entités. Ce marqueur imprimé ne doit pas survivre au rééquilibrage.
+const cartesSansDefenseurImprime = new Set([
+  'berserk-des-trois-hivers',
+  'jarl-au-marteau-de-guerre',
+  'gardienne-des-sables-ensevelis',
+  'gardienne-des-derniers-noms',
+  'guetteuse-des-marees',
+  'hatamoto-des-cendres',
+  'berserk-du-crepuscule',
+]);
+
 /** Les Défenseurs attirent les attaques accessibles, même engagés ou gelés,
  * sauf celles des créatures avec Infiltration.
  * L'ancienne propriété des Tours reste reconnue dans les parties sauvegardées.
@@ -11,11 +23,8 @@ import { duelCardById } from './rpgCards.js';
 // Les anciennes sauvegardes peuvent encore porter l'ancien marqueur : il
 // représente désormais Défenseur, sans conserver ses anciennes règles.
 export function estDefenseur(entite) {
-  // Les anciennes parties ont enregistré les mots-clés imprimés directement
-  // sur l'entité. Le Berserk et le Jarl au marteau ne possèdent plus leur
-  // Défenseur imprimé ni l'ancien marqueur de Provocation : ils peuvent
-  // toutefois recevoir Défenseur par un effet distinct.
-  if (['berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre'].includes(entite?.carteId ?? entite?.id)) {
+  // Un Défenseur donné par un effet reste actif.
+  if (cartesSansDefenseurImprime.has(entite?.carteId ?? entite?.id)) {
     return Boolean(entite.defenseurAccorde || entite.prioriteAttaqueRapide);
   }
   return Boolean(entite?.defenseur || entite?.defenseurAccorde || entite?.prioriteAttaqueRapide || entite?.provocation

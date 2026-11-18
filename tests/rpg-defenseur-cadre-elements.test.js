@@ -9,7 +9,7 @@ import { CARD_FRAME_COLORS, cardById, cardFrameClass, cardFrameColor } from '../
 
 const exemples = [
   ['gardien-de-la-porte-ardente', 'braise'],
-  ['guetteuse-des-marees', 'eau'],
+  ['tour-des-flots', 'eau'],
   ['gardienne-des-portes-de-sable', 'sable'],
   ['gardien-viking-du-fjord', 'neige'],
   ['garde-du-voile', 'tenebres'],
@@ -52,7 +52,7 @@ test('les Défenseurs gardent la couleur de leur carte, sans aucun cadre', async
   } finally { await vite.close(); }
 });
 
-test('les styles Défenseur gardent la carte rectangulaire et font pulser la pierre orange', () => {
+test('les styles Défenseur gardent la carte rectangulaire et font pulser la pierre marron doré', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|rpg-card__liseret-garde|rpg-card__ombre-garde/);
   assert.doesNotMatch(css, /--rpg-cadre-decoupe|cadre-le-sablier/);

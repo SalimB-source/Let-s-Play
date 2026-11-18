@@ -137,9 +137,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'hatamoto-des-cendres', name: 'Hatamoto des cendres',
     cost: 2, atk: 2, def: 2, rarity: 'commune',
     typeLine: 'Créature — Humain · Samouraï',
-    defenseur: true,
     coupCritique: { chance: 0.25, fois: 2 },
-    text: 'Défenseur. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Il marche derrière son seigneur, et devant la mort.',
   }),
   carte({

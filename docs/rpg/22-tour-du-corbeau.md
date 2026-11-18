@@ -54,7 +54,7 @@ Ténèbres** : elles demandent un pip de chaque couleur et portent le cadre
 | --- | --- | --- | --- | --- |
 | **Corbeau de givre** | 2 | Créature 1/2 | commune | Envol ; à l'arrivée, gèle une créature adverse **de coût 3 ou moins** |
 | **Veilleuse au corbeau noir** | 3 | Créature 2/3 | inhabituelle | Rapidité ; Tribut 1 |
-| **Berserk du crépuscule** | 4 | Créature 3/5 | rare | Défenseur, Furie 2, Tribut 2 — il ouvre le combat, il encaisse, et chaque contact paie |
+| **Berserk du crépuscule** | 4 | Créature 3/5 | rare | Furie 2, Overkill, Tribut 2 — il ouvre le combat, il encaisse, et chaque contact paie |
 | **Valkyrie des neuf nuits** | 5 | Créature 3/4 | rare | Envol, Furie 2 ; à l'arrivée, exile une créature de coût 2 ou moins |
 | **Neige noire** | 6 + 3 PV | Sorcellerie | rare | Détruit les créatures adverses de coût 3 ou moins ; gèle toutes les survivantes |
 | **LE MAÎTRE DES CORBEAUX** | 7 | Héros 5/6 | mythique | Envol, Tenacité, Tribut 1 ; à l'arrivée, exile une créature de coût 4 ou moins |
@@ -62,7 +62,7 @@ Ténèbres** : elles demandent un pip de chaque couleur et portent le cadre
 Trois règles de direction tenues par les tests :
 
 1. **Les deux vocabulaires se lisent sur les fiches.** La Neige apporte Envol,
-   Furie, Défenseur, Tenacité, le gel et la Rapidité ; les Ténèbres apportent
+   Furie, Tenacité, le gel et la Rapidité ; les Ténèbres apportent
    le Tribut, l'exil et les **seuils de coût** — le froid et les corbeaux ne
    prennent que ce qui est assez petit pour eux. Aucune carte n'emprunte un
    mot-clé qu'elle ne pourrait pas expliquer.

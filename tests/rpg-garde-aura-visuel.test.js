@@ -30,8 +30,9 @@ test('Défenseur ou Provocation portent une seule aura orange dans les deux mode
         assert.ok(doc.querySelector('.rpg-card.has-garde'));
         assert.equal(doc.querySelectorAll('[data-effet="defenseur"]').length, 1);
         const icone = doc.querySelector('[data-effet="defenseur"] .rpg-effet-icone');
-        assert.equal(icone?.getAttribute('data-pierre'), 'orange', 'icône Défenseur orange');
-        assert.ok(icone?.querySelector('polygon[fill="#e87519"]'), 'pierre orange visible');
+        assert.equal(icone?.getAttribute('data-pierre'), 'bronze', 'icône Défenseur marron doré');
+        assert.ok(icone?.querySelector('polygon[fill="#93662f"]'), 'champ marron visible');
+        assert.ok(icone?.querySelector('polygon[stroke="#d4b57a"]'), 'liseré doré visible');
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__liseret-garde[aria-hidden="true"]').length, 0,
           'Défenseur ne dessine plus de cadre');
@@ -45,6 +46,12 @@ test('Défenseur ou Provocation portent une seule aura orange dans les deux mode
       assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__liseret-garde'), null);
       assert.equal(rendre(entite(), cote, moba).querySelector('.rpg-card__ombre-garde'), null);
       assert.equal(rendre(entite({ carteId: 'source-de-bimini', defenseur: true }), cote, moba).querySelector('.rpg-card__liseret-garde'), null);
+      const ancienne = entite({ carteId: 'guetteuse-des-marees', defenseur: true, provocation: true });
+      const sansGarde = rendre(ancienne, cote, moba);
+      assert.equal(sansGarde.querySelector('[data-effet="defenseur"]'), null);
+      assert.equal(sansGarde.querySelector('.rpg-card__resonance--garde'), null);
+      const avecDon = rendre({ ...ancienne, defenseurAccorde: true }, cote, moba);
+      assert.equal(avecDon.querySelector('[data-effet="defenseur"] .rpg-effet-icone')?.getAttribute('data-pierre'), 'bronze');
       const avecArme = rendre(entite({ defenseur: true, arme: { carteId: 'armure-de-cendres' } }), cote, moba);
       assert.ok(avecArme.querySelector('.rpg-card.has-garde.has-arme .rpg-card__arme-vignette'));
       const cumul = rendre(entite({ carteId: 'la-barbe-noire', defenseur: true }), cote, moba);
@@ -66,7 +73,7 @@ test('le sonar orange conserve le débordement, la cadence et le mouvement rédu
 });
 
 
-test('le Défenseur reste rectangulaire et son icône orange pulse sans mouvement réduit', () => {
+test('le Défenseur reste rectangulaire et son icône marron doré pulse hors du mode de mouvement réduit', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path/);
   assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre 3\.6s/s);
