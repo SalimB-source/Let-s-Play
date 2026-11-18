@@ -30,8 +30,8 @@ test('Défenseur ou Provocation portent une seule aura orange dans les deux mode
         assert.ok(doc.querySelector('.rpg-card.has-garde'));
         assert.equal(doc.querySelectorAll('[data-effet="defenseur"]').length, 1);
         const icone = doc.querySelector('[data-effet="defenseur"] .rpg-effet-icone');
-        assert.equal(icone?.getAttribute('data-pierre'), 'braise', 'icône Défenseur rouge');
-        assert.ok(icone?.querySelector('polygon[fill="#a8282d"]'), 'pierre rouge visible');
+        assert.equal(icone?.getAttribute('data-pierre'), 'orange', 'icône Défenseur orange');
+        assert.ok(icone?.querySelector('polygon[fill="#e87519"]'), 'pierre orange visible');
         assert.equal(doc.querySelectorAll('.rpg-card__resonance--garde').length, 1);
         assert.equal(doc.querySelectorAll('.rpg-card__liseret-garde[aria-hidden="true"]').length, 0,
           'Défenseur ne dessine plus de cadre');
@@ -66,16 +66,10 @@ test('le sonar orange conserve le débordement, la cadence et le mouvement rédu
 });
 
 
-test('les repères Défenseur restent visibles sous la forme d’écu', () => {
+test('le Défenseur reste rectangulaire et son icône orange pulse sans mouvement réduit', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  assert.match(css, /--rpg-ecusson-masque/);
-  assert.doesNotMatch(css, /rpg-card__ombre-garde|rpg-card__liseret-garde/,
-    'l’écu se dessine sans calque d’habillage supplémentaire');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s);
-  // Les contours des effets restent possibles, mais la garde ne reçoit pas
-  // de filet d'écu : seuls l'ombre, la silhouette et les ondes la distinguent.
-  assert.doesNotMatch(css, /--rpg-ecusson-trait-defenseur/);
-  assert.match(css, /\.rpg-card__resonance:not\(\.rpg-card__resonance--garde\)/);
-  assert.doesNotMatch(css, /overflow: visible !important;/,
-    'le débordement reste celui du plateau (marge de rognage de 58 px)');
+  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path/);
+  assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre 3\.6s/s);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*?animation: none/);
+  assert.match(css, /\.rpg-battle\.is-reduced[^]*?animation: none/);
 });

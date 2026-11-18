@@ -537,7 +537,12 @@ export function rpgReglerHasard(duel, rng = Math.random) {
 export function rpgDeclencherBlocage(duel, cote, cible) {
   const cfg = cible?.blocage ?? duelCardById(cible?.carteId)?.blocage;
   if (!duel?.[cote] || !cible || !cfg || !duel[cote].creatures.includes(cible)) return false;
-  const chance = Math.min(1, Math.max(0, Number(cfg.chance) || 0));
+  // Les parties sauvegardées contiennent une copie de l'ancien 15 % imprimé.
+  // Utiliser le nouveau taux pour ces copies, sans écraser d'autres réglages.
+  const imprime = duelCardById(cible.carteId)?.blocage;
+  const chanceSource = cfg.chance === 0.15 && cfg.def === imprime?.def && imprime?.chance === 0.25
+    ? imprime.chance : cfg.chance;
+  const chance = Math.min(1, Math.max(0, Number(chanceSource) || 0));
   const bonus = Math.max(0, Number(cfg.def) || 0);
   if (!bonus || !chance || (hasardParDuel.get(duel) ?? Math.random)() >= chance) return false;
   cible.pvMax = (cible.pvMax ?? cible.def) + bonus;

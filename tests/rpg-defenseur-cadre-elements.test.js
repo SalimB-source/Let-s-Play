@@ -52,20 +52,12 @@ test('les Défenseurs gardent la couleur de leur carte, sans aucun cadre', async
   } finally { await vite.close(); }
 });
 
-test('les styles Défenseur dessinent l’écu, jamais un cadre de carte', () => {
+test('les styles Défenseur gardent la carte rectangulaire et font pulser la pierre orange', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  // La forme d'écu est portée par des masques et deux pseudo-éléments : aucun
-  // calque d'habillage, aucun cadre Le Sablier, aucune bordure de boîte.
-  assert.match(css, /--rpg-ecusson-masque/);
-  assert.doesNotMatch(css, /rpg-card__liseret-garde|rpg-card__ombre-garde/);
+  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|rpg-card__liseret-garde|rpg-card__ombre-garde/);
   assert.doesNotMatch(css, /--rpg-cadre-decoupe|cadre-le-sablier/);
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*border: 0 !important;/s,
-    'aucune bordure rectangulaire sur une face Défenseur');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s,
-    'l’agrandissement posé reste indépendant du cadre');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/,
-    'la position des statistiques reste inchangée');
-  assert.doesNotMatch(css, /--rpg-ecusson-trait-defenseur/, 'aucun dessin de contour Défenseur');
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::before\s*\{[^}]*drop-shadow\(0 10px 12px[^}]*drop-shadow\(0 6px 8px/s, 'ombre portée renforcée sans toucher aux repères');
-  assert.match(css, /\.rpg-card__resonance:not\(\.rpg-card__resonance--garde\)/, 'le filet des autres effets subsiste sans contour Défenseur');
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier \{[^}]*scale: var\(--rpg-defenseur-echelle\);/s);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/);
+  assert.match(css, /box-shadow: 0 10px 12px/);
+  assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre/s);
 });

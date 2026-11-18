@@ -30,11 +30,12 @@ export function ciblesDefenseur(cibles = [], attaquant = null) {
   return defenseurs.length ? defenseurs : cibles;
 }
 
-/** Une attaque directe est possible face à un champ vide ou à une seule
- * créature avec Infiltration. Envol peut également passer au-dessus des
- * créatures tant qu'aucun Défenseur n'est présent. L'appelant fournit les
- * créatures du champ adverse ou de la voie visée (sans les Sites). */
+/** Une créature adverse avec Envol interdit toute frappe directe, quelle que
+ * soit la capacité de l'attaquant, y compris contre une infiltrée volante.
+ * Sinon, champ vide, unique infiltrée ou Envol sans Défenseur autorisent la
+ * frappe. L'appelant fournit les créatures du champ ou de la voie, sans Sites. */
 export function attaqueDirectePermise(attaquant, creaturesAdverses = []) {
+  if (creaturesAdverses.some((creature) => creature?.envol)) return false;
   return creaturesAdverses.length === 0
     || (creaturesAdverses.length === 1 && Boolean(creaturesAdverses[0]?.infiltration))
     || Boolean(attaquant?.envol && !creaturesAdverses.some(estDefenseur));

@@ -30,13 +30,13 @@ test('les cibles sont celles du MOBA sans les voies : Envol, Infiltration et pri
   vol.envol = true; cache.infiltration = true;
   assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id], directe: false });
   a.envol = true;
-  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: true });
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: false });
   vol.provocation = true; sol.defenseur = true;
   assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id], directe: false });
   vol.provocation = false;
   assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id], directe: false });
   sol.defenseur = false; a.coupRapide = true;
-  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id, cache.id], directe: true });
+  assert.deepEqual(rpgCiblesIndividuellesClassique(d, 'joueur', a.id), { cibles: [sol.id, vol.id, cache.id], directe: false });
 });
 
 test('déclaration puis échange simultané, sans blocage ni phase d’attaque globale', () => {

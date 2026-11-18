@@ -19,11 +19,11 @@ test('attaque normale : même voie, sans Infiltration et sans cible volante pour
   assert.deepEqual(choix(d), { cibles: [], directe: true });
 });
 
-test('Envol : choix de la frappe directe même face à un ennemi volant', () => {
+test('Envol adverse bloque la frappe directe même face à un attaquant volant', () => {
   const d = position({ envol: true }, [entite('sol', 'left'), entite('vol-infiltre', 'left', { envol: true, infiltration: true })]);
-  assert.deepEqual(choix(d), { cibles: ['sol'], directe: true });
+  assert.deepEqual(choix(d), { cibles: ['sol'], directe: false });
   d.sorcier.creatures.push(entite('vol', 'left', { envol: true }));
-  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: true });
+  assert.deepEqual(choix(d), { cibles: ['sol', 'vol'], directe: false });
 });
 
 test('Attaque ciblée : Défenseur ne force que les attaques de sa propre voie', () => {

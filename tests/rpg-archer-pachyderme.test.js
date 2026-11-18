@@ -55,7 +55,7 @@ test('fiche jouable, hybride, capacités et illustration', () => {
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
   assert.ok(carteJouableSansTerrain(c)); assert.ok(c.coupRapide);
-  assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 }); assert.deepEqual(c.blocage, { chance: .15, def: 2 });
+  assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 }); assert.deepEqual(c.blocage, { chance: .25, def: 2 });
   for (const cle of ['coupRapide', 'coupCritique', 'blocage']) assert.ok(effetsDetailles(c).pastilles.find(p => p.cle === cle)?.description, cle);
   assert.match(c.text, /Attaque ciblée/); assert.match(c.text, /Coup critique/); assert.match(c.text, /Blocage/);
   const path = new URL(`../public/cards/${ID}.jpg`, import.meta.url); assert.ok(existsSync(path));
@@ -79,13 +79,13 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
     assert.equal(cible.pv, cible.pvMax); assert.equal(a.pv, 8);
     assert.ok(!(d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === a.id));
   });
-  for (const jet of [.149, .15]) test(`${mode} ${side} : Blocage au seuil ${jet} à l’annonce`, () => {
+  for (const jet of [.249, .25]) test(`${mode} ${side} : Blocage au seuil ${jet} à l’annonce`, () => {
     const d = partie(mode), cible = archer(d, mode, autre(side)), a = poser(d, mode, side, 'ashigaru-des-braises');
     d.tour = side; rpgReglerHasard(d, () => jet);
     assert.ok(declarer(d, mode, side, a, cible).ok);
-    assert.equal(cible.pvMax, jet < .15 ? 10 : 8);
+    assert.equal(cible.pvMax, jet < .25 ? 10 : 8);
     assert.ok(resoudre(d, mode, side).ok);
-    if (mode === 'pvp') assert.deepEqual(rpgPvpVue(d, autre(side)).joueur.creatures.find(e => e.id === cible.id)?.blocage, { chance: .15, def: 2 });
+    if (mode === 'pvp') assert.deepEqual(rpgPvpVue(d, autre(side)).joueur.creatures.find(e => e.id === cible.id)?.blocage, { chance: .25, def: 2 });
   });
   test(`${mode} ${side} : coup critique direct ×2`, () => {
     const d = partie(mode), a = archer(d, mode, side), adv = autre(side); d.tour = side;

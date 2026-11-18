@@ -154,7 +154,7 @@ test('la coque ne laisse aucun ancien 15 % sur Esquive ou Coup critique', () => 
     .map((nom) => readFileSync(new URL(`../docs/rpg/${nom}`, import.meta.url), 'utf8')).join('\n');
   assert.doesNotMatch(docs, /Esquive (?:vaut )?\*{0,2}15 %/u);
   assert.doesNotMatch(docs, /critique \*{0,2}15 %/u);
-  // Les autres jets à 15 % (Attaque ciblée qui rate, gel, blocage) restent.
+  // Les autres jets (Attaque ciblée, gel et Blocage) restent indépendants.
   const cartes = readdirSync(new URL('../src/games/', import.meta.url)).filter((f) => f.endsWith('.js'));
   assert.ok(cartes.length > 10);
 });
