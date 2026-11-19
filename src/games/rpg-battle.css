@@ -3804,7 +3804,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* L'assaut déclaré penche la carte ; `!important` empêche les animations
    d'entrée, d'impact et d'attaque de la redresser pendant l'échange. Une fois
-   l'attaque résolue, `attaquee` ne penche plus rien : l'engagement est muet. */
+   l'attaque résolue, `attaquee` ne penche plus rien : l'engagement se lit au
+   gris de la face (`rpg-etats-cartes.css`), pas à l'inclinaison. */
 .rpg-card[data-combat-tilted="true"] {
   transform: rotate(10deg) !important;
   transform-origin: center;
@@ -3829,9 +3830,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 0 32px rgba(222, 38, 34, .42),
     0 12px 28px rgba(0, 0, 0, .65);
 }
-/* Une créature qui a frappé ne porte plus aucun signe : ni inclinaison, ni
-   portrait grisé (le gris de `rpg-etats-cartes.css` est réservé au mal
-   d'invocation). Seul le bond d'attaque garde sa lueur, le temps du coup. */
+/* Une créature qui a frappé ne penche plus et ne s'allume plus : elle est
+   grisée avec sa face (`rpg-etats-cartes.css`, `is-attacked`). Seul le bond
+   d'attaque garde sa lueur rouge, le temps du coup. */
 
 /* La main est consultable à tout moment ; seul le glisser-déposer joue la carte. */
 .rpg-hand__card[data-jouable="true"] { cursor: grab; }

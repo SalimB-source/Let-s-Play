@@ -38,28 +38,40 @@ est donc une liste d'exceptions à tenir à jour :
 | `is-a-portee` | proie atteignable par la créature survolée, or |
 | `is-blocking`, `is-blocker-*` | déclaration de blocage |
 | `is-declared-attacker` | assaut déclaré : la carte penche de 10° (`data-combat-tilted`) |
-| `is-attacked` | la créature a frappé ce tour — **aucun signe visuel** : elle garde ses couleurs et son assise (voir plus bas) |
+| `is-attacked` | la créature a frappé ce tour : **la face se grise** (voir plus bas) |
 | `is-sacrifice-target`, `is-ascension-*` | victime d'invocation, Ascension |
 | `is-lien-actif`, `is-touch-drop-target`, `is-protege` | lien, dépôt tactile, protection |
 | `fx-*` | une cinématique de combat est en cours |
 
-## L'engagement ne se voit pas
+## L'engagement grise la carte
 
-Attaquer engage la créature jusqu'au tour suivant : elle ne peut plus bloquer,
-être sacrifiée ni avancer. C'est une **règle**, pas une apparence — la carte ne
-grise plus, ne s'incline plus, et son illustration mythique garde tout son
-éclat. Seul l'assaut lui-même se voit : `is-declared-attacker` penche la carte
-le temps de la déclaration, `fx-lunge` porte le bond et sa lueur rouge.
+Attaquer engage la créature jusqu'au tour suivant : elle ne peut plus frapper,
+bloquer, être sacrifiée ni avancer. La table le dit — la carte **entière** se
+grise (`filter: grayscale(1) brightness(.72)`, `rpg-etats-cartes.css`), du même
+gris que la carte tombée : ce qui est gris ne fera plus rien ce tour-ci.
 
-Deux exceptions à ne pas confondre avec l'engagement :
+L'engagement ne fait que cela : la carte ne s'incline pas (seul
+`is-declared-attacker` penche, le temps de la déclaration) et son assise ne
+bouge pas. `fx-lunge` porte le bond et sa lueur rouge, puis le gris prend le
+relais.
 
-- `is-summoning-sick` (mal d'invocation) **garde** son portrait grisé : là, la
-  créature ne peut pas attaquer, et son état doit se lire ;
+Aucun clic n'est retiré : une créature engagée reste une cible de sort et
+d'Attaque ciblée. Quand la table lui parle justement — `is-ciblable`,
+`is-spell-target`, `is-coup-rapide-cible`, `is-selected`, `is-active` —, la
+carte **se rallume** : le ciblage est l'information la plus fraîche, deux
+signaux de sens contraires ne se disputent jamais la même carte.
+
+Deux gris à ne pas confondre avec celui-là :
+
+- `is-summoning-sick` (mal d'invocation) grise **l'illustration seule** : la
+  créature peut encore bloquer, son état de lecture ne couvre pas la face ;
 - un terrain `is-tapped` reste grisé aussi — c'est le mana dépensé, pas la
   créature.
 
-Le libellé accessible dit toujours l'état (« engagée, elle se dégagera au début
-du prochain tour… ») : ce que l'œil ne voit plus, la voix le dit.
+Le MOBA suit la même règle sur ses créatures posées, malgré le bouton désactivé
+de ses emplacements. Le libellé accessible dit toujours l'état (« engagée, elle
+se dégagera au début du prochain tour… ») : le gris pour l'œil, la phrase pour
+la voix.
 
 ## Le contour : or pour nous, rouge pour le sorcier
 
