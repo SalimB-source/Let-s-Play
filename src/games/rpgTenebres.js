@@ -314,7 +314,7 @@ export const RPG_TENEBRES_CREATURES = [
     name: 'Le Seigneur des mâchoires',
     element: 'eau',
     cost: 6,
-    atk: 6,
+    atk: 5,
     def: 6,
     rarity: 'mythique',
     rapidite: true,

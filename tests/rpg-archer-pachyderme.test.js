@@ -50,7 +50,9 @@ function resoudre(d, mode, side) {
 
 test('fiche jouable, hybride, capacités et illustration', () => {
   const c = cardById(ID); assert.ok(c); assert.ok(RPG_DUEL_CARDS.some(card => card.id === ID));
-  assert.equal(c.kind, 'creature'); assert.equal(c.atk, 4); assert.equal(c.def, 8);
+  // Rééquilibrage : une défense en moins (4/7), capacités intactes — c'est le
+  // corps qui paie le privilège du tir, pas la fiche.
+  assert.equal(c.kind, 'creature'); assert.equal(c.atk, 4); assert.equal(c.def, 7);
   assert.equal(c.cost, 6); assert.equal(c.rarity, 'rare'); assert.equal(sacrificesInvocation(c), 1);
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
@@ -68,7 +70,7 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
     cible.pv = cible.pvMax = cible.def = 20; cible.atk = 7; d.tour = side;
     const jets = [.9, .1]; rpgReglerHasard(d, () => jets.shift() ?? .9);
     assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
-    assert.equal(cible.pv, 12); assert.equal(a.pv, 8);
+    assert.equal(cible.pv, 12); assert.equal(a.pv, 7);   // 4/7 : le tireur n'encaisse rien
     assert.ok(d.combatAnimations.some(e => e.type === 'coup-critique' && e.entiteId === a.id && e.fois === 2));
     if (d.moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
@@ -76,14 +78,14 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
     const d = partie(mode), a = archer(d, mode, side), cible = poser(d, mode, autre(side), 'ashigaru-des-braises');
     d.tour = side; rpgReglerHasard(d, () => 0);
     assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
-    assert.equal(cible.pv, cible.pvMax); assert.equal(a.pv, 8);
+    assert.equal(cible.pv, cible.pvMax); assert.equal(a.pv, 7);
     assert.ok(!(d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === a.id));
   });
   for (const jet of [.249, .25]) test(`${mode} ${side} : Blocage au seuil ${jet} à l’annonce`, () => {
     const d = partie(mode), cible = archer(d, mode, autre(side)), a = poser(d, mode, side, 'ashigaru-des-braises');
     d.tour = side; rpgReglerHasard(d, () => jet);
     assert.ok(declarer(d, mode, side, a, cible).ok);
-    assert.equal(cible.pvMax, jet < .25 ? 10 : 8);
+    assert.equal(cible.pvMax, jet < .25 ? 9 : 7);   // 7 DEF, +2 si le Blocage passe
     assert.ok(resoudre(d, mode, side).ok);
     if (mode === 'pvp') assert.deepEqual(rpgPvpVue(d, autre(side)).joueur.creatures.find(e => e.id === cible.id)?.blocage, { chance: .25, def: 2 });
   });
@@ -96,12 +98,17 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
   });
 }
 
-for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : coup critique en défense`, () => {
+// Depuis les deux lignes, une créature « À distance » frappe sans recevoir de
+// coup en retour : attaquée au corps à corps, elle ne rend donc plus son coup —
+// son Coup critique ne peut plus se déclencher en défense. C'était l'ancienne
+// promesse de ce test, restée rouge sur `main` depuis la règle du tir.
+for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : le tireur du fond ne rend pas de coup`, () => {
   const d = partie(mode), cible = archer(d, mode, autre(side)), a = poser(d, mode, side, 'ashigaru-des-braises');
   a.pv = a.pvMax = a.def = 20; d.tour = side;
   const jets = [.9, .1]; rpgReglerHasard(d, () => jets.shift() ?? .9);
   assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
-  assert.equal(a.pv, 12); assert.ok(d.combatAnimations.some(e => e.type === 'coup-critique' && e.entiteId === cible.id && e.fois === 2));
+  assert.equal(a.pv, 20, 'aucune riposte ne part du fond');
+  assert.ok(!(d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === cible.id));
 });
 
 test('MOBA : la carte figure dans le catalogue de construction audité', async () => {

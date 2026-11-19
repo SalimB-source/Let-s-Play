@@ -46,9 +46,10 @@ function resoudre(d, mode, side) {
 const pv = (d, side) => d.moba ? mobaVoie(d.moba, 'left').hp[side] : d[side].pv;
 function fixerPv(d, side, valeur) { if (d.moba) mobaVoie(d.moba, 'left').hp[side] = valeur; else d[side].pv = valeur; }
 
-test('fiche 4/4, coût 4, hybride et trois capacités jouables', () => {
+test('fiche 4/3, coût 4, hybride et trois capacités jouables', () => {
   const c = cardById(ID); assert.ok(c); assert.ok(RPG_DUEL_CARDS.some(card => card.id === ID));
-  assert.deepEqual([c.kind, c.cost, c.atk, c.def], ['creature', 4, 4, 4]);
+  // Rééquilibrage : 4/3 — l'ATQ 4 reste (elle porte le critique et le vol de vie).
+  assert.deepEqual([c.kind, c.cost, c.atk, c.def], ['creature', 4, 4, 3]);
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
   assert.equal(sacrificesInvocation(c), 0); assert.ok(carteJouableSansTerrain(c));
@@ -61,7 +62,7 @@ test('fiche 4/4, coût 4, hybride et trois capacités jouables', () => {
 for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) for (const [jet, multiplicateur] of [[.249, 2], [.25, 1]]) test(`${mode} ${side} : attaque immédiate, critique ${jet} et vol de vie`, () => {
   const d = partie(mode), a = poser(d, mode, side, ID), adv = autre(side);
   assert.ok(a.rapidite && a.volDeVie && rpgPeutAttaquer(a));
-  assert.deepEqual([a.atk, a.pv], [4, 4]);
+  assert.deepEqual([a.atk, a.pv], [4, 3], 'ATQ 4, corps 3');
   fixerPv(d, side, 10); const before = pv(d, adv); rpgReglerHasard(d, () => jet);
   assert.ok(declarer(d, mode, side, a).ok); assert.ok(resoudre(d, mode, side).ok);
   assert.equal(pv(d, adv), before - 4 * multiplicateur);
@@ -113,7 +114,7 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
   adversaire.pv = adversaire.pvMax = adversaire.def = 20; adversaire.atk = 1;
   const a = poser(d, mode, side, ID); fixerPv(d, side, 10); rpgReglerHasard(d, () => .1);
   assert.ok(declarer(d, mode, side, a, adversaire).ok); assert.ok(resoudre(d, mode, side).ok);
-  assert.equal(adversaire.pv, 12); assert.equal(a.pv, 3); assert.equal(pv(d, side), 14);
+  assert.equal(adversaire.pv, 12); assert.equal(a.pv, 2); assert.equal(pv(d, side), 14);
 });
 
 for (const mode of ['classique', 'pvp', 'moba']) test(`${mode} : le Vol de vie arrondit une blessure impaire au supérieur`, () => {

@@ -60,7 +60,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'orochi', name: 'Orochi', honneur: 0,
-    cost: 8, atk: 8, def: 8, rarity: 'mythique',
+    cost: 8, atk: 7, def: 8, rarity: 'mythique',
     typeLine: 'Créature légendaire — Serpent',
     destruction: { type: 'jetons', jeton: 'petit-orochi', nombre: 2 },
     text: 'Quand Orochi meurt, créez deux créatures-jetons « Petit Orochi » 4/4 sous votre contrôle.',

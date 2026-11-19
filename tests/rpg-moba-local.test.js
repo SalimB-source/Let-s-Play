@@ -7421,13 +7421,13 @@ test('Ghul MOBA : parade et protection limitent correctement la cible et son imp
   const duel=partie();duel.joueur.main=['ghul-des-cendres'];duel.joueur.mana.braise=30;const ghul=rpgMobaJouerCreature(duel,'joueur','ghul-des-cendres','left',0).entite;
   rpgFinDeTour(duel);duel.sorcier.main=['gardienne-des-portes-de-sable','trait-de-braise'];duel.sorcier.mana.sable=30;duel.sorcier.mana.braise=30;
   const cible=rpgMobaJouerCreature(duel,'sorcier','gardienne-des-portes-de-sable','right',0).entite;cible.bouclier=1;
-  assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',ghul.id).ok,true);const result=rpgMobaResoudreDestruction(duel,'joueur',cible.id);assert.equal(result.ok,true);assert.equal(cible.pv,4);assert.equal(cible.bouclier,0);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',ghul.id).ok,true);const result=rpgMobaResoudreDestruction(duel,'joueur',cible.id);assert.equal(result.ok,true);assert.equal(cible.pv,3);assert.equal(cible.bouclier,0);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Ghul MOBA : le Ghul IA choisit automatiquement et n’ouvre pas d’attente humaine', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable'];duel.joueur.mana.sable=30;const cible=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;rpgFinDeTour(duel);
   duel.sorcier.main=['ghul-des-cendres'];duel.sorcier.mana.braise=30;const ghul=rpgMobaJouerCreature(duel,'sorcier','ghul-des-cendres','right',0).entite;rpgFinDeTour(duel);duel.joueur.main=['trait-de-braise'];duel.joueur.mana.braise=30;
-  const mort=rpgMobaLancerMagie(duel,'joueur','trait-de-braise',ghul.id);assert.equal(mort.ok,true);assert.equal(cible.pv,3);assert.ok(!duel.destructionsEnAttente?.length);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  const mort=rpgMobaLancerMagie(duel,'joueur','trait-de-braise',ghul.id);assert.equal(mort.ok,true);assert.equal(cible.pv,2);assert.ok(!duel.destructionsEnAttente?.length);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Ghul MOBA : une vague simultanée sans survivants dissipe l’attente', () => {
@@ -7592,10 +7592,10 @@ test('Javelot MOBA : renvoi et conquête détachent l’arme sans la renvoyer en
 
 test('Cuirasse MOBA : Esquive, armure blessée et soins conservent les règles classiques', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','cuirasse-de-sel'];duel.joueur.mana.sable=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','left',0).entite;
-  const equip=rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id,{ouvrirReponse:true});assert.equal(equip.sortEnAttente,true);assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.deepEqual([porteur.pv,porteur.pvMax,porteur.esquiveChance,porteur.arme.durabilite],[7,7,.25,2]);assert.deepEqual(porteur.arme.armure,{max:3,restant:3});rpgFinDeTour(duel);
-  duel.sorcier.main=['trait-de-braise','trait-de-braise'];duel.sorcier.mana.braise=30;rpgReglerHasard(duel,()=>.1);assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);assert.equal(porteur.pv,7);assert.equal(porteur.arme.armure.restant,3);
-  rpgReglerHasard(duel,()=>.99);assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);assert.equal(porteur.pv,4);assert.equal(porteur.arme.armure.restant,0);rpgFinDeTour(duel);
-  duel.joueur.main=['festin-des-vaillants'];duel.joueur.mana.sable=30;duel.joueur.mana.neige=30;assert.equal(rpgMobaLancerMagie(duel,'joueur','festin-des-vaillants',null,'left').ok,true);assert.equal(porteur.pv,4,'les soins ne restaurent pas l’armure épuisée');assert.equal(porteur.arme.armure.restant,0);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  const equip=rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id,{ouvrirReponse:true});assert.equal(equip.sortEnAttente,true);assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.deepEqual([porteur.pv,porteur.pvMax,porteur.esquiveChance,porteur.arme.durabilite],[6,6,.25,2]);assert.deepEqual(porteur.arme.armure,{max:3,restant:3});rpgFinDeTour(duel);
+  duel.sorcier.main=['trait-de-braise','trait-de-braise'];duel.sorcier.mana.braise=30;rpgReglerHasard(duel,()=>.1);assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);assert.equal(porteur.pv,6);assert.equal(porteur.arme.armure.restant,3);
+  rpgReglerHasard(duel,()=>.99);assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);assert.equal(porteur.pv,3);assert.equal(porteur.arme.armure.restant,0);rpgFinDeTour(duel);
+  duel.joueur.main=['festin-des-vaillants'];duel.joueur.mana.sable=30;duel.joueur.mana.neige=30;assert.equal(rpgMobaLancerMagie(duel,'joueur','festin-des-vaillants',null,'left').ok,true);assert.equal(porteur.pv,3,'les soins ne restaurent pas l’armure épuisée');assert.equal(porteur.arme.armure.restant,0);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Cuirasse MOBA : Lien Bouchra intervoies et retrait de l’ancre sans dérive', () => {
@@ -7667,7 +7667,7 @@ test('Armure de cendres MOBA : Contre-attaque touche la voie du porteur et cesse
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','armure-de-cendres','cuirasse-de-sel'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;
   const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;assert.equal(rpgMobaJouerArme(duel,'joueur','armure-de-cendres',porteur.id).ok,true);assert.deepEqual([porteur.arme.armure.restant,porteur.contreAttaque],[4,true]);
   rpgFinDeTour(duel);duel.sorcier.main=['trait-de-braise'];duel.sorcier.mana.braise=30;const result=rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id);assert.equal(result.ok,true,JSON.stringify(result));assert.equal(mobaVoie(duel.moba,'right').hp.sorcier,9);assert.equal(mobaVoie(duel.moba,'left').hp.sorcier,10);assert.equal(porteur.arme.armure.restant,1);
-  rpgFinDeTour(duel);assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);assert.equal(porteur.contreAttaque,false);assert.equal(porteur.pv,7);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  rpgFinDeTour(duel);assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);assert.equal(porteur.contreAttaque,false);assert.equal(porteur.pv,6);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Sabre du croissant noir MOBA : défense sans rupture, attaque infiltrée et soins sur la voie', () => {
@@ -7775,9 +7775,9 @@ test('Masque MOBA : conquête non décisive déclenche les deux effets de contac
 
 test('Jitte MOBA : un sort de Ténèbres hostile est paré une fois, pas les autres couleurs', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','jitte-d-amayas'];duel.joueur.mana.sable=30;const p=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;
-  assert.equal(rpgMobaJouerArme(duel,'joueur','jitte-d-amayas',p.id,{ouvrirReponse:true}).sortEnAttente,true);assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.deepEqual([p.atk,p.pv,p.arme.durabilite,p.protection.contre],[3,6,2,'tenebres']);
+  assert.equal(rpgMobaJouerArme(duel,'joueur','jitte-d-amayas',p.id,{ouvrirReponse:true}).sortEnAttente,true);assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.deepEqual([p.atk,p.pv,p.arme.durabilite,p.protection.contre],[3,5,2,'tenebres']);
   rpgFinDeTour(duel);duel.sorcier.main=['trait-de-braise','effacement-des-faibles','effacement-des-faibles'];duel.sorcier.mana.braise=30;duel.sorcier.mana.tenebres=30;
-  assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',p.id).ok,true);assert.equal(p.pv,3);assert.equal(p.protection.contre,'tenebres');const first=rpgMobaLancerMagie(duel,'sorcier','effacement-des-faibles',p.id);assert.equal(first.ok,true,JSON.stringify(first));assert.equal(first.bouclierBloque,true);assert.equal(p.protection,null);assert.ok(duel.joueur.creatures.includes(p));
+  assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',p.id).ok,true);assert.equal(p.pv,2);assert.equal(p.protection.contre,'tenebres');const first=rpgMobaLancerMagie(duel,'sorcier','effacement-des-faibles',p.id);assert.equal(first.ok,true,JSON.stringify(first));assert.equal(first.bouclierBloque,true);assert.equal(p.protection,null);assert.ok(duel.joueur.creatures.includes(p));
   const second=rpgMobaLancerMagie(duel,'sorcier','effacement-des-faibles',p.id);assert.equal(second.ok,true,JSON.stringify(second));assert.ok(!duel.joueur.creatures.includes(p));assert.ok(duel.joueur.cimetiere.includes('jitte-d-amayas'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
@@ -8178,7 +8178,7 @@ test('Source de Bimini MOBA : choix successifs de deux Sites avant le reste du d
   const cible=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;const a=rpgMobaJouerCreature(duel,'joueur','source-de-bimini','left',0).entite;const b=rpgMobaJouerCreature(duel,'joueur','source-de-bimini','left',1).entite;const lima=rpgMobaJouerCreature(duel,'joueur','le-tresor-de-lima','center',0).entite;assert.ok(cible&&a&&b&&lima);a.heures.restants=1;b.heures.restants=1;lima.heures.restants=1;
   terminerEtPasser(duel,'joueur');terminerEtPasser(duel,'sorcier');assert.equal(duel.siteEnAttente.entiteId,a.id);assert.equal(b.heures.restants,1);assert.equal(lima.heures.restants,1);assert.equal(duel.phase,'debut');
   assert.ok(rpgMobaResoudreSite(duel,'joueur',cible.id).ok);assert.equal(duel.siteEnAttente.entiteId,b.id);assert.equal(lima.heures.restants,1);assert.equal(duel.phase,'debut');
-  assert.ok(rpgMobaResoudreSite(duel,'joueur',cible.id).ok);assert.equal(duel.siteEnAttente,null);assert.equal(duel.phase,'principale');assert.equal(cible.atk,7);assert.equal(cible.pvMax,10);assert.ok(!duel.joueur.creatures.includes(lima));assert.equal(duel.joueur.cimetiere.filter(id=>id==='source-de-bimini').length,2);assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.ok(rpgMobaResoudreSite(duel,'joueur',cible.id).ok);assert.equal(duel.siteEnAttente,null);assert.equal(duel.phase,'principale');assert.equal(cible.atk,7);assert.equal(cible.pvMax,9);assert.ok(!duel.joueur.creatures.includes(lima));assert.equal(duel.joueur.cimetiere.filter(id=>id==='source-de-bimini').length,2);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Source de Bimini MOBA : pas de créature éligible ou choix du sorcier via l’adaptateur', () => {
@@ -8189,7 +8189,7 @@ test('Source de Bimini MOBA : pas de créature éligible ou choix du sorcier via
 test('Source de Bimini MOBA : la consécration précède les échos du début de tour', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','source-de-bimini'];duel.joueur.mana.sable=30;duel.joueur.mana.eau=30;const cible=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;const site=rpgMobaJouerCreature(duel,'joueur','source-de-bimini','left',0).entite;site.heures.restants=1;cible.pv=1;cible.def=1;
   duel.joueur.degatsEchos=[{coteSource:'joueur',toursRestants:1,amount:2,carteId:'nuage-de-cendres',sourceType:'sort',sourceElement:'braise'}];terminerEtPasser(duel,'joueur');terminerEtPasser(duel,'sorcier');assert.equal(cible.pv,1);assert.equal(duel.joueur.degatsEchos.length,1);assert.equal(duel.phase,'debut');
-  assert.ok(rpgMobaResoudreSite(duel,'joueur',cible.id).ok);assert.equal(cible.pv,5);assert.equal(cible.bouclier,1);assert.equal(duel.joueur.degatsEchos.length,0);assert.equal(duel.phase,'principale');assert.equal(rpgMobaPlacementCoherent(duel),true);
+  assert.ok(rpgMobaResoudreSite(duel,'joueur',cible.id).ok);assert.equal(cible.pv,4);assert.equal(cible.bouclier,1);assert.equal(duel.joueur.degatsEchos.length,0);assert.equal(duel.phase,'principale');assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
 test('Source de Bimini MOBA : contresort de carte, mais pas Écueil', () => {
