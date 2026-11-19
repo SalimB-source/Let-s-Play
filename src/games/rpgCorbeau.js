@@ -57,7 +57,7 @@ export const RPG_CORBEAU_CREATURES = [
     rapidite: true,
     tribut: 1,
     typeLine: 'Créature — Veilleuse',
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
     flavor: 'Elle compte les morts à voix basse ; l’oiseau, lui, les compte dans le noir.',
   }),
   carte({

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { rpgSouffreMalInvocation } from '../src/games/rpgStatutsCreature.js';
 import { rpgChoisirCouleurMana, rpgConditionEmbuscadeRemplie, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgNouveauDuel, rpgPeutRepondre, rpgJouerCreature, rpgJouerArme, rpgLancerAttaque, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgReglerHasard, rpgVainqueur } from '../src/games/rpgDuel.js';
 import { cardById, magieById, RPG_MAGIE_CARDS } from '../src/games/rpgCards.js';
 import { rpgMobaNouveauDuel, rpgMobaChoisirVoieCentrale, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
@@ -7850,13 +7851,14 @@ test('Lance de la lune MOBA : contre, remplacement et cumul critique de Kagutsuc
 test('Sandales MOBA : ne donnent pas Rapidité à une créature fraîche, même après remplacement', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable','sandales-de-tislit','cuirasse-de-sel'];duel.joueur.mana.sable=30;
   const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','center',0).entite;
-  assert.equal(rpgPeutAttaquer(porteur),false);assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
-  assert.equal(rpgPeutAttaquer(porteur),false);assert.equal(porteur.arme.durabilite,2);
+  // La Rapidité, ici, ne se lit plus sur l'attaque — une créature fraîche frappe
+  // déjà — mais sur la seule prise de marques : elle vient de la carte, pas de l'arme.
+  assert.equal(rpgSouffreMalInvocation(porteur),true);assert.equal(rpgMobaJouerArme(duel,'joueur','sandales-de-tislit',porteur.id).ok,true);
+  assert.equal(rpgSouffreMalInvocation(porteur),true);assert.equal(porteur.arme.durabilite,2);
   // On isole le remplacement de l'arme du quota d'une arme par tour.
   duel.moba.armesJouees.joueur=false;
   assert.equal(rpgMobaJouerArme(duel,'joueur','cuirasse-de-sel',porteur.id).ok,true);
-  assert.equal(porteur.rapidite,false);assert.equal(rpgPeutAttaquer(porteur),false);
-  rpgFinDeTour(duel);rpgFinDeTour(duel);
+  assert.equal(porteur.rapidite,false);assert.equal(rpgSouffreMalInvocation(porteur),true);
   assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id]).ok,true);
   assert.equal(rpgMobaPlacementCoherent(duel),true);
 });

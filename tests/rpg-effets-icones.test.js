@@ -301,8 +301,8 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   const feriel = effetsDetailles(cardById('feriel'));
   assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Rapidité', 'Attaque ciblée'],
     'Fériel se joue normalement : sa pastille Invocation spéciale a disparu');
-  assert.match(feriel.pastilles[0].description, /attaquer le tour où elle arrive/,
-    'Rapidité reste décrite par sa pastille');
+  assert.match(feriel.pastilles[0].description, /se déplacer dès le tour où elle arrive/,
+    'Rapidité reste décrite par sa pastille : le pas, puisque l’attaque est ouverte à toutes');
   assert.match(feriel.pastilles[1].description, /créature adverse ou directement.*15 %/u,
     'la bulle décrit la nouvelle attaque ciblée');
   assert.equal(feriel.texte, '', 'tout le texte de Fériel est passé dans ses pastilles');

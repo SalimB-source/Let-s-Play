@@ -324,7 +324,9 @@ for (const moba of [false, true]) test(`Confluence + Éveil : trois matériaux d
   assert.equal(d.joueur.creatures.length, 3); assert.deepEqual(d.joueur.deck, []); assert.ok(d.joueur.main.includes('viking-des-neiges'), 'l’arrivée du Djinn pioche bien une carte');
   assert.equal(combinaisonsAscension(d.joueur, COLOSSE).length, 1);
   assert.equal(moba ? d.moba.creaturesJouees.joueur : d.joueur.invocationNormaleJouee, true);
-  const dune = d.joueur.creatures.find(e => e.carteId === 'dune-marchante'); assert.equal(dune.ready, false);
+  const dune = d.joueur.creatures.find(e => e.carteId === 'dune-marchante');
+  assert.equal(dune.ready, true, 'le renfort frappe le tour de son arrivée');
+  assert.equal(dune.malInvocation, true, 'mais il ne se déplace pas encore');
   const flamme = d.joueur.creatures.find(e => e.carteId === 'djinn-de-la-flamme-mourante'); assert.equal(flamme.ready, true, 'Rapidité imprimée conservée');
   const r = invoquer(d, COLOSSE, [...d.joueur.creatures]); assert.ok(r.ok, r.raison);
   viderMorts(d);
@@ -363,7 +365,8 @@ for (const moba of [false, true]) test(`Retour des ensevelis : choix admissible,
   assert.equal(indexReanimation(d.joueur, cardById(RETOUR).effet), 0);
   const r = moba ? rpgMobaLancerMagie(d, 'joueur', RETOUR, null, 'right', null, { emplacementReanimation: 1 }) : rpgLancerMagie(d, 'joueur', RETOUR);
   assert.ok(r.ok, r.raison); choisirCimetiere(d, 'joueur', 'momie-de-lin'); assert.equal(d.joueur.creatures[0].carteId, 'momie-de-lin');
-  assert.equal(d.joueur.creatures[0].ready, false);
+  assert.equal(d.joueur.creatures[0].ready, true, 'la réanimée frappe dès son retour');
+  assert.equal(d.joueur.creatures[0].malInvocation, true, 'le pas attend le prochain tour');
   assert.ok(d.joueur.cimetiere.includes(JARL)); assert.equal(d.joueur.invocationNormaleJouee ?? false, false);
   if (moba) { assert.equal(d.moba.creaturesJouees.joueur, false); assert.equal(d.joueur.creatures[0].mobaLane, 'right'); assert.ok(rpgMobaPlacementCoherent(d)); }
 });
@@ -560,12 +563,13 @@ test('Scorpion : sa vague ne dépend pas du coût de la créature blessée', () 
   assert.ok(invoquer(d, SCORPION, es).ok); assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id));
 });
 
-for (const moba of [false, true]) test(`renfort sans Rapidité : ne peut attaquer avant son prochain tour, puis se dégage (${moba ? 'MOBA' : 'Duel'})`, () => {
+for (const moba of [false, true]) test(`renfort sans Rapidité : il frappe son tour, il se dégage au suivant (${moba ? 'MOBA' : 'Duel'})`, () => {
   const d = nouveau(moba); d.joueur.main = [RETOUR]; d.joueur.cimetiere = ['ureus-du-seuil'];
   const r = moba ? rpgMobaLancerMagie(d, 'joueur', RETOUR, null, 'left', null, { emplacementReanimation: 0 }) : rpgLancerMagie(d, 'joueur', RETOUR);
-  assert.ok(r.ok, r.raison); choisirCimetiere(d, 'joueur', 'ureus-du-seuil'); const e = d.joueur.creatures[0]; assert.equal(rpgPeutAttaquer(e), false);
-  rpgFinDeTour(d); assert.equal(d.tour, 'sorcier'); assert.equal(rpgPeutAttaquer(e), false);
-  rpgFinDeTour(d); assert.equal(d.tour, 'joueur'); assert.equal(rpgPeutAttaquer(e), true);
+  assert.ok(r.ok, r.raison); choisirCimetiere(d, 'joueur', 'ureus-du-seuil'); const e = d.joueur.creatures[0];
+  assert.equal(rpgPeutAttaquer(e), true, 'il attaque le tour de son arrivée'); assert.equal(e.malInvocation, true);
+  rpgFinDeTour(d); assert.equal(d.tour, 'sorcier'); assert.equal(e.malInvocation, true);
+  rpgFinDeTour(d); assert.equal(d.tour, 'joueur'); assert.equal(e.malInvocation, false); assert.equal(rpgPeutAttaquer(e), true);
 });
 
 for (const moba of [false, true]) test(`trois sacrifices simultanés et la mort de Momie ne volent pas la destination (${moba ? 'MOBA' : 'Duel'})`, () => {

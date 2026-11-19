@@ -1,11 +1,12 @@
 /**
- * Le mal d'invocation vaut aussi pour le **pas** : une créature qui vient
- * d'arriver attend le prochain tour de son camp, comme elle l'attend pour
- * attaquer. Sans cette garde, l'IA posait une créature puis la faisait
+ * Le mal d'invocation ne vaut plus que pour le **pas** : une créature qui vient
+ * d'arriver frappe de sa case, mais elle attend le prochain tour de son camp
+ * pour avancer. Sans cette garde, l'IA posait une créature puis la faisait
  * aussitôt glisser d'une case dans le même tour — le joueur voyait un corps
  * neuf traverser le champ avant d'avoir lu sa carte.
  *
- * La Rapidité, imprimée ou accordée, lève les deux attentes à la fois.
+ * La Rapidité, imprimée ou accordée, lève cette attente : elle avance d'une
+ * case dès l'arrivée.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';

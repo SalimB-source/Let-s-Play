@@ -551,7 +551,7 @@ export const RPG_CREATURE_CARDS = [
     def: 1,
     rarity: 'inhabituelle',
     typeLine: 'Créature — Fennec',
-    rapidite: true, butin: true, text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+    rapidite: true, butin: true, text: 'Rapidité — Cette créature peut se déplacer le tour où elle arrive. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Les éclats sifflent ; le Fennec a déjà choisi son prochain pas.',
   },
   // Trois petites bêtes du désert : une menace rapide, une carte à récupérer
@@ -561,7 +561,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', cost: 2, atk: 1, def: 1, rarity: 'commune',
     typeLine: 'Créature — Gerboise', art: 'gerboise-des-ruines',
     rapidite: true,
-    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive.',
+    text: 'Rapidité — Cette créature peut se déplacer le tour où elle arrive.',
     flavor: 'Entre deux pierres, elle a déjà pris trois longueurs d’avance.',
   },
   {
@@ -759,7 +759,7 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -1341,7 +1341,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
     rapidite: true, infiltration: true, volDeVie: true,
-    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
+    text: 'Rapidité — Cette créature peut se déplacer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
     flavor: 'Ses pas ne laissent qu’une ombre dans le sable.',
   },
   {

@@ -64,7 +64,8 @@ signaux de sens contraires ne se disputent jamais la même carte.
 Deux gris à ne pas confondre avec celui-là :
 
 - `is-summoning-sick` (mal d'invocation) grise **l'illustration seule** : la
-  créature peut encore bloquer, son état de lecture ne couvre pas la face ;
+  créature peut encore bloquer et **frapper dès son arrivée** ; le gris ne dit
+  qu'une chose, elle ne se déplacera pas avant le tour suivant ;
 - un terrain `is-tapped` reste grisé aussi — c'est le mana dépensé, pas la
   créature.
 
