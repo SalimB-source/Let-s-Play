@@ -50,6 +50,17 @@ rend le **propriétaire**. Un envahisseur est donc une carte du joueur dont
 `avancee` marque enfin une créature qui a quitté la case que sa carte lui
 imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 
+## Le corps qui bloque
+
+Une case tenue n'est jamais une destination : on ne se pose pas sur une
+créature, ni sur celle d'en face, ni sur un envahisseur qui a percé avant nous
+(`casesOccupees` lit les deux camps). La case d'arrivée mise à part,
+`rpgCheminLibre` juge le **chemin** : toute case strictement intermédiaire doit
+être vide, faute de quoi la créature s'arrête au lieu de glisser à travers.
+Aujourd'hui le pas vaut une case, donc la question ne se pose pas encore ; la
+règle est écrite une fois, dans `rpgMouvement.js`, pour que la portée du pas
+puisse grandir sans rouvrir le sujet.
+
 ## Qui entend l'Aura
 
 Les quatre sources d'Aura (Tarek, Amani des ksour, Kenshi de la forge, Bou
@@ -158,6 +169,7 @@ idempotentes, comme le reste des scènes.
 |---|---|
 | `tests/rpg-mouvement.test.js` | 12 |
 | `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
+| `tests/rpg-mouvement-blocage.test.js` | 4 (case tenue, envahisseur, chemin, refus du pas) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
