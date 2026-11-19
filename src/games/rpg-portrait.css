@@ -58,8 +58,11 @@
     --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.32 + env(safe-area-inset-bottom, 0px));
     --rpg-touch-combat: clamp(42px, calc(var(--duel-card) * .62), 52px);
     --rpg-touch-nav: clamp(38px, calc(var(--duel-card) * .62), 52px);
-    /* La colonne d'une case : la largeur d'une carte, jamais plus. */
-    --essai-colonne: min(var(--rpg-field-card), calc((100% - 4 * var(--rpg-field-gap)) / 5));
+    /* La colonne d'une case : la largeur d'une carte, plafonnée par les cinq
+       colonnes et leurs quatre gouttières. La mesure suit le viewport (`vw`),
+       pas un pourcentage de l'élément qui l'hérite : sur une carte ou une case,
+       `100%` ne mesurerait plus la rangée mais sa propre colonne. */
+    --essai-colonne: min(var(--rpg-field-card), calc((100vw - 16px - 4 * var(--rpg-field-gap)) / 5));
     /* Les terrains rapetissent pour tenir dans la hauteur du bandeau. */
     --rpg-terrain-w: clamp(30px, calc(var(--duel-card) * .52), 56px);
     --rpg-terrain-h: calc(var(--rpg-terrain-w) * 1.25);
@@ -149,13 +152,56 @@
      La ligne neutre reste au milieu du plateau, entre les deux champs. */
   .rpg-battle--touch .card-table > .card-row {
     top: 0;
-    padding: 4px 2px;
+    padding: 2px 0;
   }
   .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: ennemi; }
   .rpg-battle--touch .card-table > .card-row--equipe { grid-area: equipe; }
   .rpg-battle--touch .card-table > .card-row--ennemi::after {
     top: auto;
     bottom: calc(-1 * var(--rpg-touch-gap));
+  }
+
+  /* ── 4 bis. Des cases et des cartes posées à la largeur du téléphone ─────
+     La variante « deux rangées » du paysage réduisait chaque colonne à 72 %
+     de la carte du champ pour tenir dans une bande de 120 px en écran couché.
+     Debout, chaque camp a sa propre rangée de grille (225 px sur 390 × 844) :
+     cette réduction n'a plus lieu d'être. La colonne reprend toute la largeur
+     utile ; les cartes posées et les cases dessinées suivent la même mesure,
+     avec les mêmes gouttières et les mêmes deux hauteurs de carte. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row {
+    /* Longueur absolue, jamais un pourcentage : la variable est héritée par
+       les cases et les cartes, où `100%` ne mesurerait plus la rangée mais
+       leur propre colonne (et les réduirait à neuf pixels). */
+    --essai-colonne: min(var(--rpg-field-card), calc((100vw - 16px - 4 * var(--rpg-field-gap)) / 5));
+    column-gap: var(--rpg-field-gap);
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row[data-lignes="true"],
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row[data-lignes="true"] {
+    --essai-colonne: min(var(--rpg-field-card), calc((100vw - 16px - 4 * var(--rpg-field-gap)) / 5));
+    column-gap: var(--rpg-field-gap);
+    row-gap: var(--rpg-field-gap);
+    min-height: calc(var(--essai-colonne) * 2.5 + var(--rpg-field-gap) + 4px);
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots {
+    column-gap: var(--rpg-field-gap);
+    row-gap: var(--rpg-field-gap);
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"],
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"],
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots {
+    grid-template-rows: repeat(2, calc(var(--essai-colonne) * 1.25));
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
+    width: min(100%, var(--essai-colonne));
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row .rpg-creature-slot,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row .rpg-creature-slot {
+    width: min(100%, var(--essai-colonne));
+    max-width: none;
   }
 
   /* ── 5. Les commandes : une ligne, sous les deux champs ──────────────────

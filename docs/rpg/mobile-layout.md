@@ -358,3 +358,20 @@ Le paysage (`rpg-mobile.css`) n'est pas touché : la composition du PC à
 l'échelle du téléphone reste entière. Vérifications : `npm run
 check:rpg-portrait`, `npm run build`, et captures au doigt de 320 × 568 à
 768 × 1024.
+
+## Des cases et des cartes posées à la largeur du téléphone
+
+La variante « deux rangées de créatures » du paysage mesurait sa colonne à
+72 % de la carte du champ pour tenir dans une bande de hauteur. En portrait,
+chaque camp dispose d'une vraie piste de grille : cette réduction n'a plus de
+raison d'être. La coque debout reprend `--rpg-field-card` comme colonne
+(`--essai-colonne`), plafonnée par `calc((100vw - 16px - 4 * var(--rpg-field-gap)) / 5)`,
+et applique la même mesure aux cartes posées, aux piles et aux cases dessinées.
+Les deux grilles partagent gouttières et hauteurs `calc(var(--essai-colonne) * 1.25)`.
+
+Sur 390 × 844, les cases et les cartes en jeu passent de 51 × 64 px à
+70 × 88 px ; elles occupent les 378 px de la rangée sans recouvrir les
+bandeaux, le rail ni la main. La mesure utilise `100vw` et non `100%` :
+héritée par une case ou une carte, une valeur en pourcentage se résoudrait
+contre sa propre colonne et la réduire à quelques pixels. Le paysage et le PC
+restent inchangés. `npm run check:rpg-portrait` : 18/18.

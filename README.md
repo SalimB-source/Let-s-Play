@@ -9780,7 +9780,7 @@ ni panneau opaque. Le paysage, lui, ne bouge pas.
 ### Vérifications
 
 ```bash
-npm run check:rpg-portrait   # 17/17 — sept rangées, échelle, ordre des feuilles, HUD debout
+npm run check:rpg-portrait   # 18/18 — sept rangées, échelle, ordre des feuilles, HUD debout, cases pleine largeur
 npm run build                # le bundle se construit
 ```
 
@@ -9789,3 +9789,14 @@ piste implicite, les deux bandeaux, les quatre rangées de cases, le rail et la
 main tiennent dans l'écran. `npm run check:rpg-mobile` demande un navigateur
 Playwright et un compte de test : dans cet environnement, il s'arrête avant la
 mesure sur l'écran de connexion, à HEAD comme ici.
+
+
+## Le Sablier : des créatures plus grandes sur le plateau debout
+
+En portrait, la variante « deux rangées » héritait encore du paysage une
+colonne réduite à 72 % de la carte du champ : les cinq emplacements et les
+cartes posées mesuraient 51 × 64 px sur un 390 × 844. `rpg-portrait.css`
+redonne à la colonne toute la largeur utile (`--rpg-field-card`, plafonnée par
+le viewport), aligne les gouttières des cartes et des cases, et garde les deux
+rangées à la hauteur 4:5. Sur 390 × 844, cases et cartes passent à
+**70 × 88 px**. Le paysage et le PC ne sont pas modifiés.
