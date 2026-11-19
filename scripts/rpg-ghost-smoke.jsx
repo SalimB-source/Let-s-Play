@@ -150,7 +150,8 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
         const entite = vivantes.get(carte.dataset.entityId);
         assert.ok(entite,
           `${contexte} : ${carte.dataset.cardId} (${carte.dataset.entityId}) est affichée alors qu'elle a quitté la table`);
-        const engagee = carte.dataset.combatTilted === 'true';
+        // L'engagement se lit sur sa classe : la carte ne penche plus.
+        const engagee = carte.classList.contains('is-attacked');
         if (engagee && !entite.attaquee) {
           const declare = etat.tour === 'joueur' || entite.cote === 'ennemi';
           assert.ok(declare,
@@ -183,7 +184,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
     // Pendant une annonce du sorcier, ses créatures viennent d'être dégagées :
     // une carte encore inclinée est une carte morte restée sur le terrain.
     if (q('.rpg-annonce-sort')) {
-      const inclinees = qa('.card-row--ennemi .rpg-card[data-combat-tilted="true"]');
+      const inclinees = qa('.card-row--ennemi .rpg-card.is-attacked');
       assert.equal(inclinees.length, 0,
         `${contexte} : aucune carte adverse engagée pendant les annonces (${inclinees.map((c) => c.dataset.cardId).join(', ')})`);
     }
@@ -196,7 +197,7 @@ export async function fuzzDuel({ assert, graine, mobile = false, pasMax = 400, s
       const mesCartes = qa('.card-row--equipe .rpg-card');
       const compte = Number(/\((\d+)\)/.exec(texte(attaqueTous))?.[1] ?? -1);
       if (etape === 'debut-de-tour') {
-        const engagees = mesCartes.filter((carte) => carte.dataset.combatTilted === 'true');
+        const engagees = mesCartes.filter((carte) => carte.classList.contains('is-attacked'));
         assert.equal(engagees.length, 0,
           `${contexte} : aucune de vos cartes ne reste engagée au début du tour`);
         const disponibles = mesCartes.filter((carte) => carte.classList.contains('is-pret'));

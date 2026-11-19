@@ -37,10 +37,29 @@ est donc une liste d'exceptions à tenir à jour :
 | `is-spell-target`, `is-coup-rapide-cible` | proie désignée, rouge épais |
 | `is-a-portee` | proie atteignable par la créature survolée, or |
 | `is-blocking`, `is-blocker-*` | déclaration de blocage |
-| `is-declared-attacker`, `is-attacked` | attaquant déclaré, créature frappée |
+| `is-declared-attacker` | assaut déclaré : la carte penche de 10° (`data-combat-tilted`) |
+| `is-attacked` | la créature a frappé ce tour — **aucun signe visuel** : elle garde ses couleurs et son assise (voir plus bas) |
 | `is-sacrifice-target`, `is-ascension-*` | victime d'invocation, Ascension |
 | `is-lien-actif`, `is-touch-drop-target`, `is-protege` | lien, dépôt tactile, protection |
 | `fx-*` | une cinématique de combat est en cours |
+
+## L'engagement ne se voit pas
+
+Attaquer engage la créature jusqu'au tour suivant : elle ne peut plus bloquer,
+être sacrifiée ni avancer. C'est une **règle**, pas une apparence — la carte ne
+grise plus, ne s'incline plus, et son illustration mythique garde tout son
+éclat. Seul l'assaut lui-même se voit : `is-declared-attacker` penche la carte
+le temps de la déclaration, `fx-lunge` porte le bond et sa lueur rouge.
+
+Deux exceptions à ne pas confondre avec l'engagement :
+
+- `is-summoning-sick` (mal d'invocation) **garde** son portrait grisé : là, la
+  créature ne peut pas attaquer, et son état doit se lire ;
+- un terrain `is-tapped` reste grisé aussi — c'est le mana dépensé, pas la
+  créature.
+
+Le libellé accessible dit toujours l'état (« engagée, elle se dégagera au début
+du prochain tour… ») : ce que l'œil ne voit plus, la voix le dit.
 
 ## Le contour : or pour nous, rouge pour le sorcier
 

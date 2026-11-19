@@ -745,8 +745,11 @@ try {
     assert.equal(await page.locator('.rpg-card--equipe.is-selected').count(), 0);
     await waitForTilt('.rpg-card--equipe', 0);
     await page.locator('.rpg-btn--attaque-tous').click();
+    // L'inclinaison appartient à l'assaut déclaré, pas à l'engagement : une
+    // fois l'attaque confirmée et résolue, les cartes se redressent.
+    await waitForTilt('.rpg-card--equipe.is-declared-attacker', 10);
     await page.locator('.rpg-btn--confirmer-attaque').click();
-    await waitForTilt('.rpg-card--equipe.is-attacked', 10);
+    await waitForTilt('.rpg-card--equipe.is-attacked', 0);
     const angles = await page.locator('.rpg-card--equipe.is-attacked').evaluate(async card => {
       const values = [];
       // Sample the lunge/impact animation and its cleanup, not just the resting state.
@@ -757,7 +760,7 @@ try {
       }
       return values;
     });
-    assert.ok(angles.every(angle => Math.abs(angle - 10) < .5), 'combat animations preserve the 10-degree clockwise attacker tilt');
+    assert.ok(angles.every(angle => Math.abs(angle) < .5), 'l’engagement ne laisse plus aucune inclinaison sur la carte');
     console.log('✓ Attackers tilt 10° to the right on declaration, straighten on cancellation and keep the tilt after attacking');
     console.log('✓ Attack-all, cancellation and confirmation share the controls column; the turn rail keeps the phases, undo and end-turn above the hand');
   } else {

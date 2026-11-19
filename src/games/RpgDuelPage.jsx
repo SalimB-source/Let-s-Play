@@ -3194,7 +3194,7 @@ export function TableCard({
       }}
       data-case-essai={caseEssai ?? undefined}
       data-ligne={caseEssai ? ligneDeCase(caseEssai - 1) : undefined}
-      data-combat-tilted={declaredAttacker || entite.attaquee ? 'true' : 'false'}
+      data-combat-tilted={declaredAttacker ? 'true' : 'false'}
       data-entity-id={reserveAscension ? undefined : entite.id}
       data-ascension-reserve-card={reserveAscension ? carte?.id : undefined}
       data-ascension-material={ascensionSelection?.eligible ? entite.id : undefined}

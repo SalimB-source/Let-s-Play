@@ -1,8 +1,13 @@
-/* Seule l'illustration des créatures engagées ou souffrant du mal
-   d'invocation est grisée. Les icônes, valeurs, cadres et effets gardent leurs
-   couleurs ; aucun clic n'est supprimé (une créature malade peut bloquer). */
-.rpg-card:is(.is-attacked, .is-summoning-sick) > .rpg-card__img,
-.moba__slot.has-creature:is(.is-attacked, .is-summoning-sick):not(.rpg-card) > img {
+/* Seule l'illustration des créatures souffrant du mal d'invocation est
+   grisée. Les icônes, valeurs, cadres et effets gardent leurs couleurs ; aucun
+   clic n'est supprimé (une créature malade peut bloquer).
+
+   L'engagement (`is-attacked`) n'a plus de signe : une créature qui a attaqué
+   garde ses couleurs et son assise. La règle, elle, n'a pas bougé — elle ne
+   peut toujours pas bloquer, être sacrifiée ni avancer avant le tour suivant —
+   et le dit dans son libellé accessible. */
+.rpg-card.is-summoning-sick > .rpg-card__img,
+.moba__slot.has-creature.is-summoning-sick:not(.rpg-card) > img {
   filter: grayscale(1) brightness(.78);
 }
 
