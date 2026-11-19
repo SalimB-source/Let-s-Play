@@ -1,0 +1,195 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   LE SABLIER DEBOUT — LE DUEL EN PORTRAIT
+   ──────────────────────────────────────────────────────────────────────────
+   Le plateau est **vertical par nature** : le sorcier adverse en haut, ses
+   deux rangées, les nôtres, puis notre sorcier en bas. Le paysage n'était
+   qu'une contrainte d'écran — il fallait faire tenir cette pile dans une
+   bande de hauteur (`--rpg-board-band`, voir `rpg-avatars-plateau.css`),
+   d'où l'avatar qui recouvrait les cases et la main poussée hors de l'écran.
+
+   Debout, la pile retrouve sa forme : sept rangées, une seule colonne.
+
+     tete        le journal (à gauche) et le menu (à droite)
+     haut        le bandeau du sorcier : médaillon, mana, terrains
+     ennemi      son champ — deux rangées de cinq cases
+     equipe      le nôtre
+     bas         notre bandeau
+     commandes   le rail du tour et les commandes de combat, sur une ligne
+     main        la main, en bande basse, qui défile au doigt
+
+   L'échelle vient de la **largeur** (cinq cartes de front), plafonnée par la
+   hauteur : sur un écran court, deux rangées de cartes par camp doivent
+   encore tenir entre les deux bandeaux. C'est le seul plafond — le paysage,
+   lui, mesurait une bande (`--rpg-board-band`).
+
+   Rien n'est masqué : le paysage garde ses coques (`rpg-mobile.css`,
+   `rpg-avatars-plateau.css`, `rpg-mana-essai.css`) et la tablette son
+   orientation libre. Cette feuille ne parle qu'au doigt debout, et se charge
+   en dernier — elle doit l'emporter sur les règles du paysage.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (orientation: portrait) {
+  /* ── 1. L'échelle : la largeur d'abord, la hauteur comme plafond ──────────
+     Cinq cartes de front et quatre gouttières dans la largeur utile (les deux
+     marges de table), puis le plafond de hauteur : 8,75 cartes de haut en
+     tout (deux rangées de 1,25 carte par camp, les deux bandeaux, le rail et
+     la main) plus 165 px de constantes (bandeaux nus, gouttières, commandes,
+     marges). Sur un 390 × 844, la largeur commande (69 px) ; sur un 320 × 568,
+     c'est la hauteur (45 px), et le plateau reste entier. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
+    --duel-card: clamp(44px, min(calc((100vw - 32px) / 5.15), calc((100dvh - 165px) / 9)), 96px);
+    /* La gouttière des rangées : quatre d'entre elles doivent tenir dans la
+       largeur, elles suivent donc l'échelle au lieu du plancher de 8 px du
+       paysage. */
+    --rpg-field-gap: max(4px, calc(var(--duel-card) * .08));
+    --rpg-field-card: calc(var(--duel-card) * 1.02);
+    --rpg-field-min: min(34px, var(--rpg-field-card));
+    /* Les deux rangées se touchent au milieu : plus de rapprochement
+       symétrique, chaque bande est à sa place. */
+    --rpg-field-center-offset: 0px;
+    /* Le médaillon du sorcier tient dans son bandeau, la vie sous lui. */
+    --rpg-avatar-height: clamp(40px, calc(var(--duel-card) * .92), 64px);
+    --rpg-avatar-vie: var(--rpg-vie-bar-height);
+    --rpg-avatar-nav: calc(var(--rpg-avatar-height) + var(--rpg-avatar-vie) + 6px);
+    --rpg-vie-bar-width: max(64px, calc(var(--duel-card) * 1.1));
+    /* La main : des cartes un peu plus larges qu'en paysage, la bande basse a
+       la place. */
+    --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .9));
+    --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.32 + env(safe-area-inset-bottom, 0px));
+    --rpg-touch-combat: clamp(42px, calc(var(--duel-card) * .62), 52px);
+    --rpg-touch-nav: clamp(38px, calc(var(--duel-card) * .62), 52px);
+    /* La colonne d'une case : la largeur d'une carte, jamais plus. */
+    --essai-colonne: min(var(--rpg-field-card), calc((100% - 4 * var(--rpg-field-gap)) / 5));
+    /* Les terrains rapetissent pour tenir dans la hauteur du bandeau. */
+    --rpg-terrain-w: clamp(30px, calc(var(--duel-card) * .52), 56px);
+    --rpg-terrain-h: calc(var(--rpg-terrain-w) * 1.25);
+
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      var(--rpg-touch-nav)
+      var(--rpg-avatar-nav)
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      var(--rpg-avatar-nav)
+      auto
+      var(--rpg-touch-hand);
+    grid-template-areas:
+      "tete"
+      "haut"
+      "ennemi"
+      "equipe"
+      "bas"
+      "commandes"
+      "main";
+  }
+  /* Même échelle, mais sur la petite hauteur de viewport : les barres du
+     navigateur ne font pas respirer la grille en cours de partie (même règle
+     que le paysage, voir `rpg-mobile.css`). */
+  @supports (height: 100svh) {
+    .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
+    .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
+      --duel-card: clamp(44px, min(calc((100vw - 32px) / 5.15), calc((100svh - 165px) / 9)), 96px);
+    }
+  }
+
+  /* ── 2. La rangée du haut : journal à gauche, menu à droite ─────────────── */
+  .rpg-battle--touch .card-table > .rpg-combat-feed {
+    grid-area: tete;
+    justify-self: start;
+    align-self: center;
+  }
+  .rpg-battle--touch .card-table > .rpg-duel-nav {
+    grid-area: tete;
+    justify-self: end;
+    align-self: center;
+  }
+  /* La main adverse (PvP, histoire) se pose entre les deux. */
+  .rpg-battle--touch .card-table > .rpg-hidden-hand {
+    grid-area: tete;
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* ── 3. Les bandeaux des sorciers : médaillon, mana et terrains ──────────
+     Le médaillon reste un carré posé au bord gauche ; la mana et les terrains
+     occupent le reste de la bande, à sa droite. Le paysage les superposait
+     dans une colonne de deux cartes — debout, la largeur ne manque pas, c'est
+     la hauteur qui compte. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate {
+    position: static;
+    transform: none;
+    top: auto;
+    bottom: auto;
+    width: var(--rpg-avatar-height);
+    height: var(--rpg-avatar-height);
+    margin: 0 0 0 max(2px, env(safe-area-inset-left, 0px));
+    justify-self: start;
+    align-self: center;
+  }
+  .rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi { grid-area: haut; }
+  .rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { grid-area: bas; }
+
+  /* Les terrains et la mana partagent le même élément (`.rpg-terrains
+     rpg-flux-track`) : une seule règle, deux bandeaux. Sa largeur de paysage
+     réservait 290 px à la colonne de gauche — debout, il prend la bande à
+     droite du médaillon. */
+  .rpg-battle--touch .card-table > .rpg-terrains {
+    grid-area: haut;
+    justify-self: stretch;
+    align-self: center;
+    width: auto;
+    max-width: none;
+    margin-inline-start: calc(var(--rpg-vie-bar-width) + 10px);
+    margin-inline-end: max(2px, env(safe-area-inset-right, 0px));
+  }
+  .rpg-battle--touch .card-table > .rpg-terrains--joueur { grid-area: bas; }
+
+  /* ── 4. Les deux champs : deux rangées de cinq cases, à plat ──────────────
+     La ligne neutre reste au milieu du plateau, entre les deux champs. */
+  .rpg-battle--touch .card-table > .card-row {
+    top: 0;
+    padding: 4px 2px;
+  }
+  .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: ennemi; }
+  .rpg-battle--touch .card-table > .card-row--equipe { grid-area: equipe; }
+  .rpg-battle--touch .card-table > .card-row--ennemi::after {
+    top: auto;
+    bottom: calc(-1 * var(--rpg-touch-gap));
+  }
+
+  /* ── 5. Les commandes : une ligne, sous les deux champs ──────────────────
+     Le paysage en faisait une colonne à droite (2,47 cartes de large), avec le
+     rail du tour ancré au-dessus. Debout, les deux se rangent sur une ligne
+     qui ferme le plateau : le rail à gauche, les boutons à droite. */
+  .rpg-battle--touch .card-table > .rpg-bottombar {
+    grid-area: commandes;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    align-self: stretch;
+    gap: 6px;
+    padding: 0 max(2px, env(safe-area-inset-right, 0px)) 0 max(2px, env(safe-area-inset-left, 0px));
+  }
+  .rpg-battle--touch .rpg-bottombar .rpg-actions__row {
+    flex: 1 1 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rpg-battle--touch .rpg-turn-indicator { flex: 0 0 auto; }
+
+  /* ── 6. La main : toute la largeur, bande basse ──────────────────────────
+     En paysage, la main se rangeait à gauche pour ne jamais glisser sous
+     l'avatar ; debout, le médaillon est dans le bandeau du haut et la main
+     n'a plus personne à contourner. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
+    width: 100%;
+    padding-left: max(4px, env(safe-area-inset-left, 0px));
+    justify-content: flex-start;
+  }
+  /* La barre de réponse se pose au-dessus de la main, du bord gauche au bord
+     droit : plus de plaque à contourner sur la même ligne. */
+  .rpg-battle--touch .rpg-annonce-sort__compact {
+    left: max(6px, env(safe-area-inset-left, 0px));
+  }
+}

@@ -14,7 +14,7 @@ test('le bouton Retour de l’APK remonte les écrans du Sablier et reste au men
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-  dom.window.LetsPlayAndroid = { setPaysageSablier() {} };
+  dom.window.LetsPlayAndroid = { setSablierActif() {} };
   dom.window.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
   dom.window.HTMLMediaElement.prototype.play = () => Promise.resolve();
   dom.window.HTMLMediaElement.prototype.pause = () => {};

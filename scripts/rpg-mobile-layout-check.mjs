@@ -36,9 +36,18 @@ try {
   await page.locator('.rpg-hand__card').first().waitFor();
   // Let the initial card-draw animation finish before measuring the cards.
   await page.waitForTimeout(1400);
-  await page.locator('.rpg-rotate-prompt').waitFor();
-  assert.equal(await page.locator('.card-table').getAttribute('inert'), '');
-  console.log('✓ Portrait requests rotation and prevents playing behind the prompt');
+  // Debout, le duel se joue : plus d'écran de rotation, la table reste active
+  // et le plateau se range en sept rangées (coque portrait `rpg-portrait.css`).
+  assert.equal(await page.locator('.rpg-rotate-prompt').count(), 0, 'plus d’écran de rotation');
+  assert.equal(await page.locator('.card-table').getAttribute('inert'), null, 'la table reste jouable debout');
+  const rangees = await page.evaluate(() => {
+    const areas = getComputedStyle(document.querySelector('.card-table')).gridTemplateAreas;
+    return { areas, main: document.querySelector('.rpg-hand')?.getBoundingClientRect().toJSON() };
+  });
+  assert.match(rangees.areas, /tete/, 'la coque portrait est active : journal et menu en haut');
+  assert.match(rangees.areas, /commandes/);
+  assert.ok(rangees.main && rangees.main.bottom <= 844.5, 'la main tient dans l’écran debout');
+  console.log('✓ Portrait keeps the whole board and the hand on screen');
   for (const [width, height] of [[568, 320], [667, 375], [844, 390], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     // La page mesure la hauteur des plaques et la publie (`--rpg-plaque-*-h`)
@@ -321,7 +330,6 @@ try {
     console.log(`✓ Layout ${width} × ${height}`);
   }
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.locator('.rpg-rotate-prompt').waitFor({ state: 'detached' });
   // Le duel s'ouvre sur son volet de mulligan : la mise en page se mesure
   // dessus, le jeu commence une fois la main de départ validée.
   // La main de départ se lit d'un seul coup : ses cartes 4:5, entières,
@@ -766,11 +774,14 @@ try {
   } else {
     console.log('✓ Duel sans terrains : le parcours des piles de terrains est hors interface, la jauge de mana le remplace');
   }
+  // Debout, on quitte la partie par le menu du duel (le hamburger) : l'écran
+  // de rotation n'existe plus.
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('.rpg-rotate-prompt').waitFor();
-  await page.getByRole('button', { name: 'Retour au menu', exact: true }).click();
+  await page.locator('.card-table').waitFor();
+  await page.locator('.rpg-duel-nav__burger').click();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
   await page.locator('.rpg-mode-menu').waitFor();
-  console.log('✓ Returning to portrait keeps the duel and allows leaving for the menu');
+  console.log('✓ Portrait keeps the duel playable and allows leaving for the menu');
 
 // L'aperçu rapide : c'est lui qui porte le nom, le type, le coût et les effets
 // que les cartes du mulligan n'impriment plus. Il se vérifie à la souris, dans

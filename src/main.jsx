@@ -43,7 +43,7 @@ import GameLoadBoundary from './games/GameLoadBoundary.jsx';
 import ChargementDuel from './games/ChargementDuel.jsx';
 import MiseAJourDisponible from './components/MiseAJourDisponible';
 import GardeErreur from './components/GardeErreur';
-import PaysageSablier from './games/PaysageSablier';
+import SessionSablier from './games/SessionSablier';
 
 /**
  * Pages à la demande — le shell (barre, thème, contexte de compte) se charge
@@ -258,12 +258,12 @@ function App() {
             <Route path="/lets-play" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Mirage Rush…" />}><MirageRushPage /></Suspense>} />
             <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Vice City Rush…" />}><ViceCityRushPage /></Suspense>} />
-            <Route path="/jeu/sablier-de-bab-el" element={<RpgConnexionRequise><PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<ChargementDuel />}><RpgEntryChoice variantesPlateaux /></Suspense></GameLoadBoundary></PaysageSablier></RpgConnexionRequise>} />
+            <Route path="/jeu/sablier-de-bab-el" element={<RpgConnexionRequise><SessionSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<ChargementDuel />}><RpgEntryChoice variantesPlateaux /></Suspense></GameLoadBoundary></SessionSablier></RpgConnexionRequise>} />
             {/* Duel en ligne : le salon sans code crée un défi, le salon avec
                 code rejoint une invitation. Le lien d'invitation est un chemin
                 réel (`…/defi/AB12CD34`) pour qu'il se colle partout. */}
-            <Route path="/jeu/sablier-de-bab-el/defi" element={<RpgConnexionRequise><PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<RouteLoading label="Chargement du duel en ligne…" />}><RpgPvpSalon /></Suspense></GameLoadBoundary></PaysageSablier></RpgConnexionRequise>} />
-            <Route path="/jeu/sablier-de-bab-el/defi/:code" element={<RpgConnexionRequise><PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<RouteLoading label="Chargement du duel en ligne…" />}><RpgPvpSalon /></Suspense></GameLoadBoundary></PaysageSablier></RpgConnexionRequise>} />
+            <Route path="/jeu/sablier-de-bab-el/defi" element={<RpgConnexionRequise><SessionSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<RouteLoading label="Chargement du duel en ligne…" />}><RpgPvpSalon /></Suspense></GameLoadBoundary></SessionSablier></RpgConnexionRequise>} />
+            <Route path="/jeu/sablier-de-bab-el/defi/:code" element={<RpgConnexionRequise><SessionSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<RouteLoading label="Chargement du duel en ligne…" />}><RpgPvpSalon /></Suspense></GameLoadBoundary></SessionSablier></RpgConnexionRequise>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />
