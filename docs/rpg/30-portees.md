@@ -77,9 +77,9 @@ d'autre** :
 
 ```js
 if (!attaqueDirectePermise(attaquant, adversaires, atteignables)) return false;
-if (!lignesActives(duel) || duel?.moba) return true;      // hors lignes : rien ne change
-if (!Number.isInteger(attaquant?.emplacement)) return true; // une créature sans case n'est pas filtrée
-return sorcierAPortee(duel, cote, attaquant);             // distance au sorcier <= portée
+if (!lignesActives(duel) || duel?.moba) return true;       // hors lignes : rien ne change
+if (!Number.isInteger(attaquant?.emplacement)) return false; // sans case, aucune position : aucune portée
+return sorcierAPortee(duel, cote, attaquant);              // distance au sorcier <= portée
 ```
 
 Conséquences, toutes voulues :
@@ -91,7 +91,19 @@ Conséquences, toutes voulues :
   tireur du fond, ni un Défenseur garé derrière ;
 - l'ancienne exception « plus aucune créature adverse » a disparu : sans
   adversaire, il faut quand même arriver à portée. La victoire conclut
-  toujours sur `duel.sorcier.pv <= 0`.
+  toujours sur `duel.sorcier.pv <= 0` ;
+- une créature **sans case** ne touche rien du tout — ni le sorcier, ni une
+  créature adverse, même au contact. Ce n'est pas une tolérance : sans
+  position, il n'y a rien à mesurer. La même règle vaut pour les créatures
+  (`filtrePortee` rend une liste vide) et pour le sorcier (`sorcierAPortee`).
+
+  Une invocation qui entrerait **sans case** est refusée, elle aussi : la garde
+  d'invocation (`rpgJouerCreature`) lit la table réelle de `rpgRecul.js`
+  (`rpgCasesPose`), envahisseurs compris, et refuse `champ-plein` **avant
+  paiement** quand aucune case du fond ne peut s'ouvrir. `casesLibresPour` ne
+  voyait que nos propres créatures : une case tenue par un Site adverse
+  passait pour libre, la pose n'avait plus où aller et la créature arrivait
+  sans case — donc capable de frapper de n'importe où.
 
 La portée **remplace** la condition de percée : on ne regarde plus la ligne de
 l'attaquant, seulement la distance. C'est la décision prise au palier 2.

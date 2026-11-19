@@ -93,10 +93,16 @@ export function cibleAPortee(attaquant, cible) {
   return distance <= portee;
 }
 
-/** Les cibles qui restent à portée, dans l'ordre reçu. */
+/** Les cibles qui restent à portée, dans l'ordre reçu.
+ *
+ *  Dans un duel à lignes, une créature **sans case** n'a aucune portée : sans
+ *  position, il n'y a rien à mesurer, et la laisser frapper partout ouvrait la
+ *  porte à des attaques depuis n'importe où (une invocation arrivée sans case,
+ *  une partie reprise). Hors des lignes (modes historiques, MOBA), les cibles
+ *  passent telles quelles. */
 export function filtrePortee(duel, attaquant, creaturesCible = [], cibles = [], cote = null) {
   if (!lignesActives(duel) || duel?.moba) return cibles;
-  if (!Number.isInteger(attaquant?.emplacement)) return cibles;
+  if (!Number.isInteger(attaquant?.emplacement)) return [];
   const camp = cote ?? campDeLaCreature(duel, attaquant);
   if (!camp) return cibles;
   const portee = porteeDe(attaquant);
@@ -115,10 +121,17 @@ export function distanceAuSorcier(duel, cote, entite) {
 
 /** Le sorcier adverse est-il à portée de cette créature ? Hors des lignes,
  *  la question ne se pose pas : la réponse est `true` (comportement
- *  historique, c'est `attaqueDirectePermise` qui décide seul). */
+ *  historique, c'est `attaqueDirectePermise` qui décide seul).
+ *
+ *  Dans un duel à lignes, une créature **sans case** ne l'atteint pas : la
+ *  distance au sorcier se mesure depuis une position, et sans position il n'y
+ *  a pas de portée.
+ */
 export function sorcierAPortee(duel, cote, entite) {
-  const distance = distanceAuSorcier(duel, cote, entite);
-  if (distance === null) return true;
+  if (!lignesActives(duel) || duel?.moba) return true;
+  if (!Number.isInteger(entite?.emplacement)) return false;
+  const distance = distanceAuSorcierAdverse(entite, cote);
+  if (distance === null) return false;
   return distance <= porteeDe(entite);
 }
 

@@ -6634,10 +6634,17 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   // Deux lignes : il faut une place libre **à l'arrière** — c'est par là que
   // toute créature entre en jeu ; le front se gagne ensuite, case par case.
-  if (lignesActives(duel)
-    && !casesLibresPour(camp, carte, champMax(duel), sacrifices.map((e) => e.id)).length
-    && !casesPoseOuvertes(duel, cote, sacrifices.map((e) => e.id)).length) {
-    return { ok: false, raison: 'champ-plein' };
+  // `casesLibresPour` ne voit que **nos** créatures : une case tenue par un
+  // envahisseur y passe pour libre. L'occupation réelle vient de `rpgRecul.js`
+  // (`rpgCasesPose`), qui seule connaît les envahisseurs et la poussée. Une
+  // invocation sans case à prendre doit être refusée **avant paiement** : sans
+  // case, la créature n'a pas de position — elle frapperait de n'importe où
+  // (`rpgPortees.js`, `rpgLignes.js`).
+  if (lignesActives(duel)) {
+    const sansIds = sacrifices.map((e) => e.id);
+    const libres = casesLibresPour(camp, carte, champMax(duel), sansIds);
+    const ouvertes = casesPoseOuvertes(duel, cote, sansIds);
+    if (!libres.some((index) => ouvertes.includes(index))) return { ok: false, raison: 'champ-plein' };
   }
   const sacrifice = sacrifices[0] ?? null;
   // La case choisie se valide tôt, comme le sacrifice : hors du champ ou
