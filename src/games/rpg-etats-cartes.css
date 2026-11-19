@@ -2,10 +2,19 @@
    grisée. Les icônes, valeurs, cadres et effets gardent leurs couleurs ; aucun
    clic n'est supprimé (une créature malade peut bloquer).
 
-   L'engagement (`is-attacked`) n'a plus de signe : une créature qui a attaqué
-   garde ses couleurs et son assise. La règle, elle, n'a pas bougé — elle ne
-   peut toujours pas bloquer, être sacrifiée ni avancer avant le tour suivant —
-   et le dit dans son libellé accessible. */
+   ── La créature qui a déjà attaqué ────────────────────────────────────────
+   L'engagement (`is-attacked`) grise la carte **entière** : elle a consommé
+   son tour, elle ne peut plus frapper, ni bloquer, ni avancer, ni être
+   sacrifiée avant le prochain tour de son camp. C'est le même gris que la
+   carte tombée (`is-down`, dans `rpg-battle.css`) — la table se lit d'un
+   regard : ce qui est gris ne fera plus rien ce tour-ci.
+
+   Aucun clic n'est retiré pour autant : une créature engagée reste une cible
+   de sort et d'Attaque ciblée. Quand la table lui parle justement — appâtée
+   par un sort, visée par une Attaque ciblée, ou choisie —, la lueur reprend
+   ses couleurs : le ciblage est une information plus fraîche que
+   l'engagement, et deux signaux de sens contraires ne se disputent jamais la
+   même carte. */
 .rpg-card.is-summoning-sick > .rpg-card__img,
 .moba__slot.has-creature.is-summoning-sick:not(.rpg-card) > img {
   filter: grayscale(1) brightness(.78);
@@ -14,3 +23,13 @@
 /* Les terrains engagés gardent leur traitement existant. */
 .rpg-terrain.is-tapped { filter: grayscale(1) brightness(.78) !important; }
 .rpg-terrain.is-tapped img { filter: none; }
+
+.rpg-card.is-attacked:not(.is-down) {
+  filter: grayscale(1) brightness(.72);
+}
+/* Le ciblage reprend la parole : la carte se rallume, la lueur cyan/orange
+   garde son sens le temps du choix. */
+.rpg-card.is-attacked:is(.is-ciblable, .is-spell-target, .is-coup-rapide-cible,
+  .is-selected, .is-active) {
+  filter: none;
+}

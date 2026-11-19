@@ -105,6 +105,11 @@
    plusieurs pierres empilées peuvent aussi dépasser le bas de la face. */
 .moba .moba__real-slot .rpg-card.moba__slot { display: flex; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; border-radius: var(--rpg-card-radius, 0px); overflow: visible; overflow: clip; overflow-clip-margin: 64px; }
 .moba .moba__real-slot .rpg-card.moba__slot:disabled { filter: none; opacity: 1; }
+/* Une créature du MOBA qui a déjà attaqué est grisée comme sur la table du
+   duel (`is-attacked`, `rpg-etats-cartes.css`) : la règle `:disabled`
+   ci-dessus lui rendait ses couleurs, il faut la nommer après elle. */
+.moba .moba__real-slot .rpg-card.moba__slot.is-attacked:disabled,
+.moba .moba__real-slot .rpg-card.moba__slot.is-attacked { filter: grayscale(1) brightness(.72); }
 .moba .moba__real-slot .rpg-card.moba__slot.is-attacking { outline: 2px solid #f39a62; outline-offset: 2px; }
 .moba .moba__real-slot .rpg-card.moba__slot.is-blocking, .moba .moba__real-slot .rpg-card.moba__slot.is-target { outline: 2px solid #9edcf3; outline-offset: 2px; }
 .moba .moba__hand-cards { align-items: flex-start; padding-top: 14px; }
