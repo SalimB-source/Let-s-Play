@@ -80,17 +80,14 @@ test('la case choisie est respectée, même hors de la ligne de la carte', () =>
   assert.equal(cases[7]?.id, melee.id);
 });
 
-test('une carte avec Envol garde la ligne de sa fiche', () => {
-  const { d, poser, poserOk } = table();
-  // Le Tengu est une créature à distance volante : elle se range au fond.
+test('une carte avec Envol se pose aussi où le joueur veut', () => {
+  const { d, poserOk } = table();
+  // Le Tengu vole : sa fiche le range au fond, mais le joueur peut le tenir au
+  // front — l'Envol ne parle que du passage au-dessus des corps.
   const tengu = poserOk('joueur', 'tengu-du-mont-ardent', { emplacement: 0 });
-  assert.equal(tengu.emplacement, 5, 'la case du front est ignorée, la pose se rabat sur sa ligne');
-  assert.equal(ligneDe(tengu), RPG_LIGNE_FOND);
-  assert.notEqual(tengu.caseChoisie, true, 'elle n’a pas choisi sa case : la ligne de la carte décide');
-  // Hors de sa ligne, la case est refusée sans casser la pose.
-  const autre = poser('joueur', 'tengu-du-mont-ardent', { emplacement: 2 });
-  assert.ok(autre.ok, 'la pose reste possible');
-  assert.equal(ligneDe(autre.entite), RPG_LIGNE_FOND);
+  assert.equal(tengu.emplacement, 0);
+  assert.equal(ligneDe(tengu), RPG_LIGNE_FRONT);
+  assert.equal(tengu.caseChoisie, true, 'sa case lui appartient : elle n’est pas rapatriée');
   assert.ok(d);
 });
 

@@ -60,8 +60,12 @@ export function rpgPeutBouger(duel, cote, entite) {
  * portée du pas puisse grandir sans qu'une créature glisse à travers une
  * autre — c'est le seul endroit où elle se décide.
  */
-export function rpgCheminLibre(duel, depart, arrivee) {
+export function rpgCheminLibre(duel, depart, arrivee, entite = null) {
   if (!depart || !arrivee) return false;
+  // **L'Envol passe par-dessus les corps.** Le chemin n'arrête pas une créature
+  // volante : elle ne traverse pas une case tenue, elle la survole. Elle ne s'y
+  // arrête pas pour autant — la case d'arrivée doit rester vide.
+  if (entite && duelCardById(entite.carteId)?.envol) return true;
   const occupees = casesOccupees(duel);
   const dr = Math.sign(arrivee.rangee - depart.rangee);
   const dc = Math.sign(arrivee.colonne - depart.colonne);
@@ -102,7 +106,7 @@ export function deplacementsLegaux(duel, cote, entiteId) {
       if (camp !== campActuel && dc !== 0) continue;
       if (occupees.has(`${camp}:${index}`)) continue;
       // Un corps sur le chemin arrête la créature : elle ne passe pas à travers.
-      if (!rpgCheminLibre(duel, position, { rangee, colonne })) continue;
+      if (!rpgCheminLibre(duel, position, { rangee, colonne }, entite)) continue;
       destinations.push({ camp, index, rangee, colonne });
     }
   }
