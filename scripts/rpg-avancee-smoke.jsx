@@ -92,6 +92,12 @@ export async function checkAvancee(assert) {
     assert.ok(dessinee.closest('.card-row--ennemi'), 'dans la rangée qu’elle occupe');
     assert.ok(dessinee.classList.contains('rpg-card--equipe'), 'avec son camp, pas celui de la rangée');
     assert.ok(!dessinee.classList.contains('rpg-card--ennemi'), 'elle ne prend pas la teinte adverse');
+    // Une seule figurine : la créature a **quitté** sa rangée. Sans ce tri,
+    // elle restait aussi chez elle et le clic semblait créer une copie.
+    assert.equal(container.querySelectorAll(`.rpg-card[data-entity-id="${perceur.id}"]`).length, 1,
+      'une créature qui a percé n’est dessinée qu’une fois, dans la rangée qu’elle occupe');
+    assert.equal(container.querySelector(`.card-row--equipe .rpg-card[data-entity-id="${perceur.id}"]`), null,
+      'elle a quitté la rangée du joueur');
   } finally {
     await act(async () => root.unmount());
     container.remove();

@@ -29,7 +29,7 @@ import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import { champMax, ligneDeCase, caseAutorisee, ligneObligee, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
-import { campDeLaCreature, envahisseurs, occupantsDeCamp } from './rpgChamp.js';
+import { campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp } from './rpgChamp.js';
 import { deplacementsLegaux, rpgDeplacerCreature } from './rpgMouvement.js';
 import { rpgIABougerCreatures } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
@@ -13765,8 +13765,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // qui ont avancé chez elle par une trouée (`campPose`, `rpgChamp.js`). Les
   // envahisseurs voyagent en piles d'un seul exemplaire : deux cartes
   // identiques de deux camps ne se confondent jamais en une pile.
-  const champEnPiles = (entites, campPose = null) => {
-    const etrangeres = campPose ? envahisseurs(duel, campPose).map((entite) => ({ carteId: entite.carteId, entites: [entite] })) : [];
+  const champEnPiles = (cote, campPose = null) => {
+    // Une rangée ne dessine que les créatures qui **s'y tiennent** : celles du
+    // camp qui la possède (`campPoseDe`) et les envahisseurs de l'autre camp.
+    // Sans ce tri, une créature qui avait franchi la trouée restait aussi dans
+    // sa propre rangée : la figurine ne bougeait pas et une copie apparaissait
+    // sur la case cliquée (le moteur, lui, avait bien déplacé l'entité).
+    const entites = (duel[cote]?.creatures ?? [])
+      .filter((entite) => !campPose || campPoseDe(entite, cote) === campPose);
+    const etrangeres = campPose
+      ? envahisseurs(duel, campPose).map((entite) => ({ carteId: entite.carteId, entites: [entite] }))
+      : [];
     return {
       indexParId: new Map(entites.map((entite, index) => [entite.id, index])),
       piles: (empilerCartes
@@ -13834,8 +13843,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     return liste[0];
   };
-  const campEnnemi = champEnPiles(duel.sorcier.creatures, 'sorcier');
-  const campJoueur = champEnPiles(duel.joueur.creatures, 'joueur');
+  const campEnnemi = champEnPiles('sorcier', 'sorcier');
+  const campJoueur = champEnPiles('joueur', 'joueur');
   // Mode essai : la colonne (1 à 5) de la case de chaque créature.
   // La case de chaque carte — la sienne comme celle d'un envahisseur — lue sur
   // la rangée qu'elle occupe réellement.
