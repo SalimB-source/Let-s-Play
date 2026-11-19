@@ -87,7 +87,7 @@
 }
 .rpg-messagerie__eyebrow {
   color: rgba(233, 196, 106, .82);
-  font: 700 8.5px/1.2 var(--mono, monospace);
+  font: 700 10px/1.2 var(--mono, monospace);
   letter-spacing: .22em;
   text-transform: uppercase;
 }
@@ -179,7 +179,7 @@
   padding: 8px 16px;
   border-top: 1px solid var(--rpg-messagerie-laiton);
   color: rgba(242, 226, 194, .45);
-  font: 500 9.5px/1.4 var(--mono, monospace);
+  font: 500 10px/1.4 var(--mono, monospace);
   letter-spacing: .08em;
   text-align: center;
 }

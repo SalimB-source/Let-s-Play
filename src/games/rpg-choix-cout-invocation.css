@@ -175,9 +175,9 @@
 @media (max-width: 480px) and (max-height: 300px) {
   .rpg-choix-cout { --rpg-cout-top: max(4px, env(safe-area-inset-top)); --rpg-cout-bottom: max(4px, env(safe-area-inset-bottom)); }
   .rpg-choix-cout__panel h2 { font-size: 18px; }
-  .rpg-choix-cout__eyebrow { font-size: 9px; }
+  .rpg-choix-cout__eyebrow { font-size: 10px; }
   .rpg-choix-cout__description { font-size: 11px; }
-  .rpg-choix-cout__legende { font-size: 9px; }
+  .rpg-choix-cout__legende { font-size: 10px; }
   .rpg-choix-cout__footer { display: block; padding: 6px 16px 8px; }
   .rpg-choix-cout__note { max-width: none; margin-bottom: 5px; font-size: 10px; line-height: 1.2; }
   .rpg-choix-cout__actions { flex-wrap: nowrap; }

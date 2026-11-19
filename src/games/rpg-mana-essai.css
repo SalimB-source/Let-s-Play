@@ -111,7 +111,7 @@
   border-radius: 2px;
   background: transparent;
   color: #b6a88c;
-  font: normal 700 clamp(9px, 1.2vw, 18px)/1 sans-serif;
+  font: normal 700 clamp(10px, 1.2vw, 18px)/1 sans-serif;
   text-align: center;
   white-space: nowrap;
   transition: filter .2s ease, opacity .2s ease;
@@ -587,7 +587,7 @@
   border-radius: 4px;
   background: rgba(12, 8, 7, .88);
   color: #fff0c6;
-  font: 800 7px/1.1 Georgia, serif;
+  font: 800 10px/1.1 Georgia, serif;
   text-overflow: ellipsis;
   white-space: nowrap;
   animation: rpg-tear-name calc(var(--rpg-sacrifice-dechirement, 820ms) * var(--rpg-anim-scale, 1)) ease-in calc(var(--rpg-sacrifice-retard, 400ms) * var(--rpg-anim-scale, 1)) both;
@@ -735,7 +735,7 @@
   min-width: 0;
   padding: 2px 5px;
   transform: none;
-  font-size: clamp(8px, calc(var(--duel-card) * .17), 13px);
+  font-size: clamp(10px, calc(var(--duel-card) * .17), 13px);
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track__slots {
   flex: 1;
@@ -761,7 +761,7 @@
   aspect-ratio: 1;
   justify-self: center;
   min-height: 0;
-  font-size: clamp(7px, calc(var(--duel-card) * .14), 12px);
+  font-size: clamp(10px, calc(var(--duel-card) * .14), 12px);
 }
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-flux-track__slot .rpg-emblem {
   width: clamp(9px, calc(var(--duel-card) * .2), 17px);
@@ -834,7 +834,7 @@
   display: -webkit-box;
   justify-self: start;
   overflow: hidden;
-  font-size: clamp(8.5px, calc(var(--duel-card) * .155), 12.5px);
+  font-size: clamp(10px, calc(var(--duel-card) * .155), 12.5px);
   letter-spacing: .02em;
   line-height: 1.05;
   text-align: left;
@@ -855,7 +855,7 @@
   max-height: 2.6em;
   margin-top: 2px;
   overflow: hidden;
-  font-size: clamp(7.5px, calc(var(--duel-card) * .13), 9.5px);
+  font-size: clamp(10px, calc(var(--duel-card) * .13), 9.5px);
   line-height: 1.3;
   letter-spacing: .01em;
   text-align: left;
@@ -926,7 +926,7 @@
   align-self: flex-start;
   margin: 4px 0 0 1px;
   color: #ffd9a6;
-  font: 800 clamp(7px, calc(var(--duel-card) * .13), 10px)/1 var(--mono, monospace);
+  font: 800 clamp(10px, calc(var(--duel-card) * .13), 10px)/1 var(--mono, monospace);
   vertical-align: baseline;
 }
 /* Le bouclier éventuel se range en petite capsule sous la goutte. */
@@ -941,7 +941,7 @@
   border-radius: 100px;
   background: #0b1620;
   color: #d6ecff;
-  font: 700 8px/1 var(--mono, monospace);
+  font: 700 10px/1 var(--mono, monospace);
   white-space: nowrap;
   text-shadow: none;
 }

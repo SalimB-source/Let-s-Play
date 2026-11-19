@@ -506,7 +506,7 @@
 
 .rpg-coffre-dore__sous {
   color: rgba(233, 214, 176, .78);
-  font: 800 8.5px/1.2 var(--mono, monospace);
+  font: 800 10px/1.2 var(--mono, monospace);
   letter-spacing: .13em;
   text-transform: uppercase;
 }

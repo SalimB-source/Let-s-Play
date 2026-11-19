@@ -18,7 +18,7 @@
   pointer-events: none;
 }
 .rpg-card-copy-badge.is-empty {
-  border-color: rgba(220, 220, 220, .34);
+  border-color: rgba(220, 220, 220, .62);
   background: rgba(20, 20, 23, .9);
   color: rgba(240, 240, 240, .68);
 }

@@ -269,7 +269,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 700 9px/1.2 'Orbitron', system-ui, sans-serif;
+  font: 700 10px/1.2 'Orbitron', system-ui, sans-serif;
   letter-spacing: 2.4px;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--teinte, #e8b75c) 88%, #fff);
@@ -305,7 +305,7 @@
 
 .rpg-coffret__boite-meta {
   margin-top: 2px;
-  font: 600 9px/1.2 'Orbitron', system-ui, sans-serif;
+  font: 600 10px/1.2 'Orbitron', system-ui, sans-serif;
   letter-spacing: 1.3px;
   text-transform: uppercase;
   color: #8f97b2;
@@ -846,7 +846,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  font: 600 9px/1.2 'Orbitron', system-ui, sans-serif;
+  font: 600 10px/1.2 'Orbitron', system-ui, sans-serif;
   letter-spacing: 1.1px;
   text-transform: uppercase;
   color: #98a0ba;

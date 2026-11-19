@@ -33,10 +33,10 @@
 .moba__player:last-of-type { flex-direction: row-reverse; text-align: right; background: linear-gradient(250deg, #2a2421, #151416 75%); }
 .moba__player.is-active { border-color: #d8b270; box-shadow: inset 0 0 24px #b58b3c18; }
 .moba__player-emblem { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; color: #f0d39a; border: 1px solid #9a7b4f; border-radius: 50%; background: #241d19; font-size: 20px; }
-.moba__player-name { display: grid; gap: 2px; }.moba__player-name small { color: #ae9874; font: 9px system-ui,sans-serif; letter-spacing: .16em; }.moba__player-name strong { font-size: 16px; font-weight: 500; }
+.moba__player-name { display: grid; gap: 2px; }.moba__player-name small { color: #ae9874; font: 10px system-ui,sans-serif; letter-spacing: .16em; }.moba__player-name strong { font-size: 16px; font-weight: 500; }
 .moba__player-score { display: flex; align-items: center; gap: 5px; margin-left: auto; color: #a59479; font: 11px system-ui,sans-serif; }.moba__player:last-of-type .moba__player-score { margin: 0 auto 0 0; }
 .moba__mark { font-size: 14px; color: #564c3e; }.moba__mark.is-won { color: #f2ca79; text-shadow: 0 0 10px #e3a844; }
-.moba__score-center { position: absolute; left: 50%; top: 50%; display: grid; gap: 1px; justify-items: center; transform: translate(-50%, -50%); color: #dec490; text-shadow: 0 1px 4px #000; }.moba__score-center span { font-size: 18px; }.moba__score-center small { font: 8px system-ui,sans-serif; letter-spacing: .12em; }
+.moba__score-center { position: absolute; left: 50%; top: 50%; display: grid; gap: 1px; justify-items: center; transform: translate(-50%, -50%); color: #dec490; text-shadow: 0 1px 4px #000; }.moba__score-center span { font-size: 18px; }.moba__score-center small { font: 10px system-ui,sans-serif; letter-spacing: .12em; }
 .moba__status { max-width: 1500px; margin: 12px auto 0; gap: 15px; justify-content: space-between; flex-wrap: wrap; font: 12px system-ui,sans-serif; color: #eadcc4; }.moba__status strong { font-weight: 600; }.moba__status strong > span { color: #a1835a; }
 .moba__mana { display: flex; flex-wrap: wrap; gap: 6px; }.moba__mana > span { padding: 4px 8px; border: 1px solid #5d554d; background: #17181b; text-transform: capitalize; }.moba__mana i { font-style: normal; }.moba__mana-neige i { color: #b3d9ee; }.moba__mana-sable i { color: #e1b75f; }.moba__mana-braise i { color: #eb815e; }
 .moba__choice { max-width: 1500px; display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin: 10px auto 0; padding: 10px; border: 1px solid #a5804b; background: #2b241b; }.moba__choice strong { margin-right: 8px; font: 13px system-ui,sans-serif; }.moba__choice button { min-height: 36px; padding: 5px 12px; text-transform: capitalize; }
@@ -47,14 +47,14 @@
 .moba__lane.is-conquered { border-color: #ae854f; background: linear-gradient(145deg, #5b402bbb, #171719e8); animation: moba-conquest .7s ease-out; }
 .moba__lanehead { display: flex; align-items: center; gap: 7px; min-height: 31px; padding-bottom: 8px; border-bottom: 1px solid #bd9a6533; color: #e3c592; text-transform: uppercase; }
 .moba__lane-number { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border: 1px solid #9b8059; color: #e4cba0; font-size: 11px; transform: rotate(45deg); }.moba__lane-number::first-letter { transform: rotate(-45deg); }
-.moba__lanehead strong { padding-left: 4px; font: 700 clamp(10px, 1vw, 13px) system-ui,sans-serif; letter-spacing: .08em; }.moba__lane-state { margin-left: auto; color: #b29a74; font: 9px system-ui,sans-serif; letter-spacing: .07em; text-align: right; }
+.moba__lanehead strong { padding-left: 4px; font: 700 clamp(10px, 1vw, 13px) system-ui,sans-serif; letter-spacing: .08em; }.moba__lane-state { margin-left: auto; color: #b29a74; font: 10px system-ui,sans-serif; letter-spacing: .07em; text-align: right; }
 .moba__side { padding: 10px 0; }.moba__side + .moba__side { border-top: 1px solid #bd9a6533; }
 .moba__health { gap: 7px; margin-bottom: 8px; font: 11px system-ui,sans-serif; color: #dfceb5; }.moba__health > span { white-space: nowrap; }.moba__health strong { color: #fae0c4; font-size: 14px; white-space: nowrap; }.moba__health strong small { color: #ab9983; font-size: 10px; }.moba__health-bar { flex: 1; min-width: 12px; height: 6px; overflow: hidden; border: 1px solid #785448; background: #291d1b; }.moba__health-bar i { display: block; height: 100%; background: linear-gradient(90deg, #993d2a, #e09466); transition: width .4s ease; }.moba__health .is-damaged { animation: moba-hit .6s ease-out; }
 .moba__slots { display: flex; justify-content: center; gap: clamp(5px, .8vw, 12px); }
 .moba__slot { position: relative; display: grid; place-items: center; width: min(100%, 132px); aspect-ratio: 4 / 5; min-width: 0; overflow: hidden; border: 1px solid #a48a645c; border-radius: var(--rpg-card-radius, 0px); padding: 0; background: #151518ba; text-align: center; }
 .moba__slot.is-empty { border-style: dashed; }.moba__slot:not(:disabled) { border-color: #eac77a; box-shadow: 0 0 15px #e2b45866, inset 0 0 18px #dfae4b20; }.moba__slot.is-attacking { border: 2px solid #f39a62; box-shadow: 0 0 16px #ff6c3c99; }.moba__slot.is-blocking, .moba__slot.is-target { border: 2px solid #9edcf3; box-shadow: 0 0 16px #68c3ed88; }
 .moba__slot > img { width: 100%; height: 100%; object-fit: cover; }.moba__slot.has-creature:disabled { opacity: 1; }.moba__slot-label { position: absolute; right: 0; bottom: 0; left: 0; display: grid; gap: 4px; padding: 15px 4px 5px; background: linear-gradient(transparent, #08090bea 35%); font: 10px/1.15 system-ui,sans-serif; }.moba__slot-label b { color: #fff4dd; }.moba__slot-label small { display: flex; justify-content: center; gap: 10px; color: #f9d69d; font-size: 11px; }.moba__slot-label em { font-style: normal; }
-.moba__slot-tag { position: absolute; top: 3px; left: 3px; padding: 3px 5px; background: #873b27ed; font: 700 8px system-ui,sans-serif; letter-spacing: .07em; }.moba__slot.is-blocking .moba__slot-tag { background: #315971ed; }.moba__empty-label { display: grid; gap: 6px; justify-items: center; color: #b09a77; font: 9px system-ui,sans-serif; letter-spacing: .08em; }.moba__empty-label i { color: #c9a96d; font: normal 26px Georgia,serif; }.moba__slot:not(:disabled) .moba__empty-label { color: #ffe0a0; }
+.moba__slot-tag { position: absolute; top: 3px; left: 3px; padding: 3px 5px; background: #873b27ed; font: 700 10px system-ui,sans-serif; letter-spacing: .07em; }.moba__slot.is-blocking .moba__slot-tag { background: #315971ed; }.moba__empty-label { display: grid; gap: 6px; justify-items: center; color: #b09a77; font: 10px system-ui,sans-serif; letter-spacing: .08em; }.moba__empty-label i { color: #c9a96d; font: normal 26px Georgia,serif; }.moba__slot:not(:disabled) .moba__empty-label { color: #ffe0a0; }
 .moba__controls { max-width: 1500px; justify-content: space-between; gap: 12px; margin: 12px auto; padding: 12px 15px; border: 1px solid #62513b; background: linear-gradient(100deg, #24201e, #141417); }.moba__phase { display: flex; align-items: center; gap: 10px; }.moba__phase > span { color: #e0b771; font-size: 24px; }.moba__phase div { display: grid; gap: 2px; }.moba__phase strong { font-size: 15px; font-weight: 500; }.moba__buttons { display: flex; flex-wrap: wrap; gap: 8px; }.moba__controls button, .moba__overlay button { font: 600 12px system-ui,sans-serif; }.moba__controls button:disabled { opacity: .4; }.moba__primary { border-color: #ddb77a !important; background: linear-gradient(#ac8550, #775127) !important; color: #fff6e2 !important; }.moba__primary span { margin-left: 12px; }
 .moba__hand { max-width: 1500px; margin: auto; padding: 16px; border: 1px solid #62513b; background: linear-gradient(120deg, #22201f, #111217); }.moba__handhead { justify-content: space-between; gap: 15px; margin-bottom: 10px; }.moba__hand h2 { margin: 2px 0 0; font-size: 20px; font-weight: 500; }.moba__deck-count { color: #bfa57a; font: 10px system-ui,sans-serif; letter-spacing: .13em; }.moba__deck-count b { margin-left: 7px; color: #f7e3c1; font-size: 18px; }
 .moba__hand-cards { display: flex; gap: 10px; overflow-x: auto; padding: 5px 4px 12px; }.moba__card { flex: 0 0 140px; overflow: hidden; border: 1px solid #8b7452; padding: 0; background: #171619; text-align: left; font: 11px system-ui,sans-serif!important; }.moba__card:disabled { opacity: .65; }.moba__card.is-selected { outline: 2px solid #f0ca80; box-shadow: 0 0 20px #e4b66299; }.moba__card-art { position: relative; display: block; height: 130px; }.moba__card-art img { width: 100%; height: 100%; object-fit: cover; }.moba__card-art i { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #e0c598; border-radius: 50%; background: #231c17; font: normal 700 12px system-ui,sans-serif; }.moba__card-info { display: grid; gap: 4px; padding: 8px; }.moba__card-info b { min-height: 2.3em; color: #fff0d8; }.moba__card-info > small { color: #d3b781; }.moba__cardtext { max-height: 5.2em; overflow: auto; line-height: 1.3; color: #c9bcaa!important; }
@@ -63,7 +63,7 @@
 @keyframes moba-hit { 0% { color: #fff; transform: scale(1.4); } 50% { color: #ff704e; } }
 @keyframes moba-conquest { 0% { filter: brightness(2); } 50% { box-shadow: 0 0 45px #f7ba4a; } }
 @media(max-width: 650px) {
-  .moba { padding: 12px 8px 24px; }.moba__header { align-items: flex-start; }.moba__header-meta { gap: 6px; }.moba__trial { display: none; }.moba__back { padding: 8px; font-size: 11px; }.moba__brand h1 small { display: block; margin-top: 5px; padding: 0; }.moba__scoreboard { gap: 6px; }.moba__player { gap: 6px; padding: 8px; }.moba__player-emblem { width: 30px; height: 30px; flex-basis: 30px; font-size: 15px; }.moba__player-name strong { font-size: 13px; }.moba__player-name small, .moba__score-center small { display: none; }.moba__player-score { gap: 2px; font-size: 9px; }.moba__score-center { display: none; }.moba__battlefield { padding: 6px; }.moba__lane { padding: 5px; }.moba__lanehead { flex-wrap: wrap; gap: 4px; }.moba__lane-number { width: 19px; height: 19px; flex-basis: 19px; font-size: 9px; }.moba__lanehead strong { font-size: 9px; }.moba__lane-state { flex-basis: 100%; margin: 0; font-size: 8px; text-align: left; }.moba__health { flex-wrap: wrap; gap: 4px; font-size: 9px; }.moba__health-bar { order: 3; flex-basis: 100%; }.moba__health strong { margin-left: auto; font-size: 12px; }.moba__slots { flex-wrap: wrap; }.moba__slot { width: min(100%, 95px); }.moba__slot-label { font-size: 9px; }.moba__slot-label small { gap: 4px; font-size: 10px; }.moba__empty-label { font-size: 8px; letter-spacing: 0; }.moba__controls { align-items: flex-start; flex-direction: column; }.moba__buttons { width: 100%; }.moba__buttons button { flex: 1; }.moba__card { flex-basis: 120px; }.moba__card-art { height: 105px; }.moba__mulligan-card { flex-basis: 105px; }
+  .moba { padding: 12px 8px 24px; }.moba__header { align-items: flex-start; }.moba__header-meta { gap: 6px; }.moba__trial { display: none; }.moba__back { padding: 8px; font-size: 11px; }.moba__brand h1 small { display: block; margin-top: 5px; padding: 0; }.moba__scoreboard { gap: 6px; }.moba__player { gap: 6px; padding: 8px; }.moba__player-emblem { width: 30px; height: 30px; flex-basis: 30px; font-size: 15px; }.moba__player-name strong { font-size: 13px; }.moba__player-name small, .moba__score-center small { display: none; }.moba__player-score { gap: 2px; font-size: 10px; }.moba__score-center { display: none; }.moba__battlefield { padding: 6px; }.moba__lane { padding: 5px; }.moba__lanehead { flex-wrap: wrap; gap: 4px; }.moba__lane-number { width: 19px; height: 19px; flex-basis: 19px; font-size: 10px; }.moba__lanehead strong { font-size: 10px; }.moba__lane-state { flex-basis: 100%; margin: 0; font-size: 10px; text-align: left; }.moba__health { flex-wrap: wrap; gap: 4px; font-size: 10px; }.moba__health-bar { order: 3; flex-basis: 100%; }.moba__health strong { margin-left: auto; font-size: 12px; }.moba__slots { flex-wrap: wrap; }.moba__slot { width: min(100%, 95px); }.moba__slot-label { font-size: 10px; }.moba__slot-label small { gap: 4px; font-size: 10px; }.moba__empty-label { font-size: 10px; letter-spacing: 0; }.moba__controls { align-items: flex-start; flex-direction: column; }.moba__buttons { width: 100%; }.moba__buttons button { flex: 1; }.moba__card { flex-basis: 120px; }.moba__card-art { height: 105px; }.moba__mulligan-card { flex-basis: 105px; }
 }
 @media(prefers-reduced-motion: reduce) { .moba * { animation: none!important; transition: none!important; } }
 @media(max-width: 650px) { .moba__mulligan-cards { justify-content: flex-start; } }
@@ -77,7 +77,7 @@
 .moba__deck-choices select:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
 @media(max-width: 420px) { .moba__deck-choices { grid-template-columns: 1fr; } }
 .moba__deck-choices small { color: #baad98; font: 12px/1.4 system-ui,sans-serif; letter-spacing: 0; }
-.moba__slot-states { color: #d4e8ef; font: 9px/1.2 system-ui,sans-serif; }
+.moba__slot-states { color: #d4e8ef; font: 10px/1.2 system-ui,sans-serif; }
 .moba__deck-choice { display: grid; align-content: start; gap: 8px; }
 .moba__deck-choice button { padding: 8px; border: 1px solid #8e704b; background: #29211b; color: #efdbbb; font-size: 11px; }
 .moba__editor { width: min(100%, 900px); max-height: min(94vh, 1000px); display: flex; flex-direction: column; text-align: left; padding: 22px; }
@@ -346,7 +346,7 @@
 }
 
 .moba__header { position: absolute; z-index: 25; top: 8px; right: 1%; max-width: none; margin: 0; padding: 5px 8px; border: 1px solid #92774e; border-radius: 9px; background: #100e0ce8; gap: 12px; }
-.moba__brand > span { display: block; font-size: 9px; white-space: nowrap; }
+.moba__brand > span { display: block; font-size: 10px; white-space: nowrap; }
 .moba__brand h1 { margin: 0; font-size: 16px; }
 .moba__brand h1 small, .moba__trial { display: none; }
 .moba__header-meta { gap: 5px; }
@@ -360,7 +360,7 @@
 .moba__player--sorcier { top: 0; }.moba__player--joueur { bottom: 0; }
 .moba__player-emblem { overflow: hidden; width: clamp(32px, 4vw, 55px); height: clamp(32px, 4vw, 55px); flex: 0 0 clamp(32px, 4vw, 55px); border: 1px solid #c4aa78; border-radius: 50%; }
 .moba__player-emblem img { width: 100%; height: 100%; object-fit: cover; }
-.moba__player-name { min-width: 0; }.moba__player-name small { font-size: 8px; }.moba__player-name strong { font-size: clamp(12px, 1.1vw, 16px); }
+.moba__player-name { min-width: 0; }.moba__player-name small { font-size: 10px; }.moba__player-name strong { font-size: clamp(12px, 1.1vw, 16px); }
 .moba__player-score, .moba__player--sorcier .moba__player-score { margin: 0 0 0 auto; gap: 3px; }
 .moba__score-center { display: none; }
 .moba__hidden-hand { position: absolute; z-index: 3; top: 1%; left: 50%; transform: translateX(-50%); text-align: center; color: #f4e4c6; font: 10px system-ui, sans-serif; text-shadow: 0 1px 4px #000; }
@@ -390,7 +390,7 @@
 .moba__side, .moba__side--joueur { --moba-slot-padding: 18px; position: relative; flex: 1 1 50%; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 3px 0; border: 0 !important; }
 .moba__frontline { display: none; }
 .moba__health { flex: none; gap: 4px; min-height: 0; margin: 0 0 4px; padding: 3px 5px; border-radius: 4px; background: #15120dc9; font-size: 10px; }
-.moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 8px; }
+.moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 10px; }
 /* Écarter les deux groupes latéraux de la rivière sans déplacer la voie centrale. */
 /* Les pierres d'effets débordent du bord droit : réserver un vrai espace
    entre les deux créatures d'une voie, même quand les cartes rétrécissent. */
@@ -401,7 +401,7 @@
 .moba .moba__ghost-zone, .moba .moba__ghost-zone--empty { inset: 0 0 18px; }
 .moba__slot.is-empty { border: 1px dashed #e9ddc062; border-radius: var(--rpg-card-radius, 0px); background: #17191c35; box-shadow: none; }
 .moba__slot.is-empty:not(:disabled) { background: #bb9b5544; }
-.moba__empty-label { font-size: 8px; color: #f9e6bd; text-shadow: 0 1px 3px #000; }.moba__empty-label i { font-size: 18px; }
+.moba__empty-label { font-size: 10px; color: #f9e6bd; text-shadow: 0 1px 3px #000; }.moba__empty-label i { font-size: 18px; }
 .moba__lane-target { position: absolute; z-index: 6; top: 0; left: 0; right: 0; margin: 0; min-height: 27px; padding: 3px; font-size: 10px; }
 .moba__controls { position: absolute; z-index: 8; top: 55%; right: 1%; width: 17%; display: grid; gap: 5px; margin: 0; padding: 8px; border: 1px solid #a8895a; border-radius: 8px; background: #17130fea; }
 .moba__phase > span, .moba__phase small { display: none; }.moba__phase strong { font-size: 12px; }
@@ -414,7 +414,7 @@
 .moba__hand { position: absolute; z-index: 9; left: 17%; right: 18%; bottom: 0; height: 21%; max-width: none; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .moba__handhead { position: absolute; left: 0; right: 0; top: -18px; display: flex; justify-content: center; gap: 12px; margin: 0; color: white; text-shadow: 0 1px 4px #000; }
 .moba__handhead > div:not(.moba__hand-pages), .moba__handhead h2 { display: none; }
-.moba__deck-count { color: #fff1d4; font-size: 9px; }.moba__deck-count b { font-size: 12px; }
+.moba__deck-count { color: #fff1d4; font-size: 10px; }.moba__deck-count b { font-size: 12px; }
 .moba__hand-pages { display: flex; align-items: center; gap: 4px; font: 11px system-ui, sans-serif; }
 .moba__hand-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }
 .moba__hand-pages button:disabled { opacity: .45; }
@@ -430,20 +430,20 @@
 .moba__journal-pages { display: flex; align-items: center; justify-content: center; gap: 8px; }.moba__journal-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }.moba__journal-pages button:disabled { opacity: .45; }
 @media (max-width: 700px) {
   .moba { --moba-card-size: min(13.5vw, 15.2vh, 96px); }
-  .moba__header { top: 4px; right: 4px; padding: 3px 5px; gap: 5px; }.moba__brand > span { font-size: 7px; }.moba__brand h1 { font-size: 13px; }
-  .moba__back { min-height: 25px; padding: 3px 5px; font-size: 9px !important; }
-  .moba__intro { top: 4px; left: 4px; }.moba__rules summary { padding: 4px; font-size: 9px; }
-  .moba__player { padding: 4px; gap: 4px; }.moba__player-emblem { width: 28px; height: 28px; flex-basis: 28px; }.moba__player-name small { display: none; }.moba__player-name strong { font-size: 10px; }.moba__player-score { font-size: 8px; }
-  .moba__hidden-hand small { font-size: 8px; }
-  .moba__status, .moba__directive, .moba__controls { padding: 4px; font-size: 9px; }.moba__hint { font-size: 9px; }.moba__mana > span { font-size: 8px; padding: 2px; }
+  .moba__header { top: 4px; right: 4px; padding: 3px 5px; gap: 5px; }.moba__brand > span { font-size: 10px; }.moba__brand h1 { font-size: 13px; }
+  .moba__back { min-height: 25px; padding: 3px 5px; font-size: 10px !important; }
+  .moba__intro { top: 4px; left: 4px; }.moba__rules summary { padding: 4px; font-size: 11px; }
+  .moba__player { padding: 4px; gap: 4px; }.moba__player-emblem { width: 28px; height: 28px; flex-basis: 28px; }.moba__player-name small { display: none; }.moba__player-name strong { font-size: 10px; }.moba__player-score { font-size: 10px; }
+  .moba__hidden-hand small { font-size: 10px; }
+  .moba__status, .moba__directive, .moba__controls { padding: 4px; font-size: 10px; }.moba__hint { font-size: 10px; }.moba__mana > span { font-size: 10px; padding: 2px; }
   .moba__field-scroll { inset: 17% 19% 24%; }
   .moba .moba__lane, .moba .moba__lane.is-conquered { padding: 0 2px; }
-  .moba__lanehead strong { font-size: 8px; }.moba__health { gap: 2px; padding: 2px; font-size: 8px; }.moba__health strong { font-size: 10px; }.moba__health strong small { display: none; }
+  .moba__lanehead strong { font-size: 10px; }.moba__health { gap: 2px; padding: 2px; font-size: 10px; }.moba__health strong { font-size: 10px; }.moba__health strong small { display: none; }
   .moba .moba__side { --moba-slot-padding: 16px; }
-  .moba__empty-label { font-size: 7px; }.moba__empty-label i { font-size: 14px; }
-  .moba__controls { top: 61%; }.moba__phase strong { font-size: 9px; }.moba__buttons button { min-height: 25px; padding: 3px; font-size: 9px; }
+  .moba__empty-label { font-size: 10px; }.moba__empty-label i { font-size: 14px; }
+  .moba__controls { top: 61%; }.moba__phase strong { font-size: 10px; }.moba__buttons button { min-height: 25px; padding: 3px; font-size: 10px; }
   .moba__hand { left: 18%; right: 18%; height: 19%; }.moba .moba__hand-item { flex-basis: min(8.5vw, 11.05vh, 75px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(10vw, 13vh, 88px); height: 16vh; }
-  .moba__journal { bottom: 2%; padding: 4px; font-size: 9px; }.moba__choice { width: 18%; }
+  .moba__journal { bottom: 2%; padding: 4px; font-size: 11px; }.moba__choice { width: 18%; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   /* En portrait, les cases occupent presque toute la largeur : étaler la
@@ -494,13 +494,13 @@
    occuper les cases des voies. Seul le carrousel en surimpression défile. */
 .moba .rpg-hidden-hand__card { width: clamp(24px, 3.5vw, 52px); height: clamp(30px, 7vh, 65px); margin-left: -12px; border-width: 2px; border-radius: var(--rpg-card-radius-sm, 0px); }
 .moba .rpg-hidden-hand__cards { padding: 0 10px; }
-.moba .rpg-hidden-hand__count { font-size: 9px; }
+.moba .rpg-hidden-hand__count { font-size: 10px; }
 .moba__piles { position: absolute; z-index: 7; left: 1%; width: 17%; display: flex; align-items: flex-start; justify-content: center; gap: 4px; }
 .moba__piles--sorcier { top: 29%; }
 .moba__piles--joueur { top: 54%; }
 .moba .moba__piles .rpg-card-pile { gap: 1px; min-width: 0; padding: 3px 5px; font: 700 10px/1.1 system-ui, sans-serif; }
 .moba .moba__piles .rpg-card-pile__stack, .moba .moba__piles .rpg-card-pile__card { width: 32px; height: 43px; }
-.moba .moba__piles .rpg-card-pile small { font-size: 9px; }
+.moba .moba__piles .rpg-card-pile small { font-size: 10px; }
 .moba__pile-fallback { border: 1px solid #8f754c; border-radius: var(--rpg-card-radius-sm, 0px); padding: 4px; color: #f0dfbd; background: #15110eea; font: 10px/1.2 system-ui, sans-serif; }
 .moba__pile-fallback:disabled { opacity: .65; }
 .moba__flux { position: absolute; z-index: 7; left: 1%; width: 17%; pointer-events: none; }
@@ -509,22 +509,22 @@
 .moba .moba__flux .rpg-flux-track { position: static; display: block; width: 100%; max-width: none; padding: 0; overflow: visible; border: 0; background: none; box-shadow: none; }
 .moba .moba__flux .rpg-flux-track__bar { padding: 3px 4px; gap: 3px; }
 .moba .moba__flux .rpg-flux-track__reserve { flex-basis: 34px; padding: 3px; font-size: 10px; }
-.moba .moba__flux .rpg-flux-track__slot { font-size: clamp(7px, 1vw, 15px); }
+.moba .moba__flux .rpg-flux-track__slot { font-size: clamp(10px, 1vw, 15px); }
 .moba .moba__flux .rpg-flux-track__slot .rpg-emblem { width: 100%; height: 100%; }
 .moba__fullscreen { display: grid; place-items: center; }
 .moba__fullscreen .rpg-fullscreen-icon { width: 15px; height: 15px; }
 @media (max-width: 700px), (max-height: 500px) {
-  .moba .moba__piles .rpg-card-pile { padding: 2px 3px; font-size: 8px; }
+  .moba .moba__piles .rpg-card-pile { padding: 2px 3px; font-size: 10px; }
   .moba .moba__piles .rpg-card-pile__stack, .moba .moba__piles .rpg-card-pile__card { width: 20px; height: 26px; }
-  .moba .moba__piles .rpg-card-pile small { font-size: 7px; }
+  .moba .moba__piles .rpg-card-pile small { font-size: 10px; }
   .moba .moba__flux .rpg-flux-track__bar { padding: 2px; gap: 2px; }
-  .moba .moba__flux .rpg-flux-track__reserve { flex-basis: 25px; padding: 2px; font-size: 8px; }
+  .moba .moba__flux .rpg-flux-track__reserve { flex-basis: 25px; padding: 2px; font-size: 10px; }
   .moba__sound-label { display: none; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .moba .rpg-hidden-hand { top: 5%; }
   .moba .rpg-hidden-hand__card { width: 24px; height: 4vh; }
-  .moba .rpg-hidden-hand__count { font-size: 8px; }
+  .moba .rpg-hidden-hand__count { font-size: 10px; }
   .moba__piles { top: 5%; width: 25%; }
   .moba__piles--joueur { left: 2%; }
   .moba__piles--sorcier { left: auto; right: 2%; }
@@ -565,7 +565,7 @@
   .moba__piles--joueur { top: calc(75% - var(--moba-plaque-h) - 30px); }
   .moba .moba__piles .rpg-card-pile { display: grid; grid-template-columns: 16px auto; grid-template-rows: 1fr 1fr; column-gap: 2px; }
   .moba .moba__piles .rpg-card-pile__stack { grid-row: 1 / 3; }
-  .moba .moba__piles .rpg-card-pile b, .moba .moba__piles .rpg-card-pile small { font: 700 7px/1 system-ui, sans-serif; }
+  .moba .moba__piles .rpg-card-pile b, .moba .moba__piles .rpg-card-pile small { font: 700 10px/1 system-ui, sans-serif; }
 }
 
 .moba__search-item { position: relative; flex: 0 0 140px; min-width: 0; }
@@ -588,7 +588,7 @@
 .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature { container-type: inline-size; }
 .rpg-battle[data-scene="duel"] .card-table .rpg-hand__card--type-creature .rpg-hand__stat {
   min-width: 0;
-  border-color: rgba(255, 255, 255, .34);
+  border-color: rgba(255, 255, 255, .62);
   background: rgba(0, 0, 0, .68);
   box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
   color: #fff8e8;
@@ -732,11 +732,11 @@
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__directive--sort .moba__directive-copy { flex: 1 1 0; }
-  .moba__directive--sort .moba__cancel-choice { flex: none; min-height: 24px; padding: 2px 4px; font-size: 9px !important; }
+  .moba__directive--sort .moba__cancel-choice { flex: none; min-height: 24px; padding: 2px 4px; font-size: 10px !important; }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
-  .moba__directive--sort .moba__cancel-choice { position: absolute; right: 0; bottom: 100%; min-height: 22px; padding: 2px 4px; font-size: 9px !important; }
+  .moba__directive--sort .moba__cancel-choice { position: absolute; right: 0; bottom: 100%; min-height: 22px; padding: 2px 4px; font-size: 10px !important; }
 }
 
 /* Give long public spell announcements room beside the battlefield on short
@@ -756,10 +756,10 @@
 /* Keep reversible multi-step spell choices clear of the turn controls. */
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__directive:has(.moba__cancel-choice) .moba__directive-copy { flex: 1 1 0; }
-  .moba__directive:has(.moba__cancel-choice) .moba__cancel-choice { flex: none; min-height: 24px; padding: 2px 4px; font-size: 9px !important; }
+  .moba__directive:has(.moba__cancel-choice) .moba__cancel-choice { flex: none; min-height: 24px; padding: 2px 4px; font-size: 10px !important; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  .moba__directive:has(.moba__cancel-choice) .moba__cancel-choice { position: absolute; right: 0; bottom: 100%; min-height: 22px; padding: 2px 4px; font-size: 9px !important; }
+  .moba__directive:has(.moba__cancel-choice) .moba__cancel-choice { position: absolute; right: 0; bottom: 100%; min-height: 22px; padding: 2px 4px; font-size: 10px !important; }
 }
 
 /* A public announcement can contain two long creature names. Anchor its bottom
@@ -941,7 +941,7 @@ button.moba__pending-art { pointer-events: auto; cursor: pointer; }
 button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-offset: 2px; }
 .moba__pending-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .moba__pending-copy { display: grid; min-width: 0; gap: 2px; }
-.moba__pending-copy small { color: #a9dfd2; font: 800 9px/1.1 system-ui, sans-serif; letter-spacing: .08em; }
+.moba__pending-copy small { color: #a9dfd2; font: 800 10px/1.1 system-ui, sans-serif; letter-spacing: .08em; }
 .moba__pending-spell--sorcier .moba__pending-copy small { color: #f2b198; }
 .moba__pending-copy strong, .moba__pending-copy > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .moba__pending-copy strong { font: 700 13px/1.15 Georgia, serif; }
@@ -949,9 +949,9 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 @media (max-width: 700px) {
   .moba__pending-spell { top: 8%; width: min(270px, 47vw); gap: 5px; padding: 3px; }
   .moba__pending-art { flex-basis: 29px; width: 29px; height: 36px; }
-  .moba__pending-copy small { font-size: 8px; letter-spacing: 0; }
+  .moba__pending-copy small { font-size: 10px; letter-spacing: 0; }
   .moba__pending-copy strong { font-size: 11px; }
-  .moba__pending-copy > span { font-size: 9px; }
+  .moba__pending-copy > span { font-size: 10px; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__pending-spell { top: 15%; left: auto; right: 2%; transform: none; width: min(280px, 62vw); }
@@ -1012,7 +1012,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   padding: 4px 3px; border: 1px solid #ffcf83; border-radius: 6px;
   background: linear-gradient(#9b4931, #62281f); color: #fff4da;
   box-shadow: 0 0 12px #f6854e99; cursor: pointer;
-  font: 700 clamp(9px, 1.1vw, 12px) system-ui, sans-serif;
+  font: 700 clamp(10px, 1.1vw, 12px) system-ui, sans-serif;
 }
 .moba .moba__attack-direct:focus-visible { outline: 3px solid #fff2bf; outline-offset: 2px; }
 
@@ -1107,14 +1107,14 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__booster-edge { position: absolute; inset: 0; border: 1px solid #b59964; border-radius: 3px; background: repeating-linear-gradient(90deg, #251d19 0 2px, #8d7448 2px 3px, #281f1a 3px 4px); transform: translateZ(-5px) translateX(6px); }
 .moba__booster-face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; border: 1px solid #c6a474; border-radius: 3px; background: linear-gradient(115deg, #6c5132, #181515 17%, #2b241d 48%, #0f1013 80%, #775635); box-shadow: inset 0 0 0 3px #080808, inset 0 0 0 4px #b2915b; }
 .moba__booster-face::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(112deg, #fff8dc2b, transparent 23%, #ffffff0b 52%, transparent 67%); }
-.moba__booster-seal, .moba__booster-stamp { position: relative; z-index: 1; flex: none; color: #efdbb1; font: 700 7px/1.2 Georgia,serif; letter-spacing: .13em; }
+.moba__booster-seal, .moba__booster-stamp { position: relative; z-index: 1; flex: none; color: #efdbb1; font: 700 10px/1.2 Georgia,serif; letter-spacing: .13em; }
 .moba__booster-seal { padding: 7px 3px 5px; border-bottom: 1px solid #b99a64; background: repeating-linear-gradient(0deg, #0f1011 0 2px, #433729 2px 3px); }
 .moba__booster-illustration { flex: 1 1 auto; min-height: 0; margin: 3px 6px 0; border: 1px solid #bc9f69; overflow: hidden; background: #201b18; }
 .moba__booster-illustration img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.moba__booster-face-name { display: flex; align-items: center; justify-content: center; min-height: 29px; padding: 2px 5px; color: #f4e4c4; font: 700 9px/1.1 Georgia,serif; text-align: center; }
-.moba__booster-stamp { padding: 4px 2px 5px; border-top: 1px solid #a1804e; background: repeating-linear-gradient(0deg, #101011 0 2px, #3b3023 2px 3px); font-size: 6px; }
+.moba__booster-face-name { display: flex; align-items: center; justify-content: center; min-height: 29px; padding: 2px 5px; color: #f4e4c4; font: 700 10px/1.1 Georgia,serif; text-align: center; }
+.moba__booster-stamp { padding: 4px 2px 5px; border-top: 1px solid #a1804e; background: repeating-linear-gradient(0deg, #101011 0 2px, #3b3023 2px 3px); font-size: 10px; }
 .moba__booster-name { min-height: 2.4em; display: flex; align-items: center; justify-content: center; color: inherit; font: 700 12px/1.2 system-ui,sans-serif; }
-.moba__booster-category { color: #d9b87f; font: 700 9px/1.3 system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.moba__booster-category { color: #d9b87f; font: 700 10px/1.3 system-ui,sans-serif; letter-spacing: .1em; text-transform: uppercase; }
 .moba__booster-state { margin-top: 4px; color: #c4b092; font: 11px/1.3 system-ui,sans-serif; }
 .moba__booster.is-selected .moba__booster-state { color: #ffe2a0; font-weight: 700; }
 .moba__booster-item.is-unavailable .moba__booster-scene { opacity: .55; filter: grayscale(.55); }
@@ -1580,9 +1580,9 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   .moba__setup .moba__booster-list { gap: 14px; padding: 10px 8px 13px; }
   .moba__setup .moba__booster-item { flex-basis: 165px; }
   .moba__setup .moba__booster-scene { height: min(26dvh, 220px); width: auto; margin: 4px auto 12px; }
-  .moba__booster-seal { font-size: 9px; }
+  .moba__booster-seal { font-size: 10px; }
   .moba__booster-face-name { font-size: 11px; }
-  .moba__booster-stamp { font-size: 8px; }
+  .moba__booster-stamp { font-size: 10px; }
   .moba__booster-name { font-size: 14px; }
   .moba__booster-state { font-size: 12px; }
   .moba__setup-actions button { min-height: 46px; font-size: 14px; }
@@ -1625,7 +1625,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
   white-space: nowrap; padding: 2px 5px; border-radius: 3px;
   color: #fff1d4; background: #24180df0; text-shadow: 0 1px 2px #000;
-  font: 700 9px/1.3 system-ui, sans-serif; letter-spacing: .07em;
+  font: 700 10px/1.3 system-ui, sans-serif; letter-spacing: .07em;
 }
 @keyframes moba-card-flight {
   0% { opacity: 0; transform: translate(0, 0) scale(.7) rotate(-12deg); }
@@ -1659,11 +1659,11 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   transform: translate(-50%, -85%); padding: 2px 5px;
   border: 1px solid #e8c58a; border-radius: 4px;
   background: #24180df2; color: #fff4dc; white-space: nowrap;
-  font: 700 9px/1.2 system-ui, sans-serif; letter-spacing: .06em;
+  font: 700 10px/1.2 system-ui, sans-serif; letter-spacing: .06em;
   pointer-events: none;
 }
 .moba__card.is-new-card .moba__hand-receipt { top: 3px; transform: translateX(-50%); }
-.moba__hand-new-page { color: #ffdc9e; white-space: nowrap; font: 700 9px system-ui, sans-serif; }
+.moba__hand-new-page { color: #ffdc9e; white-space: nowrap; font: 700 10px system-ui, sans-serif; }
 @keyframes moba-card-received { 0% { opacity: 0; scale: .93; } 25%, 55% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.04; } }
 /* Un repère immobile et contrasté demeure accessible avec le mouvement réduit. */
 .rpg-battle--moba.is-reduced .moba .moba__hand-cards .is-new-card::after { opacity: 1; scale: 1; }
@@ -1697,7 +1697,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 }
 /* La main MOBA utilise aussi les plaques neutres du champ. */
 .rpg-battle.rpg-battle--moba .moba .moba__real-hand.rpg-hand__card--type-creature .rpg-hand__stat {
-  border-color: rgba(255, 255, 255, .34);
+  border-color: rgba(255, 255, 255, .62);
   background: rgba(0, 0, 0, .68);
   box-shadow: 0 1px 3px rgba(0, 0, 0, .62), inset 0 1px rgba(255, 255, 255, .12);
   color: #fff8e8;
@@ -1765,7 +1765,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
     border-radius: 4px;
     background: #15120de0;
     color: #fff1d4;
-    font: 700 9px/1.2 system-ui, sans-serif;
+    font: 700 10px/1.2 system-ui, sans-serif;
     letter-spacing: normal;
     white-space: nowrap;
   }
@@ -1793,7 +1793,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 @supports (container-type: inline-size) {
   .moba .moba__slot.is-empty { container-type: inline-size; }
   @container (max-width: 72px) {
-    .moba__empty-label { gap: 3px; font-size: clamp(6px, 20cqw, 9px); letter-spacing: 0; }
+    .moba__empty-label { gap: 3px; font-size: clamp(10px, 20cqw, 9px); letter-spacing: 0; }
     .moba__empty-label-long { display: none; }
     .moba__empty-label-short { display: block; }
   }
@@ -1802,7 +1802,7 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 /* Repli pour les navigateurs sans requêtes de conteneur. */
 @supports not (container-type: inline-size) {
   @media (max-width: 700px), (max-height: 500px) {
-    .moba__empty-label { gap: 3px; font-size: 7px; letter-spacing: 0; }
+    .moba__empty-label { gap: 3px; font-size: 10px; letter-spacing: 0; }
     .moba__empty-label-long { display: none; }
     .moba__empty-label-short { display: block; }
   }

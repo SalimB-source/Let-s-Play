@@ -184,7 +184,7 @@
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
 .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur { top: auto; bottom: calc(var(--rpg-touch-hand) + 2px); }
 .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-wizard-plate__avatar { width: 100%; height: 100%; }
-.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate__thinking { font-size: 7px; padding: 4px 6px; }
+.rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate__thinking { font-size: 10px; padding: 4px 6px; }
 /* L'éventail adverse ne doit pas recouvrir le personnage centré. Le nombre
    de cartes reste visible dans les compteurs de zones à gauche. */
 .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-hidden-hand { justify-content: flex-start; }
@@ -208,7 +208,7 @@
   border-radius: 5px;
   background: rgba(13, 12, 14, .88);
   color: #e5d3b7;
-  font: 600 clamp(9px, calc(var(--duel-card) * .16), 11px)/1.2 var(--mono, monospace);
+  font: 600 clamp(10px, calc(var(--duel-card) * .16), 11px)/1.2 var(--mono, monospace);
   text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
@@ -225,7 +225,7 @@
     flex-wrap: nowrap;
     gap: 4px;
     padding: 2px 3px;
-    font: 600 9px/1.1 system-ui, sans-serif;
+    font: 600 10px/1.1 system-ui, sans-serif;
   }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-table-zones--ennemi {
     top: max(var(--rpg-touch-pad), env(safe-area-inset-top, 0px));

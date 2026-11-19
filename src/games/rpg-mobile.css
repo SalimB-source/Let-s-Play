@@ -138,7 +138,7 @@
   --rpg-field-gap: max(8px, calc(var(--duel-card) * .22));
   /* La taille des statistiques et le bas de la carte sont nommés une fois ;
      les losanges de compteurs vivent sous la couleur, loin du pied. */
-  --rpg-field-stat-font: clamp(8px, calc(var(--duel-card) * .145), 12px);
+  --rpg-field-stat-font: clamp(10px, calc(var(--duel-card) * .145), 12px);
   --rpg-field-foot: 3%;
   display: grid;
   grid-template-columns: var(--rpg-touch-left) minmax(0, 1fr) var(--rpg-touch-controls);
@@ -177,11 +177,11 @@
 }
 .rpg-battle--touch .rpg-spell-played__art { width: 38px; height: 48px; }
 .rpg-battle--touch .rpg-spell-played__details > strong { font-size: 12px; }
-.rpg-battle--touch .rpg-spell-played__details > p { font-size: 8px; }
+.rpg-battle--touch .rpg-spell-played__details > p { font-size: 10px; }
 .rpg-battle--touch .rpg-spell-played__target { gap: 4px; margin-top: 2px; }
 .rpg-battle--touch .rpg-spell-played__target > img { width: 18px; height: 23px; }
 .rpg-battle--touch .rpg-spell-played__target-mark { width: 18px; height: 18px; font-size: 13px; }
-.rpg-battle--touch .rpg-spell-played__target b { font-size: 9px; }
+.rpg-battle--touch .rpg-spell-played__target b { font-size: 10px; }
 
 /* `dvh` suit les barres mobiles qui apparaissent et disparaissent, et peut
    donc redimensionner les cartes en plein duel. On fixe l'échelle sur la
@@ -282,7 +282,7 @@
   /* Le plancher de lecture du duel tactile : 8 px (sous 9 px, un libellé ne
      se lit plus ; la plaque du sorcier descend à 7,5 px, sa mesure la plus
      basse, et ce libellé-là reste au-dessus). */
-  font-size: clamp(8px, calc(var(--rpg-touch-nav) * .2), 10px);
+  font-size: clamp(10px, calc(var(--rpg-touch-nav) * .2), 10px);
   letter-spacing: .08em;
   white-space: nowrap;
 }
@@ -314,13 +314,13 @@
 .rpg-battle--touch .rpg-combat-feed__toggle {
   min-height: 32px;
   padding: 4px 8px;
-  font-size: 9px;
+  font-size: 10px;
 }
 .rpg-battle--touch .rpg-combat-feed__crest { font-size: 11px; }
 .rpg-battle--touch .rpg-combat-feed__close { width: 28px; height: 28px; font-size: 12px; }
 .rpg-battle--touch .card-table > .rpg-duel-nav { grid-area: nav; justify-content: flex-end; padding: 0; gap: 0; z-index: 50; }
 .rpg-battle--touch .rpg-duel-nav strong { display: none; }
-.rpg-battle--touch .rpg-duel-nav button { min-height: 38px; padding: 4px 5px; font-size: 9px; text-shadow: 0 1px 3px #000; }
+.rpg-battle--touch .rpg-duel-nav button { min-height: 38px; padding: 4px 5px; font-size: 10px; text-shadow: 0 1px 3px #000; }
 /* Au doigt, la barre de navigation du duel tient dans un seul bouton hamburger :
    la capsule ne montre que lui (et l'éventuel bandeau de mode), les six
    commandes — Menu, Deck, Catalogue, son, 3D, plein écran — se déplient en
@@ -501,7 +501,7 @@
   display: -webkit-box;
   overflow: hidden;
   color: #fff6de;
-  font-size: clamp(8.5px, calc(var(--duel-card) * .155), 12.5px);
+  font-size: clamp(10px, calc(var(--duel-card) * .155), 12.5px);
   letter-spacing: .02em;
   line-height: 1.05;
   white-space: normal;
@@ -538,7 +538,7 @@
   max-height: 2.6em;
   margin-top: 2px;
   overflow: hidden;
-  font-size: clamp(7.5px, calc(var(--duel-card) * .13), 9.5px);
+  font-size: clamp(10px, calc(var(--duel-card) * .13), 9.5px);
   line-height: 1.3;
   letter-spacing: .01em;
   white-space: nowrap;
@@ -562,7 +562,7 @@
 .rpg-battle--touch .rpg-card-pile { min-width: 42px; text-shadow: 0 2px 3px #000; }
 .rpg-battle--touch .rpg-card-pile__stack { display: none; }
 .rpg-battle--touch .rpg-card-pile b { font-size: 14px; }
-.rpg-battle--touch .rpg-card-pile small { font-size: 8px; }
+.rpg-battle--touch .rpg-card-pile small { font-size: 10px; }
 /* ── Les terrains : le rail du PC, sous la plaque de chaque camp ─────────────
    Comme sur PC, une seule rangée horizontale par camp, collée au bord
    extérieur : celle du sorcier sous sa plaque, celle du joueur au-dessus de la
@@ -696,7 +696,7 @@
   z-index: 20;
 }
 .rpg-battle--touch .rpg-turn-indicator { min-height: 22px; padding: 3px 5px; background: #18120c66; box-shadow: none; }
-.rpg-battle--touch .rpg-turn-indicator strong { font-size: 9px; letter-spacing: .02em; }
+.rpg-battle--touch .rpg-turn-indicator strong { font-size: 10px; letter-spacing: .02em; }
 /* ── La réponse au sorcier : une barre au-dessus de la main ─────────────────
    « Laisser passer » et « Répondre » vivaient dans le panneau compact du PC,
    posé dans la colonne de droite : sur un téléphone, la barre débordait de sa
@@ -802,7 +802,7 @@
 }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator { min-height: 18px; gap: 4px; padding: 1px 6px; border-radius: 999px; }
 .rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator__lamp { width: 6px; height: 6px; }
-.rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator strong { font-size: 8px; letter-spacing: .02em; }
+.rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator strong { font-size: 10px; letter-spacing: .02em; }
 /* Les phases, comme sur PC : une rangée compacte d'icônes orange dans une
    capsule sombre translucide, la phase en cours allumée ; les noms restent
    dans l'arbre d'accessibilité. Simplement à l'échelle du téléphone. */
@@ -930,7 +930,7 @@
   min-width: 0;
   min-height: var(--rpg-touch-combat, 32px);
   padding: 3px 4px;
-  font-size: clamp(9px, calc(var(--duel-card) * .16), 13px);
+  font-size: clamp(10px, calc(var(--duel-card) * .16), 13px);
   line-height: 1.15;
   white-space: normal;
   text-align: center;
@@ -1017,7 +1017,7 @@
 .rpg-battle--touch .rpg-mulligan__card:not(.is-selected):hover { transform: none; box-shadow: none; }
 .rpg-battle--touch .rpg-mulligan__card:active { transform: scale(.97); }
 .rpg-battle--touch .rpg-mulligan__card { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-.rpg-battle--touch .rpg-hand__type { font-size: 7px; }
+.rpg-battle--touch .rpg-hand__type { font-size: 11px; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-mana-cost,
 .rpg-battle--touch .rpg-card--img .rpg-mana-cost.is-compact {
   aspect-ratio: 1;
@@ -1089,7 +1089,7 @@
   border-color: rgba(219, 174, 128, .78);
   background: rgba(30, 22, 17, .96);
   color: #ffd9a8;
-  font-size: 8px;
+  font-size: 10px;
 }
 .rpg-terrain.rpg-terrain-stack.is-partially-tapped {
   box-shadow: 0 0 0 1px rgba(255, 217, 168, .45);

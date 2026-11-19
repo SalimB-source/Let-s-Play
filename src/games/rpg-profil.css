@@ -164,7 +164,7 @@
 }
 .rpg-profil__niveau {
   margin: 0;
-  color: rgba(247, 237, 218, .58);
+  color: rgba(247, 237, 218, .62);
   font: 700 10px/1.4 var(--mono, monospace);
   letter-spacing: .18em;
   text-transform: uppercase;
@@ -195,7 +195,7 @@
 }
 .rpg-profil__xp-lecture {
   margin: 0;
-  color: rgba(247, 237, 218, .6);
+  color: rgba(247, 237, 218, .62);
   font: 700 11px/1.4 var(--mono, monospace);
   letter-spacing: .07em;
   font-variant-numeric: tabular-nums;
@@ -245,8 +245,8 @@
    raconte pas. `aria-hidden` — le groupe porte son propre nom accessible. */
 .rpg-profil__etiquette {
   margin-top: 6px;
-  color: rgba(247, 237, 218, .42);
-  font: 700 9.5px/1.4 var(--mono, monospace);
+  color: rgba(247, 237, 218, .62);
+  font: 700 10px/1.4 var(--mono, monospace);
   letter-spacing: .22em;
   text-transform: uppercase;
 }
@@ -372,7 +372,7 @@
   place-items: center;
   border-style: dashed;
   color: rgba(247, 237, 218, .62);
-  font: 700 9px/1.5 var(--mono, monospace);
+  font: 700 10px/1.5 var(--mono, monospace);
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -387,7 +387,7 @@
   padding: 10px 6px 4px;
   background: linear-gradient(180deg, transparent, rgba(6, 5, 7, .9));
   color: #f7edda;
-  font: 700 8.5px/1.3 var(--mono, monospace);
+  font: 700 10px/1.3 var(--mono, monospace);
   letter-spacing: .05em;
   text-transform: uppercase;
   text-align: left;
@@ -424,8 +424,8 @@
 .rpg-profil__pseudo .rpg-menu-button { flex: none; min-height: 44px; }
 .rpg-profil__note {
   margin: 0;
-  color: rgba(247, 237, 218, .45);
-  font: 700 9.5px/1.5 var(--mono, monospace);
+  color: rgba(247, 237, 218, .62);
+  font: 700 10px/1.5 var(--mono, monospace);
   letter-spacing: .06em;
 }
 
@@ -579,7 +579,7 @@ img.rpg-mode-menu__profil-embleme {
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(201, 150, 57, .42), rgba(111, 69, 34, .34));
   color: #fff6e3;
-  font: 800 9px/1.3 var(--mono, monospace);
+  font: 800 10px/1.3 var(--mono, monospace);
   text-align: center;
   white-space: nowrap;
 }
