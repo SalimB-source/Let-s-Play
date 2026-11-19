@@ -99,6 +99,24 @@ cases d'avancée : une case qui propose un pas ne dessine pas une croix.
 L'appel est idempotent : une créature déplacée porte `bouge`, elle ne repart pas
 au tour suivant de la boucle d'attaque.
 
+## Le tutoriel suit la règle
+
+Depuis la portée, un sorcier ne se frappe **que de près**. Les leçons qui
+enseignaient « champ adverse vide → on frappe le sorcier » ne tenaient plus :
+
+- **Fondations du sablier** : le sorcier envoie un Chien de sable sur son front.
+  Tislit, à distance 2, le tue — et la leçon explique justement que le sorcier,
+  lui, est encore trop loin.
+- **La Balance des Heures** et **Le Serment du Soleil rouge** : leur attaquant
+  arrive **déjà percé** (`prepare: { percer: [...] }` le pose sur le fond
+  adverse, `bouge` consommé, donc un seul clic déclare la frappe). La fiction
+  est la même que la règle : il faut être passé.
+
+`preparerEtapeTutoriel` accepte donc deux mises en scène nouvelles :
+`prepare.immediat` (une proie posée pendant le tour du joueur) et
+`prepare.percer` (une créature à nous, déjà chez l'adversaire). Les deux sont
+idempotentes, comme le reste des scènes.
+
 ## Ce que le palier 2 ne fait pas
 
 - Pas de **zone de contrôle** ni d'attaque d'opportunité : on peut passer devant
