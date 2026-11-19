@@ -55,7 +55,9 @@
  * ligne change de case, et une sauvegarde relue retrouve sa ligne toute seule.
  */
 
+import { campDeLaCreature } from './rpgChamp.js';
 import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
+import { sorcierAPortee } from './rpgPortees.js';
 
 export const RPG_LIGNE_FRONT = 'front';
 export const RPG_LIGNE_FOND = 'fond';
@@ -159,29 +161,30 @@ export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
 }
 
 /**
- * Le **sorcier adverse** n'est atteignable que depuis la ligne de contact.
+ * Le **sorcier adverse** se frappe **à portée**, comme une créature.
  *
  * L'attaque directe — celle qui frappe le sorcier lui-même plutôt qu'une
  * créature — garde ses conditions (`attaqueDirectePermise` : plus rien à
  * frapper, envol sans Défenseur, infiltration seule). Les lignes y ajoutent la
- * leur : **il faut avoir percé**. Seule une créature postée sur le front, la
- * ligne qui touche l'adversaire, peut porter le coup final ; un tireur du fond
- * ne tue pas le sorcier à distance, et un corps resté derrière non plus.
+ * leur : le sorcier se tient **derrière le fond** de son camp (`rpgChamp.js`),
+ * donc
  *
- * Deux exceptions, pour que la règle ne puisse jamais figer une partie :
+ * - une **mêlée** (`portee 1`) doit avoir percé les deux lignes et se tenir sur
+ *   le fond adverse pour le frapper ;
+ * - une créature **à distance** (`portee 2`) le frappe depuis le front adverse.
  *
- * - **plus aucune créature adverse** : il n'y a plus de ligne à percer, le
- *   sorcier est à découvert (`attaqueDirectePermise` décide seul) ;
- * - **hors des lignes** (`duel.lignes !== true`) ou au MOBA : comportement
- *   historique, la fonction rend exactement ce que rendait `attaqueDirectePermise`.
+ * C'est la règle demandée : la portée remplace le contact. Une seule
+ * exception : **hors des lignes** (`duel.lignes !== true`) ou au MOBA, la
+ * fonction rend exactement ce que rendait `attaqueDirectePermise`.
  */
-export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null) {
+export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null, cote = null) {
   const permise = attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
   if (!permise) return false;
   if (!lignesActives(duel) || duel?.moba) return true;
-  if (!creaturesAdverses.length) return true;
   if (!Number.isInteger(attaquant?.emplacement)) return true;
-  return ligneDe(attaquant) === RPG_LIGNE_FRONT;
+  const camp = cote ?? campDeLaCreature(duel, attaquant);
+  if (!camp) return true;
+  return sorcierAPortee(duel, camp, attaquant);
 }
 
 /** Le nombre de cases du champ de ce duel : dix quand les lignes sont

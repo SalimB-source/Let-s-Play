@@ -1,5 +1,6 @@
 import { estDefenseur } from './rpgDefenseur.js';
-import { attaqueDirecteSurLesLignes, champMax, filtreLigne, lignesActives } from './rpgLignes.js';
+import { attaqueDirecteSurLesLignes, champMax, lignesActives } from './rpgLignes.js';
+import { filtrePortee } from './rpgPortees.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -22,14 +23,15 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
-  // Le fond adverse est retiré des cibles tant qu'une créature tient le front ;
-  // Attaque ciblée et Infiltration passent la ligne (`rpgLignes.js`).
+  // La **portée** décide (`rpgPortees.js`) : une case pour une mêlée, deux
+  // pour un tir, n'importe où pour une Attaque ciblée. C'est la distance sur
+  // la grille du champ, avancées comprises.
   const atteignables = adversaires.filter((e) => accessible(attaquant, e, ciblee));
   const possibles = lignesActives(duel)
-    ? filtreLigne(attaquant, adversaires, atteignables)
+    ? filtrePortee(duel, attaquant, adversaires, atteignables, cote)
     : atteignables;
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
-  const directe = attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles);
+  const directe = attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles, cote);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe };
   return { cibles: possibles.map((e) => e.id), directe };
 }
@@ -42,13 +44,14 @@ export function rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantI
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
   const atteignables = adversaires.filter((e) => accessible(attaquant, e, Boolean(cibleeAnnoncee)));
   const possibles = lignesActives(duel)
-    ? filtreLigne(attaquant, adversaires, atteignables)
+    ? filtrePortee(duel, attaquant, adversaires, atteignables, cote)
     : atteignables;
-  if (cibleId === null) return attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles);
+  if (cibleId === null) return attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles, cote);
   const cible = adversaires.find((e) => e.id === cibleId);
   if (!cible) return false;
-  // Une cible annoncée dans le fond cesse d'être légale dès que le front tombe
-  // (ou l'inverse) : la légalité se relit toujours à l'état présent.
+  // Une cible annoncée cesse d'être légale dès qu'elle sort de portée — parce
+  // qu'elle a avancé, ou parce que l'attaquant s'est déplacé : la légalité se
+  // relit toujours à l'état présent.
   return possibles.includes(cible);
 }
 

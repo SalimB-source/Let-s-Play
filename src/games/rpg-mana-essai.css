@@ -387,8 +387,8 @@
 }
 /* Deux petits repères gravés habillent les cases libres sans toucher aux
    cartes ni aux halos interactifs de pose, de ciblage ou d'attaque. */
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::before,
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::after {
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::before,
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::after {
   content: '';
   position: absolute;
   width: clamp(7px, 1vw, 13px);
@@ -396,13 +396,13 @@
   opacity: .62;
   pointer-events: none;
 }
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::before {
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::before {
   top: 5px;
   left: 5px;
   border-top: 1px solid #edd4a1;
   border-left: 1px solid #edd4a1;
 }
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix)::after {
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::after {
   bottom: 5px;
   right: 5px;
   border-bottom: 1px solid #edd4a1;
@@ -458,6 +458,41 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-creature-slot--choix { animation: none; }
+}
+/* L'avancée : une créature choisie propose les cases où elle peut marcher.
+   Même mécanique que le placement, mais en pointillés et sans dorure — la
+   dorure reste au placement, le pas a son propre signe (la flèche). */
+.rpg-creature-slot--deplacement {
+  pointer-events: auto;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  border-style: dashed;
+  border-color: rgba(232, 220, 192, .9);
+  background: radial-gradient(circle, rgba(232, 220, 192, .12), rgba(10, 8, 5, .3) 76%);
+  box-shadow: 0 0 12px rgba(232, 220, 192, .28), inset 0 0 14px rgba(232, 220, 192, .14);
+  animation: rpg-avancee-pulse 1.4s ease-in-out infinite;
+}
+.rpg-creature-slot--deplacement:hover,
+.rpg-creature-slot--deplacement:focus-visible {
+  border-color: #fff6e0;
+  background: radial-gradient(circle, rgba(232, 220, 192, .28), rgba(10, 8, 5, .3) 78%);
+  box-shadow: 0 0 22px rgba(232, 220, 192, .5), inset 0 0 18px rgba(232, 220, 192, .26);
+  outline: 2px solid rgba(255, 246, 224, .85);
+  outline-offset: 2px;
+}
+.rpg-creature-slot--deplacement .rpg-creature-slot__numero {
+  color: #fff6e0;
+  opacity: 1;
+  font-size: 1.15em;
+  line-height: 1;
+}
+@keyframes rpg-avancee-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(232, 220, 192, .22), inset 0 0 10px rgba(232, 220, 192, .1); }
+  50% { box-shadow: 0 0 18px rgba(232, 220, 192, .42), inset 0 0 16px rgba(232, 220, 192, .2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-creature-slot--deplacement { animation: none; }
 }
 /* Repères de raccourcis clavier PC sur la colonne d'actions (sans modifier
    textContent) et aura de menace létale sur la plaque du sorcier adverse. */

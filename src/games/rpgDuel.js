@@ -5993,8 +5993,11 @@ export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX) {
   for (const entite of camp?.creatures ?? []) {
     const index = entite?.emplacement;
     const carte = duelCardById(entite?.carteId) ?? entite;
+    // Une créature qui a avancé (`avancee`) occupe la case qu'elle a choisie,
+    // où qu'elle soit — y compris chez l'adversaire. Les autres restent
+    // ramenées dans la ligne que leur carte impose.
     if (Number.isInteger(index) && index >= 0 && index < maximum && !cases[index]
-      && (!deuxLignes || caseAutorisee(carte, index))) {
+      && (!deuxLignes || entite.avancee || caseAutorisee(carte, index))) {
       cases[index] = entite;
     } else {
       restants.push({ entite, carte });
@@ -9334,7 +9337,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   const atteignables = duel[autre(cote)].creatures.filter((e) => !estSite(e)
     && !rpgEstProtegee(e, couleur)
     && (ciblee || (!e.infiltration && (attaquant.envol || !e.envol))));
-  if (!attaqueDirecteSurLesLignes(duel, attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)), atteignables)) {
+  if (!attaqueDirecteSurLesLignes(duel, attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)), atteignables, cote)) {
     return { ok: false, raison: 'cible-obligatoire' };
   }
   // Ce raccourci suppose une attaque non bloquée : un bloqueur forcé capable
@@ -9905,6 +9908,8 @@ function commencerNouveauTour(duel) {
     entite.rapiditeAccordee = false;
     entite.ready = true;
     entite.attaquee = false;
+    // L'avancée se recharge comme l'attaque : une case par tour.
+    entite.bouge = false;
   }
   const file = [];
   for (const cote of ['joueur', 'sorcier']) {

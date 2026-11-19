@@ -29,6 +29,9 @@ import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import { champMax, ligneDeCase, caseAutorisee, ligneObligee, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
+import { campDeLaCreature, envahisseurs, occupantsDeCamp } from './rpgChamp.js';
+import { deplacementsLegaux, rpgDeplacerCreature } from './rpgMouvement.js';
+import { rpgIABougerCreatures } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -941,6 +944,13 @@ export function CreatureSlots({
   nomCartePose = null,
   onChoisirEmplacement = null,
   emplacementSurvole = null,
+  // L'avancée d'une créature choisie : les cases vides où elle peut aller
+  // deviennent des boutons (`rpgMouvement.js` calcule la liste). Une créature
+  // avancée chez l'adversaire se choisit dans la rangée adverse, d'où la même
+  // mécanique des deux côtés.
+  casesDeplacement = null,
+  onChoisirDeplacement = null,
+  nomCarteDeplacee = null,
 }) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
@@ -971,7 +981,29 @@ export function CreatureSlots({
           + `${emplacementSurvole === index ? ' is-survole' : ''}`;
         const choisissable = choixEmplacement && !occupant && onChoisirEmplacement
           && (ligneChoisissable === null || ligneChoisissable === ligne);
+        const deplacable = !occupant && !choisissable && onChoisirDeplacement
+          && Array.isArray(casesDeplacement) && casesDeplacement.includes(index);
         const style = colonnes ? { '--case-col': colonne } : undefined;
+        if (deplacable) {
+          return (
+            <button
+              type="button"
+              key={index}
+              className={`${classes} rpg-creature-slot--deplacement`}
+              style={style}
+              data-creature-slot={index + 1}
+              data-creature-slot-col={colonne}
+              data-case-index={index}
+              data-ligne={ligne}
+              data-creature-slot-occupe="false"
+              data-creature-slot-deplacement="true"
+              onClick={() => onChoisirDeplacement(index)}
+              aria-label={`Avancer ${nomCarteDeplacee ?? 'la créature choisie'} sur la colonne ${colonne} ${libelleLigne(ligne)}`}
+            >
+              <span className="rpg-creature-slot__numero" aria-hidden="true">→</span>
+            </button>
+          );
+        }
         if (choisissable) {
           return (
             <button
@@ -10393,6 +10425,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!directe && !cibles?.length) return null;
     return { cibles: new Set(cibles ?? []), directe: Boolean(directe) };
   })();
+
+  // ── L'avancée du joueur ────────────────────────────────────────────────────
+  // Pendant la phase d'attaque, la créature choisie montre à la fois ses proies
+  // (cyan) et les cases vides où elle peut avancer (flèche dorée). Cliquer une
+  // case la déplace ; la phase reste ouverte et elle frappe de sa nouvelle
+  // place — avancer et frapper, comme le sorcier (`rpgMouvement.js`).
+  const attaquantMobile = !combatCollectif && phase && attaquants[0]
+    && !ciblesAttaque[attaquants[0]] ? attaquants[0] : null;
+  const deplacementsAttaquant = attaquantMobile && !modePvp
+    ? deplacementsLegaux(duel, 'joueur', attaquantMobile) : [];
+  const nomAttaquantMobile = attaquantMobile
+    ? (duel.joueur.creatures.find((entite) => entite.id === attaquantMobile)?.name ?? null) : null;
+  const deplacerAttaquant = (camp, index) => {
+    if (!attaquantMobile) return;
+    const res = rpgDeplacerCreature(duel, 'joueur', attaquantMobile, { camp, index });
+    if (!res.ok) { jouerSfx('erreur'); force(); return; }
+    jouerSfx('select');
+    force();
+  };
   const attaqueCibleeSansCibleLegale = combatCollectif && phase && duel.sorcier.creatures.length > 0
     && attaquants.some((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
@@ -12540,7 +12591,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Si aucune créature adverse n'est atteignable (champ vide, volantes ou
       // infiltrées hors de portée), il n'y a aucune cible à choisir : un seul
       // clic déclare directement l'attaque contre le sorcier.
+      // Une créature qui peut encore avancer ouvre la phase même si le sorcier
+      // est à portée : elle choisit de frapper ou de gagner une case d'abord.
       if (!combatCollectif && rpgPeutAttaquer(entite)
+        && !deplacementsLegaux(duel, 'joueur', entite.id).length
         && ((choix) => choix.directe && !choix.cibles.length)(rpgCiblesIndividuellesClassique(duel, 'joueur', entite.id))) {
         signalerTutoriel('attaque-declaree', { entiteId: entite.id });
         lancerAttaque('sorcier', entite.id);
@@ -13544,6 +13598,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = (attaquantImpose = null) => {
       if (pauseSiAttenteJoueur(() => declarerAttaqueSorcier(attaquantImpose))) return;
+      // Le sorcier joue avec les mêmes règles : une case par tour, puis la
+      // frappe (`rpgMouvementIA.js`). Idempotent : une créature déplacée porte
+      // `bouge`, elle ne repart pas au tour suivant de la boucle.
+      if (!combatCollectif && rpgIABougerCreatures(duel, 'sorcier').length) force();
       const etapeScript = tutorielActif && etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
       if (etapeScript?.skipOpponentTurn) { finirTourSorcier(); return; }
       if (!combatCollectif) {
@@ -13700,13 +13758,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Au doigt, la clé identifie une pile ; sur grand écran, elle identifie
   // un exemplaire. Partager la clé carteId entre deux exemplaires laisserait
   // des cartes fantômes (avec leur ancien état engagé) après une destruction.
-  const champEnPiles = (entites) => ({
-    indexParId: new Map(entites.map((entite, index) => [entite.id, index])),
-    piles: empilerCartes
-      ? groupEntitesParCarte(entites)
-      : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
-  });
-  const clePile = (cote, pile) => `${cote}:${rpgSignaturePile(pile.entites[0])}`;
+  // Une rangée dessine les occupants de **son** camp : ses créatures et celles
+  // qui ont avancé chez elle par une trouée (`campPose`, `rpgChamp.js`). Les
+  // envahisseurs voyagent en piles d'un seul exemplaire : deux cartes
+  // identiques de deux camps ne se confondent jamais en une pile.
+  const champEnPiles = (entites, campPose = null) => {
+    const etrangeres = campPose ? envahisseurs(duel, campPose).map((entite) => ({ carteId: entite.carteId, entites: [entite] })) : [];
+    return {
+      indexParId: new Map(entites.map((entite, index) => [entite.id, index])),
+      piles: (empilerCartes
+        ? groupEntitesParCarte(entites)
+        : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] }))).concat(etrangeres),
+    };
+  };
+  // La clé d'une pile inclut son camp : l'Ashigaru du joueur et celui du
+  // sorcier ne se déplient pas ensemble.
+  const clePile = (cote, pile) => `${cote}:${campDeLaCreature(duel, pile.entites[0]) ?? cote}:${rpgSignaturePile(pile.entites[0])}`;
   // Une pile homonyme se garde par son nom et son état visuel ; une créature armée, seule dans sa
   // pile, par son identifiant — deux créatures armées identiques restent deux
   // clés distinctes.
@@ -13764,14 +13831,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     return liste[0];
   };
-  const campEnnemi = champEnPiles(duel.sorcier.creatures);
-  const campJoueur = champEnPiles(duel.joueur.creatures);
+  const campEnnemi = champEnPiles(duel.sorcier.creatures, 'sorcier');
+  const campJoueur = champEnPiles(duel.joueur.creatures, 'joueur');
   // Mode essai : la colonne (1 à 5) de la case de chaque créature.
-  const casesParId = (camp) => (duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? new Map(rpgEmplacementsChamp(camp, champMax(duel)).flatMap((entite, index) => (entite ? [[entite.id, index + 1]] : [])))
+  // La case de chaque carte — la sienne comme celle d'un envahisseur — lue sur
+  // la rangée qu'elle occupe réellement.
+  const casesParId = (campPose) => (duel.modeMana === RPG_MODE_MANA_ESSAI
+    ? new Map(occupantsDeCamp(duel, campPose).map(({ entite, index }) => [entite.id, index + 1]))
     : null);
-  const casesEnnemi = casesParId(duel.sorcier);
-  const casesJoueur = casesParId(duel.joueur);
+  const casesEnnemi = casesParId('sorcier');
+  const casesJoueur = casesParId('joueur');
   // Les deux nombres d'un sort à cible double (les Feux de kitsune) se lisent
   // sur l'effet **réellement résolu** : le Lien de l'Oni les monte, et l'invite
   // doit annoncer les mêmes chiffres que le moteur.
@@ -14394,6 +14463,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               cote="ennemi"
               maximum={champMax(duel)}
               deuxLignes={lignesActives(duel)}
+              casesDeplacement={deplacementsAttaquant.filter((c) => c.camp === 'sorcier').map((c) => c.index)}
+              onChoisirDeplacement={deplacementsAttaquant.some((c) => c.camp === 'sorcier')
+                ? (index) => deplacerAttaquant('sorcier', index) : null}
+              nomCarteDeplacee={nomAttaquantMobile}
             />
           )}
           {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
@@ -14415,12 +14488,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 )}
                 {affichees.map((entite) => {
                   const i = campEnnemi.indexParId.get(entite.id) ?? 0;
+                  // Une carte du joueur qui a percé se dessine dans la rangée
+                  // du sorcier : elle garde son camp pour tout le reste.
+                  const proprietaire = campDeLaCreature(duel, entite) ?? 'sorcier';
+                  const coteCarte = proprietaire === 'joueur' ? 'joueur' : 'ennemi';
                   const carte = (
                     <TableCard
                       key={entite.id}
                       entite={entite}
-                      armeFx={armesAjoutees[`sorcier:${entite.id}`]}
-                      cote="ennemi"
+                      armeFx={armesAjoutees[`${proprietaire}:${entite.id}`]}
+                      cote={coteCarte}
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       sacrificeEnAnimation={sacrificeFx?.entiteArriveeId === entite.id || Boolean(sacrificeFx?.victimes.some(v => v.entityId === entite.id))}
@@ -14471,7 +14548,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       ascensionSelection={selectionAscension.pourCreature(duel, 'sorcier', entite, reserveAscensionDisponible)}
-                      onClick={() => cliquerCreatureEnnemie(entite)}
+                      onClick={() => (proprietaire === 'joueur' ? cliquerCreatureJoueur(entite) : cliquerCreatureEnnemie(entite))}
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
@@ -14522,6 +14599,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
               onChoisirEmplacement={choisirEmplacement}
               emplacementSurvole={emplacementSurvole}
+              casesDeplacement={deplacementsAttaquant.filter((c) => c.camp === 'joueur').map((c) => c.index)}
+              onChoisirDeplacement={deplacementsAttaquant.some((c) => c.camp === 'joueur')
+                ? (index) => deplacerAttaquant('joueur', index) : null}
+              nomCarteDeplacee={nomAttaquantMobile}
             />
           )}
           {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
@@ -14543,12 +14624,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 )}
                 {affichees.map((entite) => {
                   const i = campJoueur.indexParId.get(entite.id) ?? 0;
+                  // Symétriquement : une créature du sorcier qui a percé se
+                  // dessine chez nous.
+                  const proprietaire = campDeLaCreature(duel, entite) ?? 'joueur';
+                  const coteCarte = proprietaire === 'joueur' ? 'joueur' : 'ennemi';
                   const carte = (
                     <TableCard
                       key={entite.id}
                       entite={entite}
-                      armeFx={armesAjoutees[`joueur:${entite.id}`]}
-                      cote="joueur"
+                      armeFx={armesAjoutees[`${proprietaire}:${entite.id}`]}
+                      cote={coteCarte}
                       lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
@@ -14594,7 +14679,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       ascensionSelection={selectionAscension.pourCreature(duel, 'joueur', entite, reserveAscensionDisponible)}
-                      onClick={() => cliquerCreatureJoueur(entite)}
+                      onClick={() => (proprietaire === 'joueur' ? cliquerCreatureJoueur(entite) : cliquerCreatureEnnemie(entite))}
                     />
                   );
                   if (deployee || pile.entites.length < 2) {
