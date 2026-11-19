@@ -594,6 +594,24 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier',
   const victoire = premiereAttaqueDeVictoire(duel, cote, attaquantImpose);
   if (victoire) return victoire;
   const choix = [];
+  // **La meute.** Ce que le camp peut réunir sur chaque proie ce tour-ci,
+  // toutes créatures prêtes confondues. Une petite créature qui meurt en
+  // entamant une proie que ses sœurs achèveront ne sacrifie rien : elle
+  // participe à la mise à mort. Sans cette lecture d'ensemble, chaque échange
+  // est jugé isolément et l'IA refuse toujours le premier coup, laissant une
+  // grosse créature intacte face à trois petites qui la coucheraient.
+  // Sous brouillard de combat, l'IA ne lit que ce que le joueur voit : elle
+  // ne compte pas les forces qu'elle ignore.
+  const forceSurCible = new Map();
+  if (!duel.brouillardCombat) {
+    for (const allie of duel[cote].creatures.filter(rpgPeutAttaquer)) {
+      const siennes = rpgCiblesIndividuellesClassique(duel, cote, allie.id).cibles;
+      for (const cibleId of siennes) {
+        forceSurCible.set(cibleId,
+          (forceSurCible.get(cibleId) ?? 0) + Math.max(0, Number(allie.atk) || 0));
+      }
+    }
+  }
   for (const attaquant of duel[cote].creatures.filter((e) => rpgPeutAttaquer(e) && (!attaquantImpose || e.id === attaquantImpose))) {
     const cibles = rpgCiblesIndividuellesClassique(duel, cote, attaquant.id);
     if (cibles.directe && (attaquantImpose || !attaqueSansEffetSousVoile(duel, cote, attaquant, null))) {
@@ -608,6 +626,10 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier',
         || sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible)
         || mortSansGain(duel, cote, attaquant, cibleId))) continue;
       const tue = attaquant.atk >= cible.pv;
+      // La proie tombe-t-elle **ce tour-ci** ? Seule ou sous les coups de la
+      // meute : dans les deux cas la perte de l'attaquant achète une mise à
+      // mort, et c'est elle que le score récompense.
+      const abattue = tue || (forceSurCible.get(cibleId) ?? 0) >= cible.pv;
       // Riposte : l'Attaque ciblée n'en reçoit jamais, et une créature « À
       // distance » seulement d'une autre créature « À distance » — deux
       // tireurs qui se visent échangent leurs volées.
@@ -615,7 +637,7 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier',
         && (!attaquant.distance || cible.distance);
       const perte = meurt && !ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible, true)
         ? 5 + attaquant.atk + attaquant.pv : 0;
-      const score = (tue ? 5 + cible.atk + cible.pv : Math.min(attaquant.atk, cible.pv)) - perte;
+      const score = (abattue ? 5 + cible.atk + cible.pv : Math.min(attaquant.atk, cible.pv)) - perte;
       choix.push({ attaquantId: attaquant.id, cibleId, score });
     }
   }
