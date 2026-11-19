@@ -131,14 +131,22 @@ mélange les deux propriétaires dans la rangée réelle.
 
 ## Ce que l'écran montre
 
-- **Choisir une créature ouvre la phase d'attaque** : les proies légales
-  s'allument en cyan (inchangé), et les **cases où elle peut marcher** deviennent
-  des boutons **en pointillés, avec une flèche** (`.rpg-creature-slot--deplacement`).
-  Le doré reste au placement : deux invitations différentes, deux signaux
-  différents.
-- **Cliquer une case avance la créature** (`rpgDeplacerCreature`) ; la phase
-  reste ouverte et se recalcule — elle frappe de sa nouvelle place, ou le joueur
-  referme.
+- **Choisir une créature ouvre sa manœuvre** : les proies légales s'allument en
+  cyan, et les **cases où elle peut marcher** deviennent des boutons **en
+  pointillés, avec une flèche** (`.rpg-creature-slot--deplacement`). Le doré
+  reste au placement : deux invitations différentes, deux signaux différents.
+- **Choisir n'est pas déclarer.** Tant qu'aucune cible n'est désignée, la carte
+  ne prend ni lueur rouge ni inclinaison (`is-declared-attacker` attend la cible,
+  en combat individuel) et l'invite propose les deux gestes :
+  « cliquez une case libre pour avancer, ou une cible pour attaquer ». Une
+  créature trop loin pour frapper ne réclame pas de cible : « cliquez une case
+  libre pour avancer (aucune cible à portée) ».
+- **Cliquer une case avance la créature** (`rpgDeplacerCreature`) et **referme
+  la sélection** : le pas est un geste complet, rien ne reste en attente d'une
+  cible. Frapper reste possible — le pas ne consomme pas l'attaque —, il suffit
+  de recliquer la créature : elle ne peut plus marcher, donc l'invite passe à la
+  cible. Une créature qui n'a ni pas devant elle ni proie à portée n'ouvre
+  aucune phase (un son d'erreur, rien d'autre).
 - **Une créature qui a percé se dessine dans la rangée qu'elle occupe**, du côté
   du sorcier comme du nôtre, avec son propre camp : le clic la traite toujours
   comme la nôtre. Les piles d'envahisseurs restent d'un seul exemplaire — deux

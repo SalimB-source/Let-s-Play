@@ -463,8 +463,11 @@ export async function checkRpgPreviewActions(assert) {
 
     await click(fennec());
     assert.equal(fennec().classList.contains('is-selected'), true,
-      'cliquer la créature la déclare attaquante directement');
-    assert.equal(fennec().dataset.combatTilted, 'true');
+      'cliquer la créature la choisit directement');
+    // Choisir n'est pas déclarer : la carte reste droite et sans lueur rouge
+    // tant qu'aucune cible n'est désignée.
+    assert.equal(fennec().dataset.combatTilted, 'false');
+    assert.equal(fennec().classList.contains('is-declared-attacker'), false);
     await click(fennec());
     assert.equal(fennec().classList.contains('is-selected'), false,
       'recliquer la retire de l’attaque');

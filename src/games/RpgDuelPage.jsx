@@ -10469,8 +10469,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const res = rpgDeplacerCreature(duel, 'joueur', attaquantMobile, { camp, index });
     if (!res.ok) { jouerSfx('erreur'); force(); return; }
     jouerSfx('select');
+    // **Le pas est un geste complet.** La sélection se referme derrière lui :
+    // rien ne reste en attente d'une cible. Frapper reste possible — le pas
+    // ne consomme pas l'attaque —, il suffit de recliquer la créature.
+    setPhase(false);
+    setAttaquants([]);
+    setCiblesAttaque({});
     force();
   };
+  // Ce que la créature choisie peut encore faire. Une créature qui a un pas
+  // devant elle ne se voit **pas** réclamer une cible : marcher est une
+  // réponse complète, et le jeu le dit.
+  const inviteAttaqueIndividuelle = (() => {
+    if (!attaquants.length) return 'Choisissez une créature attaquante';
+    const nom = nomAttaquantMobile ?? 'Cette créature';
+    const peutFrapper = choixIndividuel.directe || choixIndividuel.cibles.length > 0;
+    const peutMarcher = deplacementsAttaquant.length > 0;
+    if (peutMarcher && peutFrapper) return `${nom} — cliquez une case libre pour avancer, ou une cible pour attaquer`;
+    if (peutMarcher) return `${nom} — cliquez une case libre pour avancer (aucune cible à portée)`;
+    if (peutFrapper) return 'Cliquez une cible légale pour lancer l’attaque';
+    return `${nom} ne peut ni avancer ni frapper ce tour`;
+  })();
   const attaqueCibleeSansCibleLegale = combatCollectif && phase && duel.sorcier.creatures.length > 0
     && attaquants.some((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
@@ -12634,6 +12653,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         lancerAttaque('sorcier', entite.id);
         return;
       }
+      // Une créature qui n'a ni pas devant elle ni proie à portée n'ouvre
+      // rien : pas de phase vide, pas de cible réclamée pour rien.
+      if (!combatCollectif && !deplacementsLegaux(duel, 'joueur', entite.id).length
+        && !rpgPeutAttaquer(entite)) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
       setPhase(true);
       if (rpgPeutAttaquer(entite)) {
         setAttaquants([entite.id]);
@@ -14014,7 +14041,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     ? {
                       cle: `attaque:${cibleAttaqueEnCours ?? 'aucune'}:${attaquants.length}`,
                       classe: 'rpg-attack-prompt',
-                      texte: !combatCollectif ? (attaquants.length ? 'Cliquez une cible légale pour lancer l’attaque' : 'Choisissez une créature attaquante')
+                      texte: !combatCollectif ? (attaquants.length
+                        ? inviteAttaqueIndividuelle
+                        : 'Choisissez une créature attaquante')
                         : attaqueCibleeSansCibleLegale
                         ? 'Attaque ciblée — aucune créature adverse ne peut être visée ; retirez cet attaquant'
                         : cibleAttaqueEnCours
@@ -14683,7 +14712,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={sacrificesChoisis.includes(entite.id) || attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
-                      declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
+                      // En combat individuel, choisir la créature n'annonce rien :
+                      // la lueur rouge et l'inclinaison attendent la cible
+                      // désignée (`lancerAttaque`), sinon un simple pas ferait
+                      // croire à une attaque engagée.
+                      declaredAttacker={Boolean((phase && attaquants.includes(entite.id) && (combatCollectif || ciblesAttaque[entite.id]))
+                        || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
                       spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id) || Boolean(!combatCollectif && combatEntrant?.cibleIndividuelle?.cibleId === entite.id)}
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
