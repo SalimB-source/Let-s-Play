@@ -7,6 +7,8 @@ import { rpgNouveauDuel, rpgJouerCreature } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique } from '../src/games/rpgCombatIndividuelClassique.js';
 import { deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger } from '../src/games/rpgMouvement.js';
 import { distanceAuSorcierAdverse, distanceEntreCreatures, positionDe } from '../src/games/rpgChamp.js';
+import { cardById } from '../src/games/rpgCards.js';
+import { ligneObligee } from '../src/games/rpgLignes.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 
 const MELEE = 'viking-des-neiges';
@@ -32,10 +34,23 @@ function table() {
     resultat.entite.malInvocation = false;
     return resultat;
   };
-  const poserOk = (camp, id, options) => {
+  // Table de laboratoire : toute créature entre par l'arrière (règle du jeu),
+  // puis on la range sur la ligne que sa fiche décrit — ces tests mesurent des
+  // portées, pas des poses. `options.poserAilleurs` la laisse où elle est
+  // arrivée.
+  const poserOk = (camp, id, options = {}) => {
     const resultat = poser(camp, id, options);
     assert.ok(resultat.ok, `${id} doit entrer en jeu : ${resultat.raison}`);
-    return resultat.entite;
+    const entite = resultat.entite;
+    if (!options.poserAilleurs) {
+      const ligne = ligneObligee(cardById(id));
+      const debut = ligne === 'fond' ? 5 : 0;
+      const prises = new Set((d[camp].creatures ?? []).filter((e) => e !== entite)
+        .map((e) => e.emplacement));
+      const place = [0, 1, 2, 3, 4].map((i) => debut + i).find((i) => !prises.has(i));
+      if (Number.isInteger(place)) surCase(entite, place);
+    }
+    return entite;
   };
   return { d, poserOk };
 }

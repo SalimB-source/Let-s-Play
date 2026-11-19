@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   RPG_LIGNE_FRONT, RPG_LIGNE_FOND, RPG_LIGNES_CASES, RPG_LIGNES_CHAMP_MAX,
-  caseAutorisee, caseParDefaut, casesDeLigne, casesLibresPour, filtreLigne, frontTient,
-  ligneDe, ligneDeCase, ligneObligee, ligneProtege, lignesActives,
+  caseAutorisee, caseChoisissable, caseParDefaut, casesDeLigne, casesLibresPour, filtreLigne, frontTient,
+  ligneDe, ligneDeCase, ligneDePose, ligneObligee, ligneProtege, lignesActives,
 } from '../src/games/rpgLignes.js';
 
 const creature = (id, emplacement, extra = {}) => ({ id, name: id, emplacement, ...extra });
@@ -37,56 +37,59 @@ test('les lignes sont une variante de partie, éteinte par défaut', () => {
   assert.equal(lignesActives({ lignes: true }), true);
 });
 
-test('la ligne vient de la carte : Défenseur et mêlée devant, À distance derrière', () => {
+test('toute créature entre par l’arrière : la fiche ne choisit plus la case', () => {
   const defenseur = { id: 'gardienne', name: 'Gardienne', defenseur: true };
   const melee = { id: 'viking', name: 'Viking' };
   const archer = { id: 'archere', name: 'Archère', distance: true };
-  // Un Défenseur reste devant, même si un effet lui prêtait « À distance ».
-  const gardeArcher = { id: 'garde', defenseur: true, distance: true };
+  // La fiche garde son repère de lecture — Défenseur et mêlée devant, tir
+  // derrière —, mais il ne décide plus de la case d'arrivée.
   assert.equal(ligneObligee(defenseur), RPG_LIGNE_FRONT);
   assert.equal(ligneObligee(melee), RPG_LIGNE_FRONT);
   assert.equal(ligneObligee(archer), RPG_LIGNE_FOND);
-  assert.equal(ligneObligee(gardeArcher), RPG_LIGNE_FRONT);
-  assert.equal(caseAutorisee(defenseur, 2), true);
-  assert.equal(caseAutorisee(defenseur, 7), false);
-  // La mêlée ne recule pas : la case du fond lui est refusée.
-  assert.equal(caseAutorisee(melee, 7), false);
-  assert.equal(caseAutorisee(archer, 7), true);
-  assert.equal(caseAutorisee(archer, 2), false);
+  assert.equal(ligneObligee({ id: 'garde', defenseur: true, distance: true }), RPG_LIGNE_FRONT);
+  // La pose, elle, est la même pour tous : l'arrière, et rien d'autre.
+  assert.equal(ligneDePose(), RPG_LIGNE_FOND);
+  for (const carte of [defenseur, melee, archer]) {
+    assert.equal(caseAutorisee(carte, 7), true, `${carte.id} entre par l’arrière`);
+    assert.equal(caseAutorisee(carte, 2), false, `${carte.id} ne se pose pas au front`);
+    assert.equal(caseChoisissable(7, 7) === undefined ? caseChoisissable(carte, 7) : caseChoisissable(carte, 7), true);
+  }
 });
 
-test('la case par défaut : la première libre de la ligne de la carte', () => {
+test('la case par défaut : la première libre de l’arrière, pour toutes les cartes', () => {
   const libres = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  assert.equal(caseParDefaut({ id: 'archere', distance: true }, libres), 5);
-  assert.equal(caseParDefaut({ id: 'viking' }, libres), 0);
-  // Attaque ciblée ne change rien à la ligne : c'est `distance` qui la donne.
-  assert.equal(caseParDefaut({ id: 'garde', coupRapide: true, defenseur: true }, libres), 0);
+  for (const carte of [
+    { id: 'archere', distance: true }, { id: 'viking' },
+    { id: 'garde', coupRapide: true, defenseur: true },
+  ]) {
+    assert.equal(caseParDefaut(carte, libres), 5, `${carte.id} entre par l’arrière`);
+  }
+  assert.equal(caseParDefaut({ id: 'viking' }, [6, 7, 8, 9]), 6);
+  assert.equal(caseParDefaut({ id: 'viking' }, [0, 1, 2, 3, 4]), null,
+    'le front ne sert pas de repli');
 });
 
-test('une ligne pleine n’a pas de repli sur l’autre', () => {
-  const frontPlein = [5, 6, 7];
-  const fondPlein = [0, 1, 2];
-  assert.equal(caseParDefaut({ id: 'viking' }, frontPlein), null);
-  assert.equal(caseParDefaut({ id: 'archere', distance: true }, fondPlein), null);
-  assert.equal(caseParDefaut({ id: 'garde', defenseur: true }, frontPlein), null);
+test('l’arrière plein n’a pas de repli sur le front', () => {
+  const frontLibre = [0, 1, 2, 3, 4];
+  assert.equal(caseParDefaut({ id: 'viking' }, frontLibre), null);
+  assert.equal(caseParDefaut({ id: 'archere', distance: true }, frontLibre), null);
+  assert.equal(caseParDefaut({ id: 'garde', defenseur: true }, frontLibre), null);
   assert.equal(caseParDefaut({ id: 'viking' }, []), null);
 });
 
-test('les cases libres pour une carte sont celles du camp, moins les occupants', () => {
+test('les cases libres sont celles de l’arrière, moins les occupants', () => {
   const camp = { creatures: [
     creature('a', 0), creature('b', 2), creature('c', 5), creature('d', 9),
-  ] } ;
-  // Le joueur place où il veut : le front comme le fond.
-  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }), [1, 3, 4, 6, 7, 8]);
+  ] };
+  // Le front reste ouvert à la table, jamais à la pose.
+  for (const carte of [{ id: 'viking' }, { id: 'archere', distance: true },
+    { id: 'tengu', distance: true, envol: true }, { id: 'garde', defenseur: true }]) {
+    assert.deepEqual(casesLibresPour(camp, carte), [6, 7, 8], `${carte.id} : l’arrière seulement`);
+  }
   // Les victimes d'un sacrifice libèrent leur case avant l'arrivée.
-  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 10, ['a']), [0, 1, 3, 4, 6, 7, 8]);
-  // L'Envol ne change rien au placement : il décide du passage au-dessus des
-  // corps, pas de la case de départ (doc 36).
-  assert.deepEqual(casesLibresPour(camp, { id: 'tengu', distance: true, envol: true }), [1, 3, 4, 6, 7, 8]);
-  assert.deepEqual(casesLibresPour(camp, { id: 'viking-volant', envol: true }), [1, 3, 4, 6, 7, 8]);
-  // Le mode à cinq cases ne connaît que le front.
-  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 5), [1, 3, 4]);
-  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }, 5), [1, 3, 4]);
+  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 10, ['c']), [5, 6, 7, 8]);
+  // Le mode à cinq cases n'a pas d'arrière : plus aucune place.
+  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 5), []);
 });
 
 test('le front tient tant qu’une créature vivante le garde', () => {

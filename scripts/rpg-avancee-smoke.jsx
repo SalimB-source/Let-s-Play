@@ -48,7 +48,11 @@ export async function checkAvancee(assert) {
       res.entite.bouge = false;
       return res.entite;
     };
+    // Toute créature entre par l'arrière : on la place au front pour la leçon
+    // du pas (c'est un décor, pas une pose).
     const nous = poser('joueur', 'le-renegat');
+    nous.emplacement = 0;
+    nous.avancee = true;
     const proie = poser('sorcier', 'le-renegat');
     await act(async () => window.__RPG_FORCE__());
 
@@ -79,6 +83,9 @@ export async function checkAvancee(assert) {
     proie.emplacement = 3;
     proie.avancee = true;
     const perceur = poser('joueur', 'cotre-de-course');
+    perceur.emplacement = 4; // notre front, colonne 5 : la trouée d'en face est libre
+    perceur.avancee = true;
+    perceur.bouge = false;
     await act(async () => window.__RPG_FORCE__());
     await click(card(perceur.id));
     await act(async () => window.__RPG_FORCE__());

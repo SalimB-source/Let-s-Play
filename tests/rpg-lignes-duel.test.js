@@ -47,47 +47,59 @@ function table(lignes = true) {
   return { d, poser, poserOk };
 }
 
-test('les deux lignes ouvrent dix cases ; la carte choisit sa ligne', () => {
+/** Table de laboratoire : poser une créature au front, ce que le jeu ne fait
+ *  plus (le front se gagne case par case, `rpgMouvement.js`). */
+const auFront = (entite, index, camp = 'joueur') => {
+  entite.emplacement = index;
+  entite.avancee = true;
+  if (camp !== 'joueur') entite.campPose = camp;
+  return entite;
+};
+
+test('les deux lignes ouvrent dix cases ; toute créature entre par l’arrière', () => {
   const { d, poserOk } = table();
   assert.equal(d.lignes, true, 'la fabrique garde le drapeau des lignes');
   assert.equal(champMax(d), 10);
   const melee = poserOk('joueur', MELEE);
   const archiere = poserOk('joueur', DISTANCE);
-  assert.equal(ligneDe(melee), RPG_LIGNE_FRONT, 'un corps à corps tient le front');
-  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND, 'une créature à distance se range derrière');
-  assert.ok(archiere.emplacement >= 5, `le fond commence à la sixième case (reçu ${archiere.emplacement})`);
+  assert.equal(ligneDe(melee), RPG_LIGNE_FOND, 'un corps à corps entre au fond');
+  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND, 'une créature à distance aussi');
+  assert.equal(melee.emplacement, 5, 'la première place de l’arrière');
+  assert.equal(archiere.emplacement, 6, 'la suivante');
   // Les dix cases du champ portent bien les deux créatures, chacune à sa place.
-  const cases = rpgEmplacementsChamp(d.joueur, champMax(d));
+  const cases = rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur');
   assert.equal(cases.length, 10);
   assert.equal(cases[melee.emplacement].id, melee.id);
   assert.equal(cases[archiere.emplacement].id, archiere.id);
+  // Le front est vide : il se gagne, il ne se pose pas.
+  assert.ok(!cases.slice(0, 5).some(Boolean), 'aucune créature au front après la pose');
 });
 
-test('la case choisie est respectée, même hors de la ligne de la carte', () => {
+test('le joueur choisit sa colonne, l’arrière est imposé', () => {
   const { d, poserOk } = table();
-  // Le joueur place où il veut dans son camp : une archère peut tenir le front.
-  const archiere = poserOk('joueur', DISTANCE, { emplacement: 0 });
-  assert.equal(archiere.emplacement, 0);
-  assert.equal(ligneDe(archiere), RPG_LIGNE_FRONT);
-  assert.equal(archiere.caseChoisie, true, 'sa case lui appartient : elle n’est pas rapatriée');
-  // Le corps à corps déposé au fond y reste.
-  const melee = poserOk('joueur', MELEE, { emplacement: 7 });
-  assert.equal(melee.emplacement, 7);
-  assert.equal(ligneDe(melee), RPG_LIGNE_FOND);
+  // Une case du fond demandée est respectée…
+  const archiere = poserOk('joueur', DISTANCE, { emplacement: 9 });
+  assert.equal(archiere.emplacement, 9);
+  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
+  // …une case du front est ignorée : la pose se rabat sur la première libre
+  // de l'arrière, sans casser la pose.
+  const melee = poserOk('joueur', MELEE, { emplacement: 0 });
+  assert.equal(ligneDe(melee), RPG_LIGNE_FOND, 'le front n’est pas une case d’arrivée');
+  assert.equal(melee.emplacement, 5);
+  assert.equal(melee.caseChoisie, undefined, 'la case reste dans la règle : rien à rapatrier');
   // La table garde les deux cases au rafraîchissement suivant.
   const cases = rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur');
-  assert.equal(cases[0]?.id, archiere.id);
-  assert.equal(cases[7]?.id, melee.id);
+  assert.equal(cases[9]?.id, archiere.id);
+  assert.equal(cases[5]?.id, melee.id);
 });
 
-test('une carte avec Envol se pose aussi où le joueur veut', () => {
+test('une carte avec Envol entre par l’arrière comme les autres', () => {
   const { d, poserOk } = table();
-  // Le Tengu vole : sa fiche le range au fond, mais le joueur peut le tenir au
-  // front — l'Envol ne parle que du passage au-dessus des corps.
+  // L'Envol parle du passage au-dessus des corps, pas du placement : le Tengu
+  // se pose au fond, et une case du front est ignorée.
   const tengu = poserOk('joueur', 'tengu-du-mont-ardent', { emplacement: 0 });
-  assert.equal(tengu.emplacement, 0);
-  assert.equal(ligneDe(tengu), RPG_LIGNE_FRONT);
-  assert.equal(tengu.caseChoisie, true, 'sa case lui appartient : elle n’est pas rapatriée');
+  assert.equal(tengu.emplacement, 5);
+  assert.equal(ligneDe(tengu), RPG_LIGNE_FOND);
   assert.ok(d);
 });
 
@@ -95,8 +107,10 @@ test('le fond est à deux cases : la mêlée ne l’atteint pas, même front tom
   const { d, poserOk } = table();
   d.tour = 'sorcier';
   const mur = poserOk('joueur', MELEE); // devant, chez la cible
+  auFront(mur, 2); // le front se gagne : ici, table de laboratoire
   const archiere = poserOk('joueur', DISTANCE);
   const attaquant = poserOk('sorcier', MELEE);
+  auFront(attaquant, 2, 'sorcier');
   d.tour = 'sorcier';
   const cibles = () => rpgCiblesIndividuellesClassique(d, 'sorcier', attaquant.id).cibles;
   assert.ok(cibles().includes(mur.id), 'la mêlée voit le front, à une case');
@@ -111,11 +125,12 @@ test('le fond est à deux cases : la mêlée ne l’atteint pas, même front tom
 test('la portée vaut pour tous : l’Infiltration ne traverse plus la ligne', () => {
   const { d, poserOk } = table();
   d.tour = 'joueur';
-  poserOk('joueur', MELEE);
+  const mur = poserOk('joueur', MELEE);
+  auFront(mur, 2);
   const archiere = poserOk('joueur', DISTANCE);
   d.tour = 'sorcier';
-  poserOk('sorcier', MELEE);
   const attaquant = poserOk('sorcier', MELEE);
+  auFront(attaquant, 2, 'sorcier');
   // Une mêlée infiltrée reste une mêlée : le trait ignore la priorité des
   // Défenseurs, pas la distance. Le fond est à deux cases.
   attaquant.infiltration = true;
@@ -128,32 +143,33 @@ test('la portée vaut pour tous : l’Infiltration ne traverse plus la ligne', (
 });
 
 
-test('un Défenseur reste devant, même quand le fond est libre', () => {
+test('un Défenseur entre par l’arrière comme les autres', () => {
   const { d, poserOk } = table();
+  // Sa fiche le dit « devant » (`ligneObligee`), mais le mur se pose au fond :
+  // la ligne d'arrivée est la même pour toutes les cartes.
   const defenseur = poserOk('joueur', 'guerrier-au-bouclier-rond');
-  assert.equal(ligneDe(defenseur), RPG_LIGNE_FRONT);
-  assert.ok(defenseur.emplacement < 5);
+  assert.equal(ligneDe(defenseur), RPG_LIGNE_FOND);
+  assert.equal(defenseur.emplacement, 5);
   assert.ok(d);
 });
 
-test('les dix cases du camp sont ouvertes : le front plein n’arrête plus la pose', () => {
+test('l’arrière plein arrête la pose : le front ne sert pas de repli', () => {
   const { d, poser, poserOk } = table();
-  const front = [];
-  for (let i = 0; i < 5; i += 1) front.push(poserOk('joueur', MELEE));
-  assert.equal(front.filter((e) => ligneDe(e) === RPG_LIGNE_FRONT).length, 5);
-  // Le sixième corps à corps n'a plus de place devant : il prend la première
-  // du fond — la ligne de la carte n'est qu'une préférence.
-  const sixieme = poserOk('joueur', MELEE);
-  assert.equal(ligneDe(sixieme), RPG_LIGNE_FOND);
-  // Une créature à distance trouve, elle aussi, une place libre.
-  const archiere = poserOk('joueur', DISTANCE);
-  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
-  assert.equal(d.joueur.creatures.length, 7);
-  // Camp plein (dix cases) : la onzième est refusée.
-  for (let i = 0; i < 3; i += 1) poserOk('joueur', MELEE);
+  const arriere = [];
+  for (let i = 0; i < 5; i += 1) arriere.push(poserOk('joueur', MELEE));
+  assert.equal(arriere.filter((e) => ligneDe(e) === RPG_LIGNE_FOND).length, 5);
+  assert.deepEqual(arriere.map((e) => e.emplacement), [5, 6, 7, 8, 9]);
+  // La sixième n'a plus de case d'arrivée, même avec un front vide.
   const refus = poser('joueur', MELEE);
   assert.equal(refus.ok, false);
   assert.equal(refus.raison, 'champ-plein');
+  // Une créature au front libère sa case du fond en revenant : la pose repart.
+  const rentrant = arriere[0];
+  rentrant.emplacement = 0;
+  rentrant.avancee = true;
+  const nouvelle = poserOk('joueur', DISTANCE);
+  assert.equal(nouvelle.emplacement, 5, 'la case laissée par la rentrante');
+  assert.equal(d.joueur.creatures.length, 6, 'la rentrante vit au front, la nouvelle au fond');
 });
 
 test('sans le drapeau des lignes, rien ne change : cinq cases, tout le monde devant', () => {
@@ -179,6 +195,7 @@ test('deux cases pour tout tir : le front adverse, jamais son fond sans avancer'
   const { d, poserOk } = table();
   d.tour = 'joueur';
   const mur = poserOk('joueur', MELEE);
+  auFront(mur, 2);
   const fond = poserOk('joueur', DISTANCE);
   d.tour = 'sorcier';
   // Un tireur « À distance » qui n'a **pas** l'Attaque ciblée : c'est la
@@ -196,23 +213,25 @@ test('deux cases pour tout tir : le front adverse, jamais son fond sans avancer'
   assert.equal(cibles().includes(fond.id), false, 'l’Attaque ciblée ne porte pas plus loin');
 });
 
-test('une carte à distance retrouvée sur une case du front se redessine au fond', () => {
+test('une créature retrouvée au front, sans avoir avancé, se redessine à l’arrière', () => {
   const { d, poserOk } = table();
   d.tour = 'joueur';
   const melee = poserOk('joueur', MELEE);
   const archiere = poserOk('joueur', DISTANCE);
   assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
-  // Partie reprise : la case de l'archère est celle d'un corps à corps.
+  // Partie reprise : la case de l'archère est une case du front, et rien ne dit
+  // qu'elle y est arrivée par le pas (`avancee` absent) — elle rentre au fond.
   archiere.emplacement = 2;
-  const cases = rpgEmplacementsChamp(d.joueur, champMax(d));
+  const cases = rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur');
   const place = cases.findIndex((entite) => entite?.id === archiere.id);
   assert.equal(ligneDeCase(place), RPG_LIGNE_FOND, 'elle réapparaît derrière, jamais au front');
   assert.equal(cases[2]?.id, undefined, 'la case 2 du front reste libre');
   assert.equal(cases.findIndex((entite) => entite?.id === melee.id), melee.emplacement,
     'la mêlée garde sa case');
-  // Une mêlée égarée au fond remonte de la même façon.
-  melee.emplacement = 7;
-  const apres = rpgEmplacementsChamp(d.joueur, champMax(d));
+  // Une créature qui a bel et bien avancé, elle, garde sa case du front.
+  melee.emplacement = 2;
+  melee.avancee = true;
+  const apres = rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur');
   assert.equal(ligneDeCase(apres.findIndex((entite) => entite?.id === melee.id)), RPG_LIGNE_FRONT);
 });
 
@@ -250,10 +269,12 @@ test('Salem posé derrière : la case du front est refusée, aucune mêlée ne l
   const { d, poserOk } = table();
   d.tour = 'joueur';
   const garde = poserOk('joueur', MELEE);
+  auFront(garde, 2);
   const salem = poserOk('joueur', 'salem');
   assert.equal(ligneDe(garde), RPG_LIGNE_FRONT);
-  assert.equal(ligneDe(salem), RPG_LIGNE_FOND, 'il se range au fond sans qu’on le lui demande');
+  assert.equal(ligneDe(salem), RPG_LIGNE_FOND, 'il entre au fond, comme tout le monde');
   const intrus = poserOk('sorcier', MELEE);
+  auFront(intrus, 2, 'sorcier');
   d.tour = 'sorcier';
   const cibles = rpgCiblesIndividuellesClassique(d, 'sorcier', intrus.id).cibles;
   assert.ok(cibles.includes(garde.id), 'la mêlée voit le front');

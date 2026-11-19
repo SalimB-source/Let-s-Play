@@ -48,6 +48,9 @@ const distance = (d, entite, proie, coteProie = 'sorcier') => distanceEntreCreat
 test('la mêlée traverse en deux tours, puis frappe sa proie du fond adverse', () => {
   const { d, poser } = table();
   const melee = poser('joueur', MELEE);
+  // Toute créature entre par l'arrière : elle a déjà gagné le front d'un pas.
+  melee.emplacement = front(0);
+  melee.avancee = true;
   const proie = poser('sorcier', MELEE);
   proie.emplacement = fond(2);
   proie.avancee = true;

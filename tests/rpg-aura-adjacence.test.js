@@ -28,8 +28,15 @@ const table = () => rpgNouveauDuel({
   lignes: true,
 });
 
-/** Pose une carte sur la case demandée (le quota d'invocation est neutralisé :
- *  c'est une table de laboratoire, pas un tour de jeu). */
+/** Un point de dégâts nul force le recalcul des auras, comme le ferait une
+ *  arrivée ou une mort. */
+const rafraichir = (duel) => {
+  const temoin = duel.joueur.creatures[0];
+  if (temoin) rpgBlesserCreature(duel, 'joueur', temoin.id, 0, null, null, 'capacite', 'kenshi-de-la-forge');
+};
+
+/** Pose une carte — l'entrée se fait toujours par l'arrière — puis la place
+ *  sur la case demandée : c'est une table de laboratoire, pas un tour de jeu. */
 const poser = (duel, cote, carteId, emplacement = null) => {
   duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map((couleur) => [couleur, 20]));
   duel[cote].manaChoixEnAttente = false;
@@ -37,19 +44,18 @@ const poser = (duel, cote, carteId, emplacement = null) => {
   duel[cote].main.push(carteId);
   const tour = duel.tour;
   duel.tour = cote; // scène de laboratoire : chacun pose sur son tour
-  const res = rpgJouerCreature(duel, cote, carteId, null, { emplacement });
+  const res = rpgJouerCreature(duel, cote, carteId, null);
+
   duel.tour = tour;
   assert.equal(res.ok, true, `${carteId} doit entrer en jeu : ${res.raison}`);
   res.entite.ready = true;
   res.entite.malInvocation = false;
+  if (Number.isInteger(emplacement)) {
+    res.entite.emplacement = emplacement;
+    res.entite.avancee = true; // sa case est la sienne
+  }
+  rafraichir(duel);
   return res.entite;
-};
-
-/** Un point de dégâts nul force le recalcul des auras, comme le ferait une
- *  arrivée ou une mort. */
-const rafraichir = (duel) => {
-  const temoin = duel.joueur.creatures[0];
-  if (temoin) rpgBlesserCreature(duel, 'joueur', temoin.id, 0, null, null, 'capacite', 'kenshi-de-la-forge');
 };
 
 const stats = (entite) => [entite.atk, entite.def];
@@ -93,6 +99,7 @@ test('la rangée compte : le fond n’est pas voisin du front', () => {
   poser(duel, 'joueur', 'kenshi-de-la-forge', 0); // front, colonne 0
   const archer = poser(duel, 'joueur', 'archere-viking-du-givre', null); // fond
   assert.equal(archer.emplacement, 5, 'l’archère se range au fond, colonne 0');
+  // Toute créature entre par l'arrière : le Kenshi posé sans case a rejoint le fond.
   assert.deepEqual(stats(archer), [2, 5], 'même colonne, autre rangée : aucune aura');
 });
 
