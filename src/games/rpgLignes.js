@@ -95,10 +95,25 @@ export function casesDeLigne(ligne) {
   return Array.from({ length: RPG_LIGNES_CASES }, (_, index) => debut + index);
 }
 
-/** La ligne d'une carte. **Défenseur** devant, **À distance** et **Attaque
- *  ciblée** derrière, les corps à corps devant. Aucune carte n'est libre : le
- *  champ se lit d'un coup d'œil, et une créature ne se cache jamais là où le
- *  joueur ne l'attend pas.
+/**
+ * La ligne par laquelle **toute** créature entre en jeu : l'arrière.
+ *
+ * Le front ne se pose pas, il se **gagne** : une créature arrive au fond, puis
+ * avance d'une case par tour (`rpgMouvement.js`). La ligne que la carte porte
+ * (`ligneObligee`) ne sert donc plus au placement — elle n'est qu'un repère de
+ * lecture pour une carte qui n'a pas encore de case.
+ */
+export const RPG_LIGNE_POSE = RPG_LIGNE_FOND;
+
+/** La ligne où cette carte se pose — l'arrière, pour toutes les cartes. */
+export function ligneDePose() {
+  return RPG_LIGNE_POSE;
+}
+
+/** La ligne d'une carte, telle que sa fiche la décrit. **Défenseur** devant,
+ *  **À distance** et **Attaque ciblée** derrière, les corps à corps devant.
+ *  Ce n'est plus une contrainte de pose : c'est le repère de lecture d'une
+ *  carte qui n'a pas encore de case (voir `ligneDePose`).
  *
  *  L'**Attaque ciblée** est un tir, pas une mêlée : la créature choisit sa
  *  cible et frappe sans recevoir de coup en retour. Elle se range donc au fond
@@ -110,28 +125,25 @@ export function ligneObligee(carte) {
   return carte?.distance || carte?.coupRapide ? RPG_LIGNE_FOND : RPG_LIGNE_FRONT;
 }
 
-/** Une case que cette carte a le droit d'occuper. */
+/** Une case que cette carte a le droit d'occuper à la pose : l'arrière. */
 export function caseAutorisee(carte, index) {
-  return ligneDeCase(index) === ligneObligee(carte);
+  return ligneDeCase(index) === ligneDePose(carte);
 }
 
 /**
- * Cette case est-elle **choisissable** à la pose ? Le joueur place ses
- * créatures où il veut dans son camp — le front comme le fond, sans que la
- * carte impose sa ligne. L'**Envol** n'y change rien : il décide du passage
- * au-dessus des corps (`rpgCheminLibre`), pas du placement.
- *
- * La ligne imposée (`ligneObligee`) ne disparaît pas : elle reste la case par
- * défaut quand personne ne choisit (IA, jeton, glisser-déposer sur la table),
- * et la règle de protection du front continue de se lire sur les positions
- * réelles.
+ * Cette case est-elle **choisissable** à la pose ? Le joueur choisit la
+ * colonne, l'**arrière** est imposé : les cinq cases du fond s'allument, le
+ * front n'est jamais une case d'arrivée (`RPG_LIGNE_POSE`). L'**Envol** n'y
+ * change rien : il décide du passage au-dessus des corps (`rpgCheminLibre`),
+ * pas du placement.
  */
 export function caseChoisissable(carte, index) {
-  return Number.isInteger(index) && index >= 0 && index < RPG_LIGNES_CHAMP_MAX;
+  if (!Number.isInteger(index) || index < 0 || index >= RPG_LIGNES_CHAMP_MAX) return false;
+  return caseAutorisee(carte, index);
 }
 
-/** Les cases encore libres pour cette carte : toutes les places non prises de
- *  son camp (la ligne imposée ne vaut que pour l'Envol). `sansIds` retire des
+/** Les cases encore libres pour cette carte : les places non prises de
+ *  l'arrière, les seules où une créature entre en jeu. `sansIds` retire des
  *  occupants du calcul — les victimes d'un sacrifice libèrent leur case avant
  *  que la créature n'arrive. */
 export function casesLibresPour(camp, carte, maximum = RPG_LIGNES_CHAMP_MAX, sansIds = []) {

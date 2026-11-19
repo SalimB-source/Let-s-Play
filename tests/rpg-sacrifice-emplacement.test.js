@@ -1,5 +1,5 @@
-/** L'invocation payée d'un sacrifice prend **la case de la victime** — celle
- *  qu'elle occupait vraiment, y compris chez l'adversaire. */
+/** L'invocation payée d'un sacrifice entre par **l'arrière**, comme toute
+ *  créature : la victime ne transmet pas sa case, seulement sa colonne. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -36,10 +36,8 @@ test('la carte de sacrifice demande bien une victime', () => {
   assert.equal(sacrificesInvocation(duelCardById(SACRIFICE), d, 'joueur'), 1);
 });
 
-test('la nouvelle créature prend la case laissée par la victime', () => {
+test('la nouvelle créature occupe la colonne de la victime, à l’arrière', () => {
   const { d, poser } = table();
-  // Une victime au fond, à la colonne 4 (case 8) : personne ne l'a mise là par
-  // une ligne imposée, c'est un choix.
   const victime = poser('joueur', 'viking-des-neiges', { emplacement: 8 });
   assert.ok(victime.ok, victime.raison);
   victime.entite.ready = true;
@@ -47,16 +45,17 @@ test('la nouvelle créature prend la case laissée par la victime', () => {
 
   const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id] });
   assert.ok(invocation.ok, `l'invocation doit aboutir : ${invocation.raison}`);
-  assert.equal(invocation.entite.emplacement, 8, 'elle entre sur la case libérée');
+  assert.equal(invocation.entite.emplacement, 8, 'même colonne, même case : elle est libre');
   assert.equal(invocation.entite.campPose, undefined, 'dans son propre camp');
+  assert.equal(positionDe(invocation.entite, 'joueur').rangee, 3, 'à l’arrière');
   assert.ok(!d.joueur.creatures.some((e) => e.id === victime.entite.id), 'la victime a quitté le champ');
 });
 
-test('une victime qui avait percé laisse sa case chez l’adversaire', () => {
+test('une victime qui avait percé n’entraîne pas l’invocation chez l’adversaire', () => {
   const { d, poser } = table();
   const victime = poser('joueur', 'viking-des-neiges');
   assert.ok(victime.ok, victime.raison);
-  // Elle a franchi la trouée : elle se tient sur le front du sorcier.
+  // Elle avait franchi la trouée : elle se tenait sur le front du sorcier.
   victime.entite.campPose = 'sorcier';
   victime.entite.emplacement = 3;
   victime.entite.avancee = true;
@@ -64,17 +63,18 @@ test('une victime qui avait percé laisse sa case chez l’adversaire', () => {
 
   const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id] });
   assert.ok(invocation.ok, `l'invocation doit aboutir : ${invocation.raison}`);
-  assert.deepEqual(positionDe(invocation.entite, 'joueur'), { camp: 'sorcier', index: 3, rangee: 1, colonne: 3 },
-    'la nouvelle créature se tient là où la victime est tombée');
-  assert.equal(invocation.entite.avancee, true, 'elle n’est pas rapatriée chez elle');
+  assert.equal(invocation.entite.campPose, undefined, 'elle reste chez nous');
+  assert.deepEqual(positionDe(invocation.entite, 'joueur'), { camp: 'joueur', index: 8, rangee: 3, colonne: 3 },
+    'la colonne de la victime, sur notre arrière');
+  assert.notEqual(invocation.entite.avancee, true, 'elle n’a pas avancé : elle vient d’entrer');
 });
 
-test('sans victime chez l’adversaire, la pose garde ses règles de place', () => {
+test('une case du front demandée pour l’invocation est ignorée', () => {
   const { d, poser } = table();
-  const victime = poser('joueur', 'viking-des-neiges', { emplacement: 1 });
+  const victime = poser('joueur', 'viking-des-neiges');
   assert.ok(victime.ok, victime.raison);
-  const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id] });
+  const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id], emplacement: 2 });
   assert.ok(invocation.ok, invocation.raison);
-  assert.equal(invocation.entite.emplacement, 1);
+  assert.equal(positionDe(invocation.entite, 'joueur').rangee, 3, 'l’arrière, jamais le front');
   assert.ok(d);
 });

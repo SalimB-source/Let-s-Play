@@ -27,7 +27,7 @@ import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
-import { champMax, ligneDeCase, caseChoisissable, ligneObligee, frontTient, lignesActives,
+import { champMax, ligneDeCase, caseChoisissable, ligneDePose, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { deplacementsLegaux, rpgDeplacerCreature } from './rpgMouvement.js';
@@ -13884,7 +13884,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ? {
           cle: `pose:${poseEnCours.carteId}:${poseEnCours.handIndex}`,
           classe: 'rpg-target-prompt',
-          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — cliquez une case libre de votre camp, front ou fond (Échap pour renoncer)`,
+          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — cliquez une case libre de l’arrière (Échap pour renoncer)`,
         }
       : defausseOuverte
         ? {
@@ -14579,7 +14579,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-card-stack"
                       key={entite.id}
                       data-entites-pile={pile.entites.map((membre) => membre.id).join(' ')}
-                      data-ligne={casesEnnemi ? (casesEnnemi.get(entite.id) ? ligneDeCase(casesEnnemi.get(entite.id) - 1) : ligneObligee(cardById(entite.carteId))) : undefined}
+                      data-ligne={casesEnnemi ? (casesEnnemi.get(entite.id) ? ligneDeCase(casesEnnemi.get(entite.id) - 1) : ligneDePose()) : undefined}
                       style={{
                         ...cardFrameStyle(cardById(pile.carteId)),
                         ...(casesEnnemi?.get(entite.id) ? {
@@ -14615,8 +14615,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               maximum={champMax(duel)}
               deuxLignes={lignesActives(duel)}
               choixEmplacement={Boolean(poseEnCours)}
-              ligneChoisissable={poseEnCours && cardById(poseEnCours.carteId)?.envol
-                ? ligneObligee(cardById(poseEnCours.carteId)) : null}
+              ligneChoisissable={poseEnCours ? ligneDePose(poseEnCours.carteId) : null}
               nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
               onChoisirEmplacement={choisirEmplacement}
               emplacementSurvole={emplacementSurvole}
@@ -14711,7 +14710,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       className="rpg-card-stack"
                       key={entite.id}
                       data-entites-pile={pile.entites.map((membre) => membre.id).join(' ')}
-                      data-ligne={casesJoueur ? (casesJoueur.get(entite.id) ? ligneDeCase(casesJoueur.get(entite.id) - 1) : ligneObligee(cardById(entite.carteId))) : undefined}
+                      data-ligne={casesJoueur ? (casesJoueur.get(entite.id) ? ligneDeCase(casesJoueur.get(entite.id) - 1) : ligneDePose()) : undefined}
                       style={{
                         ...cardFrameStyle(cardById(pile.carteId)),
                         ...(casesJoueur?.get(entite.id) ? {
