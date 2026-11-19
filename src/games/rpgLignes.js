@@ -209,7 +209,10 @@ export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = 
   const permise = attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
   if (!permise) return false;
   if (!lignesActives(duel) || duel?.moba) return true;
-  if (!Number.isInteger(attaquant?.emplacement)) return true;
+  // Sur les lignes, une créature **sans case** ne frappe pas le sorcier : la
+  // portée se mesure depuis une position. La laisser passer ouvrait une frappe
+  // directe depuis n'importe où (invocation arrivée sans case, reprise).
+  if (!Number.isInteger(attaquant?.emplacement)) return false;
   const camp = cote ?? campDeLaCreature(duel, attaquant);
   if (!camp) return true;
   return sorcierAPortee(duel, camp, attaquant);
