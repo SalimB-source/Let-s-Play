@@ -445,13 +445,12 @@
    rail où il empile son portrait, son nom, sa barre de vie et, en mode essai,
    sa jauge de mana. La table centrale reste libre.
 
-   **Le joueur tout en haut**, le sorcier au-dessus de ses propres rangées (son
-   bandeau d'origine, au centre). Le portrait du joueur vivait sous son bloc
-   Ascension, donc tout en bas de la colonne — et la main, qui part du bord
-   gauche sur PC, passait par-dessus : on ne voyait plus son propre avatar. Le
-   haut de la colonne est donc à lui, aussi haut que possible, sous la capsule du
-   journal. Deux portraits empilés ne tiendraient pas dans la même colonne : le
-   sorcier garde la sienne, au-dessus du champ.
+   **Le portrait du joueur est au centre, sous ses emplacements**, dans la
+   trouée que la main s'ouvre au milieu : trois cartes à sa gauche, le reste à
+   sa droite. Il vivait dans la colonne de gauche, sous son bloc Ascension —
+   exactement là où la main (`z-index: 42`), qui partait du bord gauche sur PC,
+   passait par-dessus : on ne voyait plus son propre avatar. Le sorcier, lui,
+   garde son bandeau au-dessus de ses propres rangées.
 
    Le rail occupe la marge déjà réservée à gauche par les rangées de cartes
    (`clamp(220px, 20%, 280px)`) : rien ne rétrécit la zone de jeu. Les piles et
@@ -470,29 +469,28 @@
     /* Hauteur du bloc Ascension (`min-height: 52px`, marges intérieures et
        bordure comprises) plus l'air qui le sépare du portrait. */
     --rpg-rail-ascension-h: 74px;
-    /* Le joueur ouvre le rail, tout en haut de la colonne : hors de portée de
-       la main (`z-index: 42`, qui part du bord gauche) et de son propre bloc
-       Ascension. On laisse passer la capsule du journal, qui garde le coin
-       (`top: 12px`, une trentaine de pixels de haut). */
-    --rpg-rail-joueur-top: 56px;
+    /* Le portrait du joueur se pose au milieu de la table, sous les
+       emplacements, dans la trouée que la main s'ouvre au centre : la barre de
+       vie garde ses quelques pixels sous le médaillon. */
+    --rpg-rail-joueur-bottom: calc(10px + var(--rpg-vie-bar-height) + 4px);
   }
   /* En mode essai, le bloc Ascension du joueur remonte à 42 %. */
   .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) {
     --rpg-rail-ascension-joueur-top: calc(42% + clamp(72px, min(7.2vw, 12vh), 104px) + 64px);
   }
 
-  /* 1. Le portrait du joueur tient la colonne, centré dans la largeur du rail.
-     Le sorcier, lui, garde son bandeau au-dessus de ses rangées : deux portraits
-     empilés dans la même colonne n'y tiennent pas — et c'est le joueur qui a
-     besoin de la place libre, pas lui. */
+  /* 1. Le portrait du joueur est centré sur la table, sous les emplacements de
+     son champ. Le sorcier, lui, garde son bandeau au-dessus de ses rangées. La
+     colonne de gauche ne sert plus qu'au paquet et au bloc Ascension. */
   .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur {
-    left: calc(var(--rpg-rail-marge) + (var(--rpg-rail-largeur) - var(--rpg-avatar-plateau)) / 2);
+    left: 50%;
     right: auto;
-    transform: none;
+    transform: translateX(-50%);
   }
 
-  /* 2. Le nom reprend sa place : sous la barre de vie, à la largeur du rail. */
+  /* 2. Le nom reprend sa place : sous la barre de vie, à la largeur du rail —
+     et au-dessus du médaillon pour le joueur, qui n'a plus rien sous lui. */
   .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-wizard-plate :is(.rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name) {
     position: absolute;
     top: calc(100% + var(--rpg-vie-bar-height) + 5px);
@@ -511,6 +509,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-wizard-plate--joueur :is(.rpg-wizard-plate__profile-name, .rpg-wizard-plate__enemy-name) {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
 
   /* 3. La jauge de mana garde la colonne du rail, sous le nom — loin de la
      barre de vie, qu'elle recouvrait en se collant au seul médaillon. */
@@ -524,11 +526,15 @@
       + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 9px);
   }
   .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--joueur {
-    /* Le portrait du joueur a rejoint le haut du rail : sa jauge le suit et
-       s'empile sous le nom, toujours dans la colonne. */
-    top: calc(var(--rpg-rail-joueur-top) + var(--rpg-plaque-joueur-h, 76px)
-      + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 9px);
-    bottom: auto;
+    /* Le portrait du joueur est au centre, sous le champ : sa jauge le suit et
+       s'empile au-dessus du nom, centrée comme lui. */
+    top: auto;
+    bottom: calc(var(--rpg-rail-joueur-bottom) + var(--rpg-avatar-plateau)
+      + 6px + var(--rpg-rail-nom-h) + 6px);
+    left: 50%;
+    width: var(--rpg-rail-largeur);
+    max-width: var(--rpg-rail-largeur);
+    transform: translateX(-50%);
   }
 
   /* 4. Piles du joueur et main cachée du sorcier cèdent le rail. */
@@ -539,15 +545,27 @@
     transform: none;
   }
 
-  /* 5. Le joueur ouvre le rail, tout en haut. Il vivait sous son bloc
-     Ascension, en bas de la colonne — exactement là où la main (`z-index: 42`),
-     qui part du bord gauche sur PC, passait par-dessus : son propre avatar
-     devenait invisible. En haut, il échappe à la main, à l'Ascension et au
-     paquet ; la colonne se lit de haut en bas — joueur, paquet, Ascension,
-     main — tandis que le sorcier garde son bandeau au-dessus du champ. */
+  /* 5. Le joueur reprend le milieu de la table, sous ses emplacements. Il est
+     posé dans la trouée que la main s'ouvre au centre (règle 6), et passe
+     au-dessus d'elle (`z-index: 60` contre 42) : plus aucune carte ne peut le
+     recouvrir, où que la main en soit. */
   .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur {
-    top: var(--rpg-rail-joueur-top);
-    bottom: auto;
+    top: auto;
+    bottom: var(--rpg-rail-joueur-bottom);
+    z-index: 60;
+  }
+
+  /* 6. La main s'ouvre en deux autour du médaillon : trois cartes à gauche,
+     le reste à droite. La cale (`.rpg-hand__ecart`, posée par la page à la
+     moitié de la main) réserve exactement la largeur du portrait, et rien ne
+     passe dessous. */
+  .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
+    justify-content: center;
+  }
+  .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand__ecart {
+    flex: 0 0 calc(var(--rpg-avatar-plateau) + 26px);
+    align-self: stretch;
+    pointer-events: none;
   }
 }
 
