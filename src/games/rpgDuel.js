@@ -9244,8 +9244,16 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     // les blessures. Un tireur face à un corps à corps garde son tir sans
     // réponse : l'autre ne l'atteint pas.
     const echangeDeTireurs = !ciblee && Boolean(attaquant.distance) && Boolean(cible.distance);
-    // Ce qui fait riposter la cible : le duel de mêlée, ou l'échange de tirs.
-    const riposte = auContact || echangeDeTireurs;
+    // **Deux Attaques ciblées se répondent.** Un tir n'a pas de contact, et
+    // l'Attaque ciblée n'en a jamais eu — mais une créature qui riposte du même
+    // geste ne se laisse pas tirer dessus sans rendre son coup : quand la cible
+    // porte elle aussi l'Attaque ciblée, elle riposte de sa propre volée. Une
+    // Contre-attaque, elle, a déjà sa riposte (`riposteDeContreAttaque`) : on ne
+    // la fait pas frapper deux fois pour le même coup.
+    const duelDeTireursCibles = ciblee && Boolean(cible.coupRapide) && !cible.contreAttaque;
+    // Ce qui fait riposter la cible : le duel de mêlée, l'échange de tirs, ou
+    // deux Attaques ciblées qui se croisent.
+    const riposte = auContact || echangeDeTireurs || duelDeTireursCibles;
     // En MOBA, une attaque normale contre une créature est l'unique duel :
     // la cible y déclenche ses effets « au blocage », sans phase de blocage
     // séparée. Les deux capacités frappent ensemble AVANT l'échange normal.
