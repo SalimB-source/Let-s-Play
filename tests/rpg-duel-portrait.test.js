@@ -130,3 +130,14 @@ test('la coque portrait est chargée après celles du paysage', () => {
   assert.ok(paysage >= 0 && coque > paysage,
     'la coque portrait doit l\'emporter sur les règles du paysage');
 });
+
+test('le HUD debout ne reprend aucune piste du paysage', () => {
+  // Les zones `enemy-mana`, `mana`, `controls` et `hand` du paysage créaient
+  // des pistes implicites : la main et les commandes sortaient de l'écran.
+  assert.match(bloc, /grid-column:\s*1 \/ -1/, 'tous les enfants rentrent dans l’unique colonne');
+  assert.match(bloc, /\.rpg-hand-dock[\s\S]*?grid-area:\s*main/, 'la main occupe la rangée `main`');
+  assert.match(bloc, /\.rpg-turn-rail[\s\S]*?flex-direction:\s*row/, 'le rail du tour est horizontal');
+  assert.match(bloc, /\.rpg-wizard-plate__avatar[\s\S]*?position:\s*relative/, 'le médaillon rentre dans sa plaque');
+  assert.match(bloc, /:has\(\.card-row\[data-lignes="true"\]\)[\s\S]*?grid-template-rows:/,
+    'la variante deux rangées garde les sept rangées debout');
+});

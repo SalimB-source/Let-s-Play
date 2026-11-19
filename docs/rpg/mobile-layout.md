@@ -324,3 +324,37 @@ Les aperçus de créatures montrent la face aussi bien au survol qu’en fiche o
 une créature posée reprend sa silhouette (écusson si Défenseur), ses statistiques
 courantes et ses effets visibles, y compris en MOBA. La consultation ne joue pas
 la carte et les aperçus rapides des autres types restent textuels.
+
+## Le duel debout : le HUD ne hérite plus du paysage
+
+La coque portrait (`rpg-portrait.css`) posait sept rangées nommées, mais les
+feuilles du paysage continuaient d'affecter aux enfants de la table des zones
+`enemy-mana`, `mana`, `controls` ou `hand`, absentes de cette grille. Il en
+naissait des pistes implicites : la colonne utile tombait à quelques pixels, la
+main et les commandes partaient à droite, et l'avatar absolu du paysage — large
+de toute la table — recouvrait le plateau d'un portrait géant.
+
+La coque debout remet donc **chaque enfant dans l'unique colonne** et range le
+HUD dans les sept zones :
+
+- `tete` : journal (onglet flottant), main adverse au centre, hamburger à droite ;
+- `haut` / `bas` : une **capsule par sorcier** — médaillon rond, nom, compteurs,
+  barre de PV — et la réserve d'Ascension à droite ;
+- `ennemi` / `equipe` : deux rangées de cinq cases sur toute la largeur, avec un
+  léger halo sombre sous les emplacements, sans masquer la peinture ;
+- `commandes` : le rail du tour devient une **barre horizontale** (tour, six
+  phases, « Fin du tour »), dans une capsule sombre. Les actions de combat
+  flottent juste au-dessus, sans recouvrir la main ;
+- `main` : toute la largeur, cartes centrées, socle dégradé sous la rangée.
+
+La variante « deux rangées de créatures » du paysage est rappelée dans la coque
+debout : sans elle, ses quatre pistes prenaient le pas sur les sept rangées et
+ouvraient les bandeaux des sorciers au milieu du plateau. La peinture des deux
+moitiés est seulement légèrement assombrie (`brightness(.86)`), jamais voilée :
+les cartes, les halos et les capsules gardent leur contraste sur les plateaux
+clairs.
+
+Le paysage (`rpg-mobile.css`) n'est pas touché : la composition du PC à
+l'échelle du téléphone reste entière. Vérifications : `npm run
+check:rpg-portrait`, `npm run build`, et captures au doigt de 320 × 568 à
+768 × 1024.
