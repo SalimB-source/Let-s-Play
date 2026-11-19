@@ -62,24 +62,23 @@ test('sans le camp, la fonction garde son ancien contrat (une rangée nue)', () 
 
 test('la case libérée par l’envahisseur accepte une invocation', () => {
   const { d, poser } = table();
-  poser('joueur', MELEE); // case 5 de l'arrière
-  const perceur = poser('joueur', MELEE); // case 6
-  perceur.emplacement = 6;
+  poser('joueur', MELEE); // case 0 du front
+  const perceur = poser('joueur', MELEE); // case 1
   perceur.campPose = 'sorcier';
   perceur.avancee = true;
-  // Sa case de l'arrière est libre : l'invocation peut la reprendre.
-  const nouveau = poser('joueur', MELEE, { emplacement: 6 });
-  assert.equal(nouveau.emplacement, 6, 'la case 6 de notre arrière est bien libre');
+  // Sa case du front est libre : l'invocation peut la reprendre.
+  const nouveau = poser('joueur', MELEE, { emplacement: 1 });
+  assert.equal(nouveau.emplacement, 1, 'la case 1 de notre front est bien libre');
 });
 
 test('une créature restée chez nous garde sa case, le fantôme de l’autre non', () => {
   const { d, poser } = table();
-  const restee = poser('joueur', MELEE, { emplacement: 6 });
+  const restee = poser('joueur', MELEE, { emplacement: 0 });
   const perceur = poser('joueur', MELEE);
-  perceur.emplacement = 6;
+  perceur.emplacement = 0;
   perceur.campPose = 'sorcier';
   perceur.avancee = true;
-  assert.equal(rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur')[6]?.id, restee.id);
+  assert.equal(rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur')[0]?.id, restee.id);
   // Le fantôme de la case 6 ne prend pas la place de la créature restée.
   const perceurCase = rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur')
     .findIndex((occupant) => occupant?.id === perceur.id);

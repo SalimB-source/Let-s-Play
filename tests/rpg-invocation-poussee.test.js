@@ -1,9 +1,9 @@
 /** L'invocation sous occupation.
  *
- *  Une ligne arrière envahie ne bloque plus la pose : l'envahisseur de la
+ *  Une ligne d'arrivée envahie ne bloque plus la pose : l'envahisseur de la
  *  colonne choisie est repoussé d'une case (chaîne comprise), puis la créature
- *  s'installe normalement, à l'arrière. Une créature à nous, elle, ne se
- *  laisse pas pousser : sa case reste prise. */
+ *  s'installe normalement, sur la ligne de sa fiche. Une créature à nous, elle,
+ *  ne se laisse pas pousser : sa case reste prise. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -14,6 +14,8 @@ import { rpgCasesPose, rpgPousserEnvahisseur } from '../src/games/rpgRecul.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 
 const MELEE = 'viking-des-neiges';
+// Un tireur : il entre par le fond, la ligne que ces cas envahissent.
+const TIREUR = 'archere-viking-du-givre';
 
 function table() {
   const d = rpgNouveauDuel({
@@ -59,9 +61,9 @@ test('une case envahie est une case d’arrivée : l’envahisseur recule', () =
   assert.equal(case2.poussable, true, 'la chaîne derrière lui est libre : il peut reculer');
 
   const pose = (() => {
-    d.joueur.main.push(MELEE);
+    d.joueur.main.push(TIREUR);
     d.joueur.invocationNormaleJouee = false;
-    return rpgJouerCreature(d, 'joueur', MELEE, null, { emplacement: 7 });
+    return rpgJouerCreature(d, 'joueur', TIREUR, null, { emplacement: 7 });
   })();
   assert.ok(pose.ok, `la pose doit aboutir : ${pose.raison}`);
   assert.equal(pose.entite.emplacement, 7, 'la créature prend la case libérée');
@@ -93,10 +95,10 @@ test('l’arrière entièrement envahi ne refuse plus la pose', () => {
   for (let colonne = 0; colonne < 5; colonne += 1) envahir(colonne);
   const ouvertes = rpgCasesPose(d, 'joueur').filter((c) => c.poussable);
   assert.equal(ouvertes.length, 5, 'les cinq colonnes sont dégageables');
-  d.joueur.main.push(MELEE);
-  const pose = rpgJouerCreature(d, 'joueur', MELEE);
+  d.joueur.main.push(TIREUR);
+  const pose = rpgJouerCreature(d, 'joueur', TIREUR);
   assert.ok(pose.ok, `la pose doit aboutir : ${pose.raison}`);
-  assert.ok(pose.entite.emplacement >= 5, 'elle entre bien par l’arrière');
+  assert.ok(pose.entite.emplacement >= 5, 'elle entre bien par le fond, sa ligne');
 });
 
 test('au bord du plateau, personne ne bouge', () => {
@@ -120,8 +122,8 @@ test('au bord du plateau, personne ne bouge', () => {
     'aucun envahisseur n’a bougé');
   const case5 = rpgCasesPose(d, 'joueur').find((c) => c.index === 5);
   assert.equal(case5.poussable, false);
-  d.joueur.main.push(MELEE);
-  const pose = rpgJouerCreature(d, 'joueur', MELEE, null, { emplacement: 5 });
+  d.joueur.main.push(TIREUR);
+  const pose = rpgJouerCreature(d, 'joueur', TIREUR, null, { emplacement: 5 });
   assert.equal(pose.ok, false, 'une case bloquée ne s’ouvre pas');
 });
 

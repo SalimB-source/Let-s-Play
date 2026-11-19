@@ -11,6 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
+import { positionDe } from '../src/games/rpgChamp.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour } from '../src/games/rpgDuel.js';
 import { deplacementsLegaux, rpgPeutBouger, rpgDeplacerCreature } from '../src/games/rpgMouvement.js';
 import { rpgIABougerUneCreature } from '../src/games/rpgMouvementIA.js';
@@ -73,11 +74,13 @@ test('au tour suivant de son camp, la créature retrouve son pas', () => {
   assert.equal(entite.malInvocation, false);
   assert.equal(rpgPeutBouger(d, 'joueur', entite), true);
   assert.ok(deplacementsLegaux(d, 'joueur', entite.id).length > 0, 'des cases sont proposées');
-  const avant = entite.emplacement;
+  // Depuis le front, la première case offerte peut être la trouée : la place
+  // se lit en camp + case (`positionDe`), pas sur le seul indice local.
+  const avant = JSON.stringify(positionDe(entite, 'joueur'));
   const destination = deplacementsLegaux(d, 'joueur', entite.id)[0];
   const resultat = rpgDeplacerCreature(d, 'joueur', entite.id, destination);
   assert.ok(resultat.ok, 'elle avance enfin');
-  assert.notEqual(entite.emplacement, avant);
+  assert.notEqual(JSON.stringify(positionDe(entite, 'joueur')), avant);
 });
 
 test('la Rapidité lève l’attente : la créature rapide bouge dès son arrivée', () => {

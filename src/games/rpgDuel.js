@@ -6,7 +6,7 @@ import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
-import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
+import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, ligneDeCase, ligneDePose, lignesActives, RPG_LIGNE_FOND, RPG_LIGNE_FRONT, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -5958,13 +5958,13 @@ function placesLibresChamp(duel, cote) {
  *  poussé. La table vient de `rpgRecul.js` — elle seule connaît les
  *  envahisseurs, qui ne figurent pas dans nos propres créatures. */
 function occupationDeCase(duel, cote, index) {
-  return rpgCasesPose(duel, cote).find((c) => c.index === index) ?? null;
+  return rpgCasesPose(duel, cote, ligneDeCase(index)).find((c) => c.index === index) ?? null;
 }
 
 /** Les cases d'arrivée réellement ouvertes : les libres, plus celles qu'un
  *  envahisseur poussable va libérer. */
-function casesPoseOuvertes(duel, cote, sansIds = []) {
-  return rpgCasesPose(duel, cote)
+function casesPoseOuvertes(duel, cote, sansIds = [], carte = null) {
+  return rpgCasesPose(duel, cote, ligneDePose(carte ?? undefined))
     .filter((c) => (!c.occupant || (c.poussable && !sansIds.includes(c.occupant.id))))
     .map((c) => c.index);
 }
@@ -5981,7 +5981,7 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
   // voit les **envahisseurs**, qui tiennent une case de notre rangée sans
   // figurer dans nos propres créatures.
   if (lignesActives(duel)) {
-    for (const occupation of rpgCasesPose(duel, cote)) {
+    for (const occupation of rpgCasesPose(duel, cote, ligneDePose(duelCardById(entite.carteId) ?? entite))) {
       if (occupation.occupant && occupation.occupant !== entite) prises.add(occupation.index);
     }
   }
@@ -6014,7 +6014,7 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
   const choix = caseParDefaut(carte, libres);
   if (choix !== null && choix !== undefined) { entite.emplacement = choix; return; }
   // L'arrière entier est envahi : la première colonne dégageable fait la place.
-  const secours = casesPoseOuvertes(duel, cote)[0];
+  const secours = casesPoseOuvertes(duel, cote, [], carte)[0];
   if (secours !== undefined && ouvrir(secours)) entite.emplacement = secours;
 }
 
@@ -6645,7 +6645,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (lignesActives(duel)) {
     const sansIds = sacrifices.map((e) => e.id);
     const libres = casesLibresPour(camp, carte, champMax(duel), sansIds);
-    const ouvertes = casesPoseOuvertes(duel, cote, sansIds);
+    const ouvertes = casesPoseOuvertes(duel, cote, sansIds, carte);
     if (!libres.some((index) => ouvertes.includes(index))) return { ok: false, raison: 'champ-plein' };
   }
   const sacrifice = sacrifices[0] ?? null;
@@ -6856,15 +6856,21 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // rien n'a été sacrifié. L'indice de la victime est retenu : la nouvelle
   // créature prend sa place, au même emplacement du plateau.
   let emplacementSacrifice = null;
-  /** La case du fond, même colonne que la victime — préférée, jamais imposée. */
+  /** La case d'arrivée de la carte, même colonne que la victime — préférée,
+   *  jamais imposée. */
+
   let caseDeLaVictime = null;
   if (sacrifice) {
     emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
-    // La victime ne transmet pas sa case : la nouvelle créature entre par
-    // l'arrière comme toutes les autres. Sa **colonne** est seulement retenue
-    // pour que le remplacement ne traverse pas la table (`caseDeLaVictime`).
+    // La victime ne transmet pas sa case : la nouvelle créature entre par la
+    // ligne de sa fiche, comme toutes les autres. Sa **colonne** est seulement
+    // retenue pour que le remplacement ne traverse pas la table
+    // (`caseDeLaVictime`).
     const colonneVictime = positionDe(sacrifice, cote)?.colonne;
-    caseDeLaVictime = Number.isInteger(colonneVictime) ? RPG_LIGNES_CASES + colonneVictime : null;
+    const baseLigne = ligneDePose(carte) === RPG_LIGNE_FOND ? RPG_LIGNES_CASES
+      : ligneDePose(carte) === RPG_LIGNE_FRONT ? 0 : null;
+    caseDeLaVictime = Number.isInteger(colonneVictime) && baseLigne !== null
+      ? baseLigne + colonneVictime : null;
     if (duel.modeMana === RPG_MODE_MANA_ESSAI && caseDeLaVictime !== null) {
       reservationsInvocation.set(camp, emplacementChoisi ?? caseDeLaVictime);
     }
