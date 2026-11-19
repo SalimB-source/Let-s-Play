@@ -120,7 +120,14 @@ export async function checkRpgTutorialCombat(assert) {
     await harnais.click(harnais.next(), 'la pioche de début de tour');
     assert.equal(harnais.step(), 'attaque');
     await harnais.click(harnais.carteChamp('equipe', 'tislit-des-aures'), 'Tislit attaque');
+    await act(async () => { await wait(300); });
+    assert.equal(harnais.step(), 'attaque', 'Tislit montre ses proies : le guide attend la cible');
+    // Le Chien de sable est à deux cases, le sorcier à quatre : seule la
+    // créature est à portée (`rpgPortees.js`).
+    await harnais.click(harnais.carteChamp('ennemi', 'chien-de-sable'), 'le Chien de sable à portée');
     assert.equal(harnais.step(), 'confirmer-attaque');
+    assert.equal(container.querySelector('.card-row--ennemi .rpg-card[data-card-id="chien-de-sable"]'), null,
+      'le Chien de sable est tombé sous le tir');
     await harnais.click(harnais.next(), 'les cibles possibles');
     assert.equal(harnais.step(), 'combat');
     assert.ok(container.querySelector('[data-tutorial-target="opponent-health"]'));
@@ -333,7 +340,12 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await harnais.click(harnais.card('chacal-du-seuil'), 'le Chacal du seuil');
     await act(async () => { await wait(850); });
     assert.equal(harnais.step(), 'attaque-chacal');
-    await harnais.click(harnais.carteChamp('equipe', 'chacal-du-seuil'), 'Le Chacal attaque');
+    await act(async () => { await wait(300); });
+    // La scène a percé : le Chacal est au fond adverse, à une case du sorcier.
+    assert.ok(container.querySelector('.card-row--ennemi .rpg-card[data-card-id="chacal-du-seuil"]'),
+      'le Chacal se tient chez le sorcier');
+    // Le Chacal a déjà marché (`bouge`) : le clic déclare la frappe directe.
+    await harnais.click(harnais.carteChamp('ennemi', 'chacal-du-seuil'), 'Le Chacal frappe');
     assert.equal(harnais.step(), 'confirmer-chacal');
     await harnais.click(harnais.next(), 'la morsure du Chacal');
     assert.equal(harnais.step(), 'tribut');
@@ -403,7 +415,8 @@ export async function checkRpgTutorialAutresLecons(assert) {
       await act(async () => { await wait(300); });
     }
     assert.equal(harnais.step(), 'charge');
-    await harnais.click(harnais.carteChamp('equipe', 'ashigaru-des-braises'), 'L’Ashigaru attaque');
+    await act(async () => { await wait(300); });
+    await harnais.click(harnais.carteChamp('ennemi', 'ashigaru-des-braises'), 'L’Ashigaru frappe le sorcier');
     assert.equal(harnais.step(), 'confirmer-charge');
     await harnais.click(harnais.next(), 'la Bannière');
     assert.equal(harnais.step(), 'impact');

@@ -23,8 +23,10 @@ assert.match(tutorial, /scriptedAnnonce: \{ cardId: 'lame-de-mer'/u, 'la leçon 
 assert.match(tutorial, /scriptedAnnonce: \{ cardId: 'feux-de-kitsune'/u, 'la leçon Ténèbres scénarise le sort de zone');
 assert.match(tutorial, /deckCards: PAQUET_EMBUSCADE/u,
   'la leçon Embuscade prête son propre paquet, aucun boîtier n’alignant ses soldats');
-assert.match(tutorial, /waitFor: 'combat-adverse'[\s\S]*?forceOpponentAttack: true[\s\S]*?stageOpponent: \['chien-du-guet', 'faussoyeur-des-dunes'\]/u,
-  'la leçon Embuscade scénarise l’assaut adverse qui ouvre la fenêtre de réponse');
+assert.match(tutorial, /id: 'attaque-adverse'[\s\S]{0,400}?forceOpponentAttack: true[\s\S]{0,200}?targetOpponentAttack: 'berserk-des-trois-hivers'/u,
+  'la leçon Neige scénarise l’assaut adverse qui ouvre la fenêtre de réponse');
+assert.match(tutorial, /id: 'attaque'[\s\S]{0,500}?prepare: \{ stageOpponent: \['chien-de-sable'\], immediat: true \}/u,
+  'la leçon d’ouverture installe sa proie immédiatement, hors du tour adverse');
 assert.match(page, /paquetDeLaLecon\(tutoriel\)/u,
   'la table joue le paquet de la leçon, pas seulement celui de l’archétype emprunté');
 

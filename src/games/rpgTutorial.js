@@ -26,6 +26,7 @@ import { RPG_DECKS_ARCHETYPES, cardById } from './rpgCards.js';
 import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
 import { rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
 import { RPG_MANA_ESSAI_MAIN_DEPART } from './rpgManaEssai.js';
+import { campPoseDe } from './rpgChamp.js';
 
 // Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
 // l'étagère du joueur (vide depuis les coffrets de bienvenue).
@@ -192,7 +193,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-creature-slots--joueur',
         eyebrow: 'RÈGLE · LE CHAMP',
         title: 'Deux lignes de cinq cases',
-        text: 'Chaque camp dispose de deux lignes de cinq cases, dessinées sous sa rangée : le front, tourné vers l’adversaire, et le fond, derrière. La ligne ne se choisit pas, elle vient de la carte : les corps à corps et les Défenseurs tiennent le front, les créatures marquées « À distance » se rangent derrière — comme celles qui portent l’Attaque ciblée : elles frappent sans recevoir de coup en retour. Tant qu’une créature tient le front, une attaque — même à distance — ne peut pas viser le fond : seules l’Attaque ciblée et l’Infiltration passent. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre de sa ligne — ou vous l’y glissez directement. Cinq créatures par ligne, dix au plus par camp.',
+        text: 'Chaque camp dispose de deux lignes de cinq cases, dessinées sous sa rangée : le front, tourné vers l’adversaire, et le fond, derrière. La ligne ne se choisit pas, elle vient de la carte : les corps à corps et les Défenseurs tiennent le front, les créatures marquées « À distance » se rangent derrière — comme celles qui portent l’Attaque ciblée : elles frappent sans recevoir de coup en retour. Chaque créature choisit sa case en entrant, puis elle avance d’une case par tour : au contact, elle frappe les huit cases qui l’entourent ; une créature « À distance » frappe à deux cases, et un tir ne reçoit pas de coup en retour. Le sorcier suit la même règle : il faut arriver à sa portée — percer les deux lignes, ou se poster sur le front adverse pour tirer. En partie, après avoir choisi une créature de votre main, vous cliquez la case libre de sa ligne — ou vous l’y glissez directement. Cinq créatures par ligne, dix au plus par camp.',
         nextLabel: 'Passer la main',
         side: 'top',
       },
@@ -231,8 +232,13 @@ export const RPG_TUTORIELS = Object.freeze([
         kind: 'action',
         target: '.card-row--equipe .rpg-card[data-card-id="tislit-des-aures"]',
         eyebrow: 'ÉTAPE 5 · PHASE D’ATTAQUE',
-        title: 'Choisissez Tislit',
-        text: 'Touchez Tislit, prête à attaquer. Comme le champ adverse est vide, elle frappe directement le sorcier. Une seule créature attaque à la fois ; chacune peut attaquer une fois par tour.',
+        title: 'Choisissez une cible',
+        // Le sorcier a envoyé un Chien de sable sur son front : à distance 2,
+        // c’est la seule proie de Tislit — le sorcier, lui, est encore trop
+        // loin (`rpgPortees.js`). La scène s’installe hors tour : une leçon
+        // montre le champ, elle n’attend pas l’invocation adverse.
+        prepare: { stageOpponent: ['chien-de-sable'], immediat: true },
+        text: 'Le sorcier a envoyé un Chien de sable sur son front. Touchez Tislit : elle montre ce qu’elle peut atteindre. À distance, elle frappe à deux cases — le Chien est juste à portée, le sorcier non. Touchez maintenant le Chien de sable pour tirer. Une seule créature attaque à la fois ; chacune peut attaquer une fois par tour.',
         on: 'attaque-confirmee',
         side: 'top',
       },
@@ -252,7 +258,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="opponent-health"]',
         eyebrow: 'RÈGLE · POINTS DE VIE',
         title: 'Une attaque sans bloqueur',
-        text: 'En attaque directe, les dégâts touchent le sorcier et font baisser ses points de vie. Le premier camp dont les points de vie atteignent zéro perd le duel. Ici, Tislit a infligé 1 dégât.',
+        text: 'Sans bloqueur, les dégâts tombent sur la cible : le Chien de sable perd son unique point de vie et quitte le champ. Un tir ne reçoit pas de coup en retour. Quand plus rien ne protège le sorcier et qu’une créature arrive à sa portée, les dégâts touchent ses points de vie — le premier camp à zéro perd le duel.',
         nextLabel: 'Équiper une arme',
         side: 'bottom',
       },
@@ -588,10 +594,13 @@ export const RPG_TUTORIELS = Object.freeze([
       {
         id: 'attaque-chacal',
         kind: 'action',
-        target: '.card-row--equipe .rpg-card[data-card-id="chacal-du-seuil"]',
+        target: '.rpg-card[data-card-id="chacal-du-seuil"]',
+        // Le sorcier ne se frappe plus de loin (`rpgPortees.js`) : la scène
+        // place le Chacal au fond adverse, à une case de lui.
+        prepare: { percer: ['chacal-du-seuil'] },
         eyebrow: 'ÉTAPE 3 · ATTAQUE',
         title: 'Faites frapper le Tribut',
-        text: 'Touchez le Chacal : grâce à Rapidité, il attaque immédiatement le sorcier dont le champ est vide. Ses blessures déclenchent son Tribut.',
+        text: 'Le Chacal s’est glissé jusqu’au fond adverse : il est à une case du sorcier. Touchez-le, puis la plaque du sorcier — ses blessures déclenchent son Tribut.',
         on: 'attaque-confirmee',
         side: 'top',
       },
@@ -887,17 +896,20 @@ export const RPG_TUTORIELS = Object.freeze([
       {
         id: 'charge',
         kind: 'action',
-        target: '.card-row--equipe .rpg-card[data-card-id="ashigaru-des-braises"]',
+        target: '.rpg-card[data-card-id="ashigaru-des-braises"]',
+        // Le sorcier ne se frappe que de près : l'Ashigaru a percé jusqu'à son
+        // fond, à une case de lui (`rpgPortees.js`).
+        prepare: { percer: ['ashigaru-des-braises'] },
         eyebrow: 'ÉTAPE 6 · LA CHARGE',
         title: 'Une lame à la fois',
-        text: 'Touchez l’Ashigaru. Il attaque seul le sorcier et gagne +1/+1 grâce à la Bannière avant ses blessures. Vos autres Samouraïs pourront attaquer séparément.',
+        text: 'L’Ashigaru a percé jusqu’au fond adverse : il est à une case du sorcier. Touchez-le : il attaque seul et gagne +1/+1 grâce à la Bannière avant ses blessures. Vos autres Samouraïs pourront attaquer séparément.',
         on: 'attaque-confirmee',
         side: 'top',
       },
       {
         id: 'confirmer-charge',
         kind: 'info',
-        target: '.card-row--equipe .rpg-card[data-card-id="ashigaru-des-braises"]',
+        target: '.rpg-card[data-card-id="ashigaru-des-braises"]',
         eyebrow: 'ÉTAPE 7 · IMPACT',
         title: 'La Bannière grandit l’attaquant',
         text: 'Chaque Samouraï reçoit la Bannière lorsqu’il attaque. Les autres gardent leur attaque disponible : choisissez-les un par un, puis désignez une cible légale.',
@@ -1307,10 +1319,29 @@ export function appliquerManaInitialTutoriel(duel) { return duel; }
 export function preparerEtapeTutoriel(duel, etape) {
   if (!duel?.sorcier || !duel?.joueur || !etape?.prepare) return [];
   const creees = [];
+  // Une leçon peut montrer une créature **déjà passée** chez l'adversaire :
+  // depuis le palier 2, le sorcier ne se frappe plus de loin, il faut être à
+  // sa portée. La scène évite deux tours de marche et garde son sujet.
+  for (const cardId of etape.prepare.percer ?? []) {
+    const entite = duel.joueur.creatures.find((candidate) => candidate.carteId === cardId);
+    if (!entite || campPoseDe(entite, 'joueur') === 'sorcier') continue;
+    const occupees = new Set(duel.sorcier.creatures
+      .filter((autre) => campPoseDe(autre, 'sorcier') === 'sorcier')
+      .map((autre) => autre.emplacement));
+    const libre = [5, 6, 7, 8, 9].find((index) => !occupees.has(index));
+    if (libre === undefined) continue;
+    entite.campPose = 'sorcier';
+    entite.emplacement = libre;
+    entite.avancee = true;
+    entite.bouge = true;
+    creees.push(entite);
+  }
   // Le moteur ne laisse pas un camp invoquer hors de son tour : la scène
   // attend le tour de son camp (l'appel est rejoué quand le tour bascule).
   for (const cardId of etape.prepare.stageOpponent ?? []) {
-    if (duel.tour !== 'sorcier') continue;
+    // Une scène « immédiate » montre le champ tel qu'il est : la leçon
+    // l'installe pendant le tour du joueur (`immediat`), sans attendre.
+    if (duel.tour !== 'sorcier' && !etape.prepare.immediat) continue;
     if (duel.sorcier.creatures.some((entite) => entite.carteId === cardId)) continue;
     const entite = poserCreatureSurChamp(duel, 'sorcier', cardId, { ready: true });
     if (entite) creees.push(entite);

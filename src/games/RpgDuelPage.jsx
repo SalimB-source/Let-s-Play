@@ -14472,7 +14472,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               nomCarteDeplacee={nomAttaquantMobile}
             />
           )}
-          {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
+          {campEnnemi.piles.length ? campEnnemi.piles.map((pile) => {
             const cle = clePile('ennemi', pile);
             const deployee = pileDeployee('ennemi', pile);
             const affichees = deployee ? pile.entites : [teteDePile('ennemi', pile)];
@@ -14608,7 +14608,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               nomCarteDeplacee={nomAttaquantMobile}
             />
           )}
-          {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
+          {campJoueur.piles.length ? campJoueur.piles.map((pile) => {
             const cle = clePile('joueur', pile);
             const deployee = pileDeployee('joueur', pile);
             const affichees = deployee ? pile.entites : [teteDePile('joueur', pile)];
