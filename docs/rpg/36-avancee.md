@@ -31,6 +31,12 @@ Le palier 2 ouvre le champ : une créature **marche d'une case par tour**, puis
 5. **Rien pour un Site**, une créature gelée (`gelToursRestants`), engagée
    (`attaquee`) ou déjà déplacée. Rien hors des lignes, rien au MOBA : les modes
    historiques gardent leur table figée.
+5 bis. **Rien le tour de son arrivée.** Le mal d'invocation vaut pour le pas
+   comme pour l'attaque : une créature posée pendant le tour de son camp attend
+   le suivant pour avancer (`rpgSouffreMalInvocation`, levé par la Rapidité
+   imprimée ou accordée). L'IA jouait autrement : elle posait un corps puis le
+   faisait glisser d'une case dans le même tour, un avantage que le joueur
+   n'avait pas lu sur sa carte.
 6. **Aucune contrainte de ligne.** Le placement impose une ligne
    (`ligneObligee`) ; le mouvement non. Un tireur peut monter au front, un corps
    à corps reculer au fond — c'est un choix, pas une règle.
