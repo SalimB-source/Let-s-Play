@@ -32,13 +32,14 @@ test('Rail d’avatars : le rail tient dans la marge déjà réservée aux rang�
     `le rail (${marge} + ${largeurMax} + ${decalage}px) doit finir avant la zone de jeu (${gaucheRangees}px)`);
 });
 
-test('Rail d’avatars : les portraits sont ancrés à gauche, plus sur l’axe central', () => {
+test('Rail d’avatars : le portrait du joueur est ancré à gauche, plus sur l’axe central', () => {
   const plaque = railSeul.slice(railSeul.indexOf('.card-table > .rpg-wizard-plate'), railSeul.indexOf('/* 2.'));
   assert.match(plaque, /left: calc\(var\(--rpg-rail-marge\) \+ \(var\(--rpg-rail-largeur\) - var\(--rpg-avatar-plateau\)\) \/ 2\);/,
     'le portrait se centre dans la largeur du rail');
   assert.match(plaque, /transform: none;/, 'plus de translation depuis le centre');
   assert.match(plaque, /:not\(\.rpg-battle--touch\)/, 'le plateau tactile garde sa disposition');
   assert.doesNotMatch(plaque, /left: calc\(50%/, 'l’axe central n’est plus la référence');
+  assert.match(plaque, /--joueur/, 'seul le joueur prend la colonne : le sorcier garde son bandeau');
 });
 
 test('Rail d’avatars : le nom revient sous la barre de vie', () => {
@@ -56,11 +57,11 @@ test('Rail d’avatars : la jauge de mana descend sous le nom, pas sous le seul 
     'la jauge garde la colonne du rail');
   const ennemi = mana.slice(mana.indexOf('--ennemi'), mana.indexOf('--joueur'));
   const joueur = mana.slice(mana.indexOf('--joueur'));
-  assert.match(ennemi, /bottom: calc\(var\(--rpg-rail-ennemi-bottom\)[^;]*var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 12px\);/s,
-    'la jauge adverse remonte au-dessus du portrait, dans la bande libre de la colonne');
+  assert.match(ennemi, /top: calc\(var\(--rpg-essai-ennemi-top\)[^;]*var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 9px\);/s,
+    'la jauge adverse reste sous son portrait, au-dessus de ses rangées');
   assert.match(joueur, /var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 9px/,
     'la jauge du joueur passe sous la barre de vie et sous le nom');
-  assert.match(joueur, /top: calc\(var\(--rpg-rail-ascension-joueur-top\)/, 'la jauge du joueur suit sa plaque remontée');
+  assert.match(joueur, /top: calc\(var\(--rpg-rail-joueur-top\)/, 'la jauge du joueur suit son portrait remonté en haut');
 });
 
 test('Rail d’avatars : piles et main cachée cèdent la colonne', () => {
@@ -71,10 +72,13 @@ test('Rail d’avatars : piles et main cachée cèdent la colonne', () => {
     'les deux se rangent à droite du rail');
 });
 
-test('Rail d’avatars : le joueur remonte sous son bloc Ascension, hors de portée de la main', () => {
+test('Rail d’avatars : le joueur ouvre le rail, tout en haut, hors de portée de la main', () => {
   const bloc = railSeul.slice(railSeul.indexOf('/* 5.'));
-  assert.match(bloc, /\.rpg-wizard-plate--joueur \{\s*top: calc\(var\(--rpg-rail-ascension-joueur-top\) \+ var\(--rpg-rail-ascension-h\)\);\s*bottom: auto;/s,
-    'la plaque se pose sous l’Ascension, plus au ras du bas');
+  assert.match(bloc, /\.rpg-wizard-plate--joueur \{\s*top: var\(--rpg-rail-joueur-top\);\s*bottom: auto;/s,
+    'la plaque se pose tout en haut de la colonne');
+  assert.match(railSeul, /--rpg-rail-joueur-top: 56px;/, 'sous la capsule du journal, qui garde le coin');
+  const main = Number(railSeul.match(/--rpg-rail-joueur-top: (\d+)px/)[1]);
+  assert.ok(main < 120, 'elle est dans les tout premiers pixels de la table');
   assert.match(railSeul, /--rpg-rail-ascension-joueur-top: calc\(44% \+ clamp\(72px, min\(7\.2vw, 12vh\), 104px\) \+ 64px\);/,
     'la même expression que le bloc Ascension de rpg-ascension.css');
   assert.match(railSeul, /--rpg-rail-ascension-joueur-top: calc\(42% \+ clamp\(72px, min\(7\.2vw, 12vh\), 104px\) \+ 64px\);/,
@@ -82,16 +86,14 @@ test('Rail d’avatars : le joueur remonte sous son bloc Ascension, hors de port
   assert.doesNotMatch(railSeul, /--rpg-rail-bas-joueur/, 'plus d’ancrage au bas de la table');
 });
 
-test('Rail d’avatars : le sorcier descend au ras de la médiane, au-dessus du paquet du joueur', () => {
-  assert.match(railSeul, /--rpg-rail-ennemi-bottom: calc\(56% \+ 8px\);/,
-    'le portrait se pose juste au-dessus du paquet du joueur (`top: 44 %`)');
-  assert.match(railSeul, /--rpg-rail-ennemi-bottom: calc\(58% \+ 8px\);/,
-    'en essai, le paquet remonte à 42 %');
-  const bloc = railSeul.slice(railSeul.indexOf('/* 6.'));
-  assert.match(bloc, /\.rpg-wizard-plate--ennemi\s*\{\s*top: auto;\s*bottom: var\(--rpg-rail-ennemi-bottom\);\s*\}/s,
-    'le sorcier quitte le haut de la table');
-  assert.doesNotMatch(railSeul, /--ennemi[^{]*\{\s*top: 1%/,
-    'plus d’ancrage à 1 % du haut');
+test('Rail d’avatars : le sorcier garde son bandeau du haut, rien ne s’empile dans la colonne', () => {
+  assert.doesNotMatch(railSeul, /--rpg-wizard-plate--ennemi/,
+    'aucune règle de rail ne déplace plus le portrait adverse');
+  assert.doesNotMatch(railSeul, /--rpg-rail-ennemi-bottom/,
+    'plus d’ancrage du sorcier au ras du paquet');
+  // Le sorcier reste réglé par le haut du plateau (`top: 1 %`, 12,5 % en essai) :
+  // deux portraits empilés ne tiendraient pas dans la même colonne.
+  assert.match(plateau, /\.rpg-wizard-plate--ennemi\s*\{[^}]*top: 1%/s);
 });
 
 test('Paysage tactile : les deux avatars encadrent la médiane, dans la colonne de gauche', () => {
