@@ -679,5 +679,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-18",
     "section": "Actualités tech"
+  },
+  "/news/gta-6-19-novembre-consoles-points-verifies": {
+    "title": "GTA VI LE RENDEZ-VOUS DE LEONIDA. — Let’s Play",
+    "description": "Le 19 novembre est la date annoncée pour GTA VI sur PS5 et Xbox Series X|S. Voici les points documentés par Rockstar sur les consoles, le cloud et les objectifs techniques, sans les confondre avec nos propres tests.",
+    "image": "https://media-rockstargames-com.akamaized.net/tina-uploads/posts/89834o94713o21/94f09130d07de4a50e3ab971e2b7d8c253b7c706.jpg",
+    "type": "article",
+    "published": "2026-11-19",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/the-altruists-netflix-19-novembre": {
+    "title": "THE ALTRUISTS L’EMPIRE CRYPTO DEVIENT UNE FICTION. — Let’s Play",
+    "description": "Netflix présente The Altruists comme disponible le 19 novembre. Cette mini-série en huit épisodes réunit Julia Garner et Anthony Boyle dans une dramatisation de l’ascension puis de la chute de FTX.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQZ1uxXfluCFaXqZJkSzMUwARLNyhjP_k43TfFFQDMPrOgqKyp9SciiU9anGoT-AJ_zQ1C4SKVY87q0tHFR3R2lzJySzhwAvt-Hc4y-XEz0O_-ThJJVbqbVneDVmWZ-yC1qGOMvJ-F14thIH9gSqZ4h3cTT0.jpg?r=75a",
+    "type": "article",
+    "published": "2026-11-19",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/figma-images-multiples-modeles-18-novembre": {
+    "title": "FIGMA AI UN PROMPT, PLUSIEURS PISTES. — Let’s Play",
+    "description": "Figma annonce le 18 novembre de nouvelles options dans Make image et Edit image : produire deux, quatre ou six images avec un modèle, ou comparer jusqu’à trois modèles avec une image chacun.",
+    "image": "https://help.figma.com/hc/article_attachments/36912269499671",
+    "type": "article",
+    "published": "2026-11-19",
+    "section": "Actualités tech"
   }
 };

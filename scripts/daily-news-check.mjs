@@ -18,8 +18,8 @@ import { JSDOM } from 'jsdom';
 import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-18.js';
 import { dailyStories as cultureTechStories20261029, dailyNewsListing as cultureTechListing20261029, dailySeoEntries as cultureTechSeo20261029 } from '../src/news/daily/2026-10-29-cinema-tech.js';
 import { dailyStories as gamingStories20261029, dailyNewsListing as gamingListing20261029, dailySeoEntries as gamingSeo20261029, editionDate as gamingDate20261029 } from '../src/news/daily/2026-10-29-gaming.js';
-import { dailyStories as currentEditionStories, dailyNewsListing as currentEditionListing, dailySeoEntries as currentEditionSeoEntries, editionDate as currentEditionDate, editionIsoDate as currentEditionIsoDate } from '../src/news/daily/2026-11-18.js';
-import { dailyStories as previousEditionStories, dailySeoEntries as previousEditionSeoEntries, editionDate as previousEditionDate, editionIsoDate as previousEditionIsoDate } from '../src/news/daily/2026-11-17.js';
+import { dailyStories as currentEditionStories, dailyNewsListing as currentEditionListing, dailySeoEntries as currentEditionSeoEntries, editionDate as currentEditionDate, editionIsoDate as currentEditionIsoDate } from '../src/news/daily/2026-11-19.js';
+import { dailyStories as previousEditionStories, dailySeoEntries as previousEditionSeoEntries, editionDate as previousEditionDate, editionIsoDate as previousEditionIsoDate } from '../src/news/daily/2026-11-18.js';
 import { dailySeoEntries as generatedDailySeoEntries } from '../src/news/daily/seo-index.js';
 import { dailyStories as dailyStories20261011, dailyNewsListing as dailyNewsListing20261011, dailySeoEntries as dailySeoEntries20261011, editionDate as editionDate20261011, editionIsoDate as editionIsoDate20261011 } from '../src/news/daily/2026-10-11.js';
 import { dailyStories as dailyStories20261014, dailyNewsListing as dailyNewsListing20261014, dailySeoEntries as dailySeoEntries20261014, editionDate as editionDate20261014, editionIsoDate as editionIsoDate20261014 } from '../src/news/daily/2026-10-14.js';
@@ -484,3 +484,25 @@ assert.ok(document.querySelector('.article-trailer-pending').textContent.include
 await act(async () => anthropicRoot.unmount());
 
 console.log(`Édition du ${currentEditionDate} et archives quotidiennes : OK — articles, hubs, accueil, sitemap, archives, recherche, SEO et lecteurs.`);
+
+// Current-edition EN/AR must actually load through Vite's globs and render,
+// not just exist on disk or report a listing-only `translated` flag.
+const localizedSmoke = await import(path.join(outDir, 'daily-news-smoke.js'));
+for (const lang of ['en', 'ar']) {
+  assert.equal(await localizedSmoke.loadArticleListings(lang), true);
+  const fieldsByKey = {};
+  for (const key of Object.keys(currentEditionStories)) {
+    const fields = await localizedSmoke.loadArticleBody(`/news/${key}`, lang);
+    assert.ok(fields?.p1 && fields?.p4, `${lang}/${key}: full body loaded`);
+    fieldsByKey[key] = fields;
+    assert.ok(localizedSmoke.getTrailerTranslation(key, lang), `${lang}/${key}: media loaded`);
+  }
+  const rendered = new Map(renderPages(lang).map(({route, html}) => [route, new JSDOM(html).window.document]));
+  for (const [key, fields] of Object.entries(fieldsByKey)) {
+    const doc = rendered.get(`/news/${key}`);
+    assert.ok(doc, `${lang}/${key}: route rendered`);
+    assert.ok(doc.querySelector('.article-body').textContent.includes(fields.p1), `${lang}/${key}: translated paragraph rendered`);
+    assert.ok(doc.querySelector('.article-dek').textContent.includes(fields.dek), `${lang}/${key}: translated header rendered`);
+  }
+}
+console.log('Édition actuelle : chargement et rendu des corps EN/AR et chargement des médias traduits OK.');

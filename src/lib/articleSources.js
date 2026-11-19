@@ -14,6 +14,8 @@ const officialDomains = [
   'bandainamcoent.com', 'bandainamcoent.eu',
   'thewitcher.com', 'remedygames.com', 'tgs.cesa.or.jp', 'callofduty.com',
   'research.google',
+  // Figma product release notes and vendor help reviewed for 19 November.
+  'figma.com',
   // Official Bethesda publisher news, verified on Slayers Club for the 16 November edition.
   'bethesda.net',
   'dropbox.com', 'press.disney.co.uk',
