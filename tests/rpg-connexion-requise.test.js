@@ -10,7 +10,7 @@ const main = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8');
 test('la connexion précède toutes les routes du Sablier et ne concerne pas Vice City', () => {
   for (const route of ['/jeu/sablier-de-bab-el', '/jeu/sablier-de-bab-el/defi', '/jeu/sablier-de-bab-el/defi/:code']) {
     const ligne = main.split('\n').find((l) => l.includes(`path="${route}"`));
-    assert.match(ligne, /<RpgConnexionRequise><PaysageSablier>/);
+    assert.match(ligne, /<RpgConnexionRequise><SessionSablier>/);
   }
   const viceCity = main.split('\n').find((l) => l.includes('path="/jeu/vice-city-rush"'));
   assert.doesNotMatch(viceCity, /RpgConnexionRequise/);

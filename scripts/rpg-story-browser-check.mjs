@@ -121,7 +121,7 @@ try {
     await page.goto(url);
     await ouvrir();
     assert.equal((await lire()).recit.curseur.id, 'listes-1-avant', 'les victoires v1 ne sont pas des scènes lues');
-    assert.equal(await page.locator('.rpg-mulligan,.card-table,.rpg-rotate-prompt').count(), 0, 'le récit est lisible en portrait, sans duel caché');
+    assert.equal(await page.locator('.rpg-mulligan,.card-table').count(), 0, 'le récit est lisible en portrait, sans duel caché');
     await verifierPortrait();
     await page.locator('[data-story-next]').focus();
     await page.keyboard.press('Enter');

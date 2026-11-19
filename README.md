@@ -5760,8 +5760,8 @@ là où il se passe.
   eux, sont intacts : le lecteur d'écran garde sa description complète de chaque
   carte et de chaque bouton.
 
-L'écran de rotation (« Le duel se joue en paysage ») reste : ce n'est pas une
-consigne de jeu mais une condition d'affichage, avec son bouton.
+L'écran de rotation a disparu avec le verrou de paysage : le Sablier se joue
+debout comme couché. Les consignes de jeu, elles, n'ont pas bougé.
 
 Une seule consigne subsiste, et elle reste **minuscule** : la puce d'action
 (`.rpg-annonce-action`, `AnnonceActionJoueur`) qui, pendant une cible, une

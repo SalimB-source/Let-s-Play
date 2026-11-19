@@ -61,6 +61,8 @@ dépôt, pour trancher sur du concret plutôt que sur du texte :
   directions), tir deux cases, le sorcier atteint par la distance seule
 - `docs/rpg/36-avancee.md` — **l'avancée** : une case par tour, la trouée, le
   franchissement de la ligne, l'IA qui marche puis frappe
+- `docs/rpg/37-le-sablier-debout.md` — **le portrait** : sept rangées, l'échelle
+  prise sur la largeur, le verrou d'orientation supprimé
 - `scripts/rpg-battle-ui-check.mjs` — la page montée dans jsdom (`npm run check:rpg-ui`)
 
 Le moteur est volontairement **agnostique** : il ne connaît ni les noms ni

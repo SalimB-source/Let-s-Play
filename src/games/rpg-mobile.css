@@ -1,26 +1,9 @@
-/* Landscape-first touch duel. Keep the original Bab El art; the battlefield
-   is unobstructed, with floating identities and contextual card actions. */
+/* La coque tactile du duel, en paysage. Le Sablier ne verrouille plus
+   l'orientation : debout, c'est `rpg-portrait.css` qui prend la main (une
+   colonne, sept rangées, l'échelle prise sur la largeur). Ici, la table tient
+   dans une bande de hauteur : le champ est dégagé, les identités flottent et
+   les actions des cartes restent contextuelles. */
 .rpg-mobile-zones { display: none; }
-.rpg-rotate-prompt {
-  position: absolute;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
-  overflow-y: auto;
-  text-align: center;
-  color: #fff0cf;
-  background: radial-gradient(ellipse at top, #614020, #100d13 75%);
-}
-.rpg-rotate-prompt__icon { font: 64px/1 Georgia, serif; color: #f4ce78; }
-.rpg-rotate-prompt h2 { margin: 0; font: 26px/1.15 Georgia, serif; }
-.rpg-rotate-prompt p { max-width: 32ch; margin: 0; font-size: 16px; line-height: 1.5; }
-.rpg-rotate-prompt small { max-width: 40ch; color: #ccbca1; line-height: 1.5; }
-.rpg-rotate-prompt .rpg-btn { min-height: 44px; flex-shrink: 0; }
 
 /* Centre the played cards as a group, in both camps. Auto margins consume
    spare space but collapse on overflow, keeping the first card reachable.

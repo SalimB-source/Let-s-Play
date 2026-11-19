@@ -464,10 +464,29 @@ public class MainActivity extends Activity {
         }
 
         /**
-         * Paysage pour **toute la section Sablier** (écran d'entrée, menu,
-         * atelier, souk, histoire, duel). Le site l'appelle à l'ouverture de la
-         * route et le relâche en la quittant ; son compteur de sessions fait que
-         * refermer le duel ne rend pas l'écran à la rotation.
+         * La section Sablier est **vivante** : écran d'entrée, menu, atelier,
+         * souk, histoire, duel. Le site l'appelle à la première ouverture de la
+         * route et la relâche à la dernière fermeture (son compteur de sessions
+         * fait que refermer le duel ne rend pas la section inactive).
+         *
+         * **Aucune orientation n'est imposée.** Le Sablier se joue debout comme
+         * couché : son plateau est une pile verticale (coque portrait du site,
+         * `rpg-portrait.css`), le paysage gardant la sienne. Seul le
+         * tirer-pour-rafraîchir est désarmé — il rechargerait la page en pleine
+         * partie, et sa prise de doigt annule les appuis longs des cartes.
+         */
+        @JavascriptInterface
+        public void setSablierActif(boolean active) {
+            runOnUiThread(() -> {
+                refreshLayout.setEnabled(!active);
+                actualiserPleinEcranJeu();
+            });
+        }
+
+        /**
+         * Ancien nom, gardé pour une page plus ancienne restée en cache : il
+         * **verrouille le paysage** (son contrat historique), ce que le site ne
+         * demande plus. Une page à jour appelle `setSablierActif`.
          */
         @JavascriptInterface
         public void setPaysageSablier(boolean active) {

@@ -48,16 +48,20 @@ test('la rotation ne remonte pas la scène : la ville n’est reconstruite que s
   assert.match(source, /camera\.aspect = width \/ height/);
 });
 
-test('le Sablier garde son orientation : ce mode n’a pas été touché', async () => {
-  const shell = await read('src/games/PaysageSablier.jsx');
-  assert.match(shell, /createRpgLandscapeSession/, 'le Sablier verrouille toujours le paysage');
-  const session = await read('src/games/rpgLandscape.js');
-  assert.match(session, /SENSOR_LANDSCAPE|setPaysageSablier|screen\.orientation/);
-  // Et la page Sablier est toujours enveloppée dans sa coque paysage.
+test('le Sablier suit l’appareil : portrait comme paysage', async () => {
+  const shell = await read('src/games/SessionSablier.jsx');
+  assert.match(shell, /createSessionSablier/, 'la route tient une session du Sablier');
+  assert.doesNotMatch(shell, /landscape|orientation\.lock|screen\.orientation/,
+    'la route ne réclame plus d’orientation');
+  const session = await read('src/games/rpgSessionSablier.js');
+  assert.doesNotMatch(session, /screen\.orientation\.lock|lock\('landscape'\)/,
+    'aucun verrou d’orientation ne subsiste');
+  assert.match(session, /setSablierActif/, 'le pont Android désarme le tirer-pour-rafraîchir');
+  // Et la page Sablier est toujours enveloppée dans sa session.
   const main = await read('src/main.jsx');
   const sablier = main.split('\n').filter((line) => line.includes('sablier-de-bab-el'));
   assert.ok(sablier.length >= 3, 'les routes du Sablier existent');
-  for (const line of sablier) assert.match(line, /<PaysageSablier>/, 'chaque route Sablier reste en paysage');
+  for (const line of sablier) assert.match(line, /<SessionSablier>/, 'chaque route Sablier ouvre sa session');
 });
 
 test('le plein écran est demandé sans casser la partie : refus silencieux', async () => {

@@ -3,8 +3,9 @@
  * RPG_URL, CHROMIUM_EXECUTABLE_PATH et CHROMIUM_ARGS peuvent remplacer les
  * valeurs locales par défaut.
  *
- * Sur mobile, le Sablier se joue en paysage (l'invite de rotation verrouille le
- * portrait). La galerie de Conquête doit alors tenir sur UN seul écran : la
+ * Sur un téléphone couché, la galerie de Conquête doit tenir sur UN seul
+ * écran (le Sablier ne verrouille plus l'orientation : ce check mesure la
+ * coque paysage, le portrait ayant la sienne) : la
  * carte de tour, ses flèches, le compteur et les points de pagination sont
  * visibles sans aucun défilement, et ce pour les onze tours, sur les formats
  * de téléphone courants. On vérifie aussi qu'aucun texte de la carte n'est

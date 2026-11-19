@@ -152,24 +152,20 @@ assert.equal(styleDe('.rpg-entry-choice__option--web .rpg-entry-choice__logo').c
 ok('désert clair via public/, carte PC blanche + logo bleu, carte Android verte + logo blanc, repli une colonne');
 
 console.log('');
-console.log('7. Le Sablier s’ouvre en paysage, écran d’entrée compris');
-const paysage = lire('src/games/PaysageSablier.jsx');
-assert.match(paysage, /createRpgLandscapeSession/, 'la route ne tient pas de session de paysage');
-assert.match(paysage, /enter\(\{ fullscreen: false \}\)/, 'la route ne réclame pas le paysage à l’ouverture');
-assert.match(paysage, /return \(\) => paysage\.leave\(\)/, 'la route ne rend pas l’écran en sortant');
-assert.match(routeur, /import PaysageSablier from '\.\/games\/PaysageSablier';/,
-  'PaysageSablier doit être importé par le routeur');
-const invite = lire('src/games/InvitePaysage.jsx');
-assert.match(entree, /import InvitePaysage, \{ usePortraitAuDoigt \} from '\.\/InvitePaysage\.jsx';/,
-  'l’écran d’entrée n’utilise pas l’invite partagée');
-assert.match(entree, /variante="bandeau"/, 'l’écran d’entrée n’invite pas à tourner l’appareil');
-assert.match(invite, /rpg-rotate-prompt--bandeau/, 'la variante bandeau a disparu de l’invite');
-assert.match(invite, /requestNativeFullscreen\(document\.documentElement\)/,
-  'le bouton de l’invite doit demander le plein écran dans le geste');
-assert.match(lire('src/games/rpg-entry-choice.css'), /\.rpg-rotate-prompt--bandeau \{/,
-  'l’invite de l’écran d’entrée n’a pas de style');
-assert.match(lire('src/games/rpgLandscape.js'), /setPaysageSablier/,
-  'le pont Android doit s’appeler setPaysageSablier');
-ok('route enveloppée, invite de rotation sur l’écran d’entrée, pont Android renommé');
+console.log('7. Le Sablier suit l’appareil : portrait comme paysage');
+const session = lire('src/games/SessionSablier.jsx');
+assert.match(session, /createSessionSablier/, 'la route ne tient pas de session du Sablier');
+assert.match(session, /enter\(\{ fullscreen: false \}\)/, 'la route ne se contente pas de la session');
+assert.match(session, /return \(\) => s\.leave\(\)/, 'la route ne referme pas sa session en sortant');
+assert.doesNotMatch(session, /landscape|orientation/, 'la route réclame encore une orientation');
+assert.match(routeur, /import SessionSablier from '\.\/games\/SessionSablier';/,
+  'SessionSablier doit être importé par le routeur');
+assert.doesNotMatch(entree, /InvitePaysage|usePortraitAuDoigt/,
+  'l’écran d’entrée ne doit plus inviter à tourner l’appareil');
+assert.doesNotMatch(lire('src/games/rpgSessionSablier.js'), /orientation\.lock/,
+  'le module de session ne verrouille plus l’orientation');
+assert.match(lire('src/games/rpgSessionSablier.js'), /setSablierActif/,
+  'le pont Android doit désarmer le tirer-pour-rafraîchir');
+ok('route enveloppée dans sa session, aucune invite de rotation, pont Android setSablierActif');
 
 console.log(`check:rpg-entry-choice — ${reussites} vérifications, aucune en échec.`);

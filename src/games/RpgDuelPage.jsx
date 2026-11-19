@@ -47,7 +47,6 @@ import { convertirDeckSansTerrain } from './rpgCards.js';
 import { Fragment, memo, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
 import './rpg-relief-visuel.css';
-import InvitePaysage from './InvitePaysage.jsx';
 import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
@@ -57,9 +56,9 @@ import './rpg-vie-compteurs.css';
 import './rpg-avatars-plateau.css';
 import './rpg-bouclier.css';
 import './rpg-etats-cartes.css';
+import './rpg-portrait.css';
 import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
-import { createRpgLandscapeSession } from './rpgLandscape.js';
 import FullscreenIcon from './FullscreenIcon.jsx';
 import RpgMessagerieBouton from './RpgMessagerieBouton.jsx';
 import RpgMessageriePanel from './RpgMessageriePanel.jsx';
@@ -6797,7 +6796,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     window.letsPlayGameBack = retourJeu;
     return () => { if (window.letsPlayGameBack === retourJeu) delete window.letsPlayGameBack; };
   }, [ecran, modePvp, reserveAscensionOuverte]);
-  const landscapeRef = useRef(null);
   // La coque du jeu (`.rpg-battle`) : menu, catalogues et duel partagent le même
   // élément — React garde le nœud d'un écran à l'autre —, donc le plein écran
   // survit au lancement d'une partie comme au retour au menu.
@@ -6809,28 +6807,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     onNativeExit: () => rentrerPleinEcranRef.current?.(),
   });
   // `survol` : le volet du mulligan y lit si la souris sait survoler.
-  const [viewport, setViewport] = useState({ mobile: false, portrait: false, survol: true });
+  const [viewport, setViewport] = useState({ mobile: false, survol: true });
   useEffect(() => {
-    landscapeRef.current = createRpgLandscapeSession();
     const update = () => {
       const mobile = Boolean(window.LetsPlayAndroid) || Boolean(window.matchMedia?.('(pointer: coarse), (max-width: 1100px)').matches);
       // Le survol n'existe pas au doigt : là, l'aperçu rapide passe par l'appui
       // long d'une seconde. `matchMedia` absent (WebView ancienne) : on suppose
       // la souris, et l'appui long reste armé de toute façon.
       const survol = typeof window.matchMedia === 'function' ? window.matchMedia('(hover: hover)').matches : true;
-      setViewport({ mobile, portrait: mobile && window.innerHeight > window.innerWidth, survol });
+      setViewport({ mobile, survol });
     };
     update();
     window.addEventListener('resize', update);
-    return () => { window.removeEventListener('resize', update); landscapeRef.current?.leave(); };
+    return () => { window.removeEventListener('resize', update); };
   }, []);
-  useEffect(() => {
-    // Quitter la partie referme **cette** session de paysage, pas le paysage :
-    // la route du Sablier (`PaysageSablier.jsx`) en tient une depuis le menu, et
-    // le compteur de `rpgLandscape.js` ne rend l'écran à la rotation qu'à la
-    // dernière fermeture. Le menu reste donc en paysage, comme la partie.
-    if (ecran !== 'partie') landscapeRef.current?.leave();
-  }, [ecran]);
 
   // Aucun mode fenêtré : la couche couvre l'écran dès le montage, sans geste.
   // Dans l'APK, Android masque lui-même les barres système : ne PAS appeler la
@@ -7108,29 +7098,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   });
 
-  // Le navigateur tactile a besoin d'un geste pour verrouiller le paysage.
-  // L'APK le fait nativement : ne jamais ouvrir sa Fullscreen API WebView,
-  // sinon Retour fermerait d'abord le plein écran au lieu de naviguer.
-  const demanderPleinEcranEtPaysage = () => {
+  // Le plein écran du navigateur exige un geste : on le demande ici, sans
+  // jamais toucher à l'orientation (le Sablier se joue debout comme couché).
+  // Dans l'APK, ne jamais ouvrir sa Fullscreen API WebView, sinon Retour
+  // fermerait d'abord le plein écran au lieu de naviguer.
+  const demanderPleinEcran = () => {
     if (!window.LetsPlayAndroid && window.matchMedia?.('(pointer: coarse)').matches) entrerPleinEcran();
-    landscapeRef.current?.enter({ fullscreen: false });
   };
   const reprendrePartie = () => {
     musiqueThemeRef.current?.stop();
-    demanderPleinEcranEtPaysage();
+    demanderPleinEcran();
     setEcran('partie');
   };
-  // Menu, atelier, souk, mode histoire : debout au doigt, l'écran entier invite
-  // à tourner — l'orientation est déjà verrouillée côté application, mais un
-  // navigateur ne tourne pas un écran sans plein écran ni geste. Le duel a la
-  // sienne, plus bas (avec « Retour au menu ») ; le menu se contente d'inviter.
-  const invitePaysage = viewport.portrait ? (
-    <InvitePaysage
-      titre="Le Sablier se joue en paysage"
-      texte="Tournez l’appareil pour retrouver toute la largeur du menu."
-      onActiver={demanderPleinEcranEtPaysage}
-    />
-  ) : null;
   // Decks maison et collection : l'atelier écrit dans le casier local, le compte
   // connecté synchronise le tout en tâche de fond (`useDecksSablier.js`).
   const {
@@ -9516,13 +9495,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => hote.removeAttribute('data-apercu-source');
   }, [apercuAppui, apercuCatalogue]);
 
-  // En portrait, l'écran de rotation du duel reprend la main : plus rien à
-  // consulter sur la table. Les cartes du Souk et des autres menus gardent
-  // leur aperçu tactile, puisqu'aucun écran de rotation ne les recouvre.
-  useEffect(() => {
-    if (ecran === 'partie' && viewport.portrait && apercuAppui) fermerApercuAppui();
-  }, [ecran, viewport.portrait, apercuAppui, fermerApercuAppui]);
-
   // « M » coupe ou rend la musique (en partie comme hors parties).
   useEffect(() => {
     const surTouche = (event) => {
@@ -9542,7 +9514,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // - A : Attaquer avec tous
   // - Z ou Ctrl/Cmd+Z : Annuler la dernière action ou Annuler l'attaque
   useEffect(() => {
-    if (ecran !== 'partie' || viewport.portrait) return undefined;
+    if (ecran !== 'partie') return undefined;
     const surRaccourciDuel = (event) => {
       if (event.defaultPrevented || event.repeat || event.altKey) return;
       if (vientDunChampDeSaisie(event.target) || gesteSurMiseAJourDesktop(event)) return;
@@ -9646,7 +9618,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     window.addEventListener('keydown', surRaccourciDuel);
     return () => window.removeEventListener('keydown', surRaccourciDuel);
-  }, [ecran, viewport.portrait, apercuAppui, apercuCatalogue, reserveAscensionOuverte, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert, monteeNiveau]);
+  }, [ecran, apercuAppui, apercuCatalogue, reserveAscensionOuverte, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert, monteeNiveau]);
 
   const demarrerEtage = (etageId, { campagne = false } = {}) => {
     if (!etageEstDebloque(progressionHistoireRef.current, etageId)) return;
@@ -9820,7 +9792,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
-        {invitePaysage}
         {ecran === 'bab-el' ? (
           <RpgStoryBabEl
             onCommencer={commencerCampagne}
@@ -9894,7 +9865,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
-        {invitePaysage}
         <GameModeMenu
           bloqueAccueil={!modePvp && (!accueilPret || bienvenueActive)}
           screen={ecran}
@@ -10179,7 +10149,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const repondreAnnonceDesactive = Boolean(tutorielActif && etapeTutoriel?.on === 'annonce-passee');
   const passerAnnonceDesactive = Boolean(tutorielActif && etapeTutoriel && etapeTutoriel.on !== 'annonce-passee');
   // Ne pas prendre le focus à un autre volet déjà ouvert au-dessus du duel.
-  const focusAnnoncePossible = !viewport.portrait && !apercuAppui && !apercuCatalogue && !cimetiereOuvert
+  const focusAnnoncePossible = !apercuAppui && !apercuCatalogue && !cimetiereOuvert
     && !reserveAscensionOuverte && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert && !monteeNiveau;
   const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
   const sorcierArtId = etageHistoire
@@ -14132,18 +14102,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         impactEcran={impactEcran}
         jouerSfx={jouerSfx}
       />
-      {viewport.portrait && <div className="rpg-rotate-prompt" role="dialog" aria-modal="true" aria-label="Jouer en paysage">
-        <span className="rpg-rotate-prompt__icon" aria-hidden="true">↻</span>
-        <h2>Le duel se joue en paysage</h2>
-        <p>Tournez votre téléphone pour retrouver toute la largeur du plateau.</p>
-        <button type="button" className="rpg-btn rpg-btn--primary" onClick={demanderPleinEcranEtPaysage}>Activer le paysage</button>
-        <small>Si votre navigateur refuse la rotation automatique, tournez l’appareil et désactivez son verrouillage d’orientation.</small>
-        <button type="button" className="rpg-btn rpg-btn--ghost" onClick={() => setEcran('jouer')}>Retour au menu</button>
-      </div>}
 
       <div
         ref={tableRef}
-        inert={viewport.portrait || mulliganOuvert || sacrificeFx || selectionAscension.apercuId || duel.renfortChoixEnAttente?.cote === 'joueur' ? true : undefined}
+        inert={mulliganOuvert || sacrificeFx || selectionAscension.apercuId || duel.renfortChoixEnAttente?.cote === 'joueur' ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` ${impactEcran.mode === 'combat' ? 'rpg-combat-screen-shake' : 'rpg-screen-shake'}--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
@@ -15808,7 +15770,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
       )}
-      {choixManaEssaiOuvert && !viewport.portrait && (
+      {choixManaEssaiOuvert && (
         <ChoixManaEssai camp={duel.joueur} onChoisir={choisirNouveauManaEssai} />
       )}
       {recompenseTutoriel && (
@@ -15832,7 +15794,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       )}
       {/* Le rituel d'invocation possède sa propre fenêtre et sa sélection sur
           le champ : le voile guidé doit leur céder les clics jusqu'à la pose. */}
-      {tutorielActif && etapeTutoriel && !viewport.portrait && !mulliganOuvert
+      {tutorielActif && etapeTutoriel && !mulliganOuvert
         && !sacrificeDemande && !sacrificeEnCours && !sacrificeFx && (
         <RpgTutorialOverlay
           key={etapeTutoriel.id}
