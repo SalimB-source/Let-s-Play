@@ -13,8 +13,10 @@ function partie() {
 /**
  * Pose une créature prête à combattre. Ce plateau de test se bat **au contact** :
  * l'ashigaru des braises porte « À distance » sur sa face, on le ramène donc à
- * la mêlée sauf demande explicite (`{ contact: false }`), sinon la riposte du
- * défenseur disparaîtrait des échanges que ces tests mesurent.
+ * la mêlée sauf demande explicite (`{ contact: false }`), sinon les capacités
+ * « au blocage » et le gel du porteur disparaîtraient des échanges que ces
+ * tests mesurent. La riposte, elle, survit au tir entre deux créatures « À
+ * distance » (voir `rpg-tir-riposte.test.js`).
  */
 function poser(duel, cote, id = 'ashigaru-des-braises', { contact = true } = {}) {
   // Construction de plateau de test, indépendante du quota d'invocation.

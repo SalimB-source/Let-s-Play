@@ -608,9 +608,11 @@ export function rpgChoisirAttaqueIndividuelleClassiqueIA(duel, cote = 'sorcier',
         || sacrificeTislitPourUneBlessure(duel, cote, attaquant, cible)
         || mortSansGain(duel, cote, attaquant, cibleId))) continue;
       const tue = attaquant.atk >= cible.pv;
-      // Un tir ne reçoit pas de coup en retour : ni l'Attaque ciblée, ni une
-      // créature « À distance » ne meurt de l'attaque qu'elle vient de faire.
-      const meurt = !attaquant.coupRapide && !attaquant.distance && cible.atk >= attaquant.pv;
+      // Riposte : l'Attaque ciblée n'en reçoit jamais, et une créature « À
+      // distance » seulement d'une autre créature « À distance » — deux
+      // tireurs qui se visent échangent leurs volées.
+      const meurt = !attaquant.coupRapide && cible.atk >= attaquant.pv
+        && (!attaquant.distance || cible.distance);
       const perte = meurt && !ephemereBlesseSansAutrePerte(duel, cote, attaquant, cible, true)
         ? 5 + attaquant.atk + attaquant.pv : 0;
       const score = (tue ? 5 + cible.atk + cible.pv : Math.min(attaquant.atk, cible.pv)) - perte;
