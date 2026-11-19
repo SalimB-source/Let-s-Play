@@ -13817,6 +13817,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
      en main comme sur le champ, garde sa place et son identité. */
   const empilerCartes = viewport.mobile && duel.modeMana !== RPG_MODE_MANA_ESSAI;
   const groupesMain = trierMainAvecRenvois(duel.joueur.main, empilerCartes, tourbillonsEau);
+  // La main s'ouvre en deux autour du médaillon du joueur, posé au centre sous
+  // ses emplacements : trois cartes à sa gauche, le reste à sa droite — l'écart
+  // est la cale qui réserve sa largeur (voir `rpg-avatars-plateau.css`, règle 6).
+  const coupeMain = groupesMain.length >= 8
+    ? Math.ceil(groupesMain.length / 2)
+    : Math.min(3, Math.floor(groupesMain.length / 2));
   // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
   // pour que le joueur voie chaque carte concernée (et que les flèches de
   // blocage, les halos de cible et les destructions trouvent leur élément).
@@ -15616,9 +15622,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // Au doigt, chaque pile forme un bloc : le compteur flotte sur son
               // coin sans masquer le nom ni le coût. À la souris, le DOM reste
               // exactement celui d'origine (une carte = un bouton).
-              return empilerCartes
-                ? <span className="rpg-hand__pile" key={`${carteId}-${i}`}>{contenu}</span>
-                : <Fragment key={`${carteId}-${i}`}>{contenu}</Fragment>;
+              const carteMain = empilerCartes
+                ? <span className="rpg-hand__pile">{contenu}</span>
+                : contenu;
+              return (
+                <Fragment key={`${carteId}-${i}`}>
+                  {position === coupeMain && <span className="rpg-hand__ecart" aria-hidden="true" />}
+                  {carteMain}
+                </Fragment>
+              );
             })}
           </div>
         </div>
