@@ -118,8 +118,8 @@ export function caseAutorisee(carte, index) {
 /**
  * Cette case est-elle **choisissable** à la pose ? Le joueur place ses
  * créatures où il veut dans son camp — le front comme le fond, sans que la
- * carte impose sa ligne. Seule exception : une carte avec **Envol**, qui garde
- * sa ligne (elle ne se range pas au hasard).
+ * carte impose sa ligne. L'**Envol** n'y change rien : il décide du passage
+ * au-dessus des corps (`rpgCheminLibre`), pas du placement.
  *
  * La ligne imposée (`ligneObligee`) ne disparaît pas : elle reste la case par
  * défaut quand personne ne choisit (IA, jeton, glisser-déposer sur la table),
@@ -127,7 +127,6 @@ export function caseAutorisee(carte, index) {
  * réelles.
  */
 export function caseChoisissable(carte, index) {
-  if (carte?.envol) return caseAutorisee(carte, index);
   return Number.isInteger(index) && index >= 0 && index < RPG_LIGNES_CHAMP_MAX;
 }
 

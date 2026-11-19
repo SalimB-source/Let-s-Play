@@ -95,3 +95,22 @@ test('le déplacement refuse une case tenue, même si le pas est légal par aill
   assert.equal(nous.emplacement, 2, 'la créature n’a pas bougé');
   assert.ok(!nous.bouge, 'son pas n’est pas consommé');
 });
+
+test('une créature volante passe par-dessus les corps, pas à travers une case tenue', () => {
+  const { d, poser } = table();
+  const volante = poser('joueur', 'tengu-du-mont-ardent');
+  const pieton = surCase(poser('joueur', MELEE), 7);
+  const depart = { rangee: 2, colonne: 2 };
+  const arrivee = { rangee: 0, colonne: 2 };
+  surCase(poser('sorcier', MELEE), 2); // la trouée est tenue
+  assert.equal(rpgCheminLibre(d, depart, arrivee, pieton), false,
+    'au sol, le corps arrête le chemin');
+  assert.equal(rpgCheminLibre(d, depart, arrivee, volante), true,
+    'en vol, on survole : le corps ne compte pas');
+  // Elle ne s'arrête pas sur un corps pour autant : la case d'arrivée reste
+  // contrôlée comme pour tout le monde.
+  surCase(volante, 2);
+  const legaux = deplacementsLegaux(d, 'joueur', volante.id);
+  assert.equal(legaux.some((c) => c.camp === 'sorcier' && c.index === 2), false,
+    'la trouée tenue reste fermée : on ne se pose pas sur une créature');
+});

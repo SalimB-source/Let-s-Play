@@ -55,8 +55,8 @@ imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 La ligne que la carte impose (`ligneObligee`) n'est plus une contrainte de pose.
 Le joueur place ses créatures **où il veut dans son camp** : une archère peut
 tenir le front, un corps à corps reculer au fond. `caseChoisissable` dit la
-règle : toute case du camp est ouverte — sauf pour une carte avec **Envol**, qui
-garde la ligne de sa fiche.
+règle : toute case du camp est ouverte, **Envol compris** — l'Envol décide du
+passage au-dessus des corps, pas du placement.
 
 La ligne imposée ne disparaît pas pour autant :
 
@@ -81,7 +81,9 @@ Une case tenue n'est jamais une destination : on ne se pose pas sur une
 créature, ni sur celle d'en face, ni sur un envahisseur qui a percé avant nous
 (`casesOccupees` lit les deux camps). La case d'arrivée mise à part,
 `rpgCheminLibre` juge le **chemin** : toute case strictement intermédiaire doit
-être vide, faute de quoi la créature s'arrête au lieu de glisser à travers.
+être vide, faute de quoi la créature s'arrête au lieu de glisser à travers. Une
+créature avec **Envol** survole ces cases : le chemin ne la concerne pas — mais
+elle ne se pose pas davantage sur un corps.
 Aujourd'hui le pas vaut une case, donc la question ne se pose pas encore ; la
 règle est écrite une fois, dans `rpgMouvement.js`, pour que la portée du pas
 puisse grandir sans rouvrir le sujet.
@@ -195,7 +197,7 @@ idempotentes, comme le reste des scènes.
 | `tests/rpg-mouvement.test.js` | 12 |
 | `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
 | `tests/rpg-sacrifice-emplacement.test.js` | 4 (case de la victime, camp adverse compris) |
-| `tests/rpg-mouvement-blocage.test.js` | 4 (case tenue, envahisseur, chemin, refus du pas) |
+| `tests/rpg-mouvement-blocage.test.js` | 5 (case tenue, envahisseur, chemin, refus du pas, Envol) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
