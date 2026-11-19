@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
+import { RPG_ELEMENTS, RPG_DUEL_CARDS, cardById } from '../src/games/rpgCards.js';
+import { estDefenseur } from '../src/games/rpgDefenseur.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgEmplacementsChamp } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique } from '../src/games/rpgCombatIndividuelClassique.js';
-import { champMax, ligneDe, ligneDeCase, frontTient, RPG_LIGNE_FRONT, RPG_LIGNE_FOND, RPG_LIGNES_CASES } from '../src/games/rpgLignes.js';
+import { champMax, ligneDe, ligneDeCase, ligneObligee, frontTient, RPG_LIGNE_FRONT, RPG_LIGNE_FOND, RPG_LIGNES_CASES } from '../src/games/rpgLignes.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { etatInitial } from '../src/server/sablierArbitre.js';
 
@@ -203,4 +204,33 @@ test('hors deux lignes, une créature garde sa case, quel que soit son trait', (
   assert.equal(cases[0]?.id, 'a');
   assert.equal(cases[2]?.id, 'b');
   assert.equal(cases.filter(Boolean).length, 2);
+});
+
+test('Attaque ciblée = tir : tous ces tireurs se rangent au fond, Salem compris', () => {
+  // Frapper sans recevoir de coup en retour, c'est frapper de loin. Toute fiche
+  // qui porte l'Attaque ciblée tient donc le fond, qu'elle imprime ou non le
+  // mot-clé « À distance ».
+  const rapides = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide);
+  assert.ok(rapides.length >= 22, `le privilège est répandu (${rapides.length} fiches)`);
+  const devant = rapides.filter((carte) => !estDefenseur(carte) && ligneObligee(carte) !== RPG_LIGNE_FOND);
+  assert.deepEqual(devant.map((carte) => carte.id), [], 'aucun tireur devant');
+  assert.equal(ligneObligee(cardById('salem')), RPG_LIGNE_FOND, 'Salem tire, Salem recule');
+  // Le Défenseur garde la priorité : c'est un mur avant d'être un tireur.
+  const chevaliere = cardById('chevaliere-du-baton-sacre');
+  assert.equal(estDefenseur(chevaliere), true);
+  assert.equal(ligneObligee(chevaliere), RPG_LIGNE_FRONT);
+});
+
+test('Salem posé derrière : la case du front est refusée, aucune mêlée ne le voit', () => {
+  const { d, poserOk } = table();
+  d.tour = 'joueur';
+  const garde = poserOk('joueur', MELEE);
+  const salem = poserOk('joueur', 'salem');
+  assert.equal(ligneDe(garde), RPG_LIGNE_FRONT);
+  assert.equal(ligneDe(salem), RPG_LIGNE_FOND, 'il se range au fond sans qu’on le lui demande');
+  const intrus = poserOk('sorcier', MELEE);
+  d.tour = 'sorcier';
+  const cibles = rpgCiblesIndividuellesClassique(d, 'sorcier', intrus.id).cibles;
+  assert.ok(cibles.includes(garde.id), 'la mêlée voit le front');
+  assert.equal(cibles.includes(salem.id), false, 'la mêlée n’atteint pas Salem derrière');
 });

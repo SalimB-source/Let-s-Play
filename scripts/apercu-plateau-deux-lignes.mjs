@@ -32,7 +32,9 @@ try {
 
   // Des cartes à coût 3 ou moins : la démonstration ne paie aucun sacrifice.
   const joueurFond = ['tislit-des-aures', 'guetteur-du-beffroi', 'scalde-des-runes', 'pretre-de-la-bouche'];
-  const joueurFront = ['viking-des-neiges', 'gerboise-des-ruines', 'bouchra-guerriere-des-cretes',
+  // Cinq corps à corps devant : `bouchra-guerriere-des-cretes` porte l'Attaque
+  // ciblée, elle se range donc au fond avec les tireuses.
+  const joueurFront = ['viking-des-neiges', 'gerboise-des-ruines', 'sentinelle-du-brasier',
     'guerrier-au-bouclier-rond', 'chien-du-guet'];
   const ennemiFront = ['berserk-des-trois-hivers', 'gardien-viking-du-fjord', 'garde-du-trone-givre'];
   const ennemiFond = ['ashigaru-des-braises', 'guetteur-du-beffroi'];

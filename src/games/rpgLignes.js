@@ -6,6 +6,9 @@
  * derrière elle. La ligne n'est pas un choix : elle vient de la **carte**.
  *
  * - une créature **À distance** (`carte.distance`) se tient au fond ;
+ * - une créature à l'**Attaque ciblée** (`coupRapide`) aussi : frapper sans
+ *   recevoir de coup en retour, c'est frapper de loin — Salem, Fériel,
+ *   l'Ifrit al-Ahmar et les autres tireurs se rangent donc derrière ;
  * - les autres — les corps à corps — tiennent le front ;
  * - le **Défenseur** est devant, toujours : c'est le mur, et sa ligne gagne
  *   sur tout le reste (un Défenseur « à distance » resterait devant).
@@ -90,12 +93,19 @@ export function casesDeLigne(ligne) {
   return Array.from({ length: RPG_LIGNES_CASES }, (_, index) => debut + index);
 }
 
-/** La ligne d'une carte. **Défenseur** devant, **À distance** derrière, les
- *  corps à corps devant. Aucune carte n'est libre : le champ se lit d'un coup
- *  d'œil, et une créature ne se cache jamais là où le joueur ne l'attend pas. */
+/** La ligne d'une carte. **Défenseur** devant, **À distance** et **Attaque
+ *  ciblée** derrière, les corps à corps devant. Aucune carte n'est libre : le
+ *  champ se lit d'un coup d'œil, et une créature ne se cache jamais là où le
+ *  joueur ne l'attend pas.
+ *
+ *  L'**Attaque ciblée** est un tir, pas une mêlée : la créature choisit sa
+ *  cible et frappe sans recevoir de coup en retour. Elle se range donc au fond
+ *  comme une carte marquée « À distance », sans qu'il faille imprimer les deux
+ *  mots-clés sur la même fiche. Le **Défenseur** garde la priorité : c'est un
+ *  mur, il reste devant, même s'il attaque de loin. */
 export function ligneObligee(carte) {
   if (estDefenseur(carte)) return RPG_LIGNE_FRONT;
-  return carte?.distance ? RPG_LIGNE_FOND : RPG_LIGNE_FRONT;
+  return carte?.distance || carte?.coupRapide ? RPG_LIGNE_FOND : RPG_LIGNE_FRONT;
 }
 
 /** Une case que cette carte a le droit d'occuper. */
