@@ -154,6 +154,30 @@ leur case n'est pas libérée —, mais rien n'est cassé : la frappe a eu lieu.
 C'est ce qui empêche un camp de camper avec cinq créatures sur la ligne arrière
 adverse : chaque frappe sur le sorcier fait reculer l'assaillant d'un cran.
 
+## L'invocation sous occupation
+
+Une ligne arrière envahie ne ferme plus l'invocation. Quand un envahisseur tient
+une case du fond d'un camp, ce camp peut invoquer comme si elle était libre :
+**l'envahisseur de la colonne choisie est repoussé d'une case** — la même
+mécanique de chaîne que le recul du bout du plateau (`rpgPousserEnvahisseur`,
+`rpgCasesPose`, dans `rpgRecul.js`) — puis la créature s'installe normalement, à
+l'arrière.
+
+- **On choisit une colonne, pas un trou** : les cases tenues par un envahisseur
+  poussable sont des cases d'arrivée comme les autres. À l'écran, cliquer
+  l'envahisseur pendant le choix de la case le repousse et termine la pose.
+- **La chaîne vaut aussi** : si la case derrière l'envahisseur est tenue, toute
+  la file recule d'un cran, dans la même colonne.
+- **Elle s'arrête au blocage** : bord du plateau, Site, case hors grille → la
+  chaîne ne se déplie pas, la case reste tenue et l'invocation se rabat sur une
+  autre colonne. Si aucune ne s'ouvre, c'est `champ-plein`.
+- **Nos créatures ne se poussent pas** : une case tenue par une créature du camp
+  reste prise — l'invocation ne déloge jamais les siens.
+- **Symétrique** : le sorcier déloge nos envahisseurs de son fond de la même
+  façon.
+- **Rien sans les lignes** : le champ d'origine n'a qu'une rangée, donc pas
+  d'envahisseur à pousser.
+
 ## Ce que l'écran montre
 
 - **Choisir une créature ouvre sa manœuvre** : les proies légales s'allument en
@@ -235,13 +259,14 @@ idempotentes, comme le reste des scènes.
 | `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
 | `tests/rpg-sacrifice-emplacement.test.js` | 4 (arrivée à l'arrière, colonne de la victime) |
 | `tests/rpg-recul.test.js` | 9 (recul, chaîne, bord, Site, symétrie, frappe réelle) |
+| `tests/rpg-invocation-poussee.test.js` | 6 (case envahie, chaîne, arrière plein, bord, allié, sans lignes) |
 | `tests/rpg-mouvement-blocage.test.js` | 5 (case tenue, envahisseur, chemin, refus du pas, Envol) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
 | `tests/rpg-lignes-duel.test.js` | 14 (entrée par l'arrière, arrière plein, tir à deux cases) |
 | `tests/rpg-sorcier-objectif.test.js` | 9 |
-| `npm run check:rpg-avancee` | 58 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
+| `npm run check:rpg-avancee` | 80 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
 | `npm run check:rpg-lignes` | 33 / 0 |
 | `npm run check:rpg-classique-individuel` | 64 / 0 |
 
