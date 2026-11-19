@@ -9,7 +9,7 @@ const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.ur
 const css = readFileSync(new URL('../src/games/rpg-mana-essai.css', import.meta.url), 'utf8');
 
 test('la page importe le moteur du pas et celui de l’IA', () => {
-  assert.match(page, /import \{ deplacementsLegaux, rpgDeplacerCreature \} from '\.\/rpgMouvement\.js'/);
+  assert.match(page, /import \{ deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger \} from '\.\/rpgMouvement\.js'/);
   assert.match(page, /import \{ rpgIABougerCreatures \} from '\.\/rpgMouvementIA\.js'/);
   assert.match(page, /import \{ campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe \} from '\.\/rpgChamp\.js'/);
 });
@@ -50,11 +50,25 @@ test('les cases se lisent sur la rangée réelle, envahisseurs compris', () => {
   assert.match(page, /occupantsDeCamp\(duel, campPose\)\.map\(\(\{ entite, index \}\) => \[entite\.id, index \+ 1\]\)/);
 });
 
+test('le survol montre les cases de pas en bleu, sans les engager', () => {
+  // L'aperçu se calcule sur les cases légales du pas, hors phase d'attaque.
+  assert.match(page, /const survolMouvant = \(\(\) => \{[\s\S]{0,420}?deplacementsLegaux\(duel, 'joueur', entite\.id\)/);
+  assert.match(page, /if \(!entiteId \|\| modePvp \|\| phase \|\| !lignesActives\(duel\)\) return null;/);
+  assert.match(page, /rpgPeutBouger\(duel, 'joueur', entite\)/, 'une créature qui a déjà marché ne montre rien');
+  const poses = page.match(/casesSurvol=\{survolMouvant\?\.(joueur|sorcier) \?\? null\}/g) ?? [];
+  assert.equal(poses.length, 2, 'les deux rangées suivent le même aperçu');
+  // La case survolée n'est jamais un bouton : aucun clic n'y est branché.
+  assert.match(page, /const survolee = !occupant && !choisissable && !deplacable/);
+  assert.match(page, /rpg-creature-slot--survol-deplacement/);
+  assert.match(css, /\.rpg-creature-slot--survol-deplacement \{[\s\S]{0,260}rgba\(126, 196, 255/,
+    'le signal du survol est bleu, distinct du doré et de l’ivoire');
+});
+
 test('le bouton d’avancée a son style, en pointillés, et n’affiche pas les repères de case vide', () => {
   assert.match(css, /\.rpg-creature-slot--deplacement \{/);
   assert.match(css, /\.rpg-creature-slot--deplacement[\s\S]{0,220}border-style: dashed;/);
-  const reperes = css.match(/\.rpg-creature-slot\.is-empty:not\(\.rpg-creature-slot--choix\):not\(\.rpg-creature-slot--deplacement\)::(before|after)/g) ?? [];
-  assert.equal(reperes.length, 4, 'les quatre repères de case vide excluent l’avancée');
+  const reperes = css.match(/\.rpg-creature-slot\.is-empty:not\(\.rpg-creature-slot--choix\):not\(\.rpg-creature-slot--deplacement\):not\(\.rpg-creature-slot--survol-deplacement\)::(before|after)/g) ?? [];
+  assert.equal(reperes.length, 4, 'les quatre repères de case vide excluent l’avancée et le survol');
   assert.equal((css.match(/\.rpg-creature-slot\.is-empty:not\(\.rpg-creature-slot--choix\)::/g) ?? []).length, 0,
     'plus aucun repère ne s’affiche sous une case d’avancée');
 });

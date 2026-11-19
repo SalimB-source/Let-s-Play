@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgJouerCreature } from '../src/games/rpgDuel.js';
+import { deplacementsLegaux } from '../src/games/rpgMouvement.js';
 import { installerDeckMaisonDeTest, passerMulligan } from './rpg-duel-start.js';
 
 /** L'avancée, jouée dans la vraie page : une créature choisie montre ses cases,
@@ -56,6 +57,22 @@ export async function checkAvancee(assert) {
     const proie = poser('sorcier', 'le-renegat');
     await act(async () => window.__RPG_FORCE__());
 
+    // Le survol, lui, montre déjà où elle peut marcher : cases bleues, aucun
+    // clic branché (aperçu, pas sélection).
+    const survoler = async (entite) => {
+      await act(async () => {
+        card(entite.id).dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }));
+      });
+      await pause();
+    };
+    await survoler(nous);
+    const bleues = () => [...container.querySelectorAll('.card-row--equipe .rpg-creature-slot--survol-deplacement')];
+    const attendues = deplacementsLegaux(duel, 'joueur', nous.id)
+      .filter((c) => c.camp === 'joueur').map((c) => c.index).sort((a, b) => a - b);
+    assert.deepEqual(bleues().map((el) => Number(el.dataset.caseIndex)).sort((a, b) => a - b), attendues,
+      'le survol allume exactement les cases du pas');
+    assert.ok(bleues().every((el) => el.tagName !== 'BUTTON'), 'ce ne sont pas des boutons : rien ne s’engage');
+
     // Choisir la créature ouvre la phase : ses cases d'avancée sont des boutons.
     await click(card(nous.id));
     await act(async () => window.__RPG_FORCE__());
@@ -76,6 +93,9 @@ export async function checkAvancee(assert) {
     await act(async () => window.__RPG_FORCE__());
     assert.equal(container.querySelectorAll('.rpg-creature-slot--deplacement').length, 0,
       'la créature déplacée ne propose plus de case');
+    // Le survol ne promet rien pour une créature qui a déjà marché.
+    await survoler(nous);
+    assert.equal(bleues().length, 0, 'plus de case bleue pour une créature qui a consommé son pas');
     assert.ok(proie, 'la proie adverse est toujours là');
 
     // La trouée : le front adverse est vide, la créature passe chez lui — et
