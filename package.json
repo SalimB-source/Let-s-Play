@@ -206,6 +206,7 @@
     "art:aleger": "bash scripts/aleger-art-cartes.sh",
     "check:rpg-art": "node --test tests/rpg-art-allegee.test.js",
     "check:rpg-lignes": "node --test tests/rpg-lignes.test.js tests/rpg-lignes-duel.test.js tests/rpg-lignes-css.test.js",
+    "check:rpg-avancee": "node --test tests/rpg-mouvement.test.js tests/rpg-avancee-scenario.test.js tests/rpg-avancee-ui.test.js tests/rpg-portees.test.js tests/rpg-lignes-duel.test.js tests/rpg-sorcier-objectif.test.js && node scripts/rpg-avancee-ui-check.mjs",
     "check:city-rush": "node --test tests/*driving*.test.js tests/blocked-junction-clarity.test.js tests/french-priority.test.js tests/parking-choice-exercise.test.js tests/real-situation-exercises.test.js tests/road-crosswalks.test.js tests/roundabout-road-surface.test.js tests/roundabout-sidewalks.test.js tests/vice-city-free-drive-features.test.js tests/vice-city-roads.test.js tests/vice-city-traffic.test.js tests/city-rush-cars.test.js tests/city-rush-cockpit.test.js tests/city-rush-free-drive.test.js tests/city-rush-audio.test.js tests/city-rush-webgpu.test.js tests/city-rush-performance.test.js tests/vice-city-portrait.test.js",
     "check:driving-interface": "node scripts/driving-school-interface-check.mjs",
     "check:city-rush-free-drive": "node --test tests/city-rush-free-drive.test.js tests/vice-city-free-drive-features.test.js tests/vice-city-roads.test.js tests/vice-city-traffic.test.js",

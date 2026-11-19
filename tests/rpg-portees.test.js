@@ -1,8 +1,10 @@
+/** Les portées du champ : une case pour la mêlée, deux pour un tir, mesurées
+ * sur la grille partagée (`rpgChamp.js`), avancées comprises. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  casesAPortee, cibleAPortee, colonneDeCase, distanceDeCases, filtrePortee,
-  porteeDe, profondeurDeCase, profondeurMax,
+  casesAPortee, cibleAPortee, colonneDeCase, distanceAuSorcier, distanceDeCases,
+  filtrePortee, porteeDe, profondeurDeCase, profondeurMax, sorcierAPortee,
 } from '../src/games/rpgPortees.js';
 
 // Deux lignes de cinq cases par camp : front 0-4, fond 5-9.
@@ -26,91 +28,87 @@ test('Géométrie : deux lignes de cinq cases, les fronts face à face', () => {
   assert.equal(profondeurMax({}), 0);
 });
 
-test('Géométrie : front contre front = 1, front contre fond = 2, fond contre fond = 3', () => {
-  assert.equal(distanceDeCases(front(2), front(2)), 1);
-  assert.equal(distanceDeCases(front(2), fond(2)), 2);
+test('Distance : Tchebychev sur la grille — une case d’écart vaut 1, en diagonale aussi', () => {
+  assert.equal(distanceDeCases(front(2), front(2)), 1, 'front contre front');
+  assert.equal(distanceDeCases(front(2), fond(2)), 2, 'front contre fond');
   assert.equal(distanceDeCases(fond(2), front(2)), 2);
   assert.equal(distanceDeCases(fond(2), fond(2)), 3);
-  assert.equal(distanceDeCases(front(0), front(4)), 5);
+  assert.equal(distanceDeCases(front(2), front(3)), 1, 'la diagonale est une case');
+  assert.equal(distanceDeCases(front(0), front(4)), 4, 'quatre colonnes d’écart');
   assert.equal(distanceDeCases(undefined, front(0)), null);
 });
 
-test('Portée : mêlée 1, distance 2, Attaque ciblée sans limite', () => {
+test('Portée : une case pour la mêlée, deux pour un tir — Attaque ciblée comprise', () => {
   assert.equal(porteeDe(melee(0)), 1);
   assert.equal(porteeDe(tireur(0)), 2);
-  assert.equal(porteeDe(cibleur(0)), Number.POSITIVE_INFINITY);
+  assert.equal(porteeDe(cibleur(0)), 2, 'l’Attaque ciblée est un tir, pas une portée infinie');
   assert.equal(porteeDe({}), 1);
 });
 
-test('Mêlée : la case juste en face seulement, sans diagonale si elle est tenue', () => {
-  const attaquant = melee(2);
-  const face = melee(2, 'front');
-  const diagonale = melee(3, 'front');
-  const ennemiFront = [face, diagonale];
-  assert.ok(cibleAPortee(attaquant, face, ennemiFront), 'la case d’en face est à portée');
-  assert.ok(!cibleAPortee(attaquant, diagonale, ennemiFront), 'la diagonale est fermée tant que la case d’en face est tenue');
+test('Mêlée : devant, en diagonale — et plus de « case d’en face » à dégager', () => {
+  const attaquant = melee(1, 'front');
+  assert.equal(cibleAPortee(attaquant, melee(1, 'front')), true, 'en face');
+  assert.equal(cibleAPortee(attaquant, melee(2, 'front')), true, 'la diagonale est à une case');
+  assert.equal(cibleAPortee(attaquant, melee(0, 'front')), true);
+  assert.equal(cibleAPortee(attaquant, melee(1, 'fond')), false, 'le fond est à deux cases');
+  assert.equal(cibleAPortee(attaquant, melee(3, 'front')), false, 'deux colonnes : trop loin');
 });
 
-test('Mêlée : la diagonale s’ouvre quand la case d’en face est vide', () => {
-  const attaquant = melee(2);
-  const diagonaleGauche = melee(1, 'front');
-  const diagonaleDroite = melee(3, 'front');
-  const ennemis = [diagonaleGauche, diagonaleDroite];
-  assert.ok(cibleAPortee(attaquant, diagonaleGauche, ennemis));
-  assert.ok(cibleAPortee(attaquant, diagonaleDroite, ennemis));
+test('Tir : deux cases dans toutes les directions, trois non', () => {
+  const attaquant = tireur(1, 'fond');
+  assert.equal(cibleAPortee(attaquant, melee(1, 'front')), true, 'front adverse à deux cases');
+  assert.equal(cibleAPortee(attaquant, melee(2, 'front')), true, 'deux cases en diagonale');
+  assert.equal(cibleAPortee(attaquant, melee(1, 'fond')), false, 'le fond adverse est à trois cases');
+  assert.equal(cibleAPortee(attaquant, melee(0, 'front')), true, 'deux colonnes, même rangée');
 });
 
-test('Mêlée : jamais dans le dos — le fond adverse reste hors de portée', () => {
-  const attaquant = melee(2);
-  const fondAdverse = melee(2, 'fond');
-  assert.ok(!cibleAPortee(attaquant, fondAdverse, [fondAdverse]), 'aucune mêlée ne touche le fond');
+test('Le filtre conserve l’ordre reçu et ne garde que l’atteignable', () => {
+  const attaquant = melee(1, 'front');
+  const duel = { lignes: true, joueur: { creatures: [attaquant] }, sorcier: { creatures: [] } };
+  const proches = [melee(1, 'front'), melee(2, 'front')];
+  const loin = melee(4, 'front');
+  assert.deepEqual(filtrePortee(duel, attaquant, proches, proches, 'joueur'), proches);
+  assert.deepEqual(filtrePortee(duel, attaquant, [loin], [loin], 'joueur'), []);
+  // L'ordre des cibles survivantes est celui qu'on a reçu.
+  const trois = [loin, proches[1], proches[0]];
+  assert.deepEqual(filtrePortee(duel, attaquant, trois, trois, 'joueur').map((e) => e.id),
+    [proches[1].id, proches[0].id]);
 });
 
-test('Distance : deux cases — le tireur du fond atteint le front adverse', () => {
-  const attaquant = tireur(2, 'fond');
-  const frontAdverse = melee(2, 'front');
-  const fondAdverse = melee(2, 'fond');
-  assert.ok(cibleAPortee(attaquant, frontAdverse, [frontAdverse]));
-  assert.ok(!cibleAPortee(attaquant, fondAdverse, [fondAdverse]), 'le fond adverse est à trois cases');
-  // Depuis le front, le fond adverse est à deux cases : à portée du tir — c'est
-  // la ligne qui le protège tant que son front tient, pas la distance.
-  const tireurFront = tireur(2, 'front');
-  assert.ok(cibleAPortee(tireurFront, frontAdverse, [frontAdverse]));
-  assert.ok(cibleAPortee(tireurFront, fondAdverse, [fondAdverse]));
+test('Hors des lignes, la portée ne retire rien', () => {
+  const attaquant = melee(1, 'front');
+  const loin = melee(4, 'front');
+  const duel = { joueur: { creatures: [attaquant] }, sorcier: { creatures: [loin] } };
+  assert.deepEqual(filtrePortee(duel, attaquant, [loin], [loin], 'joueur'), [loin]);
+  assert.deepEqual(filtrePortee({ lignes: true, moba: {}, joueur: { creatures: [attaquant] }, sorcier: { creatures: [loin] } },
+    attaquant, [loin], [loin], 'joueur'), [loin]);
 });
 
-test('Distance : depuis le fond, le tir ne sort pas de sa colonne', () => {
-  const attaquant = tireur(2, 'fond');
-  assert.ok(cibleAPortee(attaquant, melee(2, 'front'), []), 'la même colonne, deux cases : à portée');
-  assert.ok(!cibleAPortee(attaquant, melee(1, 'front'), []), 'une colonne d’écart fait trois cases');
-  assert.ok(!cibleAPortee(attaquant, melee(0, 'front'), []), 'deux colonnes d’écart : hors de portée');
-});
-
-test('Attaque ciblée : n’importe où, seule la ligne décide', () => {
-  const attaquant = cibleur(0, 'fond');
-  for (const cible of [melee(4, 'front'), melee(4, 'fond'), melee(0, 'front')]) {
-    assert.ok(cibleAPortee(attaquant, cible, [cible]));
-  }
-});
-
-test('Hors des lignes, sans case, ou au MOBA : la portée ne retire rien', () => {
-  const attaquant = melee(0);
-  const cible = melee(4, 'fond');
-  assert.deepEqual(filtrePortee({}, attaquant, [cible], [cible]), [cible]);
-  assert.deepEqual(filtrePortee({ moba: true, lignes: true }, attaquant, [cible], [cible]), [cible]);
-  assert.deepEqual(filtrePortee(duelLignes, { id: 'sans-case' }, [cible], [cible]), [cible]);
-});
-
-test('Le filtre de portée conserve l’ordre reçu et ne garde que l’atteignable', () => {
-  const attaquant = melee(2);
-  const face = melee(2, 'front');
-  const diagonale = melee(3, 'front');
-  const loin = melee(0, 'front');
-  assert.deepEqual(filtrePortee(duelLignes, attaquant, [face, diagonale, loin], [loin, face, diagonale]), [face]);
+test('Le sorcier se mesure comme une cible : derrière le fond adverse', () => {
+  // Notre front (rangée 2) est à trois cases du sorcier ; notre fond à quatre.
+  assert.equal(distanceAuSorcier(duelLignes, 'joueur', melee(0, 'front')), 3);
+  assert.equal(distanceAuSorcier(duelLignes, 'joueur', melee(0, 'fond')), 4);
+  // Sur le front adverse (rangée 1) : deux cases ; sur le fond adverse : une.
+  assert.equal(distanceAuSorcier(duelLignes, 'joueur', melee(0, 'front')), 3);
+  assert.equal(distanceAuSorcier(duelLignes, 'joueur', { emplacement: front(0), campPose: 'sorcier' }), 2);
+  assert.equal(distanceAuSorcier(duelLignes, 'joueur', { emplacement: fond(0), campPose: 'sorcier' }), 1);
+  assert.equal(sorcierAPortee(duelLignes, 'joueur', melee(0, 'front')), false, 'une mêlée au contact ne l’atteint pas');
+  assert.equal(sorcierAPortee(duelLignes, 'joueur', { emplacement: front(0), campPose: 'sorcier' }), false,
+    'une mêlée sur le front adverse est encore à deux cases');
+  assert.equal(sorcierAPortee(duelLignes, 'joueur', { emplacement: fond(0), campPose: 'sorcier' }), true,
+    'une mêlée qui a percé les deux lignes le frappe');
+  assert.equal(sorcierAPortee(duelLignes, 'joueur', { ...tireur(0, 'front'), campPose: 'sorcier' }), true,
+    'un tireur posté au front adverse le frappe à deux cases');
+  assert.equal(sorcierAPortee(duelLignes, 'joueur', tireur(0, 'fond')), false,
+    'depuis notre fond, il est à quatre cases');
 });
 
 test('Les cases à portée sont celles du survol : triées, sans doublon, sans case inconnue', () => {
-  const attaquant = tireur(2, 'fond');
-  const ennemis = [melee(2, 'front'), melee(1, 'front'), melee(4, 'front'), melee(2, 'fond'), { id: 'jeton' }];
-  assert.deepEqual(casesAPortee(duelLignes, attaquant, ennemis), [front(2)]);
+  const attaquant = melee(2, 'front');
+  const duel = { lignes: true, joueur: { creatures: [attaquant] }, sorcier: { creatures: [] } };
+  const cibles = [melee(2, 'front'), melee(1, 'front'), melee(0, 'fond'), { id: 'sans-case' }];
+  const cases = casesAPortee(duel, attaquant, cibles, 'joueur');
+  assert.deepEqual(cases.map((c) => c.index), [1, 2], 'les deux cases adjacentes, triées');
+  assert.deepEqual(cases.map((c) => c.colonne), [1, 2]);
+  assert.ok(cases.every((c) => c.ligne === 'front'));
 });

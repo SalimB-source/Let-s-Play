@@ -1,40 +1,30 @@
 /**
- * Le Sablier — les **portées** du champ à deux lignes.
+ * Le Sablier — les **portées** du champ.
  *
- * Les lignes disent *où* se tient une créature ; les portées disent *qui elle
- * peut frapper*. Les deux règles se composent, dans cet ordre :
- *
- * 1. **La ligne protège** (`filtreLigne`, `rpgLignes.js`) : tant qu'une
- *    créature tient le front adverse, le fond est hors d'atteinte — sauf pour
- *    l'Attaque ciblée et l'Infiltration.
- * 2. **La portée limite** (`filtrePortee`, ici) : parmi les cibles que la ligne
- *    laisse passer, seules celles qui sont à distance restent désignables.
+ * Une créature peut **avancer d'une case par tour** (`rpgMouvement.js`) puis
+ * frapper. Ce module ne dit qu'une chose : *à quelle distance elle peut
+ * frapper*. La géométrie du champ (rangées absolues 0 à 3, colonnes 0 à 4, les
+ * deux sorciers derrière leur fond) vit dans `rpgChamp.js`.
  *
  * ## Les portées
  *
- * - **Mêlée** (`portee: 1`) : la case juste en face, même colonne. Si personne
- *   ne s'y tient, la diagonale s'ouvre — une case à gauche ou à droite — mais
- *   **jamais par-derrière** : on ne se retourne pas en plein combat.
- * - **À distance** (`portee: 2`, mot-clé `distance`) : deux cases, mesurées en
- *   pas de grille (lignes + colonnes). Un tireur du front atteint donc le front
- *   adverse, un tireur du fond aussi ; le fond adverse reste protégé tant que
- *   son front tient.
- * - **Attaque ciblée** (`coupRapide`) : n'importe où, la ligne seule décide.
+ * - **Mêlée** (`portee: 1`) : **une case**, dans les huit directions — devant,
+ *   à sa diagonale, ou derrière. La mesure est celle de Tchebychev
+ *   (`rpgChamp.js`) : une case d'écart, que ce soit en rangée, en colonne ou
+ *   les deux, vaut 1.
+ * - **À distance** (`portee: 2`, mot-clé `distance`) : **deux cases**, même
+ *   mesure. Un tireur du fond atteint le front adverse ; pour atteindre le fond
+ *   adverse il doit avancer d'une case.
+ * - **Attaque ciblée** (`coupRapide`) : n'importe où.
  *
- * ## La géométrie
+ * ## Le sorcier
  *
- * Le champ est une grille de **deux lignes de cinq cases par camp**, les deux
- * fronts face à face de part et d'autre de la ligne neutre. Une case se lit
- * donc en (ligne, colonne) :
- *
- *     profondeur 0 = front, 1 = fond ;  colonne = case % 5
- *
- * La distance entre deux cases de camps opposés est la somme des profondeurs
- * plus un (les deux fronts se touchent) et de l'écart de colonne :
- *
- *     distance = profondeur(A) + profondeur(B) + 1 + |colonne(A) - colonne(B)|
- *
- * Front contre front : 1. Front contre fond : 2. Fond contre fond : 3.
+ * Le sorcier adverse se tient **derrière le fond** de son camp. Il est donc à
+ * une case d'une créature postée sur ce fond, et à deux cases d'une créature
+ * postée sur son front. Autrement dit : une **mêlée doit avoir percé les deux
+ * lignes** pour le frapper, une **créature à distance le frappe depuis le front
+ * adverse**. Le contact n'est plus la seule voie — la portée décide, comme pour
+ * les créatures.
  *
  * ## Ce que la portée ne fait pas
  *
@@ -46,9 +36,13 @@
  * - **Les sorts ne sont pas concernés** : une magie garde toutes ses cibles.
  */
 
+import {
+  campAdverse, campDeLaCreature, distanceAuSorcierAdverse, distanceDeGrille,
+  distanceEntreCreatures, positionDe,
+} from './rpgChamp.js';
 import { RPG_LIGNES_CASES, champMax, lignesActives } from './rpgLignes.js';
 
-/** Portée d'une attaque de mêlée : la case d'en face. */
+/** Portée d'une attaque de mêlée : une case, dans les huit directions. */
 export const RPG_PORTEE_MELEE = 1;
 /** Portée d'un tir : deux cases. */
 export const RPG_PORTEE_DISTANCE = 2;
@@ -65,79 +59,94 @@ export function colonneDeCase(index) {
   return caseConnue(index) ? index % RPG_LIGNES_CASES : 0;
 }
 
-/** La portée d'attaque d'une créature, en cases de grille. */
+/** La portée d'attaque d'une créature, en cases de grille.
+ *
+ * L'**Attaque ciblée** n'a plus de portée infinie : c'est un tir, il se mesure
+ * comme les autres. Elle garde son avantage — frapper avant le combat et
+ * arrêter là son attaque — mais doit, elle aussi, être à deux cases. */
 export function porteeDe(entite) {
-  if (entite?.coupRapide) return Number.POSITIVE_INFINITY;
-  return entite?.distance ? RPG_PORTEE_DISTANCE : RPG_PORTEE_MELEE;
-}
-
-/** Distance de grille entre deux cases de camps opposés (`null` si inconnue). */
-export function distanceDeCases(caseA, caseB) {
-  if (!caseConnue(caseA) || !caseConnue(caseB)) return null;
-  return profondeurDeCase(caseA) + profondeurDeCase(caseB) + 1
-    + Math.abs(colonneDeCase(caseA) - colonneDeCase(caseB));
-}
-
-/** Les cases du front d'un camp qui portent encore une créature. */
-function casesFrontOccupees(creatures = []) {
-  const occupees = new Set();
-  for (const entite of creatures) {
-    const index = entite?.emplacement;
-    if (caseConnue(index) && profondeurDeCase(index) === 0) occupees.add(index);
-  }
-  return occupees;
+  if (entite?.distance || entite?.coupRapide) return RPG_PORTEE_DISTANCE;
+  return RPG_PORTEE_MELEE;
 }
 
 /**
- * Cette cible est-elle à portée de cet attaquant ?
- *
- * `creaturesCible` sert à la seule règle de la diagonale : un corps à corps
- * frappe droit devant, et ne prend la diagonale que si la case d'en face est
- * vide. Rien d'autre n'est consulté — une attaque ne dépend pas du reste du
- * plateau.
+ * Distance de grille entre deux cases **de camps opposés**, chacune dans le
+ * sien : la lecture historique, conservée pour les appelants qui n'ont que des
+ * index. Une créature avancée chez l'adversaire se mesure avec
+ * `distanceEntreCreatures` (`rpgChamp.js`), qui connaît `campPose`.
  */
-export function cibleAPortee(attaquant, cible, creaturesCible = []) {
+export function distanceDeCases(caseA, caseB) {
+  if (!caseConnue(caseA) || !caseConnue(caseB)) return null;
+  const a = { rangee: profondeurDeCase(caseA) === 0 ? 2 : 3, colonne: colonneDeCase(caseA) };
+  const b = { rangee: profondeurDeCase(caseB) === 0 ? 1 : 0, colonne: colonneDeCase(caseB) };
+  return distanceDeGrille(a, b);
+}
+
+/** Cette cible est-elle à portée de cet attaquant ? Les deux créatures sont
+ *  lues dans leur propre camp — la version qui connaît `campPose` est
+ *  `filtrePortee`, et c'est elle que le moteur appelle. */
+export function cibleAPortee(attaquant, cible) {
   const portee = porteeDe(attaquant);
   if (portee === Number.POSITIVE_INFINITY) return true;
   const distance = distanceDeCases(attaquant?.emplacement, cible?.emplacement);
   if (distance === null) return true; // pas de case : aucune règle de portée
-  if (distance <= portee) return true;
-  // La diagonale d'ouverture : un corps à corps dont la case d'en face est
-  // vide frappe d'un cran sur le côté, jamais dans le dos.
-  if (portee === RPG_PORTEE_MELEE
-    && profondeurDeCase(attaquant.emplacement) + profondeurDeCase(cible.emplacement) + 1 === 1
-    && Math.abs(colonneDeCase(attaquant.emplacement) - colonneDeCase(cible.emplacement)) === 1) {
-    const face = colonneDeCase(attaquant.emplacement);
-    const occupees = casesFrontOccupees(creaturesCible);
-    return !occupees.has(face);
-  }
-  return false;
+  return distance <= portee;
 }
 
 /** Les cibles qui restent à portée, dans l'ordre reçu. */
-export function filtrePortee(duel, attaquant, creaturesCible = [], cibles = []) {
+export function filtrePortee(duel, attaquant, creaturesCible = [], cibles = [], cote = null) {
   if (!lignesActives(duel) || duel?.moba) return cibles;
   if (!Number.isInteger(attaquant?.emplacement)) return cibles;
-  return cibles.filter((cible) => cibleAPortee(attaquant, cible, creaturesCible));
+  const camp = cote ?? campDeLaCreature(duel, attaquant);
+  if (!camp) return cibles;
+  const portee = porteeDe(attaquant);
+  if (portee === Number.POSITIVE_INFINITY) return cibles;
+  return cibles.filter((cible) => {
+    const distance = distanceEntreCreatures(attaquant, camp, cible, campAdverse(camp));
+    return distance === null ? true : distance <= portee;
+  });
+}
+
+/** La distance d'une créature au **sorcier adverse** (`null` sans case). */
+export function distanceAuSorcier(duel, cote, entite) {
+  if (!lignesActives(duel) || duel?.moba) return null;
+  return distanceAuSorcierAdverse(entite, cote);
+}
+
+/** Le sorcier adverse est-il à portée de cette créature ? Hors des lignes,
+ *  la question ne se pose pas : la réponse est `true` (comportement
+ *  historique, c'est `attaqueDirectePermise` qui décide seul). */
+export function sorcierAPortee(duel, cote, entite) {
+  const distance = distanceAuSorcier(duel, cote, entite);
+  if (distance === null) return true;
+  return distance <= porteeDe(entite);
 }
 
 /**
  * Les cases adverses que cet attaquant peut viser — la matière du survol qui
  * montre sa portée sur le plateau. Ne tient compte **que** de la géométrie :
- * la ligne et la protection d'élément restent l'affaire du moteur.
+ * la protection d'élément et les priorités restent l'affaire du moteur.
  */
-export function casesAPortee(duel, attaquant, creaturesCible = []) {
+export function casesAPortee(duel, attaquant, creaturesCible = [], cote = null) {
   const maximum = champMax(duel);
-  const occupees = new Map();
-  for (const entite of creaturesCible) {
-    if (caseConnue(entite?.emplacement)) occupees.set(entite.emplacement, entite);
-  }
+  const camp = cote ?? campDeLaCreature(duel, attaquant);
+  if (!camp) return [];
+  const portee = porteeDe(attaquant);
   const cases = [];
-  for (const [index, entite] of occupees) {
-    if (index >= maximum) continue;
-    if (cibleAPortee(attaquant, entite, creaturesCible)) cases.push(index);
+  for (const entite of creaturesCible) {
+    const index = entite?.emplacement;
+    if (!Number.isInteger(index) || index < 0 || index >= maximum) continue;
+    const position = positionDe(entite, campAdverse(camp));
+    if (!position) continue;
+    // Une créature peut avoir avancé chez nous : sa case est alors dans notre
+    // camp. On rend la case **du camp adverse**, celle que le survol dessine.
+    if (position.camp !== campAdverse(camp)) continue;
+    const distance = distanceEntreCreatures(attaquant, camp, entite, campAdverse(camp));
+    if (distance !== null && distance <= portee) {
+      cases.push({ index, ligne: position.rangee % 2 === 1 ? 'front' : 'fond', colonne: position.colonne });
+    }
   }
-  return cases.sort((a, b) => a - b);
+  return cases.sort((a, b) => a.index - b.index);
 }
 
 /** La profondeur maximale du champ de ce duel (1 : deux lignes, 0 : une). */

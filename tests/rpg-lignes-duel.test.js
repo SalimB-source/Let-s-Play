@@ -77,7 +77,7 @@ test('une case du mauvais côté est ignorée, pas refusée', () => {
   assert.ok(d, 'le duel reste cohérent');
 });
 
-test('le fond est hors de portée tant que le front tient, et se découvre quand il tombe', () => {
+test('le fond est à deux cases : la mêlée ne l’atteint pas, même front tombé', () => {
   const { d, poserOk } = table();
   d.tour = 'sorcier';
   const mur = poserOk('joueur', MELEE); // devant, chez la cible
@@ -85,28 +85,34 @@ test('le fond est hors de portée tant que le front tient, et se découvre quand
   const attaquant = poserOk('sorcier', MELEE);
   d.tour = 'sorcier';
   const cibles = () => rpgCiblesIndividuellesClassique(d, 'sorcier', attaquant.id).cibles;
-  assert.ok(cibles().includes(mur.id), 'la mêlée voit le front');
-  assert.equal(cibles().includes(archiere.id), false, 'la mêlée ne voit pas le fond');
-  // Le front tombe : le fond n'est plus protégé.
+  assert.ok(cibles().includes(mur.id), 'la mêlée voit le front, à une case');
+  assert.equal(cibles().includes(archiere.id), false, 'le fond est à deux cases : hors de portée');
+  // Le front tombe : la distance, elle, ne change pas. Une mêlée doit avancer.
   d.joueur.creatures = d.joueur.creatures.filter((e) => e.id !== mur.id);
   assert.equal(frontTient(d.joueur.creatures), false);
-  assert.ok(cibles().includes(archiere.id), 'front tombé, le fond redevient une cible');
+  assert.equal(cibles().includes(archiere.id), false,
+    'front tombé, le fond reste à deux cases : c’est la portée qui décide, plus la ligne');
 });
 
-test('Attaque ciblée et Infiltration passent la ligne', () => {
-  for (const trait of ['coupRapide', 'infiltration']) {
-    const { d, poserOk } = table();
-    d.tour = 'joueur';
-    poserOk('joueur', MELEE);
-    const archiere = poserOk('joueur', DISTANCE);
-    d.tour = 'sorcier';
-    poserOk('sorcier', MELEE);
-    const attaquant = poserOk('sorcier', MELEE);
-    attaquant[trait] = true;
-    const cibles = rpgCiblesIndividuellesClassique(d, 'sorcier', attaquant.id).cibles;
-    assert.ok(cibles.includes(archiere.id), `${trait} atteint le fond`);
-  }
+test('la portée vaut pour tous : l’Infiltration ne traverse plus la ligne', () => {
+  const { d, poserOk } = table();
+  d.tour = 'joueur';
+  poserOk('joueur', MELEE);
+  const archiere = poserOk('joueur', DISTANCE);
+  d.tour = 'sorcier';
+  poserOk('sorcier', MELEE);
+  const attaquant = poserOk('sorcier', MELEE);
+  // Une mêlée infiltrée reste une mêlée : le trait ignore la priorité des
+  // Défenseurs, pas la distance. Le fond est à deux cases.
+  attaquant.infiltration = true;
+  assert.equal(rpgCiblesIndividuellesClassique(d, 'sorcier', attaquant.id).cibles.includes(archiere.id), false,
+    'l’Infiltration ne donne pas de portée');
+  // L'Attaque ciblée, elle, est un tir : deux cases, comme « À distance ».
+  attaquant.coupRapide = true;
+  assert.ok(rpgCiblesIndividuellesClassique(d, 'sorcier', attaquant.id).cibles.includes(archiere.id),
+    'l’Attaque ciblée porte à deux cases');
 });
+
 
 test('un Défenseur reste devant, même quand le fond est libre', () => {
   const { d, poserOk } = table();
@@ -151,24 +157,25 @@ test('le duel en ligne ouvre aussi les deux lignes, dès l’état initial', () 
   assert.equal(champMax(etat), 10);
 });
 
-test('« À distance » tire sans riposte mais ne voit pas le fond : l’Attaque ciblée seule passe', () => {
+test('deux cases pour tout tir : le front adverse, jamais son fond sans avancer', () => {
   const { d, poserOk } = table();
   d.tour = 'joueur';
   const mur = poserOk('joueur', MELEE);
   const fond = poserOk('joueur', DISTANCE);
   d.tour = 'sorcier';
-  // Un tireur « À distance » qui n'a **pas** l'Attaque ciblée : c'est le trait
-  // de ligne seul qui est jugé ici.
+  // Un tireur « À distance » qui n'a **pas** l'Attaque ciblée : c'est la
+  // portée seule qui est jugée ici.
   const tireur = poserOk('sorcier', 'ashigaru-des-braises');
   assert.equal(tireur.distance, true);
   assert.equal(tireur.coupRapide, false);
   const cibles = () => rpgCiblesIndividuellesClassique(d, 'sorcier', tireur.id).cibles;
-  assert.ok(cibles().includes(mur.id), 'le tireur voit le front');
+  assert.ok(cibles().includes(mur.id), 'le tireur voit le front, à deux cases');
   assert.equal(cibles().includes(fond.id), false,
-    'tirer de loin ne fait pas traverser la ligne : le fond reste couvert');
-  // Le privilège de la ligne reste à l’Attaque ciblée (et à l’Infiltration).
+    'le fond est à trois cases de son fond : la distance le protège');
+  // L'Attaque ciblée ne change plus rien à la distance : elle frappe avant,
+  // pas plus loin.
   tireur.coupRapide = true;
-  assert.ok(cibles().includes(fond.id), 'l’Attaque ciblée passe le front');
+  assert.equal(cibles().includes(fond.id), false, 'l’Attaque ciblée ne porte pas plus loin');
 });
 
 test('une carte à distance retrouvée sur une case du front se redessine au fond', () => {

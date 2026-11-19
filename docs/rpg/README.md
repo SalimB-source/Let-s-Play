@@ -57,6 +57,10 @@ dépôt, pour trancher sur du concret plutôt que sur du texte :
 - `docs/rpg/34-frappe-directe-et-attaque-avec-tous.md` — la frappe directe
   (Envol, Infiltration, champ vide) et « Attaquer avec tous », dans les trois
   formats
+- `docs/rpg/30-portees.md` — les portées branchées : mêlée une case (huit
+  directions), tir deux cases, le sorcier atteint par la distance seule
+- `docs/rpg/36-avancee.md` — **l'avancée** : une case par tour, la trouée, le
+  franchissement de la ligne, l'IA qui marche puis frappe
 - `scripts/rpg-battle-ui-check.mjs` — la page montée dans jsdom (`npm run check:rpg-ui`)
 
 Le moteur est volontairement **agnostique** : il ne connaît ni les noms ni
