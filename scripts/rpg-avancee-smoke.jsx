@@ -76,6 +76,14 @@ export async function checkAvancee(assert) {
     // Choisir la créature ouvre la phase : ses cases d'avancée sont des boutons.
     await click(card(nous.id));
     await act(async () => window.__RPG_FORCE__());
+    // Choisir n'annonce rien : la carte ne prend ni lueur rouge ni inclinaison,
+    // et l'invite propose le pas avant la cible.
+    assert.ok(!card(nous.id).classList.contains('is-declared-attacker'),
+      'une créature choisie n’est pas un assaut déclaré');
+    assert.equal(card(nous.id).dataset.combatTilted, 'false', 'elle reste droite');
+    const invite = container.querySelector('.rpg-attack-prompt')?.textContent ?? '';
+    assert.match(invite, /case libre pour avancer/, 'l’invite offre le pas');
+    assert.doesNotMatch(invite, /^Cliquez une cible légale/, 'elle ne réclame pas une cible');
     const cases = [...container.querySelectorAll('.rpg-creature-slot--deplacement')];
     assert.ok(cases.length > 0, 'la créature choisie montre des cases d’avancée');
     assert.ok(cases.every((el) => el.dataset.creatureSlotDeplacement === 'true'));
@@ -93,9 +101,19 @@ export async function checkAvancee(assert) {
     await act(async () => window.__RPG_FORCE__());
     assert.equal(container.querySelectorAll('.rpg-creature-slot--deplacement').length, 0,
       'la créature déplacée ne propose plus de case');
+    // Le pas referme la sélection : plus aucune cible réclamée derrière lui.
+    assert.equal(container.querySelector('.rpg-attack-prompt'), null,
+      'après le pas, le jeu ne demande plus de cible');
+    assert.equal(container.querySelectorAll('.rpg-card.is-declared-attacker').length, 0,
+      'et aucune créature ne reste inclinée');
     // Le survol ne promet rien pour une créature qui a déjà marché.
     await survoler(nous);
     assert.equal(bleues().length, 0, 'plus de case bleue pour une créature qui a consommé son pas');
+    // Et la recliquer ne rouvre pas de pas : son tour de marche est passé.
+    await click(card(nous.id));
+    await act(async () => window.__RPG_FORCE__());
+    assert.equal(container.querySelectorAll('.rpg-creature-slot--deplacement').length, 0,
+      'une créature qui a marché ne propose plus de case, même choisie');
     assert.ok(proie, 'la proie adverse est toujours là');
 
     // La trouée : le front adverse est vide, la créature passe chez lui — et

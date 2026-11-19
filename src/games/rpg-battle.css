@@ -3829,8 +3829,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 0 32px rgba(222, 38, 34, .42),
     0 12px 28px rgba(0, 0, 0, .65);
 }
-/* Une créature engagée reste inclinée ; seul son portrait est grisé par
-   rpg-etats-cartes.css, sans désaturer ses indicateurs. */
+/* Une créature qui a frappé ne porte plus aucun signe : ni inclinaison, ni
+   portrait grisé (le gris de `rpg-etats-cartes.css` est réservé au mal
+   d'invocation). Seul le bond d'attaque garde sa lueur, le temps du coup. */
 
 /* La main est consultable à tout moment ; seul le glisser-déposer joue la carte. */
 .rpg-hand__card[data-jouable="true"] { cursor: grab; }
