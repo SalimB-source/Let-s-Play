@@ -30,10 +30,10 @@
  *   l'attaque — la créature attend le prochain tour de son camp (Rapidité
  *   exceptée). L'IA n'a donc plus de « pose puis glisse » à son actif.
  * - **Rien pour un Site** : un site ne marche pas.
- * - **Rien pour un Défenseur** : il tient sa case, c'est son office. Imprimé
- *   ou accordé en cours de partie, le Défenseur ne se déplace jamais — il
- *   frappe de là où il est, et rien ne le fait glisser, pas même une trouée
- *   qui s'ouvrirait devant lui.
+ * - **Le Défenseur reste chez lui** : il marche sur les dix cases de son
+ *   joueur — front et fond, avant, arrière, côtés — mais ne franchit jamais la
+ *   ligne médiane. Imprimé ou accordé en cours de partie, il ne peut pas aller
+ *   ouvrir une trouée dans le camp d'en face.
  * - **Aucune contrainte de carte** : le placement impose la ligne
  *   (`ligneObligee`), le mouvement non. Un tireur peut avancer au front, un
  *   corps à corps reculer au fond — c'est le joueur qui choisit.
@@ -63,11 +63,6 @@ export function rpgPeutBouger(duel, cote, entite) {
   // lire sa carte. La Rapidité, imprimée ou accordée, lève les deux attentes.
   if (rpgSouffreMalInvocation(entite)) return false;
   if ((entite.gelToursRestants ?? 0) > 0) return false;
-  // **Un Défenseur ne se déplace pas.** Sa raison d'être est de tenir une
-  // case : la lui faire quitter, c'est offrir la trouée qu'il est censé
-  // fermer. La règle est la même pour tous les camps et pour un Défenseur
-  // accordé en cours de partie (`estDefenseur` lit l'entité et sa carte).
-  if (estDefenseur(entite)) return false;
   const carte = duelCardById(entite.carteId);
   if (!carte || carte.kind === 'site') return false;
   return true;
@@ -123,6 +118,12 @@ export function deplacementsLegaux(duel, cote, entiteId) {
       const camp = rangee <= 1 ? 'sorcier' : 'joueur';
       const index = caseLocale(camp, rangee, colonne);
       if (index === null) continue;
+      // **Un Défenseur ne sort pas de son camp.** Il peut avancer, reculer et
+      // glisser sur les dix cases de son joueur — monter au front, revenir au
+      // fond — mais jamais franchir la ligne médiane : c'est là qu'il tient, et
+      // une trouée ouverte par lui ne se referme pas. Imprimé ou accordé en
+      // cours de partie (`estDefenseur` lit l'entité et sa carte).
+      if (estDefenseur(entite) && camp !== cote) continue;
       // Franchir la ligne neutre se fait par une trouée : droit devant.
       if (camp !== campActuel && dc !== 0) continue;
       if (occupees.has(`${camp}:${index}`)) continue;
