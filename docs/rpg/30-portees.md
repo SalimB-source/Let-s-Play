@@ -100,7 +100,7 @@ Conséquences, toutes voulues :
   Une invocation qui entrerait **sans case** est refusée, elle aussi : la garde
   d'invocation (`rpgJouerCreature`) lit la table réelle de `rpgRecul.js`
   (`rpgCasesPose`), envahisseurs compris, et refuse `champ-plein` **avant
-  paiement** quand aucune case du fond ne peut s'ouvrir. `casesLibresPour` ne
+  paiement** quand aucune case de la ligne de la carte ne peut s'ouvrir. `casesLibresPour` ne
   voyait que nos propres créatures : une case tenue par un Site adverse
   passait pour libre, la pose n'avait plus où aller et la créature arrivait
   sans case — donc capable de frapper de n'importe où.

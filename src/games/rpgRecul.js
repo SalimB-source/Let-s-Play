@@ -178,22 +178,23 @@ export function rpgReculerApresFrappe(duel, cote, entiteId) {
 }
 
 /**
- * La ligne arrière de `cote`, case par case : qui la tient, et si un
- * envahisseur peut être poussé pour ouvrir la place. C'est la seule lecture
- * dont la pose a besoin — le joueur choisit une colonne, pas une ligne.
+ * La ligne d'arrivée de `cote` (`ligne`, le fond si l'appelant n'en sait
+ * rien), case par case : qui la tient, et si un envahisseur peut être poussé
+ * pour ouvrir la place. C'est la seule lecture dont la pose a besoin — le
+ * joueur choisit une colonne, pas une ligne : la carte impose la sienne.
  *
  * - `propre: true` — la case est tenue par une de nos créatures ;
  * - `poussable: true` — un envahisseur la tient **et** la chaîne peut se
  *   déplier derrière lui : l'invocation le repoussera d'une case.
  */
-export function rpgCasesPose(duel, cote) {
+export function rpgCasesPose(duel, cote, ligne = RPG_LIGNE_FOND) {
   if (!duel || duel.moba || !lignesActives(duel)) return [];
   const occupations = rpgOccupationsRangee(duel, cote);
   const maximum = champMax(duel);
   const cases = [];
   for (let index = 0; index < maximum; index += 1) {
-    // Seules les cases du fond de notre camp sont des cases d'arrivée.
-    if (ligneDeCase(index) !== RPG_LIGNE_FOND) continue;
+    // Seules les cases de la ligne d'arrivée sont des cases d'arrivée.
+    if (ligneDeCase(index) !== ligne) continue;
     const occupant = occupations.get(index) ?? null;
     if (!occupant) { cases.push({ index, occupant: null, propre: false, poussable: false }); continue; }
     const propre = occupant.cote === cote;

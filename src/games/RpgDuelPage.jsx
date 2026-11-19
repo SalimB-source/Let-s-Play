@@ -12128,13 +12128,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   /** Une carte qui prend une des cinq cases du champ quand on la joue. */
   const cartePrendUneCase = (carte) => carte?.kind === 'creature' || carte?.kind === 'hero' || carte?.kind === 'site';
 
-  /** Les numéros des cases encore libres **de notre camp** (0 à 9 quand les
-   *  deux lignes sont ouvertes). Le joueur place où il veut : le front comme
-   *  le fond. Seule une carte avec Envol garde la ligne que sa fiche impose
-   *  (`caseChoisissable`). La ligne imposée reste la case **par défaut** quand
-   *  personne ne choisit. */
+  /** Les numéros des cases encore libres de la ligne de cette carte (les cinq
+   *  du front pour un corps à corps ou un Défenseur, celles du fond pour un
+   *  tireur — `caseChoisissable`). Le joueur y choisit la **colonne** ; la
+   *  ligne vient de la fiche, et reste aussi la case par défaut quand personne
+   *  ne choisit. */
   const casesLibresJoueur = (carte = null) => (duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? rpgCasesPose(duel, 'joueur')
+    ? rpgCasesPose(duel, 'joueur', ligneDePose(carte))
       // Une case tenue par un envahisseur reste une case d'arrivée : la pose
       // le repousse d'une case pour s'y installer (`rpgRecul.js`).
       .filter(({ occupant, poussable }) => !occupant || poussable)
@@ -12239,7 +12239,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(pose.carteId);
     const handIndex = Number.isInteger(pose.handIndex) && duel.joueur.main[pose.handIndex] === pose.carteId
       ? pose.handIndex : duel.joueur.main.indexOf(pose.carteId);
-    const occupation = rpgCasesPose(duel, 'joueur').find((c) => c.index === index);
+    const occupation = rpgCasesPose(duel, 'joueur', ligneDeCase(index)).find((c) => c.index === index);
     if (!carte || handIndex < 0 || !caseChoisissable(carte, index)
       || (occupation?.occupant && !occupation.poussable)) {
       jouerSfx('erreur');
@@ -12676,7 +12676,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const position = positionDe(entite, 'sorcier');
       const locale = position ? caseLocale('joueur', position.rangee, position.colonne) : null;
       if (locale !== null) {
-        const occupation = rpgCasesPose(duel, 'joueur').find((c) => c.index === locale);
+        const occupation = rpgCasesPose(duel, 'joueur', ligneDeCase(locale)).find((c) => c.index === locale);
         if (occupation?.poussable) { choisirEmplacement(locale); return; }
       }
       jouerSfx('erreur');

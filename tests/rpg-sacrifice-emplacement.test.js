@@ -1,5 +1,5 @@
-/** L'invocation payée d'un sacrifice entre par **l'arrière**, comme toute
- *  créature : la victime ne transmet pas sa case, seulement sa colonne. */
+/** L'invocation payée d'un sacrifice entre par **la ligne de sa fiche**, comme
+ *  toute créature : la victime ne transmet pas sa case, seulement sa colonne. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -36,18 +36,21 @@ test('la carte de sacrifice demande bien une victime', () => {
   assert.equal(sacrificesInvocation(duelCardById(SACRIFICE), d, 'joueur'), 1);
 });
 
-test('la nouvelle créature occupe la colonne de la victime, à l’arrière', () => {
+test('la nouvelle créature occupe la colonne de la victime, dans sa propre ligne', () => {
   const { d, poser } = table();
-  const victime = poser('joueur', 'viking-des-neiges', { emplacement: 8 });
+  // La victime est un tireur : elle se tient au fond, colonne 3.
+  const victime = poser('joueur', 'archere-viking-du-givre', { emplacement: 8 });
   assert.ok(victime.ok, victime.raison);
   victime.entite.ready = true;
   assert.equal(victime.entite.emplacement, 8);
 
   const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id] });
   assert.ok(invocation.ok, `l'invocation doit aboutir : ${invocation.raison}`);
-  assert.equal(invocation.entite.emplacement, 8, 'même colonne, même case : elle est libre');
+  // Tarek est un corps à corps : il prend la même colonne, mais devant.
+  const place = positionDe(invocation.entite, 'joueur');
+  assert.equal(place.rangee, 2, 'au front, la ligne de sa fiche');
+  assert.equal(place.colonne, 3, 'la colonne de la victime');
   assert.equal(invocation.entite.campPose, undefined, 'dans son propre camp');
-  assert.equal(positionDe(invocation.entite, 'joueur').rangee, 3, 'à l’arrière');
   assert.ok(!d.joueur.creatures.some((e) => e.id === victime.entite.id), 'la victime a quitté le champ');
 });
 
@@ -64,17 +67,18 @@ test('une victime qui avait percé n’entraîne pas l’invocation chez l’adv
   const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id] });
   assert.ok(invocation.ok, `l'invocation doit aboutir : ${invocation.raison}`);
   assert.equal(invocation.entite.campPose, undefined, 'elle reste chez nous');
-  assert.deepEqual(positionDe(invocation.entite, 'joueur'), { camp: 'joueur', index: 8, rangee: 3, colonne: 3 },
-    'la colonne de la victime, sur notre arrière');
+  assert.deepEqual(positionDe(invocation.entite, 'joueur'), { camp: 'joueur', index: 3, rangee: 2, colonne: 3 },
+    'la colonne de la victime, sur notre front');
   assert.notEqual(invocation.entite.avancee, true, 'elle n’a pas avancé : elle vient d’entrer');
 });
 
-test('une case du front demandée pour l’invocation est ignorée', () => {
+test('une case de l’autre ligne demandée pour l’invocation est ignorée', () => {
   const { d, poser } = table();
   const victime = poser('joueur', 'viking-des-neiges');
   assert.ok(victime.ok, victime.raison);
-  const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id], emplacement: 2 });
+  const invocation = poser('joueur', SACRIFICE, { sacrificeIds: [victime.entite.id], emplacement: 8 });
   assert.ok(invocation.ok, invocation.raison);
-  assert.equal(positionDe(invocation.entite, 'joueur').rangee, 3, 'l’arrière, jamais le front');
+  assert.equal(positionDe(invocation.entite, 'joueur').rangee, 2,
+    'le front de sa fiche, jamais le fond demandé');
   assert.ok(d);
 });

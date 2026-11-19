@@ -2,11 +2,12 @@
  *
  *  La garde d'invocation comptait les places libres sur nos seules créatures
  *  (`casesLibresPour`) : une case tenue par un envahisseur y passait pour
- *  libre. Quand la ligne arrière était pleine et que le dernier envahisseur ne
- *  pouvait pas être poussé (bord, Site), `placerDansEmplacement` rendait la
+ *  libre. Quand la ligne d'arrivée était pleine et que le dernier envahisseur
+ *  ne pouvait pas être poussé (bord, Site), `placerDansEmplacement` rendait la
  *  main **sans poser** : la créature entrait sans case — et frappait alors de
  *  n'importe où (`rpgPortees.js`). La garde lit désormais la même table que la
- *  pose (`rpgCasesPose`, `rpgRecul.js`) et refuse avant paiement.
+ *  pose (`rpgCasesPose`, `rpgRecul.js`), sur la ligne de la carte, et refuse
+ *  avant paiement.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,7 +15,9 @@ import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgJouerCreature, rpgNouveauDuel } from '../src/games/rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 
-const PETITE = 'fennec-des-decombres';
+// Un tireur : il tient la ligne du fond, celle de sa fiche.
+const PETITE = 'archere-viking-du-givre';
+const MELEE = 'viking-des-neiges';
 const SITE = 'source-de-bimini';
 
 function table() {
@@ -29,7 +32,7 @@ function table() {
     d.joueur.main.push(id);
     return rpgJouerCreature(d, 'joueur', id, null);
   };
-  // La ligne arrière du joueur : quatre créatures (cases 5 à 8).
+  // La ligne arrière du joueur : quatre tireurs (cases 5 à 8).
   for (let i = 0; i < 4; i += 1) assert.ok(jouer(PETITE).ok, 'la quatrième créature entre en jeu');
   return { d, jouer };
 }
@@ -65,7 +68,7 @@ test('un envahisseur poussable ouvre la place, et la créature a bien sa case', 
   const { d, jouer } = table();
   // Une mêlée du sorcier sur la dernière case du fond : elle recule d'une case.
   d.sorcier.creatures.push({
-    id: 'envahisseur', carteId: PETITE, name: 'Fennec des décombres',
+    id: 'envahisseur', carteId: MELEE, name: 'Viking des neiges',
     pv: 1, pvMax: 1, atk: 3, ready: true, emplacement: 9, campPose: 'joueur',
   });
   const res = jouer(PETITE);

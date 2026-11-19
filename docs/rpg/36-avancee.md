@@ -62,28 +62,32 @@ rend le **propriétaire**. Un envahisseur est donc une carte du joueur dont
 `avancee` marque enfin une créature qui a quitté la case que sa carte lui
 imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 
-## Le placement : on entre par l'arrière
+## Le placement : chacun entre par sa ligne
 
-Toute créature arrive **au fond** — le front ne se pose pas, il se gagne, une
-case par tour. `RPG_LIGNE_POSE` porte cette règle, et trois fonctions la lisent :
+La ligne vient de la **fiche** (`ligneObligee`) : un corps à corps et un
+Défenseur arrivent **devant**, une créature « À distance » ou à l'Attaque ciblée
+**derrière**. `ligneDePose(carte)` porte cette règle, et trois fonctions la
+lisent :
 
-- `caseAutorisee` / `caseChoisissable` : seules les cinq cases de l'arrière sont
-  des cases d'arrivée ;
-- `caseParDefaut` : la première libre de l'arrière, pour toutes les cartes ;
-- `casesLibresPour` : les places libres de l'arrière — quand il est plein, la
-  pose est refusée (`champ-plein`), même si le front est vide.
+- `caseAutorisee` / `caseChoisissable` : seules les cinq cases de **sa** ligne
+  sont des cases d'arrivée ;
+- `caseParDefaut` : la première libre de cette ligne ;
+- `casesLibresPour` : les places libres de cette ligne — quand elle est pleine,
+  la pose est refusée (`champ-plein`), même si l'autre ligne est vide. Cinq
+  corps à corps devant, cinq tireurs derrière : chaque ligne a son quota.
 
-La ligne que la fiche décrit (`ligneObligee` : Défenseur et mêlée devant, tir
-derrière) ne décide plus de rien : elle reste le repère de lecture d'une carte
-qui n'a pas encore de case. Le joueur, lui, choisit seulement sa **colonne** :
-un clic sur une case du front est ignoré, la pose se rabat sur l'arrière.
+Le joueur, lui, choisit seulement sa **colonne** : un clic sur une case de
+l'autre ligne est ignoré, la pose se rabat sur la première libre de la ligne de
+la carte. `rpgCasesPose` (le recul) prend la même ligne en paramètre : un
+envahisseur qui tient une case d'arrivée est poussé d'un cran, quelle que soit
+la ligne visée.
 
 Une créature qui a avancé (`avancee`) garde la case qu'elle a gagnée ;
-`rpgEmplacementsChamp` ne rapatrie que celles qui n'ont jamais quitté
-l'arrière (sauvegarde reprise, réanimation).
+`rpgEmplacementsChamp` ne rapatrie que celles qui n'ont jamais quitté leur
+ligne (sauvegarde reprise, réanimation).
 
 **Le sacrifice suit la colonne de la victime.** L'invocation payée d'un
-sacrifice entre elle aussi par l'arrière, sur la même colonne que la victime si
+sacrifice entre par la ligne de sa fiche, sur la même colonne que la victime si
 cette case est libre — jamais chez l'adversaire, même quand la victime y était
 tombée : la mort d'un envahisseur ne fait pas naître un envahisseur.
 

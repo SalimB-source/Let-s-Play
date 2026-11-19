@@ -13,9 +13,10 @@ test('la page importe le moteur du pas et celui de l’IA', () => {
   assert.match(page, /import \{ rpgIABougerUneCreature, rpgIAMouvementEnAttente \} from '\.\/rpgMouvementIA\.js'/);
   assert.match(page, /import \{ campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe \} from '\.\/rpgChamp\.js'/);
   // Les cases d'arrivée de la pose viennent du moteur du recul : lui seul
-  // connaît les envahisseurs qui tiennent la ligne arrière.
+  // connaît les envahisseurs qui tiennent la ligne d'arrivée — celle de la
+  // carte, que la page lui passe (`ligneDePose`).
   assert.match(page, /import \{ rpgCasesPose \} from '\.\/rpgRecul\.js'/);
-  assert.match(page, /rpgCasesPose\(duel, 'joueur'\)/);
+  assert.match(page, /rpgCasesPose\(duel, 'joueur', ligneDePose\(carte\)\)/);
 });
 
 test('la créature choisie ouvre ses cases d’avancée, dans les deux rangées', () => {
