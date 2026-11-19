@@ -1,8 +1,6 @@
 /** Repérage des créatures Défenseur, imprimées ou acquises en jeu.
- * La classe identifie le statut sans dessiner de cadre : les créatures et les
- * héros n'ont pas de cadre décoratif. Sur le plateau, `rpg-bouclier.css`
- * conserve l'ombre et la
- * position des statistiques des cartes posées. Les règles de jeu restent dans rpgDefenseur.js. */
+ * Sur le plateau, la classe applique la silhouette du bouclier à la peinture
+ * sans rogner les indicateurs. Les règles de jeu restent dans rpgDefenseur.js. */
 
 import { estDefenseur } from './rpgDefenseur.js';
 

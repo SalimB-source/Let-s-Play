@@ -1,4 +1,4 @@
-/** Les Défenseurs restent rectangulaires sans perdre leurs repères. */
+/** La silhouette des Défenseurs conserve les repères et la taille des cartes. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -66,7 +66,7 @@ test('la classe est posée sur le plateau et les vignettes, PAS sur la main ni l
   const ligneApercu = duel.split('\n').find((l) => l.includes('className={`rpg-hover-card-preview__face'));
   assert.ok(ligneApercu, 'la face d’aperçu existe');
   assert.doesNotMatch(ligneApercu, /classeBouclier/, 'l’aperçu reste une carte rectangulaire normale');
-  assert.doesNotMatch(lire('RpgMobaBoard.jsx'), /classeBouclier/, 'la main du MOBA reste normale');
+  assert.match(lire('RpgMobaBoard.jsx'), /classeBouclier\(cardById\(entity.carteId\), entity\)/, 'le rendu autonome reconnaît aussi le Défenseur');
   assert.match(lire('RpgDeckAtelier.jsx'), /classeBouclier\(carte\)/, 'vignette de l’atelier');
   assert.match(lire('RpgBoosterOuverture.jsx'), /classeBouclier\(carte\)/, 'carte révélée au Souk');
   assert.match(lire('RpgCardGuide.jsx'), /classeBouclier\(carte\)/, 'fiche du guide');
@@ -102,12 +102,21 @@ test('TableCard distingue les Défenseurs sans changer leurs règles', async () 
   } finally { await vite.close(); }
 });
 
-test('les Défenseurs posés restent rectangulaires sans cadre décoratif', () => {
-  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path/);
-  assert.match(css, /box-shadow: 0 10px 12px/);
+test('les Défenseurs posés utilisent la silhouette SVG sans masquer les repères', () => {
+  const svg = readFileSync(new URL('../src/games/assets/bouclier-defenseur.svg', import.meta.url), 'utf8');
+  assert.match(svg, /viewBox="0 0 16 16" preserveAspectRatio="none"/);
+  assert.match(svg, /M4\.35009 13\.3929L8 16L11\.6499 13\.3929/);
+  assert.match(css, /mask: url\('\.\/assets\/bouclier-defenseur\.svg'\) center \/ 100% 100% no-repeat/);
+  assert.match(css, /\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost/);
+  assert.doesNotMatch(css, /mask:[^;]*;[^}]*\.rpg-card-icone/);
   assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre/s);
-  const cadre = lire('rpg-cadre-carte.css');
-  assert.doesNotMatch(cadre, /--rpg-ecusson|:not\(\.rpg-carte-bouclier\)/);
+});
+
+test('l’Envol élève les cartes et les wrappers de pile, cale et Conquête', () => {
+  assert.match(battleCss, /\.rpg-card\.is-envol \{\s*z-index: 2;/);
+  assert.match(css, /data-mode-mana="essai"[^\n]*\.card-row > \.rpg-card\.is-envol/);
+  assert.match(css, /\.rpg-card-stack, \.rpg-card-prison\):has\(\.rpg-card\.is-envol\)/);
+  assert.match(css, /\.moba__real-slot, \.moba__plain-slot, \.moba__ghost-slot\):has\(\.is-envol\)/);
 });
 
 test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gabarit', () => {

@@ -651,9 +651,8 @@
   display: flex;
   justify-content: space-evenly;
   align-items: flex-end;
-  /* Un peu plus d’air entre les emplacements : les créatures Défenseur sont
-     10 % plus grandes à l’écran (voir `rpg-bouclier.css`). La grille des cinq
-     cases hérite de cette gouttière (`rpg-creature-slots { gap: inherit; }`). */
+  /* Un peu plus d’air entre les emplacements et leurs pierres d’effets.
+     La grille des cinq cases hérite de cette gouttière. */
   gap: 18px;
   padding: 0 2%;
 }

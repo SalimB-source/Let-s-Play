@@ -15,6 +15,7 @@
 
 import { cardById, cardCost } from './rpgCards.js';
 import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
+import { estDefenseur } from './rpgDefenseur.js';
 
 /**
  * Présente la main par coût croissant, de gauche à droite, avec ou sans piles.
@@ -91,7 +92,8 @@ export function armesPortees(entite) {
  * deux créatures identiques ne fusionnent jamais d'un côté à l'autre, et une
  * créature armée reste seule dans sa pile. Les exemplaires engagés et
  * dégagés restent dans des piles distinctes, tout comme les cartes encore
- * atteintes du mal d’invocation et celles qui ne le sont pas.
+ * atteintes du mal d’invocation et celles qui ne le sont pas ; Défenseur et
+ * Envol accordés à certains exemplaires séparent aussi leurs silhouettes.
  * @param {{ id: string, carteId: string }[]} entites créatures d'un camp
  * @returns {{ carteId: string, entites: object[] }[]} une pile par nom, dans
  *   l'ordre du champ de bataille ; `entites[0]` est la carte de tête.
@@ -102,10 +104,15 @@ export function rpgEtatVisuelPile(entite) {
   return rpgSouffreMalInvocation(entite) ? 'mal-invocation' : 'degagee';
 }
 
+/** Une pile ne doit pas masquer une silhouette ou une hauteur différente. */
+export function rpgSignaturePile(entite) {
+  return `${entite.carteId}:${rpgEtatVisuelPile(entite)}:${estDefenseur(entite) ? 'defenseur' : 'normal'}:${entite.envol ? 'envol' : 'sol'}`;
+}
+
 export function groupEntitesParCarte(entites = []) {
   const piles = new Map();
   for (const entite of entites ?? []) {
-    const cle = armesPortees(entite).length ? `arme:${entite.id}` : `${entite.carteId}:${rpgEtatVisuelPile(entite)}`;
+    const cle = armesPortees(entite).length ? `arme:${entite.id}` : rpgSignaturePile(entite);
     let pile = piles.get(cle);
     if (!pile) {
       pile = { carteId: entite.carteId, entites: [] };

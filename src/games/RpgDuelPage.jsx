@@ -84,7 +84,7 @@ import {
   adversaireManaEssai,
   deckManaEssaiParId,
 } from './rpgManaEssai.js';
-import { armesPortees, groupEntitesParCarte, rpgEtatVisuelPile, trierCartesMainParCout, trierMainAvecRenvois } from './rpgCardStacks.js';
+import { armesPortees, groupEntitesParCarte, rpgSignaturePile, trierCartesMainParCout, trierMainAvecRenvois } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
 import {
   RPG_VITESSES_ANIMATION,
@@ -13684,12 +13684,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? groupEntitesParCarte(entites)
       : entites.map((entite) => ({ carteId: entite.carteId, entites: [entite] })),
   });
-  const clePile = (cote, carteId) => `${cote}:${carteId}`;
+  const clePile = (cote, pile) => `${cote}:${rpgSignaturePile(pile.entites[0])}`;
   // Une pile homonyme se garde par son nom et son état visuel ; une créature armée, seule dans sa
   // pile, par son identifiant — deux créatures armées identiques restent deux
   // clés distinctes.
   const clePileRendu = (pile) => (empilerCartes && !armesPortees(pile.entites[0]).length
-    ? `${pile.carteId}:${rpgEtatVisuelPile(pile.entites[0])}`
+    ? rpgSignaturePile(pile.entites[0])
     : pile.entites[0].id);
   const basculerPile = (cle) => {
     jouerSfx('pile');
@@ -13703,7 +13703,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pileDeployee = (cote, pile) => pile.entites.length < 2
     || Boolean(selectionAscension.rituel && cote === 'joueur')
     || pile.entites.some((entite) => idsActionEnCours.has(entite.id))
-    || pilesDeployees.has(clePile(cote, pile.carteId));
+    || pilesDeployees.has(clePile(cote, pile));
   const teteDePile = (cote, pile) => {
     const liste = pile.entites;
     if (liste.length < 2) return liste[0];
@@ -14375,7 +14375,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             />
           )}
           {duel.sorcier.creatures.length ? campEnnemi.piles.map((pile) => {
-            const cle = clePile('ennemi', pile.carteId);
+            const cle = clePile('ennemi', pile);
             const deployee = pileDeployee('ennemi', pile);
             const affichees = deployee ? pile.entites : [teteDePile('ennemi', pile)];
             const nom = cardById(pile.carteId)?.name ?? 'ces créatures';
@@ -14502,7 +14502,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             />
           )}
           {duel.joueur.creatures.length ? campJoueur.piles.map((pile) => {
-            const cle = clePile('joueur', pile.carteId);
+            const cle = clePile('joueur', pile);
             const deployee = pileDeployee('joueur', pile);
             const affichees = deployee ? pile.entites : [teteDePile('joueur', pile)];
             const nom = cardById(pile.carteId)?.name ?? 'ces créatures';

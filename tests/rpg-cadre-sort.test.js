@@ -137,7 +137,7 @@ test('le cadre suit l’illustration dans les faces du jeu, sans intercepter les
   assert.match(css, /z-index:\s*1/);
   assert.match(css, /> img:has\(\+ \.rpg-cadre-carte\)\s*\{\s*clip-path:\s*var\(--rpg-cadre-decoupe\)/);
   const bouclier = lire('rpg-bouclier.css');
-  // Les Défenseurs restent des cartes rectangulaires de taille ordinaire.
+  // Les Défenseurs gardent leur taille et ne reçoivent pas le cadre des sorts.
   assert.doesNotMatch(bouclier, /--rpg-cadre-decoupe|cadre-le-sablier|--rpg-ecusson-masque|--rpg-defenseur-echelle/);
   assert.match(bouclier, /data-effet='defenseur'/);
   assert.match(css, /pointer-events:\s*none/);
