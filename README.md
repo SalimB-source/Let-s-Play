@@ -9743,3 +9743,49 @@ réserves pré-existantes, hors de cette leçon : `check:rpg-tutorial-ui` casse 
 l'entrée du guide des cartes a quitté le menu Jouer (`onStartCardGuide` est
 encore passé à `GameModeMenu`, qui ne l'emploie plus), l'écran `guide` reste
 donc joignable de nulle part.
+
+## Le Sablier : le duel debout retrouve sa table
+
+Sur téléphone en portrait, la coque à sept rangées existait, mais les feuilles
+du paysage posaient encore sur ses enfants des zones de grille qui n'existaient
+pas (`enemy-mana`, `mana`, `controls`, `hand`). La première colonne tombait à
+zéro pixel, la main et les commandes partaient dans des pistes implicites, et
+l'avatar absolu du paysage — dimensionné à 100 % de la table — recouvrait tout
+le plateau d'un portrait géant. Le duel était illisible debout.
+
+`src/games/rpg-portrait.css` range maintenant **tous les enfants** dans l'unique
+colonne et donne au HUD sa forme de téléphone :
+
+- deux **capsules de sorcier** (médaillon, nom, compteurs, PV) dans les bandeaux
+  `haut` et `bas`, avec la réserve d'Ascension à droite ;
+- deux champs de cinq cases sur toute la largeur, posés sur un simple halo
+  sombre — la peinture du plateau reste visible ;
+- un **rail du tour horizontal** (indicateur, six phases, « Fin du tour ») dans
+  la rangée `commandes`, et les actions de combat qui flottent juste au-dessus ;
+- une main centrée sur toute la largeur, avec son socle dégradé ;
+- le hamburger, la main adverse et le journal conservent la rangée du haut.
+
+La variante paysage « deux rangées de créatures » est rappelée dans la coque
+debout : ses quatre pistes ne prennent plus le pas sur les sept rangées. Les
+deux moitiés peintes sont légèrement assombries (`brightness(.86)`), sans voile
+ni panneau opaque. Le paysage, lui, ne bouge pas.
+
+### Où vit le code
+
+- `src/games/rpg-portrait.css` — remise à plat des placements, capsules des
+  plaques, médaillon ramené dans sa cellule, rail horizontal, main centrée ;
+- `docs/rpg/mobile-layout.md` — la section « Le duel debout : le HUD ne hérite
+  plus du paysage ».
+
+### Vérifications
+
+```bash
+npm run check:rpg-portrait   # 17/17 — sept rangées, échelle, ordre des feuilles, HUD debout
+npm run build                # le bundle se construit
+```
+
+Captures au doigt de 320 × 568, 390 × 844, 412 × 915 et 768 × 1024 : aucune
+piste implicite, les deux bandeaux, les quatre rangées de cases, le rail et la
+main tiennent dans l'écran. `npm run check:rpg-mobile` demande un navigateur
+Playwright et un compte de test : dans cet environnement, il s'arrête avant la
+mesure sur l'écran de connexion, à HEAD comme ici.

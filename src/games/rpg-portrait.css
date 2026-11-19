@@ -192,4 +192,413 @@
   .rpg-battle--touch .rpg-annonce-sort__compact {
     left: max(6px, env(safe-area-inset-left, 0px));
   }
+
+  /* ── 7. Le HUD debout : on efface les derniers placements du paysage ──────
+     La grille à une colonne ne suffisait pas : les feuilles du paysage
+     continuaient de poser des `grid-area: enemy-mana`, `mana`, `controls` ou
+     `hand` sur les enfants de la table. Ces noms, absents de la grille debout,
+     créaient des colonnes et des rangées implicites : la première colonne
+     tombait à zéro pixel, la main et les commandes partaient à droite, et
+     l'avatar absolu du paysage — large de 100 % de la table — recouvrait tout
+     le plateau. On range donc **chaque enfant** dans l'unique colonne, avec
+     les sept zones nommées ci-dessus, et l'on redonne aux plaques leur forme
+     de capsule lisible au doigt. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > :is(
+    .rpg-duel-nav, .rpg-hidden-hand, .rpg-wizard-plate, .rpg-ascension-zone,
+    .rpg-flux-track, .rpg-terrains, .rpg-card-piles, .rpg-table-zones,
+    .card-row, .rpg-bottombar, .rpg-turn-rail, .rpg-hand-dock
+  ),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > :is(
+    .rpg-duel-nav, .rpg-hidden-hand, .rpg-wizard-plate, .rpg-ascension-zone,
+    .rpg-flux-track, .rpg-terrains, .rpg-card-piles, .rpg-table-zones,
+    .card-row, .rpg-bottombar, .rpg-turn-rail, .rpg-hand-dock
+  ) {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  /* Le journal garde son onglet flottant : il n'entre pas dans la grille. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-combat-feed,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-combat-feed {
+    position: absolute;
+    grid-area: auto;
+    top: max(8px, env(safe-area-inset-top, 0px));
+    left: max(8px, env(safe-area-inset-left, 0px));
+    z-index: 60;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-duel-nav,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-duel-nav {
+    grid-area: tete;
+    justify-self: end;
+    align-self: center;
+    z-index: 60;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-hidden-hand,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-hidden-hand {
+    grid-area: tete;
+    justify-self: center;
+    align-self: center;
+    z-index: 5;
+  }
+
+  /* Les deux plaques redeviennent des capsules : médaillon à gauche, nom et
+     compteurs au centre, PV à droite. Le médaillon du paysage était absolu et
+     prenait toute la table ; il rentre ici dans sa cellule. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate {
+    position: relative;
+    inset: auto;
+    display: grid;
+    grid-template-columns: var(--rpg-avatar-height) minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 0 8px;
+    width: calc(100% - 112px);
+    max-width: calc(100% - 112px);
+    height: var(--rpg-avatar-nav);
+    min-height: 0;
+    margin: 0 max(2px, env(safe-area-inset-right, 0px)) 0 max(2px, env(safe-area-inset-left, 0px));
+    padding: 4px 8px;
+    border: 1px solid rgba(226, 190, 119, .34);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(13, 11, 16, .9), rgba(8, 7, 12, .78));
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .38);
+    transform: none;
+    overflow: hidden;
+    text-align: left;
+    z-index: 8;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+    grid-area: haut;
+    justify-self: start;
+    align-self: center;
+    border-color: rgba(193, 105, 72, .58);
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur {
+    grid-area: bas;
+    justify-self: start;
+    align-self: center;
+    border-color: rgba(220, 186, 105, .58);
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur {
+    top: auto;
+    bottom: auto;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate .rpg-wizard-plate__avatar,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate .rpg-wizard-plate__avatar {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: var(--rpg-avatar-height);
+    height: var(--rpg-avatar-height);
+    max-width: none;
+    max-height: none;
+    border: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-wizard-plate__avatar img,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-wizard-plate__avatar img {
+    position: absolute;
+    left: 9%;
+    bottom: 2%;
+    width: 82%;
+    height: 82%;
+    transform: none;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center 22%;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__enemy-name, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__zones),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__enemy-name, .rpg-wizard-plate__profile-name, .rpg-wizard-plate__zones) {
+    display: block;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__enemy-name, .rpg-wizard-plate__profile-name),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table .rpg-wizard-plate :is(.rpg-wizard-plate__identity, .rpg-wizard-plate__enemy-name, .rpg-wizard-plate__profile-name) {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    line-height: 1.2;
+    color: #f4efe4;
+    text-shadow: 0 1px 3px #000;
+  }
+  /* Une seule identité par capsule : le nom du compte (ou « Sorcier adverse »)
+     suffit, le sur-titre « LE SORCIER / VOUS » du paysage ferait doublon et
+     déborderait sur les petits téléphones. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table .rpg-wizard-plate .rpg-wizard-plate__identity,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table .rpg-wizard-plate .rpg-wizard-plate__identity {
+    display: none;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table .rpg-wizard-plate :is(.rpg-wizard-plate__enemy-name, .rpg-wizard-plate__profile-name),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table .rpg-wizard-plate :is(.rpg-wizard-plate__enemy-name, .rpg-wizard-plate__profile-name) {
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table .rpg-wizard-plate__zones,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table .rpg-wizard-plate__zones {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 9.5px;
+    line-height: 1.2;
+    color: rgba(244, 239, 228, .72);
+    text-shadow: 0 1px 2px #000;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table .rpg-wizard-plate__pv.rpg-jauge-vie,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table .rpg-wizard-plate__pv.rpg-jauge-vie {
+    position: static;
+    inset: auto;
+    grid-column: 3;
+    grid-row: 1 / 3;
+    justify-self: end;
+    width: auto;
+    height: auto;
+    margin: 0;
+    transform: none;
+    background: transparent;
+    box-shadow: none;
+  }
+  /* Les capsules de zones du paysage font doublon avec la plaque debout. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-table-zones,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-table-zones {
+    display: none;
+  }
+  /* La réserve d'Ascension garde sa place à droite de chaque bandeau. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-ascension-zone,
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-flux-track,
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-terrains,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-ascension-zone,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-flux-track,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-terrains {
+    grid-area: haut;
+    position: relative;
+    inset: auto;
+    justify-self: end;
+    align-self: center;
+    width: 96px;
+    max-width: 96px;
+    margin: 0 max(2px, env(safe-area-inset-right, 0px)) 0 0;
+    z-index: 9;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > :is(.rpg-ascension-placement--joueur, [data-ascension-side="joueur"], .rpg-flux-track--joueur, .rpg-terrains--joueur),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > :is(.rpg-ascension-placement--joueur, [data-ascension-side="joueur"], .rpg-flux-track--joueur, .rpg-terrains--joueur) {
+    grid-area: bas;
+  }
+  /* La variante « deux rangées de créatures » du paysage pose quatre pistes
+     là où la coque debout en déclare sept : sans ce rappel, les trois dernières
+     rangées deviennent implicites et les bandeaux des sorciers s'ouvrent au
+     milieu du plateau. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table:has(.card-row[data-lignes="true"]),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table:has(.card-row[data-lignes="true"]) {
+    grid-template-rows:
+      var(--rpg-touch-nav)
+      var(--rpg-avatar-nav)
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      var(--rpg-avatar-nav)
+      auto
+      var(--rpg-touch-hand);
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-card-piles,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-card-piles {
+    display: none;
+  }
+
+  /* Les deux champs occupent enfin toute la largeur : cinq cases lisibles,
+     posées sur un léger halo sombre qui ne masque pas la peinture du plateau. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--ennemi,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row--ennemi {
+    grid-area: ennemi;
+    width: 100%;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row--equipe,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row--equipe {
+    grid-area: equipe;
+    width: 100%;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row::before,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 14px;
+    background: radial-gradient(120% 90% at 50% 50%, rgba(8, 7, 12, .22), rgba(8, 7, 12, 0) 78%);
+    pointer-events: none;
+  }
+
+  /* Le rail du tour devient une barre horizontale : indicateur, phases et
+     « Fin du tour » tiennent sur une seule ligne, dans une capsule sombre. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-turn-rail,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-turn-rail {
+    position: relative;
+    grid-area: commandes;
+    inset: auto;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    height: auto;
+    min-height: 46px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    margin: 0 max(2px, env(safe-area-inset-right, 0px)) 0 max(2px, env(safe-area-inset-left, 0px));
+    transform: none;
+    overflow: visible;
+    border: 1px solid rgba(226, 190, 119, .32);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(13, 11, 17, .9), rgba(8, 7, 12, .82));
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
+    pointer-events: auto;
+    z-index: 25;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-turn-indicator {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 2px 8px;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-turn-rail .rpg-phase-track,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-phase-track {
+    flex: 1 1 auto;
+    width: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 2px;
+    min-width: 0;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-turn-rail .rpg-phase-step__label,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-phase-step__label {
+    display: none;
+  }
+  /* En phase d'attaque, le paysage rangeait l'indicateur et les phases pour
+     laisser la place aux boutons. Debout, la barre est assez large : le HUD
+     reste entier, les actions de combat flottent au-dessus (voir plus bas). */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table:has(.rpg-actions__combat > .rpg-btn:nth-child(2)) .rpg-turn-rail :is(.rpg-turn-indicator, .rpg-phase-track),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table:has(.rpg-actions__combat > .rpg-btn:nth-child(2)) .rpg-turn-rail :is(.rpg-turn-indicator, .rpg-phase-track) {
+    display: flex;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-turn-rail .rpg-actions__turn,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-actions__turn {
+    display: flex;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    margin-left: auto;
+    gap: 4px;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-turn-rail .rpg-btn,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-btn {
+    width: auto;
+    min-width: 0;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail .rpg-btn--endturn {
+    min-height: 40px;
+    padding: 4px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  /* La barre du bas ne garde que les actions de combat : elles flottent
+     juste au-dessus du rail, sans recouvrir la main ni les cartes posées. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-bottombar,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-bottombar {
+    grid-area: commandes;
+    position: static;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    min-height: 0;
+    height: 0;
+    padding: 0;
+    gap: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 30;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-bottombar > :is(.rpg-log, .rpg-historique),
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-bottombar > :is(.rpg-log, .rpg-historique) {
+    display: none;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-bottombar .rpg-actions,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-bottombar .rpg-actions {
+    position: absolute;
+    left: max(6px, env(safe-area-inset-left, 0px));
+    right: max(6px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--rpg-touch-hand) + 56px + var(--rpg-avatar-nav) + var(--rpg-touch-gap) + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    justify-content: center;
+    width: auto;
+    max-height: none;
+    margin: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 31;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-bottombar .rpg-actions__row,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-bottombar .rpg-actions__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    gap: 6px;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-bottombar .rpg-btn,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-bottombar .rpg-btn {
+    pointer-events: auto;
+    min-height: 44px;
+  }
+
+  /* La main reprend toute la largeur, avec un léger socle sombre sous elle. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-hand-dock,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-hand-dock {
+    grid-area: main;
+    justify-self: stretch;
+    align-self: stretch;
+    width: 100%;
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    isolation: isolate;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-hand-dock::before,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-hand-dock::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-top: 1px solid rgba(226, 190, 119, .16);
+    background: linear-gradient(180deg, rgba(6, 5, 9, 0), rgba(6, 5, 9, .58));
+    pointer-events: none;
+  }
+  /* Sur une tablette debout, la main reste centrée au lieu de coller au bord
+     gauche : les cartes gardent leur cible pleine et la rangée respire. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
+    justify-content: safe center;
+  }
+  /* La peinture reste entière, mais perd l'éclat qui effaçait les repères
+     dorés sur les plateaux clairs (le Sablier debout est plein cadre). */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-plateau-moitie,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-plateau-moitie {
+    filter: brightness(.86) saturate(.92);
+  }
 }
