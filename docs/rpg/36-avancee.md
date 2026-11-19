@@ -50,6 +50,22 @@ rend le **propriétaire**. Un envahisseur est donc une carte du joueur dont
 `avancee` marque enfin une créature qui a quitté la case que sa carte lui
 imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 
+## La case fantôme
+
+Une créature qui a franchi la trouée n'est plus dans sa rangée — mais elle
+reste dans `duel[cote].creatures`. `rpgEmplacementsChamp(camp, maximum, cote)`
+la **laisse donc dehors** : sans le troisième paramètre, sa case locale passait
+pour prise dans son propre camp. Deux symptômes, tous deux corrigés :
+
+- une invocation légitime était refusée sur la case qu'elle semblait occuper ;
+- la créature apparaissait deux fois — une fois chez elle, une fois chez
+  l'adversaire.
+
+Le paramètre est optionnel : les appels qui ne connaissent pas le camp gardent
+l'ancien contrat (une rangée nue). Les rangées dessinées, elles, ne passent
+plus par cette fonction : elles lisent `occupantsDeCamp(duel, camp)`, qui
+mélange les deux propriétaires dans la rangée réelle.
+
 ## Ce que l'écran montre
 
 - **Choisir une créature ouvre la phase d'attaque** : les proies légales

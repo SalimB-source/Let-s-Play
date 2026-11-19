@@ -954,7 +954,10 @@ export function CreatureSlots({
 }) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
-  const cases = rpgEmplacementsChamp(camp, maximum);
+  // `cote` vient de l'affichage : « ennemi » est le camp `sorcier`. La rangée
+  // ne compte que ses vrais occupants — un envahisseur se dessine chez lui.
+  const campDuDuel = cote === 'joueur' ? 'joueur' : 'sorcier';
+  const cases = rpgEmplacementsChamp(camp, maximum, campDuDuel);
   const occupees = cases.filter(Boolean).length;
   // Le fond n'est hors de portée que tant qu'une créature tient le front.
   const fondProtege = deuxLignes && frontTient(camp?.creatures ?? []);
@@ -11908,7 +11911,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .find((element) => element.dataset.cardId === enCours.carteId);
     const index = source ? Number(source.dataset.handIndex) : null;
     const caseVictime = duel.modeMana === RPG_MODE_MANA_ESSAI
-      ? rpgEmplacementsChamp(duel.joueur).findIndex((entite) => entite?.id === enCours.sacrificeIds[0])
+      ? rpgEmplacementsChamp(duel.joueur, undefined, 'joueur').findIndex((entite) => entite?.id === enCours.sacrificeIds[0])
       : -1;
     if (carte && source && Number.isInteger(index) && index >= 0 && !animationsReduites()) {
       demarrerVolCarte(carte, index, poserApresRituel, caseVictime >= 0 ? caseVictime : null, { voixALaPose: true });
@@ -12093,7 +12096,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    *  (0 à 9 quand les deux lignes sont ouvertes) : une archère ne se pose
    *  jamais devant, un corps à corps jamais derrière. */
   const casesLibresJoueur = (carte = null) => (duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? rpgEmplacementsChamp(duel.joueur, champMax(duel))
+    ? rpgEmplacementsChamp(duel.joueur, champMax(duel), 'joueur')
       .map((occupant, index) => (occupant ? null : index))
       .filter((index) => index !== null && (!carte || caseAutorisee(carte, index)))
     : []);
@@ -12195,7 +12198,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(pose.carteId);
     const handIndex = Number.isInteger(pose.handIndex) && duel.joueur.main[pose.handIndex] === pose.carteId
       ? pose.handIndex : duel.joueur.main.indexOf(pose.carteId);
-    if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur, champMax(duel))[index]
+    if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur, champMax(duel), 'joueur')[index]
       || !caseAutorisee(carte, index)) {
       jouerSfx('erreur');
       force();
