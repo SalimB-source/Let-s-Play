@@ -163,3 +163,16 @@ test('les piles tactiles séparent le mal d’invocation des créatures disponib
   assert.deepEqual(groupEntitesParCarte([prete, malade, rapide]).map(p => p.entites.map(e => e.id)), [['a', 'c'], ['b']]);
   assert.equal(groupEntitesParCarte([prete, { ...malade, malInvocation: false }]).length, 1);
 });
+
+
+test('les piles séparent Défenseur et Envol accordés, puis se regroupent quand ils disparaissent', () => {
+  const sol = creature('sol', 'chien-du-guet');
+  const garde = { ...creature('garde', 'chien-du-guet'), defenseurAccorde: true };
+  const vol = { ...creature('vol', 'chien-du-guet'), envol: true };
+  const gardeVol = { ...creature('garde-vol', 'chien-du-guet'), defenseurAccorde: true, envol: true };
+  const vol2 = { ...creature('vol2', 'chien-du-guet'), envol: true };
+  assert.deepEqual(groupEntitesParCarte([sol, garde, vol, gardeVol, vol2]).map(p => p.entites.map(e => e.id)),
+    [['sol'], ['garde'], ['vol', 'vol2'], ['garde-vol']]);
+  garde.defenseurAccorde = false; vol.envol = false; gardeVol.defenseurAccorde = false; gardeVol.envol = false; vol2.envol = false;
+  assert.equal(groupEntitesParCarte([sol, garde, vol, gardeVol, vol2]).length, 1);
+});

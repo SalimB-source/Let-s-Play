@@ -1,8 +1,29 @@
-/* Les Défenseurs gardent la forme rectangulaire des autres cartes. Leur
-   repère est la pierre marron doré animée ; aucune face ni effet n'est masqué. */
-.rpg-card.rpg-carte-bouclier:not(.is-active, .is-selected, .is-blocking, .is-blocker-assigned, .is-blocker-target-hover, .is-blocker-selected, .is-sacrifice, .is-sacrifice-target, .is-ascension-chosen, .is-attacking, .is-target, .is-ciblable, .is-declared-attacker) {
-  box-shadow: 0 10px 12px rgba(0, 0, 0, .9), 0 6px 8px rgba(0, 0, 0, .7);
+/* La silhouette suit le SVG fourni (commit 3a5afcd), étiré au format 4:5
+   de la carte. Seule la peinture et ses voiles sont découpés : les pierres,
+   chiffres, zones de clic et animations de combat peuvent encore déborder. */
+.rpg-card.rpg-carte-bouclier,
+.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card) {
+  background: transparent !important;
+  border-color: transparent;
 }
+/* L'ombre rectangulaire ne doit pas trahir la silhouette au repos. Les halos
+   interactifs existants restent cependant disponibles pour sélection/ciblage. */
+.rpg-card.rpg-carte-bouclier:not(.is-active, .is-selected, .is-blocking, .is-blocker-assigned, .is-blocker-target-hover, .is-blocker-selected, .is-sacrifice, .is-sacrifice-target, .is-ascension-chosen, .is-attacking, .is-target, .is-ciblable, .is-declared-attacker, .is-spell-target, .is-coup-rapide-cible),
+.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card, .is-attacking, .is-blocking, .is-target) {
+  box-shadow: none !important;
+}
+.rpg-card.rpg-carte-bouclier > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__brume, .rpg-card__envol),
+.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card) > img {
+  mask: url('./assets/bouclier-defenseur.svg') center / 100% 100% no-repeat;
+  -webkit-mask: url('./assets/bouclier-defenseur.svg') center / 100% 100% no-repeat;
+}
+/* Le mode Conquête autonome affiche un texte de secours à la place des pierres. */
+.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card) .moba__slot-label {
+  bottom: 18%;
+  background: none;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+}
+
 .rpg-card.rpg-carte-bouclier > .rpg-card__foot { translate: 0 -20cqw; }
 
 /* Une pulsation douce met en évidence la pierre, sans faire disparaître son
@@ -19,4 +40,19 @@
 }
 .rpg-battle.is-reduced .rpg-card-icone[data-effet='defenseur'] .rpg-effet-icone {
   animation: none; opacity: 1;
+}
+
+/* Le niveau de la rangée est porté par son enfant direct : en mode sans
+   terrains, les piles et les capteurs forment leur propre contexte. Élever
+   uniquement la face intérieure ne suffit pas à passer devant une voisine. */
+.rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card.is-envol,
+.rpg-battle[data-mode-mana="essai"] .card-row > :is(.rpg-card-stack, .rpg-card-prison):has(.rpg-card.is-envol),
+.card-row > :is(.rpg-card-stack, .rpg-card-prison):has(.rpg-card.is-envol) {
+  z-index: 2;
+}
+/* En Conquête, la case est aussi un contexte distinct. Ceci vaut aussi pour
+   le rendu autonome, et suit les changements d'Envol pendant la partie. */
+.moba .moba__slots > :is(.moba__real-slot, .moba__plain-slot, .moba__ghost-slot):has(.is-envol) {
+  position: relative;
+  z-index: 2;
 }

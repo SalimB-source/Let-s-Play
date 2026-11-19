@@ -52,12 +52,13 @@ test('les Défenseurs gardent la couleur de leur carte, sans aucun cadre', async
   } finally { await vite.close(); }
 });
 
-test('les styles Défenseur gardent la carte rectangulaire et font pulser la pierre marron doré', () => {
+test('la silhouette Défenseur garde la taille ordinaire et la pierre marron doré', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(css, /--rpg-ecusson|mask-image|clip-path|rpg-card__liseret-garde|rpg-card__ombre-garde/);
+  assert.doesNotMatch(css, /--rpg-ecusson|clip-path|rpg-card__liseret-garde|rpg-card__ombre-garde/);
+  assert.match(css, /mask: url\('\.\/assets\/bouclier-defenseur\.svg'\)/);
   assert.doesNotMatch(css, /--rpg-cadre-decoupe|cadre-le-sablier/);
   assert.doesNotMatch(css, /--rpg-defenseur-echelle/);
   assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/);
-  assert.match(css, /box-shadow: 0 10px 12px/);
+  assert.match(css, /box-shadow: none !important/);
   assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre/s);
 });
