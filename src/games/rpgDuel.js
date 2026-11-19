@@ -9226,10 +9226,19 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     // **Le contact.** Une attaque de mêlée est un duel : les deux créatures
     // frappent ensemble, la cible déclenche ses capacités « au blocage », et
     // son porteur peut geler ou renvoyer l'attaquant. Un tir n'a pas de
-    // contact : l'Attaque ciblée n'en a jamais eu, et « À distance » non plus
-    // depuis les deux lignes — elle frappe de loin, sans recevoir de coup en
-    // retour, mais elle ne voit pas le fond adverse (voir `rpgLignes.js`).
+    // contact : l'Attaque ciblée n'en a jamais eu, et « À distance » frappe de
+    // loin, sans recevoir de coup en retour — sauf contre une autre créature
+    // « À distance » (voir `echangeDeTireurs`). Elle ne voit pas le fond
+    // adverse pour autant (voir `rpgLignes.js`).
     const auContact = !ciblee && !attaquant.distance;
+    // **L'échange de tirs.** Deux tireurs qui se visent se répondent : la
+    // cible riposte de sa propre volée, comme au contact, mais sans contact —
+    // ni capacités « au blocage », ni gel du porteur adverse, ni renvoi après
+    // les blessures. Un tireur face à un corps à corps garde son tir sans
+    // réponse : l'autre ne l'atteint pas.
+    const echangeDeTireurs = !ciblee && Boolean(attaquant.distance) && Boolean(cible.distance);
+    // Ce qui fait riposter la cible : le duel de mêlée, ou l'échange de tirs.
+    const riposte = auContact || echangeDeTireurs;
     // En MOBA, une attaque normale contre une créature est l'unique duel :
     // la cible y déclenche ses effets « au blocage », sans phase de blocage
     // séparée. Les deux capacités frappent ensemble AVANT l'échange normal.
@@ -9281,8 +9290,9 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
         const coup = { cote: adv, entiteId: cible.id, amount: force - exces,
           sourceElement: cardColors(duelCardById(attaquant.carteId)), sourceType: 'attaque', sourceCote: cote, sourceId: attaquant.id, voieCombat: lane, rapide: ciblee };
         const coups = [coup];
-        // La riposte de la créature visée : un duel, pas un tir.
-        if (auContact) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, 0, attaquant),
+        // La riposte de la créature visée : le duel de mêlée, ou la volée
+        // rendue par un autre tireur.
+        if (riposte) coups.push({ cote, entiteId: attaquant.id, amount: calculForce(cible, 0, attaquant),
           sourceElement: cardColors(duelCardById(cible.carteId)), sourceType: 'attaque', sourceCote: adv, sourceId: cible.id, voieCombat: lane });
         let touche = false;
         const esquives = appliquerDegatsDeCombatSimultanes(duel, coups, {

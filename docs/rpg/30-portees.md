@@ -27,6 +27,26 @@ Deux précisions qui ont coûté des tests :
   une créature qui ne pouvait pas bouger. Depuis que la mêlée avance, elle
   choisit sa case — et frappe les huit qui l'entourent.
 
+## L'échange de tirs
+
+Frappée au corps à corps, une créature rend son coup : la mêlée est un duel
+simultané. Un **tir** n'a pas de contact — l'Attaque ciblée n'en a jamais eu, et
+une créature « À distance » frappe de loin sans qu'une mêlée puisse l'atteindre
+en retour.
+
+Une exception, décidée après une partie : **deux tireurs qui se visent se
+répondent**. Quand une créature « À distance » en attaque une autre, la cible
+riposte de sa propre volée, dans le même échange simultané que la mêlée.
+
+Ce que l'exception **ne** rouvre pas : l'échange de tirs reste **sans contact**.
+Ni capacités « au blocage », ni gel du porteur adverse, ni renvoi de Sphère
+après les blessures — ces effets-là supposent des corps qui se touchent. Un
+tireur n'y gagne donc qu'une chose : le droit de répondre.
+
+Le gel se lit toujours dans la force : un tireur gelé riposte à zéro. Un tireur
+face à un **corps à corps** garde son tir sans réponse — l'autre ne l'atteint
+pas. L'Attaque ciblée, elle, n'en reçoit jamais, d'où qu'elle vienne.
+
 ## La géométrie
 
 Quatre rangées absolues (`src/games/rpgChamp.js`), distance de **Tchebychev** :
@@ -110,7 +130,8 @@ si la créature peut encore avancer, auquel cas la phase montre aussi ses cases
 
 ## Vérifications
 
-`node --test tests/rpg-portees.test.js` (9) · `tests/rpg-lignes-duel.test.js`
-(13) · `tests/rpg-sorcier-objectif.test.js` (9) · `tests/rpg-mouvement.test.js`
-(12) · `tests/rpg-avancee-scenario.test.js` (4) ·
-`npm run check:rpg-lignes` (33) · `npm run check:rpg-classique-individuel` (64).
+`node --test tests/rpg-tir-riposte.test.js` (6) · `tests/rpg-portees.test.js`
+(9) · `tests/rpg-lignes-duel.test.js` (13) · `tests/rpg-sorcier-objectif.test.js`
+(9) · `tests/rpg-mouvement.test.js` (12) · `tests/rpg-avancee-scenario.test.js`
+(4) · `npm run check:rpg-avancee` (90) · `npm run check:rpg-lignes` (34) ·
+`npm run check:rpg-classique-individuel` (64).

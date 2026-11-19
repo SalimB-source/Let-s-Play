@@ -98,17 +98,25 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
   });
 }
 
-// Depuis les deux lignes, une créature « À distance » frappe sans recevoir de
-// coup en retour : attaquée au corps à corps, elle ne rend donc plus son coup —
-// son Coup critique ne peut plus se déclencher en défense. C'était l'ancienne
-// promesse de ce test, restée rouge sur `main` depuis la règle du tir.
-for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : le tireur du fond ne rend pas de coup`, () => {
+// Deux tireurs qui se visent se répondent : la volée de l'ashigaru du fond lui
+// revient, portée par l'archer. Seul le tir contre un corps à corps reste sans
+// réponse — celui-là ne l'atteint pas.
+for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : deux tireurs échangent leurs volées`, () => {
   const d = partie(mode), cible = archer(d, mode, autre(side)), a = poser(d, mode, side, 'ashigaru-des-braises');
   a.pv = a.pvMax = a.def = 20; d.tour = side;
-  const jets = [.9, .1]; rpgReglerHasard(d, () => jets.shift() ?? .9);
+  rpgReglerHasard(d, () => .9); // ni Coup critique ni Attaque ciblée ratée
   assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
-  assert.equal(a.pv, 20, 'aucune riposte ne part du fond');
-  assert.ok(!(d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === cible.id));
+  assert.equal(a.pv, 20 - cible.atk, 'le tireur adverse rend sa volée');
+});
+
+// La règle du tir survit face à un corps à corps : l'ashigaru, à distance,
+// frappe une créature de mêlée sans recevoir de coup en retour.
+for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : le tireur ne reçoit rien d'un corps à corps`, () => {
+  const d = partie(mode), cible = archer(d, mode, autre(side)), a = poser(d, mode, side, 'ashigaru-des-braises');
+  a.pv = a.pvMax = a.def = 20; cible.distance = false; d.tour = side;
+  rpgReglerHasard(d, () => .9);
+  assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
+  assert.equal(a.pv, 20, 'aucune riposte ne part d’une mêlée');
 });
 
 test('MOBA : la carte figure dans le catalogue de construction audité', async () => {
