@@ -270,9 +270,32 @@
     minmax(min-content, calc(50% - var(--rpg-avatar-nav) - 1.5 * var(--rpg-touch-gap)))
     minmax(min-content, 1fr)
     var(--rpg-touch-hand);
+  /* Ce qu'une bande de camp peut **mesurer en hauteur**, la plus petite de
+     deux bornes : la moitié de la table moins la marge, le bandeau d'avatar et
+     la gouttière qui la précèdent (la bande adverse ne prend jamais plus,
+     `grid-template-rows` ci-dessus), et la moitié de ce que la table laisse
+     une fois la main et le bandeau payés — les deux camps se partagent ce
+     reste-là. Les deux rangées du plateau s'y mesurent
+     (`rpg-mana-essai.css`) : c'est la mesure qui manquait — la colonne ne se
+     calculait que sur la largeur d'une carte, si bien qu'en téléphone paysage
+     les deux rangées du joueur débordaient de leur bande, passaient par-dessus
+     l'avatar et poussaient la main à moitié hors de l'écran. `dvh` d'abord
+     (repli des navigateurs sans `svh`), `svh` dans le bloc `@supports` plus
+     bas : les barres du navigateur ne font pas respirer la grille en cours de
+     partie. */
+  --rpg-board-band: min(
+    calc(50dvh - var(--rpg-touch-pad) - var(--rpg-avatar-nav) - 1.5 * var(--rpg-touch-gap)),
+    calc((100dvh - 2 * var(--rpg-touch-pad) - 3 * var(--rpg-touch-gap)
+      - var(--rpg-avatar-nav) - var(--rpg-touch-hand)) / 2));
 }
 
 @supports (height: 100svh) {
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table:has(.card-row[data-lignes="true"]) {
+    --rpg-board-band: min(
+      calc(50svh - var(--rpg-touch-pad) - var(--rpg-avatar-nav) - 1.5 * var(--rpg-touch-gap)),
+      calc((100svh - 2 * var(--rpg-touch-pad) - 3 * var(--rpg-touch-gap)
+        - var(--rpg-avatar-nav) - var(--rpg-touch-hand)) / 2));
+  }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table {
     --rpg-field-card: min(calc(var(--duel-card) * 1.05), max(34px, calc((50svh - var(--rpg-avatar-height) - var(--rpg-avatar-vie) - 18px - env(safe-area-inset-bottom, 0px)) * .8)));

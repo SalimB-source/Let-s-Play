@@ -209,6 +209,35 @@ l'arrière.
 Les repères de case vide (`::before`/`::after`) sont explicitement exclus des
 cases d'avancée : une case qui propose un pas ne dessine pas une croix.
 
+## Le plateau à deux lignes sur un téléphone
+
+Le duel se joue **en paysage** au doigt (le portrait n'affiche que l'invite à
+tourner l'appareil). Deux bandes de camp, un bandeau d'avatar au-dessus, la main
+en dessous : sur un écran de 390 px de haut, il ne reste que ~200 px pour les
+deux champs. Une colonne de case ne peut donc pas se mesurer sur la carte seule
+(`--essai-colonne`, 72 % d'une carte posée) : elle est **plafonnée par la
+hauteur d'une bande** (`--rpg-board-band`, `rpg-avatars-plateau.css`), qui vaut
+la plus petite de deux bornes — la moitié de la table moins le bandeau
+d'avatar, et la moitié de ce que la table laisse une fois le bandeau et la main
+payés.
+
+Sans ce plafond, les deux rangées du joueur débordaient de leur bande : elles
+passaient **par-dessus l'avatar** et poussaient la main à moitié hors de
+l'écran. Les deux bandes gardent maintenant la hauteur de leurs deux rangées,
+la main reste entière et l'avatar du joueur reste dégagé.
+
+| Écran (paysage) | Colonne avant | Colonne après | Deux rangées | Place par camp |
+|---|---|---|---|---|
+| 568 × 320 | 36 px | 24 px | 72 px | 76 px |
+| 667 × 375 | 44 px | 26 px | 78 px | 96 px |
+| 844 × 390 | 46 px | 28 px | 82 px | 100 px |
+| 926 × 428 | 50 px | 33 px | 94 px | 112 px |
+
+Les cases sont plus petites qu'avant — c'est la place qui manquait, pas la
+marge : dix cartes au ratio 4/5 ne tiennent pas autrement dans 200 px de haut.
+`tests/rpg-plateau-mobile.test.js` rejoue cette arithmétique sur les six tailles
+courantes plutôt que de la laisser au hasard d'un rendu.
+
 ## L'IA
 
 `rpgIABougerCreatures(duel, 'sorcier')` est appelée au début de
@@ -265,8 +294,9 @@ idempotentes, comme le reste des scènes.
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
 | `tests/rpg-lignes-duel.test.js` | 14 (entrée par l'arrière, arrière plein, tir à deux cases) |
+| `tests/rpg-plateau-mobile.test.js` | 4 (plafond de la colonne, mesure de la bande, six tailles d'écran, largeur des cinq cases) |
 | `tests/rpg-sorcier-objectif.test.js` | 9 |
-| `npm run check:rpg-avancee` | 80 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
+| `npm run check:rpg-avancee` | 84 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
 | `npm run check:rpg-lignes` | 33 / 0 |
 | `npm run check:rpg-classique-individuel` | 64 / 0 |
 

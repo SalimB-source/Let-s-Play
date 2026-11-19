@@ -1167,11 +1167,21 @@
   background: radial-gradient(120% 90% at 50% 100%, rgba(214, 122, 106, .10), rgba(10, 8, 5, .30) 72%);
 }
 
-/* Au doigt, les deux rangées se mesurent sur la carte du champ, à 72 % : la
-   bande d'un camp garde deux rangées lisibles sur un téléphone. */
+/* Au doigt, les deux rangées se mesurent sur la carte du champ, à 72 % — mais
+   **plafonnées par la hauteur d'une bande de camp** (`--rpg-board-band`, posée
+   sur la table par `rpg-avatars-plateau.css`) : c'est la vraie contrainte d'un
+   téléphone en paysage, où le bandeau d'avatar et la main mangent 40 % de la
+   hauteur. Sans ce plafond, la colonne ne dépendait que de la carte, les deux
+   rangées du joueur débordaient de leur bande — par-dessus l'avatar — et
+   poussaient la main à moitié hors de l'écran. Le plancher de 24 px évite une
+   grille écrasée sur un écran minuscule ; `- 16px` réserve la gouttière des
+   rangées et la marge intérieure de la rangée, plus 4 px d'air. */
 .rpg-battle--touch[data-mode-mana="essai"] .card-row[data-lignes="true"] {
-  --essai-colonne: calc(var(--rpg-field-card, var(--duel-card, 64px)) * .72);
+  --essai-colonne: clamp(24px,
+    min(calc(var(--rpg-field-card, var(--duel-card, 64px)) * .72),
+      calc((var(--rpg-board-band, 120px) - 16px) / 2.5)),
+    var(--rpg-field-card, var(--duel-card, 64px)));
   column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
   row-gap: 4px;
-  min-height: calc(var(--rpg-field-card, var(--duel-card, 64px)) * .72 * 2.5 + 4px);
+  min-height: calc(var(--essai-colonne) * 2.5 + 4px);
 }
