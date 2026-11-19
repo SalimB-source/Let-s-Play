@@ -26,6 +26,9 @@
  * - **Rien hors des lignes** : sans `duel.lignes`, aucune créature ne bouge.
  *   Le champ de cinq cases et les modes historiques gardent leur géométrie.
  * - **Rien pour une créature engagée** (`attaquee`), gelée, ou déjà déplacée.
+ * - **Rien le tour de son arrivée** : le mal d'invocation interdit le pas comme
+ *   l'attaque — la créature attend le prochain tour de son camp (Rapidité
+ *   exceptée). L'IA n'a donc plus de « pose puis glisse » à son actif.
  * - **Rien pour un Site** : un site ne marche pas.
  * - **Aucune contrainte de carte** : le placement impose la ligne
  *   (`ligneObligee`), le mouvement non. Un tireur peut avancer au front, un
@@ -37,6 +40,7 @@ import {
 } from './rpgChamp.js';
 import { duelCardById } from './rpgCards.js';
 import { lignesActives } from './rpgLignes.js';
+import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 
 /** Une case par tour. */
 export const RPG_MOUVEMENT_CASES = 1;
@@ -46,6 +50,13 @@ export function rpgPeutBouger(duel, cote, entite) {
   if (!lignesActives(duel) || duel?.moba) return false;
   if (!entite || !Number.isInteger(entite.emplacement)) return false;
   if (entite.bouge || entite.attaquee) return false;
+  // **Le mal d'invocation vaut aussi pour le pas.** Une créature qui vient
+  // d'arriver n'a pas encore pris ses marques : elle attend le prochain tour de
+  // son camp pour avancer, comme elle l'attend pour attaquer. Sans cette garde,
+  // l'IA posait une créature puis la faisait aussitôt glisser d'une case — le
+  // joueur voyait un corps neuf traverser le champ avant même qu'il ait pu
+  // lire sa carte. La Rapidité, imprimée ou accordée, lève les deux attentes.
+  if (rpgSouffreMalInvocation(entite)) return false;
   if ((entite.gelToursRestants ?? 0) > 0) return false;
   const carte = duelCardById(entite.carteId);
   if (!carte || carte.kind === 'site') return false;
