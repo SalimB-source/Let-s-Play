@@ -30,7 +30,7 @@ import { classeBouclier } from './rpgBouclier.js';
 import { champMax, ligneDeCase, caseChoisissable, ligneDePose, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
-import { deplacementsLegaux, rpgDeplacerCreature } from './rpgMouvement.js';
+import { deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger } from './rpgMouvement.js';
 import { rpgIABougerCreatures } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
@@ -952,6 +952,9 @@ export function CreatureSlots({
   casesDeplacement = null,
   onChoisirDeplacement = null,
   nomCarteDeplacee = null,
+  // Le survol d'une créature : ses cases de pas s'allument en bleu. Aperçu
+  // seul — la case n'est pas un bouton, rien ne s'engage au clic.
+  casesSurvol = null,
 }) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
@@ -980,13 +983,16 @@ export function CreatureSlots({
         // Sur deux lignes, le numéro affiché est la **colonne** : les touches
         // 1 à 5 désignent une colonne, la ligne étant celle de la carte.
         const colonne = colonnes ? (index % colonnes) + 1 : index + 1;
-        const classes = `rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`
-          + `${ligne === RPG_LIGNE_FOND ? ' is-fond' : ' is-front'}`
-          + `${emplacementSurvole === index ? ' is-survole' : ''}`;
         const choisissable = choixEmplacement && !occupant && onChoisirEmplacement
           && (ligneChoisissable === null || ligneChoisissable === ligne);
         const deplacable = !occupant && !choisissable && onChoisirDeplacement
           && Array.isArray(casesDeplacement) && casesDeplacement.includes(index);
+        const survolee = !occupant && !choisissable && !deplacable
+          && Array.isArray(casesSurvol) && casesSurvol.includes(index);
+        const classes = `rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`
+          + `${ligne === RPG_LIGNE_FOND ? ' is-fond' : ' is-front'}`
+          + `${emplacementSurvole === index ? ' is-survole' : ''}`
+          + `${survolee ? ' rpg-creature-slot--survol-deplacement' : ''}`;
         const style = colonnes ? { '--case-col': colonne } : undefined;
         if (deplacable) {
           return (
@@ -10430,6 +10436,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return { cibles: new Set(cibles ?? []), directe: Boolean(directe) };
   })();
 
+  // Le survol d'une créature montre **où elle peut marcher** : les cases
+  // légales du pas s'allument en bleu, sans rien engager (aucun clic n'y est
+  // posé — c'est un aperçu). Pendant la phase d'attaque, la créature choisie
+  // garde son signal doré et le bleu se tait, pour ne pas doubler.
+  const survolMouvant = (() => {
+    const entiteId = apercuSurvol?.entiteId;
+    if (!entiteId || modePvp || phase || !lignesActives(duel)) return null;
+    const entite = duel.joueur?.creatures?.find((e) => e.id === entiteId);
+    if (!entite || !rpgPeutBouger(duel, 'joueur', entite)) return null;
+    const cases = deplacementsLegaux(duel, 'joueur', entite.id);
+    if (!cases.length) return null;
+    return {
+      joueur: cases.filter((c) => c.camp === 'joueur').map((c) => c.index),
+      sorcier: cases.filter((c) => c.camp === 'sorcier').map((c) => c.index),
+    };
+  })();
+
   // ── L'avancée du joueur ────────────────────────────────────────────────────
   // Pendant la phase d'attaque, la créature choisie montre à la fois ses proies
   // (cyan) et les cases vides où elle peut avancer (flèche dorée). Cliquer une
@@ -14486,6 +14509,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               casesDeplacement={deplacementsAttaquant.filter((c) => c.camp === 'sorcier').map((c) => c.index)}
               onChoisirDeplacement={deplacementsAttaquant.some((c) => c.camp === 'sorcier')
                 ? (index) => deplacerAttaquant('sorcier', index) : null}
+              casesSurvol={survolMouvant?.sorcier ?? null}
               nomCarteDeplacee={nomAttaquantMobile}
             />
           )}
@@ -14619,6 +14643,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
               onChoisirEmplacement={choisirEmplacement}
               emplacementSurvole={emplacementSurvole}
+              casesSurvol={survolMouvant?.joueur ?? null}
               casesDeplacement={deplacementsAttaquant.filter((c) => c.camp === 'joueur').map((c) => c.index)}
               onChoisirDeplacement={deplacementsAttaquant.some((c) => c.camp === 'joueur')
                 ? (index) => deplacerAttaquant('joueur', index) : null}

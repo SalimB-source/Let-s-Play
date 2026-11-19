@@ -143,7 +143,11 @@ mélange les deux propriétaires dans la rangée réelle.
   du sorcier comme du nôtre, avec son propre camp : le clic la traite toujours
   comme la nôtre. Les piles d'envahisseurs restent d'un seul exemplaire — deux
   cartes identiques de deux camps ne se confondent jamais.
-- **Le survol** suit les mêmes portées (doc 30) ; il n'a pas eu à changer.
+- **Le survol** suit les mêmes portées (doc 30), et il montre aussi **où la
+  créature peut marcher** : sans la choisir, ses cases de pas s'allument en bleu
+  (`.rpg-creature-slot--survol-deplacement`) — un aperçu, pas un bouton. Le
+  bleu se tait pour une créature qui a déjà consommé son pas, et pendant la
+  phase d'attaque, où la sélection parle déjà en doré.
 
 Les repères de case vide (`::before`/`::after`) sont explicitement exclus des
 cases d'avancée : une case qui propose un pas ne dessine pas une croix.

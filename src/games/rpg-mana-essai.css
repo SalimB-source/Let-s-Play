@@ -387,8 +387,8 @@
 }
 /* Deux petits repères gravés habillent les cases libres sans toucher aux
    cartes ni aux halos interactifs de pose, de ciblage ou d'attaque. */
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::before,
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::after {
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement)::before,
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement)::after {
   content: '';
   position: absolute;
   width: clamp(7px, 1vw, 13px);
@@ -396,13 +396,13 @@
   opacity: .62;
   pointer-events: none;
 }
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::before {
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement)::before {
   top: 5px;
   left: 5px;
   border-top: 1px solid #edd4a1;
   border-left: 1px solid #edd4a1;
 }
-.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement)::after {
+.rpg-battle[data-scene="duel"] .card-table:not(.is-dragging-creature) .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement)::after {
   bottom: 5px;
   right: 5px;
   border-bottom: 1px solid #edd4a1;
@@ -493,6 +493,19 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-creature-slot--deplacement { animation: none; }
+}
+/* Le survol : une créature simplement survolée montre déjà ses cases de pas.
+   Bleu, pour ne pas confondre avec la dorure du placement ni les pointillés
+   ivoire de la créature choisie — et jamais un bouton : c'est un aperçu. */
+.rpg-creature-slot--survol-deplacement {
+  border-color: rgba(126, 196, 255, .78);
+  border-style: dashed;
+  background: radial-gradient(circle, rgba(126, 196, 255, .16), rgba(8, 12, 20, .32) 78%);
+  box-shadow: 0 0 14px rgba(126, 196, 255, .32), inset 0 0 14px rgba(126, 196, 255, .16);
+}
+.rpg-creature-slot--survol-deplacement .rpg-creature-slot__numero {
+  color: #cfe8ff;
+  opacity: 1;
 }
 /* Repères de raccourcis clavier PC sur la colonne d'actions (sans modifier
    textContent) et aura de menace létale sur la plaque du sorcier adverse. */
