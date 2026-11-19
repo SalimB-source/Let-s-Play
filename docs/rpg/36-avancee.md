@@ -129,6 +129,31 @@ l'ancien contrat (une rangée nue). Les rangées dessinées, elles, ne passent
 plus par cette fonction : elles lisent `occupantsDeCamp(duel, camp)`, qui
 mélange les deux propriétaires dans la rangée réelle.
 
+## Le recul du bout du plateau
+
+Une créature qui atteint le bout du plateau — la dernière rangée avant le
+sorcier adverse — et qui **le frappe** ne s'y installe pas : elle est
+**repoussée d'une case**, vers son propre camp (`rpgRecul.js`).
+
+Le recul ne s'arrête pas au premier corps : si la case derrière la frappeuse est
+tenue, la créature qui s'y trouve recule **aussi**, et ainsi de suite dans la
+même colonne — la chaîne se déplie tant que la place est libre derrière. La
+chaîne s'arrête au **blocage** : un bord du camp, un Site (il ne marche pas) ou
+une case hors grille. Ceux qui sont devant le blocage ne bougent pas non plus —
+leur case n'est pas libérée —, mais rien n'est cassé : la frappe a eu lieu.
+
+- **Les deux camps** : symétrique. Une créature du sorcier qui frappe notre
+  sorcier depuis notre fond recule vers son camp.
+- **Seule la frappe du sorcier** déclenche le recul : une attaque bloquée par
+  une créature, ou un tir qui n'atteint pas le sorcier, ne déplace personne.
+- **Rien sans les lignes** : le champ d'origine n'a pas de bout du plateau, et
+  le MOBA garde sa géométrie.
+- **Aucun coût** : la créature a déjà frappé ; le recul ne consomme ni pas ni
+  attaque, il ne fait que rendre la case du sorcier intenable.
+
+C'est ce qui empêche un camp de camper avec cinq créatures sur la ligne arrière
+adverse : chaque frappe sur le sorcier fait reculer l'assaillant d'un cran.
+
 ## Ce que l'écran montre
 
 - **Choisir une créature ouvre sa manœuvre** : les proies légales s'allument en
@@ -209,6 +234,7 @@ idempotentes, comme le reste des scènes.
 | `tests/rpg-mouvement.test.js` | 12 |
 | `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
 | `tests/rpg-sacrifice-emplacement.test.js` | 4 (arrivée à l'arrière, colonne de la victime) |
+| `tests/rpg-recul.test.js` | 9 (recul, chaîne, bord, Site, symétrie, frappe réelle) |
 | `tests/rpg-mouvement-blocage.test.js` | 5 (case tenue, envahisseur, chemin, refus du pas, Envol) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
