@@ -138,7 +138,7 @@ export const RPG_TOUR_OUBLIEE_CREATURES = [
     envol: true,
     rapidite: true,
     typeLine: 'Créature — Animal · Cour de sang',
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Rapidité — Peut attaquer le tour où elle arrive.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Rapidité — Peut se déplacer le tour où elle arrive.',
     flavor: 'Elle sort du linteau comme une langue.',
   }),
   carte({

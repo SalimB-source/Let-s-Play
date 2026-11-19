@@ -289,7 +289,7 @@ export const RPG_TENEBRES_CREATURES = [
     // Son souffle ne balaie plus la plaine : il désigne une seule proie.
     arrivee: { type: 'degats', amount: 4, cible: 'creature' },
     typeLine: 'Créature légendaire — Lionne solaire',
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Bouclier d’Eau et de Neige — Bloque le prochain sort adverse d’Eau ou de Neige, puis se brise. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Bouclier d’Eau et de Neige — Bloque le prochain sort adverse d’Eau ou de Neige, puis se brise. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({

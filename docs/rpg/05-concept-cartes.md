@@ -53,7 +53,10 @@ limitée à 7.
 
 - Le nerf du combat. Payée en mana, elle arrive sur la table, attaque les
   créatures adverses ou le sorcier adverse, et encaisse sur sa défense.
-- Une créature qui arrive ne frappe pas le tour même (elle observe).
+- Une créature qui arrive **frappe le tour même**, de la case où elle est posée ;
+  seul son **pas** attend le tour suivant (elle prend ses marques) — la
+  Rapidité, elle, la laisse glisser d'une case dès l'arrivée. Elle peut toujours
+  bloquer dès son arrivée.
 - Capacités imprimées (vol, ruée, barrage…) selon la carte.
 
 ### Magie
@@ -355,7 +358,8 @@ mythique (41,8 à 44,4), et son corps de 3/1 pour deux manas est le plus
 agressif du Sable.
 
 - **Rapidité** — sa chèvre de guerre ne connaît pas le mal d'invocation : elle
-  attaque le tour où elle arrive, comme le Djinn de foudre ou Fériel.
+  **avance d'une case** le tour où elle arrive, là où les autres attendent le
+  suivant (l'attaque, elle, est ouverte à toutes dès l'arrivée).
 - **Esquive** — 30 % de chances d'esquiver une attaque, une Magie ou une
   Sorcellerie (les capacités ne s'esquivent pas). C'est sa seule défense : elle
   ne porte **pas de bouclier**, elle glisse dans la pente. À 1 PV, une attaque
@@ -392,14 +396,15 @@ Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :
   `jeton: true`). Aucun sable n'est payé en plus : le coût de Tarek est le seul
   paiement.
 
-Le chien occupe une vraie case, peut bloquer et, grâce à **Rapidité**, attaquer
+Le chien occupe une vraie case, peut bloquer et, grâce à **Rapidité**, avancer
 dès son arrivée. Voisin de Tarek, il arrive à 2/2 et retombe à 1/1 si
 Tarek quitte la table.
 
 Le second jeton du set est le **Guépard** de Kusayla (`guepard`, 2/1, coût 1,
 `jeton: true`, `rapidite: true`) : le roi l'appelle à son arrivée, un seul
-exemplaire. Il ne connaît pas le mal d'invocation — **Rapidité** le rend prêt le
-tour même, comme la bête qui court déjà devant le cheval — mais il ne survit
+exemplaire. Il ne connaît pas le mal d'invocation — **Rapidité** le fait glisser
+d'une case le tour même, comme la bête qui court déjà devant le cheval — mais il
+ne survit
 pas plus qu'un autre corps 2/1. Sa peinture est un plein art 4:5 dédié
 (`public/cards/guepard.jpg`), un guépard fauve sur la cendre du champ de
 bataille, révision de cache `guepard-jeton-v1`.

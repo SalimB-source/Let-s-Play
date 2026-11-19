@@ -190,7 +190,7 @@ function etatsCreature(entity) {
   if (!entity) return [];
   const etats = [];
   if (entity.site) etats.push('Site indestructible : ne peut ni attaquer ni bloquer');
-  if (rpgSouffreMalInvocation(entity)) etats.push('Mal d’invocation : ne peut pas attaquer avant le prochain tour de son camp, mais peut défendre');
+  if (rpgSouffreMalInvocation(entity)) etats.push('Vient d’arriver : elle attaque déjà de sa case, mais ne se déplace pas avant le prochain tour de son camp');
   if (entity.gelToursRestants > 0) etats.push('Gelée');
   if (entity.attaquee) etats.push('Engagée : ne peut pas être sacrifiée');
   else if (!entity.ready) etats.push('Non prête');

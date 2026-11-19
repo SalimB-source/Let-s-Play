@@ -74,9 +74,9 @@ meilleures raisons d'attaquer.
 Rapidité (elle désactive le mal d'invocation).
 
 Pourquoi c'est intéressant : à 1 mana, c'est l'arme des **jetons**. Le chien de
-sable 1/1 de Tarek arrive avec le mal d'invocation ; chaussé, il frappe le tour
-même. La carte a l'air faible et elle est le meilleur tour 1 du set après une
-arrivée de Tarek.
+sable 1/1 de Tarek arrive avec le mal d'invocation — il frappe déjà, mais il ne
+bouge pas ; **chaussé**, il avance d'une case le tour même. La carte a l'air
+faible et elle est le meilleur tour 1 du set après une arrivée de Tarek.
 
 ### 2. Cuirasse de sel — commune — 2
 

@@ -1755,7 +1755,7 @@ function creerEntiteCreature(carte, duel) {
     // l’attachement et plafonds de coût le lisent.
     coutBonusArme: 0,
     // Conserver le mal même sous Rapidité : si elle est retirée avant le
-    // prochain tour, la créature ne peut plus attaquer. Les Sites sont exclus.
+    // prochain tour, la créature ne peut plus bouger. Les Sites sont exclus.
     rapidite: Boolean(carte.rapidite),
     malInvocation: carte.kind !== 'site',
     rapiditeAccordee: false,
@@ -3609,8 +3609,8 @@ function prendreEnCale(duel, capteur, victime, sourceSnapshot = null, coteVictim
  *   prisonnier revient **en jeu**, sur le champ de bataille de son
  *   propriétaire, avec l'attaque et la défense qu'il avait avant la prise. Ce
  *   n'est pas une arrivée : aucun effet d'arrivée ne se déclenche. Comme la
- *   renaissance de Tenacité, il revient avec le mal d'invocation (il n'attaque
- *   pas le tour de son retour, sauf Rapidité) ;
+ *   renaissance de Tenacité, il revient avec le mal d'invocation : il frappe
+ *   dès son retour, mais ne se déplace qu'au tour suivant (sauf Rapidité) ;
  * - **il quitte la table sans mourir** (renvoi en main, exil, capture par un
  *   autre corsaire) : le prisonnier retourne dans la **main** de son
  *   propriétaire.
@@ -3875,8 +3875,9 @@ export function rpgResoudreRenfortChoisi(duel, cote, index = null) {
   const entite = creerEntiteCreature(carte, duel);
   if (!effet.reanimation || effet.renfortAscension) {
     entite.rapidite = Boolean(carte.rapidite);
-    entite.ready = Boolean(carte.rapidite);
-    entite.malInvocation = !entite.ready;
+    // Elle frappe le tour de son arrivée ; seul le pas attend le prochain tour.
+    entite.ready = true;
+    entite.malInvocation = !entite.rapidite;
   }
   if (effet.ephemere) { entite.detruireFinDuTour = true; entite.detruireFinDuTourActuel = true; }
   camp.creatures.push(entite);
@@ -3945,8 +3946,9 @@ function appliquerRenfortAscension(duel, cote, effet, sourceCarteId, sauf, optio
     const carte = duelCardById(id);
     const entite = creerEntiteCreature(carte, duel);
     entite.rapidite = Boolean(carte.rapidite);
-    entite.ready = Boolean(carte.rapidite);
-    entite.malInvocation = !entite.ready;
+    // Elle frappe le tour de son arrivée ; seul le pas attend le prochain tour.
+    entite.ready = true;
+    entite.malInvocation = !entite.rapidite;
     if (effet.ephemere) { entite.detruireFinDuTour = true; entite.detruireFinDuTourActuel = true; }
     camp.creatures.push(entite);
     placerDansEmplacement(duel, cote, entite, place.emplacement ?? null);
@@ -4578,9 +4580,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     case 'jetons': {
       // Créatures-jetons : l'effet fait naître une ou plusieurs créatures de
       // modèle (`jetonById`), sans carte en main ni sable payé. Elles entrent
-      // en jeu comme n'importe quelle créature — le mal d'invocation et les
-      // auras du camp s'appliquent à leur tour, `rpgJouerCreature` finissant
-      // par `rafraichirAuras`.
+      // en jeu comme n'importe quelle créature — mal d'invocation (le pas
+      // seulement), effet d'arrivée et auras du camp s'appliquent à leur tour,
+      // `rpgJouerCreature` finissant par `rafraichirAuras`.
       const modele = jetonById(effet.jeton);
       if (!modele) return;
       const nombre = effet.remplirChamp
@@ -7474,8 +7476,13 @@ export function rpgModesArme(duel, cote, entiteId) {
 // Mur (Tours de défense) et `nePeutPasAttaquer` (le Drakkar) : ne peuvent
 // jamais attaquer, même prêts — seul le Mur interdit aussi l'équipement.
 const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
+// **Le tour de son arrivée, une créature frappe déjà.** Elle peut attaquer dès
+// qu'elle est posée — le mal d'invocation ne lui ferme plus que le pas (voir
+// `rpgPeutBouger`) : elle se bat là où elle arrive et ne prend ses marques
+// qu'au tour suivant. Rapidité garde son privilège, celui de glisser d'une
+// case tout de suite.
 export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
-  && entite.ready && !entite.attaquee && !rpgSouffreMalInvocation(entite) && !estGelee(entite)
+  && entite.ready && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
 // Toute créature qui n'a pas attaqué peut bloquer dès son arrivée.

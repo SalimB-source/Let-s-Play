@@ -26,9 +26,10 @@
  * - **Rien hors des lignes** : sans `duel.lignes`, aucune créature ne bouge.
  *   Le champ de cinq cases et les modes historiques gardent leur géométrie.
  * - **Rien pour une créature engagée** (`attaquee`), gelée, ou déjà déplacée.
- * - **Rien le tour de son arrivée** : le mal d'invocation interdit le pas comme
- *   l'attaque — la créature attend le prochain tour de son camp (Rapidité
- *   exceptée). L'IA n'a donc plus de « pose puis glisse » à son actif.
+ * - **Rien le tour de son arrivée** : le mal d'invocation interdit le pas — la
+ *   créature frappe là où elle arrive, mais ne prend ses marques qu'au tour
+ *   suivant (Rapidité exceptée). L'IA n'a donc pas de « pose puis glisse » à
+ *   son actif.
  * - **Rien pour un Site** : un site ne marche pas.
  * - **Le Défenseur reste chez lui** : il marche sur les dix cases de son
  *   joueur — front et fond, avant, arrière, côtés — mais ne franchit jamais la
@@ -55,12 +56,13 @@ export function rpgPeutBouger(duel, cote, entite) {
   if (!lignesActives(duel) || duel?.moba) return false;
   if (!entite || !Number.isInteger(entite.emplacement)) return false;
   if (entite.bouge || entite.attaquee) return false;
-  // **Le mal d'invocation vaut aussi pour le pas.** Une créature qui vient
-  // d'arriver n'a pas encore pris ses marques : elle attend le prochain tour de
-  // son camp pour avancer, comme elle l'attend pour attaquer. Sans cette garde,
-  // l'IA posait une créature puis la faisait aussitôt glisser d'une case — le
-  // joueur voyait un corps neuf traverser le champ avant même qu'il ait pu
-  // lire sa carte. La Rapidité, imprimée ou accordée, lève les deux attentes.
+  // **Le mal d'invocation ne vaut plus que pour le pas.** Une créature qui
+  // vient d'arriver attaque déjà de sa case (voir `rpgPeutAttaquer`), mais elle
+  // n'a pas pris ses marques : elle attend le prochain tour de son camp pour
+  // avancer. Sans cette garde, l'IA posait une créature puis la faisait aussitôt
+  // glisser d'une case — le joueur voyait un corps neuf traverser le champ
+  // avant même qu'il ait pu lire sa carte. La Rapidité, imprimée ou accordée,
+  // lève cette attente.
   if (rpgSouffreMalInvocation(entite)) return false;
   if ((entite.gelToursRestants ?? 0) > 0) return false;
   const carte = duelCardById(entite.carteId);
