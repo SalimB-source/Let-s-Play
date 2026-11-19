@@ -7,8 +7,10 @@ const battle = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.u
 
 /** Le bloc du rail, du commentaire d'ouverture à la fin de sa requête média. */
 const debut = plateau.indexOf("Rail d'avatars à gauche");
-const rail = debut < 0 ? '' : plateau.slice(debut);
-// Le rail ferme le fichier : tout ce qui suit son commentaire lui appartient.
+// Le rail finit là où commence le bloc tactile du paysage, ajouté après lui.
+const finRail = plateau.indexOf('Au doigt, en paysage : les deux avatars encadrent la médiane');
+const rail = debut < 0 ? '' : plateau.slice(debut, finRail > debut ? finRail : undefined);
+// Le rail ne contient que sa propre requête média.
 const railSeul = rail;
 
 test('Rail d’avatars : la colonne gauche devient un rail, réservé à la souris large', () => {
@@ -54,10 +56,10 @@ test('Rail d’avatars : la jauge de mana descend sous le nom, pas sous le seul 
     'la jauge garde la colonne du rail');
   const ennemi = mana.slice(mana.indexOf('--ennemi'), mana.indexOf('--joueur'));
   const joueur = mana.slice(mana.indexOf('--joueur'));
-  for (const [camp, bloc] of [['adverse', ennemi], ['joueur', joueur]]) {
-    assert.match(bloc, /var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 9px/,
-      `la jauge ${camp} passe sous la barre de vie et sous le nom`);
-  }
+  assert.match(ennemi, /bottom: calc\(var\(--rpg-rail-ennemi-bottom\)[^;]*var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 12px\);/s,
+    'la jauge adverse remonte au-dessus du portrait, dans la bande libre de la colonne');
+  assert.match(joueur, /var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 9px/,
+    'la jauge du joueur passe sous la barre de vie et sous le nom');
   assert.match(joueur, /top: calc\(var\(--rpg-rail-ascension-joueur-top\)/, 'la jauge du joueur suit sa plaque remontée');
 });
 
@@ -78,6 +80,29 @@ test('Rail d’avatars : le joueur remonte sous son bloc Ascension, hors de port
   assert.match(railSeul, /--rpg-rail-ascension-joueur-top: calc\(42% \+ clamp\(72px, min\(7\.2vw, 12vh\), 104px\) \+ 64px\);/,
     'et sa variante du mode essai');
   assert.doesNotMatch(railSeul, /--rpg-rail-bas-joueur/, 'plus d’ancrage au bas de la table');
+});
+
+test('Rail d’avatars : le sorcier descend au ras de la médiane, au-dessus du paquet du joueur', () => {
+  assert.match(railSeul, /--rpg-rail-ennemi-bottom: calc\(56% \+ 8px\);/,
+    'le portrait se pose juste au-dessus du paquet du joueur (`top: 44 %`)');
+  assert.match(railSeul, /--rpg-rail-ennemi-bottom: calc\(58% \+ 8px\);/,
+    'en essai, le paquet remonte à 42 %');
+  const bloc = railSeul.slice(railSeul.indexOf('/* 6.'));
+  assert.match(bloc, /\.rpg-wizard-plate--ennemi\s*\{\s*top: auto;\s*bottom: var\(--rpg-rail-ennemi-bottom\);\s*\}/s,
+    'le sorcier quitte le haut de la table');
+  assert.doesNotMatch(railSeul, /--ennemi[^{]*\{\s*top: 1%/,
+    'plus d’ancrage à 1 % du haut');
+});
+
+test('Paysage tactile : les deux avatars encadrent la médiane, dans la colonne de gauche', () => {
+  const bloc = plateau.slice(plateau.indexOf('Au doigt, en paysage : les deux avatars encadrent la médiane'));
+  assert.ok(bloc, 'le bloc tactile du paysage doit exister');
+  assert.match(bloc, /@media \(orientation: landscape\)/, 'il ne concerne que le paysage');
+  assert.match(bloc, /left: calc\(6px \+ env\(safe-area-inset-left, 0px\)\);/, 'les pastilles quittent l’axe central');
+  assert.match(bloc, /bottom: calc\(56% \+ 6px\);/, 'le sorcier se pose juste au-dessus du paquet du joueur');
+  assert.match(bloc, /grid-area: mana;/, 'le joueur occupe la cellule qui ouvre sa moitié de table');
+  assert.match(bloc, /top: 0;/, 'son bord haut est la ligne médiane');
+  assert.doesNotMatch(bloc, /left: calc\(50%/, 'plus de centrage sur le champ');
 });
 
 test('Rail d’avatars : l’expression de l’Ascension reste celle de rpg-ascension.css', () => {

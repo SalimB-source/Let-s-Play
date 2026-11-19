@@ -463,10 +463,15 @@
     /* Hauteur du bloc Ascension (`min-height: 52px`, marges intérieures et
        bordure comprises) plus l'air qui le sépare du portrait. */
     --rpg-rail-ascension-h: 74px;
+    /* Hauteur du sorcier comptée depuis le bas de la table : il vient se poser
+       juste au-dessus du paquet du joueur (`top: 44 %`, 42 % en essai), donc au
+       ras de la médiane. */
+    --rpg-rail-ennemi-bottom: calc(56% + 8px);
   }
   /* En mode essai, le bloc Ascension du joueur remonte à 42 %. */
   .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) {
     --rpg-rail-ascension-joueur-top: calc(42% + clamp(72px, min(7.2vw, 12vh), 104px) + 64px);
+    --rpg-rail-ennemi-bottom: calc(58% + 8px);
   }
 
   /* 1. Le portrait tient la colonne, centré dans la largeur du rail. */
@@ -504,9 +509,14 @@
     width: var(--rpg-rail-largeur);
     max-width: var(--rpg-rail-largeur);
   }
+  /* Le sorcier est passé au ras de la médiane (règle 6) : sa jauge ne peut plus
+     descendre sous lui, le paquet du joueur occupe la place. Elle remonte donc
+     au-dessus du portrait, dans la bande libre de la colonne — de bas en haut :
+     médaillon, PV, nom, jauge. */
   .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--ennemi {
-    top: calc(var(--rpg-essai-ennemi-top) + var(--rpg-plaque-ennemi-h, 82px)
-      + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 9px);
+    top: auto;
+    bottom: calc(var(--rpg-rail-ennemi-bottom) + var(--rpg-plaque-ennemi-h, 82px)
+      + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 12px);
   }
   .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--joueur {
     top: calc(var(--rpg-rail-ascension-joueur-top) + var(--rpg-rail-ascension-h)
@@ -531,4 +541,58 @@
     bottom: auto;
   }
 
+  /* 6. Le sorcier descend au ras de la médiane, juste au-dessus du paquet du
+     joueur. Il siégeait à 1 % du haut — 12,5 % en essai — détaché de sa jauge
+     et du reste de la colonne : son portrait flottait au-dessus du champ
+     adverse comme un décor. Collé au paquet, il ferme le haut de la colonne et
+     la médiane sépare enfin les camps — sorcier au-dessus, joueur au-dessous. */
+  .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--ennemi,
+  .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--ennemi {
+    top: auto;
+    bottom: var(--rpg-rail-ennemi-bottom);
+  }
+
+}
+
+/* ── Au doigt, en paysage : les deux avatars encadrent la médiane ────────────
+   Le portrait du joueur était collé au bas de la table, dans le dock de la
+   main : il disparaissait sous les cartes. Les deux pastilles rejoignent la
+   colonne de gauche, de part et d'autre de la ligne médiane, là où le doigt
+   les lit sans quitter le camp qu'elles désignent :
+
+   · le sorcier vient au ras du paquet du joueur (`top: 44 %`), donc juste
+     au-dessus de la médiane ;
+   · le joueur ouvre la cellule `mana` — bord haut sur la médiane — et prend
+     la colonne du bloc Ascension, qui est centré plus bas dans la même
+     cellule ; les deux ne se recouvrent jamais.
+
+   La colonne se lit alors de haut en bas — sorcier, paquet, médiane,
+   Ascension et joueur, main — et plus aucun portrait ne se cache derrière
+   les cartes. */
+@media (orientation: landscape) {
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate {
+    left: calc(6px + env(safe-area-inset-left, 0px));
+    right: auto;
+    transform: none;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--ennemi {
+    grid-area: auto;
+    top: auto;
+    bottom: calc(56% + 6px);
+  }
+  /* La cellule `mana` ouvre la moitié du joueur : son bord haut est la médiane
+     au pixel près (les deux moitiés de la grille sont égales), son bord gauche
+     prolonge la colonne du paquet et du bloc Ascension, qui est centré plus
+     bas dans la même cellule. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .rpg-wizard-plate--joueur {
+    grid-area: mana;
+    left: 6px;
+    right: auto;
+    top: 0;
+    bottom: auto;
+    transform: none;
+  }
 }
