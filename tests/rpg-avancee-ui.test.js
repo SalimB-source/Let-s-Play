@@ -11,7 +11,7 @@ const css = readFileSync(new URL('../src/games/rpg-mana-essai.css', import.meta.
 test('la page importe le moteur du pas et celui de l’IA', () => {
   assert.match(page, /import \{ deplacementsLegaux, rpgDeplacerCreature \} from '\.\/rpgMouvement\.js'/);
   assert.match(page, /import \{ rpgIABougerCreatures \} from '\.\/rpgMouvementIA\.js'/);
-  assert.match(page, /import \{ campDeLaCreature, envahisseurs, occupantsDeCamp \} from '\.\/rpgChamp\.js'/);
+  assert.match(page, /import \{ campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe \} from '\.\/rpgChamp\.js'/);
 });
 
 test('la créature choisie ouvre ses cases d’avancée, dans les deux rangées', () => {
@@ -37,8 +37,12 @@ test('une carte avancée se dessine dans la rangée qu’elle occupe, avec son c
   assert.match(page, /const proprietaire = campDeLaCreature\(duel, entite\) \?\? 'joueur';/);
   const clics = page.match(/proprietaire === 'joueur' \? cliquerCreatureJoueur\(entite\) : cliquerCreatureEnnemie\(entite\)/g) ?? [];
   assert.equal(clics.length, 2, 'le clic suit le propriétaire, pas la rangée');
+  // La rangée ne dessine que les créatures qui s'y tiennent : `campPoseDe`
+  // écarte l'envahisseur de son ancienne rangée (sans quoi il apparaîtrait
+  // deux fois — la figurine qui ne bouge pas et sa copie sur la case visée).
+  assert.match(page, /const entites = \(duel\[cote\]\?\.creatures \?\? \[\]\)\s*\n?\s*\.filter\(\(entite\) => !campPose \|\| campPoseDe\(entite, cote\) === campPose\)/);
   // Les piles étrangères restent d'un seul exemplaire : pas de fusion entre camps.
-  assert.match(page, /const etrangeres = campPose \? envahisseurs\(duel, campPose\)\.map/);
+  assert.match(page, /const etrangeres = campPose\s*\n?\s*\? envahisseurs\(duel, campPose\)\.map/);
   assert.match(page, /const clePile = \(cote, pile\) => `\$\{cote\}:\$\{campDeLaCreature/);
 });
 

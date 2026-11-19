@@ -50,6 +50,67 @@ rend le **propriétaire**. Un envahisseur est donc une carte du joueur dont
 `avancee` marque enfin une créature qui a quitté la case que sa carte lui
 imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 
+## Le placement : le joueur choisit, la ligne propose
+
+La ligne que la carte impose (`ligneObligee`) n'est plus une contrainte de pose.
+Le joueur place ses créatures **où il veut dans son camp** : une archère peut
+tenir le front, un corps à corps reculer au fond. `caseChoisissable` dit la
+règle : toute case du camp est ouverte — sauf pour une carte avec **Envol**, qui
+garde la ligne de sa fiche.
+
+La ligne imposée ne disparaît pas pour autant :
+
+- elle reste la **case par défaut** quand personne ne choisit (IA, jeton,
+  glisser-déposer sur la table, `caseParDefaut`) ;
+- quand elle est pleine, la créature prend la première place libre du camp au
+  lieu d'être refusée ;
+- la règle de protection du front se lit sur les **positions réelles**, jamais
+  sur la fiche : dix cases ouvertes, le front protège toujours le fond.
+
+Une créature posée hors de la ligne de sa carte porte `caseChoisie` : sa case
+lui appartient, et `rpgEmplacementsChamp` ne la rapatrie plus.
+
+**Le sacrifice suit la victime.** L'invocation payée d'un sacrifice entre sur la
+case que la victime occupait — y compris si elle avait franchi la trouée, auquel
+cas la nouvelle créature naît chez le sorcier (`campPose`, `avancee`). La victime
+est lue par `positionDe`, pas par sa place dans la rangée de son camp.
+
+## Le corps qui bloque
+
+Une case tenue n'est jamais une destination : on ne se pose pas sur une
+créature, ni sur celle d'en face, ni sur un envahisseur qui a percé avant nous
+(`casesOccupees` lit les deux camps). La case d'arrivée mise à part,
+`rpgCheminLibre` juge le **chemin** : toute case strictement intermédiaire doit
+être vide, faute de quoi la créature s'arrête au lieu de glisser à travers.
+Aujourd'hui le pas vaut une case, donc la question ne se pose pas encore ; la
+règle est écrite une fois, dans `rpgMouvement.js`, pour que la portée du pas
+puisse grandir sans rouvrir le sujet.
+
+## Qui entend l'Aura
+
+Les quatre sources d'Aura (Tarek, Amani des ksour, Kenshi de la forge, Bou
+Jeloud) parlent de **créatures adjacentes** : un voisinage, pas un camp. Tant
+que les créatures ne bougeaient pas, « adjacente » se calculait sur l'ordre
+d'arrivée — `casesRangee` rendait la suite des rangs et deux cartes étaient
+voisines si leurs positions se suivaient. Dès qu'une créature avance, cet ordre
+ne veut plus rien dire : une carte passée chez le sorcier restait « voisine » de
+celles qu'elle avait laissées au fond, et une case vide ne coupait rien.
+
+`voisines(duel, entite, cote)` lit désormais la **grille** (`positionsDuCamp`,
+construite sur `positionDe`) :
+
+1. même **camp de pose** — le camp adverse n'entend jamais notre Aura ;
+2. même **rangée** — le fond ne renforce pas le front ;
+3. **une colonne d'écart** — `|Δcolonne| === 1`, et rien d'autre.
+
+Conséquences directes : un trou coupe le voisinage, deux sources voisines
+cumulent, une créature qui a franchi la trouée n'est plus la voisine de ses
+anciens compagnons, et la source ne se renforce jamais elle-même.
+
+Restent **globales**, par choix et par texte de carte : la Malédiction, la
+Bannière, la Résonance et les Lettres de marque. Le test
+`tests/rpg-aura-adjacence.test.js` fige les deux familles.
+
 ## La case fantôme
 
 Une créature qui a franchi la trouée n'est plus dans sa rangée — mais elle
@@ -132,12 +193,15 @@ idempotentes, comme le reste des scènes.
 | Suite | Résultat |
 |---|---|
 | `tests/rpg-mouvement.test.js` | 12 |
+| `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
+| `tests/rpg-sacrifice-emplacement.test.js` | 4 (case de la victime, camp adverse compris) |
+| `tests/rpg-mouvement-blocage.test.js` | 4 (case tenue, envahisseur, chemin, refus du pas) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
-| `tests/rpg-lignes-duel.test.js` | 13 |
+| `tests/rpg-lignes-duel.test.js` | 14 (case choisie respectée, Envol, dix places) |
 | `tests/rpg-sorcier-objectif.test.js` | 9 |
-| `npm run check:rpg-avancee` | 54 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
+| `npm run check:rpg-avancee` | 58 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
 | `npm run check:rpg-lignes` | 33 / 0 |
 | `npm run check:rpg-classique-individuel` | 64 / 0 |
 

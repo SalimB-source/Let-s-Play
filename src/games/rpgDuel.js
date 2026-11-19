@@ -1,12 +1,12 @@
 import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
-import { campPoseDe } from './rpgChamp.js';
+import { campPoseDe, positionDe } from './rpgChamp.js';
 export { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
-import { attaqueDirecteSurLesLignes, caseAutorisee, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
+import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -1189,27 +1189,27 @@ const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
  * deux cases qui entourent la source, jamais la source elle-même, et jamais
  * le camp d'en face. La Résonance et la Bannière gardent leurs règles propres.
  *
- * `casesRangee` donne la case de chaque créature. En mode sans terrains, la
- * case choisie à la pose (0 à 4) fait foi : une case VIDE entre deux
+ * `positionsDuCamp` donne la **vraie** position de chaque créature : rangée
+ * et colonne de la grille, `campPose` compris (une créature qui a franchi la
+ * trouée n'est voisine de personne chez elle). Une case vide entre deux
  * créatures coupe le voisinage. Dans le format historique — et dans les
  * sauvegardes sans case — la rangée se lit dans l'ordre d'arrivée : pas de
  * trou, chaque créature est voisine de la précédente et de la suivante.
  */
-function casesRangee(camp) {
-  const creatures = camp?.creatures ?? [];
+function positionsDuCamp(duel, cote) {
+  const creatures = duel?.[cote]?.creatures ?? [];
+  // Une sauvegarde sans case garde l'ordre d'arrivée : pas de trou, chaque
+  // créature est voisine de la précédente et de la suivante.
   if (!creatures.some((entite) => Number.isInteger(entite?.emplacement))) {
-    return new Map(creatures.map((entite, index) => [entite, index]));
+    return new Map(creatures.map((entite, index) => [entite, { camp: cote, index, rangee: null, colonne: index }]));
   }
-  const cases = rpgEmplacementsChamp(camp);
   const positions = new Map();
-  creatures.forEach((entite, index) => {
-    const caseTrouvee = cases.indexOf(entite);
-    // Une créature hors des cases du champ (sauvegarde incomplète) est mise à
-    // l'écart plutôt que déclarée voisine d'une case fixe par accident.
-    positions.set(entite, caseTrouvee >= 0
-      ? positionDeCase(caseTrouvee)
-      : 1000 + index);
-  });
+  for (const entite of creatures) {
+    // La position **réelle** : rangée et colonne de la grille, `campPose`
+    // compris. Une créature qui a franchi la trouée n'est plus voisine de
+    // celles qu'elle a laissées derrière elle (`rpgChamp.js`).
+    positions.set(entite, positionDe(entite, cote));
+  }
   return positions;
 }
 
@@ -1218,16 +1218,22 @@ function voisines(positions, source, cible, moba = false) {
   if (!source || !cible || source === cible) return false;
   const a = positions.get(source);
   const b = positions.get(cible);
-  if (!Number.isInteger(a) || !Number.isInteger(b) || Math.abs(a - b) !== 1) return false;
+  if (!a || !b) return false;
+  // Le voisinage d'une aura reste **latéral** : la même rangée, une colonne
+  // d'écart. Deux créatures de part et d'autre de la ligne neutre ne sont
+  // jamais voisines, même si leurs cases locales se suivent.
+  if (a.camp !== b.camp) return false;
+  if (a.rangee !== null && b.rangee !== null && a.rangee !== b.rangee) return false;
+  if (Math.abs(a.colonne - b.colonne) !== 1) return false;
   // Dans le MOBA, les cases 0–1, 2 et 3–4 appartiennent à trois voies
   // distinctes : les bords voisins de deux voies ne sont pas adjacents.
-  const voie = (index) => index < 2 ? 'left' : index === 2 ? 'center' : index < 5 ? 'right' : null;
-  return !moba || (voie(a) !== null && voie(a) === voie(b));
+  const voie = (colonne) => colonne < 2 ? 'left' : colonne === 2 ? 'center' : colonne < 5 ? 'right' : null;
+  return !moba || (voie(a.colonne) !== null && voie(a.colonne) === voie(b.colonne));
 }
 
 function appliquerAuraSable(duel, cote) {
   const camp = duel[cote];
-  const positions = casesRangee(camp);
+  const positions = positionsDuCamp(duel, cote);
   const sources = camp.creatures.filter((entite) => entite.carteId === 'tarek' && entite.pv > 0);
   for (const entite of camp.creatures) {
     const carte = duelCardById(entite.carteId);
@@ -1257,7 +1263,7 @@ function appliquerAuraSable(duel, cote) {
  */
 function appliquerAuraAmani(duel, cote) {
   const camp = duel[cote];
-  const positions = casesRangee(camp);
+  const positions = positionsDuCamp(duel, cote);
   const sources = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour' && entite.pv > 0);
   for (const entite of camp.creatures) {
     const prochainBonus = estSite(entite) ? 0 : sources.reduce((total, source) =>
@@ -1356,7 +1362,7 @@ export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
 function appliquerAurasBuffAutres(duel) {
   for (const cote of ['joueur', 'sorcier']) {
     const camp = duel[cote];
-    const positions = casesRangee(camp);
+    const positions = positionsDuCamp(duel, cote);
     const sources = camp.creatures.filter((entite) => {
       const aura = duelCardById(entite.carteId)?.aura;
       return entite.pv > 0 && aura?.type === 'buff-autres' && Number(aura.atk) > 0;
@@ -5945,10 +5951,18 @@ function placesLibresChamp(duel, cote) {
  * suivante prend la première case libre — ou, pour un sacrifice, la case de
  * la victime (`prefere`). Hors essai, la rangée garde son ordre de pose.
  */
-function placerDansEmplacement(duel, cote, entite, prefere = null) {
+function placerDansEmplacement(duel, cote, entite, prefere = null, campCible = null) {
   if (duel.modeMana !== RPG_MODE_MANA_ESSAI || !entite) return;
   const maximum = champMax(duel);
-  const cases = rpgEmplacementsChamp(duel[cote], maximum, cote);
+  // La place peut être **chez l'adversaire** : c'est la case qu'occupait la
+  // victime d'un sacrifice qui avait franchi la trouée. La nouvelle créature
+  // prend sa suite, sur la même case (`campPose`), sans être rapatriée.
+  const camp = campCible && campCible !== cote ? campCible : cote;
+  if (camp !== cote) {
+    entite.campPose = camp;
+    entite.avancee = true;
+  }
+  const cases = rpgEmplacementsChamp(duel[camp], maximum, camp);
   const prises = new Set(cases
     .map((occupant, index) => (occupant && occupant !== entite ? index : null))
     .filter((index) => index !== null));
@@ -5963,15 +5977,26 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
     entite.emplacement = Number.isInteger(prefere) && libres.includes(prefere) ? prefere : libres[0];
     return;
   }
-  // Les deux lignes : la case demandée compte si elle est libre **et** dans la
-  // ligne de la carte — une mêlée ne recule pas, une archer ne passe pas
-  // devant. Sans choix (jeton, réanimation, IA), la première case de sa ligne.
-  if (Number.isInteger(prefere) && libres.includes(prefere) && caseAutorisee(carte, prefere)) {
+  // Les deux lignes : la case demandée compte si elle est libre et
+  // choisissable — le joueur place où il veut dans son camp, sauf une carte
+  // avec Envol, qui garde sa ligne. Sans choix (jeton, réanimation, IA), la
+  // première case de la ligne que la carte impose.
+  const caseDeLaVictime = camp !== cote;
+  if (Number.isInteger(prefere) && libres.includes(prefere)
+    && (caseDeLaVictime || caseChoisissable(carte, prefere))) {
     entite.emplacement = prefere;
+    // La case n'est plus celle que la carte impose : elle lui appartient, et
+    // `rpgEmplacementsChamp` ne la rapatrie plus dans sa ligne.
+    if (!caseDeLaVictime && !caseAutorisee(carte, prefere)) entite.caseChoisie = true;
     return;
   }
-  const choix = caseParDefaut(carte, libres);
-  if (choix !== null && choix !== undefined) entite.emplacement = choix;
+  // La ligne de la carte n'est qu'une préférence : quand elle est pleine, la
+  // créature prend la première place libre du camp (le joueur, lui, choisit).
+  const choix = caseParDefaut(carte, libres) ?? libres[0];
+  if (choix !== null && choix !== undefined) {
+    entite.emplacement = choix;
+    if (!caseAutorisee(carte, choix)) entite.caseChoisie = true;
+  }
 }
 
 /**
@@ -6003,7 +6028,7 @@ export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX, c
     // où qu'elle soit — y compris chez l'adversaire. Les autres restent
     // ramenées dans la ligne que leur carte impose.
     if (Number.isInteger(index) && index >= 0 && index < maximum && !cases[index]
-      && (!deuxLignes || entite.avancee || caseAutorisee(carte, index))) {
+      && (!deuxLignes || entite.avancee || entite.caseChoisie || caseAutorisee(carte, index))) {
       cases[index] = entite;
     } else {
       restants.push({ entite, carte });
@@ -6586,13 +6611,18 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const recette = validerMateriauxAscension(camp, carte, sacrifices.map((e) => e.id));
     if (!recette.ok) return recette;
   }
-  if (duel.modeMana === RPG_MODE_MANA_ESSAI
+  // Une victime qui se tenait chez l'adversaire libère une case de **sa**
+  // grille : la place de la nouvelle créature est déjà trouvée, et les deux
+  // vérifications de place ci-dessous ne la concernent pas.
+  const victimeChezLAdversaire = sacrifices.length > 0
+    && (positionDe(sacrifices[0], cote)?.camp ?? cote) !== cote;
+  if (!victimeChezLAdversaire && duel.modeMana === RPG_MODE_MANA_ESSAI
     && camp.creatures.length - sacrifices.length >= champMax(duel)) {
     return { ok: false, raison: 'champ-plein' };
   }
-  // Deux lignes : c'est **sa** ligne qui doit avoir une place. Cinq mêlées
-  // devant ne laissent pas entrer une sixième, même fond vide.
-  if (lignesActives(duel)
+  // Deux lignes : il suffit d'une place libre dans le camp — le joueur place
+  // où il veut (la ligne imposée ne vaut plus que pour l'Envol et l'IA).
+  if (!victimeChezLAdversaire && lignesActives(duel)
     && !casesLibresPour(camp, carte, champMax(duel), sacrifices.map((e) => e.id)).length) {
     return { ok: false, raison: 'champ-plein' };
   }
@@ -6608,11 +6638,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       || emplacementChoisi < 0 || emplacementChoisi >= champMax(duel)) {
       return { ok: false, raison: 'emplacement' };
     }
-    // Une case hors de la ligne de la carte n'est pas une erreur : elle est
-    // ignorée, et la pose se rabat sur la première case libre de sa ligne
-    // (voir `placerDansEmplacement`). Glisser une archère devant ne la casse
-    // pas, elle se range derrière.
-    if (lignesActives(duel) && !caseAutorisee(carte, emplacementChoisi)) emplacementChoisi = null;
+    // Une case fermée (carte avec Envol hors de sa ligne) n'est pas une
+    // erreur : elle est ignorée, et la pose se rabat sur la première case
+    // libre de la ligne de la carte (voir `placerDansEmplacement`).
+    if (lignesActives(duel) && !caseChoisissable(carte, emplacementChoisi)) emplacementChoisi = null;
     const occupant = emplacementChoisi === null
       ? null
       : rpgEmplacementsChamp(camp, champMax(duel), cote)[emplacementChoisi];
@@ -6804,10 +6833,17 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // créature prend sa place, au même emplacement du plateau.
   let emplacementSacrifice = null;
   let caseSacrifice = null;
+  let positionSacrifice = null;
   if (sacrifice) {
     emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
-    caseSacrifice = rpgEmplacementsChamp(camp, champMax(duel), cote).findIndex((occupant) => occupant?.id === sacrifice.id);
-    if (duel.modeMana === RPG_MODE_MANA_ESSAI) reservationsInvocation.set(camp, emplacementChoisi ?? caseSacrifice);
+    // La **vraie** position de la victime : `positionDe` la lit sur la grille
+    // qu'elle occupe — y compris celle du sorcier si elle avait percé.
+    positionSacrifice = positionDe(sacrifice, cote);
+    caseSacrifice = positionSacrifice?.index ?? -1;
+    if (duel.modeMana === RPG_MODE_MANA_ESSAI
+      && (positionSacrifice?.camp ?? cote) === cote) {
+      reservationsInvocation.set(camp, emplacementChoisi ?? (caseSacrifice >= 0 ? caseSacrifice : null));
+    }
     try {
       // Une recette d’Ascension paie tous ses corps simultanément : les
       // effets de mort ne peuvent pas tuer/réutiliser le second sacrifice.
@@ -6858,7 +6894,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // Sa case : celle que le joueur a choisie, sinon celle de la victime d'un
   // sacrifice, sinon la première libre.
   placerDansEmplacement(duel, cote, entite,
-    emplacementChoisi ?? (caseSacrifice >= 0 ? caseSacrifice : null));
+    emplacementChoisi ?? (caseSacrifice >= 0 ? caseSacrifice : null),
+    emplacementChoisi === null || emplacementChoisi === undefined ? positionSacrifice?.camp ?? null : null);
   // Le MOBA réserve la case avant toute capacité d'arrivée, qui peut tuer
   // la nouvelle créature ou déclencher une conquête en chaîne.
   if (typeof onEntitePlacee === 'function') onEntitePlacee(entite);

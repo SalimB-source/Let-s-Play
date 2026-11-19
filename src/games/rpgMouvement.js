@@ -33,7 +33,7 @@
  */
 
 import {
-  campPoseDe, caseLocale, casesOccupees, positionDe, rangeeDeCase, RPG_RANGEES,
+  campDeRangee, campPoseDe, caseLocale, casesOccupees, positionDe, rangeeDeCase, RPG_RANGEES,
 } from './rpgChamp.js';
 import { duelCardById } from './rpgCards.js';
 import { lignesActives } from './rpgLignes.js';
@@ -49,6 +49,34 @@ export function rpgPeutBouger(duel, cote, entite) {
   if ((entite.gelToursRestants ?? 0) > 0) return false;
   const carte = duelCardById(entite.carteId);
   if (!carte || carte.kind === 'site') return false;
+  return true;
+}
+
+/**
+ * Le **chemin** entre deux cases est-il libre ? On ne traverse pas un corps :
+ * toute case strictement intermédiaire (même rangée ou même colonne) doit être
+ * vide, dans l'un **ou** l'autre camp. Aujourd'hui le pas vaut une case, donc
+ * la question ne se pose pas encore ; la règle est écrite ici pour que la
+ * portée du pas puisse grandir sans qu'une créature glisse à travers une
+ * autre — c'est le seul endroit où elle se décide.
+ */
+export function rpgCheminLibre(duel, depart, arrivee) {
+  if (!depart || !arrivee) return false;
+  const occupees = casesOccupees(duel);
+  const dr = Math.sign(arrivee.rangee - depart.rangee);
+  const dc = Math.sign(arrivee.colonne - depart.colonne);
+  // Un déplacement qui n'est ni droit ni diagonal n'a pas de chemin à lire.
+  if (dr && dc && Math.abs(arrivee.rangee - depart.rangee) !== Math.abs(arrivee.colonne - depart.colonne)) return false;
+  let rangee = depart.rangee + dr;
+  let colonne = depart.colonne + dc;
+  while (rangee !== arrivee.rangee || colonne !== arrivee.colonne) {
+    const camp = campDeRangee(rangee);
+    const index = caseLocale(camp, rangee, colonne);
+    if (index === null) return false;
+    if (occupees.has(`${camp}:${index}`)) return false;
+    rangee += dr;
+    colonne += dc;
+  }
   return true;
 }
 
@@ -73,6 +101,8 @@ export function deplacementsLegaux(duel, cote, entiteId) {
       // Franchir la ligne neutre se fait par une trouée : droit devant.
       if (camp !== campActuel && dc !== 0) continue;
       if (occupees.has(`${camp}:${index}`)) continue;
+      // Un corps sur le chemin arrête la créature : elle ne passe pas à travers.
+      if (!rpgCheminLibre(duel, position, { rangee, colonne })) continue;
       destinations.push({ camp, index, rangee, colonne });
     }
   }

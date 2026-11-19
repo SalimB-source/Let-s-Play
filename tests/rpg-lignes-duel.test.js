@@ -63,18 +63,35 @@ test('les deux lignes ouvrent dix cases ; la carte choisit sa ligne', () => {
   assert.equal(cases[archiere.emplacement].id, archiere.id);
 });
 
-test('une case du mauvais côté est ignorée, pas refusée', () => {
+test('la case choisie est respectée, même hors de la ligne de la carte', () => {
   const { d, poserOk } = table();
-  // L'archère glissée sur la première case du front se range au fond.
+  // Le joueur place où il veut dans son camp : une archère peut tenir le front.
   const archiere = poserOk('joueur', DISTANCE, { emplacement: 0 });
-  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
-  assert.ok(archiere.emplacement >= 5);
-  // Le corps à corps déposé au fond se range devant.
+  assert.equal(archiere.emplacement, 0);
+  assert.equal(ligneDe(archiere), RPG_LIGNE_FRONT);
+  assert.equal(archiere.caseChoisie, true, 'sa case lui appartient : elle n’est pas rapatriée');
+  // Le corps à corps déposé au fond y reste.
   const melee = poserOk('joueur', MELEE, { emplacement: 7 });
-  assert.equal(ligneDe(melee), RPG_LIGNE_FRONT);
-  assert.ok(melee.emplacement < 5);
-  assert.notEqual(melee.emplacement, archiere.emplacement);
-  assert.ok(d, 'le duel reste cohérent');
+  assert.equal(melee.emplacement, 7);
+  assert.equal(ligneDe(melee), RPG_LIGNE_FOND);
+  // La table garde les deux cases au rafraîchissement suivant.
+  const cases = rpgEmplacementsChamp(d.joueur, champMax(d), 'joueur');
+  assert.equal(cases[0]?.id, archiere.id);
+  assert.equal(cases[7]?.id, melee.id);
+});
+
+test('une carte avec Envol garde la ligne de sa fiche', () => {
+  const { d, poser, poserOk } = table();
+  // Le Tengu est une créature à distance volante : elle se range au fond.
+  const tengu = poserOk('joueur', 'tengu-du-mont-ardent', { emplacement: 0 });
+  assert.equal(tengu.emplacement, 5, 'la case du front est ignorée, la pose se rabat sur sa ligne');
+  assert.equal(ligneDe(tengu), RPG_LIGNE_FOND);
+  assert.notEqual(tengu.caseChoisie, true, 'elle n’a pas choisi sa case : la ligne de la carte décide');
+  // Hors de sa ligne, la case est refusée sans casser la pose.
+  const autre = poser('joueur', 'tengu-du-mont-ardent', { emplacement: 2 });
+  assert.ok(autre.ok, 'la pose reste possible');
+  assert.equal(ligneDe(autre.entite), RPG_LIGNE_FOND);
+  assert.ok(d);
 });
 
 test('le fond est à deux cases : la mêlée ne l’atteint pas, même front tombé', () => {
@@ -122,20 +139,24 @@ test('un Défenseur reste devant, même quand le fond est libre', () => {
   assert.ok(d);
 });
 
-test('chaque ligne a ses cinq places : le front plein n’empêche pas le fond', () => {
+test('les dix cases du camp sont ouvertes : le front plein n’arrête plus la pose', () => {
   const { d, poser, poserOk } = table();
   const front = [];
   for (let i = 0; i < 5; i += 1) front.push(poserOk('joueur', MELEE));
   assert.equal(front.filter((e) => ligneDe(e) === RPG_LIGNE_FRONT).length, 5);
-  // Le sixième corps à corps n'a plus de place devant : il est refusé, et
-  // n'occupe pas une case du fond pour autant.
+  // Le sixième corps à corps n'a plus de place devant : il prend la première
+  // du fond — la ligne de la carte n'est qu'une préférence.
+  const sixieme = poserOk('joueur', MELEE);
+  assert.equal(ligneDe(sixieme), RPG_LIGNE_FOND);
+  // Une créature à distance trouve, elle aussi, une place libre.
+  const archiere = poserOk('joueur', DISTANCE);
+  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
+  assert.equal(d.joueur.creatures.length, 7);
+  // Camp plein (dix cases) : la onzième est refusée.
+  for (let i = 0; i < 3; i += 1) poserOk('joueur', MELEE);
   const refus = poser('joueur', MELEE);
   assert.equal(refus.ok, false);
   assert.equal(refus.raison, 'champ-plein');
-  // Une créature à distance trouve encore les cinq places du fond.
-  const archiere = poserOk('joueur', DISTANCE);
-  assert.equal(ligneDe(archiere), RPG_LIGNE_FOND);
-  assert.equal(d.joueur.creatures.length, 6);
 });
 
 test('sans le drapeau des lignes, rien ne change : cinq cases, tout le monde devant', () => {

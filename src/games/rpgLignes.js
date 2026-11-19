@@ -115,9 +115,26 @@ export function caseAutorisee(carte, index) {
   return ligneDeCase(index) === ligneObligee(carte);
 }
 
-/** Les cases encore libres pour cette carte : les places non prises **de sa
- *  ligne**. `sansIds` retire des occupants du calcul — les victimes d'un
- *  sacrifice libèrent leur case avant que la créature n'arrive. */
+/**
+ * Cette case est-elle **choisissable** à la pose ? Le joueur place ses
+ * créatures où il veut dans son camp — le front comme le fond, sans que la
+ * carte impose sa ligne. Seule exception : une carte avec **Envol**, qui garde
+ * sa ligne (elle ne se range pas au hasard).
+ *
+ * La ligne imposée (`ligneObligee`) ne disparaît pas : elle reste la case par
+ * défaut quand personne ne choisit (IA, jeton, glisser-déposer sur la table),
+ * et la règle de protection du front continue de se lire sur les positions
+ * réelles.
+ */
+export function caseChoisissable(carte, index) {
+  if (carte?.envol) return caseAutorisee(carte, index);
+  return Number.isInteger(index) && index >= 0 && index < RPG_LIGNES_CHAMP_MAX;
+}
+
+/** Les cases encore libres pour cette carte : toutes les places non prises de
+ *  son camp (la ligne imposée ne vaut que pour l'Envol). `sansIds` retire des
+ *  occupants du calcul — les victimes d'un sacrifice libèrent leur case avant
+ *  que la créature n'arrive. */
 export function casesLibresPour(camp, carte, maximum = RPG_LIGNES_CHAMP_MAX, sansIds = []) {
   const prises = new Set();
   for (const entite of camp?.creatures ?? []) {
@@ -127,7 +144,7 @@ export function casesLibresPour(camp, carte, maximum = RPG_LIGNES_CHAMP_MAX, san
   }
   const libres = [];
   for (let index = 0; index < maximum; index += 1) {
-    if (!prises.has(index) && caseAutorisee(carte, index)) libres.push(index);
+    if (!prises.has(index) && caseChoisissable(carte, index)) libres.push(index);
   }
   return libres;
 }
