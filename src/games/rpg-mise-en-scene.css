@@ -25,7 +25,7 @@
 .moba > .rpg-verdict-scene { z-index: 9998; }
 .moba__end-panel.rpg-overlay--loss, .card-table > .rpg-overlay--loss:not(.rpg-overlay--apres-eclat) { animation: rpg-victoire-panneau-loss calc(.48s * var(--rpg-anim-scale, 1)) cubic-bezier(.25, .7, .3, 1) calc(.12s * var(--rpg-anim-scale, 1)) both, rpg-bilan-voile calc(1.25s * var(--rpg-anim-scale, 1)) ease-out both; }
 @keyframes rpg-bilan-voile { from { background-color: transparent; backdrop-filter: none; } to { background-color: rgba(4, 4, 10, .86); backdrop-filter: blur(2px); } }
-@media (max-width: 850px) { .rpg-temps-forts { bottom: 19%; max-width: 42%; } .rpg-temps-forts__fait { font-size: 9px; padding: 3px 5px; } }
+@media (max-width: 850px) { .rpg-temps-forts { bottom: 19%; max-width: 42%; } .rpg-temps-forts__fait { font-size: 10px; padding: 3px 5px; } }
 .rpg-battle.is-reduced :is(.rpg-entree-legendaire, .rpg-verdict-scene) { display: none; }
 .rpg-battle.is-reduced :is(.rpg-temps-forts__fait, .moba__end-panel.rpg-overlay--loss, .card-table > .rpg-overlay--loss:not(.rpg-overlay--apres-eclat)) { animation: none; }
 @media (prefers-reduced-motion: reduce) {

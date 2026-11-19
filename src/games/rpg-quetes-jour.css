@@ -195,7 +195,7 @@
   flex: none;
   margin: 0;
   color: #e8cf93;
-  font: 800 9.5px/1.2 var(--mono, monospace);
+  font: 800 10px/1.2 var(--mono, monospace);
   letter-spacing: .08em;
   text-transform: uppercase;
   white-space: nowrap;

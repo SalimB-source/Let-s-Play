@@ -354,7 +354,7 @@
 }
 
 .rpg-deck-choice__text { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0 4px 6px; text-align: center; }
-.rpg-deck-choice__text small { color: #d6b970; font: 800 9px/1.2 var(--mono, monospace); letter-spacing: .12em; }
+.rpg-deck-choice__text small { color: #d6b970; font: 800 11px/1.2 var(--mono, monospace); letter-spacing: .12em; }
 .rpg-deck-choice--braise .rpg-deck-choice__text small { color: #eba089; }
 .rpg-deck-choice--hybride .rpg-deck-choice__text small { color: #e8c37a; }
 .rpg-deck-choice--neige .rpg-deck-choice__text small { color: #a9dbef; }
@@ -438,7 +438,7 @@
   align-items: center;
   gap: 6px 10px;
 }
-.rpg-deck-filter__label { grid-area: label; color: #e8c77f; font: 800 8px/1.2 var(--mono, monospace); letter-spacing: .13em; text-transform: uppercase; }
+.rpg-deck-filter__label { grid-area: label; color: #e8c77f; font: 800 10px/1.2 var(--mono, monospace); letter-spacing: .13em; text-transform: uppercase; }
 .rpg-deck-filter__chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 5px; }
 .rpg-deck-filter__chip {
   display: inline-flex;
@@ -477,7 +477,7 @@
 .rpg-deck-filter__chip--tenebres.is-active { background: linear-gradient(135deg, #c3aef5, #7f63c4); }
 .rpg-deck-filter__chip.is-active .rpg-emblem { color: inherit; }
 .rpg-deck-filter__chip.is-active .rpg-emblem--neige { color: #fff; }
-.rpg-deck-filter__count { grid-area: count; margin: 0; color: rgba(244, 233, 214, .68); font: 800 9px/1.3 var(--mono, monospace); white-space: nowrap; }
+.rpg-deck-filter__count { grid-area: count; margin: 0; color: rgba(244, 233, 214, .68); font: 800 10px/1.3 var(--mono, monospace); white-space: nowrap; }
 /* Dès 641 px, étagère fermée : libellé, puces et compteur sur une seule rangée centrée. */
 @media (min-width: 641px) {
   .rpg-deck-catalog--closed .rpg-deck-filter { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 12px; }
@@ -611,13 +611,13 @@
   .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text small,
   .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__text em,
   .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__meta b { display: none; }
-  .rpg-deck-catalog--open .rpg-deck-choice__select { grid-column: auto; justify-self: stretch; margin: 6px 0 0; padding: 7px 2px; font-size: 9px; letter-spacing: .03em; }
+  .rpg-deck-catalog--open .rpg-deck-choice__select { grid-column: auto; justify-self: stretch; margin: 6px 0 0; padding: 7px 2px; font-size: 10px; letter-spacing: .03em; }
 }
 @media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-deckbox--shelf { --bw: clamp(96px, 30vw, 132px); }
   /* Les quatre puces de couleur tiennent sur une rangée dès 360 px. */
   .rpg-deck-filter__chips { gap: 4px; }
-  .rpg-deck-filter__chip { gap: 4px; padding: 6px 8px; font-size: 9px; letter-spacing: .04em; }
+  .rpg-deck-filter__chip { gap: 4px; padding: 6px 8px; font-size: 10px; letter-spacing: .04em; }
   .rpg-deck-catalog--closed .rpg-deck-catalog__choices { gap: 4px; }
   .rpg-deck-catalog--closed .rpg-deck-choice { width: 100%; padding: 8px 4px 10px; }
   .rpg-deck-detail__header .rpg-deckbox { margin-left: -6px; }
@@ -643,7 +643,7 @@
 }
 /* Très petit écran : « SÉLECTIONNER » doit tenir dans un tiers de la rangée. */
 @media (max-width: 360px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
-  .rpg-deck-catalog--open .rpg-deck-choice__select { padding-inline: 1px; font-size: 8px; letter-spacing: .02em; }
+  .rpg-deck-catalog--open .rpg-deck-choice__select { padding-inline: 1px; font-size: 10px; letter-spacing: .02em; }
 }
 
 @media (prefers-reduced-motion: reduce) {

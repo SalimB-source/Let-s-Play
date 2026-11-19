@@ -215,7 +215,7 @@ body.rpg-pvp-lock { overflow: hidden; }
   font-size: 12px;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: rgba(244, 239, 228, .6);
+  color: rgba(244, 239, 228, .62);
 }
 .rpg-pvp__code strong {
   font-size: clamp(22px, 4vw, 30px);
@@ -246,8 +246,8 @@ body.rpg-pvp-lock { overflow: hidden; }
 .rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(82px, 6.2vw, 106px); }
 .rpg-pvp-deckbox .rpg-deck-choice__text { gap: 3px; padding: 0 2px 2px; }
 .rpg-pvp-deckbox .rpg-deck-choice__text strong { font-size: 13.5px; }
-.rpg-pvp-deckbox .rpg-deck-choice__text em { font-size: 9.5px; color: rgba(244, 231, 207, .66); }
-.rpg-pvp-deckbox .rpg-deck-choice__cta { color: rgba(244, 239, 228, .62); font-size: 9.5px; letter-spacing: .06em; }
+.rpg-pvp-deckbox .rpg-deck-choice__text em { font-size: 11px; color: rgba(244, 231, 207, .66); }
+.rpg-pvp-deckbox .rpg-deck-choice__cta { color: rgba(244, 239, 228, .62); font-size: 10px; letter-spacing: .06em; }
 .rpg-pvp-deckbox:hover .rpg-deck-choice__cta { color: #f2d79b; }
 .rpg-pvp-deckbox.is-selected {
   border-color: rgba(233, 196, 106, .7);
@@ -323,7 +323,7 @@ body.rpg-pvp-lock { overflow: hidden; }
 .rpg-pvp-duel__camp { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .rpg-pvp-duel__camp--moi { text-align: right; align-items: flex-end; }
 .rpg-pvp-duel__tour { text-align: center; display: flex; flex-direction: column; gap: 2px; }
-.rpg-pvp-duel__tour small { font-size: 11px; letter-spacing: .18em; color: rgba(244, 239, 228, .5); }
+.rpg-pvp-duel__tour small { font-size: 11px; letter-spacing: .18em; color: rgba(244, 239, 228, .62); }
 .rpg-pvp-duel__badge {
   padding: 4px 10px;
   border-radius: 999px;
@@ -339,11 +339,11 @@ body.rpg-pvp-lock { overflow: hidden; }
 
 .rpg-pvp-pv { font-variant-numeric: tabular-nums; }
 .rpg-pvp-pv b { font-size: 20px; color: #fff; }
-.rpg-pvp-pv i { font-style: normal; color: rgba(244, 239, 228, .5); }
+.rpg-pvp-pv i { font-style: normal; color: rgba(244, 239, 228, .62); }
 .rpg-pvp-pv em { font-style: normal; margin-left: 6px; font-size: 12px; color: #9fd7ff; }
 
 .rpg-pvp-mana { display: flex; gap: 4px; flex-wrap: wrap; }
-.rpg-pvp-mana--vide { font-size: 12px; color: rgba(244, 239, 228, .45); }
+.rpg-pvp-mana--vide { font-size: 12px; color: rgba(244, 239, 228, .62); }
 .rpg-pvp-mana__orbe {
   width: 20px;
   height: 20px;
@@ -402,7 +402,7 @@ body.rpg-pvp-lock { overflow: hidden; }
 }
 .rpg-pvp-creature strong { font-size: 13px; }
 .rpg-pvp-creature__stats b { font-size: 16px; color: #fff; }
-.rpg-pvp-creature__stats i { font-style: normal; color: rgba(244, 239, 228, .6); }
+.rpg-pvp-creature__stats i { font-style: normal; color: rgba(244, 239, 228, .62); }
 .rpg-pvp-creature.is-engagee { opacity: .55; }
 .rpg-pvp-creature.is-selectionnee {
   border-color: var(--pvp-or);
@@ -449,7 +449,7 @@ body.rpg-pvp-lock { overflow: hidden; }
   font-weight: 700;
 }
 .rpg-pvp-carte-main strong { font-size: 12px; line-height: 1.2; }
-.rpg-pvp-carte-main small { font-size: 11px; color: rgba(244, 239, 228, .6); }
+.rpg-pvp-carte-main small { font-size: 11px; color: rgba(244, 239, 228, .62); }
 .rpg-pvp-carte-main:disabled { opacity: .5; cursor: not-allowed; }
 .rpg-pvp-carte-main.is-jouable { border-color: rgba(233, 196, 106, .45); }
 
@@ -546,7 +546,7 @@ body.rpg-pvp-lock { overflow: hidden; }
   display: block;
   margin-top: 8px;
   font-size: 11px;
-  color: rgba(244, 239, 228, .5);
+  color: rgba(244, 239, 228, .62);
   word-break: break-all;
 }
 

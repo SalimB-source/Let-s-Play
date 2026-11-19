@@ -49,7 +49,7 @@
 
 .rpg-bab-el__eyebrow {
   color: rgba(232, 194, 113, .82);
-  font: 800 9.5px/1.4 var(--mono, ui-monospace, monospace);
+  font: 800 10px/1.4 var(--mono, ui-monospace, monospace);
   letter-spacing: .24em;
   text-transform: uppercase;
 }

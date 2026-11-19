@@ -188,7 +188,7 @@
 }
 
 .rpg-piste__palier.is-verrouille .rpg-piste__niveau {
-  color: rgba(225, 217, 201, 0.48);
+  color: rgba(225, 217, 201, .62);
 }
 
 .rpg-piste__palier.is-courant .rpg-piste__niveau {
@@ -491,7 +491,7 @@
 
 .rpg-piste__paquet-reel .rpg-souk__sachet-marque {
   top: 10%;
-  font-size: 4.5px;
+  font-size: 10px;
   letter-spacing: 0.04em;
 }
 
@@ -510,7 +510,7 @@
 
 .rpg-piste__paquet-reel .rpg-souk__sachet-legende {
   bottom: 9%;
-  font-size: 3.4px;
+  font-size: 10px;
   letter-spacing: 0.04em;
 }
 
@@ -539,7 +539,7 @@
 }
 
 .rpg-piste__paquet-reel .rpg-souk__sachet-languette span {
-  font-size: 2.8px;
+  font-size: 10px;
   letter-spacing: 0.06em;
 }
 

@@ -90,7 +90,7 @@
   display: grid;
   place-items: center;
   color: #eaf6ff;
-  font: 800 7px/1 var(--mono, monospace);
+  font: 800 10px/1 var(--mono, monospace);
   font-style: normal;
   letter-spacing: .04em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
@@ -230,7 +230,7 @@
 }
 .rpg-accueil-mobile__plaque b {
   color: #e3bf76;
-  font: 900 8px/1.2 var(--mono, monospace);
+  font: 900 10px/1.2 var(--mono, monospace);
   letter-spacing: .16em;
 }
 .rpg-accueil-mobile__plaque em {
@@ -241,7 +241,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.rpg-accueil-mobile__plaque small { color: rgba(240, 226, 198, .78); font-size: 9.5px; }
+.rpg-accueil-mobile__plaque small { color: rgba(240, 226, 198, .78); font-size: 10px; }
 
 /* ── Le gros bouton de jeu ─────────────────────────────────────────────── */
 .rpg-accueil-mobile__jouer {
@@ -276,12 +276,12 @@
   .rpg-accueil-mobile { gap: 4px; padding: 4px 6px; }
   .rpg-accueil-mobile__niveau { width: 22px; height: 22px; font-size: 11px; }
   .rpg-accueil-mobile__pseudo { font-size: 10px; }
-  .rpg-accueil-mobile__mode { min-height: 22px; font-size: 9px; }
+  .rpg-accueil-mobile__mode { min-height: 22px; font-size: 10px; }
   .rpg-accueil-mobile__jouer { min-height: 36px; padding: 6px 14px; letter-spacing: .12em; }
   .rpg-accueil-mobile__plaque { padding: 3px 8px; }
-  .rpg-accueil-mobile__plaque small { font-size: 8.5px; }
+  .rpg-accueil-mobile__plaque small { font-size: 10px; }
   .rpg-coffres-quetes__scene { --coffre-h: 32px; --scene-air: 10px; }
-  .rpg-coffres-quetes__titre { font-size: 8.5px; }
+  .rpg-coffres-quetes__titre { font-size: 10px; }
 }
 
 /* Le mouvement réduit coupe les rebonds, garde les états. */

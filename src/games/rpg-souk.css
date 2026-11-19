@@ -26,7 +26,7 @@
 .rpg-souk__titre { min-width: 0; flex: 1 1 320px; }
 .rpg-souk__titre h2 { margin: 6px 0 8px; font-size: clamp(24px, 3.4vw, 38px); line-height: 1; letter-spacing: .01em; }
 .rpg-souk__titre p { margin: 0; max-width: 62ch; color: rgba(247, 237, 218, .72); font-size: 13px; line-height: 1.6; }
-.rpg-souk__sync { margin-top: 7px !important; color: rgba(247, 237, 218, .5) !important; font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .06em; }
+.rpg-souk__sync { margin-top: 7px !important; color: rgba(247, 237, 218, .62) !important; font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .06em; }
 
 .rpg-souk__bourse {
   flex: none;
@@ -50,10 +50,10 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: .01em;
 }
-.rpg-souk__solde em { color: rgba(247, 237, 218, .58); font: 700 10px/1 var(--mono, monospace); font-style: normal; letter-spacing: .14em; text-transform: uppercase; }
+.rpg-souk__solde em { color: rgba(247, 237, 218, .62); font: 700 10px/1 var(--mono, monospace); font-style: normal; letter-spacing: .14em; text-transform: uppercase; }
 .rpg-souk__cycle { margin: 9px 0 0; color: rgba(247, 237, 218, .72); font-size: 12px; }
 .rpg-souk__cycle strong { color: #f0d194; font-variant-numeric: tabular-nums; }
-.rpg-souk__serie { margin: 4px 0 0; color: rgba(247, 237, 218, .48); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__serie { margin: 4px 0 0; color: rgba(247, 237, 218, .62); font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
 .rpg-souk__retour { flex: none; }
 
 /* ── Ce qui attend d'être réclamé ─────────────────────────────────────────── */
@@ -87,8 +87,8 @@
 }
 .rpg-souk__section-tete { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .rpg-souk__section-tete h3 { margin: 0; font-size: clamp(15px, 2vw, 19px); letter-spacing: .02em; }
-.rpg-souk__section-tete p { margin: 0; color: rgba(247, 237, 218, .5); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
-.rpg-souk__vide { margin: 0; color: rgba(247, 237, 218, .56); font-size: 12.5px; line-height: 1.65; }
+.rpg-souk__section-tete p { margin: 0; color: rgba(247, 237, 218, .62); font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__vide { margin: 0; color: rgba(247, 237, 218, .62); font-size: 12.5px; line-height: 1.65; }
 
 /* ── Les quêtes du jour ───────────────────────────────────────────────────── */
 .rpg-souk__quetes {
@@ -124,7 +124,7 @@
   border: 1px solid rgba(235, 215, 176, .3);
   border-radius: 999px;
   color: #e8c77f;
-  font: 800 8px/1.6 var(--mono, monospace);
+  font: 800 10px/1.6 var(--mono, monospace);
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -166,7 +166,7 @@
 .rpg-souk .rpg-menu-button[disabled] {
   border-color: rgba(235, 215, 176, .16);
   background: rgba(20, 17, 18, .8);
-  color: rgba(247, 237, 218, .38);
+  color: rgba(247, 237, 218, .62);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -180,8 +180,8 @@
   background: rgba(255, 255, 255, .045);
   color: rgba(247, 237, 218, .62);
 }
-.rpg-souk__pris { color: rgba(247, 237, 218, .5); font: 800 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
-.rpg-souk__quete-note { margin: 0; color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); letter-spacing: .06em; }
+.rpg-souk__pris { color: rgba(247, 237, 218, .62); font: 800 10px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-souk__quete-note { margin: 0; color: rgba(247, 237, 218, .62); font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .06em; }
 
 /* ── Les cartes à l'unité : cinq offres, un rafraîchissement par jour ────── */
 .rpg-souk__direct {
@@ -301,7 +301,7 @@
   border-radius: 999px;
   background: rgba(20, 28, 40, .86);
   color: #bcd3f0;
-  font: 900 7px/1.2 var(--mono, monospace);
+  font: 900 10px/1.2 var(--mono, monospace);
   letter-spacing: .1em;
   text-transform: uppercase;
   text-shadow: 0 1px 2px #000;
@@ -444,14 +444,14 @@
   border: 1px dashed rgba(235, 215, 176, .24);
   border-radius: 12px;
   background: rgba(10, 9, 11, .62);
-  color: rgba(247, 237, 218, .5);
+  color: rgba(247, 237, 218, .62);
   transition: border-color .25s ease, background .3s ease, color .25s ease, box-shadow .3s ease;
 }
 .rpg-souk__jour-libelle {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  font: 800 8px/1.3 var(--mono, monospace);
+  font: 800 10px/1.3 var(--mono, monospace);
   letter-spacing: .11em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -471,7 +471,7 @@
   border: 1px dashed rgba(235, 215, 176, .3);
   border-radius: 50%;
   background: rgba(255, 255, 255, .03);
-  color: rgba(247, 237, 218, .38);
+  color: rgba(247, 237, 218, .62);
   font: 800 clamp(12px, 1.25vw, 15px)/1 var(--mono, monospace);
   font-variant-numeric: tabular-nums;
   transition: border-color .25s ease, background .3s ease, color .25s ease, box-shadow .3s ease;
@@ -545,7 +545,7 @@
   gap: 2px;
   margin-top: -1px;
   color: #ffe7af;
-  font: 800 9px/1 var(--mono, monospace);
+  font: 800 10px/1 var(--mono, monospace);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -565,10 +565,10 @@
   font-size: 11.5px;
 }
 .rpg-souk__journal li[data-souk-journal-mythe="true"] { border-color: rgba(168, 117, 237, .45); }
-.rpg-souk__journal-rayon { color: #ffe7af; font: 800 9.5px/1.4 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
-.rpg-souk__journal-date { color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); white-space: nowrap; }
+.rpg-souk__journal-rayon { color: #ffe7af; font: 800 11px/1.4 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
+.rpg-souk__journal-date { color: rgba(247, 237, 218, .62); font: 700 11px/1.4 var(--mono, monospace); white-space: nowrap; }
 .rpg-souk__journal-cartes { min-width: 0; color: rgba(247, 237, 218, .8); line-height: 1.5; overflow-wrap: anywhere; }
-.rpg-souk__journal-notes { color: rgba(247, 237, 218, .5); font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.rpg-souk__journal-notes { color: rgba(247, 237, 218, .62); font: 700 11px/1.4 var(--mono, monospace); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 
 /* ── Le paquet, en volume ─────────────────────────────────────────────────
    Un sachet scellé, pas une vignette : cinq faces posées autour d'un pavé
@@ -738,7 +738,7 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 240, 196, .22);
 }
 .rpg-souk__paquet-dos-sceau b { font-size: calc(var(--pw) * .22); line-height: 1; font-weight: 400; }
-.rpg-souk__paquet-dos-sceau small { font: 800 9.5px/1 var(--mono, monospace); letter-spacing: .2em; text-transform: uppercase; color: rgba(248, 224, 168, .82); }
+.rpg-souk__paquet-dos-sceau small { font: 800 10px/1 var(--mono, monospace); letter-spacing: .2em; text-transform: uppercase; color: rgba(248, 224, 168, .82); }
 .rpg-souk__paquet-face--tranche {
   top: calc(var(--pw) * .012);
   left: calc((var(--pw) - var(--pd)) / 2);
@@ -808,7 +808,7 @@
   top: 14%;
   left: 50%;
   transform: translateX(-50%);
-  color: rgba(255, 255, 255, .22);
+  color: rgba(255, 255, 255, .62);
   font-size: calc(var(--pw) * .42);
   line-height: 1;
 }
@@ -833,7 +833,7 @@
   gap: 4px;
   justify-items: center;
   color: rgba(255, 255, 255, .72);
-  font: 700 clamp(9.5px, .95vw, 11.5px)/1.35 var(--mono, monospace);
+  font: 700 clamp(10px, .95vw, 11.5px)/1.35 var(--mono, monospace);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -1090,8 +1090,8 @@
   padding: 2px 7px;
   border: 1px solid rgba(235, 215, 176, .22);
   border-radius: 999px;
-  color: rgba(247, 237, 218, .52);
-  font: 800 8px/1.6 var(--mono, monospace);
+  color: rgba(247, 237, 218, .62);
+  font: 800 10px/1.6 var(--mono, monospace);
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -1104,10 +1104,10 @@
   color: #f0d194;
 }
 .rpg-souk__rayon-texte { margin: 0; color: rgba(247, 237, 218, .66); font-size: 12px; line-height: 1.55; }
-.rpg-souk__rayon-taux { margin: 0; color: #e8c77f; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
-.rpg-souk__rayon-reste { margin: 0; color: rgba(247, 237, 218, .52); font: 700 10px/1.5 var(--mono, monospace); }
+.rpg-souk__rayon-taux { margin: 0; color: #e8c77f; font: 700 10px/1.5 var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
+.rpg-souk__rayon-reste { margin: 0; color: rgba(247, 237, 218, .62); font: 700 10px/1.5 var(--mono, monospace); }
 .rpg-souk__rayon footer { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
-.rpg-souk__rayon-refus { flex: 1 1 100%; margin: 0; color: #f0b9a4; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .04em; text-align: center; }
+.rpg-souk__rayon-refus { flex: 1 1 100%; margin: 0; color: #f0b9a4; font: 700 10px/1.5 var(--mono, monospace); letter-spacing: .04em; text-align: center; }
 .rpg-souk__rayon footer .rpg-menu-button { flex: 1 1 auto; min-height: 44px; }
 /* Le coffret n'est pas l'appel principal (le paquet l'est), mais il se voit :
    c'est la seule offre qui promet une mythique. */
@@ -1126,7 +1126,7 @@
   border-radius: 999px;
   background: rgba(255, 231, 175, .18);
   color: #ffe7af;
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: .06em;
 }
 
@@ -1160,7 +1160,7 @@
 }
 .rpg-souk__ceremonie-tete h2 { margin: 6px 0 6px; font-size: clamp(20px, 3vw, 30px); }
 .rpg-souk__ceremonie-tete p { margin: 0; color: rgba(247, 237, 218, .66); font-size: 12.5px; }
-.rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 7px; color: rgba(247, 237, 218, .44); font: 700 9px/1.45 var(--mono, monospace); letter-spacing: .04em; }
+.rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 7px; color: rgba(247, 237, 218, .62); font: 700 10px/1.45 var(--mono, monospace); letter-spacing: .04em; }
 .rpg-souk__ceremonie-cartes {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1284,7 +1284,7 @@
   border-radius: 999px;
   background: rgba(27, 19, 12, .82);
   color: #ffe7af !important;
-  font: 800 8.5px/1.4 var(--mono, monospace) !important;
+  font: 800 10px/1.4 var(--mono, monospace) !important;
   letter-spacing: .08em;
   text-transform: uppercase;
   text-align: center;
@@ -1350,7 +1350,7 @@
     max-width: calc(100% - 4px);
     min-height: 24px;
     padding: 3px 5px;
-    font-size: 6.5px !important;
+    font-size: 10px !important;
     letter-spacing: .03em;
   }
   .rpg-souk__ceremonie-pied .rpg-menu-button { flex: 1 1 100%; }
@@ -1590,7 +1590,7 @@
 .rpg-souk__carte-verso-cadre {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   border: 1px solid #cba85b80; border-radius: 5px;
-  color: #efd392; font: 700 9px/1.4 var(--mono, monospace); letter-spacing: .22em;
+  color: #efd392; font: 700 10px/1.4 var(--mono, monospace); letter-spacing: .22em;
 }
 .rpg-souk__rune-sablier { display: inline-block; width: 1em; height: 1.34em; vertical-align: middle; }
 .rpg-souk__carte-verso-cadre b { font-size: clamp(28px, 4vw, 48px); filter: sepia(1); }
@@ -1655,7 +1655,7 @@
 }
 .rpg-souk__sachet-marque { top: 10%; font-size: clamp(21px, 3vw, 30px); font-weight: 900; letter-spacing: .08em; }
 .rpg-souk__sachet-rune { top: 40%; font-size: 42px; filter: sepia(1); }
-.rpg-souk__sachet-legende { bottom: 10%; font: 800 8px/1.4 var(--mono, monospace); letter-spacing: .12em; }
+.rpg-souk__sachet-legende { bottom: 10%; font: 800 10px/1.4 var(--mono, monospace); letter-spacing: .12em; }
 .rpg-souk__sachet-languette {
   position: absolute; inset: 0 0 86%; display: grid; place-items: center;
   border: 1px solid #f4d28c; border-radius: 5px 5px 0 0;
@@ -1663,7 +1663,7 @@
   clip-path: polygon(0 0, 100% 0, 100% 88%, 94% 100%, 87% 88%, 80% 100%, 73% 88%, 66% 100%, 59% 88%, 52% 100%, 45% 88%, 38% 100%, 31% 88%, 24% 100%, 17% 88%, 10% 100%, 0 88%);
   transform-origin: 90% 100%;
 }
-.rpg-souk__sachet-languette span { font: 900 8px/1 var(--mono, monospace); letter-spacing: .15em; color: #362314; }
+.rpg-souk__sachet-languette span { font: 900 10px/1 var(--mono, monospace); letter-spacing: .15em; color: #362314; }
 [data-souk-phase='ouverture'] .rpg-souk__sachet-languette,
 [data-souk-phase='sortie'] .rpg-souk__sachet-languette,
 [data-souk-phase='revelation'] .rpg-souk__sachet-languette { animation: rpg-souk-sachet-dechire .6s ease-out both; }
@@ -1768,10 +1768,10 @@
 @media (max-height: 600px) {
   .rpg-souk__ceremonie-tete h2 { margin: 1px 0; font-size: clamp(15px, 4vh, 22px); }
   .rpg-souk__ceremonie-tete p { font-size: 10px; line-height: 1.25; }
-  .rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 2px; font-size: 9px; }
+  .rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 2px; font-size: 10px; }
   .rpg-souk__ceremonie-pied .rpg-menu-button { min-height: 38px; padding: 5px 8px; }
-  .rpg-souk__ceremonie-bilan { flex-basis: auto; font-size: 9px; }
-  .rpg-souk__carte-tampon { min-height: 0; max-width: 95%; padding: 2px 3px; font-size: 7px !important; letter-spacing: 0; bottom: 4px; }
+  .rpg-souk__ceremonie-bilan { flex-basis: auto; font-size: 10px; }
+  .rpg-souk__carte-tampon { min-height: 0; max-width: 95%; padding: 2px 3px; font-size: 10px !important; letter-spacing: 0; bottom: 4px; }
 }
 
 /* Sur téléphone, toute l'étagère reste sur quatre colonnes, en portrait comme
@@ -1791,24 +1791,24 @@
     row-gap: 7px;
     padding-bottom: 0;
   }
-  .rpg-souk__rayon .rpg-souk__paquet-nom { font-size: clamp(5px, 2cqw, 10px); letter-spacing: 0; overflow-wrap: anywhere; }
-  .rpg-souk__rayon .rpg-souk__paquet-meta { gap: 1px; font-size: clamp(5px, 1.6cqw, 8px); letter-spacing: 0; line-height: 1.1; }
+  .rpg-souk__rayon .rpg-souk__paquet-nom { font-size: clamp(10px, 2cqw, 10px); letter-spacing: 0; overflow-wrap: anywhere; }
+  .rpg-souk__rayon .rpg-souk__paquet-meta { gap: 1px; font-size: clamp(10px, 1.6cqw, 8px); letter-spacing: 0; line-height: 1.1; }
   .rpg-souk__rayon .rpg-souk__paquet-meta em { padding: 1px 2px; }
   .rpg-souk__rayon .rpg-souk__paquet-prix {
     box-sizing: border-box; width: 100%; min-height: 44px; padding: 3px 1px;
     flex-wrap: wrap; align-content: center; align-items: center; gap: 1px 3px;
-    white-space: normal; font-size: clamp(9px, 2.7vw, 12px); line-height: 1.05;
+    white-space: normal; font-size: clamp(10px, 2.7vw, 12px); line-height: 1.05;
   }
   .rpg-souk__rayon .rpg-souk__prix-geste { letter-spacing: 0; }
   .rpg-souk__rayon footer { min-width: 0; gap: 4px; margin: 0; }
   .rpg-souk__rayon-info, .rpg-souk__rayon-refus {
-    min-width: 0; font-size: 9px; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere;
+    min-width: 0; font-size: 10px; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere;
   }
   .rpg-souk__rayon footer .rpg-souk__coffret {
     min-width: 0; width: 100%; min-height: 44px; padding: 4px 2px;
-    font-size: 9px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere;
+    font-size: 10px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere;
   }
-  .rpg-souk__rayon-remise { margin: 0; padding: 1px 2px; font-size: 8px; letter-spacing: 0; }
+  .rpg-souk__rayon-remise { margin: 0; padding: 1px 2px; font-size: 10px; letter-spacing: 0; }
 }
 
 /* Sur écran tactile, éviter les animations permanentes et les effets de
