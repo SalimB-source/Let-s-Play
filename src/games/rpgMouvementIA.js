@@ -15,6 +15,10 @@
  *    adverse ensuite.
  * 3. À distance égale, on ne bouge pas : rester immobile est un choix sûr.
  *
+ * Les créatures que `rpgPeutBouger` écarte ne sont jamais déplacées : Site,
+ * créature gelée, engagée, déjà déplacée, **Défenseur** (il tient sa case) et
+ * tout ce qui vient d'arriver (`rpgSouffreMalInvocation`).
+ *
  * Aucun hasard, aucune simulation : l'IA lit la même géométrie que le joueur
  * (`rpgChamp.js`) et les mêmes cibles (`rpgCiblesIndividuellesClassique`).
  */

@@ -37,6 +37,9 @@ Le palier 2 ouvre le champ : une créature **marche d'une case par tour**, puis
    imprimée ou accordée). L'IA jouait autrement : elle posait un corps puis le
    faisait glisser d'une case dans le même tour, un avantage que le joueur
    n'avait pas lu sur sa carte.
+5 ter. **Rien pour un Défenseur.** Il tient sa case, c'est son office : le
+   Défenseur — imprimé ou accordé en cours de partie — ne se déplace jamais, il
+   frappe de là où il est, et la trouée qu'il ferme ne s'ouvre pas de son fait.
 6. **Aucune contrainte de ligne.** Le placement impose une ligne
    (`ligneObligee`) ; le mouvement non. Un tireur peut monter au front, un corps
    à corps reculer au fond — c'est un choix, pas une règle.
