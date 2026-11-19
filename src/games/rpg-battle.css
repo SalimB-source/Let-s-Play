@@ -4188,6 +4188,64 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card.is-a-portee { animation: none; }
 }
+
+/* ── Le plateau : des cartes posées, un contour au survol ────────────────────
+   Une créature en jeu ne flotte plus au-dessus de la table. Le relief venait
+   d'une ombre portée en deux couches (`0 12px 28px` + `0 2px 6px`, posées par
+   `.rpg-card`) : elle faisait sous la carte le « biseau » qui la décollait du
+   plateau. Elle part, comme elle est déjà partie des Défenseurs
+   (`rpg-bouclier.css`), dont la silhouette doit rester nue au repos. La carte
+   redevient une plaque : l'illustration, ses pierres, ses compteurs.
+
+   **Aucun état ne perd son signal.** Les halos de ciblage (`is-ciblable`), de
+   désignation (`is-spell-target`, `is-coup-rapide-cible`), de blocage, de
+   sacrifice, d'Ascension et de portée (`is-a-portee`) sont énumérés ci-dessous
+   et gardent leur ombre ; les créatures prêtes gardent leur liseré doré
+   (`is-pret`), et une volante son relief propre (`is-envol`, fait de
+   `filter`). Seul le repos devient plat.
+
+   Le relief ne revient qu'au survol, et sous la forme la plus simple : un
+   **contour fin de 2 px**. L'**or** dit les nôtres, le **rouge** ceux du
+   sorcier — on sait du premier coup d'œil à qui l'on a affaire. Le rouge du
+   survol (`#ff7b6f`) est plus tendre que celui de la proie désignée
+   (`is-spell-target`, 4 px et halo qui respire) : désigner reste plus fort
+   que survoler. Les cartes qui portent déjà un état plus fort ne reçoivent
+   pas ce contour — leur couleur a déjà quelque chose à dire.
+
+   Le doigt ne survole pas : sur les tablettes et les téléphones, les cartes
+   restent plates et ce sont les états (ciblage, sélection) qui parlent. */
+.rpg-battle .card-row .rpg-card:not(
+  .is-pret, .is-mythique-creature, .is-active, .is-selected, .is-envol,
+  .is-ciblable, .is-spell-target, .is-coup-rapide-cible, .is-a-portee,
+  .is-blocking, .is-blocker-assigned, .is-blocker-selected,
+  .is-blocker-target, .is-blocker-target-hover,
+  .is-declared-attacker, .is-attacked,
+  .is-sacrifice-target, .is-ascension-candidate, .is-ascension-chosen,
+  .is-lien-actif, .is-touch-drop-target, .is-protege,
+  .fx-lunge, .fx-hit, .fx-combat-impact, .fx-foudre, .fx-glow,
+  .fx-block, .fx-unblock, .fx-dodge
+) {
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* Le camp d'abord : la teinte du contour descend de la rangée, la carte ne
+     fait que la lire. */
+  .rpg-battle .card-row--equipe .rpg-card { --rpg-contour-survol: #f0cd7f; }
+  .rpg-battle .card-row--ennemi .rpg-card { --rpg-contour-survol: #ff7b6f; }
+  .rpg-battle .card-row .rpg-card:is(:hover, :focus-visible):not(
+    .is-pret, .is-mythique-creature, .is-active, .is-selected,
+    .is-ciblable, .is-spell-target, .is-coup-rapide-cible,
+    .is-blocking, .is-blocker-assigned, .is-blocker-selected,
+    .is-blocker-target-hover,
+    .is-declared-attacker,
+    .is-sacrifice-target, .is-ascension-candidate, .is-ascension-chosen,
+    .is-touch-drop-target
+  ) {
+    outline: 2px solid var(--rpg-contour-survol, #f0cd7f);
+    outline-offset: 2px;
+  }
+}
 .rpg-btn--undo { border-color: rgba(234, 199, 128, .68); color: #f7e4b7; background: rgba(63, 43, 25, .72); }
 .rpg-btn--undo:hover { border-color: #ffe3a4; color: #fff2d5; background: rgba(108, 72, 35, .9); }
 
