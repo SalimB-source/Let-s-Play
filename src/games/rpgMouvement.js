@@ -30,6 +30,10 @@
  *   l'attaque — la créature attend le prochain tour de son camp (Rapidité
  *   exceptée). L'IA n'a donc plus de « pose puis glisse » à son actif.
  * - **Rien pour un Site** : un site ne marche pas.
+ * - **Rien pour un Défenseur** : il tient sa case, c'est son office. Imprimé
+ *   ou accordé en cours de partie, le Défenseur ne se déplace jamais — il
+ *   frappe de là où il est, et rien ne le fait glisser, pas même une trouée
+ *   qui s'ouvrirait devant lui.
  * - **Aucune contrainte de carte** : le placement impose la ligne
  *   (`ligneObligee`), le mouvement non. Un tireur peut avancer au front, un
  *   corps à corps reculer au fond — c'est le joueur qui choisit.
@@ -39,6 +43,7 @@ import {
   campDeRangee, campPoseDe, caseLocale, casesOccupees, positionDe, rangeeDeCase, RPG_RANGEES,
 } from './rpgChamp.js';
 import { duelCardById } from './rpgCards.js';
+import { estDefenseur } from './rpgDefenseur.js';
 import { lignesActives } from './rpgLignes.js';
 import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 
@@ -58,6 +63,11 @@ export function rpgPeutBouger(duel, cote, entite) {
   // lire sa carte. La Rapidité, imprimée ou accordée, lève les deux attentes.
   if (rpgSouffreMalInvocation(entite)) return false;
   if ((entite.gelToursRestants ?? 0) > 0) return false;
+  // **Un Défenseur ne se déplace pas.** Sa raison d'être est de tenir une
+  // case : la lui faire quitter, c'est offrir la trouée qu'il est censé
+  // fermer. La règle est la même pour tous les camps et pour un Défenseur
+  // accordé en cours de partie (`estDefenseur` lit l'entité et sa carte).
+  if (estDefenseur(entite)) return false;
   const carte = duelCardById(entite.carteId);
   if (!carte || carte.kind === 'site') return false;
   return true;
