@@ -1,5 +1,5 @@
-import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
-import { champMax, filtreLigne, lignesActives } from './rpgLignes.js';
+import { estDefenseur } from './rpgDefenseur.js';
+import { attaqueDirecteSurLesLignes, champMax, filtreLigne, lignesActives } from './rpgLignes.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -29,7 +29,7 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
     ? filtreLigne(attaquant, adversaires, atteignables)
     : atteignables;
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
-  const directe = attaqueDirectePermise(attaquant, adversaires, possibles);
+  const directe = attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles);
   if (prioritaires.length) return { cibles: prioritaires.map((e) => e.id), directe };
   return { cibles: possibles.map((e) => e.id), directe };
 }
@@ -44,7 +44,7 @@ export function rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantI
   const possibles = lignesActives(duel)
     ? filtreLigne(attaquant, adversaires, atteignables)
     : atteignables;
-  if (cibleId === null) return attaqueDirectePermise(attaquant, adversaires, possibles);
+  if (cibleId === null) return attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles);
   const cible = adversaires.find((e) => e.id === cibleId);
   if (!cible) return false;
   // Une cible annoncée dans le fond cesse d'être légale dès que le front tombe

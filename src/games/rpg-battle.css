@@ -4155,6 +4155,39 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle:not(.rpg-battle--touch) .rpg-wizard-plate.is-spell-target {
   box-shadow: 0 0 0 4px rgba(38, 8, 6, .7), 0 0 25px rgba(255, 64, 56, .8);
 }
+
+/* ── Anneau doré = « à portée du survol » ─────────────────────────────────────
+   Survoler une des nôtres (souris, ou focus au clavier) allume d'un anneau
+   doré les proies que son attaque atteindrait *vraiment* : la page lit pour
+   cela `rpgCiblesIndividuellesClassique`, la règle même du clic, et pose
+   `is-a-portee` — rien n'est cliquable, rien n'est promis, c'est une lecture.
+   L'or est la couleur de l'invitation douce ; le cyan (`is-ciblable`) reste
+   celui du ciblage ouvert et le rouge (`is-spell-target`) celui de la proie
+   déjà désignée : les deux gardes ci-dessous rendent la main à ces états plus
+   forts, l'anneau doré ne s'affiche que quand la carte n'a rien de plus
+   urgent à dire. Au doigt, l'anneau n'existe pas : le premier appui sur une
+   créature ouvre la phase d'attaque, et les proies légales s'y allument
+   d'elles-mêmes — c'est le geste en deux temps, pas un appui long (celui-là
+   ouvre la fiche, et la table se floute derrière). */
+@keyframes rpg-portee-pulse {
+  from { outline-color: rgba(240, 205, 127, .55); box-shadow: 0 0 10px rgba(240, 205, 127, .28), 0 12px 28px rgba(0, 0, 0, .72); }
+  to { outline-color: #f6dda6; box-shadow: 0 0 20px rgba(246, 221, 166, .5), 0 12px 28px rgba(0, 0, 0, .72); }
+}
+.rpg-card.is-a-portee {
+  outline: 2px solid #f0cd7f;
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(240, 205, 127, .34), 0 12px 28px rgba(0, 0, 0, .72);
+}
+.rpg-card.is-a-portee:not(.is-ciblable, .is-spell-target, .is-coup-rapide-cible, .is-selected, .is-active, .is-blocker-target, .is-blocker-target-hover, .is-sacrifice-target) {
+  animation: rpg-portee-pulse 1.9s ease-in-out infinite alternate;
+}
+.rpg-card.is-a-portee:is(.is-ciblable, .is-spell-target, .is-coup-rapide-cible) {
+  outline-offset: 0;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card.is-a-portee { animation: none; }
+}
 .rpg-btn--undo { border-color: rgba(234, 199, 128, .68); color: #f7e4b7; background: rgba(63, 43, 25, .72); }
 .rpg-btn--undo:hover { border-color: #ffe3a4; color: #fff2d5; background: rgba(108, 72, 35, .9); }
 

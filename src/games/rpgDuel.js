@@ -4,8 +4,8 @@ import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, 
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
-import { attaqueDirectePermise, ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
-import { caseAutorisee, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
+import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
+import { attaqueDirecteSurLesLignes, caseAutorisee, caseParDefaut, casesLibresPour, champMax, filtreLigne, lignesActives, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
@@ -9334,7 +9334,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   const atteignables = duel[autre(cote)].creatures.filter((e) => !estSite(e)
     && !rpgEstProtegee(e, couleur)
     && (ciblee || (!e.infiltration && (attaquant.envol || !e.envol))));
-  if (!attaqueDirectePermise(attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)), atteignables)) {
+  if (!attaqueDirecteSurLesLignes(duel, attaquant, duel[autre(cote)].creatures.filter((e) => !estSite(e)), atteignables)) {
     return { ok: false, raison: 'cible-obligatoire' };
   }
   // Ce raccourci suppose une attaque non bloquée : un bloqueur forcé capable
