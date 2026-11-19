@@ -58,6 +58,7 @@ import {
 } from './rpgAI.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { armesPortees } from './rpgCardStacks.js';
+import { rpgReculerApresFrappe } from './rpgRecul.js';
 import { rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import {
   RPG_MANA_ESSAI_CARTES_EXCLUES,
@@ -8968,6 +8969,10 @@ export function rpgLancerAttaque(
     if (coup.overkill) {
       duel.log.push(`Overkill : ${coup.overkill} perce les bloqueurs — ${coup.amount} dégâts ${resoudreDegatsDirects ? 'à la voie' : 'au sorcier'}.`);
     }
+    // Le bout du plateau ne se tient pas : la frappeuse recule d'une case (et
+    // la chaîne derrière elle). Un détour de voie (MOBA) n'est pas concerné —
+    // `rpgReculerApresFrappe` s'en charge lui-même.
+    if (!duel.moba && (blessureSorcier?.recus ?? 0) > 0) rpgReculerApresFrappe(duel, cote, coup.attaquantId);
   }
 
   // Les montants normaux restent simultanés, mais une source éliminée par
@@ -9284,6 +9289,10 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     sourceExileeParConquete = frappe?.sourceExileeParConquete ? sourceAuContact : null;
     resume.frappeSorcier = degatsVoie;
     if (attaquant.volDeVie && degatsVoie > 0 && !duel.moba?.winner) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(degatsVoie / 2));
+    // **Le bout du plateau ne se tient pas.** Une créature qui frappe le
+    // sorcier depuis sa dernière rangée recule d'une case, et la chaîne de
+    // créatures derrière elle avec (voir `rpgRecul.js`).
+    if (degatsVoie > 0 && !duel.moba && !duel.moba?.winner) rpgReculerApresFrappe(duel, cote, attaquantId);
   }
   if (annule) duel.log.push(`${attaquant.name} ne trouve plus sa cible : son attaque est annulée.`);
   else if (cibleId === null) duel.log.push(`${attaquant.name} frappe ${classique ? 'le sorcier adverse' : 'sa voie adverse'} (${degatsVoie} dégâts).`);
@@ -9377,6 +9386,8 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     if (attaquant.volDeVie) gagnerVieDepuisCreature(duel, cote, attaquant, Math.ceil(blessureSorcier.recus / 2));
     if (coup.critique) duel.log.push(libelleCritique(attaquant.name, coup.fois, coup.garanti));
     duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${frappeSorcier}).`);
+    // Le bout du plateau ne se tient pas, même par ce raccourci.
+    rpgReculerApresFrappe(duel, cote, attaquant.id);
   }
   // L'arme du Sable emporte ses déclencheurs : « attaque » et « blesse le
   // sorcier » (l’Attaque ciblée, plus haut, est passée par `rpgLancerAttaque`,
