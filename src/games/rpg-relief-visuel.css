@@ -70,17 +70,17 @@
 }
 
 /* Au pointeur précis seulement : pas de changement de la géométrie des cases,
-   ni de transformation concurrente quand une carte est engagée ou animée. */
+   ni de transformation concurrente quand une carte assaille ou s'anime. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .rpg-battle:not(.is-reduced):not(.rpg-battle--touch) .rpg-card[data-relief-survol="true"]:not([data-combat-tilted="true"]):not(
-    .is-attacked, .is-declared-attacker, .is-selected, .is-active, .is-blocking, .is-envol,
+    .is-declared-attacker, .is-selected, .is-active, .is-blocking, .is-envol,
     .is-sacrifice-animating, .is-blocker-dragging, .is-invoking, .is-attacking, .fx-enter, .fx-lunge, .fx-hit,
     .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
   ) {
     transform: perspective(900px) rotateX(var(--rpg-relief-x, 0deg)) rotateY(var(--rpg-relief-y, 0deg));
   }
   .rpg-battle:not(.is-reduced):not(.rpg-battle--touch) .rpg-card[data-relief-survol="true"]:not([data-combat-tilted="true"]):not(
-    .is-attacked, .is-declared-attacker, .is-selected, .is-active, .is-blocking, .is-envol,
+    .is-declared-attacker, .is-selected, .is-active, .is-blocking, .is-envol,
     .is-sacrifice-animating, .is-blocker-dragging, .is-invoking, .is-attacking, .fx-enter, .fx-lunge, .fx-hit,
     .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
   ) > .rpg-relief-ombre { opacity: .7; }

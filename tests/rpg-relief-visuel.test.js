@@ -41,7 +41,10 @@ test('les effets préservent les signaux de combat et le mouvement réduit', () 
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(css, /\.is-reduced[\s\S]*rpg-impact-onde/);
   assert.match(css, /pointer: fine/);
-  assert.match(css, /\.is-attacked[\s\S]*\.fx-lunge/);
+  // Le relief se retire devant l'assaut (carte inclinée, bond d'attaque…) ;
+  // l'engagement lui-même n'est plus un signal et ne bloque donc plus rien.
+  assert.match(css, /:not\(\[data-combat-tilted="true"\]\)[\s\S]{0,400}\.fx-lunge/);
+  assert.doesNotMatch(css, /\.is-attacked/, 'l’engagement ne se voit plus dans le relief');
   assert.match(css, /\.rpg-relief-ombre\s*\{[^}]*box-shadow:/, 'l’ombre mobile est isolée de celle de la carte');
   assert.match(css, /:not\(\[data-combat-tilted="true"\]\)/);
 });

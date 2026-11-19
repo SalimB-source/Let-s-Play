@@ -473,7 +473,9 @@ export async function checkRpgPreviewActions(assert) {
     await click(container.querySelector('.rpg-btn--confirmer-attaque'));
     assert.equal(fennec().classList.contains('is-attacked'), true,
       'la confirmation résout l’attaque sans bloqueur');
-    assert.equal(fennec().dataset.combatTilted, 'true');
+    // L'engagement ne penche plus la carte : l'inclinaison appartient à
+    // l'assaut déclaré, pas au tour qui suit.
+    assert.equal(fennec().dataset.combatTilted, 'false');
 
     // ── Le Butin pioche une carte, puis sa défausse attend le choix du joueur ─
     assert.ok(hand('tislit-des-aures'), 'toucher le sorcier déclenche le Butin : une carte piochée');

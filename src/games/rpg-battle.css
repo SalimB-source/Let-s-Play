@@ -674,9 +674,10 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
   cursor: pointer;
   /* Une carte POSÉE sur la table est droite. L'éventail — et ses petites
-     inclinaisons — n'appartient qu'à la main (`--hand-fan`). Seuls les états
-     de combat penchent une créature : `data-combat-tilted` pour l'attaquant
-     déclaré. */
+     inclinaisons — n'appartient qu'à la main (`--hand-fan`). Seul l'attaquant
+     **déclaré** penche, le temps de son assaut (`data-combat-tilted`) :
+     l'engagement lui-même ne laisse plus de trace, la carte se redresse dès
+     l'attaque résolue. */
   transform: none;
   transition: transform .35s ease, translate .35s ease, box-shadow .35s ease, filter .3s ease, opacity .3s ease;
 }
@@ -3801,9 +3802,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 0 0 4px rgba(8, 24, 26, .9), 0 0 22px rgba(91, 240, 218, .46), 0 12px 28px rgba(0, 0, 0, .72);
 }
 
-/* Combat rotation is driven by entity state, not hover/selection styling.
-   Keep attackers readable while still making their engaged state visible;
-   `!important` prevents entry, hit and attack animations from straightening them. */
+/* L'assaut déclaré penche la carte ; `!important` empêche les animations
+   d'entrée, d'impact et d'attaque de la redresser pendant l'échange. Une fois
+   l'attaque résolue, `attaquee` ne penche plus rien : l'engagement est muet. */
 .rpg-card[data-combat-tilted="true"] {
   transform: rotate(10deg) !important;
   transform-origin: center;
@@ -4124,8 +4125,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Toute créature ciblée par une attaque ciblée, une magie, une
    sorcellerie ou n'importe quel effet de carte s'allume en rouge, quel que
    soit son camp : on voit immédiatement qui va être frappé. Le rouge est
-   celui du combat déjà employé pour la créature engagée (`is-attacked
-   .fx-lunge`) — même famille de couleur, même idée de danger. Le halo
+   celui du bond d'attaque (`is-attacked.fx-lunge`) — même famille de
+   couleur, même idée de danger. Le halo
    « respire » via `box-shadow` et jamais via `filter`, pour ne pas écraser
    le flash d'impact (`fx-hit`) ni le bond d'attaque (`fx-lunge`) : la garde
    `:not(.fx-*)` rend l'animation à la carte dès que sa cinématique joue.
@@ -4219,7 +4220,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .is-ciblable, .is-spell-target, .is-coup-rapide-cible, .is-a-portee,
   .is-blocking, .is-blocker-assigned, .is-blocker-selected,
   .is-blocker-target, .is-blocker-target-hover,
-  .is-declared-attacker, .is-attacked,
+  .is-declared-attacker,
   .is-sacrifice-target, .is-ascension-candidate, .is-ascension-chosen,
   .is-lien-actif, .is-touch-drop-target, .is-protege,
   .fx-lunge, .fx-hit, .fx-combat-impact, .fx-foudre, .fx-glow,
@@ -10211,8 +10212,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face[class*="rpg-card--frame-"] { background-color: transparent; }
 
 /* La peinture mythique garde un soupçon de relief sans changer de couleur.
-   Les filtres d'état (fatigue, blessure, carte verrouillée) restent prioritaires. */
-.rpg-card--mythique:not(.is-summoning-sick, .is-attacked) > .rpg-card__img,
+   Seul le mal d'invocation atténue la peinture : l'engagement ne l'éteint
+   plus. */
+.rpg-card--mythique:not(.is-summoning-sick) > .rpg-card__img,
 .rpg-card--mythique > .rpg-hand__img,
 .rpg-card--mythique > .rpg-mulligan__img,
 .rpg-hover-card-preview__face.rpg-card--mythique > img,
@@ -12378,7 +12380,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   opacity: .55;
   filter: saturate(.7) brightness(1.1) blur(.4px);
 }
-.rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
 
 /* Le losange de l'arme s'accroche à cheval sur le bord supérieur sans remplacer le cadre
    de la créature. Le clic droit sur le losange consulte l’arme ; le clic

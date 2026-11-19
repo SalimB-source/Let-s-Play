@@ -15,8 +15,10 @@ const probe = { name: 'engagement-probe', enforce: 'pre', transform(code, id) {
   }
   return null;
 } };
-/** Le filtre ne doit pas atteindre la carte, ses icônes ou ses valeurs. */
-async function verifierIllustration(carte, gris = true) {
+/** Le filtre ne doit pas atteindre la carte, ses icônes ou ses valeurs.
+ *  `gris` dit ce qu'on attend du portrait : vrai pour le mal d'invocation (il
+ *  reste marqué), faux pour l'engagement (il ne marque plus rien). */
+async function verifierIllustration(carte, gris) {
   const infos = await carte.evaluate((el) => {
     const portrait = el.matches('.rpg-card') ? el.querySelector(':scope > .rpg-card__img') : el.querySelector(':scope > img');
     const elements = [...el.querySelectorAll('.rpg-card-icone, .rpg-effet-icone, .rpg-card__stat--atk, .rpg-card__pt, .rpg-card-element-badge, .moba__slot-label')];
@@ -25,7 +27,7 @@ async function verifierIllustration(carte, gris = true) {
   });
   assert.ok(infos.portrait !== null, 'portrait présent');
   if (gris) assert.match(infos.portrait, /grayscale\(1\)/, 'portrait entièrement grisé');
-  else assert.doesNotMatch(infos.portrait, /grayscale/, 'portrait dégagé en couleur');
+  else assert.doesNotMatch(infos.portrait, /grayscale/, 'portrait en couleur : aucun signe d’engagement');
   assert.doesNotMatch(infos.carte, /grayscale/, 'carte non désaturée');
   assert.ok(infos.indicateurs.length, 'indicateurs présents');
   for (const filtre of infos.indicateurs) assert.doesNotMatch(filtre, /grayscale/, 'icône ou valeur en couleur');
@@ -56,9 +58,13 @@ try {
     const select = (id) => page.locator(`[data-moba-entity="${id}"] .moba__slot`).first();
     const a = select(ids[0]), b = select(ids[1]);
     await a.waitFor({ state: 'attached' });
-    for (const c of [a, b]) await verifierIllustration(c);
+    // L'engagement ne se voit plus ; le mal d'invocation, si.
+    await verifierIllustration(a, false);
+    await verifierIllustration(b, true);
     assert.ok(await a.evaluate(el => el.classList.contains('is-attacked')));
     assert.ok(await b.evaluate(el => el.classList.contains('is-summoning-sick')));
+    assert.equal(await a.evaluate(el => el.dataset.combatTilted ?? 'false'), 'false',
+      'une créature engagée reste droite');
     await page.waitForTimeout(800);
     const tailles = await Promise.all([a, b].map(c => c.evaluate(el => ({ width: el.offsetWidth, height: el.offsetHeight, scale: getComputedStyle(el).scale }))));
     assert.ok(Math.abs(tailles[0].width - tailles[1].width) < 1 && Math.abs(tailles[0].height - tailles[1].height) < 1);
@@ -94,7 +100,10 @@ try {
     });
     const a = page.locator(`[data-entity-id="${ids[0]}"]`), b = page.locator(`[data-entity-id="${ids[1]}"]`);
     await a.waitFor({ state: 'attached' }); await b.waitFor({ state: 'attached' });
-    for (const c of [a, b]) await verifierIllustration(c);
+    await verifierIllustration(a, false);
+    await verifierIllustration(b, true);
+    assert.equal(await a.evaluate(el => el.dataset.combatTilted ?? 'false'), 'false',
+      'attaquer ne penche plus la carte une fois l’assaut résolu');
     await page.waitForTimeout(800);
     const tailles = await Promise.all([a,b].map(c => c.evaluate(el => ({ width: el.offsetWidth, height: el.offsetHeight, scale: getComputedStyle(el).scale }))));
     assert.ok(Math.abs(tailles[0].width - tailles[1].width) < 1 && Math.abs(tailles[0].height - tailles[1].height) < 1);
