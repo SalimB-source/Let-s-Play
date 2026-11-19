@@ -77,3 +77,13 @@ disparaître : la vague n'a plus lieu d'être.
 - `node --test tests/rpg-attaque-tous.test.js`
 - `node --test tests/rpg-classique-combat-individuel.test.js`
 - `node --test tests/rpg-moba-defenseur-voie.test.js`
+
+## Depuis les lignes : il faut avoir percé
+
+Sur les plateaux à deux lignes (`duel.lignes`), la frappe directe passe par
+`attaqueDirecteSurLesLignes` (`src/games/rpgLignes.js`) : elle commence par
+`attaqueDirectePermise`, puis exige que l'attaquant soit **au front**. Un tireur
+du fond, ou un Défenseur resté derrière, ne termine plus la partie à distance ;
+il conserve ses flèches pour les créatures. Le MOBA et les plateaux sans lignes
+gardent exactement le comportement décrit plus haut. Voir
+[`30-portees.md`](./30-portees.md#le-sorcier-comme-objectif--il-faut-avoir-percé).

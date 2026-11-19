@@ -57,3 +57,67 @@ En attendant, la fondation sert déjà à deux choses qui ne changent aucune rè
 
 - le **survol** qui montre ce qu'une créature peut atteindre (`casesAPortee`) ;
 - le **sorcier adverse comme objectif**, atteignable depuis la dernière ligne.
+
+## Le sorcier comme objectif : il faut avoir percé
+
+Une attaque **directe** contre le sorcier adverse (le chemin qui contourne les
+créatures) n'est proposée que lorsque rien n'est atteignable — c'est
+`attaqueDirectePermise`. Cette règle disait *quand* on pouvait viser le
+sorcier ; elle ne disait pas *d'où*. Depuis les lignes, un tireur du fond ou un
+Défenseur garé derrière terminait donc la partie sans jamais toucher le front.
+
+`attaqueDirecteSurLesLignes` (dans `rpgLignes.js`) ajoute la seule condition qui
+manquait :
+
+```js
+export function attaqueDirecteSurLesLignes(duel, attaquant, adversaires = [], atteignables = null) {
+  if (!attaqueDirectePermise(attaquant, adversaires, atteignables)) return false;
+  if (!lignesActives(duel) || duel?.moba) return true;   // hors lignes : rien ne change
+  if (!adversaires.length) return true;                  // sorcier à découvert
+  if (!Number.isInteger(attaquant?.emplacement)) return true;
+  return ligneDe(attaquant) === RPG_LIGNE_FRONT;         // il faut être au contact
+}
+```
+
+Elle remplace `attaqueDirectePermise` aux trois endroits qui décident de la
+frappe directe : la liste des cibles individuelles
+(`rpgCombatIndividuelClassique`), sa revérification à l'instant du clic, et le
+raccourci de `rpgDuel.js` qui saute la sélection quand il n'y a qu'une proie.
+La victoire, elle, ne bouge pas : `rpgVainqueur` conclut toujours sur
+`duel.sorcier.pv <= 0`.
+
+Conséquences voulues : un tireur du fond garde ses flèches sur les créatures,
+un Défenseur ne finit plus la partie depuis sa case, et une créature qui vient
+de percer le front peut terminer — c'est la récompense de la percée.
+
+## Le survol : montrer la portée sans rien promettre
+
+Survoler une des nôtres (souris, ou focus au clavier) allume d'un **anneau
+doré** les proies que son attaque atteindrait vraiment. La page ne réécrit
+aucune règle : elle appelle `rpgCiblesIndividuellesClassique(duel, 'joueur', id)`
+— la fonction du clic — et pose `is-a-portee` sur les cartes rendues par cette
+liste. Rien ne devient cliquable, aucune attaque n'est déclarée.
+
+Trois garde-fous :
+
+- **nos créatures seulement** — ce que l'adversaire peut frapper ne s'annonce
+  pas ;
+- **sur deux lignes seulement** (`lignesActives`), sinon le survol ne dirait
+  rien de plus que le plateau ;
+- **pas en PvP**, où la table adverse n'est pas la nôtre ;
+- **pas pendant la phase d'attaque** : la sélection y parle déjà en cyan, l'or
+  se tait pour ne pas doubler le signal.
+
+Une créature qui n'a plus aucune proie atteignable mais qui garde la frappe
+directe allume la **plaque du sorcier** (`is-ciblable`), exactement comme le
+clic l'aurait fait : le survol annonce la décision avant qu'elle soit prise.
+
+Les couleurs restent trois signaux distincts : l'**or** invite (survol), le
+**cyan** ouvre le ciblage (`is-ciblable`), le **rouge** désigne la proie déjà
+choisie (`is-spell-target`). L'anneau doré s'efface dès qu'un état plus fort
+parle, et `prefers-reduced-motion` lui retire sa pulsation sans le retirer.
+
+Au doigt, l'anneau n'existe pas : le premier appui sur une créature ouvre la
+phase d'attaque et les proies légales s'y allument d'elles-mêmes. L'appui long,
+lui, est déjà pris par la fiche de carte — c'est le geste en deux temps qui
+sert de survol tactile.

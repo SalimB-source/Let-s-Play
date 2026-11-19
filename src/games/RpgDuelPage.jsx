@@ -2927,6 +2927,10 @@ export function TableCard({
   spellTarget = false,
   sortBloqueParBouclier = false,
   coupRapideCible = false,
+  // Survol façon Fire Emblem : la carte est une proie LÉGALE de la créature
+  // survolée — un simple anneau doré, la règle ne bouge pas et rien n'est
+  // cliquable tant que l'attaque n'est pas déclarée.
+  porteeVisible = false,
   declaredAttacker = false,
   onClick,
   canDragBlocker = false,
@@ -3107,6 +3111,7 @@ export function TableCard({
         sacrificeEnAnimation ? 'is-sacrifice-animating' : '',
         spellTarget ? 'is-spell-target' : '',
         coupRapideCible ? 'is-coup-rapide-cible' : '',
+        porteeVisible ? 'is-a-portee' : '',
         canDragBlocker ? 'is-blocker-draggable' : '',
         blocking ? 'is-blocker-assigned' : '',
         draggedBlocker ? 'is-blocker-dragging' : '',
@@ -10371,6 +10376,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }) ?? null;
   const cibleAttaqueEnCours = phase ? (combatCollectif ? prochainCoupRapideSansCible(attaquants) : (attaquants[0] && !ciblesAttaque[attaquants[0]] ? attaquants[0] : null)) : null;
   const choixIndividuel = !combatCollectif && phase && attaquants[0] ? rpgCiblesIndividuellesClassique(duel, 'joueur', attaquants[0]) : { cibles: [], directe: false };
+  // Survol façon Fire Emblem : `apercuSurvol.entiteId` dit quelle créature est
+  // sous le curseur (ou sous le doigt). Quand c'est une des nôtres, on lit son
+  // attaque réelle — `rpgCiblesIndividuellesClassique`, la même règle que le
+  // clic — et on allume d'un anneau doré les proies qu'elle atteindrait. Aucune
+  // cible ne devient cliquable : c'est une lecture, pas une promesse. Une
+  // créature adverse ne s'annonce pas — ce qu'elle peut frapper ne nous
+  // regarde pas — et pendant la phase d'attaque la sélection parle déjà en
+  // cyan : l'or se tait alors pour ne pas doubler le signal.
+  const porteeSurvol = (() => {
+    const entiteId = apercuSurvol?.entiteId;
+    if (!entiteId || modePvp || phase || !lignesActives(duel)) return null;
+    const attaquant = duel.joueur?.creatures?.find((entite) => entite.id === entiteId);
+    if (!attaquant) return null;
+    const { cibles, directe } = rpgCiblesIndividuellesClassique(duel, 'joueur', entiteId);
+    if (!directe && !cibles?.length) return null;
+    return { cibles: new Set(cibles ?? []), directe: Boolean(directe) };
+  })();
   const attaqueCibleeSansCibleLegale = combatCollectif && phase && duel.sorcier.creatures.length > 0
     && attaquants.some((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
@@ -14293,7 +14315,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${(cibleEnCours && (sorcierEstCibleDuSort || arriveeViseSorcierEnAttente)) || (!combatCollectif && phase && choixIndividuel.directe) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${(cibleEnCours && (sorcierEstCibleDuSort || arriveeViseSorcierEnAttente)) || (!combatCollectif && phase && choixIndividuel.directe) || porteeSurvol?.directe ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
@@ -14445,6 +14467,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       miss={missDeCarte(entite, pile, deployee)}
                       critiqueFx={critiqueDeCarte(entite, pile, deployee)}
                       bouclierFx={bouclierDeCarte(entite, pile, deployee)}
+                      porteeVisible={Boolean(porteeSurvol?.cibles?.has(entite.id))}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       ascensionSelection={selectionAscension.pourCreature(duel, 'sorcier', entite, reserveAscensionDisponible)}

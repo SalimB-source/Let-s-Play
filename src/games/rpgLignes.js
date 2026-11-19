@@ -55,7 +55,7 @@
  * ligne change de case, et une sauvegarde relue retrouve sa ligne toute seule.
  */
 
-import { estDefenseur } from './rpgDefenseur.js';
+import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
 
 export const RPG_LIGNE_FRONT = 'front';
 export const RPG_LIGNE_FOND = 'fond';
@@ -156,6 +156,32 @@ export function ligneProtege(attaquant, cible, creaturesCible = []) {
 export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
   if (!frontTient(creaturesCible)) return cibles;
   return cibles.filter((cible) => !ligneProtege(attaquant, cible, creaturesCible));
+}
+
+/**
+ * Le **sorcier adverse** n'est atteignable que depuis la ligne de contact.
+ *
+ * L'attaque directe — celle qui frappe le sorcier lui-même plutôt qu'une
+ * créature — garde ses conditions (`attaqueDirectePermise` : plus rien à
+ * frapper, envol sans Défenseur, infiltration seule). Les lignes y ajoutent la
+ * leur : **il faut avoir percé**. Seule une créature postée sur le front, la
+ * ligne qui touche l'adversaire, peut porter le coup final ; un tireur du fond
+ * ne tue pas le sorcier à distance, et un corps resté derrière non plus.
+ *
+ * Deux exceptions, pour que la règle ne puisse jamais figer une partie :
+ *
+ * - **plus aucune créature adverse** : il n'y a plus de ligne à percer, le
+ *   sorcier est à découvert (`attaqueDirectePermise` décide seul) ;
+ * - **hors des lignes** (`duel.lignes !== true`) ou au MOBA : comportement
+ *   historique, la fonction rend exactement ce que rendait `attaqueDirectePermise`.
+ */
+export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null) {
+  const permise = attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
+  if (!permise) return false;
+  if (!lignesActives(duel) || duel?.moba) return true;
+  if (!creaturesAdverses.length) return true;
+  if (!Number.isInteger(attaquant?.emplacement)) return true;
+  return ligneDe(attaquant) === RPG_LIGNE_FRONT;
 }
 
 /** Le nombre de cases du champ de ce duel : dix quand les lignes sont
