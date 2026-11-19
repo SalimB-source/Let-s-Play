@@ -50,6 +50,31 @@ rend le **propriétaire**. Un envahisseur est donc une carte du joueur dont
 `avancee` marque enfin une créature qui a quitté la case que sa carte lui
 imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 
+## Le placement : le joueur choisit, la ligne propose
+
+La ligne que la carte impose (`ligneObligee`) n'est plus une contrainte de pose.
+Le joueur place ses créatures **où il veut dans son camp** : une archère peut
+tenir le front, un corps à corps reculer au fond. `caseChoisissable` dit la
+règle : toute case du camp est ouverte — sauf pour une carte avec **Envol**, qui
+garde la ligne de sa fiche.
+
+La ligne imposée ne disparaît pas pour autant :
+
+- elle reste la **case par défaut** quand personne ne choisit (IA, jeton,
+  glisser-déposer sur la table, `caseParDefaut`) ;
+- quand elle est pleine, la créature prend la première place libre du camp au
+  lieu d'être refusée ;
+- la règle de protection du front se lit sur les **positions réelles**, jamais
+  sur la fiche : dix cases ouvertes, le front protège toujours le fond.
+
+Une créature posée hors de la ligne de sa carte porte `caseChoisie` : sa case
+lui appartient, et `rpgEmplacementsChamp` ne la rapatrie plus.
+
+**Le sacrifice suit la victime.** L'invocation payée d'un sacrifice entre sur la
+case que la victime occupait — y compris si elle avait franchi la trouée, auquel
+cas la nouvelle créature naît chez le sorcier (`campPose`, `avancee`). La victime
+est lue par `positionDe`, pas par sa place dans la rangée de son camp.
+
 ## Le corps qui bloque
 
 Une case tenue n'est jamais une destination : on ne se pose pas sur une
@@ -169,11 +194,12 @@ idempotentes, comme le reste des scènes.
 |---|---|
 | `tests/rpg-mouvement.test.js` | 12 |
 | `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
+| `tests/rpg-sacrifice-emplacement.test.js` | 4 (case de la victime, camp adverse compris) |
 | `tests/rpg-mouvement-blocage.test.js` | 4 (case tenue, envahisseur, chemin, refus du pas) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
-| `tests/rpg-lignes-duel.test.js` | 13 |
+| `tests/rpg-lignes-duel.test.js` | 14 (case choisie respectée, Envol, dix places) |
 | `tests/rpg-sorcier-objectif.test.js` | 9 |
 | `npm run check:rpg-avancee` | 58 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
 | `npm run check:rpg-lignes` | 33 / 0 |

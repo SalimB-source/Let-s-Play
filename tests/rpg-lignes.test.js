@@ -72,21 +72,20 @@ test('une ligne pleine n’a pas de repli sur l’autre', () => {
   assert.equal(caseParDefaut({ id: 'viking' }, []), null);
 });
 
-test('les cases libres pour une carte sont celles de sa ligne, moins les occupants', () => {
+test('les cases libres pour une carte sont celles du camp, moins les occupants', () => {
   const camp = { creatures: [
     creature('a', 0), creature('b', 2), creature('c', 5), creature('d', 9),
-  ] };
-  // Devant : cases 1, 3 et 4 ; le fond n'intéresse pas une mêlée.
-  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }), [1, 3, 4]);
-  // Derrière : cases 6, 7 et 8.
-  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }), [6, 7, 8]);
+  ] } ;
+  // Le joueur place où il veut : le front comme le fond.
+  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }), [1, 3, 4, 6, 7, 8]);
   // Les victimes d'un sacrifice libèrent leur case avant l'arrivée.
-  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 10, ['a']), [0, 1, 3, 4]);
-  // Un Défenseur suit la même règle de ligne que les autres mêlées.
-  assert.deepEqual(casesLibresPour(camp, { id: 'garde', defenseur: true }), [1, 3, 4]);
+  assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 10, ['a']), [0, 1, 3, 4, 6, 7, 8]);
+  // Une carte avec Envol, elle, garde la ligne que sa fiche impose.
+  assert.deepEqual(casesLibresPour(camp, { id: 'tengu', distance: true, envol: true }), [6, 7, 8]);
+  assert.deepEqual(casesLibresPour(camp, { id: 'viking-volant', envol: true }), [1, 3, 4]);
   // Le mode à cinq cases ne connaît que le front.
   assert.deepEqual(casesLibresPour(camp, { id: 'viking' }, 5), [1, 3, 4]);
-  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }, 5), []);
+  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true, envol: true }, 5), []);
 });
 
 test('le front tient tant qu’une créature vivante le garde', () => {

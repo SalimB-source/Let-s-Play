@@ -11,7 +11,7 @@ const css = readFileSync(new URL('../src/games/rpg-mana-essai.css', import.meta.
 test('la page importe le moteur du pas et celui de l’IA', () => {
   assert.match(page, /import \{ deplacementsLegaux, rpgDeplacerCreature \} from '\.\/rpgMouvement\.js'/);
   assert.match(page, /import \{ rpgIABougerCreatures \} from '\.\/rpgMouvementIA\.js'/);
-  assert.match(page, /import \{ campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp \} from '\.\/rpgChamp\.js'/);
+  assert.match(page, /import \{ campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe \} from '\.\/rpgChamp\.js'/);
 });
 
 test('la créature choisie ouvre ses cases d’avancée, dans les deux rangées', () => {

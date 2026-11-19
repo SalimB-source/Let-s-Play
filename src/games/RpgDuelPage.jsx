@@ -27,9 +27,9 @@ import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
-import { champMax, ligneDeCase, caseAutorisee, ligneObligee, frontTient, lignesActives,
+import { champMax, ligneDeCase, caseChoisissable, ligneObligee, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
-import { campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp } from './rpgChamp.js';
+import { campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { deplacementsLegaux, rpgDeplacerCreature } from './rpgMouvement.js';
 import { rpgIABougerCreatures } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
@@ -929,7 +929,8 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
  * distance n'a que le fond, un corps à corps que le front.
  *
  * Quand une pose attend sa case (`choixEmplacement`, côté joueur), les cases
- * libres **de la ligne de la carte** deviennent de vrais boutons : clic,
+ * libres **du camp** deviennent de vrais boutons (la ligne de la carte ne
+ * contraint plus que l'Envol) : clic,
  * doigt ou clavier (touches 1 à 5, la colonne) posent la créature en attente
  * sur la case choisie. Une case occupée ne se désigne jamais : échanger une
  * créature contre une autre passe par le sacrifice du plateau plein
@@ -11910,9 +11911,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const source = !enCours.depuisReserve && [...(tableRef.current?.querySelectorAll('.rpg-hand__card') ?? [])]
       .find((element) => element.dataset.cardId === enCours.carteId);
     const index = source ? Number(source.dataset.handIndex) : null;
-    const caseVictime = duel.modeMana === RPG_MODE_MANA_ESSAI
-      ? rpgEmplacementsChamp(duel.joueur, undefined, 'joueur').findIndex((entite) => entite?.id === enCours.sacrificeIds[0])
-      : -1;
+    // La victime vole vers **sa** case — celle qu'elle occupait vraiment. Une
+    // victime qui avait percé se tenait chez le sorcier : le vol vise alors la
+    // rangée du joueur sans case précise (la nouvelle créature, elle, prend sa
+    // place chez l'adversaire — c'est le moteur qui la pose là).
+    const victimeRituel = (duel.joueur.creatures ?? []).find((entite) => entite.id === enCours.sacrificeIds[0]) ?? null;
+    const positionVictime = victimeRituel && duel.modeMana === RPG_MODE_MANA_ESSAI
+      ? positionDe(victimeRituel, 'joueur') : null;
+    const caseVictime = positionVictime?.camp === 'joueur' ? positionVictime.index : -1;
     if (carte && source && Number.isInteger(index) && index >= 0 && !animationsReduites()) {
       demarrerVolCarte(carte, index, poserApresRituel, caseVictime >= 0 ? caseVictime : null, { voixALaPose: true });
     } else {
@@ -12092,13 +12098,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   /** Une carte qui prend une des cinq cases du champ quand on la joue. */
   const cartePrendUneCase = (carte) => carte?.kind === 'creature' || carte?.kind === 'hero' || carte?.kind === 'site';
 
-  /** Les numéros des cases encore libres **dans la ligne de cette carte**
-   *  (0 à 9 quand les deux lignes sont ouvertes) : une archère ne se pose
-   *  jamais devant, un corps à corps jamais derrière. */
+  /** Les numéros des cases encore libres **de notre camp** (0 à 9 quand les
+   *  deux lignes sont ouvertes). Le joueur place où il veut : le front comme
+   *  le fond. Seule une carte avec Envol garde la ligne que sa fiche impose
+   *  (`caseChoisissable`). La ligne imposée reste la case **par défaut** quand
+   *  personne ne choisit. */
   const casesLibresJoueur = (carte = null) => (duel.modeMana === RPG_MODE_MANA_ESSAI
     ? rpgEmplacementsChamp(duel.joueur, champMax(duel), 'joueur')
       .map((occupant, index) => (occupant ? null : index))
-      .filter((index) => index !== null && (!carte || caseAutorisee(carte, index)))
+      .filter((index) => index !== null && (!carte || caseChoisissable(carte, index)))
     : []);
 
   /**
@@ -12199,7 +12207,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const handIndex = Number.isInteger(pose.handIndex) && duel.joueur.main[pose.handIndex] === pose.carteId
       ? pose.handIndex : duel.joueur.main.indexOf(pose.carteId);
     if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur, champMax(duel), 'joueur')[index]
-      || !caseAutorisee(carte, index)) {
+      || !caseChoisissable(carte, index)) {
       jouerSfx('erreur');
       force();
       return;
@@ -13876,7 +13884,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ? {
           cle: `pose:${poseEnCours.carteId}:${poseEnCours.handIndex}`,
           classe: 'rpg-target-prompt',
-          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — cliquez une case libre de votre rangée (Échap pour renoncer)`,
+          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — cliquez une case libre de votre camp, front ou fond (Échap pour renoncer)`,
         }
       : defausseOuverte
         ? {
@@ -14607,7 +14615,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               maximum={champMax(duel)}
               deuxLignes={lignesActives(duel)}
               choixEmplacement={Boolean(poseEnCours)}
-              ligneChoisissable={poseEnCours ? ligneObligee(cardById(poseEnCours.carteId)) : null}
+              ligneChoisissable={poseEnCours && cardById(poseEnCours.carteId)?.envol
+                ? ligneObligee(cardById(poseEnCours.carteId)) : null}
               nomCartePose={poseEnCours ? cardById(poseEnCours.carteId)?.name ?? null : null}
               onChoisirEmplacement={choisirEmplacement}
               emplacementSurvole={emplacementSurvole}
