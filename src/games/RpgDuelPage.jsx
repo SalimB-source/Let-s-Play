@@ -29,8 +29,9 @@ import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import { champMax, ligneDeCase, caseChoisissable, ligneDePose, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
-import { campDeLaCreature, campPoseDe, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
+import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger } from './rpgMouvement.js';
+import { rpgCasesPose } from './rpgRecul.js';
 import { rpgIABougerCreatures } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
@@ -12146,9 +12147,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    *  (`caseChoisissable`). La ligne imposée reste la case **par défaut** quand
    *  personne ne choisit. */
   const casesLibresJoueur = (carte = null) => (duel.modeMana === RPG_MODE_MANA_ESSAI
-    ? rpgEmplacementsChamp(duel.joueur, champMax(duel), 'joueur')
-      .map((occupant, index) => (occupant ? null : index))
-      .filter((index) => index !== null && (!carte || caseChoisissable(carte, index)))
+    ? rpgCasesPose(duel, 'joueur')
+      // Une case tenue par un envahisseur reste une case d'arrivée : la pose
+      // le repousse d'une case pour s'y installer (`rpgRecul.js`).
+      .filter(({ occupant, poussable }) => !occupant || poussable)
+      .map(({ index }) => index)
+      .filter((index) => !carte || caseChoisissable(carte, index))
     : []);
 
   /**
@@ -12248,8 +12252,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const carte = cardById(pose.carteId);
     const handIndex = Number.isInteger(pose.handIndex) && duel.joueur.main[pose.handIndex] === pose.carteId
       ? pose.handIndex : duel.joueur.main.indexOf(pose.carteId);
-    if (!carte || handIndex < 0 || rpgEmplacementsChamp(duel.joueur, champMax(duel), 'joueur')[index]
-      || !caseChoisissable(carte, index)) {
+    const occupation = rpgCasesPose(duel, 'joueur').find((c) => c.index === index);
+    if (!carte || handIndex < 0 || !caseChoisissable(carte, index)
+      || (occupation?.occupant && !occupation.poussable)) {
       jouerSfx('erreur');
       force();
       return;
@@ -12677,9 +12682,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const cliquerCreatureEnnemie = (entite) => {
-    // Une créature attend sa case dans votre rangée : le camp adverse n'a
-    // rien à recevoir de ce geste-là.
-    if (poseEnCours) { jouerSfx('erreur'); force(); return; }
+    // Une créature attend sa case dans votre rangée. Un envahisseur qui tient
+    // une de ces cases est le seul geste utile : le cliquer le repousse d'une
+    // case et la pose s'y termine. Tout le reste est refusé.
+    if (poseEnCours) {
+      const position = positionDe(entite, 'sorcier');
+      const locale = position ? caseLocale('joueur', position.rangee, position.colonne) : null;
+      if (locale !== null) {
+        const occupation = rpgCasesPose(duel, 'joueur').find((c) => c.index === locale);
+        if (occupation?.poussable) { choisirEmplacement(locale); return; }
+      }
+      jouerSfx('erreur');
+      force();
+      return;
+    }
     // Boualem : l'effet contré peut aussi être relancé sur une créature du
     // lanceur — c'est toujours celui qui joue Boualem qui clique.
     if (resoudreBoualemClic(entite)) return;
@@ -13934,7 +13950,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ? {
           cle: `pose:${poseEnCours.carteId}:${poseEnCours.handIndex}`,
           classe: 'rpg-target-prompt',
-          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — cliquez une case libre de l’arrière (Échap pour renoncer)`,
+          texte: `Choisissez l’emplacement de ${cardById(poseEnCours.carteId)?.name ?? 'votre créature'} — une case libre de l’arrière, ou un envahisseur : il reculera d’une case (Échap pour renoncer)`,
         }
       : defausseOuverte
         ? {
