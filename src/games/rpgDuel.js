@@ -1,5 +1,5 @@
 import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
-import { campPoseDe } from './rpgChamp.js';
+import { campPoseDe, positionDe } from './rpgChamp.js';
 export { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
@@ -1189,27 +1189,27 @@ const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
  * deux cases qui entourent la source, jamais la source elle-même, et jamais
  * le camp d'en face. La Résonance et la Bannière gardent leurs règles propres.
  *
- * `casesRangee` donne la case de chaque créature. En mode sans terrains, la
- * case choisie à la pose (0 à 4) fait foi : une case VIDE entre deux
+ * `positionsDuCamp` donne la **vraie** position de chaque créature : rangée
+ * et colonne de la grille, `campPose` compris (une créature qui a franchi la
+ * trouée n'est voisine de personne chez elle). Une case vide entre deux
  * créatures coupe le voisinage. Dans le format historique — et dans les
  * sauvegardes sans case — la rangée se lit dans l'ordre d'arrivée : pas de
  * trou, chaque créature est voisine de la précédente et de la suivante.
  */
-function casesRangee(camp) {
-  const creatures = camp?.creatures ?? [];
+function positionsDuCamp(duel, cote) {
+  const creatures = duel?.[cote]?.creatures ?? [];
+  // Une sauvegarde sans case garde l'ordre d'arrivée : pas de trou, chaque
+  // créature est voisine de la précédente et de la suivante.
   if (!creatures.some((entite) => Number.isInteger(entite?.emplacement))) {
-    return new Map(creatures.map((entite, index) => [entite, index]));
+    return new Map(creatures.map((entite, index) => [entite, { camp: cote, index, rangee: null, colonne: index }]));
   }
-  const cases = rpgEmplacementsChamp(camp);
   const positions = new Map();
-  creatures.forEach((entite, index) => {
-    const caseTrouvee = cases.indexOf(entite);
-    // Une créature hors des cases du champ (sauvegarde incomplète) est mise à
-    // l'écart plutôt que déclarée voisine d'une case fixe par accident.
-    positions.set(entite, caseTrouvee >= 0
-      ? positionDeCase(caseTrouvee)
-      : 1000 + index);
-  });
+  for (const entite of creatures) {
+    // La position **réelle** : rangée et colonne de la grille, `campPose`
+    // compris. Une créature qui a franchi la trouée n'est plus voisine de
+    // celles qu'elle a laissées derrière elle (`rpgChamp.js`).
+    positions.set(entite, positionDe(entite, cote));
+  }
   return positions;
 }
 
@@ -1218,16 +1218,22 @@ function voisines(positions, source, cible, moba = false) {
   if (!source || !cible || source === cible) return false;
   const a = positions.get(source);
   const b = positions.get(cible);
-  if (!Number.isInteger(a) || !Number.isInteger(b) || Math.abs(a - b) !== 1) return false;
+  if (!a || !b) return false;
+  // Le voisinage d'une aura reste **latéral** : la même rangée, une colonne
+  // d'écart. Deux créatures de part et d'autre de la ligne neutre ne sont
+  // jamais voisines, même si leurs cases locales se suivent.
+  if (a.camp !== b.camp) return false;
+  if (a.rangee !== null && b.rangee !== null && a.rangee !== b.rangee) return false;
+  if (Math.abs(a.colonne - b.colonne) !== 1) return false;
   // Dans le MOBA, les cases 0–1, 2 et 3–4 appartiennent à trois voies
   // distinctes : les bords voisins de deux voies ne sont pas adjacents.
-  const voie = (index) => index < 2 ? 'left' : index === 2 ? 'center' : index < 5 ? 'right' : null;
-  return !moba || (voie(a) !== null && voie(a) === voie(b));
+  const voie = (colonne) => colonne < 2 ? 'left' : colonne === 2 ? 'center' : colonne < 5 ? 'right' : null;
+  return !moba || (voie(a.colonne) !== null && voie(a.colonne) === voie(b.colonne));
 }
 
 function appliquerAuraSable(duel, cote) {
   const camp = duel[cote];
-  const positions = casesRangee(camp);
+  const positions = positionsDuCamp(duel, cote);
   const sources = camp.creatures.filter((entite) => entite.carteId === 'tarek' && entite.pv > 0);
   for (const entite of camp.creatures) {
     const carte = duelCardById(entite.carteId);
@@ -1257,7 +1263,7 @@ function appliquerAuraSable(duel, cote) {
  */
 function appliquerAuraAmani(duel, cote) {
   const camp = duel[cote];
-  const positions = casesRangee(camp);
+  const positions = positionsDuCamp(duel, cote);
   const sources = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour' && entite.pv > 0);
   for (const entite of camp.creatures) {
     const prochainBonus = estSite(entite) ? 0 : sources.reduce((total, source) =>
@@ -1356,7 +1362,7 @@ export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
 function appliquerAurasBuffAutres(duel) {
   for (const cote of ['joueur', 'sorcier']) {
     const camp = duel[cote];
-    const positions = casesRangee(camp);
+    const positions = positionsDuCamp(duel, cote);
     const sources = camp.creatures.filter((entite) => {
       const aura = duelCardById(entite.carteId)?.aura;
       return entite.pv > 0 && aura?.type === 'buff-autres' && Number(aura.atk) > 0;

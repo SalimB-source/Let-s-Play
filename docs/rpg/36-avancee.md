@@ -50,6 +50,31 @@ rend le **propriétaire**. Un envahisseur est donc une carte du joueur dont
 `avancee` marque enfin une créature qui a quitté la case que sa carte lui
 imposait : `rpgEmplacementsChamp` ne la rapatrie plus au fond.
 
+## Qui entend l'Aura
+
+Les quatre sources d'Aura (Tarek, Amani des ksour, Kenshi de la forge, Bou
+Jeloud) parlent de **créatures adjacentes** : un voisinage, pas un camp. Tant
+que les créatures ne bougeaient pas, « adjacente » se calculait sur l'ordre
+d'arrivée — `casesRangee` rendait la suite des rangs et deux cartes étaient
+voisines si leurs positions se suivaient. Dès qu'une créature avance, cet ordre
+ne veut plus rien dire : une carte passée chez le sorcier restait « voisine » de
+celles qu'elle avait laissées au fond, et une case vide ne coupait rien.
+
+`voisines(duel, entite, cote)` lit désormais la **grille** (`positionsDuCamp`,
+construite sur `positionDe`) :
+
+1. même **camp de pose** — le camp adverse n'entend jamais notre Aura ;
+2. même **rangée** — le fond ne renforce pas le front ;
+3. **une colonne d'écart** — `|Δcolonne| === 1`, et rien d'autre.
+
+Conséquences directes : un trou coupe le voisinage, deux sources voisines
+cumulent, une créature qui a franchi la trouée n'est plus la voisine de ses
+anciens compagnons, et la source ne se renforce jamais elle-même.
+
+Restent **globales**, par choix et par texte de carte : la Malédiction, la
+Bannière, la Résonance et les Lettres de marque. Le test
+`tests/rpg-aura-adjacence.test.js` fige les deux familles.
+
 ## La case fantôme
 
 Une créature qui a franchi la trouée n'est plus dans sa rangée — mais elle
@@ -132,12 +157,13 @@ idempotentes, comme le reste des scènes.
 | Suite | Résultat |
 |---|---|
 | `tests/rpg-mouvement.test.js` | 12 |
+| `tests/rpg-aura-adjacence.test.js` | 7 (voisinage de case, rangée, franchissement) |
 | `tests/rpg-avancee-scenario.test.js` | 4 (traversée en deux tours puis frappe, tireur au sorcier, trouée fermée, pas de franchissement diagonal) |
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
 | `tests/rpg-lignes-duel.test.js` | 13 |
 | `tests/rpg-sorcier-objectif.test.js` | 9 |
-| `npm run check:rpg-avancee` | 54 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
+| `npm run check:rpg-avancee` | 58 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
 | `npm run check:rpg-lignes` | 33 / 0 |
 | `npm run check:rpg-classique-individuel` | 64 / 0 |
 

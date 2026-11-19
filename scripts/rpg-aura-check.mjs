@@ -105,8 +105,16 @@ assert.match(composant, /variante = 'resonance'/, 'la variante par défaut reste
 assert.match(composant, /rpg-card__resonance--aura/, 'la variante jaune se pose sur le même calque');
 assert.equal((duel.match(/function AuraOndes/g) ?? []).length, 1,
   'un seul composant d’ondes pour les deux teintes — pas deux effets à maintenir');
-assert.equal((duel.match(/<AuraOndes/g) ?? []).length, 3,
-  'la table monte le calque pour la résonance, l’aura et la malédiction, et pour elles seules');
+// Huit montages = deux rendus (la carte posée, son aperçu) × quatre teintes
+// (résonance, aura, malédiction, garde) : aucun effet n'a de calque à lui.
+assert.equal((duel.match(/<AuraOndes/g) ?? []).length, 8,
+  'la table monte le calque pour les quatre teintes, sur la carte comme sur l’aperçu');
+for (const teinte of ['aura', 'malediction', 'garde']) {
+  assert.equal((duel.match(new RegExp(`variante="${teinte}"`, 'g')) ?? []).length, 2,
+    `la teinte ${teinte} se pose sur les deux rendus`);
+}
+assert.equal((duel.match(/variante="resonance"/g) ?? []).length, 0,
+  'le bleu de la résonance reste la variante par défaut : il ne s’écrit pas');
 
 // ── 3. La feuille : le même débordement, une teinte d'or ────────────────────
 const debut = battleCss.indexOf('/* ── Résonance : une aura bleue de sonar');
@@ -147,18 +155,26 @@ assert.equal((battleCss.match(/@keyframes rpg-resonance-onde/g) ?? []).length, 1
 // ── 4. La règle : l'Aura ne renforce que les cases voisines ─────────────────
 const moteur = lire('rpgDuel.js');
 const fiches = [lire('rpgCards.js'), lire('rpgSoleilRouge.js'), lire('rpgTourOubliee.js')].join('\n');
-assert.match(moteur, /function casesRangee\(camp\) \{[\s\S]*?rpgEmplacementsChamp\(camp\)/,
-  'la rangée lit les cinq cases fixes du mode sans terrains');
-assert.match(moteur, /function voisines\(positions, source, cible\) \{[\s\S]*?Math\.abs\(a - b\) === 1/,
-  'deux créatures ne sont voisines qu’à une case d’écart');
+assert.match(moteur, /function positionsDuCamp\(duel, cote\) \{[\s\S]*?positionDe\(entite, cote\)/,
+  'la position de chaque créature se lit sur la grille, campPose compris');
+assert.match(moteur, /function voisines\(positions, source, cible, moba = false\) \{/,
+  'le voisinage confronte deux positions réelles');
+assert.match(moteur, /if \(a\.camp !== b\.camp\) return false;/,
+  'une aura ne franchit jamais la ligne des camps');
+assert.match(moteur, /if \(a\.rangee !== null && b\.rangee !== null && a\.rangee !== b\.rangee\) return false;/,
+  'le fond ne renforce pas le front : il faut la même rangée');
+assert.match(moteur, /Math\.abs\(a\.colonne - b\.colonne\) !== 1/,
+  'deux créatures ne sont voisines qu’à une case d’écart — un trou coupe le voisinage');
+assert.doesNotMatch(moteur, /function casesRangee\(camp\)/,
+  'l’ancien ordre d’arrivée ne sert plus de position');
 assert.match(moteur, /function appliquerAurasBuffAutres\(duel\)/,
   'les auras buff-autres sont calculées ensemble (Kenshi et Bou Jeloud)');
 assert.match(moteur, /appliquerAurasBuffAutres\(duel\);/,
   'rafraichirAuras appelle le calcul de voisinage');
-assert.match(moteur, /sources\.some\(\(source\) => voisines\(positions, source, entite\)\)/,
+assert.match(moteur, /voisines\(positions, source, entite, Boolean\(duel\.moba\)\) \? 1 : 0/,
   'Tarek ne renforce que ses voisines Sable');
-assert.match(moteur, /voisines\(positions, source, entite\) \? 1 : 0/,
-  'Amani compte ses sources voisines, une par une');
+assert.match(moteur, /const positions = positionsDuCamp\(duel, cote\);/,
+  'chaque aura relit les positions avant de compter ses voisines');
 assert.doesNotMatch(moteur, /function appliquerAuraKenshi\(/,
   'l’ancien calcul de camp entier a disparu');
 for (const id of ['tarek', 'amani-des-ksour', 'kenshi-de-la-forge', 'bou-jeloud']) {
@@ -170,4 +186,4 @@ assert.match(lire('effetIcons.js'), /aura: \(\) => 'Tant qu’elle est en jeu, s
 assert.match(duel, /aura : vos créatures adjacentes gagnent/,
   'la description lue de la table dit elle aussi le voisinage');
 
-console.log('✓ Aura : les cartes qui impriment une aura portent le sonar de la résonance en jaune — même calque, mêmes ondes, même débordement, même mouvement réduit — et ne renforcent plus que les créatures des cases voisines de leur camp');
+console.log('✓ Aura : les cartes qui impriment une aura portent le sonar de la résonance en jaune — même calque, mêmes ondes, même débordement, même mouvement réduit — et ne renforcent plus que les créatures des cases voisines de la même rangée');
