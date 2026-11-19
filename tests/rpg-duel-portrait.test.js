@@ -49,8 +49,9 @@ function mesures(largeur, hauteur) {
   const carte = clamp(44, Math.min((largeur - 32) / 5.15, (hauteur - 165) / 9), 96);
   const gouttiere = Math.max(4, 0.08 * carte);          // --rpg-field-gap
   const rangee = 1.02 * carte;                          // --rpg-field-card
-  // La rangée : ses deux marges de 2 px, quatre gouttières, cinq cases.
-  const colonne = Math.min(rangee, (largeur - 2 * PAD - 4 - 4 * gouttiere) / 5);
+  // La coque debout plafonne la colonne à la largeur du viewport moins 16 px
+  // (marges de table et respiration), puis ses quatre gouttières.
+  const colonne = Math.min(rangee, (largeur - 16 - 4 * gouttiere) / 5);
   const deuxRangees = 2 * (colonne * 1.25) + gouttiere + 8; // 4/5 + gouttière + marges
   const nav = clamp(38, 0.62 * carte, 52);              // --rpg-touch-nav
   const avatar = clamp(40, 0.92 * carte, 64);           // --rpg-avatar-height
@@ -99,7 +100,7 @@ test('cinq cartes de front et deux rangées tiennent dans chaque téléphone deb
     const m = mesures(largeur, hauteur);
     assert.ok(m.colonne >= 34,
       `${nom} : une case mesure ${m.colonne.toFixed(1)} px, au-dessus du plancher tactile`);
-    assert.ok(5 * m.colonne + 4 * Math.max(4, 0.08 * m.carte) <= largeur - 2 * PAD,
+    assert.ok(5 * m.colonne + 4 * Math.max(4, 0.08 * m.carte) <= largeur - 16 + 0.001,
       `${nom} : les cinq cases et leurs gouttières tiennent dans la largeur`);
     assert.ok(m.total <= hauteur,
       `${nom} : ${m.total.toFixed(0)} px de plateau pour ${hauteur} px d'écran`);
@@ -140,4 +141,18 @@ test('le HUD debout ne reprend aucune piste du paysage', () => {
   assert.match(bloc, /\.rpg-wizard-plate__avatar[\s\S]*?position:\s*relative/, 'le médaillon rentre dans sa plaque');
   assert.match(bloc, /:has\(\.card-row\[data-lignes="true"\]\)[\s\S]*?grid-template-rows:/,
     'la variante deux rangées garde les sept rangées debout');
+});
+
+test('les cases et les cartes posées reprennent toute la largeur debout', () => {
+  // Le paysage réduisait la colonne à 72 % de la carte du champ pour tenir
+  // dans sa bande de hauteur. Debout, les deux rangées ont leur propre piste :
+  // la colonne se mesure sur `--rpg-field-card`, plafonnée par le viewport,
+  // et non par un pourcentage hérité qui rétrécirait cases et cartes à 9 px.
+  assert.match(bloc, /--essai-colonne:\s*min\(var\(--rpg-field-card\),\s*calc\(\(100vw - 16px - 4 \* var\(--rpg-field-gap\)\) \/ 5\)\)/);
+  assert.match(bloc, /\.card-row\[data-lignes="true"\][\s\S]*?row-gap:\s*var\(--rpg-field-gap\)/);
+  assert.match(bloc, /grid-template-rows:\s*repeat\(2,\s*calc\(var\(--essai-colonne\) \* 1\.25\)\)/);
+  assert.match(bloc, /width:\s*min\(100%,\s*var\(--essai-colonne\)\)/,
+    'les cartes posées et les cases dessinées partagent la même largeur');
+  assert.doesNotMatch(bloc, /\*\s*\.72\)/,
+    'la réduction à 72 % du paysage ne doit pas s’appliquer au portrait');
 });
