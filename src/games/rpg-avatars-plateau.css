@@ -419,9 +419,9 @@
 
 /* ── Rail d'avatars à gauche (souris, écran large) ───────────────────────────
    Les deux portraits quittent l'axe central : la colonne de gauche devient un
-   rail — le sorcier en haut, le joueur en bas — où chaque camp empile son
-   portrait, son nom, sa barre de vie et, en mode essai, sa jauge de mana. La
-   table centrale reste libre et les deux camps se lisent d'un seul regard.
+   rail — le sorcier en haut, le joueur sous son bloc Ascension — où chaque camp
+   empile son portrait, son nom, sa barre de vie et, en mode essai, sa jauge de
+   mana. La table centrale reste libre et les deux camps se lisent d'un regard.
 
    Le rail occupe la marge déjà réservée à gauche par les rangées de cartes
    (`clamp(220px, 20%, 280px)`) : rien ne rétrécit la zone de jeu. Les piles et
@@ -434,9 +434,16 @@
     --rpg-rail-marge: 14px;
     --rpg-rail-largeur: clamp(150px, 14vw, 190px);
     --rpg-rail-nom-h: 18px;
-    /* Distance du bas de la table au bas de la plaque du joueur : la même que
-       celle de la plaque elle-même, pour que la jauge de mana s'y accroche. */
-    --rpg-rail-bas-joueur: calc(clamp(34px, 2.5vw, 40px) + 5px + clamp(0px, calc(8vh - 40px), 16px));
+    /* Le haut du bloc Ascension du joueur, repris tel quel de `rpg-ascension.css`
+       (`top: calc(44% + …)`) : la plaque du joueur vient s'y accrocher. */
+    --rpg-rail-ascension-joueur-top: calc(44% + clamp(72px, min(7.2vw, 12vh), 104px) + 64px);
+    /* Hauteur du bloc Ascension (`min-height: 52px`, marges intérieures et
+       bordure comprises) plus l'air qui le sépare du portrait. */
+    --rpg-rail-ascension-h: 74px;
+  }
+  /* En mode essai, le bloc Ascension du joueur remonte à 42 %. */
+  .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) {
+    --rpg-rail-ascension-joueur-top: calc(42% + clamp(72px, min(7.2vw, 12vh), 104px) + 64px);
   }
 
   /* 1. Le portrait tient la colonne, centré dans la largeur du rail. */
@@ -479,9 +486,9 @@
       + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 9px);
   }
   .rpg-battle[data-mode-mana="essai"][data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-flux-track--joueur {
-    top: auto;
-    bottom: calc(var(--rpg-rail-bas-joueur) + var(--rpg-plaque-joueur-h, 76px)
-      + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 9px);
+    top: calc(var(--rpg-rail-ascension-joueur-top) + var(--rpg-rail-ascension-h)
+      + var(--rpg-plaque-joueur-h, 76px) + var(--rpg-vie-bar-height) + var(--rpg-rail-nom-h) + 9px);
+    bottom: auto;
   }
 
   /* 4. Piles du joueur et main cachée du sorcier cèdent le rail. */
@@ -491,4 +498,14 @@
     right: auto;
     transform: none;
   }
+
+  /* 5. Le joueur remonte sous son bloc Ascension. Il était au ras du bas de la
+     table, là où le dock de la main (`z-index: 42`) le recouvrait entièrement :
+     le portrait disparaissait. Sous l'Ascension, il échappe à la main et suit
+     la lecture de la colonne — piles, Ascension, portrait, PV, nom, mana. */
+  .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--joueur {
+    top: calc(var(--rpg-rail-ascension-joueur-top) + var(--rpg-rail-ascension-h));
+    bottom: auto;
+  }
+
 }

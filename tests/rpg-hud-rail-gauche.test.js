@@ -58,7 +58,7 @@ test('Rail d’avatars : la jauge de mana descend sous le nom, pas sous le seul 
     assert.match(bloc, /var\(--rpg-vie-bar-height\) \+ var\(--rpg-rail-nom-h\) \+ 9px/,
       `la jauge ${camp} passe sous la barre de vie et sous le nom`);
   }
-  assert.match(joueur, /bottom: calc\(var\(--rpg-rail-bas-joueur\)/, 'la jauge du joueur s’accroche au bas, comme sa plaque');
+  assert.match(joueur, /top: calc\(var\(--rpg-rail-ascension-joueur-top\)/, 'la jauge du joueur suit sa plaque remontée');
 });
 
 test('Rail d’avatars : piles et main cachée cèdent la colonne', () => {
@@ -67,4 +67,21 @@ test('Rail d’avatars : piles et main cachée cèdent la colonne', () => {
   assert.match(reste, /\.card-table > \.rpg-hidden-hand/, 'la main cachée du sorcier était collée à gauche');
   assert.match(reste, /left: calc\(var\(--rpg-rail-marge\) \+ var\(--rpg-rail-largeur\) \+ 10px\);/,
     'les deux se rangent à droite du rail');
+});
+
+test('Rail d’avatars : le joueur remonte sous son bloc Ascension, hors de portée de la main', () => {
+  const bloc = railSeul.slice(railSeul.indexOf('/* 5.'));
+  assert.match(bloc, /\.rpg-wizard-plate--joueur \{\s*top: calc\(var\(--rpg-rail-ascension-joueur-top\) \+ var\(--rpg-rail-ascension-h\)\);\s*bottom: auto;/s,
+    'la plaque se pose sous l’Ascension, plus au ras du bas');
+  assert.match(railSeul, /--rpg-rail-ascension-joueur-top: calc\(44% \+ clamp\(72px, min\(7\.2vw, 12vh\), 104px\) \+ 64px\);/,
+    'la même expression que le bloc Ascension de rpg-ascension.css');
+  assert.match(railSeul, /--rpg-rail-ascension-joueur-top: calc\(42% \+ clamp\(72px, min\(7\.2vw, 12vh\), 104px\) \+ 64px\);/,
+    'et sa variante du mode essai');
+  assert.doesNotMatch(railSeul, /--rpg-rail-bas-joueur/, 'plus d’ancrage au bas de la table');
+});
+
+test('Rail d’avatars : l’expression de l’Ascension reste celle de rpg-ascension.css', () => {
+  const ascension = readFileSync(new URL('../src/games/rpg-ascension.css', import.meta.url), 'utf8');
+  assert.match(ascension, /\.card-table > \.rpg-ascension-placement--joueur \{ left: 14px; top: calc\(44% \+ clamp\(72px, min\(7\.2vw, 12vh\), 104px\) \+ 64px\); \}/,
+    'si le bloc Ascension bouge, le rail doit être réaligné');
 });
