@@ -288,6 +288,13 @@ ni échange, ni dégâts au sorcier. Dirigée vers le sorcier adverse, l’attaq
 le touche avec **100 % de précision** ; les bloqueurs s'appliquent normalement.
 Sans proie désignée, le porteur attaque normalement.
 
+**Deux Attaques ciblées se répondent.** Quand la proie porte elle aussi
+l’Attaque ciblée, elle riposte de sa propre volée : le tir reste sans contact
+(pas de capacité « au blocage »), mais l'attaquant encaisse les dégâts de la
+cible, comme deux créatures « À distance » qui s'échangent leurs flèches. Une
+Contre-attaque, elle, a déjà sa riposte et ne frappe pas deux fois pour le même
+coup. Un tireur face à une mêlée garde son tir sans réponse.
+
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 

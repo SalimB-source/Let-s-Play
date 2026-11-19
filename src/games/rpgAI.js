@@ -821,6 +821,18 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
       }
     }
 
+    // **Deux Attaques ciblées se répondent** : une cible qui porte elle aussi
+    // l'Attaque ciblée rend son coup. Quand cette riposte peut abattre le
+    // tireur, chaque tir qui ne la tue pas devient une perte probable — sans
+    // cette ligne, l'IA croirait le tir gratuit. Même mesure que la
+    // Contre-attaque ci-dessous, qui a déjà sa riposte.
+    for (const attaquant of attaquants) {
+      const cible = ennemis.find((entite) => entite.id === attribution[attaquant.id]);
+      if (!cible || !cible.coupRapide || cible.contreAttaque || attaquant.bouclier > 0) continue;
+      if (!meurtSousCouleurs(attaquant, cible.atk, couleursEntite(cible), 'attaque')) continue;
+      score -= chanceDeTouche(attaquant, cible) * (20 + valeurEntite(attaquant));
+    }
+
     // Une Contre-attaque peut coûter cher même si la proie meurt : pénaliser
     // chaque frappe qui a une chance d'abattre son propre attaquant.
     for (const attaquant of attaquants) {
