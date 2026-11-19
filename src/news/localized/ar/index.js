@@ -51,6 +51,14 @@ export const listings = {
     "category": "سينما · NETFLIX ANIMATION",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/cinema/the-altruists-netflix-19-novembre": {
+    "title": "THE ALTRUISTS",
+    "accent": "إمبراطورية العملات المشفرة تتحول إلى دراما.",
+    "dek": "تقدّم نتفليكس The Altruists بوصفه متاحاً في 19 نوفمبر. يجمع المسلسل المحدود من ثماني حلقات جوليا غارنر وأنتوني بويل في معالجة درامية لصعود FTX وسقوطها.",
+    "imageAlt": "صورة رسمية لمسلسل The Altruists منشورة على Netflix Tudum. © Netflix / أصحاب الحقوق. صورة من المسلسل، لا صورة وثائقية لشركة FTX.",
+    "category": "سينما / مسلسلات · نتفليكس",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/doom-dark-ages-revelations-slaughter-mode-16-novembre": {
     "title": "DOOM: THE DARK AGES",
     "accent": "البقاء بلا نهاية.",
@@ -74,6 +82,14 @@ export const listings = {
     "imageAlt": "صورة رسمية من PlayStation — God of War Laufey - Pre-Orders Open Now | PS5 Games، فيديو أرشيفي.",
     "category": "ألعاب · PS5",
     "readTime": "قراءة دقيقتين"
+  },
+  "/news/gta-6-19-novembre-consoles-points-verifies": {
+    "title": "GTA VI",
+    "accent": "موعد ليونيدا.",
+    "dek": "19 نوفمبر هو الموعد المعلن للعبة GTA VI على PS5 وXbox Series X|S. نراجع معلومات روكستار الموثقة عن الأجهزة والسحابة والأهداف التقنية، من دون الخلط بينها وبين اختبارات أجراها فريقنا.",
+    "imageAlt": "صورة رسمية من منشور روكستار حول التحميل المسبق، نُشر في 10 نوفمبر 2026. © Rockstar Games. رسم ترويجي، لا لقطة التقطها فريقنا.",
+    "category": "ألعاب · ROCKSTAR GAMES",
+    "readTime": "قراءة في 3 دقائق"
   },
   "/news/gta-6-calendrier-xbox-semaine-16-20-novembre": {
     "title": "GTA VI",
@@ -121,6 +137,14 @@ export const listings = {
     "dek": "تعلن آبل عن واصفين جديدين للتصنيف في App Store Connect ابتداءً من 16 نوفمبر: مشاركة الموقع والمواعدة/العلاقات. يجب أن تستكمل كل التطبيقات هذه التصريحات بحلول 12 يناير 2027.",
     "imageAlt": "رسم تقديمي رسمي لـ App Store Connect على Apple Developer. صورة عامة للخدمة، لا لقطة لحقول التصنيف الجديدة. © Apple.",
     "category": "تقنية · APPLE DEVELOPER",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/figma-images-multiples-modeles-18-novembre": {
+    "title": "FIGMA AI",
+    "accent": "طلب واحد واتجاهات متعددة.",
+    "dek": "تعلن Figma في 18 نوفمبر خيارات جديدة في Make image وEdit image: إنتاج صورتين أو أربع أو ست بنموذج واحد، أو مقارنة ما يصل إلى ثلاثة نماذج بصورة واحدة لكل نموذج.",
+    "imageAlt": "لقطة رسمية من مساعدة Figma تعرض صورة محددة وشريط التحرير. © Figma. للتوضيح العام، لا لقطة لمحدد الصور المتعددة الجديد.",
+    "category": "تقنية · إنشاء بصري",
     "readTime": "قراءة في 3 دقائق"
   },
   "/news/tech/gemini-notebook-sites-interactifs": {

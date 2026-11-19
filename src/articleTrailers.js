@@ -112,6 +112,37 @@ export function trailerWatchUrl(id) {
 
 export const articleTrailers = {
 
+  "gta-6-19-novembre-consoles-points-verifies": {
+    "label": "GTA VI",
+    "meta": "ROCKSTAR GAMES",
+    "credit": "Visuel officiel du billet Rockstar sur le préchargement, publié le 10 novembre 2026. © Rockstar Games. Illustration promotionnelle, pas une capture de notre équipe.",
+    "items": [
+      {
+        "id": "rz1B4B2yBZY",
+        "kind": "trailer",
+        "title": "Grand Theft Auto VI Launch Trailer",
+        "channel": "Rockstar Games",
+        "note": "Trailer officiel Rockstar du 15 octobre 2026, utilisé comme illustration. Ce n’est pas une nouvelle vidéo publiée le 19 novembre ni un test technique de la rédaction.",
+        "verified": "19.11.2026"
+      }
+    ]
+  },
+  "cinema/the-altruists-netflix-19-novembre": {
+    "label": "THE ALTRUISTS",
+    "meta": "NETFLIX TUDUM",
+    "credit": "Visuel officiel de The Altruists publié sur Netflix Tudum. © Netflix / ayants droit. Illustration de la série, pas une photographie documentaire de FTX.",
+    "items": [],
+    "pending": "Trailer officiel de 2 min 03 disponible sur la page Netflix Tudum liée en source. Aucun upload YouTube officiel vérifié pour intégration ; aucune copie non officielle n’est utilisée."
+  },
+  "tech/figma-images-multiples-modeles-18-novembre": {
+    "label": "FIGMA AI",
+    "meta": "FIGMA",
+    "credit": "Capture officielle de l’aide Figma montrant une image sélectionnée et la barre d’édition. © Figma. Illustration générale, pas une capture du nouveau sélecteur multi-images.",
+    "items": [],
+    "pending": "Aucune vidéo officielle dédiée à cette mise à jour n’a été vérifiée. La capture vient de l’aide officielle Figma ; aucune démonstration tierce n’est intégrée."
+  }
+,
+
   "gta-6-miami-heat-night-vice-city-18-novembre": {
     "label": "GTA VI",
     "meta": "MIAMI HEAT",

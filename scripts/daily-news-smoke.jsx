@@ -1,3 +1,4 @@
+import { dailyStories as dailyStories20261119 } from '../src/news/daily/2026-11-19';
 import { dailyStories as dailyStories20261118 } from '../src/news/daily/2026-11-18';
 import { dailyStories as dailyStories20261117 } from '../src/news/daily/2026-11-17';
 import { dailyStories as dailyStories20261116 } from '../src/news/daily/2026-11-16';
@@ -49,6 +50,7 @@ export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
 // Toutes les clés d'article des éditions quotidiennes, du plus récent au plus
 // ancien — l'ordre de l'archive et des hubs en dépend.
 export const editionKeys = {
+  '2026-11-19': Object.keys(dailyStories20261119),
   '2026-11-18': Object.keys(dailyStories20261118),
   '2026-11-17': Object.keys(dailyStories20261117),
   '2026-11-16': Object.keys(dailyStories20261116),
@@ -116,3 +118,7 @@ export function renderPages(lang = 'fr') {
     ),
   }));
 }
+
+// Exercise the same lazy body/listing/media loaders used by the article UI.
+export { loadArticleListings, loadArticleBody } from '../src/news/localized/load';
+export { getTrailerTranslation } from '../src/articleTrailers';

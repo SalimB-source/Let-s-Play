@@ -51,6 +51,14 @@ export const listings = {
     "category": "CINEMA · NETFLIX ANIMATION",
     "readTime": "3 MIN READ"
   },
+  "/news/cinema/the-altruists-netflix-19-novembre": {
+    "title": "THE ALTRUISTS",
+    "accent": "A CRYPTO EMPIRE BECOMES DRAMA.",
+    "dek": "Netflix presents The Altruists as streaming on 19 November. This eight-episode limited series stars Julia Garner and Anthony Boyle in a dramatisation of FTX’s rise and fall.",
+    "imageAlt": "Official The Altruists visual published on Netflix Tudum. © Netflix / rights holders. Series illustration, not a documentary photograph of FTX.",
+    "category": "CINEMA / SERIES · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
   "/news/doom-dark-ages-revelations-slaughter-mode-16-novembre": {
     "title": "DOOM: THE DARK AGES",
     "accent": "SURVIVAL HAS NO END.",
@@ -74,6 +82,14 @@ export const listings = {
     "imageAlt": "Official PlayStation thumbnail — God of War Laufey - Pre-Orders Open Now | PS5 Games, archive video.",
     "category": "GAMING · PS5",
     "readTime": "2 MIN READ"
+  },
+  "/news/gta-6-19-novembre-consoles-points-verifies": {
+    "title": "GTA VI",
+    "accent": "LEONIDA’S APPOINTMENT.",
+    "dek": "19 November is the announced date for GTA VI on PS5 and Xbox Series X|S. Here are Rockstar’s documented console, cloud and technical details, without confusing them with our own tests.",
+    "imageAlt": "Official visual from Rockstar’s preload post, published on 10 November 2026. © Rockstar Games. Promotional illustration, not a screenshot captured by our team.",
+    "category": "GAMING · ROCKSTAR GAMES",
+    "readTime": "3 MIN READ"
   },
   "/news/gta-6-calendrier-xbox-semaine-16-20-novembre": {
     "title": "GTA VI",
@@ -121,6 +137,14 @@ export const listings = {
     "dek": "From 16 November, Apple announces two new rating descriptors in App Store Connect: shared location and dating/relationships. All apps must have completed these declarations by 12 January 2027.",
     "imageAlt": "Official App Store Connect presentation illustration on Apple Developer. General service visual, not a screenshot of the new rating fields. © Apple.",
     "category": "TECH · APPLE DEVELOPER",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/figma-images-multiples-modeles-18-novembre": {
+    "title": "FIGMA AI",
+    "accent": "ONE PROMPT, MULTIPLE DIRECTIONS.",
+    "dek": "Figma announces new Make image and Edit image options on 18 November: generate two, four or six images with one model, or compare up to three models with one image each.",
+    "imageAlt": "Official Figma help screenshot showing a selected image and editing toolbar. © Figma. General illustration, not a screenshot of the new multi-image selector.",
+    "category": "TECH · VISUAL CREATION",
     "readTime": "3 MIN READ"
   },
   "/news/tech/gemini-notebook-sites-interactifs": {
