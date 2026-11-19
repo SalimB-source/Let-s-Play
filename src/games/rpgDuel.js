@@ -1,4 +1,5 @@
 import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
+import { campPoseDe } from './rpgChamp.js';
 export { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
@@ -5947,7 +5948,7 @@ function placesLibresChamp(duel, cote) {
 function placerDansEmplacement(duel, cote, entite, prefere = null) {
   if (duel.modeMana !== RPG_MODE_MANA_ESSAI || !entite) return;
   const maximum = champMax(duel);
-  const cases = rpgEmplacementsChamp(duel[cote], maximum);
+  const cases = rpgEmplacementsChamp(duel[cote], maximum, cote);
   const prises = new Set(cases
     .map((occupant, index) => (occupant && occupant !== entite ? index : null))
     .filter((index) => index !== null));
@@ -5981,7 +5982,7 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
  * prend la première case libre, dans l'ordre de la rangée — sans rien
  * modifier de l'état du duel.
  */
-export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX) {
+export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX, cote = null) {
   const cases = Array.from({ length: maximum }, () => null);
   // Sur deux lignes, la case d'une créature doit être **de sa ligne**. Une carte
   // « À distance » retrouvée sur une case du front — partie reprise d'avant les
@@ -5991,6 +5992,11 @@ export function rpgEmplacementsChamp(camp, maximum = RPG_MANA_ESSAI_CHAMP_MAX) {
   const deuxLignes = maximum > RPG_LIGNES_CASES;
   const restants = [];
   for (const entite of camp?.creatures ?? []) {
+    // Un envahisseur n'occupe aucune case de son propre camp : il se dessine
+    // dans la rangée où il se tient (`occupantsDeCamp`, `campPose`). Sans ce
+    // filtre, sa case locale passerait pour prise ici et la créature
+    // apparaîtrait deux fois — une fois chez elle, une fois chez l'adversaire.
+    if (cote && campPoseDe(entite, cote) !== cote) continue;
     const index = entite?.emplacement;
     const carte = duelCardById(entite?.carteId) ?? entite;
     // Une créature qui a avancé (`avancee`) occupe la case qu'elle a choisie,
@@ -6609,7 +6615,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (lignesActives(duel) && !caseAutorisee(carte, emplacementChoisi)) emplacementChoisi = null;
     const occupant = emplacementChoisi === null
       ? null
-      : rpgEmplacementsChamp(camp, champMax(duel))[emplacementChoisi];
+      : rpgEmplacementsChamp(camp, champMax(duel), cote)[emplacementChoisi];
     if (occupant && !sacrifices.some(e => e.id === occupant.id)) {
       return { ok: false, raison: 'emplacement' };
     }
@@ -6800,7 +6806,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   let caseSacrifice = null;
   if (sacrifice) {
     emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
-    caseSacrifice = rpgEmplacementsChamp(camp, champMax(duel)).findIndex((occupant) => occupant?.id === sacrifice.id);
+    caseSacrifice = rpgEmplacementsChamp(camp, champMax(duel), cote).findIndex((occupant) => occupant?.id === sacrifice.id);
     if (duel.modeMana === RPG_MODE_MANA_ESSAI) reservationsInvocation.set(camp, emplacementChoisi ?? caseSacrifice);
     try {
       // Une recette d’Ascension paie tous ses corps simultanément : les
