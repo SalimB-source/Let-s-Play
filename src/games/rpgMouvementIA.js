@@ -67,14 +67,34 @@ export function destinationIA(duel, cote, entite) {
   return retenue;
 }
 
-/** Fait avancer toutes les créatures de ce camp qui y gagnent quelque chose. */
-export function rpgIABougerCreatures(duel, cote) {
-  const bouges = [];
+/** Ce camp a-t-il encore une créature qui gagnerait à avancer ? La question se
+ *  pose sans rien déplacer : l'écran l'interroge avant d'ouvrir sa file de pas. */
+export function rpgIAMouvementEnAttente(duel, cote) {
+  return (duel?.[cote]?.creatures ?? []).some((entite) => destinationIA(duel, cote, entite));
+}
+
+/** Fait avancer **une** créature de ce camp qui y gagne quelque chose : la
+ *  première trouvée, dans l'ordre du champ. Rend `{ entiteId, destination }`,
+ *  ou `null` quand plus rien ne bouge.
+ *
+ *  L'écran enchaîne ces pas un par un (`RpgDuelPage`) : le joueur voit chaque
+ *  créature avancer avant que la suivante ne bouge. Le lot complet reste
+ *  disponible pour les tests et les simulations. */
+export function rpgIABougerUneCreature(duel, cote) {
   for (const entite of [...(duel?.[cote]?.creatures ?? [])]) {
     const destination = destinationIA(duel, cote, entite);
     if (!destination) continue;
     const resultat = rpgDeplacerCreature(duel, cote, entite.id, destination);
-    if (resultat.ok) bouges.push({ entiteId: entite.id, destination: resultat.destination });
+    if (resultat.ok) return { entiteId: entite.id, destination: resultat.destination };
+  }
+  return null;
+}
+
+/** Fait avancer toutes les créatures de ce camp qui y gagnent quelque chose. */
+export function rpgIABougerCreatures(duel, cote) {
+  const bouges = [];
+  for (let pas = rpgIABougerUneCreature(duel, cote); pas; pas = rpgIABougerUneCreature(duel, cote)) {
+    bouges.push(pas);
   }
   if (bouges.length) {
     duel.log.push(`Le sorcier avance ${bouges.length > 1 ? `${bouges.length} créatures` : 'une créature'}.`);

@@ -10,7 +10,7 @@ const css = readFileSync(new URL('../src/games/rpg-mana-essai.css', import.meta.
 
 test('la page importe le moteur du pas et celui de l’IA', () => {
   assert.match(page, /import \{ deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger \} from '\.\/rpgMouvement\.js'/);
-  assert.match(page, /import \{ rpgIABougerCreatures \} from '\.\/rpgMouvementIA\.js'/);
+  assert.match(page, /import \{ rpgIABougerUneCreature, rpgIAMouvementEnAttente \} from '\.\/rpgMouvementIA\.js'/);
   assert.match(page, /import \{ campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe \} from '\.\/rpgChamp\.js'/);
   // Les cases d'arrivée de la pose viennent du moteur du recul : lui seul
   // connaît les envahisseurs qui tiennent la ligne arrière.
@@ -29,11 +29,24 @@ test('une créature qui peut encore avancer n’est pas envoyée d’office sur 
   assert.match(page, /&& !deplacementsLegaux\(duel, 'joueur', entite\.id\)\.length/);
 });
 
-test('le sorcier avance avant de frapper', () => {
+test('le sorcier avance un pas à la fois, avant de frapper', () => {
   const debut = page.indexOf('const declarerAttaqueSorcier = (attaquantImpose = null) => {');
   assert.ok(debut > 0);
-  const bloc = page.slice(debut, debut + 900);
-  assert.match(bloc, /rpgIABougerCreatures\(duel, 'sorcier'\)/);
+  const bloc = page.slice(debut, debut + 1200);
+  // Tant qu'une créature gagne à avancer, la frappe attend : la file des pas
+  // rend la main à `declarerAttaqueSorcier` une fois le dernier pas joué.
+  assert.match(bloc, /rpgIAMouvementEnAttente\(duel, 'sorcier'\)/);
+  assert.match(bloc, /avancerSorcierUnPas\(\(\) => declarerAttaqueSorcier\(attaquantImpose\)\)/);
+  // Une seule créature bouge par battement, et le battement suivant est planifié.
+  const fileDebut = page.indexOf('const avancerSorcierUnPas = (quandFini) => {');
+  assert.ok(fileDebut > 0, 'la file des pas existe');
+  const file = page.slice(fileDebut, fileDebut + 700);
+  assert.match(file, /rpgIABougerUneCreature\(duel, 'sorcier'\)/, 'un seul pas par battement');
+  assert.match(file, /later\(\(\) => avancerSorcierUnPas\(quandFini\), delaiPasSorcier\(\)\)/,
+    'le pas suivant est planifié, pas empilé');
+  // Le bruit du pas accompagne le mouvement, et les animations réduites sont respectées.
+  assert.match(file, /jouerSfx\('whoosh'\)/);
+  assert.match(page, /const delaiPasSorcier = \(\) => \(animationsReduites\(\) \? PAS_SORCIER_REDUIT_MS : PAS_SORCIER_MS\);/);
 });
 
 test('une carte avancée se dessine dans la rangée qu’elle occupe, avec son camp', () => {

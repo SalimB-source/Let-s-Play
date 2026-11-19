@@ -32,7 +32,7 @@ import { champMax, ligneDeCase, caseChoisissable, ligneDePose, frontTient, ligne
 import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger } from './rpgMouvement.js';
 import { rpgCasesPose } from './rpgRecul.js';
-import { rpgIABougerCreatures } from './rpgMouvementIA.js';
+import { rpgIABougerUneCreature, rpgIAMouvementEnAttente } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -2998,6 +2998,10 @@ export function TableCard({
   bouclierFx = null,
   armeFx = null,
   playerTurn = false,
+  // `true` : la carte a une action **légale** ce tour-ci (frapper une cible,
+  // toucher le sorcier, ou avancer). `null` : pas de calcul fourni, on retombe
+  // sur l'ancienne lecture (« peut attaquer » dans l'absolu).
+  pretAAgir = null,
   activationDispo = false,
   onActiver = null,
   tutorialTarget,
@@ -3141,7 +3145,7 @@ export function TableCard({
         blocking ? 'is-blocking' : '',
         entite.attaquee ? 'is-attacked' : '',
         declaredAttacker && !entite.attaquee ? 'is-declared-attacker' : '',
-        rpgPeutAttaquer(entite) ? 'is-pret' : '',
+        (pretAAgir ?? rpgPeutAttaquer(entite)) ? 'is-pret' : '',
         malInvocation ? 'is-summoning-sick' : '',
         blessee ? 'is-wounded' : '',
         entite.furieDeclenchee ? 'is-furie' : '',
@@ -6624,6 +6628,13 @@ function animationsReduites() {
   return rpgAnimationsReduites();
 }
 
+/** Le temps entre deux pas du sorcier : assez pour suivre la carte qui change
+ *  de case, assez court pour ne pas ralentir la partie. */
+const PAS_SORCIER_MS = 480;
+const PAS_SORCIER_REDUIT_MS = 120;
+
+const delaiPasSorcier = () => (animationsReduites() ? PAS_SORCIER_REDUIT_MS : PAS_SORCIER_MS);
+
 /** Vrai quand le geste part d'un champ de saisie (nom de deck, filtre…) :
  * les raccourcis clavier du duel ne doivent pas voler la saisie. */
 function vientDunChampDeSaisie(cible) {
@@ -8305,6 +8316,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const timerSortRef = useRef(null);
   const timerSortSorcierRef = useRef(null);
   const timersRef = useRef([]);
+  // Un seul enchaînement de pas du sorcier peut courir à la fois : deux files
+  // entrelacées déplaceraient deux créatures dans le même battement.
+  const filePasSorcierRef = useRef(false);
   // Chaque partie a son numéro. Les minuteries du tour du sorcier (annonces,
   // attaque, animations) le portent : une partie relancée — ou quittée puis
   // reprise ailleurs — ne peut donc plus recevoir le tour de la précédente,
@@ -8331,6 +8345,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const annulerMinuteriesDuTour = () => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
     timersRef.current = [];
+    // Une file de pas coupée ne doit pas laisser son verrou fermé : le
+    // prochain tour du sorcier doit pouvoir rouvrir la sienne.
+    filePasSorcierRef.current = false;
   };
   useEffect(() => () => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
@@ -13642,13 +13659,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     else later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
 
+  // L'avancée du sorcier se **voit** : une créature à la fois, avec un temps
+  // entre deux pas. L'ancienne version déplaçait tout le camp d'un bloc — un
+  // seul rendu, aucun mouvement perceptible — puis enchaînait les frappes. Le
+  // moteur reste idempotent (`bouge`), donc la file s'arrête d'elle-même.
+  const avancerSorcierUnPas = (quandFini) => {
+    if (pauseSiAttenteJoueur(() => avancerSorcierUnPas(quandFini))) return;
+    const pas = rpgIABougerUneCreature(duel, 'sorcier');
+    if (!pas) { filePasSorcierRef.current = false; quandFini(); return; }
+    jouerSfx('whoosh');
+    force();
+    later(() => avancerSorcierUnPas(quandFini), delaiPasSorcier());
+  };
+
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = (attaquantImpose = null) => {
       if (pauseSiAttenteJoueur(() => declarerAttaqueSorcier(attaquantImpose))) return;
       // Le sorcier joue avec les mêmes règles : une case par tour, puis la
-      // frappe (`rpgMouvementIA.js`). Idempotent : une créature déplacée porte
-      // `bouge`, elle ne repart pas au tour suivant de la boucle.
-      if (!combatCollectif && rpgIABougerCreatures(duel, 'sorcier').length) force();
+      // frappe (`rpgMouvementIA.js`). Les pas passent par une file d'animation :
+      // le joueur voit chaque créature avancer avant la première frappe.
+      if (!combatCollectif && rpgIAMouvementEnAttente(duel, 'sorcier')) {
+        if (!filePasSorcierRef.current) {
+          filePasSorcierRef.current = true;
+          avancerSorcierUnPas(() => declarerAttaqueSorcier(attaquantImpose));
+        }
+        return;
+      }
       const etapeScript = tutorielActif && etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
       if (etapeScript?.skipOpponentTurn) { finirTourSorcier(); return; }
       if (!combatCollectif) {
@@ -13897,6 +13933,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null);
   const casesEnnemi = casesParId('sorcier');
   const casesJoueur = casesParId('joueur');
+  // **Disponible** : la carte a quelque chose à faire ce tour-ci — frapper une
+  // cible légale, toucher le sorcier, ou avancer d'une case. Le liseré doré
+  // (`.is-pret`) ne promet donc plus une action qui n'existe pas, et les
+  // Défenseurs disponibles le portent comme les autres créatures.
+  const pretAAgir = (entite, proprietaire) => {
+    if (!entite || !rpgPeutAttaquer(entite)) return false;
+    // Le duel collectif (PvP historique) et les champs sans lignes n'ont pas
+    // de pas à mesurer : la lecture d'origine reste la bonne.
+    if (combatCollectif || !lignesActives(duel)) return true;
+    const choix = rpgCiblesIndividuellesClassique(duel, proprietaire, entite.id);
+    if (choix.directe || choix.cibles.length) return true;
+    return deplacementsLegaux(duel, proprietaire, entite.id).length > 0;
+  };
   // Les deux nombres d'un sort à cible double (les Feux de kitsune) se lisent
   // sur l'effet **réellement résolu** : le Lien de l'Oni les monte, et l'invite
   // doit annoncer les mêmes chiffres que le moteur.
@@ -14551,6 +14600,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       cote={coteCarte}
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
+                      pretAAgir={pretAAgir(entite, proprietaire)}
                       sacrificeEnAnimation={sacrificeFx?.entiteArriveeId === entite.id || Boolean(sacrificeFx?.victimes.some(v => v.entityId === entite.id))}
                       entreeDifferee={sacrificeFx?.entiteArriveeId === entite.id}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
@@ -14688,6 +14738,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       cote={coteCarte}
                       lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
+                      pretAAgir={pretAAgir(entite, proprietaire)}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={sacrificesChoisis.includes(entite.id) || attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       // En combat individuel, choisir la créature n'annonce rien :
