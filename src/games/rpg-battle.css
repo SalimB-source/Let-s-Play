@@ -5473,9 +5473,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── Le mulligan : la main de départ, en cartes 4:5 nues ─────────────────────
    À l'ouverture du duel, le volet isole la table et montre la main de départ :
-   les cinq cartes, entières, toutes à l'écran — la rangée ne défile jamais, ni
-   en largeur ni en hauteur. Chaque carte est la **face 4:5** du jeu et rien
-   d'autre : l'illustration plein cadre, le coût, les pierres d'effets et les
+   les cinq cartes, entières, toutes à l'écran — une rangée de cinq sur PC et en
+   paysage, deux lignes de trois puis deux en portrait tactile (`rpg-mobile.css`) ;
+   aucune ne défile, ni en largeur ni en hauteur. Chaque carte est la **face 4:5**
+   du jeu et rien d'autre : l'illustration plein cadre, le coût, les pierres d'effets et les
    statistiques des créatures ou les bonus des armes, comme dans la main.
    Aucun mot d'interface n'est imprimé dessus ; la fiche reste accessible par
    les gestes de consultation du jeu. Ce
@@ -5691,8 +5692,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-mulligan__panel { gap: 5px; padding: 6px 8px; }
 }
-/* Écrans étroits : la même rangée de cinq, plus serrée — la main reste
-   entière sous les yeux, jamais coupée en deux colonnes qui défilent. */
+/* Écrans étroits : la rangée de cinq se serre en paysage ; en portrait tactile,
+   `rpg-mobile.css` la remplace par deux lignes de trois puis deux cartes.
+   La main reste entière sous les yeux, jamais coupée par un défilement. */
 @media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mulligan__head p {
     display: -webkit-box;

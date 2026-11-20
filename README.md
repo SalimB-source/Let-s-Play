@@ -6224,7 +6224,7 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   s'éteint — une carte allumée mais injouable enferme le joueur.
 - **Des cartes 4:5, nues.** Chaque carte de la main de départ est la **face
   4:5** du jeu : l'illustration plein cadre, ses repères aux places du jeu —
-  **la couleur en haut à gauche, le coût en haut à droite**, et dans le bas
+  **la couleur en haut à gauche, le coût juste dessous**, et dans le bas
   **les plaques d'attaque et de défense du jeu** : l'épée sur fond d'or **contre
   le bord gauche**, le bouclier sur fond d'acier **contre le bord droit**, icône
   et chiffre côte à côte, **composées plus grandes qu'en main comme sur la
@@ -6285,9 +6285,9 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
 - `src/games/rpg-battle.css` — `.rpg-mulligan` (volet posé sur la table, sous
   l'écran de rotation et l'aperçu au doigt), sa **scène mesurée** par requêtes
   de conteneur (`.rpg-mulligan__stage` : une hauteur tenue par le volet, sur
-  laquelle les cinq colonnes se règlent, `cqw`/`cqh`), la **carte 4:5**
+  laquelle les cinq colonnes se règlent, `cqw`/`cqh` en paysage), la **carte 4:5**
   (`.rpg-mulligan__card`, conteneur de taille en largeur : la couleur en haut à
-  gauche, le coût en haut à droite, et la pile `.rpg-mulligan__bas` en bas — le
+  gauche, le coût juste dessous, et la pile `.rpg-mulligan__bas` en bas — le
   type centré pour les terrains et les sorts, puis les plaques
   `.rpg-card__stat--atk` / `.rpg-card__pt` du jeu, reprises telles quelles,
   simplement composées en `cqw` plus grand et posées chacune sur son bord
@@ -6295,7 +6295,11 @@ tour perdu, deux si le paquet est avare. Le joueur découvre désormais sa
   `--rpg-mulligan-text` de ce que la carte garde autour d'elle, et
   `.rpg-hover-card-preview--mulligan` qui pose l'aperçu au-dessus du volet ;
   `src/games/rpg-mobile.css` neutralise le survol au doigt sans toucher au
-  liseré doré d'une carte mise de côté.
+  liseré doré d'une carte mise de côté et, **en portrait tactile**, remplace la
+  rangée par **deux lignes de trois puis deux cartes centrées** : trois colonnes
+  et deux gouttières en largeur, deux faces 4:5 et une gouttière en hauteur,
+  plafonnées à 180 px — sur 390 × 844, une face passe de 54 × 68 px à environ
+  103 × 129 px, sans défilement (détail dans `docs/rpg/mobile-layout.md`).
 
 ### Vérifications
 
