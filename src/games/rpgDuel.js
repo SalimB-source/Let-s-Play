@@ -8640,6 +8640,34 @@ export function rpgLancerAttaque(
       // fois, juste après les blessures de la frappe.
       rapide: true,
     });
+    // **Deux tireurs se répondent.** Un tir n'a pas de contact, mais une cible
+    // qui tire elle aussi — Attaque ciblée *ou* « À distance » — ne se laisse
+    // pas viser sans rendre son coup. Sa volée part dans le **même échange
+    // simultané** que la frappe : elle touche même si le tir la terrasse, et
+    // elle ne passe pas par les blessures de combat (un tireur ne bloque pas).
+    // La Contre-attaque a déjà sa propre riposte, après coup, et se contente
+    // de celle-là. Un tireur gelé ne répond pas, comme au contact.
+    const cibleTireuse = Boolean(cible.coupRapide || cible.distance)
+      && !cible.contreAttaque && !estGelee(cible);
+    if (cibleTireuse) {
+      const volee = forceCombatAvecCritique(cible, attaquant);
+      degatsAvantCombat.push({
+        cote,
+        entiteId: attaquant.id,
+        amount: volee.force,
+        sourceElement: cardColors(duelCardById(cible.carteId)),
+        sourceType: 'attaque',
+        sourceCote: adv, sourceId: cible.id,
+      });
+      frappesRapides[frappesRapides.length - 1].reponse = {
+        cible: cible.name,
+        cibleId: cible.id,
+        degats: volee.force,
+        critique: volee.critique,
+        fois: volee.fois,
+        garanti: volee.garanti,
+      };
+    }
   }
   // Les attaquants dont la frappe a trouvé sa cible : leur attaque s'arrête sur
   // cette frappe. Elle ne connaît ni blocage, ni blessures de combat, ni dégâts
@@ -8803,6 +8831,16 @@ export function rpgLancerAttaque(
     resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois, ...(garanti ? { garanti: true } : {}) });
     journaliserAnimationCombat(duel, { type: 'coup-critique', entiteId: entite.id, carteId: entite.carteId, fois });
   };
+  // Les critiques des volées rendues par une cible qui tire, elles aussi.
+  for (const frappe of frappesRapides) {
+    if (frappe.reponse?.critique) {
+      enregistrerCritique(
+        duel[adv].creatures.find((entite) => entite.id === frappe.reponse.cibleId),
+        frappe.reponse.fois,
+        frappe.reponse.garanti,
+      );
+    }
+  }
   // Les critiques des Attaques ciblées sont déjà dans les frappes rapides.
   for (const frappe of frappesRapides) {
     if (frappe.critique) {
@@ -9190,6 +9228,10 @@ export function rpgLancerAttaque(
       : coup.rate
         ? `${coup.attaquant} rate son Attaque ciblée contre ${coup.cible}.`
         : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Attaque ciblée${coup.traque ? ` (Traque +${coup.traque}/+0)` : ''}${coup.critique ? ` — Coup critique${coup.critiqueGaranti ? ' garanti' : ''} ×${coup.critiqueFois} !` : ''}.`);
+  }
+  for (const frappe of frappesRapides) {
+    if (!frappe.reponse) continue;
+    duel.log.push(`${frappe.reponse.cible} répond à la volée de ${frappe.attaquant} (${frappe.reponse.degats} dégâts).`);
   }
   for (const traque of traquesCombat) {
     duel.log.push(`Traque : ${traque.attaquant} gagne +${traque.bonus}/+0 contre ${traque.cible} pour ce combat.`);

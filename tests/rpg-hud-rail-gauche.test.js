@@ -106,12 +106,15 @@ test('Rail d’avatars : le sorcier garde son bandeau du haut, rien ne s’empil
 
 test('Main coupée en deux : la page pose la cale à la moitié de la main', () => {
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-  assert.match(page, /const coupeMain = groupesMain\.length >= 8\s*\n\s*\? Math\.ceil\(groupesMain\.length \/ 2\)\s*\n\s*: Math\.min\(3, Math\.floor\(groupesMain\.length \/ 2\)\);/,
-    'trois cartes à gauche jusqu’à sept, la moitié au-delà');
+  // La coupe tombe au plus bas : la moitié droite reçoit la carte de plus, et
+  // la carte fantôme (voir `rpg-main-impaire.test.js`) équilibre la gauche.
+  assert.match(page, /const coupeMain = Math\.floor\(groupesMain\.length \/ 2\);/,
+    'la moitié des cartes à gauche, le reste à droite');
   assert.match(page, /position === coupeMain && <span className="rpg-hand__ecart" aria-hidden="true" \/>/,
     'la cale s’insère entre les deux moitiés');
-  // Six cartes : trois à gauche, trois à droite ; sept : trois et quatre.
-  const coupe = (n) => (n >= 8 ? Math.ceil(n / 2) : Math.min(3, Math.floor(n / 2)));
+  const coupe = (n) => Math.floor(n / 2);
+  // Six cartes : trois à gauche, trois à droite ; sept : trois et quatre ;
+  // huit : quatre et quatre ; dix : cinq et cinq.
   assert.deepEqual([0, 1, 2, 4, 6, 7, 8, 10].map(coupe), [0, 0, 1, 2, 3, 3, 4, 5]);
 });
 

@@ -381,8 +381,18 @@
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: center; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
+  /* Une place de carte : la largeur d'une carte et sa gouttière. Sert à
+     élargir la main quand une carte fantôme équilibre ses deux moitiés. */
+  --rpg-main-slot: calc(clamp(64px, 7.2vw, 108px) + clamp(8px, 1vw, 18px));
+  --rpg-main-boite: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - max(var(--rpg-avatar-plateau), var(--rpg-vie-bar-width)) / 2 - 28px);
   padding-left: calc(clamp(8px, 1.5vw, 24px) + 12px);
-  width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - max(var(--rpg-avatar-plateau), var(--rpg-vie-bar-width)) / 2 - 28px);
+  width: var(--rpg-main-boite);
+}
+/* Une main impaire ajoute sa carte fantôme : elle ne prend pas la place d'une
+   vraie carte, la main s'élargit donc d'une place. Sans ça, cinq cartes se
+   partageraient la largeur prévue pour quatre et rétréciraient. */
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand.is-main-impaire {
+  width: calc(var(--rpg-main-boite) + var(--rpg-main-slot));
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-hidden-hand { left: 0; transform: none; }
 
@@ -565,6 +575,24 @@
   .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand__ecart {
     flex: 0 0 calc(var(--rpg-avatar-plateau) + 26px);
     align-self: stretch;
+    pointer-events: none;
+  }
+
+  /* 7. La carte fantôme des mains impaires. La cale se pose au milieu du
+     **contenu** de la main : à trois ou cinq cartes, la moitié droite en
+     compte une de plus et la pousse d'une demi-carte vers la gauche — le
+     portrait, lui, reste sur l'axe de la table, et une carte venait mourir
+     sur son visage. La fantôme rend les deux moitiés égales : même largeur
+     qu'une carte (`flex: 0 1`, elle se resserre comme elles), même
+     gouttière, mais invisible et sans clic. Les cartes ne changent pas de
+     taille : la main s'élargit d'une place pour l'accueillir (`.is-main-
+     impaire`, avec la largeur de la main, plus haut). */
+  .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand__cale-fantome {
+    display: block;
+    flex: 0 1 clamp(64px, 7.2vw, 108px);
+    min-width: 0;
+    align-self: stretch;
+    visibility: hidden;
     pointer-events: none;
   }
 }
