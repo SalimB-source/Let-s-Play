@@ -7361,6 +7361,13 @@ export function rpgDissiperContresortBoualem(duel) {
  * Le sorcier peut répondre par un contresort « carte », comme pour une
  * créature : l'arme part alors au cimetière sans jamais être portée.
  */
+export const rpgArmeCompatible = (arme, entite) => {
+  if (!arme || !entite) return true;
+  if (arme.porteeArme === 'melee' && entite.distance) return false;
+  if (arme.porteeArme === 'distance' && !entite.distance) return false;
+  return true;
+};
+
 export function rpgJouerArme(duel, cote, carteId, cibleId = null, options = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
@@ -7377,6 +7384,7 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null, options = {}) 
   // la contrer, et l'arme s'attache au dernier jeton arrivé.
   if (!cible && (!carte.armeVivante || (duel.moba && !options.mobaPlacementArme))) return { ok: false, raison: 'cible' };
   if (cible && cible.mur) return { ok: false, raison: 'mur' };
+  if (cible && !rpgArmeCompatible(carte, cible)) return { ok: false, raison: 'portee' };
   if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   if (!dejaPayee && !rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (!dejaPayee && duel.moba && options.annoncerArmeMoba) {
@@ -7538,6 +7546,7 @@ const estGelee = (entite) => (entite?.gelToursRestants ?? 0) > 0;
 // case tout de suite.
 export const rpgPeutAttaquer = (entite) => entite && !estSite(entite)
   && entite.ready && !entite.attaquee && !estGelee(entite)
+  && !rpgSouffreMalInvocation(entite)
   && !(entite.empecheAttaqueToursRestants > 0) && !entite.mur && !entite.nePeutPasAttaquer;
 const pret = rpgPeutAttaquer;
 // Toute créature qui n'a pas attaqué peut bloquer dès son arrivée.
@@ -9309,7 +9318,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     const cibleAvant = { ...cible };
     const rate = (
       (ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE)
-      || (attaquant.distance && !estGelee(attaquant) && rng() < RPG_DISTANCE_ECHEC_CHANCE)
+      || (attaquant.distance && !armeCarteDe(attaquant)?.immanquable && !estGelee(attaquant) && rng() < RPG_DISTANCE_ECHEC_CHANCE)
     );
     // **Le contact.** Une attaque de mêlée est un duel : les deux créatures
     // frappent ensemble, la cible déclenche ses capacités « au blocage », et
