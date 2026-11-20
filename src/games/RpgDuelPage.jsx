@@ -12330,11 +12330,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  /** Le sort part avec sa zone : la carte quitte la main, le champ s'éteint. */
+  /**
+   * Le sort part avec sa zone : la carte quitte la main, le champ s'éteint.
+   * Sans ancre posée, le moteur prend la zone la plus rentable
+   * (`meilleureZone`) — le sort reste donc lançable même si le joueur valide
+   * sans avoir désigné, et le journal dit alors quelle zone a été couverte.
+   */
   const validerZoneSort = (zone = zoneAncre) => {
     const carteId = zoneSortEnCours;
-    if (!carteId || !zone) return;
-    lancerMagie(carteId, null, null, zone);
+    if (!carteId) return;
+    setZoneSortEnCours(null);
+    setZoneAncre(null);
+    lancerMagie(carteId, null, null, zone ?? null);
   };
 
   const annulerZoneSort = () => {
@@ -14284,7 +14291,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ref={tableRef}
         inert={mulliganOuvert || sacrificeFx || selectionAscension.apercuId || duel.renfortChoixEnAttente?.cote === 'joueur' ? true : undefined}
         onPointerDownCapture={() => unlockSfx()}
-        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` ${impactEcran.mode === 'combat' ? 'rpg-combat-screen-shake' : 'rpg-screen-shake'}--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
+        className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${zoneSortEnCours ? ' is-choix-zone' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` ${impactEcran.mode === 'combat' ? 'rpg-combat-screen-shake' : 'rpg-screen-shake'}--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
         data-anim-reduite={rpgAnimationsReduites(animReduite) ? 'true' : undefined}
         data-anim-vitesse={String(vitesseAnim)}
@@ -14322,13 +14329,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             aria-label="Zone du sort">
             <span className="rpg-zone-sort__titre">{cardById(zoneSortEnCours)?.name ?? 'Sort de zone'}</span>
             <span className="rpg-zone-sort__libelle">
-              {zoneAncre ? libelleZone(zoneAncre) : 'choisissez la zone sur le champ'}
+              {zoneAncre ? libelleZone(zoneAncre) : 'touchez une case, ou lancez au meilleur endroit'}
             </span>
-            {zoneAncre && (
-              <button type="button" className="rpg-zone-sort__valider" onClick={() => validerZoneSort()}>
-                Lancer
-              </button>
-            )}
+            <button type="button" className="rpg-zone-sort__valider" onClick={() => validerZoneSort()}>
+              Lancer
+            </button>
             <button type="button" className="rpg-zone-sort__annuler" onClick={annulerZoneSort}>
               Renoncer
             </button>

@@ -125,6 +125,15 @@ Trois règles de résolution, et une de présentation :
   déplace, le bandeau dit la zone en toutes lettres et propose « Lancer » ou
   « Renoncer ». Le MOBA n'a pas de zone : ses voies en tiennent lieu.
 
+  Deux pièges de style, payés une fois : le calque des cases
+  (`.rpg-creature-slots`) **éteint les pointeurs** et se tient **sous les
+  cartes** (`z-index: 0` contre `1`). Une case interactive doit donc rendre les
+  pointeurs à elle-même *et* passer devant les cartes — c'est ce que fait
+  l'état `.card-table.is-choix-zone`. Sans lui, les cases de zone s'allumaient
+  sans jamais recevoir le clic : le sort semblait ne pas pouvoir être lancé.
+  `tests/rpg-zones-ui-css.test.js` garde la leçon pour toutes les cases
+  interactives.
+
 ## Le corps qui bloque
 
 Une case tenue n'est jamais une destination : on ne se pose pas sur une
