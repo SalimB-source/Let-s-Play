@@ -3302,6 +3302,11 @@ export function TableCard({
         aria-hidden="true"
       />
       <RpgCadreCarte carte={carte} />
+      {malInvocation && (
+        <span className="rpg-card__zzz" aria-hidden="true">
+          <span>z</span><span>Z</span><span>Z</span><span>Z</span>
+        </span>
+      )}
       {cartesArmes.length > 0 && (
         <span className={`rpg-card__arme-vignette${durabiliteArme > 0 || entite.arme?.compteurs > 0 ? ' has-compteurs' : ''}`} data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
           <img src={cardArt(cartesArmes[0])} alt="" />

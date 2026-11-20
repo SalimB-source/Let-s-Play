@@ -9374,7 +9374,12 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       }
       // Le gel se résout avant les blessures des deux côtés, sans favoriser
       // l'attaquant ; les deux forces sont ensuite déterminées avant l'échange.
-      const traque = estGelee(attaquant) ? 0 : bonusTraquePirates(attaquant, cible);
+      const bonusElement = estGelee(attaquant) ? 0 : (() => {
+        const regle = duelCardById(attaquant?.carteId)?.bonusContreElement;
+        const carteCible = regle && cible ? duelCardById(cible.carteId) : null;
+        return carteCible && cardColors(carteCible).includes(regle.element) ? (regle.amount ?? 1) : 0;
+      })();
+      const traque = (estGelee(attaquant) ? 0 : bonusTraquePirates(attaquant, cible)) + bonusElement;
       const force = rate ? 0 : calculForce(attaquant, traque, cible);
       if (ciblee) resume.coupsRapides.push({ attaquantId, attaquant: attaquant.name, cibleId, cible: cible.name, degats: force, ...(rate ? { rate: true } : {}) });
       else resume.paires.push([attaquant.name, cible.name]);

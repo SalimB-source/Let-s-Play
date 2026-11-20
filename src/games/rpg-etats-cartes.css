@@ -20,6 +20,43 @@
   filter: grayscale(1) brightness(.78);
 }
 
+.rpg-card__zzz {
+  position: absolute;
+  top: 8%;
+  right: 10%;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
+  pointer-events: none;
+  z-index: 6;
+  font-weight: 900;
+  font-style: italic;
+  color: #e2e8f0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .9), 0 0 8px rgba(148, 163, 184, .6);
+}
+
+.rpg-card__zzz span {
+  display: inline-block;
+  font-size: clamp(10px, 1.1vw, 15px);
+  line-height: 1;
+  animation: rpgZzzFloat 2.2s ease-in-out infinite;
+}
+
+.rpg-card__zzz span:nth-child(2) { font-size: clamp(12px, 1.3vw, 18px); animation-delay: .28s; }
+.rpg-card__zzz span:nth-child(3) { font-size: clamp(14px, 1.5vw, 21px); animation-delay: .56s; }
+.rpg-card__zzz span:nth-child(4) { font-size: clamp(16px, 1.7vw, 24px); animation-delay: .84s; }
+
+@keyframes rpgZzzFloat {
+  0%, 100% {
+    opacity: .25;
+    transform: translate(0, 2px) scale(.88);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(3px, -7px) scale(1.06);
+  }
+}
+
 /* Les terrains engagés gardent leur traitement existant. */
 .rpg-terrain.is-tapped { filter: grayscale(1) brightness(.78) !important; }
 .rpg-terrain.is-tapped img { filter: none; }

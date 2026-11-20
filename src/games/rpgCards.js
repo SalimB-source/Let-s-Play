@@ -1477,14 +1477,15 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'chevaliere-du-baton-sacre',
-    name: 'Chevalière du bâton sacré',
+    name: 'Chevalière à l’arbalète',
     element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine · Chevalière',
     coupRapide: true,
     coupCritique: { chance: 0.25, fois: 2 },
     defenseur: true,
-    text: 'Défenseur. Attaque ciblée — Elle peut viser une créature adverse : elle lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    bonusContreElement: { element: 'tenebres', amount: 1 },
+    text: 'Défenseur. Attaque ciblée — Elle peut viser une créature adverse : elle lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. +1 dégât contre les créatures Ténèbres.',
     flavor: 'Là où son frère se jette dans la bataille, elle tient la ligne.',
   },
   {
@@ -2642,10 +2643,10 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Takouba',
 
     rarity: 'commune',
-    bonus: { atk: 2, def: 0 },
+    bonus: { atk: 2, def: 1 },
     donne: { infiltration: true },
     lien: { ancre: 'tin-hinan', bonus: { atk: 3, def: 1 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration. Avec Tin Hinan, mère des pistes en jeu : +3/+1 au lieu de +2/+0.',
+    text: 'Arme — Le porteur gagne +2/+1 et Infiltration. Avec Tin Hinan, mère des pistes en jeu : +3/+1 au lieu de +2/+1.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -2669,9 +2670,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Armure',
 
     rarity: 'mythique',
-    bonus: { atk: 0, def: 4 },
+    bonus: { atk: 0, def: 2 },
     donne: { contreAttaque: true },
-    text: 'Arme — Le porteur gagne +0/+4 et Contre-attaque.',
+    text: 'Arme — Le porteur gagne +0/+2 et Contre-attaque.',
     flavor: 'Forgée dans le cratère même : aucune flamme ne mord deux fois cet acier-là.',
   },
   {
@@ -2684,8 +2685,8 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
-    porteurAvantDegats: { type: 'gel', chance: 0.15 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Avant les dégâts, 15 % de chances de geler chaque créature combattue.',
+    porteurAvantDegats: { type: 'gel', chance: 0.25 },
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Avant les dégâts, 25 % de chances de geler chaque créature combattue.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2728,14 +2729,14 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Armure',
 
     rarity: 'commune',
-    bonus: { atk: 0, def: 3 },
+    bonus: { atk: 0, def: 2 },
     donne: { esquive: true },
     // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4), rien
     // de plus — le texte ne dit que la différence. Le CUMUL d'Esquive
     // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
     // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+3.',
+    text: 'Arme — Le porteur gagne +0/+2 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+2.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2803,9 +2804,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Jitte',
 
     rarity: 'rare',
-    bonus: { atk: 2, def: 2 },
-    donne: { protection: { contre: 'tenebres' } },
-    text: 'Arme — Le porteur gagne +2/+2 et bloque le prochain sort adverse de Ténèbres.',
+    bonus: { atk: 1, def: 1 },
+    donne: { bouclier: 1 },
+    text: 'Arme — Le porteur gagne +1/+1 et un bouclier.',
     flavor: 'Le guide pare d’un geste ce que la nuit envoie.',
   },
   {
@@ -2816,7 +2817,7 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Khopesh',
 
     rarity: 'rare',
-    bonus: { atk: 3, def: 1 },
+    bonus: { atk: 2, def: 1 },
     // Arme vivante (Batterskull) : jouable la main vide, elle fait naître le
     // chien de sable qui la portera (`rpgJouerArme` accepte `cibleId: null`).
     armeVivante: { jeton: 'chien-de-sable', nombre: 1 },
@@ -2824,7 +2825,7 @@ export const RPG_ARME_CARDS = [
     // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
     // sans qu'un seul de ses chiffres imprints ne bouge.
     lien: { ancre: 'tarek', donne: { bouclier: 1 } },
-    text: 'Arme — Arme vivante : jouable sans cible, elle crée alors un Chien de sable 1/1 porteur. +3/+1. Avec TAREK en jeu : le porteur reçoit un bouclier.',
+    text: 'Arme — Arme vivante : jouable sans cible, elle crée alors un Chien de sable 1/1 porteur. +2/+1. Avec TAREK en jeu : le porteur reçoit un bouclier.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {
