@@ -2164,7 +2164,70 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 .rpg-overlay h2 { font-family: var(--font-gaming); margin: 0; font-size: 22px; color: var(--yellow); }
 .rpg-overlay p { margin: 0; max-width: 56ch; color: var(--muted); }
-.rpg-overlay--loss h2 { color: #fca5a5; }
+.rpg-zone-sort {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  max-width: min(92vw, 460px);
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(229, 189, 122, .55);
+  background: rgba(11, 16, 22, .92);
+  color: #f2e7d4;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .6);
+  text-align: center;
+}
+.rpg-zone-sort__titre {
+  font-family: var(--font-gaming);
+  font-size: 13px;
+  color: #e5bd7a;
+  letter-spacing: .04em;
+}
+.rpg-zone-sort__libelle {
+  font-size: 13px;
+  color: #e8dcc9;
+}
+.rpg-zone-sort__valider,
+.rpg-zone-sort__annuler {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rpg-zone-sort__valider {
+  border: 1px solid #e5c277;
+  background: #d5a552;
+  color: #21160c;
+}
+.rpg-zone-sort__annuler {
+  border: 1px solid rgba(242, 231, 212, .28);
+  background: rgba(255, 255, 255, .08);
+  color: #f2e7d4;
+}
+
+.rpg-overlay--loss h2 {
+  color: #fecaca;
+  font-size: clamp(22px, 3vw, 28px);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
+}
+.rpg-overlay--loss p {
+  background: rgba(28, 12, 16, .88);
+  border: 1px solid rgba(252, 165, 165, .42);
+  border-radius: 14px;
+  padding: 12px 18px;
+  color: #f8fafc;
+  font-size: 15px;
+  line-height: 1.5;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .55);
+}
 
 /* Ce que la victoire vient de payer : le gain de l'étage, et le butin de la
    tour quand cette victoire l'a terminée. Les deux lignes se lisent comme des
