@@ -13896,11 +13896,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const empilerCartes = viewport.mobile && duel.modeMana !== RPG_MODE_MANA_ESSAI;
   const groupesMain = trierMainAvecRenvois(duel.joueur.main, empilerCartes, tourbillonsEau);
   // La main s'ouvre en deux autour du médaillon du joueur, posé au centre sous
-  // ses emplacements : trois cartes à sa gauche, le reste à sa droite — l'écart
-  // est la cale qui réserve sa largeur (voir `rpg-avatars-plateau.css`, règle 6).
-  const coupeMain = groupesMain.length >= 8
-    ? Math.ceil(groupesMain.length / 2)
-    : Math.min(3, Math.floor(groupesMain.length / 2));
+  // ses emplacements : la moitié des cartes à sa gauche, le reste à sa droite —
+  // l'écart est la cale qui réserve sa largeur (voir `rpg-avatars-plateau.css`,
+  // règle 6). La coupe tombe donc **au plus bas** : la moitié droite reçoit la
+  // carte de plus quand la main est impaire.
+  const coupeMain = Math.floor(groupesMain.length / 2);
+  // Une main impaire est bancale : une moitié compte une carte de plus, et la
+  // cale — qui se pose au milieu du contenu — glisse d'une demi-carte hors de
+  // l'axe de la table. Le médaillon du joueur restait alors à moitié sous la
+  // carte voisine. Une carte fantôme, invisible et de même largeur, remet les
+  // deux moitiés à égalité (styles : `rpg-avatars-plateau.css`, règle 6).
+  const caleFantome = groupesMain.length % 2 === 1;
   // Exemplaires impliqués dans l'action en cours : leur groupe se déplie seul,
   // pour que le joueur voie chaque carte concernée (et que les flèches de
   // blocage, les halos de cible et les destructions trouvent leur élément).
@@ -15547,7 +15553,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           inert={apercuAnnonceOuvert || selectionAscension.rituel ? true : undefined}
           data-tutorial-target={cibleTutoriel('hand') ? 'hand' : undefined}
         >
-          <div className="rpg-hand" style={{ '--hand-count': Math.max(1, groupesMain.length) }}>
+          <div
+            className={`rpg-hand${caleFantome ? ' is-main-impaire' : ''}`}
+            style={{ '--hand-count': Math.max(1, groupesMain.length) }}
+          >
+            {caleFantome && <span className="rpg-hand__cale-fantome" aria-hidden="true" />}
             {groupesMain.map((groupe, position) => {
               const carteId = groupe.carteId;
               const i = groupe.indices[0];

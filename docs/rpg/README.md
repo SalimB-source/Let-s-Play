@@ -32,6 +32,7 @@ réactif de *Clair Obscur*.
 | [`31-ascension.md`](31-ascension.md) | **Ascension** : réserve hors-pioche, invocation spéciale par sacrifices exacts, Samouraï du Dragon Rouge et intégration Duel/MOBA |
 | [`32-decks-ascension.md`](32-decks-ascension.md) | Les quatre decks de 30 cartes dédiés aux Ascensions, matériaux, préparation et mulligan |
 | [`33-pression-des-tours.md`](33-pression-des-tours.md) | La **pression des Tours** : la puissance d’un étage devient un pacte (PV, cartes en main, bouclier) et un plancher d’IA — des gardiens durs à battre alors même que leurs paquets sont les listes communes |
+| [`38-la-main-autour-du-medaillon.md`](38-la-main-autour-du-medaillon.md) | La **main autour du médaillon** : la cale qui réserve le portrait tombe au milieu du *contenu* — une main impaire la décalait d'une demi-carte, et une carte venait sur le visage du joueur. Une **carte fantôme** invisible équilibre les deux moitiés sans rétrécir les cartes |
 
 ## La décision de conception
 

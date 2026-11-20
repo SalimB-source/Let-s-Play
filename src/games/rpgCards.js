@@ -1714,12 +1714,13 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     // Le Sondeur ne porte plus de bouclier de lumière (réservé à la Dame aux
-    // ailes d'or). Il arrive désormais avec les trois mots-clés demandés :
-    // une parade anti-sort sur SON corps (`cible: 'soi'`), la Rapidité qu'il
-    // avait déjà, et la Contre-attaque d'Eirik et de Tojiro.
+    // ailes d'or). Il arrive avec la Rapidité et l'Attaque ciblée. La
+    // Contre-attaque, elle, est réservée aux mêlées : un tireur rend sa volée
+    // par la règle des deux tireurs (voir `rpgLancerAttaque`), pas par le
+    // mot-clé — il ne riposte donc plus aux sorts, ce qui était le propre du
+    // corps à corps.
     rapidite: true,
-    contreAttaque: true,
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (15 % de chances de rater, 100 % de toucher le sorcier). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (15 % de chances de rater, 100 % de toucher le sorcier).',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
