@@ -3709,10 +3709,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   -webkit-mask-image: none;
 }
 .rpg-battle:not(.rpg-battle--touch) .rpg-hand__card {
-  width: clamp(76px, 9vw, 136px);
+  width: clamp(64px, 7.2vw, 108px);
   min-width: 0;
   min-height: 0;
-  flex: 0 1 clamp(76px, 9vw, 136px);
+  flex: 0 1 clamp(64px, 7.2vw, 108px);
   pointer-events: auto;
 }
 
