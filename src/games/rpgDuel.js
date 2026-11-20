@@ -4,6 +4,10 @@ export { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 import { ajouterCarteEnMainOuReserve, combinaisonsAscension, estCarteAscension, reserveAscensionInitiale, timingAscensionValide, validerMateriauxAscension } from './rpgAscension.js';
 import { noterSortieCimetiere } from './rpgCimetiereAnimation.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
+import { zoneFormeCarte } from './rpgZoneCartes.js';
+import { entiteDansZone, libelleZone, meilleureZone, zoneValide } from './rpgZones.js';
+import { porteeEffetCarte } from './rpgPorteesCartes.js';
+import { cibleDeLEffetAPortee } from './rpgPortees.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, ligneDeCase, ligneDePose, lignesActives, RPG_LIGNE_FOND, RPG_LIGNE_FRONT, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
@@ -3975,11 +3979,45 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     ? (options?.mobaLane ?? duel[cote].creatures.find((e) => e.id === sauf)?.mobaLane)
     : sourceType === 'magie' ? options?.mobaLane : null) : null;
   const dansVoie = (entite) => !voieEffet || mobaPartageVoie(duel.moba, entite.mobaLane, voieEffet);
+  // **La zone de l'effet.** Une carte inscrite dans `RPG_ZONE_CARTES` ne
+  // balaie plus la table : elle couvre la zone que le lanceur a désignée
+  // (`options.zone`), ou la plus rentable pour lui quand personne n'a choisie
+  // (IA, résolution automatique d'une arrivée). Tout ce qui s'y tient encaisse,
+  // les créatures du lanceur comprises — la zone ne choisit pas ses victimes —
+  // sauf la source elle-même, jamais sa propre victime. Le MOBA garde ses
+  // voies : la zone n'y a pas de sens, la voie en tient lieu.
+  const formeZoneEffet = duel.moba ? null : zoneFormeCarte(sourceCarteId);
+  // Sans zone désignée (IA, arrivée automatique, réponse), le moteur prend la
+  // plus rentable : celle qui touche le plus de PV adverses, en comptant ce
+  // qu'elle coûte à nos propres créatures. À montant égal, deux parties
+  // identiques jouent la même zone.
+  const peseeZone = (entite, campPese) => {
+    const pv = Math.max(0, Number(entite.pv ?? entite.def) || 0);
+    const poids = Number.isFinite(effet.amount) ? Math.min(effet.amount, pv) : 1;
+    return campPese === cote ? -poids : poids;
+  };
+  const zoneEffet = formeZoneEffet
+    ? (zoneValide(options?.zone) ? options.zone : meilleureZone(duel, cote, formeZoneEffet, peseeZone))
+    : null;
+  const dansLaZone = (campEntite, entite) => !zoneEffet
+    || (entite.id !== sauf && entiteDansZone(zoneEffet, campEntite, entite,
+      duel[campEntite].creatures.findIndex((autreEntite) => autreEntite.id === entite.id)));
   // Un effet relancé par le contresort de Boualem peut tomber sur une créature
   // des DEUX camps (`cibleCamp`). Par défaut, la cible est adverse.
   let campCible = cibleCamp ?? ((effet.type === 'exil' || effet.type === 'retour-main' || effet.type === 'destruction-cible')
     && duel[cote].creatures.some((entite) => entite.id === cibleId) ? cote : adv);
   const cibleDirecte = cibleId && duel[campCible]?.creatures.find((entite) => entite.id === cibleId);
+  // **La portée de l'effet.** Une créature ne frappe pas au-delà de sa fiche :
+  // l'effet d'arrivée désigne une cible, et une cible hors de portée n'est pas
+  // atteinte — pas de dégât, pas de gel, pas d'exil à l'autre bout du plateau.
+  // Les effets sans portée inscrite (masses, sorciers, pioches) passent sans
+  // mesure, comme avant.
+  const porteeEffet = sourceType === 'capacite' ? porteeEffetCarte(sourceCarteId) : null;
+  if (porteeEffet && cibleDirecte
+    && !cibleDeLEffetAPortee(duel, cote, sauf, cibleDirecte, campCible, porteeEffet)) {
+    duel.log.push(`${cibleDirecte.name ?? 'La créature'} est hors de portée de ${cardById(sourceCarteId)?.name ?? 'l’effet'}.`);
+    return;
+  }
   // Targeted creature abilities cannot jump from their source lane.
   if (duel.moba && sourceType === 'capacite' && voieEffet && cibleDirecte && !dansVoie(cibleDirecte)) return;
   const effetCible = Boolean(cibleId && (effet.cible === 'creature' || ['debuff', 'empeche-blocage', 'blocage-force'].includes(effet.type)));
@@ -4131,7 +4169,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Neige noire ne brise pas les siens. Les morts sont retirées ensemble,
       // avant leurs déclenchements : les jetons et réanimations produits
       // ensuite échappent à cette vague.
-      const camps = effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
+      // Une zone couvre les deux camps : c'est elle qui décide, plus la fiche.
+      const camps = zoneEffet ? [cote, adv]
+        : effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
       const declenchements = [];
       const victimes = [];
       const epargnees = [];
@@ -4141,6 +4181,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       for (const camp of camps) {
         for (const entite of duel[camp].creatures) {
           if (!dansVoie(entite)) continue;
+          if (!dansLaZone(camp, entite)) continue;
           // La source ne se vise jamais elle-même (Celui qui juge).
           if (entite.id === sauf) continue;
           // La protection de couleur et le Serpent du monde écartent la vague.
@@ -4377,7 +4418,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const touchees = [];
         for (const campCible of [cote, adv]) {
           for (const entite of [...duel[campCible].creatures]) {
-            if (!dansVoie(entite) || entite.id === sauf || estSite(entite) || rpgEstProtegee(entite, sourceElement)
+            if (!dansVoie(entite) || !dansLaZone(campCible, entite) || entite.id === sauf || estSite(entite) || rpgEstProtegee(entite, sourceElement)
               || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
               || (effet.exclutType && cardHasPrintedType(entite.carteId, effet.exclutType))
               || paradeZoneBloque(duel, entite, sourceType, campCible, cote, sourceElement)) continue;
@@ -4675,10 +4716,16 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Les Esquives réussies d'un malus de zone : le débuff ne les marque
       // pas, mais l'Esquive n'éteint pas leur Contre-attaque.
       const esquivees = new Set();
+      // Une zone couvre les deux camps : l'Embuscade qui tombe sur une zone
+      // où se tiennent nos créatures les affaiblit aussi.
+      const creaturesBuff = zoneEffet
+        ? [cote, adv].flatMap((nomCamp) => duel[nomCamp].creatures.map((entite) => ({ entite, campBuff: nomCamp })))
+        : campCible.creatures.map((entite) => ({ entite, campBuff: contreAdversaire ? adv : cote }));
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
-        : campCible.creatures.filter((entite) => {
+        : creaturesBuff.filter(({ entite, campBuff }) => {
           if (!dansVoie(entite)) return false;
+          if (zoneEffet && !dansLaZone(campBuff, entite)) return false;
           if ((!effet.inclutSource && entite.id === sauf) || estSite(entite)
             || (!(effet.ignoreProtectionAlliee && !contreAdversaire) && rpgEstProtegee(entite, sourceElement))) return false;
           if (effet.typeSeulement && !cardHasPrintedType(entite.carteId, effet.typeSeulement)) return false;
@@ -4692,7 +4739,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             return false;
           }
           return true;
-        });
+        }).map(({ entite }) => entite);
       // `tribut` (l'Offrande de lin) : le renfort porte aussi le mot-clé —
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
@@ -4880,7 +4927,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const atteintes = duel[adv].creatures
           .filter((entite) => !estSite(entite) && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-            && dansVoie(entite)
+            && dansVoie(entite) && dansLaZone(adv, entite)
             && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
           .map((entite) => ({
             entiteId: entite.id, dernierEtat: { ...entite },
@@ -4909,7 +4956,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // tombe ; les créatures du camp du lanceur ne réveillent pas la leur.
         const atteintes = [cote, adv].flatMap((camp) => duel[camp].creatures
           .filter((entite) => entite.id !== sauf
-            && dansVoie(entite) && !estSite(entite)
+            && dansVoie(entite) && dansLaZone(camp, entite) && !estSite(entite)
             && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
             && !paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement))
@@ -4947,7 +4994,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           ? [cote, adv]
             .flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
             .filter(({ entite }) => !(effet.exclutSoi && entite.id === sauf))
-          : duel[adv].creatures.map((entite) => ({ entite, camp: adv }))).filter(({ entite }) => dansVoie(entite))
+          : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
+        .filter(({ entite, camp }) => dansVoie(entite) && dansLaZone(camp, entite))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
           .map((entite) => ({ entite, camp: campCible }));
       // MOBA's Oni reserves explicit targets before any impact. Never let
@@ -5089,7 +5137,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // survivantes sont gelées — les mortes ne rejoignent pas la liste.
       const zoneGel = effet.cible === 'toutes-creatures';
       const cibles = zoneGel
-        ? duel[adv].creatures.filter((entite) => dansVoie(entite) && !rpgEstProtegee(entite, sourceElement)
+        ? duel[adv].creatures.filter((entite) => dansVoie(entite) && dansLaZone(adv, entite)
+          && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
           && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId
@@ -8032,6 +8081,18 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
+  // **La zone du sort.** Un sort de masse ne balaie plus la table : il tombe
+  // sur la zone que le lanceur désigne (`options.zone`, voir `rpgZones.js`).
+  // Une zone d'une autre forme est refusée — la carte impose la sienne — et
+  // l'absence de zone laisse le moteur prendre la plus rentable (IA, PvP
+  // automatique, réponses). Le MOBA garde ses voies : pas de zone chez lui.
+  const formeZoneSort = duel.moba ? null : zoneFormeCarte(carteId);
+  if (formeZoneSort && options?.zone) {
+    const zoneVoulue = options.zone;
+    if (zoneVoulue.forme !== formeZoneSort || !zoneValide(zoneVoulue)) return { ok: false, raison: 'zone' };
+  }
+  const zoneSort = formeZoneSort ? (zoneValide(options?.zone) ? options.zone : null) : null;
+  const optionsSort = zoneSort ? { ...(options ?? {}), zone: zoneSort } : options;
 
   if (!dejaPayee && cote === 'joueur' && !duel.annonce && !duel.pvp) {
     const contreIA = choisirContreIA(duel, carte);
@@ -8158,7 +8219,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     }
   } else appliquer(duel, cote, effet, cibleId,
     cibleAllieeId ?? null,
-    cardColors(carte), 'magie', carteId, null, options);
+    cardColors(carte), 'magie', carteId, null, optionsSort);
   // Le Lien à cible supplémentaire (le Poids de la Barbe Noire) : la créature
   // désignée encaisse son malus APRÈS le transfert de vie. Le Lien se lit à la
   // résolution, comme tous les autres.
@@ -8176,6 +8237,10 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     camp.cimetiere.push(carteId);
   }
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
+  if (formeZoneSort) {
+    const zoneJouee = zoneSort ?? meilleureZone(duel, cote, formeZoneSort);
+    if (zoneJouee) duel.log.push(`${carte.name} couvre ${libelleZone(zoneJouee)}.`);
+  }
   rpgActionsEtat(duel);
   // Une Esquive annule le renvoi : la cible est toujours sur la table et la
   // page ne doit pas jouer son animation de retour en main.
@@ -8184,6 +8249,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
       .some((entite) => entite.id === creatureRetourneeEnMain.id));
   return {
     ok: true,
+    zone: formeZoneSort ? (zoneSort ?? meilleureZone(duel, cote, formeZoneSort)) : null,
     renvoiMain: renvoiEffectif,
     renvoiEntityId: renvoiEffectif ? creatureRetourneeEnMain.id : null,
   };

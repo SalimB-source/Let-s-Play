@@ -108,6 +108,31 @@ Conséquences, toutes voulues :
 La portée **remplace** la condition de percée : on ne regarde plus la ligne de
 l'attaquant, seulement la distance. C'est la décision prise au palier 2.
 
+## La portée des effets de créature
+
+La portée d'attaque dit jusqu'où une créature **frappe au combat**. Elle ne
+disait rien de son **effet d'arrivée** : l'Oni de la fournaise, la Tour de
+braise ou le Corbeau de givre désignaient leur cible n'importe où sur la table.
+C'est fini — une créature porte son effet aussi loin qu'elle, et la valeur est
+écrite **sur la fiche**, une portée par carte (`rpgPorteesCartes.js`) :
+
+| Portée | Cartes | Mesure |
+|---|---|---|
+| `1` — contact | les duels : Bakunawa, Cavalier amazigh du désert, Souverain de la lune noire | une case, diagonales comprises |
+| `2` — tir | les tours de défense, la Völva soigneuse, l'Éclipse silencieuse, la Guetteuse des marées, les effets d'arrivée des archers | deux cases, même mesure |
+| absente | les masses (zones, renvois, destructions) et tout ce qui ne désigne pas une créature en jeu | sans limite |
+
+`porteeDeCarte` lit la table (ou `arrivee.porteeCases` sur la fiche) ; le
+moteur confronte la cible désignée à la source **avant** de résoudre l'effet
+(`cibleDeLEffetAPortee`, dans `appliquerEffet`). Une cible hors de portée n'est
+pas atteinte : rien ne tombe, et le journal le dit en toutes lettres
+(« … est hors de portée de … »). `ciblesDeLEffetAPortee` rend la même liste
+pour l'écran et l'IA.
+
+Deux tolérances voulues : un duel **sans lignes** n'a pas de géométrie, et une
+distance nulle (`null`) ne refuse jamais une cible ; le MOBA, lui, mesure ses
+voies, pas des cases — sa portée d'effet n'y est pas opposée.
+
 ## Le branchement
 
 | Endroit | Ce qu'il fait |
@@ -116,6 +141,8 @@ l'attaquant, seulement la distance. C'est la décision prise au palier 2.
 | `rpgDeclarerAttaqueIndividuelleClassique` | revérifie la même liste au moment du clic — pas de cible périmée |
 | `rpgAttaquerSorcier` | passe `cote` à `attaqueDirecteSurLesLignes` |
 | `casesAPortee` | la matière du survol (`rpg-survol-portee`) |
+| `appliquerEffet` | `cibleDeLEffetAPortee` : l'effet d'arrivée ne dépasse pas la portée de sa carte |
+| `rpgPorteesCartes.js` | la table des portées d'effet, une ligne par carte |
 
 `filtrePortee` **conserve l'ordre reçu** et rend une liste vide hors des lignes
 ou au MOBA : les modes historiques gardent leur comportement.
@@ -143,7 +170,8 @@ si la créature peut encore avancer, auquel cas la phase montre aussi ses cases
 ## Vérifications
 
 `node --test tests/rpg-tir-riposte.test.js` (6) · `tests/rpg-portees.test.js`
-(9) · `tests/rpg-lignes-duel.test.js` (13) · `tests/rpg-sorcier-objectif.test.js`
-(9) · `tests/rpg-mouvement.test.js` (12) · `tests/rpg-avancee-scenario.test.js`
-(4) · `npm run check:rpg-avancee` (90) · `npm run check:rpg-lignes` (34) ·
-`npm run check:rpg-classique-individuel` (64).
+(9) · `tests/rpg-portees-effets.test.js` (8, une portée par carte : contact,
+tir, cible hors d'atteinte) · `tests/rpg-lignes-duel.test.js` (13) ·
+`tests/rpg-sorcier-objectif.test.js` (9) · `tests/rpg-mouvement.test.js` (12) ·
+`tests/rpg-avancee-scenario.test.js` (4) · `npm run check:rpg-avancee` (90) ·
+`npm run check:rpg-lignes` (34) · `npm run check:rpg-classique-individuel` (64).

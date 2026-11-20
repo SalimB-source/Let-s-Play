@@ -478,12 +478,16 @@ function executerIntention(duel, cote, intention) {
       }
       if (carte.kind === 'arme') return rpgJouerArme(duel, cote, intention.carteId, intention.cibleId ?? null);
       if (carte.kind === 'magie') {
+        // Un sort de masse emporte sa **zone** : le camp qui subit la vague
+        // doit voir exactement les cases que le lanceur a désignées, pas une
+        // zone recalculée de son côté (voir `rpgZones.js`).
         const res = rpgLancerMagie(
           duel,
           cote,
           intention.carteId,
           intention.cibleId ?? null,
           intention.cibleAllieeId ?? null,
+          intention.zone ? { zone: intention.zone } : null,
         );
         if (res?.ok !== false) nettoyerCombatDeclareSiVide(duel);
         return res;

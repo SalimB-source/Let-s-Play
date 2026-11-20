@@ -91,6 +91,40 @@ sacrifice entre par la ligne de sa fiche, sur la même colonne que la victime si
 cette case est libre — jamais chez l'adversaire, même quand la victime y était
 tombée : la mort d'un envahisseur ne fait pas naître un envahisseur.
 
+## Les sorts de masse ont une zone
+
+Un sort qui disait « toutes les créatures adverses » ne balaie plus la table :
+il couvre **une zone**, que le lanceur désigne avant de payer. Trois formes
+(`rpgZones.js`), trois tailles :
+
+| Forme | Cases | Cartes |
+|---|---|---|
+| `rangee` — une ligne d'un camp | 5 | Tempête de sable, Brume du fjord, Ressac de la lune noire |
+| `colonne` — la même colonne chez les deux | 4 | Vent rouge, Hurlement du blizzard, Brisure de verre, Le Grand Hiver, Tempête de foudre et de givre, Géant des banquises, Léviathan… |
+| `carre` — deux colonnes × deux lignes d'un camp | 4 | Nuage de cendres, Verglas, Neige noire, Embuscade, Celui qui juge, Tour des Ténèbres, Braisier du Souk… |
+
+La table des cartes vit dans `rpgZoneCartes.js` (`RPG_ZONE_CARTES`) ; une carte
+absente garde son effet global. Une zone est un **objet sérialisable** —
+`{ forme: 'rangee', camp, ligne }`, `{ forme: 'colonne', colonne }`,
+`{ forme: 'carre', camp, colonne }` — donc elle traverse le PvP
+(`intention.zone`), l'IA et les sauvegardes sans rien réinventer.
+
+Trois règles de résolution, et une de présentation :
+
+- **Tout ce qui tient dans la zone encaisse** — les créatures du lanceur
+  comprises. La zone ne choisit pas ses victimes ; seule la source est épargnée
+  (elle ne se frappe jamais elle-même). C'est le prix d'un sort de masse.
+- **Sans zone désignée, le moteur prend la plus rentable** : celle qui touche
+  le plus de PV adverses, en comptant ce qu'elle coûte à nos propres créatures
+  (`meilleureZone`). C'est la voie de l'IA, des réponses automatiques et des
+  arrivées de créature — deux parties identiques jouent la même zone.
+- **Une zone d'une autre forme est refusée** (`raison: 'zone'`) : la carte
+  impose sa forme, le mana reste entier.
+- **À l'écran, les cases de la zone s'allument en bleu, en relief**
+  (`rpg-creature-slot--zone-sort`) : le clic pose l'ancre, le re-clic la
+  déplace, le bandeau dit la zone en toutes lettres et propose « Lancer » ou
+  « Renoncer ». Le MOBA n'a pas de zone : ses voies en tiennent lieu.
+
 ## Le corps qui bloque
 
 Une case tenue n'est jamais une destination : on ne se pose pas sur une
@@ -310,6 +344,7 @@ idempotentes, comme le reste des scènes.
 | `tests/rpg-avancee-ui.test.js` | 7 (page, styles, IA câblée, propriétaire d'une carte) |
 | `tests/rpg-portees.test.js` | 9 |
 | `tests/rpg-lignes-duel.test.js` | 14 (entrée par l'arrière, arrière plein, tir à deux cases) |
+| `tests/rpg-zones.test.js` | 15 (trois formes, ancres, colonne à deux camps, zone imposée, masses zonées) |
 | `tests/rpg-plateau-mobile.test.js` | 4 (plafond de la colonne, mesure de la bande, six tailles d'écran, largeur des cinq cases) |
 | `tests/rpg-sorcier-objectif.test.js` | 9 |
 | `npm run check:rpg-avancee` | 84 / 0 + la page montée dans jsdom (`scripts/rpg-avancee-ui-check.mjs`) |
