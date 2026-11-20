@@ -196,7 +196,10 @@
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"],
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots {
+    grid-template-columns: repeat(3, var(--essai-colonne));
     grid-template-rows: repeat(2, calc(var(--essai-colonne) * 1.25));
+    justify-content: center;
+    justify-items: center;
   }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison),
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
@@ -208,7 +211,10 @@
     max-width: none;
   }
 
-  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand .rpg-hand__avatar-gap {
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
+    justify-content: center;
+  }
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand__ecart {
     flex: 0 0 calc(var(--rpg-avatar-height, 52px) + 18px);
     width: calc(var(--rpg-avatar-height, 52px) + 18px);
     pointer-events: none;
