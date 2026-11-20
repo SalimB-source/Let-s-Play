@@ -205,10 +205,11 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
   carte({
     id: 'sabre-maudit', name: 'Sabre maudit',
     kind: 'magie',  rarity: 'rare',
+    porteeArme: 'melee',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.25, volDeVie: true },
-    text: 'Arme — Le porteur gagne +2/+1, Coup critique (25 %) et Vol de vie. Le sabre tombe avec son porteur.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -1, coupCritique: 0.25, volDeVie: true },
+    text: 'Arme (Mêlée) — Le porteur gagne +2/-1, Coup critique (25 %) et Vol de vie. Le sabre tombe avec son porteur.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
