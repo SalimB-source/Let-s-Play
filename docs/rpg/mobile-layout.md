@@ -407,3 +407,14 @@ Les états interactifs des cases (pose, déplacement, zone de sort) gardent leur
 couleurs ; seules les cases libres et neutres sont retouchées. Le paysage et le
 PC ne sont pas concernés. `npm run check:rpg-portrait` : 19/19 ; captures
 320 × 568 et 390 × 844.
+
+## Le mulligan debout : des lignes de 3
+
+La main de départ tenait ses cinq cartes sur une seule rangée : sur 390 × 844,
+chaque face 4:5 tombait à 54 × 68 px. `rpg-mobile.css` passe le volet en deux
+lignes en portrait tactile — trois cartes, puis deux centrées — avec une
+largeur calculée sur la scène : trois colonnes et deux gouttières en largeur,
+deux faces et une gouttière en hauteur, plafonnées à 180 px sur tablette. Les
+faces passent à environ **103 × 129 px** sur 390 × 844 et **82 × 103 px** sur
+320 × 568. Aucun défilement ; le paysage garde sa rangée de cinq, où la hauteur
+reste la contrainte. Vérification : `npm run check:rpg-mulligan`.

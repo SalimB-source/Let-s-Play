@@ -60,8 +60,8 @@ assert.ok(mulliganPanel.length > 400 && mulliganPanel.includes('VoletMulligan'),
 // ── Le volet est une étape du jeu, pas une couche décorative ────────────────
 assert.match(battlePage, /setMulligan\(!modeTutoriel && rpgPeutMulligan\(duelRef\.current, 'joueur'\)[\s\S]*?\{ etape: 'choix', choix: new Set\(\)[\s\S]*?: null\)/,
   'les duels libres ouvrent le mulligan sur la main de départ, mais le tutoriel garde sa main guidée');
-assert.match(battlePage, /inert=\{viewport\.portrait \|\| mulliganOuvert \? true : undefined\}/,
-  'la table est inerte pendant le mulligan ou en portrait, mais laisse consulter les cartes pendant le choix de mana et le sacrifice');
+assert.match(battlePage, /inert=\{mulliganOuvert \|\| sacrificeFx \|\| selectionAscension\.apercuId \|\| duel\.renfortChoixEnAttente\?\.cote === 'joueur' \? true : undefined\}/,
+  'la table est inerte pendant le mulligan, les sacrifices et les aperçus qui tiennent la main');
 assert.match(battlePage, /const mulliganOuvert = Boolean\(mulligan\);/,
   'une seule source de vérité pour « le mulligan tient la table »');
 assert.match(battlePage, /const peutJouerCarte = \(carte\) => \{[\s\S]{0,240}?if \(mulliganOuvert\) return false;/,
@@ -93,8 +93,10 @@ assert.match(aiBrain, /export function choisirMulliganIA\(duel, cote = 'sorcier'
   'l’IA a sa propre lecture de sa main de départ');
 assert.match(aiBrain, /if \(main\.length < 2 \|\| profil\.niveau === 'recit'\) return \[\];/,
   'niveau Récit, le sorcier ne renvoie jamais sa main');
-assert.match(aiBrain, /if \(!terrains\.length\) return autres;/,
-  'une main sans terrain est renvoyée au paquet');
+assert.match(aiBrain, /const creatures = main\.filter\(\(id\) => \{[\s\S]*?\(carte\.cost \?\? 0\) <= 4[\s\S]*?\}\)\.length;/,
+  'l’IA compte ses créatures jouables pour ne pas écarter une main équilibrée');
+assert.match(aiBrain, /return terrainById\(id\) \|\| \(creatures < 2 && carte && \['creature', 'hero'\]\.includes\(carte\.kind\) && carte\.cost >= 5\) \? \[index\] : \[\];/,
+  'elle n’écarte que les terrains devenus inutiles et les créatures trop chères d’une main sans départ');
 
 // ── La feuille : des faces 4:5 nues, l'aperçu rapide pour tout lire ────────
 assert.match(battleCss, /\.rpg-mulligan\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*1150;/s,
@@ -110,7 +112,7 @@ assert.match(battleCss, /\.rpg-mulligan__stage\s*\{[^}]*min-height:\s*0;/s,
 
 const cardsRule = battleCss.slice(battleCss.indexOf('.rpg-mulligan__cards {'), battleCss.indexOf('.rpg-mulligan__card {'));
 assert.match(cardsRule, /grid-auto-flow:\s*column;/,
-  'la main est une seule rangée — jamais une grille de deux colonnes');
+  'sur PC et en paysage, la main reste une seule rangée de cinq');
 assert.match(cardsRule, /grid-auto-columns:[^;]*100cqh[^;]*\*\s*\.8\)[^;]*;/,
   'une face 4:5 se plafonne par la hauteur utile du volet moins ce que la carte garde autour d’elle');
 assert.match(cardsRule, /grid-auto-columns:[^;]*100cqw[^;]*\/\s*5\)[^;]*;/,
@@ -121,6 +123,29 @@ assert.doesNotMatch(cardsRule, /overflow:\s*(auto|scroll)/,
   'la rangée ne défile jamais : les cinq cartes sont toutes visibles d’un coup');
 assert.doesNotMatch(cardsRule, /grid-template-columns/,
   'aucun repli en grille de deux colonnes qui défile');
+
+/* Debout, la feuille tactile prend le relais : trois cartes par ligne, les
+   deux dernières centrées. La taille se calcule sur la scène (`cqw`/`cqh`),
+   jamais sur un défilement : sur 390 × 844, une face passe de 54 × 68 px à
+   environ 103 × 129 px. */
+const lignesTrois = mobileCss.slice(mobileCss.indexOf('/* Le mulligan debout : des lignes de 3'));
+assert.ok(lignesTrois.length > 0, 'le mulligan debout a sa variante « lignes de 3 »');
+assert.match(lignesTrois, /@media \(orientation: portrait\)/,
+  'le paysage garde la rangée de cinq');
+assert.match(lignesTrois, /\.rpg-mulligan__cards\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap;[^}]*justify-content:\s*center;/s,
+  'trois cartes par ligne, puis deux cartes centrées');
+assert.match(lignesTrois, /calc\(\(100vw - 90px - 2 \* var\(--rpg-mulligan-gap\)\) \/ 3\)/,
+  'les WebView sans requêtes de conteneur gardent trois colonnes et deux gouttières');
+assert.match(lignesTrois, /@supports \(width: 1cqw\)/,
+  'la mesure sur la scène est réservée aux navigateurs qui connaissent `cqw`');
+assert.match(lignesTrois, /calc\(\(100cqw - 2 \* var\(--rpg-mulligan-gap\)\) \/ 3\)/,
+  'la largeur d’une carte vient de trois colonnes et deux gouttières');
+assert.match(lignesTrois, /calc\(\(100cqh - var\(--rpg-mulligan-text\) - var\(--rpg-mulligan-gap\)\) \* \.4\)/,
+  'deux faces 4:5 et leur gouttière tiennent dans la hauteur de la scène');
+assert.match(lignesTrois, /flex:\s*0 0 var\(--rpg-mulligan-card\)/,
+  'les cinq faces gardent exactement la même largeur');
+assert.doesNotMatch(lignesTrois, /overflow:\s*(auto|scroll)/,
+  'les deux lignes ne défilent pas : les cinq cartes restent visibles');
 
 // ── La carte : la face 4:5 du jeu, et pas un mot dessus ────────────────────
 const cardRule = battleCss.slice(battleCss.indexOf('.rpg-mulligan__card {'), battleCss.indexOf('.rpg-mulligan__img {'));
@@ -138,12 +163,12 @@ assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}
   'la couleur de la carte est en haut à gauche, comme sur les cartes du jeu');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-card-element-badge\s*\{[^}]*bottom:/s,
   'la couleur n’est plus en bas de la carte');
-assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*position:\s*absolute;[^}]*top:\s*var\(--rpg-card-element-marker-top,\s*5%\);[^}]*right:\s*var\(--rpg-card-element-marker-left,\s*6%\);[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*50%;/s,
-  'le coût est posé en haut à droite de l’illustration dans un bloc bien rond, à la taille de la carte');
-assert.doesNotMatch(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:/s,
-  'le coût a quitté le coin gauche');
-assert.match(battlePage, /rpg-mulligan__stats"[\s\S]{0,200}?rpg-card__stat--atk"><CardStatIcon type="attack" \/><span className="rpg-stat-value">\{carte\.atk\}<\/span>/,
-  'l’attaque porte la plaque du jeu : l’épée dessinée et le chiffre');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*top:\s*calc\(var\(--rpg-card-element-marker-top,\s*5%\) \+ var\(--rpg-plaque-taille,\s*24px\) \+ 6px\);[^}]*right:\s*auto;[^}]*left:\s*var\(--rpg-card-element-marker-left,\s*6%\);[^}]*aspect-ratio:\s*1;[^}]*padding:\s*0;[^}]*border-radius:\s*0;/s,
+  'le coût se range sous le badge de couleur, dans le même coin que l’aperçu, sur une plaque carrée');
+assert.match(battleCss, /\.rpg-mulligan__card\s+\.rpg-mana-cost\s*\{[^}]*left:\s*var\(--rpg-card-element-marker-left,\s*6%\);/s,
+  'le coût partage le coin gauche du badge : la face se lit de haut en bas');
+assert.match(battlePage, /rpg-mulligan__stats"[\s\S]{0,240}?rpg-card__stat--atk"><CardStatIcon type="attack"[^>]*\/><span className="rpg-stat-value">\{carte\.atk\}<\/span>/,
+  'l’attaque porte la plaque du jeu : l’épée dessinée (attaque ciblée, distance) et le chiffre');
 assert.match(battlePage, /rpg-card__pt"><CardStatIcon type="defense" \/><span className="rpg-stat-value">\{carte\.def\}<\/span>/,
   'la défense porte la plaque du jeu : le bouclier dessiné et le chiffre');
 assert.doesNotMatch(mulliganPanel, /⚔|🛡/,
@@ -172,13 +197,13 @@ assert.match(battleCss, /@keyframes rpg-mulligan-new/,
   'les cartes qui entrent en main à l’étape du résultat ont leur propre entrée');
 assert.doesNotMatch(battleCss, /\.rpg-mulligan__(name|rules|flag|banner|top|bas|type)\b/,
   'plus un bloc de texte encombrant sur les cartes : la face du mulligan est identique à celle de l’aperçu');
-assert.match(battlePage, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau rpg-mulligan__sort" \/>/,
+assert.match(battlePage, /<SortSceau carte=\{carte\} className="rpg-mulligan__sceau" \/>/,
   'les sorts du mulligan portent le même sceau aligné que l’aperçu');
 
 // ── Pas d'aperçu rapide au survol dans le mulligan ──────────────────────────
 assert.doesNotMatch(mulliganPanel, /onMouseEnter=|onMouseLeave=|HoverCardPreview/,
   'le survol d’une carte du mulligan n’ouvre plus d’aperçu rapide');
-assert.match(battlePage, /\{apercuSurvol && !mulligan && !apercuAnnonceOuvert && \(/,
+assert.match(battlePage, /\{apercuSurvol && !reserveAscensionOuverte && !mulligan && !apercuAnnonceOuvert && \(/,
   'la table n’ouvre aucun aperçu rapide tant que le mulligan est ouvert');
 assert.doesNotMatch(mulliganPanel, /aria-hidden="true">\s*\{(effets|nouvelle)/,
   'aucun texte d’effet ni drapeau d’état n’est rendu sur la carte');
@@ -194,11 +219,11 @@ assert.match(battleCss, /--rpg-mulligan-text:\s*\d+px;/,
   'ce que la carte garde autour de sa face est réservé dans le calcul de sa taille');
 assert.match(battleCss, /@media \(max-height: 480px\) \{[\s\S]{0,400}?\.rpg-mulligan__head p\s*\{/,
   'sur téléphone en paysage, la phrase d’explication se replie — la main garde la place');
-assert.match(battleCss, /@media \(max-width: 620px\) \{[\s\S]{0,400}?\.rpg-mulligan__head p\s*\{/,
-  'sur écran étroit, la même rangée de cinq, avec l’explication repliée');
+assert.match(battleCss, /@media \(max-width: 620px\)[^{]*\{[\s\S]{0,400}?\.rpg-mulligan__head p\s*\{/,
+  'sur écran étroit, l’explication se replie pour laisser la place aux cartes');
 assert.match(`${battleCss}\n${mobileCss}`, /\.rpg-mulligan__valider[^{]*\{[^}]*min-height:\s*44px;/s,
   'les commandes du volet gardent une taille tactile');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-mulligan__card:not\(\.is-selected\):hover \{ transform: none; box-shadow: none; \}/,
   'au doigt, le survol ne soulève rien — et la carte grisée à lueur rouge reste intacte');
 
-console.log('✓ Mulligan du Sablier : trois cartes 4:5 sans ligne de type — couleur en haut à gauche, coût en haut à droite, plaques ATQ/DÉF comme dans le jeu — toutes visibles d’un seul coup, échange contre le paquet battu et nouvelle main relue avant de rendre la table');
+console.log('✓ Mulligan du Sablier : cinq cartes 4:5 sans ligne de type — lignes de 3 en portrait, rangée de 5 en paysage — couleur en haut à gauche, coût dessous, plaques ATQ/DÉF comme dans le jeu — toutes visibles d’un seul coup, échange contre le paquet battu et nouvelle main relue avant de rendre la table');

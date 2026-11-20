@@ -45,8 +45,10 @@
   <h1>Mulligan sur mobile — les cinq cartes respirent</h1>
   <p class="intro">
     Même volet, mêmes cinq cartes, même largeur de scène : seule la gouttière
-    <code>--rpg-mulligan-gap</code> change. Les cartes se réduisent d'autant pour
-    que la rangée reste entière, sans défilement.
+    <code>--rpg-mulligan-gap</code> change. En paysage, les cartes se réduisent
+    d'autant pour que la rangée reste entière, sans défilement. En portrait
+    tactile, la surcharge de <code>rpg-mobile.css</code> passe la main en deux
+    lignes de trois puis deux cartes, toujours sans défilement.
   </p>
 
   <div class="scenes">
@@ -78,7 +80,7 @@
     </div>
 
     <div class="demo-scene">
-      <h2>APRÈS — <span>14 à 16 px</span> entre les cartes (surcharge <code>.rpg-battle--touch</code>)</h2>
+      <h2>APRÈS — <span>14 à 16 px</span> en paysage, <span>10 à 14 px</span> en portrait (surcharge <code>.rpg-battle--touch</code>)</h2>
       <div class="rpg-battle rpg-battle--touch" data-scene="duel">
         <div class="rpg-mulligan" data-demo="apres">
           <div class="rpg-mulligan__backdrop" aria-hidden="true"></div>
@@ -106,29 +108,41 @@
   </div>
 
   <p class="note">
-    La surcharge vaut <code>clamp(14px, 1.8vw, 16px)</code> : sur un téléphone en
-    paysage de 844 × 390, cela donne <strong>15,2 px</strong> ; sur cette page de
-    démonstration (fenêtre de bureau) le plafond de 16 px s'applique. Le calcul
-    de largeur soustrait déjà <code>4 × var(--rpg-mulligan-gap)</code>, donc les
-    cartes perdent environ 9 px de large et restent entières. Le PC et le
-    mulligan MOBA ne changent pas.
+    La surcharge vaut <code>clamp(14px, 1.8vw, 16px)</code> en paysage : sur un
+    téléphone de 844 × 390, cela donne <strong>15,2 px</strong> ; sur cette page
+    de démonstration (fenêtre de bureau) le plafond de 16 px s'applique. Le calcul
+    de largeur soustrait <code>4 × var(--rpg-mulligan-gap)</code>, donc les cartes
+    perdent environ 9 px de large et restent entières. En <strong>portrait
+    tactile</strong>, la gouttière passe à <code>10–14 px</code> et la main prend
+    deux lignes : <code>3 + 2</code>, avec des faces d'environ 103 × 129 px sur
+    390 × 844 au lieu de 54 × 68 px. Le paysage, le PC et le mulligan MOBA — qui
+    a déjà ses propres lignes de 3 — gardent leur grille.
   </p>
 
   <script>
-    // Mesures réelles du navigateur, pour vérifier l'écart et l'absence de
-    // débordement sans rien recopier du CSS du jeu.
+    // Mesures réelles du navigateur : la rangée de cinq en paysage, ou les
+    // lignes de 3 + 2 si cette démonstration est ouverte dans une fenêtre en
+    // portrait. On lit les boîtes rendues, sans rien recopier du CSS du jeu.
     for (const scene of document.querySelectorAll('.demo-scene')) {
       const row = scene.querySelector('.rpg-mulligan__cards');
       const cartes = [...scene.querySelectorAll('.rpg-mulligan__card')];
       const style = getComputedStyle(row);
-      const ecart = parseFloat(style.columnGap);
-      const largeur = cartes[0].getBoundingClientRect().width;
-      const total = 5 * largeur + 4 * ecart;
-      const scène = row.parentElement.getBoundingClientRect().width;
+      const ecart = parseFloat(style.columnGap) || parseFloat(style.gap) || 0;
+      const rects = cartes.map((carte) => carte.getBoundingClientRect());
+      const largeur = rects[0].width;
+      const scène = row.parentElement.getBoundingClientRect();
+      const lignes = new Map();
+      for (const rect of rects) {
+        const y = Math.round(rect.y / 3) * 3;
+        lignes.set(y, (lignes.get(y) ?? 0) + 1);
+      }
+      const debordement = rects.some((rect) => rect.left < scène.left - 1
+        || rect.right > scène.right + 1 || rect.top < scène.top - 1
+        || rect.bottom > scène.bottom + 1);
       scene.querySelector('[data-mesure]').textContent =
-        `écart mesuré : ${ecart.toFixed(1)} px · carte : ${largeur.toFixed(1)} px · `
-        + `rangée : ${total.toFixed(1)} px / scène ${scène.toFixed(1)} px · `
-        + `débordement : ${total > scène + 1 ? 'OUI' : 'non'} · 5 cartes visibles : ${cartes.length === 5 ? 'oui' : 'non'}`;
+        `écart mesuré : ${ecart.toFixed(1)} px · carte : ${largeur.toFixed(1)} × ${rects[0].height.toFixed(1)} px · `
+        + `lignes : ${[...lignes.values()].join(' + ')} · `
+        + `débordement : ${debordement ? 'OUI' : 'non'} · 5 cartes visibles : ${cartes.length === 5 ? 'oui' : 'non'}`;
     }
   </script>
 </body>

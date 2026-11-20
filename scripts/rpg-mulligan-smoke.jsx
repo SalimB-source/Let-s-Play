@@ -13,7 +13,10 @@ import { lancerDuelDepuisMenu } from './rpg-duel-start.js';
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function verifierTriMain(assert, cartes, main, cleIndex = 'handIndex') {
-  const couts = cartes.map((carte) => cardCost(cardById(carte.dataset.cardId)));
+  // Une carte sans coût imprimé se range après les cartes à coût : c'est le
+  // `?? Infinity` du vrai tri (`rpgCardStacks.js`), pas un 0 implicite.
+  const cout = (carteId) => cardCost(cardById(carteId)) ?? Infinity;
+  const couts = cartes.map((carte) => cout(carte.dataset.cardId));
   assert.deepEqual(couts, [...couts].sort((a, b) => a - b),
     'les cartes sont présentées de gauche à droite par coût croissant');
   for (const carte of cartes) {
@@ -23,11 +26,13 @@ function verifierTriMain(assert, cartes, main, cleIndex = 'handIndex') {
 }
 
 /** Les decks du scénario : depuis le mana automatique, la main de départ
- *  compte trois cartes et les paquets ne portent plus de terrains. Le deck du
- *  joueur est mono-Sable (le premier mana s'allume tout seul) ; son tirage
- *  déterministe ouvre sur deux Cuirasses de sel et l'Amayas du Hoggar, et
- *  l'échange des deux dernières ramène la Tislit des Aures — la créature à
- *  1 mana qui sera jouable dès la table rendue. */
+ *  compte cinq cartes et les paquets ne portent plus de terrains. Le deck du
+ *  joueur est mono-Sable (le premier mana s'allume tout seul) ; avec le tirage
+ *  déterministe, l'échange des deux cartes du milieu garde la Mousse des
+ *  galiotes — la créature à 1 mana qui sera jouable dès la table rendue. Les
+ *  recettes sont complétées à trente cartes par `convertirDeckSansTerrain`,
+ *  comme dans une vraie partie : il reste toujours de quoi repiocher deux
+ *  cartes, côté joueur comme côté sorcier. */
 const DECK_JOUER = ['rempart-de-dunes', 'sandales-de-tislit', 'jitte-d-amayas', 'tislit-des-aures', 'chien-du-guet', 'faiseur-de-passage'];
 const DECK_SORCIER = ['tislit-des-aures', 'chien-du-guet', 'fennec-des-decombres'];
 
@@ -62,13 +67,13 @@ export async function checkRpgMulligan(assert) {
   assert.equal(volet().getAttribute('role'), 'dialog', 'le volet est une boîte de dialogue modale');
   assert.match(volet().getAttribute('aria-label'), /Mulligan/, 'le volet se nomme pour les lecteurs d’écran');
   assert.equal(q('.card-table').hasAttribute('inert'), true, 'la table est close tant que la main n’est pas validée');
-  assert.equal(cartes().length, 3, 'les trois cartes piochées sont toutes présentées');
+  assert.equal(cartes().length, 5, 'les cinq cartes piochées sont toutes présentées');
   assert.deepEqual(cartes().map((carte) => carte.dataset.cardId), main(),
     'le volet montre exactement la main de départ, dans le même ordre');
   verifierTriMain(assert, cartes(), window.__RPG_DUEL__.joueur.main, 'mulliganIndex');
   verifierTriMain(assert, qa('.rpg-hand__card'), window.__RPG_DUEL__.joueur.main);
-  assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 3,
-    'les trois cartes forment une seule rangée, dans la scène que la feuille mesure');
+  assert.equal(q('.rpg-mulligan__stage > .rpg-mulligan__cards')?.children.length, 5,
+    'les cinq cartes sont rendues dans la scène (une rangée en paysage, deux lignes de trois en portrait)');
   for (const carte of cartes()) {
     const id = carte.dataset.cardId;
     const attendue = cardById(id);
@@ -76,10 +81,11 @@ export async function checkRpgMulligan(assert) {
       `la carte ${id} montre son illustration`);
     // Aucun texte imprimé sur la carte : ni nom, ni type, ni effets, ni drapeau.
     // Il ne reste que l'illustration et les repères de l'aperçu (coût, badge, sceau, stats).
-    const reperes = (noeud) => noeud.classList?.contains('rpg-card-element-badge')
-      || noeud.classList?.contains('rpg-mana-cost')
-      || noeud.classList?.contains('rpg-sort-sceau')
-      || noeud.classList?.contains('rpg-mulligan__stats');
+    const reperes = (noeud) => [
+      'rpg-card-element-badge', 'rpg-mana-cost', 'rpg-sort-sceau',
+      'rpg-mulligan__sceau', 'rpg-cadre-carte', 'rpg-card-icones',
+      'rpg-mulligan__stats',
+    ].some((classe) => noeud.classList?.contains(classe));
     for (const noeud of carte.childNodes) {
       if (noeud.nodeType === 3) {
         assert.equal(noeud.textContent.trim(), '', `aucun texte n’est posé sur la carte ${id}`);
@@ -158,8 +164,8 @@ export async function checkRpgMulligan(assert) {
   await click(q('.rpg-mulligan__tout'), 'annuler la sélection');
   assert.equal(cartes().filter((carte) => carte.getAttribute('aria-pressed') === 'true').length, 0,
     '« Annuler la sélection » vide les choix sans fermer le volet');
-  await click(cartes()[1], 'la carte du milieu est choisie');
-  await click(cartes()[2], 'et la dernière aussi');
+  await click(cartes()[1], 'la deuxième carte est choisie');
+  await click(cartes()[2], 'et la troisième aussi');
 
   // ── 4. Validation : ce qui sort, ce qui entre, et la main qui ne fond pas ─
   const duel = window.__RPG_DUEL__;
@@ -167,12 +173,17 @@ export async function checkRpgMulligan(assert) {
   const paquetAvant = [...duel.joueur.deck];
   const sorcierAvant = [...duel.sorcier.main];
   const sorcierPaquetAvant = [...duel.sorcier.deck];
+  const indicesChoisis = cartes()
+    .filter((carte) => carte.getAttribute('aria-pressed') === 'true')
+    .map((carte) => Number(carte.dataset.mulliganIndex));
+  assert.equal(indicesChoisis.length, 2, 'deux cartes sont désignées pour l’échange');
   await click(q('.rpg-mulligan__valider'), 'valider l’échange');
   await act(async () => { await wait(120); });
 
-  assert.equal(duel.joueur.main.length, 3, 'la main compte toujours trois cartes après l’échange');
-  assert.deepEqual(duel.joueur.main.slice(0, 1), [mainAvant[0]],
-    'la carte gardée reste en main, en tête');
+  assert.equal(duel.joueur.main.length, 5, 'la main compte toujours cinq cartes après l’échange');
+  assert.deepEqual(duel.joueur.main.slice(0, 3),
+    mainAvant.filter((_, index) => !indicesChoisis.includes(index)),
+    'les trois cartes gardées restent en main, en tête, dans leur ordre du moteur');
   assert.equal([...duel.joueur.main, ...duel.joueur.deck].sort().join('|'),
     [...mainAvant, ...paquetAvant].sort().join('|'),
     'les deux cartes écartées sont retournées dans le paquet, aucune carte perdue');
@@ -182,11 +193,11 @@ export async function checkRpgMulligan(assert) {
   // Le volet reste ouvert sur la nouvelle main, avec les étapes du bilan.
   assert.match(volet()?.className ?? '', /rpg-mulligan--resultat/, 'le volet passe à l’étape du résultat');
   assert.match(titre(), /nouvelle main/, 'le titre annonce la main qui vient d’être piochée');
-  assert.equal(cartes().length, 3, 'la nouvelle main se relit en grand');
+  assert.equal(cartes().length, 5, 'la nouvelle main se relit en grand');
   assert.equal(cartes().filter((carte) => carte.classList.contains('is-new')).length, 2,
     'les deux cartes piochées sont signalées');
   assert.deepEqual(cartes().filter((carte) => carte.classList.contains('is-new')).map((carte) => carte.dataset.cardId),
-    duel.joueur.main.slice(1), 'ce sont bien les cartes qui viennent d’entrer en main');
+    duel.joueur.main.slice(-2), 'ce sont bien les deux dernières cartes entrées en main');
   verifierTriMain(assert, cartes(), duel.joueur.main, 'mulliganIndex');
   verifierTriMain(assert, qa('.rpg-hand__card'), duel.joueur.main);
   assert.match(q('.rpg-mulligan__head p').textContent, /Vous écartez 2 cartes et piochez 2 cartes/,
@@ -196,7 +207,7 @@ export async function checkRpgMulligan(assert) {
   assert.equal(q('.rpg-mulligan__valider'), null, 'plus de second échange possible');
 
   // ── 5. Le sorcier a eu le même droit ─────────────────────────────────────
-  assert.equal(duel.sorcier.main.length, 3, 'la main du sorcier garde trois cartes');
+  assert.equal(duel.sorcier.main.length, 5, 'la main du sorcier garde cinq cartes');
   assert.equal([...duel.sorcier.main, ...duel.sorcier.deck].sort().join('|'),
     [...sorcierAvant, ...sorcierPaquetAvant].sort().join('|'),
     'le sorcier non plus ne perd pas de carte en route');
@@ -215,6 +226,11 @@ export async function checkRpgMulligan(assert) {
   const jouable = q(`.rpg-hand__card[data-card-id="${jouableId}"]`);
   assert.equal(jouable?.dataset.jouable, 'true', 'une créature à un mana devient jouable dès la table rendue');
   await click(jouable, 'poser la créature');
+  // Depuis le choix de la case, la créature attend sa colonne : les cases
+  // libres s'allument, le second geste dit où elle atterrit.
+  const caseLibre = q('.card-row--equipe .rpg-creature-slot--choix');
+  assert.ok(caseLibre, 'les cases libres s’allument après le choix de la créature');
+  await click(caseLibre, 'choisir la case de pose');
   // La carte vole vers la table : le geste n'est résolu qu'à l'atterrissage.
   await act(async () => { await wait(900); });
   assert.ok(q(`.card-row--equipe .rpg-card[data-card-id="${jouableId}"]`),
