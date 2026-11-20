@@ -1718,8 +1718,7 @@ export const RPG_HERO_CARDS = [
     // avait déjà, et la Contre-attaque d'Eirik et de Tojiro.
     rapidite: true,
     contreAttaque: true,
-    arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (15 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (15 % de chances de rater, 100 % de toucher le sorcier). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
