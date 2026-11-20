@@ -1129,7 +1129,10 @@
    cases tombaient entre deux rangées de cartes. */
 .rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"],
 .rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] .rpg-creature-slots {
+  grid-template-columns: repeat(3, var(--essai-colonne));
   grid-template-rows: repeat(2, calc(var(--essai-colonne) * 1.25));
+  justify-content: center;
+  justify-items: center;
 }
 .rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="front"] { grid-row: 1; }
 .rpg-battle[data-mode-mana="essai"] .card-row--equipe[data-lignes="true"] .rpg-creature-slot[data-ligne="fond"] { grid-row: 2; }
