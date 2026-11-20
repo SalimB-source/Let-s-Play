@@ -63,9 +63,9 @@ export const RPG_LIGNE_FRONT = 'front';
 export const RPG_LIGNE_FOND = 'fond';
 export const RPG_LIGNES = Object.freeze([RPG_LIGNE_FRONT, RPG_LIGNE_FOND]);
 
-/** Cinq cases par ligne, comme le champ d'origine. */
-export const RPG_LIGNES_CASES = 5;
-/** Les dix cases du champ à deux lignes (front 0-4, fond 5-9). */
+/** Trois cases par ligne (front 0-2, fond 3-5). */
+export const RPG_LIGNES_CASES = 3;
+/** Les six cases du champ à deux lignes (front 0-2, fond 3-5). */
 export const RPG_LIGNES_CHAMP_MAX = RPG_LIGNES_CASES * 2;
 
 /** Les lignes sont une variante de partie, portée par le duel lui-même —
