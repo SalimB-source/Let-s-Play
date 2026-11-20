@@ -9309,7 +9309,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     const cibleAvant = { ...cible };
     const rate = (
       (ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE)
-      || (!ciblee && attaquant.distance && !estGelee(attaquant) && rng() < RPG_DISTANCE_ECHEC_CHANCE)
+      || (attaquant.distance && !estGelee(attaquant) && rng() < RPG_DISTANCE_ECHEC_CHANCE)
     );
     // **Le contact.** Une attaque de mêlée est un duel : les deux créatures
     // frappent ensemble, la cible déclenche ses capacités « au blocage », et
