@@ -9780,7 +9780,7 @@ ni panneau opaque. Le paysage, lui, ne bouge pas.
 ### Vérifications
 
 ```bash
-npm run check:rpg-portrait   # 18/18 — sept rangées, échelle, ordre des feuilles, HUD debout, cases pleine largeur
+npm run check:rpg-portrait   # 19/19 — sept rangées, échelle, ordre des feuilles, HUD debout, cases pleine largeur
 npm run build                # le bundle se construit
 ```
 
@@ -9816,4 +9816,21 @@ déborde ni ne fait défiler la page. Le paysage et le PC restent inchangés.
 ```bash
 npm run check:rpg-accueil-portrait   # ordre des feuilles, priorité de la vitrine, rangée debout
 npm run build                        # le bundle se construit
+```
+
+
+## Le Sablier : le plateau debout se lit d'un coup d'œil
+
+Les cases libres se perdaient sur les plateaux clairs, la ligne médiane était
+presque invisible et le rail du tour poussait « Fin du tour » hors de l'écran
+(396 px de large sur un téléphone de 390 px). La coque portrait ajoute deux
+bandes de camp discrètes, un filet doré continu, des cases vides cerclées et
+des numéros plus lisibles. Le rail repasse à **378 px** : phase réduite à sa
+pastille active, « Annuler la dernière action » raccourci à l'écran, et les
+deux boutons enfin entièrement visibles. Les halos de pose, de déplacement et
+de zone de sort restent intacts, comme le paysage et le PC.
+
+```bash
+npm run check:rpg-portrait   # 19/19 — géométrie, repères du plateau, rail complet
+npm run build                # le bundle se construit
 ```

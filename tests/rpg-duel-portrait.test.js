@@ -143,6 +143,21 @@ test('le HUD debout ne reprend aucune piste du paysage', () => {
     'la variante deux rangées garde les sept rangées debout');
 });
 
+test('le plateau debout garde ses repères et son rail dans l’écran', () => {
+  // Les cases libres, la ligne médiane et le rail du tour : trois repères qui
+  // se perdaient sur les plateaux clairs ou sortaient de l'écran étroit.
+  assert.match(bloc, /border:\s*2px dashed rgba\(255, 230, 171, \.78\)/,
+    'les cases libres gardent un filet doré lisible');
+  assert.match(bloc, /\.card-row--ennemi::after[\s\S]*?background:\s*linear-gradient\(90deg, transparent/,
+    'la ligne médiane reste visible sur la peinture');
+  assert.match(bloc, /\.rpg-turn-rail\s*\{[\s\S]*?box-sizing:\s*border-box/,
+    'le rail ne dépasse pas de la largeur utile');
+  assert.match(bloc, /flex:\s*0 0 24px/,
+    'la phase active occupe une pastille compacte');
+  assert.match(bloc, /content:\s*'↶ Annuler'/,
+    '« Annuler la dernière action » reste visible en version courte');
+});
+
 test('les cases et les cartes posées reprennent toute la largeur debout', () => {
   // Le paysage réduisait la colonne à 72 % de la carte du champ pour tenir
   // dans sa bande de hauteur. Debout, les deux rangées ont leur propre piste :
