@@ -54,7 +54,7 @@
     --rpg-vie-bar-width: max(64px, calc(var(--duel-card) * 1.1));
     /* La main : des cartes un peu plus larges qu'en paysage, la bande basse a
        la place. */
-    --rpg-hand-card-mobile: max(44px, calc(var(--duel-card) * .9));
+    --rpg-hand-card-mobile: max(40px, calc(var(--duel-card) * .76));
     --rpg-touch-hand: calc(var(--rpg-hand-card-mobile) * 1.32 + env(safe-area-inset-bottom, 0px));
     --rpg-touch-combat: clamp(42px, calc(var(--duel-card) * .62), 52px);
     --rpg-touch-nav: clamp(38px, calc(var(--duel-card) * .62), 52px);
@@ -173,20 +173,24 @@
     /* Longueur absolue, jamais un pourcentage : la variable est héritée par
        les cases et les cartes, où `100%` ne mesurerait plus la rangée mais
        leur propre colonne (et les réduirait à neuf pixels). */
-    --essai-colonne: min(var(--rpg-field-card), calc((100vw - 16px - 4 * var(--rpg-field-gap)) / 5));
+    --essai-colonne: min(calc(var(--rpg-field-card) * 1.15), calc((100vw - 16px - 2 * var(--rpg-field-gap)) / 3));
     column-gap: var(--rpg-field-gap);
   }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-table > .card-row[data-lignes="true"],
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row[data-lignes="true"] {
-    --essai-colonne: min(var(--rpg-field-card), calc((100vw - 16px - 4 * var(--rpg-field-gap)) / 5));
+    --essai-colonne: min(calc(var(--rpg-field-card) * 1.15), calc((100vw - 16px - 2 * var(--rpg-field-gap)) / 3));
     column-gap: var(--rpg-field-gap);
     row-gap: var(--rpg-field-gap);
     min-height: calc(var(--essai-colonne) * 2.5 + var(--rpg-field-gap) + 4px);
+    justify-content: center;
+    justify-items: center;
   }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots {
     column-gap: var(--rpg-field-gap);
     row-gap: var(--rpg-field-gap);
+    justify-content: center;
+    justify-items: center;
   }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"],
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"],
@@ -202,6 +206,12 @@
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row .rpg-creature-slot {
     width: min(100%, var(--essai-colonne));
     max-width: none;
+  }
+
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand .rpg-hand__avatar-gap {
+    flex: 0 0 calc(var(--rpg-avatar-height, 52px) + 18px);
+    width: calc(var(--rpg-avatar-height, 52px) + 18px);
+    pointer-events: none;
   }
 
   /* ── 5. Les commandes : une ligne, sous les deux champs ──────────────────
