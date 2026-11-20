@@ -1195,8 +1195,21 @@
    Le bandeau (`.rpg-zone-sort`) dit la zone en toutes lettres : le joueur la
    lit sur le plateau **et** dans le journal.
    ══════════════════════════════════════════════════════════════════════════ */
+/* **Les cases de la zone sont cliquables.** Le conteneur des cases éteint les
+   pointeurs (`pointer-events: none`) et se tient sous les cartes (`z-index: 0`,
+   les cartes à 1) : un bouton de case doit donc rendre les pointeurs à lui-même
+   ET passer au-dessus des cartes — sans quoi le clic tombait dans la rangée ou
+   sur la créature posée, et l'ancre ne se posait jamais. C'est la leçon des
+   cases de placement (`--choix`) et de pas (`--deplacement`), qui font de même. */
+.card-table.is-choix-zone .rpg-creature-slots {
+  z-index: 30;
+  pointer-events: auto;
+}
 .rpg-creature-slot--zone-sort {
   position: relative;
+  pointer-events: auto;
+  padding: 0;
+  font: inherit;
   cursor: pointer;
   border-color: rgba(126, 196, 255, .55);
   border-style: dashed;
@@ -1249,6 +1262,14 @@
     0 10px 24px rgba(48, 132, 236, .6);
   transform: perspective(420px) rotateX(8deg) translateZ(18px) scale(1.02);
   animation: none;
+}
+/* Sur une case occupée, le bleu se fait voile : la carte de la créature reste
+   lisible, on désigne une zone, pas un pion. */
+.rpg-creature-slot--zone-sort.is-occupied {
+  background: linear-gradient(160deg, rgba(126, 196, 255, .16), rgba(8, 18, 34, .30) 62%);
+}
+.rpg-creature-slot--zone-sort.is-occupied.is-dans-zone-sort {
+  background: linear-gradient(160deg, rgba(96, 176, 255, .30), rgba(18, 48, 96, .40) 70%);
 }
 .rpg-creature-slot--zone-sort.is-dans-zone-sort .rpg-creature-slot__numero {
   color: #ffffff;

@@ -26,7 +26,7 @@ import { ascensionDisponible, ERREURS_ASCENSION, validerMateriauxAscension } fro
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
-import { cardById, cardColors, cardHasPrintedType, lienSatisfait, cardFrameClass, cardFrameColor, cardMotifClass, cardRarityInfo, magieFamille } from './rpgCards.js';
+import { cardById, cardColors, cardHasPrintedType, cardTypeLine, lienSatisfait, cardFrameClass, cardFrameColor, cardMotifClass, cardRarityInfo, magieFamille } from './rpgCards.js';
 import { EffetsSprite, IconesCarte } from './effetIcons.jsx';
 import { SortSceau } from './rpgSortSignature.jsx';
 import { cardArt, cardArtEntite } from './rpgCardArt.js';

@@ -70,10 +70,18 @@ export async function checkZones(assert) {
     const bandeau = container.querySelector('.rpg-zone-sort');
     assert.ok(bandeau, 'le bandeau de zone s’ouvre');
     assert.match(bandeau.textContent, /Tempête de sable/);
-    assert.match(bandeau.textContent, /choisissez la zone/i, 'la zone n’est pas encore posée');
+    assert.match(bandeau.textContent, /touchez une case/i, 'la zone n’est pas encore posée');
     assert.ok(duel.joueur.main.includes('tempete-de-sable'), 'la carte n’a pas quitté la main');
     const cases = [...container.querySelectorAll('.rpg-creature-slot--zone-sort')];
     assert.ok(cases.length >= 10, `les cases du champ s’allument en bleu : ${cases.length}`);
+    // La table porte l'état de désignation : c'est lui qui fait passer le
+    // calque des cases devant les cartes et rend les pointeurs aux cases
+    // (voir `tests/rpg-zones-ui-css.test.js` — sans ça, le clic n'atteint
+    // jamais l'ancre et le sort ne part pas).
+    const table = container.querySelector('.card-table');
+    assert.equal(table.classList.contains('is-choix-zone'), true, 'la table signale la zone');
+    assert.equal(cases.every((c) => c.tagName === 'BUTTON' && !c.disabled), true,
+      'chaque case de zone est un bouton actif');
 
     // 2. Le clic sur une case du front adverse pose l'ancre : cinq cases bleues.
     const caseFront = container.querySelector('.card-row--ennemi .rpg-creature-slot--zone-sort[data-case-index="0"]');
@@ -89,11 +97,32 @@ export async function checkZones(assert) {
 
     // 3. « Lancer » fait partir le sort, avec sa zone, et le journal la nomme.
     await click(container.querySelector('.rpg-zone-sort__valider'), 'le bouton Lancer existe');
+    assert.equal(container.querySelector('.card-table').classList.contains('is-choix-zone'), false,
+      'la table quitte l’état de zone après le lancement');
     assert.equal(duel.joueur.main.includes('tempete-de-sable'), false, 'la carte a quitté la main');
     assert.equal(container.querySelector('.rpg-zone-sort'), null, 'le bandeau se referme');
     assert.ok(duel.log.some((ligne) => /Tempête de sable couvre la rangée du front du camp adverse/.test(ligne)),
       duel.log.slice(-4).join(' | '));
     assert.equal(proie.pv, 7, 'la créature du front adverse encaisse les trois dégâts');
+
+    // 3 bis. Sans ancre, « Lancer » reste possible : le moteur couvre la zone
+    // la plus rentable, et le journal dit laquelle. C'est le filet de sécurité
+    // du joueur qui valide sans avoir touché le champ.
+    duel.joueur.main = ['verglas'];
+    await act(async () => window.__RPG_FORCE__());
+    await attendre();
+    const verglas = [...container.querySelectorAll('button.rpg-hand__card')]
+      .find((carte) => carte.getAttribute('aria-label')?.includes('Verglas'));
+    assert.ok(verglas, 'le Verglas est en main');
+    await click(verglas);
+    const libre = container.querySelector('.rpg-zone-sort__valider');
+    assert.ok(libre, 'Lancer est offert même sans ancre');
+    assert.match(container.querySelector('.rpg-zone-sort__libelle').textContent, /meilleur endroit/);
+    await click(libre);
+    assert.equal(duel.joueur.main.includes('verglas'), false, 'la carte part sans ancre posée');
+    assert.ok(duel.log.some((ligne) => /Verglas couvre /.test(ligne)),
+      duel.log.slice(-3).join(' | '));
+    assert.equal(container.querySelector('.rpg-zone-sort'), null);
 
     // 4. « Renoncer » referme la désignation sans rien dépenser.
     duel.joueur.main = ['vent-rouge'];
