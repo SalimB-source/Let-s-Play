@@ -57,7 +57,6 @@
 
 import { campDeLaCreature } from './rpgChamp.js';
 import { attaqueDirectePermise, estDefenseur } from './rpgDefenseur.js';
-import { sorcierAPortee } from './rpgPortees.js';
 import { duelCardById } from './rpgCards.js';
 
 export const RPG_LIGNE_FRONT = 'front';
@@ -174,10 +173,10 @@ export function frontTient(creatures = []) {
 }
 
 /** Cette cible est-elle abritée derrière la ligne de son camp, pour cet
- *  attaquant-là ? Attaque ciblée et Infiltration passent la ligne. */
+ *  attaquant-là ? Seule l'Attaque ciblée passe la ligne. */
 export function ligneProtege(attaquant, cible, creaturesCible = []) {
   if (ligneDe(cible) !== RPG_LIGNE_FOND) return false;
-  if (attaquant?.coupRapide || attaquant?.infiltration) return false;
+  if (attaquant?.coupRapide) return false;
   return frontTient(creaturesCible);
 }
 
@@ -206,17 +205,8 @@ export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
  * exception : **hors des lignes** (`duel.lignes !== true`) ou au MOBA, la
  * fonction rend exactement ce que rendait `attaqueDirectePermise`.
  */
-export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null, cote = null) {
-  const permise = attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
-  if (!permise) return false;
-  if (!lignesActives(duel) || duel?.moba) return true;
-  // Sur les lignes, une créature **sans case** ne frappe pas le sorcier : la
-  // portée se mesure depuis une position. La laisser passer ouvrait une frappe
-  // directe depuis n'importe où (invocation arrivée sans case, reprise).
-  if (!Number.isInteger(attaquant?.emplacement)) return false;
-  const camp = cote ?? campDeLaCreature(duel, attaquant);
-  if (!camp) return true;
-  return sorcierAPortee(duel, camp, attaquant);
+export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null) {
+  return attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
 }
 
 /** Le nombre de cases du champ de ce duel : dix quand les lignes sont

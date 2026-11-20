@@ -120,11 +120,11 @@ test('le fond est hors de portée d’une attaque de mêlée', () => {
   assert.equal(ligneProtege(melee, archer, ligne), true);
 });
 
-test('Attaque ciblée et Infiltration passent la ligne', () => {
+test('Seule Attaque ciblée passe la ligne (pas Infiltration)', () => {
   const archer = creature('archere', 6);
   const ligne = [creature('garde', 0), archer];
   assert.equal(ligneProtege({ id: 'tislit', coupRapide: true }, archer, ligne), false);
-  assert.equal(ligneProtege({ id: 'takouba', infiltration: true }, archer, ligne), false);
+  assert.equal(ligneProtege({ id: 'takouba', infiltration: true }, archer, ligne), true);
 });
 
 test('front tombé, le fond redevient une cible ordinaire', () => {

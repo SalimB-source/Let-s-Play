@@ -1,6 +1,5 @@
 import { estDefenseur } from './rpgDefenseur.js';
-import { attaqueDirecteSurLesLignes, champMax, lignesActives } from './rpgLignes.js';
-import { filtrePortee } from './rpgPortees.js';
+import { attaqueDirecteSurLesLignes, champMax, filtreLigne, lignesActives } from './rpgLignes.js';
 /** Combat individuel du duel classique et PvP, indépendant des voies du MOBA. */
 import { cardColors, duelCardById } from './rpgCards.js';
 import { RPG_MANA_ESSAI_CHAMP_MAX, RPG_MANA_ESSAI_MAIN_MAX, RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -23,12 +22,9 @@ export function rpgCiblesIndividuellesClassique(duel, cote, attaquantId) {
   if (!creature(attaquant)) return { cibles: [], directe: false };
   const ciblee = Boolean(attaquant.coupRapide);
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
-  // La **portée** décide (`rpgPortees.js`) : une case pour une mêlée, deux
-  // pour un tir, n'importe où pour une Attaque ciblée. C'est la distance sur
-  // la grille du champ, avancées comprises.
   const atteignables = adversaires.filter((e) => accessible(attaquant, e, ciblee));
   const possibles = lignesActives(duel)
-    ? filtrePortee(duel, attaquant, adversaires, atteignables, cote)
+    ? filtreLigne(attaquant, adversaires, atteignables)
     : atteignables;
   const prioritaires = attaquant.infiltration ? [] : possibles.filter(estDefenseur);
   const directe = attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles, cote);
@@ -44,7 +40,7 @@ export function rpgCibleIndividuelleClassiqueEncoreLegale(duel, cote, attaquantI
   const adversaires = (duel[autre(cote)]?.creatures ?? []).filter(creature);
   const atteignables = adversaires.filter((e) => accessible(attaquant, e, Boolean(cibleeAnnoncee)));
   const possibles = lignesActives(duel)
-    ? filtrePortee(duel, attaquant, adversaires, atteignables, cote)
+    ? filtreLigne(attaquant, adversaires, atteignables)
     : atteignables;
   if (cibleId === null) return attaqueDirecteSurLesLignes(duel, attaquant, adversaires, possibles, cote);
   const cible = adversaires.find((e) => e.id === cibleId);
