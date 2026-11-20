@@ -9800,3 +9800,20 @@ redonne à la colonne toute la largeur utile (`--rpg-field-card`, plafonnée par
 le viewport), aligne les gouttières des cartes et des cases, et garde les deux
 rangées à la hauteur 4:5. Sur 390 × 844, cases et cartes passent à
 **70 × 88 px**. Le paysage et le PC ne sont pas modifiés.
+
+
+## Le Sablier : l'accueil « Jouer » respire debout
+
+Sur téléphone en portrait, les quêtes du jour reprenaient leur variante
+empilée : trois coffres l'un sous l'autre mangeaient le bas de l'écran et
+réduisaient la vitrine à 155 px sur 390 × 844. La nouvelle feuille
+`rpg-accueil-portrait.css` les remet en **rangée horizontale à défilement
+tactile**, avec les jalons cycle et semaine juste dessous. La place rendue va
+aux trois cartes de mode (78 → **102 px**) et au diaporama (155 → **236 px**) ;
+le titre garde ses marges pour les flèches. De 320 × 568 à 412 × 915, rien ne
+déborde ni ne fait défiler la page. Le paysage et le PC restent inchangés.
+
+```bash
+npm run check:rpg-accueil-portrait   # ordre des feuilles, priorité de la vitrine, rangée debout
+npm run build                        # le bundle se construit
+```

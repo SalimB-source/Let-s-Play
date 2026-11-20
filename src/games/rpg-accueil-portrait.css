@@ -1,0 +1,140 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   L'ACCUEIL « JOUER » DEBOUT — la vitrine avant les quêtes
+   ──────────────────────────────────────────────────────────────────────────
+   Sur un téléphone en portrait, la rampe des quêtes héritait de sa variante
+   « une colonne » : trois coffres empilés prenaient le tiers de l'écran, la
+   vitrine tombait à ~150 px et les trois modes à ~78 px. L'inversion de
+   priorité est simple : les quêtes redeviennent une **rangée que l'on fait
+   glisser au doigt**, et la place rendue va aux modes et à l'illustration.
+
+   Le paysage tactile garde sa composition (modes à gauche, vitrine au centre,
+   quêtes en bas) : ce fichier ne parle qu'au portrait étroit, et se charge en
+   dernier dans `RpgDuelPage.jsx`.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (orientation: portrait) and (max-width: 700px) {
+  /* Trois bandes : les modes, la vitrine, puis la rampe de quêtes. La rampe ne
+     réclame plus une part de la hauteur : elle ne prend que sa hauteur propre. */
+  .rpg-mode-menu--jouer .rpg-mode-menu__content {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    grid-template-rows: minmax(0, 1.15fr) minmax(0, .85fr) auto;
+    gap: 8px;
+    padding: 5px 8px 8px;
+    overflow: hidden;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__modes-col,
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero,
+  .rpg-mode-menu--jouer .rpg-quests-jour {
+    min-height: 0;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions > .rpg-mode-carte {
+    min-height: 64px;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero {
+    height: 100%;
+    max-height: none;
+  }
+  /* Les flèches du diaporama occupent les bords : le sur-titre ne doit pas
+     passer dessous, et le titre reste lisible sans rogner l'illustration. */
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy {
+    width: 100%;
+    padding: 8px 38px 12px;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy .rpg-mode-menu__eyebrow {
+    display: none;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy h2 {
+    font-size: clamp(18px, 5vw, 26px);
+    line-height: 1.08;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy p {
+    font-size: 11px;
+  }
+
+  /* Les trois quêtes redeviennent une rangée : scroll horizontal, snap au
+     doigt, aucune page à faire défiler. Les jalons restent dessous, visibles. */
+  .rpg-mode-menu--jouer .rpg-quests-jour {
+    gap: 4px;
+    padding: 0;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__rail {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 5px;
+    padding: 0;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__liste {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(136px, 1fr);
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(241, 210, 145, .7) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__liste::-webkit-scrollbar { height: 4px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__liste::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: rgba(241, 210, 145, .7);
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__quete {
+    min-width: 0;
+    gap: 3px;
+    scroll-snap-align: start;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__capsule {
+    min-height: 26px;
+    padding: 2px 6px 2px 20px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__quete-texte {
+    font-size: 9px;
+    line-height: 1.12;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__corps .rpg-coffre-dore {
+    min-width: 38px;
+    min-height: 38px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalons {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 6px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__cachet,
+  .rpg-mode-menu--jouer .rpg-quests-jour__semaine {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalon-bouton {
+    min-height: 34px;
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__bonus {
+    font-size: 9px;
+    text-align: center;
+  }
+}
+
+/* Très petit téléphone debout : on serre les gouttières, rien ne disparaît. */
+@media (orientation: portrait) and (max-width: 360px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    gap: 5px;
+    padding: 4px 6px 6px;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions { gap: 4px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy { padding: 6px 34px 8px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__liste { grid-auto-columns: minmax(124px, 1fr); }
+}
