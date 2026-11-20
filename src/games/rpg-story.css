@@ -372,7 +372,7 @@
   /* Le nom et le badge partagent la première ligne ; la description occupe toute
      la largeur de la carte juste dessous, pour se lire en entier ; le gain de
      l'étage ferme la carte, aligné sous le nom. */
-  grid-template-areas: "step name badge" "step note note" ". gain gain";
+  grid-template-areas: "step name badge" "step note note" "step pacte pacte" ". gain gain";
   align-items: center;
   column-gap: 10px;
   row-gap: 3px;
@@ -438,7 +438,7 @@
 
 /* La description se lit en entier : elle passe à la ligne au lieu d'être
    coupée par une ellipse (on n'en voyait guère plus du quart). */
-.rpg-story-floor__copy small {
+.rpg-story-floor__copy small:not(.rpg-story-floor__pacte) {
   grid-area: note;
   min-width: 0;
   color: var(--muted);
@@ -1557,6 +1557,7 @@
 /* Le pacte d'un étage — PV, mana, main et bouclier de départ. Il se lit comme
    une clause du contrat, sous la description de l'étage. */
 .rpg-story-floor__pacte {
+  grid-area: pacte;
   color: #d9a6ff;
   font-size: 11.5px;
   letter-spacing: .02em;
