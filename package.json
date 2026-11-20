@@ -87,6 +87,7 @@
     "check:rpg-coffres-quetes": "node --test tests/rpg-coffres-quetes.test.js",
     "check:rpg-coffre-metal": "node --test tests/rpg-coffre-metal.test.js",
     "check:rpg-accueil-mobile": "node --test tests/rpg-accueil-mobile.test.js && node scripts/rpg-accueil-mobile-check.mjs",
+    "check:rpg-accueil-portrait": "node scripts/rpg-accueil-portrait-check.mjs",
     "check:rpg-tours-decor": "node --test tests/rpg-tours-decor.test.js",
     "check:rpg-tutorial": "node --test tests/rpg-tutorial.test.js && npm run check:rpg-tutorial-ui",
     "check:rpg-tutorial-ui": "node scripts/rpg-tutorial-ui-check.mjs && node scripts/rpg-tutorial-flow-check.mjs",

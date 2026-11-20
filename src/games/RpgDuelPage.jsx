@@ -57,6 +57,7 @@ import './rpg-avatars-plateau.css';
 import './rpg-bouclier.css';
 import './rpg-etats-cartes.css';
 import './rpg-portrait.css';
+import './rpg-accueil-portrait.css';
 import { CompteurCarte, PlaqueVie } from './RpgVieCompteurs.jsx';
 import useRpgMythicImpact from './useRpgMythicImpact.js';
 import FullscreenIcon from './FullscreenIcon.jsx';

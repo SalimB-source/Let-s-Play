@@ -375,3 +375,18 @@ bandeaux, le rail ni la main. La mesure utilise `100vw` et non `100%` :
 héritée par une case ou une carte, une valeur en pourcentage se résoudrait
 contre sa propre colonne et la réduire à quelques pixels. Le paysage et le PC
 restent inchangés. `npm run check:rpg-portrait` : 18/18.
+
+## L'accueil « Jouer » debout : la vitrine avant les quêtes
+
+En portrait étroit, la rampe des quêtes reprenait sa variante « une colonne » :
+trois coffres empilés occupaient le bas de l'écran et laissaient la vitrine à
+155 px sur 390 × 844. `rpg-accueil-portrait.css` inverse les priorités : les
+quêtes redeviennent une rangée horizontale à défilement tactile, les deux
+jalons restent dessous, et la hauteur rendue va aux trois modes et au
+diaporama. Les cartes de mode passent de 78 à 102 px et la vitrine de 155 à
+236 px, sans défilement vertical de 320 × 568 à 412 × 915.
+
+Le titre de la vitrine garde une marge de 38 px de chaque côté pour les
+flèches du carrousel ; le sur-titre cède sa place. Le paysage tactile, la
+tablette et le PC conservent leur composition. Vérification :
+`npm run check:rpg-accueil-portrait`.
