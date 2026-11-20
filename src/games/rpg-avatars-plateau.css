@@ -379,7 +379,7 @@
   top: auto;
   bottom: calc(clamp(34px, 2.5vw, 40px) + 5px + clamp(0px, calc(8vh - 40px), 16px));
 }
-.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: flex-start; }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock { justify-content: center; }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
   padding-left: calc(clamp(8px, 1.5vw, 24px) + 12px);
   width: calc(50% + (clamp(220px, 20%, 280px) - clamp(150px, 15%, 254px)) / 2 - max(var(--rpg-avatar-plateau), var(--rpg-vie-bar-width)) / 2 - 28px);
