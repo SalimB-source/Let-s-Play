@@ -16,7 +16,7 @@ import { rpgNouveauDuel, rpgJouerCreature, rpgReglerHasard, rpgLancerAttaque } f
 
 const TIREUR = 'tislit-des-aures';        // Attaque ciblée sur sa face
 const TIREUR_DISTANCE = 'guetteuse-des-marees'; // « À distance » seulement
-const MELÉE = 'guerrier-au-bouclier-rond';
+const MELÉE = 'viking-des-neiges';          // mêlée nue : ni tir, ni Contre-attaque
 
 function partie() {
   const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 });
@@ -116,9 +116,21 @@ test('la Contre-attaque reste une affaire de mêlée : aucun tireur ne la porte'
     .map((carte) => carte.id);
   assert.deepEqual(fautives, [],
     'le mot-clé Contre-attaque est réservé aux créatures de mêlée');
-  // Et elle a toujours ses porteurs historiques, tous au contact.
+  // Et elle a ses porteurs, tous au contact — les historiques et les sept
+  // arrivés avec la règle des tireurs.
   const porteurs = RPG_DUEL_CARDS.filter((carte) => carte.contreAttaque).map((carte) => carte.id);
-  assert.ok(porteurs.includes('eirik-du-premier-serment'));
-  assert.ok(porteurs.includes('pourfendeur-des-djinns'));
+  for (const id of [
+    'eirik-du-premier-serment', 'pourfendeur-des-djinns', 'veilleur-du-dernier-crepuscule',
+    'kusayla-roi-des-imazighen', 'guerrier-au-bouclier-rond', 'onna-musha-des-cendres',
+    'chevalier-sacre-des-braises', 'cavalier-amazigh-du-desert', 'gardien-de-la-porte-ardente',
+    'la-barbe-noire', 'maitre-du-marteau',
+  ]) {
+    assert.ok(porteurs.includes(id), `${id} porte la Contre-attaque`);
+  }
   assert.ok(!porteurs.includes('salem'), 'SALEM tire : il rend sa volée par la règle des tireurs');
+  // Aucune Tour : sans force, la riposte ne ferait rien.
+  for (const id of porteurs) {
+    const carte = RPG_DUEL_CARDS.find((c) => c.id === id);
+    assert.ok((carte?.atk ?? 0) > 0, `${id} frappe au moins 1 : une riposte sans force ne sert à rien`);
+  }
 });

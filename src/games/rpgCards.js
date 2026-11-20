@@ -439,7 +439,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'braise', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain · Gardien', defenseur: true,
     riposteAttaqueCiblee: 1,
-    text: 'Défenseur. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit.',
+    contreAttaque: true,
+    text: 'Défenseur. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Gardien de la porte ardente lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Derrière lui, le brasier veille sur les derniers vivants.',
   },
   {
@@ -952,7 +953,8 @@ export const RPG_CREATURE_CARDS = [
     esquive: true,
     typeLine: 'Créature — Guerrier amazigh',
     art: 'cavalier-amazigh-du-desert', arrivee: { type: 'combat', cible: 'creature' },
-    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque.',
+    contreAttaque: true,
+    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Cavalier amazigh du Désert lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
   },
   {
@@ -1043,7 +1045,8 @@ export const RPG_CREATURE_CARDS = [
     art: 'guerrier-au-bouclier-rond',
     defenseur: true,
     blocage: { chance: 0.25, def: 2 },
-    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    contreAttaque: true,
+    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Guerrier au bouclier rond lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -1472,7 +1475,8 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true,
     volDeVie: true,
     coupCritique: { chance: 0.25, fois: 2 },
-    text: 'Rapidité — Il peut attaquer dès son arrivée. Vol de vie — Quand il inflige des dégâts, son camp récupère la moitié de ces dégâts en PV, arrondie à l’entier supérieur. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    contreAttaque: true,
+    text: 'Rapidité — Il peut attaquer dès son arrivée. Vol de vie — Quand il inflige des dégâts, son camp récupère la moitié de ces dégâts en PV, arrondie à l’entier supérieur. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Chevalier sacré des braises lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Sa lame embrase les ténèbres, et chaque victoire ranime les siens.',
   },
   {
@@ -1889,7 +1893,8 @@ export const RPG_HERO_CARDS = [
     // « son marteau frappe » : 3 dégâts à une créature **ou** au sorcier
     // adverse. La cible se désigne sur la table, comme pour un Trait de braise.
     arrivee: { type: 'degats', amount: 3, cible: 'creature', cibles: ['creature', 'sorcier'] },
-    text: 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix. Furie 3. Tant que sa Furie est active, il gagne aussi Overkill et Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau.',
+    contreAttaque: true,
+    text: 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix. Furie 3. Tant que sa Furie est active, il gagne aussi Overkill et Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, il lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {

@@ -353,7 +353,8 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     // `appliquerMaledictions` dans `rpgDuel.js`.
     malediction: { atk: 2, def: 0 },
     typeLine: 'Créature légendaire — Pirate · Terreur',
-    text: 'Défenseur. Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0. Le dédoublement — Barbe Noire ne peut pas être prise en cale : la fumée referme son poing sur elle.',
+    contreAttaque: true,
+    text: 'Défenseur. Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0. Le dédoublement — Barbe Noire ne peut pas être prise en cale : la fumée referme son poing sur elle. Contre-attaque — Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui la atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
     flavor: 'Thatch comptait les rançons au sou près ; la chose qui brûlait dans sa barbe n’a jamais rien compté.',
   }),
 ];
