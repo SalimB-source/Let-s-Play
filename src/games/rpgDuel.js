@@ -103,9 +103,9 @@ export const RPG_MAIN_DEPART = 5;
 // (deux Esquives valent 50 %, voir `recalculerEsquive`).
 export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
-// L'Attaque ciblée a 15 % de chances de rater une créature.
-// Contre le sorcier, elle touche toujours.
-export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.15;
+// L'Attaque ciblée ne rate plus ; les créatures À distance ont 25 % de chances de rater.
+export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0;
+export const RPG_DISTANCE_ECHEC_CHANCE = 0.25;
 // Coup critique : 25 % de chances par frappe, et GARANTI contre une créature
 // déjà blessée (voir `frappeUneCreatureBlessee`). ×2 pour presque toutes les
 // cartes, ×4 pour Kagutsuchi et le plafond de repli de ce moteur.
@@ -9307,8 +9307,10 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
   }
   if (cible) {
     const cibleAvant = { ...cible };
-    const rate = ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable
-      && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    const rate = (
+      (ciblee && !estGelee(attaquant) && !armeCarteDe(attaquant)?.coupRapideImmanquable && rng() < RPG_COUP_RAPIDE_ECHEC_CHANCE)
+      || (attaquant.distance && !estGelee(attaquant) && rng() < RPG_DISTANCE_ECHEC_CHANCE)
+    );
     // **Le contact.** Une attaque de mêlée est un duel : les deux créatures
     // frappent ensemble, la cible déclenche ses capacités « au blocage », et
     // son porteur peut geler ou renvoyer l'attaquant. Un tir n'a pas de

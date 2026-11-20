@@ -74,10 +74,10 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Sans armure, sans hésitation : les cimes ne sont qu’un autre chemin.',
   }),
   carte({
-    id: 'ashigaru-des-braises', distance: true, name: 'Ashigaru des braises', honneur: 0,
+    id: 'ashigaru-des-braises', distance: true, name: 'Ashigaru des braises', honneur: 1,
     cost: 1, atk: 1, def: 1, rarity: 'commune',
     typeLine: 'Créature — Humain · Ashigaru · Samouraï',
-    text: 'À distance — Il tire à l’arquebuse, depuis la ligne du fond.',
+    text: 'À distance — Il tire à l’arquebuse, depuis la ligne du fond. Harakiri 1.',
     flavor: 'Avant les noms gravés dans les chroniques, il y eut ceux qui tinrent la ligne.',
   }),
   carte({
