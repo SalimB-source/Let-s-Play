@@ -32,9 +32,7 @@ import { champMax, ligneDeCase, caseChoisissable, ligneDePose, frontTient, ligne
 import { zoneFormeCarte } from './rpgZoneCartes.js';
 import { casesDeZone, libelleZone } from './rpgZones.js';
 import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
-import { deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger } from './rpgMouvement.js';
 import { rpgCasesPose } from './rpgRecul.js';
-import { rpgIABougerUneCreature, rpgIAMouvementEnAttente } from './rpgMouvementIA.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -10487,43 +10485,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // légales du pas s'allument en bleu, sans rien engager (aucun clic n'y est
   // posé — c'est un aperçu). Pendant la phase d'attaque, la créature choisie
   // garde son signal doré et le bleu se tait, pour ne pas doubler.
-  const survolMouvant = (() => {
-    const entiteId = apercuSurvol?.entiteId;
-    if (!entiteId || modePvp || phase || !lignesActives(duel)) return null;
-    const entite = duel.joueur?.creatures?.find((e) => e.id === entiteId);
-    if (!entite || !rpgPeutBouger(duel, 'joueur', entite)) return null;
-    const cases = deplacementsLegaux(duel, 'joueur', entite.id);
-    if (!cases.length) return null;
-    return {
-      joueur: cases.filter((c) => c.camp === 'joueur').map((c) => c.index),
-      sorcier: cases.filter((c) => c.camp === 'sorcier').map((c) => c.index),
-    };
-  })();
+  const survolMouvant = null;
 
-  // ── L'avancée du joueur ────────────────────────────────────────────────────
-  // Pendant la phase d'attaque, la créature choisie montre à la fois ses proies
-  // (cyan) et les cases vides où elle peut avancer (flèche dorée). Cliquer une
-  // case la déplace ; la phase reste ouverte et elle frappe de sa nouvelle
-  // place — avancer et frapper, comme le sorcier (`rpgMouvement.js`).
-  const attaquantMobile = !combatCollectif && phase && attaquants[0]
-    && !ciblesAttaque[attaquants[0]] ? attaquants[0] : null;
-  const deplacementsAttaquant = attaquantMobile && !modePvp
-    ? deplacementsLegaux(duel, 'joueur', attaquantMobile) : [];
-  const nomAttaquantMobile = attaquantMobile
-    ? (duel.joueur.creatures.find((entite) => entite.id === attaquantMobile)?.name ?? null) : null;
-  const deplacerAttaquant = (camp, index) => {
-    if (!attaquantMobile) return;
-    const res = rpgDeplacerCreature(duel, 'joueur', attaquantMobile, { camp, index });
-    if (!res.ok) { jouerSfx('erreur'); force(); return; }
-    jouerSfx('select');
-    // **Le pas est un geste complet.** La sélection se referme derrière lui :
-    // rien ne reste en attente d'une cible. Frapper reste possible — le pas
-    // ne consomme pas l'attaque —, il suffit de recliquer la créature.
-    setPhase(false);
-    setAttaquants([]);
-    setCiblesAttaque({});
-    force();
-  };
+  const attaquantMobile = null;
+  const deplacementsAttaquant = [];
+  const nomAttaquantMobile = null;
+  const deplacerAttaquant = () => {};
   // Ce que la créature choisie peut encore faire. Une créature qui a un pas
   // devant elle ne se voit **pas** réclamer une cible : marcher est une
   // réponse complète, et le jeu le dit.
@@ -12768,16 +12735,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Une créature qui peut encore avancer ouvre la phase même si le sorcier
       // est à portée : elle choisit de frapper ou de gagner une case d'abord.
       if (!combatCollectif && rpgPeutAttaquer(entite)
-        && !deplacementsLegaux(duel, 'joueur', entite.id).length
         && ((choix) => choix.directe && !choix.cibles.length)(rpgCiblesIndividuellesClassique(duel, 'joueur', entite.id))) {
         signalerTutoriel('attaque-declaree', { entiteId: entite.id });
         lancerAttaque('sorcier', entite.id);
         return;
       }
-      // Une créature qui n'a ni pas devant elle ni proie à portée n'ouvre
-      // rien : pas de phase vide, pas de cible réclamée pour rien.
-      if (!combatCollectif && !deplacementsLegaux(duel, 'joueur', entite.id).length
-        && !rpgPeutAttaquer(entite)) {
+      if (!combatCollectif && !rpgPeutAttaquer(entite)) {
         jouerSfx('erreur');
         force();
         return;
@@ -13792,28 +13755,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // entre deux pas. L'ancienne version déplaçait tout le camp d'un bloc — un
   // seul rendu, aucun mouvement perceptible — puis enchaînait les frappes. Le
   // moteur reste idempotent (`bouge`), donc la file s'arrête d'elle-même.
-  const avancerSorcierUnPas = (quandFini) => {
-    if (pauseSiAttenteJoueur(() => avancerSorcierUnPas(quandFini))) return;
-    const pas = rpgIABougerUneCreature(duel, 'sorcier');
-    if (!pas) { filePasSorcierRef.current = false; quandFini(); return; }
-    jouerSfx('whoosh');
-    force();
-    later(() => avancerSorcierUnPas(quandFini), delaiPasSorcier());
-  };
-
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
   const declarerAttaqueSorcier = (attaquantImpose = null) => {
       if (pauseSiAttenteJoueur(() => declarerAttaqueSorcier(attaquantImpose))) return;
-      // Le sorcier joue avec les mêmes règles : une case par tour, puis la
-      // frappe (`rpgMouvementIA.js`). Les pas passent par une file d'animation :
-      // le joueur voit chaque créature avancer avant la première frappe.
-      if (!combatCollectif && rpgIAMouvementEnAttente(duel, 'sorcier')) {
-        if (!filePasSorcierRef.current) {
-          filePasSorcierRef.current = true;
-          avancerSorcierUnPas(() => declarerAttaqueSorcier(attaquantImpose));
-        }
-        return;
-      }
       const etapeScript = tutorielActif && etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
       if (etapeScript?.skipOpponentTurn) { finirTourSorcier(); return; }
       if (!combatCollectif) {
@@ -14078,8 +14022,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // de pas à mesurer : la lecture d'origine reste la bonne.
     if (combatCollectif || !lignesActives(duel)) return true;
     const choix = rpgCiblesIndividuellesClassique(duel, proprietaire, entite.id);
-    if (choix.directe || choix.cibles.length) return true;
-    return deplacementsLegaux(duel, proprietaire, entite.id).length > 0;
+    return Boolean(choix.directe || choix.cibles.length);
   };
   // Les deux nombres d'un sort à cible double (les Feux de kitsune) se lisent
   // sur l'effet **réellement résolu** : le Lien de l'Oni les monte, et l'invite
