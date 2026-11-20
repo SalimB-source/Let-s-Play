@@ -2647,7 +2647,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 2, def: 1 },
     donne: { infiltration: true },
     lien: { ancre: 'tin-hinan', bonus: { atk: 3, def: 1 } },
-    text: 'Arme — Le porteur gagne +2/+1 et Infiltration. Avec Tin Hinan, mère des pistes en jeu : +3/+1 au lieu de +2/+1.',
+    text: 'Arme (Mêlée) — Le porteur gagne +2/+1 et Infiltration. Avec Tin Hinan, mère des pistes en jeu : +3/+1 au lieu de +2/+1.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -2655,12 +2655,13 @@ export const RPG_ARME_CARDS = [
     name: 'Bâton des citernes',
     element: 'eau',
     kind: 'arme',
+    porteeArme: 'melee',
     typeLine: 'Arme — Bâton',
 
     rarity: 'rare',
     bonus: { atk: 0, def: 3 },
     arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', remplirChamp: true },
-    text: 'Arme — Le porteur gagne +0/+3. À l’arrivée, créez un Serpent 1/1 sur chaque emplacement allié libre.',
+    text: 'Arme (Mêlée) — Le porteur gagne +0/+3. À l’arrivée, créez un Serpent 1/1 sur chaque emplacement allié libre.',
     flavor: 'Il soulève les serpents des citernes comme des rubans de soie — puis les lâche, furieux, entre l’ennemi et vous.',
   },
   {
@@ -2686,9 +2687,8 @@ export const RPG_ARME_CARDS = [
 
     rarity: 'rare',
     bonus: { atk: 1, def: 0 },
-    donne: { coupRapide: true },
     porteurAvantDegats: { type: 'gel', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Avant les dégâts, 25 % de chances de geler chaque créature combattue.',
+    text: 'Arme (Mêlée) — Le porteur gagne +1/+0. Avant les dégâts, 25 % de chances de geler chaque créature combattue.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2696,12 +2696,13 @@ export const RPG_ARME_CARDS = [
     name: 'Hache de la banquise',
     element: 'neige',
     kind: 'arme',
+    porteeArme: 'melee',
     typeLine: 'Arme — Hache',
 
     rarity: 'commune',
     bonus: { atk: 3, def: 0 },
     blessurePorteur: 1,
-    text: 'Arme — À l’attachement, inflige 1 dégât au porteur, puis lui donne +3/+0.',
+    text: 'Arme (Mêlée) — À l’attachement, inflige 1 dégât au porteur, puis lui donne +3/+0.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
@@ -2715,12 +2716,13 @@ export const RPG_ARME_CARDS = [
     name: 'Sandales de Tislit',
     element: 'sable',
     kind: 'arme',
+    porteeArme: 'melee',
     typeLine: 'Arme — Bottes',
 
     rarity: 'commune',
     bonus: { atk: 0, def: 1 },
     donne: { rapidite: true },
-    text: 'Arme — Le porteur gagne +0/+1 et Rapidité.',
+    text: 'Arme (Mêlée) — Le porteur gagne +0/+1 et Rapidité.',
     flavor: 'Elle part avant la question.',
   },
   {
@@ -2738,7 +2740,7 @@ export const RPG_ARME_CARDS = [
     // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
     // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
-    text: 'Arme — Le porteur gagne +0/+2 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+2.',
+    text: 'Arme (À distance) — Le porteur gagne +0/+2 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+2.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2746,12 +2748,13 @@ export const RPG_ARME_CARDS = [
     name: 'Javelot du beffroi',
     element: 'sable',
     kind: 'arme',
+    porteeArme: 'distance',
     typeLine: 'Arme — Javelot',
 
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée.',
+    text: 'Arme (À distance) — Le porteur gagne +2/+0 et Attaque ciblée.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2759,12 +2762,13 @@ export const RPG_ARME_CARDS = [
     name: 'Licou du chien de sable',
     element: 'sable',
     kind: 'arme',
+    porteeArme: 'melee',
     typeLine: 'Arme — Licou',
 
     rarity: 'inhabituelle',
     bonus: { atk: 1, def: -1 },
     porteurMeurt: { type: 'pioche', amount: 1 },
-    text: 'Arme — Le porteur gagne +1/−1. Quand le porteur meurt, piochez une carte.',
+    text: 'Arme (Mêlée) — Le porteur gagne +1/−1. Quand le porteur meurt, piochez une carte.',
     flavor: 'Il tirait bien. Il tire encore, d’une certaine façon.',
   },
   {
@@ -2772,12 +2776,13 @@ export const RPG_ARME_CARDS = [
     name: 'Harnais du méhari',
     element: 'sable',
     kind: 'arme',
+    porteeArme: 'melee',
     typeLine: 'Arme — Harnais',
 
     rarity: 'inhabituelle',
     bonus: { atk: 1, def: 2 },
     porteurAttaque: { type: 'sable', amount: 1 },
-    text: 'Arme — Le porteur gagne +1/+2. Quand le porteur attaque : gagnez 1 mana de sable.',
+    text: 'Arme (Mêlée) — Le porteur gagne +1/+2. Quand le porteur attaque : gagnez 1 mana de sable.',
     flavor: 'Le méhari connaît le puits d’avant la soif.',
   },
   {
@@ -2785,6 +2790,7 @@ export const RPG_ARME_CARDS = [
     name: 'Masque du guetteur',
     element: 'sable',
     kind: 'arme',
+    porteeArme: 'melee',
     typeLine: 'Arme — Masque',
 
     rarity: 'rare',
@@ -2795,7 +2801,7 @@ export const RPG_ARME_CARDS = [
       bonus: { atk: 2, def: 2 },
       remplace: { porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 0 } },
     },
-    text: 'Arme — Le porteur gagne +1/+1. Ses blessures au sorcier font piocher puis défausser une carte. Avec Le Passeur au masque de chacal en jeu : +2/+2, sans défausse.',
+    text: 'Arme (Mêlée) — Le porteur gagne +1/+1. Ses blessures au sorcier font piocher puis défausser une carte. Avec Le Passeur au masque de chacal en jeu : +2/+2, sans défausse.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {
@@ -2809,7 +2815,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 1 },
     donne: { bouclier: 1 },
-    text: 'Arme — Le porteur gagne +1/+1 et un bouclier.',
+    text: 'Arme (Mêlée) — Le porteur gagne +1/+1 et un bouclier.',
     flavor: 'Le guide pare d’un geste ce que la nuit envoie.',
   },
   {
@@ -2829,7 +2835,7 @@ export const RPG_ARME_CARDS = [
     // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
     // sans qu'un seul de ses chiffres imprints ne bouge.
     lien: { ancre: 'tarek', donne: { bouclier: 1 } },
-    text: 'Arme — Arme vivante : jouable sans cible, elle crée alors un Chien de sable 1/1 porteur. +2/+1. Avec TAREK en jeu : le porteur reçoit un bouclier.',
+    text: 'Arme (Mêlée) — Arme vivante : jouable sans cible, elle crée alors un Chien de sable 1/1 porteur. +2/+1. Avec TAREK en jeu : le porteur reçoit un bouclier.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {
@@ -2844,7 +2850,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 3, def: 2 },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2. Blesser une créature fait piocher 1 carte ; blesser le sorcier crée un Chien de sable 1/1.',
+    text: 'Arme (Mêlée) — Le porteur gagne +3/+2. Blesser une créature fait piocher 1 carte ; blesser le sorcier crée un Chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {
@@ -2864,7 +2870,7 @@ export const RPG_ARME_CARDS = [
     // de combat (référence JoJo). Le moteur gère ce déclenchement pré-dégâts
     // dans `rpgLancerAttaque` (avant `appliquerDegatsDeCombatSimultanes`).
     porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.15 },
-    text: 'Arme — Le porteur gagne +1/+2 et un Bouclier. Quand il combat une créature : 15 % de chances de la renvoyer en main avant les dégâts.',
+    text: 'Arme (À distance) — Le porteur gagne +1/+2 et un Bouclier. Quand il combat une créature : 15 % de chances de la renvoyer en main avant les dégâts.',
     flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
   },
   {
@@ -2922,9 +2928,10 @@ export const RPG_ARME_CARDS = [
   {
     id: 'sabre-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Sabre du croissant noir',
     element: 'sable', colors: ['sable', 'tenebres'],
-    kind: 'arme', typeLine: 'Arme — Sabre',  rarity: 'inhabituelle',
+    kind: 'arme',
+    porteeArme: 'melee', typeLine: 'Arme — Sabre',  rarity: 'inhabituelle',
     bonus: { atk: 2, def: 0 }, donne: { infiltration: true, volDeVie: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
-    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie. Endurance 1 : le Sabre est détruit après son attaque.',
+    text: 'Arme (Mêlée) — Le porteur gagne +2/+0, Infiltration et Vol de vie. Endurance 1 : le Sabre est détruit après son attaque.',
     flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
   },
   {
@@ -2932,7 +2939,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'],
     kind: 'arme', typeLine: 'Arme — Lance',  rarity: 'inhabituelle',
     bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 25 % de doubler ses dégâts sur une créature ou l’adversaire, garanti si elle est déjà blessée.',
+    text: 'Arme (À distance) — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 25 % de doubler ses dégâts sur une créature ou l’adversaire, garanti si elle est déjà blessée.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 
