@@ -374,7 +374,7 @@ Sur 390 × 844, les cases et les cartes en jeu passent de 51 × 64 px à
 bandeaux, le rail ni la main. La mesure utilise `100vw` et non `100%` :
 héritée par une case ou une carte, une valeur en pourcentage se résoudrait
 contre sa propre colonne et la réduire à quelques pixels. Le paysage et le PC
-restent inchangés. `npm run check:rpg-portrait` : 18/18.
+restent inchangés. `npm run check:rpg-portrait` : 19/19.
 
 ## L'accueil « Jouer » debout : la vitrine avant les quêtes
 
@@ -390,3 +390,20 @@ Le titre de la vitrine garde une marge de 38 px de chaque côté pour les
 flèches du carrousel ; le sur-titre cède sa place. Le paysage tactile, la
 tablette et le PC conservent leur composition. Vérification :
 `npm run check:rpg-accueil-portrait`.
+
+## Le plateau debout : lisibilité des cases et rail complet
+
+Les vingt cases libres se confondaient avec les plateaux clairs et le rail du
+tour poussait « Fin du tour » hors de l'écran : l'indicateur, la phase,
+l'annulation longue et le bouton de fin cumulaient plus de 450 px sur un
+téléphone de 390 px. `rpg-portrait.css` ajoute deux bandes de camp très
+légères, une ligne médiane dorée, des cases vides cerclées et des numéros plus
+lisibles. Le rail passe en `border-box`, la phase se résume à sa pastille
+active, « Annuler la dernière action » devient « ↶ Annuler » à l'écran et les
+deux boutons se partagent le reste : sur 390 × 844, le rail passe de
+396 px débordants à **378 px**, bouton compris.
+
+Les états interactifs des cases (pose, déplacement, zone de sort) gardent leurs
+couleurs ; seules les cases libres et neutres sont retouchées. Le paysage et le
+PC ne sont pas concernés. `npm run check:rpg-portrait` : 19/19 ; captures
+320 × 568 et 390 × 844.
