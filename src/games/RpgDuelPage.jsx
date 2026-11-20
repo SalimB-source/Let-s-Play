@@ -29,6 +29,8 @@ import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import { champMax, ligneDeCase, caseChoisissable, ligneDePose, frontTient, lignesActives,
   RPG_LIGNE_FOND, RPG_LIGNES_CASES } from './rpgLignes.js';
+import { zoneFormeCarte } from './rpgZoneCartes.js';
+import { casesDeZone, libelleZone } from './rpgZones.js';
 import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { deplacementsLegaux, rpgDeplacerCreature, rpgPeutBouger } from './rpgMouvement.js';
 import { rpgCasesPose } from './rpgRecul.js';
@@ -955,6 +957,12 @@ export function CreatureSlots({
   // Le survol d'une créature : ses cases de pas s'allument en bleu. Aperçu
   // seul — la case n'est pas un bouton, rien ne s'engage au clic.
   casesSurvol = null,
+  // **La zone d'un sort.** Pendant la désignation, chaque case du champ est
+  // une ancre possible : elle s'allume en bleu, en relief, et le clic y pose
+  // l'ancre. `zoneSort.cases` dit quelles cases tombent dans la zone déjà
+  // posée — elles passent en bleu plein (`is-dans-zone-sort`).
+  zoneSort = null,
+  onChoisirZone = null,
 }) {
   // Chaque créature garde sa case : une case vidée par une mort reste vide
   // au milieu de la rangée, les autres ne glissent pas pour la combler.
@@ -989,11 +997,37 @@ export function CreatureSlots({
           && Array.isArray(casesDeplacement) && casesDeplacement.includes(index);
         const survolee = !occupant && !choisissable && !deplacable
           && Array.isArray(casesSurvol) && casesSurvol.includes(index);
+        // La zone du sort primes sur tout le reste : tant qu'elle se désigne,
+        // la case est une ancre, pas une cible de créature.
+        const zoneCandidate = Boolean(zoneSort && onChoisirZone);
+        const zoneAtteinte = Boolean(zoneSort?.cases?.includes(index));
         const classes = `rpg-creature-slot${occupant ? ' is-occupied' : ' is-empty'}`
           + `${ligne === RPG_LIGNE_FOND ? ' is-fond' : ' is-front'}`
           + `${emplacementSurvole === index ? ' is-survole' : ''}`
-          + `${survolee ? ' rpg-creature-slot--survol-deplacement' : ''}`;
+          + `${survolee ? ' rpg-creature-slot--survol-deplacement' : ''}`
+          + `${zoneCandidate ? ' rpg-creature-slot--zone-sort' : ''}`
+          + `${zoneAtteinte ? ' is-dans-zone-sort' : ''}`;
         const style = colonnes ? { '--case-col': colonne } : undefined;
+        if (zoneCandidate) {
+          return (
+            <button
+              type="button"
+              key={index}
+              className={`${classes} rpg-creature-slot--zone-choix`}
+              style={style}
+              data-creature-slot={index + 1}
+              data-creature-slot-col={colonne}
+              data-case-index={index}
+              data-ligne={ligne}
+              data-zone-sort="ancre"
+              data-zone-atteinte={zoneAtteinte ? 'true' : 'false'}
+              onClick={() => onChoisirZone(index)}
+              aria-label={`Poser la zone du sort sur la colonne ${colonne} ${libelleLigne(ligne)}`}
+            >
+              <span className="rpg-creature-slot__numero">{colonne}</span>
+            </button>
+          );
+        }
         if (deplacable) {
           return (
             <button
@@ -1052,6 +1086,21 @@ export function CreatureSlots({
       })}
     </div>
   );
+}
+
+/**
+ * La zone qu'une case désigne. L'ancre d'une **rangée** est la ligne de la
+ * case, celle d'un **carré** sa colonne et son camp (deux colonnes, repli sur
+ * la dernière paire), celle d'une **colonne** sa seule colonne — elle traverse
+ * les deux camps. Une case suffit donc toujours à poser l'ancre, et le re-clic
+ * la déplace.
+ */
+function zoneDepuisCase(forme, camp, index) {
+  const colonne = index % RPG_LIGNES_CASES;
+  if (forme === 'rangee') return { forme, camp, ligne: ligneDeCase(index) };
+  if (forme === 'colonne') return { forme, colonne };
+  if (forme === 'carre') return { forme, camp, colonne: Math.min(colonne, RPG_LIGNES_CASES - 2) };
+  return null;
 }
 
 function profileNameFallback(user) {
@@ -8186,6 +8235,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [bloqueurGlisse, setBloqueurGlisse] = useState(null);
   const [bloqueurSelectionne, setBloqueurSelectionne] = useState(null);
   const [cibleEnCours, setCibleEnCours] = useState(null);
+  // **La zone d'un sort de masse.** Un sort qui frappe une rangée, une colonne
+  // ou un carré ne se lance plus depuis la main : il pose d'abord son ancre sur
+  // le champ. `zoneSortEnCours` garde la carte, `zoneAncre` la zone choisie —
+  // les cases qu'elle couvre s'allument en bleu, en relief, et le re-clic
+  // déplace l'ancre jusqu'à la validation.
+  const [zoneSortEnCours, setZoneSortEnCours] = useState(null);
+  const [zoneAncre, setZoneAncre] = useState(null);
   // Quand Bimini retire sa dernière Heure, la cible se choisit directement
   // sur les créatures alliées du champ, comme une arrivée différée.
   useEffect(() => {
@@ -8221,13 +8277,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // La foudre activée se désigne avec Échap, comme les autres ciblages ; la
   // proie d'un mode d'arme aussi ; le sacrifice en attente, enfin, se renonce.
   useEffect(() => {
-    if (!choixCoutDemande && !activationEnCours && !sacrificeEnCours && !poseEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
+    if (!choixCoutDemande && !activationEnCours && !sacrificeEnCours && !poseEnCours && !zoneSortEnCours && !navMenuOuvert && !navParametresOuvert && !messagerieVoletOuvert) return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       setActivationEnCours(null);
       setSacrificeEnCours(null);
       setSacrificesChoisis([]);
       setPoseEnCours(null);
+      setZoneSortEnCours(null);
+      setZoneAncre(null);
       setChoixCoutDemande(null);
       choixCoutRef.current = null;
       setNavMenuOuvert(false);
@@ -8236,7 +8294,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [choixCoutDemande, activationEnCours, sacrificeEnCours, poseEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
+  }, [choixCoutDemande, activationEnCours, sacrificeEnCours, poseEnCours, zoneSortEnCours, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert]);
   // Le menu hamburger et son onglet Paramètres se referment au premier geste hors de la barre du duel.
   useEffect(() => {
     if (!navMenuOuvert && !navParametresOuvert) return undefined;
@@ -11651,21 +11709,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, { contre: true });
   };
 
-  const lancerMagie = (carteId, cibleId = null, cibleAllieeId = null) => {
+  const lancerMagie = (carteId, cibleId = null, cibleAllieeId = null, zone = null) => {
     const carte = cardById(carteId);
     const cibleEffective = cibleId ?? rpgCibleAuto(duel, 'joueur', carte);
     const cibleDecrite = decrireCibleMagie(carte, cibleEffective, cibleAllieeId ?? cibleAllieeMagie);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     setCibleAllieeMagie(null);
+    if (zone) { setZoneSortEnCours(null); setZoneAncre(null); }
     if (modePvp) rpgSyncCompteurEntites(duel);
-    const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective, cibleAllieeId ?? null);
+    const res = rpgLancerMagie(duel, 'joueur', carteId, cibleEffective, cibleAllieeId ?? null,
+      zone ? { zone } : null);
     if (modePvp && res.ok) {
       void envoyerIntentionPvp({
         type: 'jouer-carte',
         carteId,
         cibleId: cibleEffective ?? null,
         cibleAllieeId: cibleAllieeId ?? null,
+        ...(zone ? { zone } : {}),
       });
     }
     // Le sort a-t-il été lancé ? Le Souk n'est prévenu qu'après `force()`.
@@ -12092,6 +12153,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (carte.kind === 'magie') {
       signalerTutoriel('magie-choisie', { cardId: carteId });
+      // Un sort de masse demande sa **zone** avant de partir : le champ devient
+      // une grille de cases bleues, la première désigne l'ancre, la seconde
+      // confirme (voir `validerZoneSort`). Le MOBA garde ses voies : chez lui,
+      // la carte se lance comme avant.
+      const formeZone = duel.moba ? null : zoneFormeCarte(carteId);
+      if (formeZone) {
+        setCibleEnCours(null);
+        setZoneAncre(null);
+        setZoneSortEnCours(carteId);
+        jouerSfx('select');
+        force();
+        return;
+      }
       const cible = targetMode(carte, lienSatisfait(carte, duel.joueur.creatures));
       if (cible) {
         setCibleAllieeMagie(null);
@@ -12153,6 +12227,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const jouerCarteDepuisMain = (carteId, handIndex = null, emplacement = undefined) => {
     const carte = cardById(carteId);
     if (carteEnVol || sacrificeEnCours) return;
+    // Une autre carte jouée referme la zone qui attendait son ancre : on ne
+    // laisse jamais une désignation orpheline derrière soi.
+    if (zoneSortEnCours && zoneSortEnCours !== carteId) {
+      setZoneSortEnCours(null);
+      setZoneAncre(null);
+    }
     if (!carte || !duel.joueur.main.includes(carteId)) return;
     if (tutorielActif && etapeTutorielIdRef.current) {
       const etape = etapesTutoriel.find((step) => step.id === etapeTutorielIdRef.current);
@@ -12227,6 +12307,47 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       demarrerVolCarte(carte, index, () => poserCarte(carteId, emplacement ?? null), emplacement ?? null);
     }
+  };
+
+  /**
+   * **La zone d'un sort.** Le clic sur une case du champ pose l'ancre — la
+   * rangée, la colonne ou le carré que le sort couvrira. Un second clic la
+   * déplace (on ne valide pas par erreur en visant mal) ; la validation passe
+   * par « Lancer » dans le bandeau, ou par un clic sur la case déjà ancrée.
+   */
+  const choisirZoneSort = (camp, index) => {
+    const forme = zoneFormeCarte(zoneSortEnCours);
+    if (!forme) return;
+    const zone = zoneDepuisCase(forme, camp, index);
+    if (!zone) return;
+    const dejaLa = zoneAncre
+      && JSON.stringify([zoneAncre.forme, zoneAncre.camp ?? null, zoneAncre.ligne ?? null, zoneAncre.colonne ?? null])
+        === JSON.stringify([zone.forme, zone.camp ?? null, zone.ligne ?? null, zone.colonne ?? null]);
+    setZoneAncre(zone);
+    jouerSfx('select');
+    if (dejaLa) { validerZoneSort(zone); return; }
+    force();
+  };
+
+  /** Le sort part avec sa zone : la carte quitte la main, le champ s'éteint. */
+  const validerZoneSort = (zone = zoneAncre) => {
+    const carteId = zoneSortEnCours;
+    if (!carteId || !zone) return;
+    lancerMagie(carteId, null, null, zone);
+  };
+
+  const annulerZoneSort = () => {
+    setZoneSortEnCours(null);
+    setZoneAncre(null);
+    jouerSfx('annuler');
+    force();
+  };
+
+  /** Les cases de la zone, telles que la rangée de ce camp doit les peindre. */
+  const casesZoneSort = (camp) => {
+    if (!zoneSortEnCours) return null;
+    if (!zoneAncre) return null;
+    return casesDeZone(zoneAncre).filter((c) => c.camp === camp).map((c) => c.index);
   };
 
   /** La case est choisie (clic, doigt ou touche du numéro) : la créature en
@@ -14195,6 +14316,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <RpgGuideCibles surfaceRef={tableRef} actif={Boolean(!vainqueur && (cibleEnCours || cibleAttaqueEnCours || activationEnCours))}
           sourceId={cibleAttaqueEnCours ?? activationEnCours ?? (duel.arriveeEnAttente?.carteId === cibleEnCours ? duel.arriveeEnAttente.entiteId : null)} />
         <RpgVerdictScene vainqueur={vainqueur} />
+        {zoneSortEnCours && (
+          <div className={`rpg-zone-sort${zoneAncre ? ' is-ancree' : ''}`} role="group"
+            aria-label="Zone du sort">
+            <span className="rpg-zone-sort__titre">{cardById(zoneSortEnCours)?.name ?? 'Sort de zone'}</span>
+            <span className="rpg-zone-sort__libelle">
+              {zoneAncre ? libelleZone(zoneAncre) : 'choisissez la zone sur le champ'}
+            </span>
+            {zoneAncre && (
+              <button type="button" className="rpg-zone-sort__valider" onClick={() => validerZoneSort()}>
+                Lancer
+              </button>
+            )}
+            <button type="button" className="rpg-zone-sort__annuler" onClick={annulerZoneSort}>
+              Renoncer
+            </button>
+          </div>
+        )}
         {/* Le jumeau de la peinture : le flou d'un aperçu ne peut pas être posé
             sur `.card-table` (il emporterait l'aperçu lui-même), ni sur sa
             `background-image`. Ce calque en reprend donc la peinture par
@@ -14573,6 +14711,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 ? (index) => deplacerAttaquant('sorcier', index) : null}
               casesSurvol={survolMouvant?.sorcier ?? null}
               nomCarteDeplacee={nomAttaquantMobile}
+              zoneSort={zoneSortEnCours ? { cases: casesZoneSort('sorcier') } : null}
+              onChoisirZone={zoneSortEnCours ? (index) => choisirZoneSort('sorcier', index) : null}
             />
           )}
           {campEnnemi.piles.length ? campEnnemi.piles.map((pile) => {
@@ -14711,6 +14851,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               onChoisirDeplacement={deplacementsAttaquant.some((c) => c.camp === 'joueur')
                 ? (index) => deplacerAttaquant('joueur', index) : null}
               nomCarteDeplacee={nomAttaquantMobile}
+              zoneSort={zoneSortEnCours ? { cases: casesZoneSort('joueur') } : null}
+              onChoisirZone={zoneSortEnCours ? (index) => choisirZoneSort('joueur', index) : null}
             />
           )}
           {campJoueur.piles.length ? campJoueur.piles.map((pile) => {

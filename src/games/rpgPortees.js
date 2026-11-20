@@ -41,6 +41,7 @@ import {
   distanceEntreCreatures, positionDe,
 } from './rpgChamp.js';
 import { RPG_LIGNES_CASES, champMax, lignesActives } from './rpgLignes.js';
+import { porteeEffetCarte } from './rpgPorteesCartes.js';
 
 /** Portée d'une attaque de mêlée : une case, dans les huit directions. */
 export const RPG_PORTEE_MELEE = 1;
@@ -165,4 +166,55 @@ export function casesAPortee(duel, attaquant, creaturesCible = [], cote = null) 
 /** La profondeur maximale du champ de ce duel (1 : deux lignes, 0 : une). */
 export function profondeurMax(duel) {
   return lignesActives(duel) ? 1 : 0;
+}
+
+/**
+ * ## Les portées des **effets** de créature
+ *
+ * La portée d'attaque (`porteeDe`) dit jusqu'où une créature frappe au combat.
+ * Celle-ci dit jusqu'où porte son **effet d'arrivée** : l'Oni qui arrive ne
+ * foudroie pas la moitié du plateau, il frappe ce qui est à sa portée. La
+ * valeur est écrite **sur la carte** (`arrivee.porteeCases`) — une portée par
+ * carte, décidée par la fiche :
+ *
+ * - `1` — contact : une lame ne touche que ce qui la touche (les duels) ;
+ * - `2` — tir : ce qui frappe ou soigne **à distance** (tours, Völva, éclats
+ *   d'ombre, effets d'arrivée des archers) ;
+ * - absent — sans limite : les effets déjà globaux (zones, renvois de masse)
+ *   et tout ce qui ne désigne pas une créature en jeu.
+ *
+ * Sans géométrie (duel d'avant les lignes, MOBA), aucune portée n'est
+ * opposée : on ne refuse rien là où il n'y a rien à mesurer.
+ */
+export function porteeDeCarte(carte) {
+  // Une portée peut être écrite sur la fiche (`porteeCases`) ou venir du
+  // tableau central (`rpgPorteesCartes.js`) — le tableau gagne pour les cartes
+  // qui vivent dans plusieurs fichiers de données.
+  const ecrite = carte?.arrivee?.porteeCases ?? carte?.capacite?.porteeCases ?? null;
+  if (Number.isFinite(ecrite) && ecrite > 0) return ecrite;
+  return porteeEffetCarte(carte?.id ?? carte?.carteId ?? null);
+}
+
+/** La créature source d'un effet d'arrivée, dans son camp. */
+export function sourceDeLEffet(duel, cote, sourceId) {
+  if (!sourceId) return null;
+  return duel?.[cote]?.creatures?.find((entite) => entite.id === sourceId) ?? null;
+}
+
+/** La cible désignée est-elle encore à portée de l'effet ? */
+export function cibleDeLEffetAPortee(duel, cote, sourceId, cible, campCible, portee) {
+  if (!portee) return true;
+  const source = sourceDeLEffet(duel, cote, sourceId);
+  if (!source || !cible) return true;
+  const distance = distanceEntreCreatures(source, cote, cible, campCible ?? campAdverse(cote));
+  if (distance === null) return true;
+  return distance <= portee;
+}
+
+/** Les créatures d'un camp qu'un effet de cette portée peut désigner. */
+export function ciblesDeLEffetAPortee(duel, cote, sourceId, portee, campCible = null) {
+  const camp = campCible ?? campAdverse(cote);
+  const creatures = duel?.[camp]?.creatures ?? [];
+  if (!portee) return [...creatures];
+  return creatures.filter((entite) => cibleDeLEffetAPortee(duel, cote, sourceId, entite, camp, portee));
 }
