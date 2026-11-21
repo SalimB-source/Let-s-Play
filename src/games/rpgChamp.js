@@ -11,11 +11,11 @@
  *
  * Le champ se lit de haut en bas, du fond du sorcier au fond du joueur :
  *
- *     rangée 0   fond du sorcier        (cases locales 5-9 du camp sorcier)
- *     rangée 1   front du sorcier       (cases locales 0-4)
+ *     rangée 0   fond du sorcier        (cases locales 4-7 du camp sorcier)
+ *     rangée 1   front du sorcier       (cases locales 0-3)
  *     ------- la ligne neutre -------
- *     rangée 2   front du joueur        (cases locales 0-4)
- *     rangée 3   fond du joueur         (cases locales 5-9)
+ *     rangée 2   front du joueur        (cases locales 0-3)
+ *     rangée 3   fond du joueur         (cases locales 4-7)
  *
  * Une créature peut **avancer d'une case** et franchir la ligne neutre par une
  * trouée : elle occupe alors une case du camp adverse. Sa position ne se lit
@@ -43,7 +43,7 @@
 // Aucune importation de `rpgLignes.js` : ce module est le socle géométrique,
 // et les lignes s'appuient sur lui (`attaqueDirecteSurLesLignes`). La constante
 // est répétée plutôt que d'ouvrir un cycle entre les deux fichiers.
-const CASES_PAR_LIGNE = 5;
+const CASES_PAR_LIGNE = 4;
 
 /** Les quatre rangées du champ, du fond du sorcier au fond du joueur. */
 export const RPG_RANGEE_SORCIER_FOND = 0;
@@ -71,7 +71,7 @@ function profondeur(index) {
   return Number.isInteger(index) && index >= CASES_PAR_LIGNE ? 1 : 0;
 }
 
-/** La colonne d'une case locale (0 à 4). */
+/** La colonne d'une case locale (0 à 3). */
 export function colonneDeCaseLocale(index) {
   return Number.isInteger(index) && index >= 0 ? index % CASES_PAR_LIGNE : 0;
 }
@@ -183,7 +183,7 @@ export function occupantsDeCamp(duel, camp) {
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel?.[cote]?.creatures ?? []) {
       const index = entite?.emplacement;
-      if (!Number.isInteger(index) || index < 0 || index >= 10) continue;
+      if (!Number.isInteger(index) || index < 0 || index >= CASES_PAR_LIGNE * 2) continue;
       if (campPoseDe(entite, cote) !== camp) continue;
       occupants.push({ entite, cote, index });
     }

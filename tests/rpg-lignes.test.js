@@ -9,18 +9,18 @@ import {
 
 const creature = (id, emplacement, extra = {}) => ({ id, name: id, emplacement, ...extra });
 
-test('le champ tient deux lignes de trois cases, et rien de plus', () => {
-  assert.equal(RPG_LIGNES_CASES, 3);
-  assert.equal(RPG_LIGNES_CHAMP_MAX, 6);
-  assert.deepEqual(casesDeLigne(RPG_LIGNE_FRONT), [0, 1, 2]);
-  assert.deepEqual(casesDeLigne(RPG_LIGNE_FOND), [3, 4, 5]);
+test('le champ tient deux lignes de quatre cases, et rien de plus', () => {
+  assert.equal(RPG_LIGNES_CASES, 4);
+  assert.equal(RPG_LIGNES_CHAMP_MAX, 8);
+  assert.deepEqual(casesDeLigne(RPG_LIGNE_FRONT), [0, 1, 2, 3]);
+  assert.deepEqual(casesDeLigne(RPG_LIGNE_FOND), [4, 5, 6, 7]);
 });
 
-test('la ligne d’une case : front 0-2, fond 3-5, et le front pour tout le reste', () => {
-  for (const index of [0, 1, 2]) assert.equal(ligneDeCase(index), RPG_LIGNE_FRONT);
-  for (const index of [3, 4, 5]) assert.equal(ligneDeCase(index), RPG_LIGNE_FOND);
+test('la ligne d’une case : front 0-3, fond 4-7, et le front pour tout le reste', () => {
+  for (const index of [0, 1, 2, 3]) assert.equal(ligneDeCase(index), RPG_LIGNE_FRONT);
+  for (const index of [4, 5, 6, 7]) assert.equal(ligneDeCase(index), RPG_LIGNE_FOND);
   // Une case inconnue ne cache jamais une créature derrière une protection.
-  for (const index of [undefined, null, -1, 6, 99, 1.5, '3']) {
+  for (const index of [undefined, null, -1, 8, 99, 1.5, '3']) {
     assert.equal(ligneDeCase(index), RPG_LIGNE_FRONT, `case ${index}`);
   }
 });
@@ -65,23 +65,23 @@ test('chaque carte entre par sa ligne : mêlée devant, tir derrière', () => {
 });
 
 test('la case par défaut : la première libre de la ligne de la carte', () => {
-  const libres = [0, 1, 2, 3, 4, 5];
+  const libres = [0, 1, 2, 3, 4, 5, 6, 7];
   assert.equal(caseParDefaut({ id: 'viking' }, libres), 0, 'la mêlée entre devant');
   assert.equal(caseParDefaut({ id: 'garde', defenseur: true }, libres), 0, 'le Défenseur aussi');
-  assert.equal(caseParDefaut({ id: 'archere', distance: true }, libres), 3, 'le tir entre derrière');
+  assert.equal(caseParDefaut({ id: 'archere', distance: true }, libres), 4, 'le tir entre derrière');
   assert.equal(caseParDefaut({ id: 'garde', coupRapide: true, defenseur: true }, libres), 0,
     'un Défenseur reste devant, même avec l’Attaque ciblée');
   assert.equal(caseParDefaut({ id: 'viking' }, [1, 2, 4, 5]), 1);
   assert.equal(caseParDefaut({ id: 'archere', distance: true }, [1, 2, 4, 5]), 4);
-  assert.equal(caseParDefaut({ id: 'viking' }, [3, 4, 5]), null,
+  assert.equal(caseParDefaut({ id: 'viking' }, [4, 5, 6]), null,
     'le fond ne sert pas de repli à une mêlée');
   assert.equal(caseParDefaut({ id: 'archere', distance: true }, [0, 1, 2]), null,
     'le front ne sert pas de repli à un tireur');
 });
 
 test('une ligne pleine n’a pas de repli sur l’autre', () => {
-  const frontLibre = [0, 1, 2];
-  const fondLibre = [3, 4, 5];
+  const frontLibre = [0, 1, 2, 3];
+  const fondLibre = [4, 5, 6, 7];
   assert.equal(caseParDefaut({ id: 'archere', distance: true }, frontLibre), null,
     'le fond plein ne pousse pas un tireur au front');
   assert.equal(caseParDefaut({ id: 'viking' }, fondLibre), null,
@@ -92,25 +92,25 @@ test('une ligne pleine n’a pas de repli sur l’autre', () => {
 
 test('les cases libres sont celles de la ligne de la carte, moins les occupants', () => {
   const camp = { creatures: [
-    creature('a', 0), creature('b', 2), creature('c', 3), creature('d', 5),
+    creature('a', 0), creature('b', 2), creature('c', 4), creature('d', 6),
   ] };
   // Le front pour la mêlée et le Défenseur, le fond pour les tireurs.
   for (const carte of [{ id: 'viking' }, { id: 'garde', defenseur: true }]) {
-    assert.deepEqual(casesLibresPour(camp, carte), [1], `${carte.id} : le front libre`);
+    assert.deepEqual(casesLibresPour(camp, carte), [1, 3], `${carte.id} : le front libre`);
   }
   for (const carte of [{ id: 'archere', distance: true }, { id: 'tengu', distance: true, envol: true }]) {
-    assert.deepEqual(casesLibresPour(camp, carte), [4], `${carte.id} : le fond libre`);
+    assert.deepEqual(casesLibresPour(camp, carte), [5, 7], `${carte.id} : le fond libre`);
   }
   // Les victimes d'un sacrifice libèrent leur case avant l'arrivée.
-  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }, 6, ['c']), [3, 4]);
-  // Le mode à trois cases n'a pas de fond : plus aucune place pour un tireur.
-  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }, 3), []);
+  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }, 8, ['c']), [4, 5, 7]);
+  // Le mode à quatre cases n'a pas de fond : plus aucune place pour un tireur.
+  assert.deepEqual(casesLibresPour(camp, { id: 'archere', distance: true }, 4), []);
 });
 
 test('le front tient tant qu’une créature vivante le garde', () => {
   assert.equal(frontTient([]), false);
-  assert.equal(frontTient([creature('a', 3), creature('b', 4)]), false);
-  assert.equal(frontTient([creature('a', 3), creature('b', 2)]), true);
+  assert.equal(frontTient([creature('a', 4), creature('b', 5)]), false);
+  assert.equal(frontTient([creature('a', 4), creature('b', 2)]), true);
 });
 
 test('le fond est hors de portée d’une attaque de mêlée', () => {
@@ -138,8 +138,8 @@ test('front tombé, le fond redevient une cible ordinaire', () => {
 test('le filtre de ligne conserve l’ordre et les autres filtres', () => {
   const melee = { id: 'berserk' };
   const devant = creature('devant', 1);
-  const fondA = creature('fondA', 3);
-  const fondB = creature('fondB', 5);
+  const fondA = creature('fondA', 4);
+  const fondB = creature('fondB', 6);
   const ligne = [devant, fondA, fondB];
   // Les cibles arrivent déjà filtrées par l'appelant (protection d'élément,
   // voie du MOBA…) : le filtre de ligne n'en retire que le fond.

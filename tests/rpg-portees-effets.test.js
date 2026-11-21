@@ -69,12 +69,12 @@ test('les duels sont au contact, les tirs et les tours à deux cases', () => {
   assert.equal(porteeEffetCarte('leviathan'), null);
 });
 
-test('une cible à une case est atteinte, une cible à quatre ne l’est plus', () => {
+test('une cible à une case est atteinte, une cible à trois ne l’est plus', () => {
   const d = scene();
   const source = poser(d, 'joueur', { carte: 'tour-de-braise', caseVoulue: 0 });
   assert.deepEqual(positionDe(source, 'joueur'), { camp: 'joueur', index: 0, rangee: 2, colonne: 0 });
   const proche = { emplacement: 0 };
-  const loin = { emplacement: 9 };
+  const loin = { emplacement: 7 };
   assert.equal(cibleDeLEffetAPortee(d, 'joueur', source.id, proche, 'sorcier', 2), true);
   assert.equal(cibleDeLEffetAPortee(d, 'joueur', source.id, loin, 'sorcier', 2), false);
   // Sans portée, la même cible redevient légale.
@@ -86,7 +86,7 @@ test('une cible à une case est atteinte, une cible à quatre ne l’est plus', 
 
 test('une tour ne frappe pas au-delà de deux cases : hors de portée, la cible tient', () => {
   const d = scene();
-  const cible = poser(d, 'sorcier', { carte: 'ashigaru-des-braises', caseVoulue: 9 });
+  const cible = poser(d, 'sorcier', { carte: 'ashigaru-des-braises', caseVoulue: 7 });
   const tour = poser(d, 'joueur', { carte: 'tour-de-braise', caseVoulue: 0, cibleId: cible.id });
   assert.ok(tour, 'la tour est posée');
   assert.equal(cible.pv, 10, 'aucun dégât hors de portée');
@@ -104,7 +104,7 @@ test('les cibles à portée se lisent dans l’ordre du champ', () => {
   const d = scene();
   const source = poser(d, 'joueur', { carte: 'tour-de-braise', caseVoulue: 0 });
   const pres = poser(d, 'sorcier', { carte: 'novice-des-cendres', caseVoulue: 0 });
-  const loin = poser(d, 'sorcier', { carte: 'ashigaru-des-braises', caseVoulue: 9 });
+  const loin = poser(d, 'sorcier', { carte: 'ashigaru-des-braises', caseVoulue: 7 });
   const aDeux = ciblesDeLEffetAPortee(d, 'joueur', source.id, 2, 'sorcier');
   assert.deepEqual(aDeux.map((e) => e.id), [pres.id]);
   const sansLimite = ciblesDeLEffetAPortee(d, 'joueur', source.id, null, 'sorcier');
@@ -113,10 +113,10 @@ test('les cibles à portée se lisent dans l’ordre du champ', () => {
 
 test('le duel de Bakunawa exige le contact', () => {
   const d = scene();
-  const loin = poser(d, 'sorcier', { carte: 'ashigaru-des-braises', caseVoulue: 9 });
+  const loin = poser(d, 'sorcier', { carte: 'ashigaru-des-braises', caseVoulue: 7 });
   const bakunawa = poser(d, 'joueur', { carte: 'bakunawa', caseVoulue: 0, cibleId: loin.id });
   assert.ok(bakunawa);
-  assert.equal(loin.pv, 10, 'aucune lame à quatre cases');
+  assert.equal(loin.pv, 10, 'aucune lame à trois cases');
   assert.ok(d.log.some((ligne) => /hors de portée/.test(ligne)), d.log.join(' | '));
 });
 

@@ -43,9 +43,9 @@ function table({ lignes = true } = {}) {
   /** Pose une créature exactement sur une rangée/colonne absolues. */
   const surCase = (camp, id, rangee, colonne) => {
     const entite = poser(camp, id);
-    // Rangées 0 et 3 = les fonds (cases 5-9) ; 1 et 2 = les fronts (cases 0-4).
+    // Rangées 0 et 3 = les fonds (cases 4-7) ; 1 et 2 = les fronts (cases 0-3).
     const fond = rangee === 0 || rangee === 3;
-    entite.emplacement = fond ? 5 + colonne : colonne;
+    entite.emplacement = fond ? 4 + colonne : colonne;
     const proprietaire = rangee <= 1 ? 'sorcier' : 'joueur';
     if (proprietaire === camp) delete entite.campPose;
     else entite.campPose = proprietaire;
@@ -62,8 +62,8 @@ test('une créature qui frappe depuis le bout du plateau recule d’une case', (
 
   const res = rpgReculerApresFrappe(d, 'joueur', attaquant.id);
   assert.equal(res.ok, true, res.raison);
-  assert.deepEqual(res.reculs.map((r) => [r.avant, r.apres]), [[7, 2]],
-    'du fond du sorcier (case 7) à son front (case 2), même colonne');
+  assert.deepEqual(res.reculs.map((r) => [r.avant, r.apres]), [[6, 2]],
+    'du fond du sorcier (case 6) à son front (case 2), même colonne');
   assert.deepEqual(positionDe(attaquant, 'joueur'), { camp: 'sorcier', index: 2, rangee: 1, colonne: 2 });
   assert.match(d.log.at(-1), /repoussée d’une case/);
 });
@@ -128,7 +128,7 @@ test('sans les lignes, la règle ne s’applique pas', () => {
 
 test('le sorcier recule aussi, symétriquement, depuis notre fond', () => {
   const { d, surCase } = table();
-  const envahisseur = surCase('sorcier', MELEE, 3, 4);
+  const envahisseur = surCase('sorcier', MELEE, 3, 3);
   assert.ok(rpgAuBoutDuPlateau(d, 'sorcier', envahisseur), 'il est sur notre fond');
   const res = rpgReculerApresFrappe(d, 'sorcier', envahisseur.id);
   assert.equal(res.ok, true, res.raison);

@@ -42,7 +42,7 @@ function table() {
     const resultat = poser('sorcier', MELEE);
     assert.ok(resultat.ok, `l'envahisseur doit entrer : ${resultat.raison}`);
     const entite = resultat.entite;
-    entite.emplacement = 5 + colonne;
+    entite.emplacement = 4 + colonne;
     entite.campPose = 'joueur';
     entite.avancee = true;
     entite.ready = true;
@@ -55,7 +55,7 @@ function table() {
 test('une case envahie est une case d’arrivée : l’envahisseur recule', () => {
   const { d, envahir } = table();
   const envahisseur = envahir(2);
-  const case2 = rpgCasesPose(d, 'joueur').find((c) => c.index === 7);
+  const case2 = rpgCasesPose(d, 'joueur').find((c) => c.index === 6);
   assert.ok(case2.occupant, 'la case est tenue par l’envahisseur');
   assert.equal(case2.propre, false);
   assert.equal(case2.poussable, true, 'la chaîne derrière lui est libre : il peut reculer');
@@ -63,10 +63,10 @@ test('une case envahie est une case d’arrivée : l’envahisseur recule', () =
   const pose = (() => {
     d.joueur.main.push(TIREUR);
     d.joueur.invocationNormaleJouee = false;
-    return rpgJouerCreature(d, 'joueur', TIREUR, null, { emplacement: 7 });
+    return rpgJouerCreature(d, 'joueur', TIREUR, null, { emplacement: 6 });
   })();
   assert.ok(pose.ok, `la pose doit aboutir : ${pose.raison}`);
-  assert.equal(pose.entite.emplacement, 7, 'la créature prend la case libérée');
+  assert.equal(pose.entite.emplacement, 6, 'la créature prend la case libérée');
   assert.deepEqual(positionDe(envahisseur, 'sorcier'),
     { camp: 'joueur', index: 2, rangee: 2, colonne: 2 },
     'l’envahisseur recule d’une case vers son camp, même colonne');
@@ -83,7 +83,7 @@ test('une chaîne d’envahisseurs recule d’un cran', () => {
     entite.campPose = 'joueur';
     return entite;
   })();
-  const res = rpgPousserEnvahisseur(d, 'joueur', 6);
+  const res = rpgPousserEnvahisseur(d, 'joueur', 5);
   assert.equal(res.ok, true, res.raison);
   assert.equal(res.reculs.length, 2, 'les deux envahisseurs de la colonne reculent');
   assert.equal(positionDe(devant, 'sorcier').rangee, 2, 'il recule sur notre front');
@@ -92,13 +92,13 @@ test('une chaîne d’envahisseurs recule d’un cran', () => {
 
 test('l’arrière entièrement envahi ne refuse plus la pose', () => {
   const { d, envahir } = table();
-  for (let colonne = 0; colonne < 5; colonne += 1) envahir(colonne);
+  for (let colonne = 0; colonne < 4; colonne += 1) envahir(colonne);
   const ouvertes = rpgCasesPose(d, 'joueur').filter((c) => c.poussable);
-  assert.equal(ouvertes.length, 5, 'les cinq colonnes sont dégageables');
+  assert.equal(ouvertes.length, 4, 'les quatre colonnes sont dégageables');
   d.joueur.main.push(TIREUR);
   const pose = rpgJouerCreature(d, 'joueur', TIREUR);
   assert.ok(pose.ok, `la pose doit aboutir : ${pose.raison}`);
-  assert.ok(pose.entite.emplacement >= 5, 'elle entre bien par le fond, sa ligne');
+  assert.ok(pose.entite.emplacement >= 4, 'elle entre bien par le fond, sa ligne');
 });
 
 test('au bord du plateau, personne ne bouge', () => {
@@ -106,8 +106,8 @@ test('au bord du plateau, personne ne bouge', () => {
   // Une colonne pleine de son fond jusqu'au nôtre : reculer d'un cran
   // sortirait le premier du plateau.
   const ranger = (entite, rangee) => {
-    if (rangee >= 2) { entite.campPose = 'joueur'; entite.emplacement = (rangee - 2) * 5; }
-    else { delete entite.campPose; entite.emplacement = (rangee === 1 ? 0 : 5); }
+    if (rangee >= 2) { entite.campPose = 'joueur'; entite.emplacement = (rangee - 2) * 4; }
+    else { delete entite.campPose; entite.emplacement = (rangee === 1 ? 0 : 4); }
     entite.avancee = true;
     return entite;
   };
@@ -115,15 +115,15 @@ test('au bord du plateau, personne ne bouge', () => {
   const troupes = rangees.map((rangee) => ranger(envahir(0), rangee));
   assert.deepEqual(troupes.map((e) => positionDe(e, 'sorcier').rangee), rangees);
 
-  const res = rpgPousserEnvahisseur(d, 'joueur', 5);
+  const res = rpgPousserEnvahisseur(d, 'joueur', 4);
   assert.equal(res.ok, false);
   assert.equal(res.raison, 'bord');
   assert.deepEqual(troupes.map((e) => positionDe(e, 'sorcier').rangee), rangees,
     'aucun envahisseur n’a bougé');
-  const case5 = rpgCasesPose(d, 'joueur').find((c) => c.index === 5);
+  const case5 = rpgCasesPose(d, 'joueur').find((c) => c.index === 4);
   assert.equal(case5.poussable, false);
   d.joueur.main.push(TIREUR);
-  const pose = rpgJouerCreature(d, 'joueur', TIREUR, null, { emplacement: 5 });
+  const pose = rpgJouerCreature(d, 'joueur', TIREUR, null, { emplacement: 4 });
   assert.equal(pose.ok, false, 'une case bloquée ne s’ouvre pas');
 });
 

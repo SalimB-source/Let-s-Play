@@ -575,7 +575,7 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], joueurReserv
   const atouts = pvp ? rpgAtoutsSorcier(null) : rpgAtoutsSorcier(sorcierAtouts);
   const duel = {
     ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
-    // Les deux lignes du champ (`rpgLignes.js`) : dix cases, front et fond.
+    // Les deux lignes du champ (`rpgLignes.js`) : huit cases, front et fond.
     // Le drapeau vient de la fabrique — la page le demande, une partie
     // sauvegardée le retrouve, et l'arbitre en ligne le pose aussi.
     ...(essaiMana && lignes ? { lignes: true } : {}),
@@ -6079,7 +6079,7 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
 
 /**
  * Les cases d'un camp (`duel.joueur`, `duel.sorcier`) en essai : un tableau
- * d'une entrée par case — cinq, ou dix quand les deux lignes sont ouvertes
+ * d'une entrée par case — quatre, ou huit quand les deux lignes sont ouvertes
  * (`champMax`) —, la créature qui occupe chaque case ou `null`. Une créature
  * sans case connue (partie sauvegardée avant les cases fixes) ou en doublon
  * prend la première case libre, dans l'ordre de la rangée — sans rien

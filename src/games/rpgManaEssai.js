@@ -18,10 +18,10 @@ export const RPG_MANA_ESSAI_MAIN_DEPART = 5;
 /** Taille de main maximale à la fin d'un tour : l'excédent est défaussé. */
 export const RPG_MANA_ESSAI_MAIN_MAX = 6;
 export const RPG_MANA_ESSAI_CARTES_EXCLUES = Object.freeze([]);
-/** Le champ de bataille accueille cinq créatures, dessinées en cinq
- *  emplacements de chaque côté du plateau : la sixième exige un sacrifice —
+/** Le champ de bataille accueille quatre créatures, dessinées en quatre
+ *  emplacements de chaque côté du plateau : la cinquième exige un sacrifice —
  *  le joueur choisit laquelle, l'IA sacrifie la plus frêle. */
-export const RPG_MANA_ESSAI_CHAMP_MAX = 5;
+export const RPG_MANA_ESSAI_CHAMP_MAX = 4;
 
 /** Les cinq anciens identifiants restent utilisables dans les sauvegardes.
  * Chaque liste provient du même catalogue que le mode MOBA et le duel classique. */

@@ -1,7 +1,7 @@
 /**
  * Le Sablier — les **deux lignes** du champ de bataille.
  *
- * Le champ de cinq places devient un champ de **deux lignes de cinq cases** :
+ * Le champ de quatre places devient un champ de **deux lignes de quatre cases** :
  * une ligne de **front**, face à l'adversaire, et une ligne du **fond**,
  * derrière elle. La ligne n'est pas un choix : elle vient de la **carte**.
  *
@@ -50,8 +50,8 @@
  * ## La géométrie
  *
  * Une seule source de vérité : la **case** de la créature (`entite.emplacement`,
- * 0 à 9, comme avant mais sur dix places). Les cases 0 à 4 sont le front, les
- * cases 5 à 9 le fond. Rien d'autre n'est stocké : une créature déplacée de
+ * 0 à 7, comme avant mais sur huit places). Les cases 0 à 3 sont le front, les
+ * cases 4 à 7 le fond. Rien d'autre n'est stocké : une créature déplacée de
  * ligne change de case, et une sauvegarde relue retrouve sa ligne toute seule.
  */
 
@@ -63,9 +63,9 @@ export const RPG_LIGNE_FRONT = 'front';
 export const RPG_LIGNE_FOND = 'fond';
 export const RPG_LIGNES = Object.freeze([RPG_LIGNE_FRONT, RPG_LIGNE_FOND]);
 
-/** Trois cases par ligne (front 0-2, fond 3-5). */
-export const RPG_LIGNES_CASES = 3;
-/** Les six cases du champ à deux lignes (front 0-2, fond 3-5). */
+/** Quatre cases par ligne (front 0-3, fond 4-7). */
+export const RPG_LIGNES_CASES = 4;
+/** Les huit cases du champ à deux lignes (front 0-3, fond 4-7). */
 export const RPG_LIGNES_CHAMP_MAX = RPG_LIGNES_CASES * 2;
 
 /** Les lignes sont une variante de partie, portée par le duel lui-même —
@@ -131,7 +131,7 @@ export function caseAutorisee(carte, index) {
 
 /**
  * Cette case est-elle **choisissable** à la pose ? Le joueur choisit la
- * colonne, la **ligne est imposée par la carte** : les cinq cases du front
+ * colonne, la **ligne est imposée par la carte** : les quatre cases du front
  * s'allument pour un corps à corps ou un Défenseur, celles du fond pour une
  * créature « À distance » ou à l'Attaque ciblée. L'**Envol** n'y change rien :
  * il décide du passage au-dessus des corps (`rpgCheminLibre`), pas du
@@ -209,8 +209,8 @@ export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = 
   return attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
 }
 
-/** Le nombre de cases du champ de ce duel : dix quand les lignes sont
- *  ouvertes, cinq sinon. Une seule question à poser partout où le moteur
+/** Le nombre de cases du champ de ce duel : huit quand les lignes sont
+ *  ouvertes, quatre sinon. Une seule question à poser partout où le moteur
  *  compte les places. */
 export function champMax(duel) {
   return lignesActives(duel) ? RPG_LIGNES_CHAMP_MAX : RPG_LIGNES_CASES;
@@ -218,7 +218,7 @@ export function champMax(duel) {
 
 /** L'ordonnée d'une case pour les règles de **voisinage** (auras de Tarek,
  *  liens, adjacence) : les deux lignes sont deux rangées séparées, donc la
- *  case 4 (bout du front) et la case 5 (début du fond) ne sont pas voisines,
+ *  case 3 (bout du front) et la case 4 (début du fond) ne sont pas voisines,
  *  alors qu'elles se suivent dans la numérotation. */
 export function positionDeCase(index) {
   const ligne = ligneDeCase(index);

@@ -338,7 +338,7 @@
 .rpg-battle[data-mode-mana="essai"] .card-row {
   --essai-colonne: clamp(62px, min(11vw, 18.5vh), 160px);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, var(--essai-colonne)));
+  grid-template-columns: repeat(4, minmax(0, var(--essai-colonne)));
   justify-content: center;
   column-gap: clamp(20px, 1.8vw, 30px);
   justify-items: center;
@@ -358,7 +358,7 @@
   inset: 0;
   z-index: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, var(--essai-colonne, 1fr)));
+  grid-template-columns: repeat(4, minmax(0, var(--essai-colonne, 1fr)));
   justify-content: center;
   align-items: end;
   justify-items: center;
@@ -1056,14 +1056,14 @@
 /* ══════════════════════════════════════════════════════════════════════════
    LES DEUX LIGNES DU CHAMP — le front devant, les distances derrière
    ──────────────────────────────────────────────────────────────────────────
-   Cinq colonnes, deux rangées. La ligne vient de la carte, jamais du joueur :
+   Quatre colonnes, deux rangées. La ligne vient de la carte, jamais du joueur :
    les corps à corps (et les Défenseurs) tiennent le front, face à
    l'adversaire, les créatures « À distance » se rangent derrière. La règle
    vit dans `rpgLignes.js` ; ici, seulement la géométrie.
 
    Le front est toujours du côté de l'adversaire : en **haut** de chaque camp
    pour le sorcier (rangée 2), en **bas** pour le joueur (rangée 1). Chaque
-   rangée garde ses cinq colonnes, donc une case reste la même colonne d'une
+   rangée garde ses quatre colonnes, donc une case reste la même colonne d'une
    ligne à l'autre.
 
    Deux hauteurs de carte doivent tenir là où une seule tenait : les cartes
@@ -1081,15 +1081,15 @@
   align-content: start;
   row-gap: clamp(6px, .8vh, 11px);
   /* Deux hauteurs de carte (ratio 4/5) plus leur gouttière : même vide, la
-     rangée garde ses dix cases à l'écran. */
+     rangée garde ses huit cases à l'écran. */
   min-height: calc(var(--essai-colonne) * 2.5 + clamp(6px, .8vh, 11px));
   column-gap: clamp(14px, 1.2vw, 22px);
 }
-/* La carte posée prend sa colonne (1 à 5) et la rangée de sa ligne. La pile
+/* La carte posée prend sa colonne (1 à 4) et la rangée de sa ligne. La pile
    et le wrapper de prison suivent la carte qu'ils portent. */
 .rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] > :is(.rpg-card, .rpg-card-stack, .rpg-card-prison) {
   grid-column: var(--case-col, auto);
-  /* La règle des cinq colonnes pose `grid-row: 1` sur **toutes** les cartes du
+  /* La règle des quatre colonnes pose `grid-row: 1` sur **toutes** les cartes du
      champ. Sans cette remise à zéro, et malgré les règles de rangée plus bas,
      le fond se dessinerait dans la rangée du front : une archère viendrait se
      poser sur la première case, par-dessus le corps à corps qui l'occupe. */
@@ -1129,7 +1129,7 @@
    cases tombaient entre deux rangées de cartes. */
 .rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"],
 .rpg-battle[data-mode-mana="essai"] .card-row[data-lignes="true"] .rpg-creature-slots {
-  grid-template-columns: repeat(3, var(--essai-colonne));
+  grid-template-columns: repeat(4, var(--essai-colonne));
   grid-template-rows: repeat(2, calc(var(--essai-colonne) * 1.25));
   justify-content: center;
   justify-items: center;

@@ -923,7 +923,7 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
  * rangée de chaque camp : une case par créature jouable, pleine quand elle
  * est occupée, en pointillés quand elle attend encore sa créature.
  *
- * Sur **deux lignes** (`deuxLignes`, les dix cases du champ), les cases se
+ * Sur **deux lignes** (`deuxLignes`, les huit cases du champ), les cases se
  * lisent comme le champ lui-même : les cinq du front d'un côté, les cinq du
  * fond derrière, et le fond porte le voile doré tant que le front tient
  * (`data-front-tient`). Aucune case ne se choisit librement : une carte à
@@ -932,7 +932,7 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
  * Quand une pose attend sa case (`choixEmplacement`, côté joueur), les cases
  * libres **du camp** deviennent de vrais boutons (la ligne de la carte ne
  * contraint plus que l'Envol) : clic,
- * doigt ou clavier (touches 1 à 5, la colonne) posent la créature en attente
+ * doigt ou clavier (touches 1 à 4, la colonne) posent la créature en attente
  * sur la case choisie. Une case occupée ne se désigne jamais : échanger une
  * créature contre une autre passe par le sacrifice du plateau plein
  * (`sacrificeEnCours`), pas par ici. */
@@ -988,7 +988,7 @@ export function CreatureSlots({
       {cases.map((occupant, index) => {
         const ligne = ligneDeCase(index);
         // Sur deux lignes, le numéro affiché est la **colonne** : les touches
-        // 1 à 5 désignent une colonne, la ligne étant celle de la carte.
+        // 1 à 4 désignent une colonne, la ligne étant celle de la carte.
         const colonne = colonnes ? (index % colonnes) + 1 : index + 1;
         const choisissable = choixEmplacement && !occupant && onChoisirEmplacement
           && (ligneChoisissable === null || ligneChoisissable === ligne);
@@ -8712,7 +8712,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Les autres étages n'en déclarent pas — `rpgAtoutsSorcier` les ramène à zéro.
       sorcierAtouts: modeTutoriel ? null : etageCourant?.atouts ?? null,
       modeMana: RPG_MODE_MANA_ESSAI,
-      // Les deux lignes du champ (`rpgLignes.js`) : dix cases, une ligne de
+      // Les deux lignes du champ (`rpgLignes.js`) : huit cases, une ligne de
       // front et une ligne du fond, dessinées l'une devant l'autre.
       lignes: true,
       joueurCouleurs: deckEssai?.elements,
@@ -9636,7 +9636,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
 
-      // Une créature attend sa case : les touches 1 à 5 désignent alors
+      // Une créature attend sa case : les touches 1 à 4 désignent alors
       // l'emplacement numéroté (une case occupée n'a pas de bouton).
       const boutonEmplacement = indexChiffre >= 0
         ? coque.querySelector(`.rpg-creature-slot--choix[data-creature-slot-col="${indexChiffre + 1}"]`)
