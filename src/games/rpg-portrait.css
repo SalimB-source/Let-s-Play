@@ -196,7 +196,7 @@
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"],
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots {
-    grid-template-columns: repeat(3, var(--essai-colonne));
+    grid-template-columns: repeat(4, var(--essai-colonne));
     grid-template-rows: repeat(2, calc(var(--essai-colonne) * 1.25));
     justify-content: center;
     justify-items: center;
