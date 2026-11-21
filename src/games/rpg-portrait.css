@@ -214,9 +214,17 @@
   .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand-dock .rpg-hand {
     justify-content: center;
   }
-  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand__ecart {
-    flex: 0 0 calc(var(--rpg-avatar-height, 52px) + 18px);
-    width: calc(var(--rpg-avatar-height, 52px) + 18px);
+  /* La main au doigt reste **d'une seule pièce** : la cale ne réserve plus la
+     largeur du médaillon, elle ne fait plus que couper la rangée en deux (trois
+     cartes à gauche, le reste à droite). Debout, le portrait du joueur a sa
+     propre rangée au-dessus de la main — rien ne passe dessous — donc la cale
+     se réduit à zéro et les cartes se suivent comme sur le plateau large. */
+  .rpg-battle[data-scene="duel"].rpg-battle--touch .rpg-hand__ecart,
+  .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .rpg-hand__ecart {
+    flex: 0 0 0;
+    width: 0;
+    margin: 0;
+    padding: 0;
     pointer-events: none;
   }
 
