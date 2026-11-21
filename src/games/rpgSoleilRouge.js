@@ -91,9 +91,16 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'ninja-samourai-des-ombres', infiltration: true, frappeSansRiposte: true,
     name: 'Ninja samouraï des ombres',
     cost: 3, atk: 3, def: 1, rarity: 'inhabituelle',
+    // Le seul hybride du set : le serment du Soleil rouge pour la Braise, la
+    // nuit où il frappe pour les Ténèbres. Trois manas, dont un de chaque :
+    // son cadre se partage en deux (voir `cardHybridGradient`), et un deck
+    // Braise doit ouvrir un peu de Ténèbres pour l'inviter.
+    element: 'braise',
+    colors: ['braise', 'tenebres'],
+    colorCost: { braise: 1, tenebres: 1 },
     typeLine: 'Créature — Humain · Ninja · Samouraï',
     text: 'Infiltration — Il passe les lignes sans être bloqué. Frappe de l’ombre — Quand il attaque une créature, il ne reçoit aucun coup en retour, même si elle porte Contre-attaque. Harakiri 1.',
-    flavor: 'On ne le voit qu’une fois la gorge ouverte ; sa lame ne rend jamais deux fois.',
+    flavor: 'La braise le réchauffe, la nuit le cache : on ne le voit qu’une fois la gorge ouverte.',
   }),
   carte({
     id: 'ronin-du-soleil-rouge', name: 'Rōnin du Soleil rouge',

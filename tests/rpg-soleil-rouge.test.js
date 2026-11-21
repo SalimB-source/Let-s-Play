@@ -396,7 +396,7 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       'feriel': 'braise-souls-cendres-v3',
       'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
       'archer-samourai-des-cendres': 'archer-samourai-cendres-v2',
-      'ninja-samourai-des-ombres': 'ninja-samourai-ombres-v1',
+      'ninja-samourai-des-ombres': 'ninja-samourai-ombres-v2',
       'ashigaru-des-braises': 'braise-souls-cendres-v4',
       'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
       'samourai-du-torii': 'braise-souls-cendres-v4',

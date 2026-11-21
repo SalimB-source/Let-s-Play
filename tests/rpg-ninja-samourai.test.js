@@ -15,7 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rpgSoleilRouge.js';
-import { RPG_DECKS_ARCHETYPES, RPG_DUEL_CARDS, cardById, cardColors, cardCost, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, RPG_DUEL_CARDS, cardById, cardColors, cardColorCost, cardCopyLimit, cardCost, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART } from '../src/games/rpgCollection.js';
 import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR, cardArt } from '../src/games/rpgCardArt.js';
 import { EFFET_DEFINITIONS, EFFET_ICONE, EFFET_LIBELLES, pastillesPourCarte } from '../src/games/effetIcons.js';
@@ -90,7 +90,9 @@ test('la carte appartient au Serment du Soleil rouge et se collectionne', () => 
   const carte = cardById(ID);
   assert.equal(carte.set, RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(carte.element, 'braise');
-  assert.deepEqual(cardColors(ID), ['braise']);
+  assert.deepEqual(cardColors(ID), ['braise', 'tenebres'], 'Braise et Ténèbres');
+  assert.deepEqual(cardColorCost(ID), { braise: 1, tenebres: 1 },
+    'trois manas, dont un de chaque couleur');
   assert.ok(RPG_SOLEIL_ROUGE_CARDS.some((candidate) => candidate.id === ID), 'présente dans le set');
   assert.ok(RPG_DUEL_CARDS.some((candidate) => candidate.id === ID), 'présente au catalogue du duel');
   assert.ok(COLLECTION_DEPART.includes(ID), 'offerte dans la dotation de départ, comme les inhabituelles');
@@ -106,11 +108,24 @@ test('ses trois pastilles : Infiltration, Frappe de l’ombre et Harakiri', () =
     'le volet déplié dit que la Contre-attaque ne part pas');
 });
 
-test('il entre dans le deck préconstruit du Soleil rouge, deux exemplaires au plus', () => {
-  const starter = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === RPG_SOLEIL_ROUGE_SET_ID);
-  const variante = [...starter.cardIds.slice(0, 28), ID, ID];
-  assert.deepEqual(rpgValiderDeck(variante), { ok: true, terrains: 0 });
-  const trois = [...starter.cardIds.slice(0, 27), ID, ID, ID];
+test('un deck Braise + Ténèbres l’accepte, deux exemplaires au plus', () => {
+  // Le starter préconstruit est Braise + Neige : l'hybride Ténèbres y ferait
+  // une troisième couleur. Le deck se compose donc du set et de lui.
+  const deck = [ID, ID];
+  for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
+    if (carte.id === ID || deck.length >= 30) continue;
+    const max = Math.min(2, cardCopyLimit(carte));
+    for (let copie = 0; copie < max && deck.length < 30; copie += 1) deck.push(carte.id);
+  }
+  assert.deepEqual(rpgValiderDeck(deck), { ok: true, terrains: 0 });
+  assert.deepEqual([...new Set(deck.flatMap((id) => cardColors(id)))], ['braise', 'tenebres'],
+    'deux couleurs, la Braise du set et les Ténèbres du ninja');
+
+  const starter = RPG_DECKS_ARCHETYPES.find((deckArchetype) => deckArchetype.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const melange = [...starter.cardIds.slice(0, 28), ID, ID];
+  assert.equal(rpgValiderDeck(melange).ok, false, 'Braise + Neige + Ténèbres : trois couleurs refusées');
+
+  const trois = [...deck.slice(0, 27), ID, ID, ID];
   assert.equal(rpgValiderDeck(trois).ok, false, 'la limite de copies reste celle des inhabituelles');
 });
 
@@ -157,6 +172,6 @@ test('sa peinture est livrée en 768 × 960 et reste légère', () => {
   const jpg = readFileSync(chemin);
   assert.deepEqual(dimensionsJpeg(jpg), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR]);
   assert.ok(statSync(chemin).size <= 260 * 1024, 'sous le plafond d’une peinture livrée');
-  assert.match(cardArt(ID), new RegExp(`cards/${ID}\\.jpg\\?v=ninja-samourai-ombres-v1$`),
+  assert.match(cardArt(ID), new RegExp(`cards/${ID}\\.jpg\\?v=ninja-samourai-ombres-v2$`),
     'la révision de cache est déclarée');
 });
