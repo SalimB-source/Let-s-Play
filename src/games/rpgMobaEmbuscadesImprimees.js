@@ -54,6 +54,8 @@ const defausserMagie = Object.freeze({ zone: 'main', destination: 'cimetiere', a
 export const MOBA_EMBUSCADES_IMPRIMEES = Object.freeze({
   'garde-du-trone-givre': entree('Vous avez au moins un Viking dans votre cimetière.', (d, s) => creaturesCimetiere(d, s).some((id) => cardHasPrintedType(id, 'Viking'))),
   'momie-de-lin': entree('Exilez une carte de créature de votre cimetière, au choix.', (d, s) => creaturesCimetiere(d, s).length > 0, exilerCreature),
+  'ninja-samourai-des-toits': entree('L’adversaire contrôle au moins une créature.',
+    (d, s) => creatures(d, autre(s)).length >= 1),
   'sanguinaire-des-dunes': entree('L’adversaire contrôle au moins deux créatures blessées.', (d, s) => creatures(d, autre(s)).filter(blessee).length >= 2),
   'gardienne-du-croissant': entree('Vous contrôlez une créature blessée.', (d, s) => creatures(d, s).some(blessee)),
   'porte-etendard-de-leclipse': entree('Vous contrôlez au moins trois créatures.', (d, s) => creatures(d, s).length >= 3),

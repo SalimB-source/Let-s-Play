@@ -339,6 +339,19 @@ donc en duel classique il passe directement au sorcier — la Frappe de l'ombre
 se voit dès qu'il affronte une créature (combat individuel, voie MOBA, ou tout
 chemin qui l'oppose à un corps à corps).
 
+**Le ninja samouraï des toits** (`ninja-samourai-des-toits`, Serment du Soleil
+rouge) est le second tireur du set : 2 manas, **2/1**, « Humain · Ninja ·
+Samouraï », **À distance**, **Harakiri 1**, et une **Invocation spéciale** —
+pendant votre phase principale, sans sacrifice ni invocation normale, dès que
+l'adversaire contrôle **au moins une créature** (`conditionEmbuscade:
+'adversaire-a-une-creature'`, au registre `MOBA_EMBUSCADES_IMPRIMEES`). Sans
+créature en face, il s'invoque normalement. Son tir porte le quart de raté de
+tous les tireurs. Sa peinture est sa propre scène, sans
+reprendre la silhouette de l'autre ninja : debout face au lecteur, écharpe
+rouge, bras tendu, six shuriken figés au ralenti dans une gerbe d'étincelles,
+tour de guet en feu derrière lui (`cards/ninja-samourai-des-toits.jpg`,
+révision `ninja-samourai-des-toits-v2`).
+
 **L'archer samouraï des cendres** (`archer-samourai-des-cendres`, Serment du
 Soleil rouge) est le tireur commune du set : 2 manas, **2/1**, ligne de type
 « Humain · Samouraï », « À distance » et Harakiri 1, sans autre mot-clé. Le

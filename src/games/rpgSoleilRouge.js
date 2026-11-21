@@ -88,6 +88,18 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'La corde chante une fois ; l’ennemi n’entend jamais la seconde.',
   }),
   carte({
+    id: 'ninja-samourai-des-toits', distance: true,
+    name: 'Ninja samouraï des toits',
+    cost: 2, atk: 2, def: 1, rarity: 'inhabituelle',
+    // L'invocation spéciale du set : il n'entre que si l'adversaire tient déjà
+    // la table (`conditionEmbuscade: 'adversaire-a-une-creature'`). Hors de ce
+    // cas, il s'invoque normalement pendant son propre tour.
+    reactionTourAdverse: true, conditionEmbuscade: 'adversaire-a-une-creature',
+    typeLine: 'Créature — Humain · Ninja · Samouraï',
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : L’adversaire contrôle au moins une créature. À distance — Il pleut des lames depuis les toits, hors de portée des ripostes. Harakiri 1.',
+    flavor: 'Le premier shuriken annonce le second ; aucun des deux ne prévient.',
+  }),
+  carte({
     id: 'ninja-samourai-des-ombres', infiltration: true, frappeSansRiposte: true,
     name: 'Ninja samouraï des ombres',
     cost: 3, atk: 3, def: 1, rarity: 'inhabituelle',

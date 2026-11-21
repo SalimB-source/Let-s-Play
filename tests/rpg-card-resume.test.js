@@ -82,7 +82,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
 
 test('les conditions d’Embuscade ont une version courte avec des mots clés à mettre en gras', () => {
   const embuscades = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse && carte.conditionEmbuscade);
-  assert.equal(embuscades.length, 7, "les sept cartes dotées d’Embuscade sont concernées");
+  assert.equal(embuscades.length, 8, "les huit cartes dotées d’Embuscade sont concernées");
   for (const carte of embuscades) {
     const morceaux = conditionEmbuscadeCourtePourApercu(carte);
     assert.ok(morceaux?.length >= 2, carte.id);

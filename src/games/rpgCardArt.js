@@ -136,6 +136,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le ninja : shinobi accroupi sur la crête d'un toit de tuiles, la ville
   // embrumée et ses lanternes en contrebas — il observe avant de frapper.
   'ninja-samourai-des-ombres': 'ninja-samourai-ombres-v2',
+  // Le second ninja : debout face au lecteur, six shuriken figés au ralenti,
+  // écharpe rouge et tour de guet en feu — une peinture distincte de l'autre.
+  'ninja-samourai-des-toits': 'ninja-samourai-des-toits-v2',
   'ashigaru-des-braises': 'braise-souls-cendres-v4',
   'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
   'samourai-du-torii': 'braise-souls-cendres-v4',
