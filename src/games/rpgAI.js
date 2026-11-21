@@ -629,8 +629,8 @@ function meilleureCibleArme(duel, cote, carte) {
   // ne se confie pas à un mourant : le porteur doit survivre à la morsure.
   const morsure = Math.max(0, Number(carte?.blessurePorteur) || 0);
   const candidates = duel[cote].creatures
-    .filter((entite) => !entite.mur && !entite.arme && !estProtegee(entite, couleurs)
-      && (entite.pv ?? 0) > morsure);
+    .filter((entite) => !entite.mur && !entite.arme && moteur.rpgArmeCompatible(carte, entite)
+      && !estProtegee(entite, couleurs) && (entite.pv ?? 0) > morsure);
   // Une arme à défense négative dont la mort du porteur déclenche un gain
   // (le Licou du chien de sable, +1/−1) ne cherche pas le meilleur bras :
   // elle cherche le moins regrettable — un jeton, un mourant — puisque la
