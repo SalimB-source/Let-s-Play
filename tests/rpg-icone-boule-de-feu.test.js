@@ -48,8 +48,10 @@ test('boule de feu : l’icône d’ATQ bascule sur la boule pour une créature 
   const page = lire('RpgDuelPage.jsx');
   const moba = lire('RpgMobaBoard.jsx');
   assert.match(page, /data-stat-icon=\{arc \? \(feu \? 'boule-de-feu' : 'arc'\) : type\}/);
-  assert.match(page, /data-boule-tracee=""/);
-  assert.match(page, /M9\.2 18\.6 3 23\.6/); // diagonale descendante, la boule part en haut à droite
+  // Une boule simple : une seule silhouette pleine, inclinée en diagonale.
+  assert.match(page, /data-boule-de-feu="" fill="currentColor" stroke="none"/);
+  assert.match(page, /M18\.6 2\.4c/); // la pointe en haut à droite, le corps vers le bas à gauche
+  assert.doesNotMatch(page, /data-boule-(corps|coeur|tracee|sillage)/);
   assert.match(page, /bouleDeFeu=\{carteLanceBouleDeFeu\(entite\.carte \?\? entite\)\}/);
   assert.match(page, /bouleDeFeu=\{!armesEquipees\.length && carteLanceBouleDeFeu\(carte\)\}/);
   assert.match(moba, /bouleDeFeu=\{carteLanceBouleDeFeu\(card\)\}/);
