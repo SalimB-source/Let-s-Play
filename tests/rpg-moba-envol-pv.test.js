@@ -30,8 +30,9 @@ test('Envol MOBA reste sous les PV, sans modifier le duel, la main ni l’aperç
     assert.equal(style('.moba__side--joueur > .moba__health').position, 'absolute', 'la jauge rattachée reste ancrée');
     assert.equal(style('.moba__side--joueur > .moba__health').zIndex, '12');
   } finally { dom.window.close(); }
-  assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate: 0 var\(--rpg-envol-repos, -14px\)/s);
-  for (const [stage, fallback] of [['repos', '-14px'], ['montee', '-19px'], ['sommet', '-23px'], ['descente', '-17.5px']]) {
+  // Le duel vole bas : la créature reste dans sa case, le MOBA encore plus.
+  assert.match(battleCss, /\.rpg-card\.is-envol\s*\{[^}]*translate: 0 var\(--rpg-envol-repos, -5px\)/s);
+  for (const [stage, fallback] of [['repos', '-5px'], ['montee', '-8px'], ['sommet', '-10px'], ['descente', '-7px']]) {
     assert.match(battleCss, new RegExp(`@keyframes rpg-envol-levite[\\s\\S]*?translate: [^;]*var\\(--rpg-envol-${stage}, ${fallback.replace('.', '\\.')}\\)`));
   }
   assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.rpg-card\.is-envol \{ animation: none; \}/);
