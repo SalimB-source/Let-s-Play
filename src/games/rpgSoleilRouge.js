@@ -81,6 +81,13 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Avant les noms gravés dans les chroniques, il y eut ceux qui tinrent la ligne.',
   }),
   carte({
+    id: 'archer-samourai-des-cendres', distance: true, name: 'Archer samouraï des cendres',
+    cost: 2, atk: 2, def: 1, rarity: 'commune',
+    typeLine: 'Créature — Humain · Samouraï',
+    text: 'À distance — Il bande son yumi depuis la ligne du fond, hors de portée des lames. Harakiri 1.',
+    flavor: 'La corde chante une fois ; l’ennemi n’entend jamais la seconde.',
+  }),
+  carte({
     id: 'ronin-du-soleil-rouge', name: 'Rōnin du Soleil rouge',
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle', rapidite: true,
     typeLine: 'Créature — Humain · Rōnin · Samouraï',
@@ -104,7 +111,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     esquive: true,
     blocage: { chance: 0.25, def: 2 },
     contreAttaque: true,
-    text: 'Défenseur. Esquive — 25 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Contre-attaque — Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, Onna-musha des cendres lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui la atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
+    text: 'Défenseur. Esquive — 25 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Contre-attaque — Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, Onna-musha des cendres lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({

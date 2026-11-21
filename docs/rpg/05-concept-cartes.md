@@ -311,6 +311,18 @@ reste sans contact — pas de capacité « au blocage » — et le journal l'éc
 ne frappe pas deux fois pour le même coup. Un tireur face à une mêlée garde son
 tir sans réponse, et un tireur gelé ne rend rien.
 
+**L'archer samouraï des cendres** (`archer-samourai-des-cendres`, Serment du
+Soleil rouge) est le tireur commune du set : 2 manas, **2/1**, ligne de type
+« Humain · Samouraï », « À distance » et Harakiri 1, sans autre mot-clé. Le
+corps est volontairement mince — 1 de défense, il meurt du premier contact
+tandis que son Harakiri rend le coup — et son tir porte le quart de raté de
+tous les tireurs (`RPG_DISTANCE_ECHEC_CHANCE`). Il n'a **pas** la
+Contre-attaque : c'est une créature de mêlée, et un tireur rend déjà son coup
+par la règle ci-dessus. Commune, donc offerte dans la dotation de départ et
+limitée à deux exemplaires par deck ; sa peinture est dédiée
+(`cards/archer-samourai-des-cendres.jpg`, révision
+`archer-samourai-cendres-v2`).
+
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 

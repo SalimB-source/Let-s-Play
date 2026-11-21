@@ -52,8 +52,8 @@ function sort(duel, id, cible) {
 // Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
-test('Soleil rouge : dix-neuf cartes uniques, illustrées en 768 × 960 et collectionnables', () => {
-  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 19, 'le terrain Braise du Soleil rouge est retiré; Braise et sable complète le set');
+test('Soleil rouge : vingt cartes uniques, illustrées en 768 × 960 et collectionnables', () => {
+  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 20, 'le terrain Braise du Soleil rouge est retiré; Braise et sable complète le set');
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
@@ -73,7 +73,7 @@ test('Soleil rouge : dix-neuf cartes uniques, illustrées en 768 × 960 et colle
     }
     assert.deepEqual(dimensions, [CARD_ART_LARGEUR, CARD_ART_HAUTEUR], carte.id);
   }
-  assert.equal(empreintes.size, 19, 'une illustration dédiée par carte');
+  assert.equal(empreintes.size, 20, 'une illustration dédiée par carte');
 });
 
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
@@ -139,7 +139,8 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
     assert.equal(carte.combat, undefined);
     // Esquive : Susanoo, l’Onna-musha et Tojiro, le pourfendeur.
     assert.equal(carte.esquive, ['susanoo', 'onna-musha-des-cendres', 'tojiro-le-pourfendeur'].includes(carte.id) ? true : undefined, carte.id);
-    assert.equal(carte.contreAttaque, carte.id === 'tojiro-le-pourfendeur' ? true : undefined, carte.id);
+    assert.equal(carte.contreAttaque,
+      ['tojiro-le-pourfendeur', 'onna-musha-des-cendres'].includes(carte.id) ? true : undefined, carte.id);
   }
   assert.equal(cardById('tengu-du-mont-ardent').resonance, 1);
   const kagutsuchiCarte = cardById('kagutsuchi-flamme-originelle');
@@ -394,6 +395,7 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       'onna-musha-des-cendres': 'braise-souls-cendres-v3',
       'feriel': 'braise-souls-cendres-v3',
       'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
+      'archer-samourai-des-cendres': 'archer-samourai-cendres-v2',
       'ashigaru-des-braises': 'braise-souls-cendres-v4',
       'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
       'samourai-du-torii': 'braise-souls-cendres-v4',
