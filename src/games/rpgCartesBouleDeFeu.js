@@ -11,6 +11,8 @@
  * son texte. Une carte peut aussi l'imprimer explicitement avec
  * `bouleDeFeu: true`, et les armes restent toujours des arcs.
  */
+import { cardById } from './rpgCards.js';
+
 const NATURES_DE_FEU = /\b(sahir|djinns?|ifrits?|kami|feu|flamme[s]?|braises?|serpent royal|d[ée]esse[ ]?solaire|souveraine ail[ée]e|greffier [àa] t[êe]te|oiseau de feu)\b/i;
 
 export function carteLanceBouleDeFeu(carte) {
@@ -19,4 +21,16 @@ export function carteLanceBouleDeFeu(carte) {
   if (carte.kind && carte.kind !== 'creature' && carte.kind !== 'hero') return false;
   if (carte.kind === 'arme' || carte.porteeArme) return false;
   return NATURES_DE_FEU.test(`${carte.typeLine ?? ''} ${carte.text ?? ''}`);
+}
+
+/**
+ * Même réponse, mais depuis une **créature en jeu** : le plateau ne manipule
+ * que des entités (`{ carteId, distance, coupRapide, … }`), sans typeLine ni
+ * texte. On lit donc la fiche d'origine dans le catalogue, en retombant sur
+ * l'entité elle-même pour les jetons qui portent déjà leur nature.
+ */
+export function entiteLanceBouleDeFeu(entite) {
+  if (!entite) return false;
+  const carte = (entite.carteId && cardById(entite.carteId)) || entite.carte || entite;
+  return carteLanceBouleDeFeu(carte) || carteLanceBouleDeFeu(entite);
 }

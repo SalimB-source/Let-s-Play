@@ -33,7 +33,7 @@ import { zoneFormeCarte } from './rpgZoneCartes.js';
 import { casesDeZone, libelleZone } from './rpgZones.js';
 import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { rpgCasesPose } from './rpgRecul.js';
-import { carteLanceBouleDeFeu } from './rpgCartesBouleDeFeu.js';
+import { carteLanceBouleDeFeu, entiteLanceBouleDeFeu } from './rpgCartesBouleDeFeu.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -3427,7 +3427,7 @@ export function TableCard({
               className={`rpg-card__stat--atk${classeAttaque ? ` ${classeAttaque}` : ''}`}
               data-stat-variation={classeAttaque === 'is-buffed' ? 'buff' : classeAttaque === 'is-debuffed' ? 'debuff' : undefined}
             >
-              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} bouleDeFeu={carteLanceBouleDeFeu(entite.carte ?? entite)} /><span className="rpg-stat-value">{entite.atk}</span>
+              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} bouleDeFeu={entiteLanceBouleDeFeu(entite)} /><span className="rpg-stat-value">{entite.atk}</span>
             </span>
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}

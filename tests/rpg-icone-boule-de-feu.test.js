@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { carteLanceBouleDeFeu } from '../src/games/rpgCartesBouleDeFeu.js';
+import { carteLanceBouleDeFeu, entiteLanceBouleDeFeu } from '../src/games/rpgCartesBouleDeFeu.js';
 import { cardById } from '../src/games/rpgCards.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -52,9 +52,25 @@ test('boule de feu : l’icône d’ATQ bascule sur la boule pour une créature 
   assert.match(page, /data-boule-de-feu="" fill="currentColor" stroke="none"/);
   assert.match(page, /M18\.6 2\.4c/); // la pointe en haut à droite, le corps vers le bas à gauche
   assert.doesNotMatch(page, /data-boule-(corps|coeur|tracee|sillage)/);
-  assert.match(page, /bouleDeFeu=\{carteLanceBouleDeFeu\(entite\.carte \?\? entite\)\}/);
+  // Sur le plateau, la carte posée n'est qu'une entité : la boule se déduit de sa fiche.
+  assert.match(page, /bouleDeFeu=\{entiteLanceBouleDeFeu\(entite\)\}/);
   assert.match(page, /bouleDeFeu=\{!armesEquipees\.length && carteLanceBouleDeFeu\(carte\)\}/);
   assert.match(moba, /bouleDeFeu=\{carteLanceBouleDeFeu\(card\)\}/);
   // Les armes gardent l'arc : la fiche d'arme ne reçoit pas la boule.
   assert.match(page, /<CardStatIcon type="attack" distance=\{carte\.porteeArme === 'distance'\} \/>/);
+});
+
+test('boule de feu : visible sur le plateau, depuis la créature en jeu', () => {
+  for (const id of ['sahir-des-braises', 'djinn-de-foudre', 'kagutsuchi-flamme-originelle']) {
+    const fiche = cardById(id);
+    const entite = { id: 'e1', carteId: id, distance: fiche.distance, atk: fiche.atk, pv: fiche.def };
+    assert.equal(entiteLanceBouleDeFeu(entite), true, id);
+  }
+  for (const id of ['archere-viking-du-givre', 'ashigaru-des-braises', 'galion-de-la-flotte']) {
+    const fiche = cardById(id);
+    assert.equal(entiteLanceBouleDeFeu({ id: 'e2', carteId: id, distance: fiche.distance }), false, id);
+  }
+  // Un jeton qui porte sa nature sur l'entité elle-même est reconnu aussi.
+  assert.equal(entiteLanceBouleDeFeu({ id: 'e3', typeLine: 'Créature — Djinn', distance: true }), true);
+  assert.equal(entiteLanceBouleDeFeu(null), false);
 });
