@@ -1724,7 +1724,8 @@ export const RPG_HERO_CARDS = [
     // mot-clé — il ne riposte donc plus aux sorts, ce qui était le propre du
     // corps à corps.
     rapidite: true,
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (15 % de chances de rater, 100 % de toucher le sorcier).',
+    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'bouclier-tour', amount: 1 } },
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant. Effet activé (1/tour) — La créature alliée ciblée gagne un bouclier jusqu’à la fin du tour.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {

@@ -1078,8 +1078,10 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
   if (!entite || !activation) return { ok: false, raison: 'capacite' };
   if (duel.tour !== cote) return { ok: false, raison: 'tour' };
+  if (activation.uneFoisParTour && entite.activationUtiliseeCeTour) return { ok: false, raison: 'deja-activee' };
   const cibleCamp = ['joueur', 'sorcier'].find((possedant) => duel[possedant].creatures
     .some((candidate) => candidate.id === cibleId)) ?? null;
+  if (activation.cible === 'creature-amie' && cibleCamp !== cote) return { ok: false, raison: 'cible' };
   const cible = cibleCamp
     ? duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId)
     : null;
@@ -1109,6 +1111,15 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
   const cible = cibleCamp && duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId);
   if (!cible) { duel.log.push(`La cible de ${carte.name} a disparu : l'effet se dissipe.`); return { ok: true, dissipe: true }; }
   presenterEffet(duel, cote, carte.id);
+  if (entite) entite.activationUtiliseeCeTour = true;
+  if (activation.effet?.type === 'bouclier-tour') {
+    const montantBouclier = Math.max(1, Number(activation.effet?.amount) || 1);
+    cible.bouclier = (cible.bouclier ?? 0) + montantBouclier;
+    cible.bouclierTemporaire = (cible.bouclierTemporaire ?? 0) + montantBouclier;
+    duel.log.push(`${carte.name} protège ${cible.name} avec un bouclier jusqu’à la fin du tour.`);
+    rpgActionsEtat(duel);
+    return { ok: true, cibleId: cible.id, bouclier: true };
+  }
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
   const montant = Math.max(0, Number(activation.effet?.amount) || 0);
@@ -10203,6 +10214,11 @@ function commencerNouveauTour(duel) {
   }
   for (const entite of camp.creatures) {
     entite.malInvocation = false;
+    entite.activationUtiliseeCeTour = false;
+    if (entite.bouclierTemporaire) {
+      entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - entite.bouclierTemporaire);
+      entite.bouclierTemporaire = 0;
+    }
     entite.rapiditeAccordee = false;
     entite.ready = true;
     entite.attaquee = false;
