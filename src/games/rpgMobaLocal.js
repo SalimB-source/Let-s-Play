@@ -410,7 +410,7 @@ export function rpgMobaInvocationSpecialeDisponible(duel, side, cardId) {
 /** Place a creature from the active player's hand using the engine's payment,
  * restrictions, entity creation and aura recalculation. Effects requiring lane
  * semantics are temporarily rejected rather than executed incorrectly. */
-export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, sacrificeIds = null, choixCoutInvocation = null, choixCoutAuto = false } = {}) {
+export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, sacrificeIds = null, choixCoutInvocation = null, choixCoutAuto = false, defausseIds = null } = {}) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
@@ -420,8 +420,10 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   // paie les sacrifices imprimés plutôt que la carte exigée par la spéciale.
   const sacrificesFournis = resoudreEnAttente ? (attente?.sacrificeIds ?? [])
     : (Array.isArray(sacrificeIds) ? sacrificeIds : []);
+  const defausseFournie = resoudreEnAttente ? (attente?.defausseIds?.length ?? 0) > 0
+    : Array.isArray(defausseIds) && defausseIds.length > 0;
   const speciale = resoudreEnAttente ? Boolean(attente?.invocationSpecialeMoba)
-    : sacrificesFournis.length > 0 ? false : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
+    : (sacrificesFournis.length > 0 || defausseFournie) ? false : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId
     || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
   if (side !== duel.tour) return fail('pas-votre-tour');
@@ -450,8 +452,8 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   // Une invocation payée par sacrifice prend physiquement la place d'une
   // des victimes choisies, y compris après la fenêtre de réponse. Laisser le
   // moteur commun signaler les listes de victimes manquantes ou invalides.
-  const nombreSacrifices = resoudreEnAttente ? attente.sacrificeIds.length : sacrificesInvocation(carte, duel, side, speciale);
-  if (nombreSacrifices && sacrificesDemandes === null) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
+  const nombreSacrifices = resoudreEnAttente ? (attente.sacrificeIds.length || (attente.defausseIds?.length ?? 0)) : sacrificesInvocation(carte, duel, side, speciale);
+  if (nombreSacrifices && sacrificesDemandes === null && !defausseFournie) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
   if (nombreSacrifices && Array.isArray(sacrificesDemandes)
     && sacrificesDemandes.length === nombreSacrifices
     && new Set(sacrificesDemandes).size === nombreSacrifices
@@ -484,6 +486,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
       invocationSpecialeMoba: speciale,
       choixCoutInvocation, choixCoutAuto,
       ...(sacrificesDemandes !== null ? { sacrificeIds: sacrificesDemandes } : {}),
+      ...(defausseIds !== null ? { defausseIds } : {}),
       ...(ouvrirReponse && !resoudreEnAttente ? { annoncerCreatureMoba: { laneId, slot, nomVoie: NOMS_VOIES[laneId], ...(speciale ? { embuscadeSuspendue: Boolean(suspendue), embuscadeCombat: Boolean(duel.combatDeclare) } : {}) } } : {}),
       ...(resoudreEnAttente ? { resoudreCreatureMoba: true } : {}),
       peutPlacerApresSacrifices: () => !duel.moba.winner && mobaVoieJouable(duel.moba, side, laneId),

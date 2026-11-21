@@ -228,21 +228,32 @@ for (const inverse of [false, true]) test(`classique : invoquer le Djinn qui gag
   assert.ok(duel.joueur.pv <= 0);
 });
 
-test('classique : un bouclier empêche de présumer la victoire du Djinn', () => {
+test('classique : un bouclier ne fait plus choisir entre le Djinn et la Gardienne', () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
   rpgFinDeTour(duel); duel.joueur.pv = 2; duel.joueur.bouclier = 1;
   duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'gardienne-des-portes-de-sable'];
+  // Une invocation par tour faisait préférer la Gardienne durable ; les deux
+  // lignes libres posent le Djinn (à distance) puis la Gardienne (mêlée).
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.deepEqual(duel.sorcier.invocationsNormalesLignes, ['distance']);
   assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'gardienne-des-portes-de-sable');
 });
 
-test('classique : un Défenseur empêche de présumer la victoire directe du Djinn', () => {
+test('classique : un Défenseur détourne le Djinn, la mêlée suit sur son quota', () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
   duel.joueur.main = ['gardienne-des-portes-de-sable'];
-  assert.ok(rpgJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable').ok);
+  const defenseur = rpgJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable').entite;
+  assert.ok(defenseur);
   rpgFinDeTour(duel); duel.joueur.pv = 2;
   duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'gardienne-des-portes-de-sable'];
+  // Le Défenseur interdit toujours la victoire directe, mais ne coûte plus la
+  // pose : le Djinn frappe la Défenseuse, puis la Gardienne arrive en mêlée.
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
+  const pose = rpgSorcierResoudreAnnonce(duel); assert.ok(pose.ok);
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: pose.entite.id, cibleId: defenseur.id });
   assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'gardienne-des-portes-de-sable');
 });
 
@@ -258,7 +269,7 @@ test('classique : la recherche d’invocation gagnante ne modifie ni duel ni has
   assert.equal(rpgNoterCompteurEntites(duel), uid);
 });
 
-test('classique : pas besoin de dépenser un Djinn si un allié déjà présent peut conclure', () => {
+test('classique : l’allié déjà présent conclut, les deux lignes se remplissent', () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
   rpgFinDeTour(duel); duel.sorcier.main = ['chacal-du-seuil'];
@@ -266,11 +277,14 @@ test('classique : pas besoin de dépenser un Djinn si un allié déjà présent 
   assert.ok(allie); rpgFinDeTour(duel); rpgFinDeTour(duel);
   duel.joueur.pv = 2;
   duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'gardienne-des-portes-de-sable'];
+  // L'allié déjà présent conclut toujours ; les deux lignes libres permettent
+  // en plus de poser le Djinn (distance) puis la Gardienne (mêlée).
   const annonce = rpgSorcierAnnonceSuivante(duel, () => .5);
-  assert.equal(annonce?.carteId, 'gardienne-des-portes-de-sable');
+  assert.equal(annonce?.carteId, 'djinn-de-la-premiere-etincelle');
   assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
   const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel);
   assert.deepEqual(choix, { attaquantId: allie.id, cibleId: null });
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'gardienne-des-portes-de-sable');
 });
 
 test('classique : le Djinn de la flamme mourante peut gagner dès son arrivée malgré sa pioche', () => {

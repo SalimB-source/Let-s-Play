@@ -1,6 +1,6 @@
 import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
-import { invocationPossible, rpgInvocationSpecialeSurSonTour, sacrificesInvocation, victimesInvocation } from './rpgInvocation.js';
+import { invocationPossible, rpgInvocationSpecialeSurSonTour, sacrificesInvocation, victimesInvocation, ligneQuotaInvocation } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
@@ -2293,7 +2293,11 @@ function djinnSansEffetCeTour(duel, cote, carte) {
       const main = [...camp.main];
       main.splice(main.indexOf(carte.id), 1);
       const quotaApresPose = camp.invocationNormaleJouee || !rpgInvocationSpecialeSurSonTour(duel, cote, carte);
-      const attendu = { ...camp, main, creatures: [...camp.creatures, pose.entite], invocationNormaleJouee: quotaApresPose };
+      const lignesApresPose = quotaApresPose
+        ? [...new Set([...(camp.invocationsNormalesLignes ?? []), ligneQuotaInvocation(carte)])]
+        : camp.invocationsNormalesLignes;
+      const attendu = { ...camp, main, creatures: [...camp.creatures, pose.entite], invocationNormaleJouee: quotaApresPose,
+        ...(lignesApresPose ? { invocationsNormalesLignes: lignesApresPose } : {}) };
       const vueDuel = (etat) => {
         const { joueur, sorcier, log, combatDeclare, combatFeed, combatAnimations, combatAnimationSeq, prochainUid, ...visible } = etat;
         return visible;
@@ -2351,6 +2355,7 @@ function djinnSansEffetCeTour(duel, cote, carte) {
       // Une invocation spéciale ne consomme pas le quota normal. Dans les
       // deux cas, son état est un coût éventuel, pas un bénéfice de la pose.
       const attenduFin = { ...sansAllie, main: sansAllie.main - 1, invocationNormaleJouee: quotaApresPose,
+        ...(lignesApresPose ? { invocationsNormalesLignes: lignesApresPose } : {}),
         cimetiere: [...sansAllie.cimetiere, carte.id] };
       return JSON.stringify(attenduFin) === JSON.stringify(vueCamp(avec[cote]))
         && JSON.stringify(vueCamp(sans[adv])) === JSON.stringify(vueCamp(avec[adv]))
