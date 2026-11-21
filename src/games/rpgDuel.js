@@ -1773,6 +1773,9 @@ function creerEntiteCreature(carte, duel) {
     envol: Boolean(carte.envol),
     volDeVie: Boolean(carte.volDeVie),
     infiltration: Boolean(carte.infiltration),
+    // Frappe de l'ombre : sa frappe ne reçoit aucun coup en retour, même d'un
+    // porteur de Contre-attaque (voir `frappeSansRiposte` plus bas).
+    frappeSansRiposte: Boolean(carte.frappeSansRiposte),
     // Furie : l'état visible et la seule part d'attaque qu'il a ajoutée. Le
     // bonus est compté à part pour pouvoir le retirer sans toucher aux
     // autres renforts quand la créature retrouve sa DEF de base.
@@ -2681,6 +2684,13 @@ function tenterEsquive(duel, entite, sourceType, hostile = true) {
  */
 function riposteDeContreAttaque(duel, defenseur, source) {
   if (!defenseur?.contreAttaque || (duel.moba && (duel.moba.winner || !mobaVoiesCombat(duel.moba, defenseur.mobaLane).length))) return false;
+  // Une frappe de l'ombre ne laisse rien à rendre : la Contre-attaque de la
+  // victime ne part pas, même si la frappe la détruit (l'attaquant est relu
+  // sur le terrain, à défaut d'y être encore).
+  const sourceEntite = source?.type === 'creature'
+    ? duel[source.cote]?.creatures.find((candidat) => candidat.id === source.entiteId)
+    : null;
+  if (sourceEntite?.frappeSansRiposte) return false;
   const force = Math.max(0, Number(defenseur.atk) || 0);
   if (!force) return false;
   const carte = duelCardById(defenseur.carteId);
@@ -7645,7 +7655,11 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const degatsAvantCombat = [];
   ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, cible, attaquant, 'attaque');
   ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, autre(cote), carteCible, attaquant, cible, 'blocage');
-  appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
+  // Une frappe de l'ombre ne reçoit aucun coup en retour, pas même la capacité
+  // « au blocage » de sa victime.
+  appliquerDegatsDeCombatSimultanes(duel, attaquant.frappeSansRiposte
+    ? degatsAvantCombat.filter((coup) => !(coup.cote === cote && coup.entiteId === attaquant.id))
+    : degatsAvantCombat);
   resoudreCapaciteBlocage(duel, autre(cote), cible.id, attaquant.id);
   // Les capacités déclenchées à la déclaration se résolvent avant les
   // blessures de combat ; seules ces dernières sont annulées par le renvoi.
@@ -7669,7 +7683,7 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
     });
     if (traque > 0) duel.log.push(`Traque : ${attaquant.name} gagne +${traque}/+0 contre ${cible.name} pour ce combat.`);
   }
-  if (duel[autre(cote)].creatures.some((entite) => entite.id === cible.id)) {
+  if (!attaquant.frappeSansRiposte && duel[autre(cote)].creatures.some((entite) => entite.id === cible.id)) {
     coupsNormaux.push({
       cote, entiteId: attaquant.id, amount: estGelee(cible) ? 0 : cible.atk,
       sourceElement: couleursCible, sourceType: 'attaque',
@@ -8687,7 +8701,7 @@ export function rpgLancerAttaque(
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
       if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque-bloquee');
-      if (bloqueur && !estGelee(bloqueur)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
+      if (bloqueur && !estGelee(bloqueur) && !attaquant.frappeSansRiposte) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
     }
   }
   // Une Attaque ciblée est aussi un combat contre une créature : la Sphère
@@ -9069,16 +9083,20 @@ export function rpgLancerAttaque(
         attaquant.id,
       );
 
-      enregistrerDegatsCombat(
-        degatsCombat,
-        cote,
-        attaquant.id,
-        forceBloqueur,
-        couleursBloqueur,
-        'attaque',
-        adv,
-        bloqueur.id,
-      );
+      // Une frappe de l'ombre ne reçoit aucun coup en retour : le bloqueur
+      // encaisse sans rendre, même s'il porte une riposte.
+      if (!attaquant.frappeSansRiposte) {
+        enregistrerDegatsCombat(
+          degatsCombat,
+          cote,
+          attaquant.id,
+          forceBloqueur,
+          couleursBloqueur,
+          'attaque',
+          adv,
+          bloqueur.id,
+        );
+      }
     }
     // La Traque : le +N/+0 s’ajoute aux blessures portées à la première
     // proie qui bloque — la répartition déclarée (qui partage la force
@@ -9384,8 +9402,10 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     // la fait pas frapper deux fois pour le même coup.
     const duelDeTireursCibles = ciblee && Boolean(cible.coupRapide) && !cible.contreAttaque;
     // Ce qui fait riposter la cible : le duel de mêlée, l'échange de tirs, ou
-    // deux Attaques ciblées qui se croisent.
-    const riposte = auContact || echangeDeTireurs || duelDeTireursCibles;
+    // deux Attaques ciblées qui se croisent — sauf face à une frappe de
+    // l'ombre, qui ne laisse aucun coup en retour.
+    const riposte = !attaquant.frappeSansRiposte
+      && (auContact || echangeDeTireurs || duelDeTireursCibles);
     // En MOBA, une attaque normale contre une créature est l'unique duel :
     // la cible y déclenche ses effets « au blocage », sans phase de blocage
     // séparée. Les deux capacités frappent ensemble AVANT l'échange normal.
@@ -9394,6 +9414,13 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       const coupsAvantCombat = [];
       if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(coupsAvantCombat, cote, duelCardById(attaquant.carteId), cible, attaquant, 'attaque-bloquee');
       if (!estGelee(cible)) ajouterDegatsCapaciteAvantCombat(coupsAvantCombat, adv, duelCardById(cible.carteId), attaquant, cible, 'blocage');
+      // Une frappe de l'ombre ne reçoit rien : la capacité « au blocage » de
+      // la victime ne le touche pas, ses propres déclencheurs restent entiers.
+      if (attaquant.frappeSansRiposte) {
+        for (let i = coupsAvantCombat.length - 1; i >= 0; i -= 1) {
+          if (coupsAvantCombat[i].entiteId === attaquant.id) coupsAvantCombat.splice(i, 1);
+        }
+      }
       if (coupsAvantCombat.length) {
         const sourcesPresentees = new Set();
         for (const coup of coupsAvantCombat) {

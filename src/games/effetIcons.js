@@ -42,6 +42,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8.5v5M9.5 11h5"/></symbol>
   <symbol id="i-aura" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"/></symbol>
   <symbol id="i-resonance" viewBox="0 0 24 24"><path d="M8 3v9a4 4 0 0 0 8 0V3"/><path d="M12 16v5"/><path d="M5 7a6 6 0 0 0 0 8"/><path d="M19 7a6 6 0 0 1 0 8"/></symbol>
+  <symbol id="i-frappe-ombre" viewBox="0 0 24 24"><path d="M12 1.8 13.7 8.6 20.6 6.9 15.9 12 20.6 17.1 13.7 15.4 12 22.2 10.3 15.4 3.4 17.1 8.1 12 3.4 6.9 10.3 8.6z"/><circle cx="12" cy="12" r="1.6"/></symbol>
   <symbol id="i-honneur" viewBox="0 0 24 24"><path d="M22 2 10.5 11.5l2 2L22 2z"/><path d="m8.5 10.5 5 5M10 14l-6 6 1 1 6-6M3 20l2 2"/></symbol>
   <symbol id="i-pioche" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></symbol>
   <symbol id="i-soin" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
@@ -108,6 +109,7 @@ export const EFFET_ICONE = {
   furie: 'i-furie',
   esquive: 'i-esquive',
   contreAttaque: 'i-contre-attaque',
+  frappeSansRiposte: 'i-frappe-ombre',
   envol: 'i-envol',
   rapidite: 'i-rapidite',
   coupRapide: 'i-coup-rapide',
@@ -229,6 +231,7 @@ export const EFFET_LIBELLES = {
   furie: 'Furie',
   esquive: 'Esquive',
   contreAttaque: 'Contre-attaque',
+  frappeSansRiposte: 'Frappe de l’ombre',
   envol: 'Envol',
   rapidite: 'Rapidité',
   coupRapide: 'Attaque ciblée',
@@ -336,6 +339,7 @@ export function pastillesPourCarte(carte) {
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
   if (carte.contreAttaque || carte.donne?.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
+  if (carte.frappeSansRiposte || carte.donne?.frappeSansRiposte) ajouter('frappeSansRiposte', 'Frappe de l’ombre');
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.compagnie) {
     // La Compagnie se nomme par la tribu qu'elle compte : « Compagnie viking ».
@@ -511,6 +515,7 @@ const MOTIFS_LIGNE = [
   ['furie', /\bfurie\b/iu],
   ['esquive', /\besquive/iu],
   ['contreAttaque', /\bcontre[- ]attaque/iu],
+  ['frappeSansRiposte', /\bfrappe de l[’']ombre/iu],
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\battaque ciblée/iu],
@@ -664,6 +669,7 @@ export const EFFET_DEFINITIONS = {
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
   esquive: () => '25 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Elle peut aussi esquiver la réplique lorsqu’elle attaque. Les effets alliés ne sont pas esquivés. Deux sources d’Esquive se cumulent : 25 % + 25 % = 50 %.',
+  frappeSansRiposte: 'Quand elle attaque une créature, celle-ci encaisse sans rendre le coup : ni riposte de mêlée, ni capacité « au blocage » ne la touche, et une Contre-attaque ne part pas non plus. Ses propres déclencheurs d’attaque, eux, restent entiers.',
   contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent le bonus indiqué sur la carte.',
@@ -718,6 +724,7 @@ const LIBELLES_IMPRIMES = [
   ['furie', 'Furie(?: \\d+)?'],
   ['esquive', 'Esquive'],
   ['contreAttaque', 'Contre-attaque'],
+  ['frappeSansRiposte', 'Frappe de l[’\']ombre'],
   ['tenacite', 'T[ée]nacité'],
   ['resonance', 'Résonance(?: samouraï|viking| vampire| djinn)?'],
   ['compagnie', 'Compagnie(?: viking| samouraï)?'],
