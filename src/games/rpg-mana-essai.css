@@ -581,6 +581,60 @@
 }
 .rpg-retour-deck__texte strong { color: #fff4dc; }
 .rpg-retour-deck__actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 8px; }
+/* Les cartes admissibles de la main, proposées dans le bandeau : un jeton par
+   exemplaire, cochable au doigt comme à la souris (la main reste cliquable). */
+.rpg-retour-deck__liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 34vh;
+  overflow-y: auto;
+}
+.rpg-retour-deck__carte {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid rgba(236, 214, 172, .4);
+  border-radius: 8px;
+  background: #1c2828;
+  color: #f2e8d5;
+  font: 600 12px/1.2 var(--display, sans-serif);
+  text-align: left;
+}
+.rpg-retour-deck__carte-cout {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #4b3a86;
+  color: #fff;
+  font: 800 11px/1 var(--mono, monospace);
+}
+.rpg-retour-deck__carte.is-choisie {
+  border-color: #8af2df;
+  background: #123c38;
+  color: #d8fff5;
+}
+
+/* Mobile : le bandeau passe TOUJOURS en colonne — texte, cartes proposées,
+   puis boutons pleine largeur. En ligne, le texte s'écrasait sur une colonne
+   de quelques caractères et les boutons chevauchaient le plateau. */
+@media (max-width: 820px), (pointer: coarse) {
+  .rpg-retour-deck {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 168px);
+    max-height: min(62vh, 560px);
+    overflow-y: auto;
+  }
+  .rpg-retour-deck__liste { max-height: none; }
+  .rpg-retour-deck__actions { flex-direction: column; }
+  .rpg-retour-deck__actions .rpg-btn { width: 100%; }
+}
 
 /* Les cartes de la main pendant le prix : la source attend, les admissibles
    se proposent, les cochées sont retenues pour le deck. */

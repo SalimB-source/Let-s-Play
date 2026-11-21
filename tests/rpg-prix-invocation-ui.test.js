@@ -48,6 +48,10 @@ test('duel : le prix d’invocation se choisit dans la main, sans fenêtre ni vi
     assert.match(bandeau.textContent, /remettez/i);
     assert.equal(document.querySelector('.rpg-retour-deck__valider').disabled, true, 'rien de choisi : validation fermée');
     assert.ok(paiement().classList.contains('is-retour-deck-cible'), 'la carte admissible se propose');
+    // Les cartes disponibles sont listées dans le bandeau, cochables au doigt.
+    const jeton = document.querySelector('.rpg-retour-deck__carte');
+    assert.ok(jeton, 'les créatures disponibles sont montrées dans le bandeau');
+    assert.match(jeton.textContent, /Chien du guet/i);
     // Annuler rend la main sans rien payer.
     await click(document.querySelector('.rpg-retour-deck__annuler'));
     assert.equal(document.querySelector('.rpg-retour-deck'), null, 'bandeau refermé');
@@ -56,8 +60,8 @@ test('duel : le prix d’invocation se choisit dans la main, sans fenêtre ni vi
     assert.ok(duel.joueur.creatures.some((e) => e.id === victime.entite.id), 'le plateau est intact');
     // Le prix : on coche dans la main, puis on valide.
     await click(main());
-    await click(paiement());
-    assert.equal(paiement().dataset.retourDeck, 'choisie', 'carte cochée');
+    await click(document.querySelector('.rpg-retour-deck__carte'));
+    assert.equal(paiement().dataset.retourDeck, 'choisie', 'carte cochée depuis le bandeau');
     assert.equal(main().dataset.retourDeck, 'source', 'carte à invoquer marquée');
     assert.equal(document.querySelector('.rpg-retour-deck__valider').disabled, false, 'validation ouverte');
     await click(document.querySelector('.rpg-retour-deck__valider'));
