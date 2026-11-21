@@ -4,8 +4,13 @@ import { cardArt } from './rpgCardArt.js';
 import { MOBA_EMBUSCADES_IMPRIMEES, rpgCandidatsCoutInvocationSpeciale } from './rpgMobaEmbuscadesImprimees.js';
 import './rpg-choix-cout-invocation.css';
 
-/** Aucun coût n'est payé tant que le joueur n'a pas confirmé sa carte. */
-export default function RpgChoixCoutInvocation({ duel, cote, carteId, onChoisir, onAnnuler }) {
+/** Aucun coût n'est payé tant que le joueur n'a pas confirmé sa carte.
+ *
+ * `onChoisirNormal` (facultatif) ajoute l'échappatoire : l'Invocation spéciale
+ * n'est qu'une **offre**. Son prix imprimé — défausser un Sabre maudit pour
+ * Tojiro — ne doit pas empêcher d'invoquer la créature à la manière ordinaire,
+ * en payant ses sacrifices. Le bouton n'apparaît que si cette voie est ouverte. */
+export default function RpgChoixCoutInvocation({ duel, cote, carteId, onChoisir, onAnnuler, onChoisirNormal = null }) {
   const [choix, setChoix] = useState(null);
   const cout = MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout;
   const candidats = rpgCandidatsCoutInvocationSpeciale(duel, cote, carteId);
@@ -53,6 +58,9 @@ export default function RpgChoixCoutInvocation({ duel, cote, carteId, onChoisir,
       <footer className="rpg-choix-cout__footer">
         <p className="rpg-choix-cout__note"><span aria-hidden="true">◇</span> Aucune carte n’est déplacée avant validation.</p>
         <div className="rpg-choix-cout__actions">
+          {onChoisirNormal && <button type="button" className="rpg-choix-cout__normale" onClick={onChoisirNormal}>
+            Invoquer normalement<span className="rpg-choix-cout__normale-detail"> — payer ses sacrifices, sans défausser</span>
+          </button>}
           <button type="button" className="rpg-choix-cout__confirmer" disabled={!choixValide} onClick={() => onChoisir(choix)}>Confirmer</button>
           <button type="button" className="rpg-choix-cout__annuler" autoFocus={!candidats.length} onClick={onAnnuler}>Annuler</button>
         </div>

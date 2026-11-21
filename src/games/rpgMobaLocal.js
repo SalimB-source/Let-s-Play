@@ -171,7 +171,11 @@ export function rpgMobaPeutPayer(duel, side, carte) {
 }
 
 /** La même lecture du coût que la pose : la condition spéciale dispense de sacrifice. */
-export function rpgMobaSacrificesInvocation(duel, side, carte) {
+/** `invocationNormale` : le joueur a préféré l'invocation ordinaire à
+ * l'Invocation spéciale — elle réclame alors les sacrifices imprimés, et non la
+ * carte que la condition de la spéciale demanderait de défausser. */
+export function rpgMobaSacrificesInvocation(duel, side, carte, invocationNormale = false) {
+  if (invocationNormale) return sacrificesInvocation(carte, duel, side, false, false);
   return sacrificesInvocation(carte, duel, side, rpgMobaInvocationSpecialeDisponible(duel, side, carte?.id));
 }
 
@@ -412,8 +416,12 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side)) return fail('pas-votre-tour');
   const attente = resoudreEnAttente && duel.mobaCreatureEnAttente;
+  // Une victime présentée dit à elle seule « invocation normale » : le joueur
+  // paie les sacrifices imprimés plutôt que la carte exigée par la spéciale.
+  const sacrificesFournis = resoudreEnAttente ? (attente?.sacrificeIds ?? [])
+    : (Array.isArray(sacrificeIds) ? sacrificeIds : []);
   const speciale = resoudreEnAttente ? Boolean(attente?.invocationSpecialeMoba)
-    : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
+    : sacrificesFournis.length > 0 ? false : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId
     || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
   if (side !== duel.tour) return fail('pas-votre-tour');

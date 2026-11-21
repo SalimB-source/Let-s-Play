@@ -6630,7 +6630,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false } = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
   if (!camp) return { ok: false, raison: 'camp' };
@@ -6669,10 +6669,18 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (rpgArriveeExigeAttaquant(duel, carte) && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
-  const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba);
-  const limiteInvocation = !dejaPayee && limiteInvocationMoba(duel, cote, carte, invocationSpecialeMoba);
-  if (limiteInvocation) return { ok: false, raison: limiteInvocation };
+  // Le prix d'invocation est un **choix** : celui qui présente une victime paie
+  // l'invocation normale — sacrifices imprimés et quota du tour — et n'a donc
+  // pas à défausser en plus la carte qu'exige la condition de l'Invocation
+  // spéciale (Tojiro ne réclame plus un Sabre maudit à qui le sacrifie).
   const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
+  const sacrificeDemande = Array.isArray(idsDemandes) && idsDemandes.length > 0;
+  const invocationNormaleChoisie = !duel.moba && (invocationNormale || sacrificeDemande);
+  const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length
+    : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
+  const limiteInvocation = !dejaPayee
+    && limiteInvocationMoba(duel, cote, carte, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
+  if (limiteInvocation) return { ok: false, raison: limiteInvocation };
   let sacrifices = [];
   if (idsDemandes !== null) {
     if (!Array.isArray(idsDemandes) || idsDemandes.length !== nombreSacrifices
@@ -6861,7 +6869,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   if (!dejaPayee && !rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   // Capturer la voie spéciale avant de modifier la main ou le cimetière.
-  const invocationSpeciale = !dejaPayee && (duel.moba ? invocationSpecialeMoba : rpgInvocationSpecialeSurSonTour(duel, cote, carte));
+  const invocationSpeciale = !dejaPayee && (invocationNormaleChoisie ? false
+    : duel.moba ? invocationSpecialeMoba : rpgInvocationSpecialeSurSonTour(duel, cote, carte));
   const coutSpecial = invocationSpeciale && MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout;
   const choixCout = coutSpecial && choixCoutInvocation === null && (choixCoutAuto || (!duel.moba && !duel.pvp && cote === 'sorcier'))
     ? rpgCandidatsCoutInvocationSpeciale(duel, cote, carteId)[0] : choixCoutInvocation;
