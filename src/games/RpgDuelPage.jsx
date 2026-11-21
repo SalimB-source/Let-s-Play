@@ -15994,8 +15994,29 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               Pour invoquer <strong>{cartePrix?.name ?? 'cette créature'}</strong>, remettez
               {' '}{nombrePrix} carte{nombrePrix > 1 ? 's' : ''} de votre main dans votre deck —
               {' '}{retourDeckChoisis.length}/{nombrePrix} choisie{nombrePrix > 1 ? 's' : ''}.
-              Cliquez les cartes de votre main, puis validez.
             </p>
+            <div className="rpg-retour-deck__liste" role="group" aria-label="Cartes de votre main que vous pouvez remettre dans le deck">
+              {duel.joueur.main
+                .map((id, index) => ({ id, index }))
+                .filter(({ id, index }) => id !== cartePrix?.id && retourDeckAdmissible(id, cartePrix)
+                  && !(retourDeckEnCours.handIndex === index))
+                .map(({ id, index }) => {
+                  const cle = `${id}#${index}`;
+                  const fiche = cardById(id);
+                  return (
+                    <button
+                      key={cle}
+                      type="button"
+                      aria-pressed={retourDeckChoisis.includes(cle)}
+                      className={`rpg-retour-deck__carte${retourDeckChoisis.includes(cle) ? ' is-choisie' : ''}`}
+                      onClick={() => basculerRetourDeck(id, index)}
+                    >
+                      {fiche?.cost != null && <span className="rpg-retour-deck__carte-cout" aria-hidden="true">{fiche.cost}</span>}
+                      <span className="rpg-retour-deck__carte-nom">{fiche?.name ?? id}</span>
+                    </button>
+                  );
+                })}
+            </div>
             <div className="rpg-retour-deck__actions">
               <button
                 type="button"
