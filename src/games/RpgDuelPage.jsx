@@ -33,7 +33,7 @@ import { zoneFormeCarte } from './rpgZoneCartes.js';
 import { casesDeZone, libelleZone } from './rpgZones.js';
 import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { rpgCasesPose } from './rpgRecul.js';
-import { carteLanceBouleDeFeu, entiteLanceBouleDeFeu } from './rpgCartesBouleDeFeu.js';
+import { carteLanceEtoile, entiteLanceEtoile } from './rpgCartesEtoile.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -1600,16 +1600,15 @@ export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null 
  * la carte n'a pas d'icône d'effet : elle n'est pas un effet, c'est une place
  * sur le champ, et les deux mots-clés se lisent écrits sur la face.
  */
-function CardStatIcon({ type, attaqueCiblee = false, distance = false, bouleDeFeu = false }) {
+function CardStatIcon({ type, attaqueCiblee = false, distance = false, magique = false }) {
   const arc = type === 'attack' && (attaqueCiblee || distance);
-  const feu = arc && bouleDeFeu;
+  const etoile = arc && magique;
   const portee = attaqueCiblee ? 'ciblee' : 'distance';
-  return <svg className="rpg-stat-icon" data-stat-icon={arc ? (feu ? 'boule-de-feu' : 'arc') : type}
+  return <svg className="rpg-stat-icon" data-stat-icon={arc ? (etoile ? 'etoile' : 'arc') : type}
     data-stat-arc={arc ? portee : undefined}
     viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    {feu
-      ? <path data-boule-de-feu="" fill="currentColor" stroke="none"
-          d="M18.6 2.4c.7 2 1.4 3 2.4 4.1.8.9 1 2.1.4 3.2-1.4 2.6-4.6 3.6-7.2 2.2-2.6-1.4-3.6-4.6-2.2-7.2 1-1.9 2.9-2.9 4.9-2.8 1 .1 1.5-.5 1.7-1.5Z" />
+    {etoile
+      ? <path data-stat-etoile="" d="M12 2.8 14.5 9.3 21.4 9.7 16.1 14.1 17.8 20.8 12 17.1 6.2 20.8 7.9 14.1 2.6 9.7 9.5 9.3Z" />
       : arc
       ? <>
           <path d="M2 1.5C18 .7 22.4 8.8 16.3 22.5l-2.2-.8C19.4 9.2 16.4 4 2 3.5Z" fill="currentColor" stroke="none" />
@@ -3427,7 +3426,7 @@ export function TableCard({
               className={`rpg-card__stat--atk${classeAttaque ? ` ${classeAttaque}` : ''}`}
               data-stat-variation={classeAttaque === 'is-buffed' ? 'buff' : classeAttaque === 'is-debuffed' ? 'debuff' : undefined}
             >
-              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} bouleDeFeu={entiteLanceBouleDeFeu(entite)} /><span className="rpg-stat-value">{entite.atk}</span>
+              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} magique={entiteLanceEtoile(entite)} /><span className="rpg-stat-value">{entite.atk}</span>
             </span>
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}
@@ -3882,7 +3881,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       />
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
-          <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} bouleDeFeu={!armesEquipees.length && carteLanceBouleDeFeu(carte)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
+          <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} magique={!armesEquipees.length && carteLanceEtoile(carte)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
           <span data-armure={entite?.armure ?? undefined} className={`rpg-card__pt${entite?.blessee ? ' is-wounded' : ''} ${entite ? classeVariationStatCreature(defenseAffichee, carte.def) : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{defenseAffichee}</span></span>
         </footer>
       )}
@@ -4241,7 +4240,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
 
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} bouleDeFeu={carteLanceBouleDeFeu(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} magique={carteLanceEtoile(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
         </footer>
       )}
@@ -15735,7 +15734,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} bouleDeFeu={carteLanceBouleDeFeu(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} magique={carteLanceEtoile(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
                     </span>
                   )}
