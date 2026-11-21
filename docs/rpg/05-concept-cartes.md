@@ -314,8 +314,13 @@ ne frappe pas deux fois pour le même coup. Un tireur face à une mêlée garde 
 tir sans réponse, et un tireur gelé ne rend rien.
 
 **Le ninja samouraï des ombres** (`ninja-samourai-des-ombres`, Serment du Soleil
-rouge) est le tueur du set : 3 manas, **3/1**, « Humain · Ninja · Samouraï »,
-**Infiltration**, **Harakiri 1** et une règle propre, la **Frappe de l'ombre**
+rouge) est le tueur du set — et son **seul hybride** : **Braise + Ténèbres**
+(`colors: ['braise', 'tenebres']`), 3 manas dont **un pip de chaque**
+(`colorCost`), cadre partagé en diagonale comme celui de Kusayla. La Braise est
+son serment, les Ténèbres la nuit où il frappe ; un deck Braise doit donc
+ouvrir un peu de Ténèbres pour l'inviter, et une troisième couleur le refuse
+(deux couleurs par deck au plus). Pour le reste : **3/1**, « Humain · Ninja ·
+Samouraï », **Infiltration**, **Harakiri 1** et une règle propre, la **Frappe de l'ombre**
 (`frappeSansRiposte`) : quand il attaque une créature, celle-ci encaisse **sans
 rendre le coup** — ni riposte de mêlée, ni capacité « au blocage », ni
 **Contre-attaque**. Le moteur applique le drapeau dans les trois chemins de
@@ -324,7 +329,10 @@ l'attaque simple, `resoudreEchangeIndividuel` pour le duel individuel) et
 `riposteDeContreAttaque` refuse de partir contre une frappe de l'ombre, même
 si la victime riposte d'ordinaire. Ses propres déclencheurs d'attaque, eux,
 restent entiers. À 1 de défense, c'est une carte de tempo : elle tue un corps
-à corps et ne survit qu'au Harakiri qu'elle laisse derrière elle.
+à corps et ne survit qu'au Harakiri qu'elle laisse derrière elle. Sa peinture
+le montre accroupi sur la crête d'un toit de tuiles, la ville embrumée et ses
+lanternes en contrebas : il observe avant de frapper
+(`cards/ninja-samourai-des-ombres.jpg`, révision `ninja-samourai-ombres-v2`).
 
 **À noter** : l'Infiltration interdit de le bloquer (`rpgPeutBloquerAttaquant`),
 donc en duel classique il passe directement au sorcier — la Frappe de l'ombre
