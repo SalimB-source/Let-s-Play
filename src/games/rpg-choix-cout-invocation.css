@@ -145,6 +145,11 @@
 .rpg-choix-cout__confirmer:not(:disabled):hover { background: #c49b58; }
 .rpg-choix-cout__annuler { background: #30262d; }
 .rpg-choix-cout__annuler:hover { background: #46343b; }
+/* L'Invocation spéciale reste une offre : ce bouton rend l'invocation normale,
+   avec ses sacrifices imprimés, à qui ne veut pas payer la défausse exigée. */
+.rpg-choix-cout__normale { flex: 1 1 100%; background: #24313a; color: #dce9f4; }
+.rpg-choix-cout__normale:hover { background: #2e3f4a; }
+.rpg-choix-cout__normale-detail { opacity: .72; font-size: .92em; }
 .rpg-choix-cout__actions button:disabled { opacity: .45; cursor: not-allowed; }
 .rpg-choix-cout__carte:focus-visible,
 .rpg-choix-cout__actions button:focus-visible { outline: 3px solid #ffde96; outline-offset: 2px; }

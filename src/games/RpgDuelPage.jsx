@@ -18,7 +18,7 @@ export { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaCartePourApercu } from './rpgMobaPresentation.js';
 import { SACRIFICE_ANIMATION, instantaneSansSacrificesAnimes } from './rpgSacrificeAnimation.js';
 import { instantanePrisesAnimation, prisesPourAnimation } from './rpgPrisesAnimation.js';
-import { sacrificesInvocation, invocationPossible, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
+import { sacrificesInvocation, invocationPossible, rpgInvocationSpecialeSurSonTour, rpgInvocationNormalePossible } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { cinematiqueCombatClassique, positionsCombatClassique } from './rpgCombatClassiqueCinematique.js';
@@ -11822,7 +11822,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    */
   const finaliserPoseCreature = (carteId, sacrificeIds = null, emplacement = null) => {
     const carte = cardById(carteId);
-    const choixCoutInvocation = choixCoutRef.current?.carteId === carteId ? choixCoutRef.current.choix : null;
+    // Le joueur a pu préférer l'invocation **normale** à l'Invocation spéciale :
+    // la référence retient alors `normale`, et le moteur ne réclame plus la
+    // carte exigée par la condition de la spéciale (le Sabre maudit de Tojiro).
+    const choixCoutEnregistre = choixCoutRef.current?.carteId === carteId ? choixCoutRef.current : null;
+    const choixCoutInvocation = choixCoutEnregistre?.choix ?? null;
+    const invocationNormale = Boolean(choixCoutEnregistre?.normale);
     choixCoutRef.current = null;
     carteCibleeHandIndexRef.current = null;
     setSacrificeEnCours(null);
@@ -11837,6 +11842,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquants: combatEntrant?.coteAttaquant === 'sorcier' ? combatEntrant.attaquants : [],
       sacrificeIds,
       choixCoutInvocation,
+      invocationNormale,
       emplacement: Number.isInteger(emplacement) ? emplacement : null,
     });
     if (modePvp && res.ok) {
@@ -11846,6 +11852,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         cibleDifferee: true,
         sacrificeIds: sacrificeIds ?? null,
         choixCoutInvocation,
+        invocationNormale,
         emplacement: Number.isInteger(emplacement) ? emplacement : null,
       });
     }
@@ -12161,8 +12168,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!monTour && !peutRepondre) return;
     // Le coût de la carte exige une ou deux victimes avant la pose — la carte reste en main, la table s'allume, et le clic sur la
     // victime termine la pose (`finaliserPoseCreature`, avec son sacrifice).
-    if (sacrificesInvocation(carte, duel, 'joueur') > 0) {
-      if (!invocationPossible(duel, 'joueur', carte)) { jouerSfx('erreur'); return; }
+    const invocationNormalePose = Boolean(choixCoutRef.current?.carteId === carteId && choixCoutRef.current.normale);
+    const nombreSacrificesPose = sacrificesInvocation(carte, duel, 'joueur', false, invocationNormalePose ? false : undefined);
+    if (nombreSacrificesPose > 0) {
+      if (!invocationPossible(duel, 'joueur', carte, false, invocationNormalePose ? false : undefined)) { jouerSfx('erreur'); return; }
       setSacrificesChoisis([]);
       setSacrificeEnCours(carteId);
       jouerSfx('select');
@@ -12222,6 +12231,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (carte.kind !== 'terrain') { unlockSfx(); }
     if (choixCoutRef.current?.carteId !== carteId) choixCoutRef.current = null;
+    // Invocation normale choisie dans la fenêtre du coût spécial : elle paie les
+    // sacrifices imprimés, même quand la condition de la spéciale est remplie.
+    const invocationNormale = Boolean(choixCoutRef.current?.normale);
+    const nombreSacrificesCarte = sacrificesInvocation(carte, duel, 'joueur', false, invocationNormale ? false : undefined);
     if (MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout && rpgInvocationSpecialeSurSonTour(duel, 'joueur', carte)
       && !choixCoutRef.current) {
       setChoixCoutDemande({ carteId, handIndex, emplacement });
@@ -12242,9 +12255,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
     }
     // Prix d’invocation : confirmation avant animation et sans paiement.
-    if (sacrificesInvocation(carte, duel, 'joueur') > 0
+    if (nombreSacrificesCarte > 0
       && !sacrificeDemande && !sacrificeEnCours && !sacrificeEnCoursRef.current) {
-      setSacrificeDemande({ carteId, handIndex: index });
+      setSacrificeDemande({ carteId, handIndex: index, normale: invocationNormale });
       jouerSfx('select');
       force();
       return;
@@ -12258,7 +12271,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       poserCarte(carteId);
     } else {
       // Une invocation exige le choix complet de ses victimes avant le vol.
-      if (sacrificesInvocation(carte, duel, 'joueur') > 0) {
+      if (nombreSacrificesCarte > 0) {
         setSacrificesChoisis([]);
         setSacrificeEnCours(carteId);
         jouerSfx('select');
@@ -15905,6 +15918,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       </div>
       {choixCoutDemande && <RpgChoixCoutInvocation key={choixCoutDemande.carteId} duel={duel} cote="joueur" carteId={choixCoutDemande.carteId}
         onAnnuler={() => { choixCoutRef.current = null; setChoixCoutDemande(null); }}
+        onChoisirNormal={rpgInvocationNormalePossible(duel, 'joueur', cardById(choixCoutDemande.carteId))
+          ? () => { const demande = choixCoutDemande; choixCoutRef.current = { carteId: demande.carteId, choix: null, normale: true }; setChoixCoutDemande(null); jouerCarteDepuisMain(demande.carteId, demande.handIndex, demande.emplacement); }
+          : null}
         onChoisir={(choix) => { const demande = choixCoutDemande; choixCoutRef.current = { carteId: demande.carteId, choix }; setChoixCoutDemande(null); jouerCarteDepuisMain(demande.carteId, demande.handIndex, demande.emplacement); }} />}
       {sacrificeDemande && (
         <div className="rpg-sacrifice-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-sacrifice-titre" aria-describedby="rpg-sacrifice-texte">
@@ -15913,7 +15929,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <h2 id="rpg-sacrifice-titre">Sacrifices d’invocation</h2>
             <p id="rpg-sacrifice-texte">
               Pour invoquer <strong>{cardById(sacrificeDemande.carteId)?.name ?? 'cette créature'}</strong>,
-              choisissez {sacrificesInvocation(cardById(sacrificeDemande.carteId), duel, 'joueur')} créature(s)
+              choisissez {sacrificesInvocation(cardById(sacrificeDemande.carteId), duel, 'joueur', false, sacrificeDemande.normale ? false : undefined)} créature(s)
               dégagée(s) à sacrifier sur la table. Une créature engagée ne peut pas être sacrifiée. Rien n’est sacrifié
               avant la validation de toutes les victimes ; vous pouvez annuler.
             </p>

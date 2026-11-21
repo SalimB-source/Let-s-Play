@@ -469,6 +469,8 @@ function executerIntention(duel, cote, intention) {
           sacrificeId: intention.sacrificeId ?? null,
           sacrificeIds: intention.sacrificeIds ?? null,
           choixCoutInvocation: intention.choixCoutInvocation ?? null,
+          // L'invocation normale choisie malgré une Invocation spéciale offerte.
+          invocationNormale: Boolean(intention.invocationNormale),
           // La case choisie sur la table du joueur : le moteur la revalide
           // (libre, dans le champ) — une case occupée refuse l'intention.
           emplacement: Number.isInteger(intention.emplacement) ? intention.emplacement : null,

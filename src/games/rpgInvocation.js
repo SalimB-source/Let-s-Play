@@ -5,10 +5,15 @@ import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 import { champMax } from './rpgLignes.js';
 
 /** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
- * Une Invocation spéciale à son tour est sans sacrifice ni quota. */
-export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false) {
+ * Une Invocation spéciale à son tour est sans sacrifice ni quota.
+ *
+ * `specialeForcee` tranche le choix quand le joueur l'a déjà fait : `false`
+ * garde l'invocation **normale** (les sacrifices imprimés, le quota) même
+ * quand la condition de l'Invocation spéciale est remplie — sa défausse n'est
+ * pas un péage obligatoire. `undefined` laisse le moteur décider. */
+export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false, specialeForcee = undefined) {
   if (carte?.ascension) return carte.ascension.nombre;
-  if (embuscade(duel, cote, carte, specialeMoba)) return 0;
+  if (embuscade(duel, cote, carte, specialeMoba, specialeForcee)) return 0;
   if (!['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return 0;
   const cout = Number(carte.cost) || 0;
   return cout >= 7 ? 2 : cout >= 5 ? 1 : 0;
@@ -36,14 +41,15 @@ export function rpgInvocationSpecialeSurSonTour(duel, cote, carte) {
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && camp.creatures.length >= champMax(duel)) return false;
   return rpgConditionEmbuscadeCommune(duel, cote, carte);
 }
-function embuscade(duel, cote, carte, specialeMoba = false) {
+function embuscade(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
+  if (specialeForcee !== undefined) return Boolean(specialeForcee);
   return Boolean(duel && cote && cote === duel.tour && (specialeMoba
     || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
-export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false) {
+export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
   if (carte?.ascension) return null;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
-  if (embuscade(duel, cote, carte, specialeMoba)) return null;
+  if (embuscade(duel, cote, carte, specialeMoba, specialeForcee)) return null;
   return (duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee) ? 'creature-limite' : null;
 }
 export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, specialeFixee = null) {
@@ -57,14 +63,22 @@ export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, s
 export function victimesInvocation(camp) {
   return (camp?.creatures ?? []).filter(e => !e.attaquee && cardById(e.carteId)?.kind !== 'site');
 }
-export function invocationPossible(duel, cote, carte, specialeMoba = false) {
+export function invocationPossible(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;
-  const nombre = sacrificesInvocation(carte, duel, cote, specialeMoba);
+  const nombre = sacrificesInvocation(carte, duel, cote, specialeMoba, specialeForcee);
   const camp = duel[cote];
   if (carte?.ascension && (!camp?.reserveAscension?.includes(carte.id)
     || !combinaisonsAscension(camp, carte).length)) return false;
-  return !limiteInvocationMoba(duel, cote, carte, specialeMoba)
+  return !limiteInvocationMoba(duel, cote, carte, specialeMoba, specialeForcee)
     && victimesInvocation(camp).length >= nombre
     && (duel.modeMana !== RPG_MODE_MANA_ESSAI
       || camp.creatures.length - nombre < champMax(duel));
+}
+/** L'invocation **normale** reste offerte quand l'Invocation spéciale l'est
+ *  aussi : la condition imprimée de la spéciale (défausser un Sabre maudit pour
+ *  Tojiro) n'est pas un péage — le joueur qui préfère payer les sacrifices
+ *  imprimés et son quota du tour garde ce choix. */
+export function rpgInvocationNormalePossible(duel, cote, carte) {
+  if (!duel?.[cote] || !carte?.id) return false;
+  return invocationPossible(duel, cote, carte, false, false);
 }

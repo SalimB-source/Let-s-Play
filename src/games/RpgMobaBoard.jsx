@@ -11,7 +11,7 @@ import './rpg-relief-visuel.css';
 import RpgCritiqueVisuel from './RpgCritiqueVisuel.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
-import { rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
+import { rpgInvocationSpecialeSurSonTour, rpgInvocationNormalePossible } from './rpgInvocation.js';
 import { estDefenseur } from './rpgDefenseur.js';
 import { classeBouclier } from './rpgBouclier.js';
 import './rpg-bouclier.css';
@@ -230,6 +230,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [carte, setCarte] = useState(null);
   const [sacrificesChoisis, setSacrificesChoisis] = useState([]);
   const [choixCoutDemande, setChoixCoutDemande] = useState(null);
+  // Carte que le joueur a choisi d'invoquer **normalement** alors que l'Invocation
+  // spéciale était offerte : elle paie ses sacrifices imprimés, pas la défausse.
+  const [invocationNormale, setInvocationNormale] = useState(null);
   const [attaquants, setAttaquants] = useState([]);
   const [ciblesRapides, setCiblesRapides] = useState({});
   const [cibleRapideEnCours, setCibleRapideEnCours] = useState(null);
@@ -900,24 +903,28 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       setCarte(id); setPrixLane(null); setErreur('');
     } else if (MOBA_MAGIES_ESSAI.includes(id) || MOBA_MAGIES_IMMEDIATES.includes(id) || MOBA_CONTRESORTS.includes(id)) {
       lancerMagie(id);
-    } else { setSacrificesChoisis([]); setCarte(carte === id ? null : id); setPrixLane(null); setCibleSortPrimaire(null); setErreur(''); }
+    } else { setSacrificesChoisis([]); setInvocationNormale(null); setCarte(carte === id ? null : id); setPrixLane(null); setCibleSortPrimaire(null); setErreur(''); }
   };
-  const poser = (lane, slot, carteId = carte, sacrificeIds = sacrificesChoisis, choixCoutInvocation = null) => {
+  /** Sacrifices imprimés d'une invocation : l'Invocation spéciale les efface,
+   *  sauf si le joueur a demandé l'invocation normale (`invocationNormale`). */
+  const nombreSacrificesCarte = (carteId, normale = invocationNormale === carteId) =>
+    rpgMobaSacrificesInvocation(duel, mainSide, cardById(carteId), normale);
+  const poser = (lane, slot, carteId = carte, sacrificeIds = sacrificesChoisis, choixCoutInvocation = null, normale = invocationNormale === carteId) => {
     if (!carteId) return;
-    if (choixCoutInvocation === null && MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout
+    if (!normale && choixCoutInvocation === null && MOBA_EMBUSCADES_IMPRIMEES[carteId]?.cout
       && rpgInvocationSpecialeSurSonTour(duel, mainSide, cardById(carteId))) {
       setChoixCoutDemande({ lane, slot, carteId, sacrificeIds, cote: mainSide });
       return;
     }
     const avantDestructions = instantaneDestructions();
-    const nombre = rpgMobaSacrificesInvocation(duel, mainSide, cardById(carteId));
+    const nombre = nombreSacrificesCarte(carteId, normale);
     if (sacrificeIds.length !== nombre) { setErreur(`Choisissez ${nombre} créature${nombre > 1 ? 's' : ''} à sacrifier.`); return; }
     const result = rpgMobaJouerCreature(duel, mainSide, carteId, lane, slot, { ouvrirReponse: true, sacrificeIds, choixCoutInvocation });
     if (!afficherResultat(result)) return;
     montrerDestructions(avantDestructions, false, result.sacrificeIds, result.entite?.id);
     if (result.damageEvents?.length) setEvents(result.damageEvents);
     if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier');
-    setCarte(null); setSacrificesChoisis([]);
+    setCarte(null); setSacrificesChoisis([]); setInvocationNormale(null);
     if (result.creatureEnAttente) setEtape('reponse-creature');
     else if (result.arriveeEnAttente) setEtape('arrivee');
   };
@@ -1129,7 +1136,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   // Un dépôt sur la dernière victime choisit aussi sa case : pas de second
   // clic nécessaire pour les sacrifices, au doigt comme à la souris.
   const sacrificesPourPosition = (card, position) => {
-    const nombre = rpgMobaSacrificesInvocation(duel, mainSide, card);
+    const nombre = nombreSacrificesCarte(card?.id);
     if (!nombre) return position.id === null && !sacrificesChoisis.length ? [] : null;
     if (!position.id) return null;
     if (sacrificesChoisis.length === nombre && sacrificesChoisis.includes(position.id)) return sacrificesChoisis;
@@ -1525,14 +1532,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         : carte && MOBA_MAGIES_ALLIEES.includes(carte) ? 'Choisissez une créature alliée illuminée pour lancer votre magie.'
         : carte && MOBA_MAGIES_NEUTRES.includes(carte) ? 'Choisissez une créature illuminée respectant le coût indiqué.'
         : carte && MOBA_MAGIES_CIBLEES.includes(carte) ? 'Choisissez une créature adverse illuminée pour lancer votre magie.'
-          : carte && rpgMobaInvocationSpecialeDisponible(duel, mainSide, carte) ? 'Choisissez une case libre pour votre Invocation spéciale.'
+          : carte && invocationNormale !== carte && rpgMobaInvocationSpecialeDisponible(duel, mainSide, carte) ? 'Choisissez une case libre pour votre Invocation spéciale.'
           : etape === 'reponse-creature' ? 'Jouez une magie rapide, ou passez pour laisser entrer la créature.'
           : etape === 'reponse-sort' ? `Jouez une magie rapide, ou passez pour résoudre ${duel.mobaSortEnAttente?.armeMoba ? 'l’arme' : 'le sort'}.`
           : etape === 'reponse-arrivee' ? 'Jouez une magie rapide, puis passez pour résoudre la capacité.'
           : etape === 'fin' ? 'Jouez une magie rapide si vous le souhaitez, puis passez pour commencer votre tour.'
             : etape === 'blocage' && duel.combatDeclare?.cibleIndividuelle ? 'Répondez avec une Magie Rapide, ou passez pour résoudre l’attaque.'
             : etape === 'blocage' ? 'Répondez avec une Magie Rapide, ou passez pour résoudre l’attaque.'
-            : carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > sacrificesChoisis.length ? 'Choisissez vos créatures dégagées à sacrifier pour invoquer.'
+            : carte && nombreSacrificesCarte(carte) > sacrificesChoisis.length ? 'Choisissez vos créatures dégagées à sacrifier pour invoquer.'
             : carte ? 'Choisissez une case illuminée pour invoquer votre créature.'
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
   const reserveAscensionDisponible = etape === 'tour' && mainSide === 'joueur' && !iaAgit && !fini && !carte;
@@ -1607,12 +1614,15 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     })()}
     {choixCoutDemande && <RpgChoixCoutInvocation key={choixCoutDemande.carteId} duel={duel} cote={choixCoutDemande.cote} carteId={choixCoutDemande.carteId}
       onAnnuler={() => setChoixCoutDemande(null)}
+      onChoisirNormal={rpgInvocationNormalePossible(duel, choixCoutDemande.cote, cardById(choixCoutDemande.carteId))
+        ? () => { const demande = choixCoutDemande; setChoixCoutDemande(null); setInvocationNormale(demande.carteId); poser(demande.lane, demande.slot, demande.carteId, demande.sacrificeIds, null, true); }
+        : null}
       onChoisir={(choix) => { const demande = choixCoutDemande; setChoixCoutDemande(null); poser(demande.lane, demande.slot, demande.carteId, demande.sacrificeIds, choix); }} />}
-    {carte && rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">
+    {carte && nombreSacrificesCarte(carte) > 0 && (etape === 'tour' || rpgMobaPeutEmbuscade(duel, mainSide, carte)) && <div className="moba__sacrifice-hint" role="status">
       {cardById(carte).ascension ? <>
         Ascension prête pour {cardById(carte).name} : choisissez la place de l’un des sacrifices sélectionnés. Les sacrifices seront payés à la résolution.
         <button type="button" onClick={() => { setCarte(null); setSacrificesChoisis([]); ouvrirReserveAscension('joueur'); }}>Modifier les sacrifices</button>
-      </> : <>Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte))}. {rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte)) === 1 ? "Touchez une créature dégagée à sacrifier : la nouvelle prendra sa place immédiatement." : "Touchez les créatures dégagées à sacrifier : la dernière choisie sera remplacée immédiatement."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></>}
+      </> : <>Sacrifices pour {cardById(carte).name} : {sacrificesChoisis.length}/{nombreSacrificesCarte(carte)}. {nombreSacrificesCarte(carte) === 1 ? "Touchez une créature dégagée à sacrifier : la nouvelle prendra sa place immédiatement." : "Touchez les créatures dégagées à sacrifier : la dernière choisie sera remplacée immédiatement."} <button type="button" onClick={() => setSacrificesChoisis([])}>Recommencer</button></>}
     </div>}
     {/* Chaque voie conquise révèle uniquement son calque de ruines, à la même
         projection que la carte. Le centre garde sa case au camp vainqueur. */}
@@ -1677,7 +1687,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             const carteSoin = carte && MOBA_MAGIES_SOINS.includes(carte);
             const cartePrix = carte && MOBA_MAGIES_PRIX.includes(carte);
             const carteTransfert = carte && MOBA_MAGIES_TRANSFERT.includes(carte);
-            const nombreSacrifices = rpgMobaSacrificesInvocation(duel, mainSide, cardById(carte));
+            const nombreSacrifices = nombreSacrificesCarte(carte);
             const maySacrifice = (etape === 'tour' && side === actif) && entity && carte && nombreSacrifices > 0
               && sacrificesChoisis.length < nombreSacrifices && !sacrificesChoisis.includes(id) && !entity.attaquee && cardById(entity.carteId)?.kind !== 'site'
               && mobaVoieJouable(duel.moba, side, lane.id) && !defausse && !fini && rpgMobaPeutPayer(duel, mainSide, cardById(carte));
