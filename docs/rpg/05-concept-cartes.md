@@ -241,7 +241,9 @@ valkyries n'émettent plus de Résonance viking.
   Esquive), le **Gardien de la porte ardente** (3, 2/4, qui garde sa riposte de
   1 dégât sur Attaque ciblée), **La Barbe Noire** (5, 4/5) et **Le Maître du
   marteau** (6, 5/5). L'Armure de cendres la donne à son porteur. Les Tours,
-  0 d'attaque, ne la portent pas : sans force, la riposte ne fait rien.
+  0 d'attaque, ne la portent pas : sans force, la riposte ne fait rien. **Une frappe de l'ombre ne la
+  déclenche jamais** : le Ninja samouraï des ombres encaisse zéro coup en
+  retour, même d'une victime qui porte la Contre-attaque.
 - **Eirik du Premier Serment** (1 mana, 1/1, mythique, Contre-attaque et
   Compagnie) — une créature légendaire de type Guerrier viking. Une créature qui
   le frappe avec Attaque ciblée ou le cible avec une capacité encaisse ses
@@ -310,6 +312,24 @@ reste sans contact — pas de capacité « au blocage » — et le journal l'éc
 (« X répond à la volée de Y »). Une Contre-attaque, elle, a déjà sa riposte et
 ne frappe pas deux fois pour le même coup. Un tireur face à une mêlée garde son
 tir sans réponse, et un tireur gelé ne rend rien.
+
+**Le ninja samouraï des ombres** (`ninja-samourai-des-ombres`, Serment du Soleil
+rouge) est le tueur du set : 3 manas, **3/1**, « Humain · Ninja · Samouraï »,
+**Infiltration**, **Harakiri 1** et une règle propre, la **Frappe de l'ombre**
+(`frappeSansRiposte`) : quand il attaque une créature, celle-ci encaisse **sans
+rendre le coup** — ni riposte de mêlée, ni capacité « au blocage », ni
+**Contre-attaque**. Le moteur applique le drapeau dans les trois chemins de
+combat (`rpgLancerAttaque` pour le combat en lot, `rpgAttaquerCreature` pour
+l'attaque simple, `resoudreEchangeIndividuel` pour le duel individuel) et
+`riposteDeContreAttaque` refuse de partir contre une frappe de l'ombre, même
+si la victime riposte d'ordinaire. Ses propres déclencheurs d'attaque, eux,
+restent entiers. À 1 de défense, c'est une carte de tempo : elle tue un corps
+à corps et ne survit qu'au Harakiri qu'elle laisse derrière elle.
+
+**À noter** : l'Infiltration interdit de le bloquer (`rpgPeutBloquerAttaquant`),
+donc en duel classique il passe directement au sorcier — la Frappe de l'ombre
+se voit dès qu'il affronte une créature (combat individuel, voie MOBA, ou tout
+chemin qui l'oppose à un corps à corps).
 
 **L'archer samouraï des cendres** (`archer-samourai-des-cendres`, Serment du
 Soleil rouge) est le tireur commune du set : 2 manas, **2/1**, ligne de type

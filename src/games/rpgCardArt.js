@@ -133,6 +133,8 @@ const CARD_ART_CACHE_VERSIONS = {
   // L'archer samouraï arrive avec sa peinture dédiée, refaite dans l'huile
   // sombre du lot Souls (torii écroulé, braises froides).
   'archer-samourai-des-cendres': 'archer-samourai-cendres-v2',
+  // Le ninja : shinobi encapuchonné, dagues jumelles, torii brisé dans la cendre.
+  'ninja-samourai-des-ombres': 'ninja-samourai-ombres-v1',
   'ashigaru-des-braises': 'braise-souls-cendres-v4',
   'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
   'samourai-du-torii': 'braise-souls-cendres-v4',

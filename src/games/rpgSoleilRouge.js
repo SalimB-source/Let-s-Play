@@ -88,6 +88,14 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'La corde chante une fois ; l’ennemi n’entend jamais la seconde.',
   }),
   carte({
+    id: 'ninja-samourai-des-ombres', infiltration: true, frappeSansRiposte: true,
+    name: 'Ninja samouraï des ombres',
+    cost: 3, atk: 3, def: 1, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humain · Ninja · Samouraï',
+    text: 'Infiltration — Il passe les lignes sans être bloqué. Frappe de l’ombre — Quand il attaque une créature, il ne reçoit aucun coup en retour, même si elle porte Contre-attaque. Harakiri 1.',
+    flavor: 'On ne le voit qu’une fois la gorge ouverte ; sa lame ne rend jamais deux fois.',
+  }),
+  carte({
     id: 'ronin-du-soleil-rouge', name: 'Rōnin du Soleil rouge',
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle', rapidite: true,
     typeLine: 'Créature — Humain · Rōnin · Samouraï',

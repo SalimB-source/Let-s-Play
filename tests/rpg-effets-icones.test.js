@@ -41,13 +41,14 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 42 symboles validés, un par effet', () => {
+test('le sprite porte les 43 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  // De retour à 42 : la ligne « À distance » n'est plus un effet, elle n'a
-  // donc plus d'icône — c'est l'arc de l'ATQ qui dit la portée.
-  assert.equal(symboles.length, 42);
+  // La ligne « À distance » n'est plus un effet, elle n'a donc plus d'icône —
+  // c'est l'arc de l'ATQ qui dit la portée. Le 43e est le shuriken de la
+  // Frappe de l'ombre, le mot-clé du ninja samouraï.
+  assert.equal(symboles.length, 43);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
