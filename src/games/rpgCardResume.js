@@ -185,6 +185,7 @@ const CONDITIONS_EMBUSCADE_COURTES = {
   'djinn-adverse': ['il y a un ', 'Djinn', ' en face'],
   'autre-vampire': ['vous avez un ', 'autre Vampire', ' en jeu'],
   'trois-adversaires': ['l’adversaire a au moins ', '3 créatures'],
+  'adversaire-a-une-creature': ['l’adversaire a au moins ', 'une créature', ' en jeu'],
   'attaquant-force-2': ['une créature adverse de ', 'force 2+', ' attaque'],
   'attaquant-force-3': ['une créature adverse de ', 'force 3+', ' attaque'],
   'allie-cible': ['une de vos créatures est ', 'visée', ' par un sort, un effet ou une ', 'Attaque ciblée'],
@@ -201,6 +202,11 @@ const CONDITIONS_EMBUSCADE_COURTES = {
 export function conditionEmbuscadeCourtePourApercu(carte) {
   const conditionCommune = rpgTexteConditionEmbuscade(carte);
   if (conditionCommune) return ['', conditionCommune];
+  // La table courte est la source des libellés du cadre : elle répond même
+  // quand la phrase imprimée suit la formule « si la condition est remplie »
+  // que le repli ci-dessous ne sait pas découper.
+  const courte = CONDITIONS_EMBUSCADE_COURTES[carte?.conditionEmbuscade];
+  if (carte?.reactionTourAdverse && courte) return courte;
   const condition = conditionEmbuscadePourApercu(carte);
   return condition ? (CONDITIONS_EMBUSCADE_COURTES[carte.conditionEmbuscade] ?? [condition]) : null;
 }

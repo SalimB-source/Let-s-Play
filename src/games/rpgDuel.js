@@ -6352,6 +6352,8 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.a
     case 'attaquant': return attaquants.length > 0;
     case 'autre-vampire': return allies.some((entite) => cardHasPrintedType(entite.carteId, 'Vampire'));
     case 'trois-adversaires': return adversaires.length >= 3;
+    // Le Ninja samouraï des toits : l'adversaire tient déjà la table.
+    case 'adversaire-a-une-creature': return adversaires.some((entite) => !estSite(entite));
     case 'attaquant-force-2': return attaquants.some((entite) => entite.atk >= 2);
     case 'attaquant-force-3': return attaquants.some((entite) => entite.atk >= 3);
     case 'allie-cible': return allies.some((entite) => !estSite(entite) && (

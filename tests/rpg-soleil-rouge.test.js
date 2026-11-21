@@ -52,8 +52,8 @@ function sort(duel, id, cible) {
 // Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
-test('Soleil rouge : vingt et une cartes uniques, illustrées en 768 × 960 et collectionnables', () => {
-  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 21, 'le terrain Braise du Soleil rouge est retiré; Braise et sable complète le set');
+test('Soleil rouge : vingt-deux cartes uniques, illustrées en 768 × 960 et collectionnables', () => {
+  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 22, 'le terrain Braise du Soleil rouge est retiré; Braise et sable complète le set');
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
@@ -73,7 +73,7 @@ test('Soleil rouge : vingt et une cartes uniques, illustrées en 768 × 960 et c
     }
     assert.deepEqual(dimensions, [CARD_ART_LARGEUR, CARD_ART_HAUTEUR], carte.id);
   }
-  assert.equal(empreintes.size, 21, 'une illustration dédiée par carte');
+  assert.equal(empreintes.size, 22, 'une illustration dédiée par carte');
 });
 
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
@@ -397,6 +397,7 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
       'archer-samourai-des-cendres': 'archer-samourai-cendres-v2',
       'ninja-samourai-des-ombres': 'ninja-samourai-ombres-v2',
+      'ninja-samourai-des-toits': 'ninja-samourai-des-toits-v2',
       'ashigaru-des-braises': 'braise-souls-cendres-v4',
       'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
       'samourai-du-torii': 'braise-souls-cendres-v4',
