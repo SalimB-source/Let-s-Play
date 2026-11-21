@@ -58,11 +58,12 @@ test('étoile : visible sur le plateau, depuis la créature en jeu', () => {
   assert.equal(entiteLanceEtoile(null), false);
 });
 
-test('étoile : l’icône d’ATQ dessine une étoile à cinq branches, centrée', () => {
+test('étoile : l’icône d’ATQ dessine une étoile à huit branches entrelacées, centrée', () => {
   const page = lire('RpgDuelPage.jsx');
   const moba = lire('RpgMobaBoard.jsx');
   assert.match(page, /data-stat-icon=\{arc \? \(etoile \? 'etoile' : 'arc'\) : type\}/);
-  assert.match(page, /data-stat-etoile="" d="M12 2\.8 14\.5 9\.3 21\.4 9\.7 16\.1 14\.1 17\.8 20\.8 12 17\.1 6\.2 20\.8 7\.9 14\.1 2\.6 9\.7 9\.5 9\.3Z"/);
+  // Huit branches entrelacées : 16 pointes, une sur deux rentrée vers le cœur.
+  assert.match(page, /data-stat-etoile="" d="M12 2\.2 13\.7 8\.5 17\.5 3\.5 15\.7 9\.8 21\.6 8\.2 16\.8 12 21\.6 15\.8 15\.7 14\.2 17\.5 20\.5 13\.7 15\.5 12 21\.8 10\.3 15\.5 6\.5 20\.5 8\.3 14\.2 2\.4 15\.8 7\.2 12 2\.4 8\.2 8\.3 9\.8 6\.5 3\.5 10\.3 8\.5Z"/);
   assert.doesNotMatch(page, /boule-de-feu|data-boule-/);
   // Le plateau passe par l'entité en jeu, la main et la fiche par la carte.
   assert.match(page, /magique=\{entiteLanceEtoile\(entite\)\}/);

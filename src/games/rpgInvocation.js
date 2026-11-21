@@ -4,19 +4,25 @@ import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 import { champMax, ligneDePose, RPG_LIGNE_FOND } from './rpgLignes.js';
 
-/** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
- * Une Invocation spéciale à son tour est sans sacrifice ni quota.
+/** Le prix d'une invocation n'est plus un sacrifice : la créature de 5 étoiles
+ *  ou plus **remet une carte de la main dans le deck** — deux cartes à partir
+ *  de 7. Le plateau n'est jamais vidé, et l'Invocation spéciale à son tour ne
+ *  paie ni ce retour ni le quota.
  *
  * `specialeForcee` tranche le choix quand le joueur l'a déjà fait : `false`
- * garde l'invocation **normale** (les sacrifices imprimés, le quota) même
- * quand la condition de l'Invocation spéciale est remplie — sa défausse n'est
- * pas un péage obligatoire. `undefined` laisse le moteur décider. */
-export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false, specialeForcee = undefined) {
-  if (carte?.ascension) return carte.ascension.nombre;
+ * garde l'invocation **normale** (les retours imprimés, le quota) même quand la
+ * condition de l'Invocation spéciale est remplie — sa défausse n'est pas un
+ * péage obligatoire. `undefined` laisse le moteur décider. */
+export function retoursAuDeckInvocation(carte, duel = null, cote = null, specialeMoba = false, specialeForcee = undefined) {
+  if (carte?.ascension) return 0;
   if (embuscade(duel, cote, carte, specialeMoba, specialeForcee)) return 0;
   if (!['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return 0;
   const cout = Number(carte.cost) || 0;
   return cout >= 7 ? 2 : cout >= 5 ? 1 : 0;
+}
+/** Ce que l'Ascension exige encore du plateau : ses matériaux sont des corps. */
+export function sacrificesInvocation(carte, duel = null, cote = null, specialeMoba = false, specialeForcee = undefined) {
+  return carte?.ascension ? carte.ascension.nombre : 0;
 }
 /** Classement des petites créatures selon leur coût imprimé. */
 export function petiteCreatureMoba(carte) {
@@ -87,42 +93,44 @@ export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, s
 export function victimesInvocation(camp) {
   return (camp?.creatures ?? []).filter(e => !e.attaquee && cardById(e.carteId)?.kind !== 'site');
 }
-/** Ce que la main peut défausser à la place d'un sacrifice : la fiche le dit
- *  cas par cas (`defausseSacrifice.types`), sinon toute créature en main. */
-export function typesDefausseSacrifice(carte) {
-  return carte?.defausseSacrifice?.types ?? ['creature'];
+/** Ce que la main peut remettre dans le deck : la fiche le dit cas par cas
+ *  (`retourDeck.types`), sinon toute créature en main. */
+export function typesRetourDeck(carte) {
+  return carte?.retourDeck?.types ?? carte?.defausseSacrifice?.types ?? ['creature'];
 }
-export function defausseSacrificeAdmissible(idMain, cartePosee) {
+export function retourDeckAdmissible(idMain, cartePosee) {
   const kind = cardById(idMain)?.kind;
-  return kind != null && typesDefausseSacrifice(cartePosee).includes(kind);
+  return kind != null && typesRetourDeck(cartePosee).includes(kind);
 }
-/** La main du camp porte-t-elle de quoi payer la défausse (hors la carte jouée) ? */
-export function defausseSacrificePossible(duel, cote, carte, nombre) {
+/** La main du camp porte-t-elle de quoi payer le retour au deck (hors la carte jouée) ? */
+export function retourDeckPossible(duel, cote, carte, nombre) {
   if (!nombre || !duel?.[cote]?.main) return false;
   const reste = [...duel[cote].main];
   const idxPose = reste.indexOf(carte.id ?? carte);
   if (idxPose >= 0) reste.splice(idxPose, 1);
-  return reste.filter((id) => defausseSacrificeAdmissible(id, carte)).length >= nombre;
+  return reste.filter((id) => retourDeckAdmissible(id, carte)).length >= nombre;
 }
 export function invocationPossible(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;
-  const nombre = sacrificesInvocation(carte, duel, cote, specialeMoba, specialeForcee);
   const camp = duel[cote];
-  if (carte?.ascension && (!camp?.reserveAscension?.includes(carte.id)
-    || !combinaisonsAscension(camp, carte).length)) return false;
+  if (carte?.ascension) {
+    const corps = sacrificesInvocation(carte);
+    return camp?.reserveAscension?.includes(carte.id)
+      && combinaisonsAscension(camp, carte).length > 0
+      && victimesInvocation(camp).length >= corps
+      && (duel.modeMana !== RPG_MODE_MANA_ESSAI || camp.creatures.length - corps < champMax(duel));
+  }
   if (limiteInvocationMoba(duel, cote, carte, specialeMoba, specialeForcee)) return false;
-  const place = duel.modeMana !== RPG_MODE_MANA_ESSAI;
-  const voieSacrifice = victimesInvocation(camp).length >= nombre
-    && (place || camp.creatures.length - nombre < champMax(duel));
-  // La défausse depuis la main paie le même nombre, sans vider le plateau :
-  // il faut donc une case libre devant soi.
-  const voieDefausse = nombre > 0 && defausseSacrificePossible(duel, cote, carte, nombre)
-    && (place || camp.creatures.length < champMax(duel));
-  return voieSacrifice || voieDefausse;
+  const nombre = retoursAuDeckInvocation(carte, duel, cote, specialeMoba, specialeForcee);
+  if (!nombre) return true;
+  // Le prix se paie **depuis la main** : le plateau ne se vide plus, il faut
+  // donc une case libre devant soi.
+  return retourDeckPossible(duel, cote, carte, nombre)
+    && (duel.modeMana !== RPG_MODE_MANA_ESSAI || camp.creatures.length < champMax(duel));
 }
 /** L'invocation **normale** reste offerte quand l'Invocation spéciale l'est
  *  aussi : la condition imprimée de la spéciale (défausser un Sabre maudit pour
- *  Tojiro) n'est pas un péage — le joueur qui préfère payer les sacrifices
+ *  Tojiro) n'est pas un péage — le joueur qui préfère payer les retours au deck
  *  imprimés et son quota du tour garde ce choix. */
 export function rpgInvocationNormalePossible(duel, cote, carte) {
   if (!duel?.[cote] || !carte?.id) return false;

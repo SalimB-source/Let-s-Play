@@ -14,7 +14,7 @@ import {
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
-import { invocationPossible, limiteInvocationMoba, sacrificesInvocation, victimesInvocation, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
+import { invocationPossible, limiteInvocationMoba, retoursAuDeckInvocation, victimesInvocation, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
 import { MOBA_EMBUSCADES_CONDITIONS, rpgMobaConditionSpeciale } from './rpgMobaEmbuscades.js';
 import { MOBA_RAPIDITE_EMBUSCADES, rpgMobaConditionRapidite } from './rpgMobaRapidite.js';
 import { MOBA_EMBUSCADES_IMPRIMEES, rpgMobaConditionImprimee } from './rpgMobaEmbuscadesImprimees.js';
@@ -170,13 +170,13 @@ export function rpgMobaPeutPayer(duel, side, carte) {
     && duel.moba.lanes.some((lane) => lane.active && lane.hp[side] > carte.prixPv);
 }
 
-/** La même lecture du coût que la pose : la condition spéciale dispense de sacrifice. */
+/** La même lecture du coût que la pose : la condition spéciale dispense du retour au deck. */
 /** `invocationNormale` : le joueur a préféré l'invocation ordinaire à
- * l'Invocation spéciale — elle réclame alors les sacrifices imprimés, et non la
+ * l'Invocation spéciale — elle réclame alors les retours imprimés, et non la
  * carte que la condition de la spéciale demanderait de défausser. */
 export function rpgMobaSacrificesInvocation(duel, side, carte, invocationNormale = false) {
-  if (invocationNormale) return sacrificesInvocation(carte, duel, side, false, false);
-  return sacrificesInvocation(carte, duel, side, rpgMobaInvocationSpecialeDisponible(duel, side, carte?.id));
+  if (invocationNormale) return retoursAuDeckInvocation(carte, duel, side, false, false);
+  return retoursAuDeckInvocation(carte, duel, side, rpgMobaInvocationSpecialeDisponible(duel, side, carte?.id));
 }
 
 /** Two human-controlled seats reuse the turn engine, without mana costs or growth.
@@ -396,7 +396,8 @@ export function rpgMobaPeutEmbuscade(duel, side, cardId) {
 }
 
 /** En phase principale, la condition ouvre aussi l'invocation spéciale sur
- * une case libre ; sans case libre, une invocation normale avec sacrifice reste possible. */
+ * une case libre ; sans case libre, une invocation normale (qui remet une carte
+ * de la main dans le deck) reste possible. */
 export function rpgMobaInvocationSpecialeDisponible(duel, side, cardId) {
   if (rpgMobaPeutEmbuscade(duel, side, cardId)) return true;
   const carte = duelCardById(cardId);
@@ -410,20 +411,21 @@ export function rpgMobaInvocationSpecialeDisponible(duel, side, cardId) {
 /** Place a creature from the active player's hand using the engine's payment,
  * restrictions, entity creation and aura recalculation. Effects requiring lane
  * semantics are temporarily rejected rather than executed incorrectly. */
-export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, sacrificeIds = null, choixCoutInvocation = null, choixCoutAuto = false, defausseIds = null } = {}) {
+export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirReponse = false, resoudreEnAttente = false, retourIds = null, choixCoutInvocation = null, choixCoutAuto = false, sacrificeIds = null, defausseIds = null } = {}) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side)) return fail('pas-votre-tour');
   const attente = resoudreEnAttente && duel.mobaCreatureEnAttente;
-  // Une victime présentée dit à elle seule « invocation normale » : le joueur
-  // paie les sacrifices imprimés plutôt que la carte exigée par la spéciale.
-  const sacrificesFournis = resoudreEnAttente ? (attente?.sacrificeIds ?? [])
-    : (Array.isArray(sacrificeIds) ? sacrificeIds : []);
-  const defausseFournie = resoudreEnAttente ? (attente?.defausseIds?.length ?? 0) > 0
-    : Array.isArray(defausseIds) && defausseIds.length > 0;
+  // Des cartes présentées pour le retour au deck disent à elles seules
+  // « invocation normale » : le joueur paie le prix imprimé plutôt que la carte
+  // exigée par la spéciale. `sacrificeIds`/`defausseIds` sont d'anciens noms.
+  const idsRetour = resoudreEnAttente
+    ? (attente?.retourIds ?? attente?.defausseIds ?? attente?.sacrificeIds ?? [])
+    : ([retourIds, defausseIds, sacrificeIds].find((liste) => Array.isArray(liste) && liste.length > 0) ?? []);
+  const retourFourni = idsRetour.length > 0;
   const speciale = resoudreEnAttente ? Boolean(attente?.invocationSpecialeMoba)
-    : (sacrificesFournis.length > 0 || defausseFournie) ? false : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
+    : retourFourni ? false : rpgMobaInvocationSpecialeDisponible(duel, side, cardId);
   if (resoudreEnAttente && (!attente || attente.cote !== side || attente.carteId !== cardId
     || attente.laneId !== laneId || attente.slot !== slot || !duel.fenetreReponse)) return fail('timing');
   if (side !== duel.tour) return fail('pas-votre-tour');
@@ -434,9 +436,11 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
       || duel.effetCreatureEnAttente || duel.mobaSortEnAttente))) return fail('timing');
   const lane = mobaVoie(duel.moba, laneId);
   if (!mobaVoieJouable(duel.moba, side, laneId)) return fail('voie-inactive');
-  const sacrificesDemandes = resoudreEnAttente ? attente.sacrificeIds : sacrificeIds;
+  // Le prix se paie depuis la main : la case visée doit être libre. Seule
+  // l'Ascension conserve des matériaux **sur le plateau**, qui libèrent leur case.
+  const idsMateriaux = resoudreEnAttente ? (attente.sacrificeIds ?? []) : [];
   if (!Number.isInteger(slot) || slot < 0 || slot >= lane.slots[side].length
-    || (lane.slots[side][slot] !== null && !sacrificesDemandes?.includes(lane.slots[side][slot]))) return fail('emplacement');
+    || (lane.slots[side][slot] !== null && !idsMateriaux.includes(lane.slots[side][slot]))) return fail('emplacement');
   const carte = duelCardById(cardId);
   if (!carte) return fail('carte');
   // A card with unaudited combat or leave-play abilities must never enter the
@@ -449,16 +453,12 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   const arriveeGlobale = MOBA_ARRIVEES_GLOBALES.includes(cardId) || ['tiziri-du-djurdjura', 'dune-marchante', 'pilote-de-la-carreira', 'pretre-de-la-bouche'].includes(cardId);
   if ((carte.arrivee && carte.arrivee.type !== 'pioche' && !soinArrivee && !arriveeCiblee && !arriveeGlobale) || (Number.isFinite(carte.abordage) && !MOBA_ABORDAGE_IMPRIME.includes(cardId)) || carte.interceptionAttaque
     || carte.prixPv || (carte.kind !== 'site' && duel[side].abordageDesArrivees)) return fail('effet-non-pris-en-charge');
-  // Une invocation payée par sacrifice prend physiquement la place d'une
-  // des victimes choisies, y compris après la fenêtre de réponse. Laisser le
-  // moteur commun signaler les listes de victimes manquantes ou invalides.
-  const nombreSacrifices = resoudreEnAttente ? (attente.sacrificeIds.length || (attente.defausseIds?.length ?? 0)) : sacrificesInvocation(carte, duel, side, speciale);
-  if (nombreSacrifices && sacrificesDemandes === null && !defausseFournie) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
-  if (nombreSacrifices && Array.isArray(sacrificesDemandes)
-    && sacrificesDemandes.length === nombreSacrifices
-    && new Set(sacrificesDemandes).size === nombreSacrifices
-    && sacrificesDemandes.every((id) => victimesInvocation(duel[side]).some((e) => e.id === id))
-    && !sacrificesDemandes.includes(lane.slots[side][slot])) return fail('emplacement-sacrifice');
+  // Le prix d'une invocation ordinaire : 1 carte remise dans le deck pour un
+  // coût de 5–6, 2 à partir de 7. Laisser le moteur commun valider la liste.
+  const nombreRetours = resoudreEnAttente
+    ? (attente.retourIds?.length ?? attente.defausseIds?.length ?? attente.sacrificeIds?.length ?? 0)
+    : retoursAuDeckInvocation(carte, duel, side, speciale);
+  if (nombreRetours && !retourFourni) return { ok: false, raison: 'retour-requis', nombreRetours };
   const before = JSON.stringify(duel);
   const restore = () => {
     const snapshot = JSON.parse(before);
@@ -485,8 +485,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
       emplacement: OFFSETS[laneId] + slot,
       invocationSpecialeMoba: speciale,
       choixCoutInvocation, choixCoutAuto,
-      ...(sacrificesDemandes !== null ? { sacrificeIds: sacrificesDemandes } : {}),
-      ...(defausseIds !== null ? { defausseIds } : {}),
+      ...(idsRetour.length ? { retourIds: idsRetour } : {}),
       ...(ouvrirReponse && !resoudreEnAttente ? { annoncerCreatureMoba: { laneId, slot, nomVoie: NOMS_VOIES[laneId], ...(speciale ? { embuscadeSuspendue: Boolean(suspendue), embuscadeCombat: Boolean(duel.combatDeclare) } : {}) } } : {}),
       ...(resoudreEnAttente ? { resoudreCreatureMoba: true } : {}),
       peutPlacerApresSacrifices: () => !duel.moba.winner && mobaVoieJouable(duel.moba, side, laneId),
@@ -577,7 +576,7 @@ export function rpgMobaPasserCreature(duel, side) {
     || !duel.fenetreReponse || duel.defausseEnAttente || duel.mobaRechercheEnAttente || duel.destructionsEnAttente?.length || duel.moba.winner) return fail('aucune-creature');
   const lane = mobaVoie(duel.moba, attente.laneId);
   if (!mobaVoieJouable(duel.moba, attente.cote, attente.laneId)
-    || (lane.slots[attente.cote][attente.slot] !== null && !attente.sacrificeIds?.includes(lane.slots[attente.cote][attente.slot]))) {
+    || (lane.slots[attente.cote][attente.slot] !== null && !(attente.sacrificeIds ?? []).includes(lane.slots[attente.cote][attente.slot]))) {
     duel[attente.cote].cimetiere.push(attente.carteId);
     duel.log.push(`La case de ${duelCardById(attente.carteId)?.name ?? 'la créature'} n'est plus disponible : elle ne peut pas entrer.`);
     duel.mobaCreatureEnAttente = null; duel.fenetreReponse = false;

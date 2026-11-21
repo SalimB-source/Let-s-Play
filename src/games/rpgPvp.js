@@ -468,7 +468,8 @@ function executerIntention(duel, cote, intention) {
           cibleDifferee: Boolean(intention.cibleDifferee),
           sacrificeId: intention.sacrificeId ?? null,
           sacrificeIds: intention.sacrificeIds ?? null,
-          defausseIds: Array.isArray(intention.defausseIds) ? intention.defausseIds : null,
+          retourIds: Array.isArray(intention.retourIds) ? intention.retourIds
+            : (Array.isArray(intention.defausseIds) ? intention.defausseIds : null),
           choixCoutInvocation: intention.choixCoutInvocation ?? null,
           // L'invocation normale choisie malgré une Invocation spéciale offerte.
           invocationNormale: Boolean(intention.invocationNormale),
