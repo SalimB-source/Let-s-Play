@@ -1362,6 +1362,34 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
   }
 }
 
+/* Portrait au doigt : même lecture verticale que le duel — carte annoncée
+   au-dessus, fiche pleine largeur dessous, réponses sous la fiche. */
+@media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  .moba .moba__card-announcement .rpg-hover-card-preview--annonce {
+    --rpg-annonce-column-gap: 10px;
+    --rpg-annonce-column-width: min(430px, calc(100vw - 20px));
+  }
+  .moba .moba__card-announcement:not(.rpg-annonce-sort--magie) .rpg-hover-card-preview--annonce {
+    --rpg-annonce-card-width: clamp(120px, min(42vw, 26dvh), 220px);
+  }
+  .moba .moba__card-announcement .rpg-hover-card-preview--annonce .rpg-hover-card-preview__layout {
+    grid-template-columns: minmax(0, var(--rpg-annonce-column-width));
+    grid-template-rows: auto auto;
+    justify-items: center;
+    row-gap: var(--rpg-annonce-column-gap);
+    width: var(--rpg-annonce-column-width);
+    max-height: calc(100% - 12px);
+  }
+  .moba .moba__card-announcement .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details-column {
+    width: 100%;
+    max-height: none;
+    min-height: 0;
+  }
+  .moba .moba__card-announcement .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+    max-height: min(42dvh, 380px);
+  }
+}
+
 /* La main reste opaque : seule sa saturation signale une carte injouable. */
 .moba .moba__hand-cards .moba__card:disabled { opacity: 1; filter: saturate(.58) brightness(.82); }
 /* Compenser l'espace réservé sous les cases (18 px, ou 16 px sur mobile),
