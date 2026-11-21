@@ -130,6 +130,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
+  // L'archer samouraï arrive avec sa peinture dédiée, refaite dans l'huile
+  // sombre du lot Souls (torii écroulé, braises froides).
+  'archer-samourai-des-cendres': 'archer-samourai-cendres-v2',
   'ashigaru-des-braises': 'braise-souls-cendres-v4',
   'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
   'samourai-du-torii': 'braise-souls-cendres-v4',
