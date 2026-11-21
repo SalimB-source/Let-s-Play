@@ -7,17 +7,13 @@ import { createServer } from 'vite';
 
 const wait = (ms) => act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
 
-for (const scenario of ['vol', 'deux victimes', 'mouvement système réduit', 'mouvement réduit du jeu', 'source absente', 'effets à la pose']) test(`duel : le sacrifice précède la pose — ${scenario}`, async () => {
-  const reduit = scenario.startsWith('mouvement');
-  const deuxVictimes = scenario === 'deux victimes';
-  const carteInvoquee = deuxVictimes ? 'orochi' : scenario === 'effets à la pose' ? 'geant-des-banquises' : 'anqa-des-braises';
+test('duel : le prix d’invocation se choisit dans la main, sans fenêtre ni victime', async () => {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/', pretendToBeVisual: true });
   const previous = {};
   for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'requestAnimationFrame', 'cancelAnimationFrame', 'IS_REACT_ACT_ENVIRONMENT']) previous[key] = Object.getOwnPropertyDescriptor(globalThis, key);
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, Element: dom.window.Element, Node: dom.window.Node, requestAnimationFrame: dom.window.requestAnimationFrame.bind(dom.window), cancelAnimationFrame: dom.window.cancelAnimationFrame.bind(dom.window), IS_REACT_ACT_ENVIRONMENT: true });
   Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
-  dom.window.matchMedia = () => ({ matches: scenario === 'mouvement système réduit', addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
-  if (scenario === 'mouvement réduit du jeu') dom.window.localStorage.setItem('letsplay_sablier_anim_reduite_v1', 'on');
+  dom.window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {}, addListener() {}, removeEventListener() {} });
   dom.window.HTMLMediaElement.prototype.play = () => Promise.resolve();
   dom.window.HTMLMediaElement.prototype.pause = () => {};
   dom.window.HTMLMediaElement.prototype.load = () => {};
@@ -27,87 +23,53 @@ for (const scenario of ['vol', 'deux victimes', 'mouvement système réduit', 'm
     const { default: Page } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     const { rpgNouveauDuel, rpgJouerCreature } = await server.ssrLoadModule('/src/games/rpgDuel.js');
     const { RPG_MODE_MANA_ESSAI } = await server.ssrLoadModule('/src/games/rpgManaEssai.js');
-    const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], modeMana: RPG_MODE_MANA_ESSAI, joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], pvp: true });
+    const duel = rpgNouveauDuel({ joueurDeck: Array(8).fill('ashigaru-des-braises'), sorcierDeck: [], modeMana: RPG_MODE_MANA_ESSAI, joueurCouleurs: ['braise', 'neige'], sorcierCouleurs: ['braise', 'neige'], pvp: true });
     duel.mulliganFait = { joueur: true, sorcier: true }; duel.manaEssaiDemarre = true;
-    let cible = null;
-    if (scenario === 'effets à la pose') {
-      duel.tour = 'sorcier'; duel.sorcier.main = ['ashigaru-des-braises'];
-      cible = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
-      assert.ok(cible); cible.pv = cible.pvMax = 5; duel.tour = 'joueur';
-    }
     duel.joueur.main = ['ashigaru-des-braises'];
     const victime = rpgJouerCreature(duel, 'joueur', 'ashigaru-des-braises', null, { emplacement: 3 });
     assert.equal(victime.ok, true, JSON.stringify(victime));
     duel.joueur.invocationNormaleJouee = false;
-    let secondeVictime = null;
-    if (deuxVictimes) {
-      duel.joueur.main = ['chien-du-guet'];
-      secondeVictime = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 1 });
-      assert.equal(secondeVictime.ok, true);
-      duel.joueur.invocationNormaleJouee = false;
-    }
-    duel.joueur.main = [carteInvoquee];
+    duel.joueur.invocationsNormalesLignes = [];
+    duel.joueur.main = ['anqa-des-braises', 'chien-du-guet']; // coût 5 : une carte à rendre
     const intentions = [];
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Page, { pvp: { vue: duel, seq: 1, onIntention: async i => { intentions.push(i); return { ok: true }; }, onQuitter() {}, onAbandon() {} } })));
     const click = async (el) => { assert.ok(el, 'commande présente'); await act(async () => el.click()); };
-    const main = () => document.querySelector(`.rpg-hand__card[data-card-id="${carteInvoquee}"]`);
+    const main = () => document.querySelector('.rpg-hand__card[data-card-id="anqa-des-braises"]');
+    const paiement = () => document.querySelector('.rpg-hand__card[data-card-id="chien-du-guet"]');
     assert.ok(main());
-    assert.equal(main().dataset.jouable, 'true', `carte jouable : ${main().outerHTML.slice(0, 400)} ; ${document.body.textContent.slice(-1200)}`);
+    assert.equal(main().dataset.jouable, 'true', `carte jouable : ${main().outerHTML.slice(0, 300)}`);
     await click(main());
-    await click(document.querySelector('.rpg-sacrifice-choix__annuler'));
-    assert.ok(main(), 'annulation sans paiement');
+    // Plus de fenêtre : un bandeau, et la main sert de sélecteur.
+    assert.equal(document.querySelector('.rpg-sacrifice-choix'), null, 'aucune fenêtre de sacrifice');
+    assert.equal(document.querySelector('[data-rpg-sacrifice-id]'), null, 'aucun cercle sur le plateau');
+    const bandeau = document.querySelector('.rpg-retour-deck');
+    assert.ok(bandeau, 'le bandeau du prix est là');
+    assert.match(bandeau.textContent, /remettez/i);
+    assert.equal(document.querySelector('.rpg-retour-deck__valider').disabled, true, 'rien de choisi : validation fermée');
+    assert.ok(paiement().classList.contains('is-retour-deck-cible'), 'la carte admissible se propose');
+    // Annuler rend la main sans rien payer.
+    await click(document.querySelector('.rpg-retour-deck__annuler'));
+    assert.equal(document.querySelector('.rpg-retour-deck'), null, 'bandeau refermé');
+    assert.ok(main(), 'la carte est toujours en main');
+    assert.equal(intentions.length, 0, 'aucun paiement');
+    assert.ok(duel.joueur.creatures.some((e) => e.id === victime.entite.id), 'le plateau est intact');
+    // Le prix : on coche dans la main, puis on valide.
     await click(main());
-    await click(document.querySelector('.rpg-sacrifice-choix__sacrifier'));
-    const victimeEl = document.querySelector(`.rpg-card--equipe[data-entity-id="${victime.entite.id}"]`);
-    const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
-    main().getBoundingClientRect = () => rect(20, 500, 100, 125);
-    victimeEl.getBoundingClientRect = () => rect(400, 200, 100, 125);
-    document.querySelector('.card-row--equipe [data-creature-slot="4"]').getBoundingClientRect = () => rect(400, 200, 120, 160);
-    await click(victimeEl);
-    if (secondeVictime) {
-      const secondeEl = document.querySelector(`.rpg-card--equipe[data-entity-id="${secondeVictime.entite.id}"]`);
-      secondeEl.getBoundingClientRect = () => rect(200, 200, 100, 125);
-      await click(secondeEl);
-    }
-    assert.equal(document.querySelectorAll('[data-rpg-sacrifice-id]').length, deuxVictimes ? 2 : 1, 'un cercle par victime');
-    for (const id of [victime.entite.id, secondeVictime?.entite.id].filter(Boolean)) {
-      assert.ok(document.querySelector(`.rpg-card--equipe[data-entity-id="${id}"]`).classList.contains('is-sacrifice-animating'), 'victime masquée sous la déchirure');
-    }
-    assert.ok(main(), 'la carte reste en main pendant le rituel');
-    assert.equal(intentions.length, 0, 'aucun paiement avant la fin du rituel');
-    if (cible) { const label = document.querySelector(`[data-entity-id="${cible.id}"]`).getAttribute('aria-label'); assert.match(label, /défense 5/); assert.doesNotMatch(label, /gelée/); }
-    if (scenario === 'source absente') main().removeAttribute('data-card-id');
-    if (reduit) {
-      await wait(140);
-      assert.equal(document.querySelector('[data-rpg-card-flight]'), null);
-      assert.equal(intentions.length, 1, 'pose immédiate après le rituel réduit');
-    } else if (scenario === 'source absente') {
-      await wait(1900);
-      assert.equal(document.querySelector('[data-rpg-card-flight]'), null);
-      assert.equal(intentions.length, 1, 'la pose reste possible sans source visuelle');
-    } else {
-      await wait(1900);
-      const vol = document.querySelector('[data-rpg-card-flight="creature"]');
-      assert.ok(vol, 'vol après le rituel');
-      assert.equal(document.querySelector('[data-rpg-sacrifice-id]'), null, 'cercle retiré avant le vol');
-      assert.equal(document.querySelector('[data-sacrifice-fx="dechirement"]'), null, 'déchirure retirée avant le vol');
-      for (const id of [victime.entite.id, secondeVictime?.entite.id].filter(Boolean)) {
-        assert.ok(document.querySelector(`.rpg-card--equipe[data-entity-id="${id}"]`).classList.contains('is-sacrifice-animating'), 'la victime ne réapparaît pas pendant le vol');
-      }
-      assert.equal(vol.style.getPropertyValue('--rpg-flight-dx'), '390px', 'le vol vise la case de la victime');
-      assert.equal(vol.style.getPropertyValue('--rpg-flight-dy'), '-265px');
-      assert.equal(intentions.length, 0, 'la pose attend l’atterrissage');
-      if (cible) { const label = document.querySelector(`[data-entity-id="${cible.id}"]`).getAttribute('aria-label'); assert.match(label, /défense 5/); assert.doesNotMatch(label, /gelée/); }
-      await wait(800);
-      assert.equal(intentions.length, 1);
-    }
-    if (cible) { const label = document.querySelector(`[data-entity-id="${cible.id}"]`).getAttribute('aria-label'); assert.match(label, /défense 4/); assert.match(label, /gelée/); }
-    assert.deepEqual(intentions[0].sacrificeIds, [victime.entite.id, secondeVictime?.entite.id].filter(Boolean));
-    assert.ok(document.querySelector(`.rpg-card--equipe[data-card-id="${carteInvoquee}"]`), 'créature posée');
-    for (const id of [victime.entite.id, secondeVictime?.entite.id].filter(Boolean)) {
-      assert.equal(document.querySelector(`.rpg-card--equipe[data-entity-id="${id}"]`), null);
-    }
+    await click(paiement());
+    assert.equal(paiement().dataset.retourDeck, 'choisie', 'carte cochée');
+    assert.equal(main().dataset.retourDeck, 'source', 'carte à invoquer marquée');
+    assert.equal(document.querySelector('.rpg-retour-deck__valider').disabled, false, 'validation ouverte');
+    await click(document.querySelector('.rpg-retour-deck__valider'));
+    await wait(900);
+    assert.equal(intentions.length, 1, 'la pose est partie');
+    assert.deepEqual(intentions[0].retourIds, ['chien-du-guet'], 'l’intention porte la carte rendue au deck');
+    assert.equal(intentions[0].sacrificeIds, null, 'aucune victime n’est désignée');
+    // En PvP la vue locale n’applique pas l’intention : c’est le rendu qui dit
+    // que la main a payé et que la créature est entrée.
+    assert.equal(document.querySelector('.rpg-hand__card[data-card-id="chien-du-guet"]'), null, 'la carte payée quitte la main');
+    assert.equal(document.querySelector('.rpg-hand__card[data-card-id="anqa-des-braises"]'), null, 'la carte invoquée quitte la main');
+    assert.ok(document.querySelector(`.rpg-card--equipe[data-entity-id="${victime.entite.id}"]`), 'aucune victime sacrifiée : la créature en jeu reste');
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();
@@ -170,11 +132,15 @@ test('duel : les effets de la créature du sorcier attendent sa pose après le c
     cible.pv = cible.pvMax = 5;
     duel.tour = 'sorcier'; duel.sorcier.main = ['viking-des-neiges'];
     const victime = moteur.rpgJouerCreature(duel, 'sorcier', 'viking-des-neiges').entite;
-    duel.sorcier.invocationNormaleJouee = false; duel.sorcier.main = ['geant-des-banquises'];
+    duel.sorcier.invocationNormaleJouee = false;
+    // Le prix se paie depuis la main : il lui faut une autre carte à rendre.
+    duel.sorcier.main = ['geant-des-banquises', 'viking-des-neiges'];
     duel.annonce = { cote: 'sorcier', carteId: 'geant-des-banquises', cibleId: null }; duel.fenetreReponse = true;
+    duel.sorcier.deck = Array(6).fill('viking-des-neiges');
     const avant = JSON.stringify(duel);
-    assert.deepEqual(moteur.rpgSacrificesAnnonceSorcier(duel), [victime.id]);
-    assert.equal(JSON.stringify(duel), avant, 'préparer le sacrifice ne modifie pas la partie');
+    const prix = moteur.rpgSacrificesAnnonceSorcier(duel);
+    assert.deepEqual(prix, ['viking-des-neiges'], 'le sorcier rend une carte de sa main');
+    assert.equal(JSON.stringify(duel), avant, 'préparer le prix ne modifie pas la partie');
     globalThis.__SACRIFICE_TEST_DUEL__ = duel;
     const { default: Page } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     root = createRoot(document.getElementById('root'));
@@ -182,16 +148,17 @@ test('duel : les effets de la créature du sorcier attendent sa pose après le c
     const passer = document.querySelector('.rpg-annonce-sort__pass');
     assert.ok(passer, 'annonce du Géant');
     await act(async () => passer.click());
-    const cercle = document.querySelector(`[data-rpg-sacrifice-id="${victime.id}"]`);
-    assert.ok(cercle, 'le rituel commence');
-    assert.equal(cible.pv, 5); assert.equal(cible.gelToursRestants, 0);
-    assert.ok(duel.sorcier.creatures.some((e) => e.id === victime.id));
-    assert.equal(duel.sorcier.creatures.some((e) => e.carteId === 'geant-des-banquises'), false);
-    assert.equal(document.querySelector('.rpg-gel-masse'), null, 'aucune animation de gel avant la pose');
-    await wait(1900);
+    assert.equal(document.querySelector(`[data-rpg-sacrifice-id="${victime.id}"]`), null, 'aucun cercle : rien n’est sacrifié');
+    assert.ok(duel.sorcier.creatures.some((e) => e.id === victime.id), 'sa créature reste en jeu');
+    // Sans rituel à attendre, la pose et son effet d’arrivée passent tout de suite.
+    assert.ok(duel.sorcier.creatures.some((e) => e.carteId === 'geant-des-banquises'), 'le Géant est posé');
+    assert.equal(cible.pv, 4, 'son arrivée a gelé la cible');
+    assert.ok(cible.gelToursRestants > 0);
+    await wait(400);
     assert.ok(duel.sorcier.creatures.some((e) => e.carteId === 'geant-des-banquises'));
     assert.equal(cible.pv, 4); assert.ok(cible.gelToursRestants > 0);
-    assert.equal(duel.sorcier.creatures.some((e) => e.id === victime.id), false);
+    assert.ok(duel.sorcier.creatures.some((e) => e.id === victime.id), 'la créature du sorcier reste en jeu');
+    assert.ok(duel.sorcier.deck.includes('viking-des-neiges'), 'la carte payée est repartie dans son deck');
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close();

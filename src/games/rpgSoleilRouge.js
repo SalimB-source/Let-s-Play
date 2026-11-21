@@ -161,8 +161,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   carte({
     id: 'kagutsuchi-flamme-originelle', distance: true, name: 'Kagutsuchi, Flamme originelle', honneur: 0,
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
-    // La flamme originelle se nourrit aussi d'un sort défaussé de la main.
-    defausseSacrifice: { types: ['creature', 'magie'] },
+    // Son prix accepte aussi un sort de la main remis dans le deck.
+    retourDeck: { types: ['creature', 'magie'] },
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
     coupCritique: { chance: 0.25, fois: 4 },
@@ -198,9 +198,9 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   carte({
     id: 'tojiro-le-pourfendeur', name: 'Tojiro, le pourfendeur',
     cost: 6, atk: 5, def: 5, rarity: 'mythique',
-    // À la place d'une victime sur le plateau, le pourfendeur accepte qu'on
-    // défausse une créature **ou une arme** de sa main (`rpgInvocation.js`).
-    defausseSacrifice: { types: ['creature', 'arme'] },
+    // Son prix accepte une créature **ou une arme** de la main remise dans le
+    // deck (`rpgInvocation.js`).
+    retourDeck: { types: ['creature', 'arme'] },
     typeLine: 'Créature légendaire — Humain · Samouraï · Vampire',
     reactionTourAdverse: true,
     conditionEmbuscade: 'djinn-adverse',

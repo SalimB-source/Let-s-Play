@@ -1,6 +1,6 @@
 import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
-import { invocationPossible, rpgInvocationSpecialeSurSonTour, sacrificesInvocation, victimesInvocation, ligneQuotaInvocation } from './rpgInvocation.js';
+import { invocationPossible, rpgInvocationSpecialeSurSonTour, retoursAuDeckInvocation, retourDeckAdmissible, sacrificesInvocation, victimesInvocation, ligneQuotaInvocation } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
@@ -2198,64 +2198,43 @@ function attaqueDisponiblePourSacrifice(duel, victime) {
   return (duel.moba || duel.phase !== 'principale2') && moteur.rpgPeutAttaquer(victime);
 }
 
-/** Before committing to any sacrifice, require a concrete tactical payoff on
- * an isolated engine simulation, not just the card's mana cost or printed
- * arrival text. A winning attack is an explicit exception. */
+/** Le prix d'une invocation se paie **depuis la main** : la créature de 5
+ * étoiles ou plus remet une carte de la main dans le deck (deux à partir de 7).
+ * L'IA rend les cartes les moins utiles — les moins chères d'abord, et les
+ * non-créatures avant les créatures. Seule l'Ascension paie encore avec des
+ * corps du plateau : elle rend alors la recette la moins chère.
+ * `null` veut dire « ce prix ne peut pas être payé » — l'invocation est écartée. */
 export function choisirSacrificesInvocationIA(duel, cote, carte, cibleId = null) {
-  return moteur.rpgAvecCompteurEntitesIsole(() => choisirSacrificesInvocationIAInterne(duel, cote, carte, cibleId));
+  return moteur.rpgAvecCompteurEntitesIsole(() => choisirRetoursAuDeckIAInterne(duel, cote, carte));
 }
+/** Nom d'usage du choix de paiement, maintenant que rien n'est sacrifié. */
+export const choisirRetoursAuDeckIA = choisirSacrificesInvocationIA;
 
-function choisirSacrificesInvocationIAInterne(duel, cote, carte, cibleId) {
-  const n = sacrificesInvocation(carte, duel, cote);
-  if (!n) return [];
-  let menaceInitiale;
-  let victoireInitiale;
-  const victoireAuCombat = (position) => {
-    if (position.attaqueJouee === cote || !position[cote].creatures.some(moteur.rpgPeutAttaquer)) return false;
-    const essai = copierDuelPourRecherche(position);
-    moteur.rpgReglerHasard(essai, () => 0.5);
-    const attaquants = choisirAttaquantsIA(essai, cote, { rng: () => 0.5 });
-    if (!attaquants.length) return false;
-    const cibles = choisirCiblesRapidesIA(essai, cote, attaquants);
-    const blocs = choisirBloqueursIA(essai, cote, attaquants, cibles);
-    return moteur.rpgLancerAttaque(essai, cote, attaquants, blocs, null, null, cibles).ok
-      && moteur.rpgVainqueur(essai) === cote;
-  };
-  for (const victimes of rpgCombinaisonsSacrificesIA(duel, cote, carte)) {
-    const ids = victimes.map((e) => e.id);
-    try {
-      const probe = copierDuelPourRecherche(duel);
-      moteur.rpgReglerHasard(probe, () => 0.5);
-      const pose = moteur.rpgJouerCreature(probe, cote, carte.id, cibleId, { sacrificeIds: ids });
-      if (!pose.ok) continue;
-      if (victoireInitiale === undefined) victoireInitiale = victoireAuCombat(duel);
-      if (victoireInitiale) continue;
-      if (moteur.rpgVainqueur(probe) === cote) return ids;
-      if (probe.arriveeEnAttente || probe.effetCreatureEnAttente || probe.destructionsEnAttente?.length || probe.siteEnAttente || probe.defausseEnAttente) continue;
-      const cout = victimes.reduce((total, victime) => total + 4
-        + (attaqueDisponiblePourSacrifice(duel, victime) ? 4 : 0), 0);
-      const gain = evaluerPositionIA(probe, cote) - evaluerPositionIA(duel, cote) - cout;
-      const progression = (etat) => etat[cote].creatures.some((e) =>
-        duelCardById(e.carteId)?.kind !== 'site' && !e.nePeutPasAttaquer && (Number(e.atk) || 0) > 0);
-      const besoin = duel[autre(cote)].creatures.length > 0
-        || probe[autre(cote)].pv < duel[autre(cote)].pv
-        || (!progression(duel) && progression(probe));
-      if (besoin && gain >= 4) return ids;
-      if (menaceInitiale === undefined) menaceInitiale = adversaireGagneProchainCombat(duel, cote);
-      if (menaceInitiale === true && adversaireGagneProchainCombat(probe, cote) === false) return ids;
-      // A haste creature can close the game now. Resolve a legal attack and
-      // the defending AI's blocks rather than assuming it goes unblocked.
-      if (pose.entite && moteur.rpgPeutAttaquer(pose.entite) && probe.attaqueJouee !== cote) {
-        const attackers = choisirAttaquantsIA(probe, cote);
-        if (attackers.includes(pose.entite.id)) {
-          const cibles = choisirCiblesRapidesIA(probe, cote, attackers);
-          const blocks = choisirBloqueursIA(probe, cote, attackers, cibles);
-          if (moteur.rpgLancerAttaque(probe, cote, attackers, blocks, null, null, cibles).ok && moteur.rpgVainqueur(probe) === cote) return ids;
-        }
-      }
-    } catch { /* Unknown or incomplete effects do not justify a downgrade. */ }
+function choisirRetoursAuDeckIAInterne(duel, cote, carte) {
+  const camp = duel?.[cote];
+  if (!camp || !carte?.id) return null;
+  if (carte.ascension) {
+    const recettes = combinaisonsAscension(camp, carte);
+    if (!recettes.length) return null;
+    const valeur = (ids) => ids.reduce((total, id) => {
+      const e = camp.creatures.find((c) => c.id === id);
+      return total + (Number(e?.atk) || 0) + (Number(e?.def ?? e?.pv) || 0);
+    }, 0);
+    return recettes.slice().sort((a, b) => valeur(a) - valeur(b))[0].map((e) => e.id);
   }
-  return null;
+  const nombre = retoursAuDeckInvocation(carte, duel, cote);
+  if (!nombre) return [];
+  const main = [...(camp.main ?? [])];
+  const idxPose = main.indexOf(carte.id);
+  if (idxPose >= 0) main.splice(idxPose, 1);
+  const candidates = main
+    .map((id, index) => ({ id, index, fiche: duelCardById(id) ?? cardById(id) }))
+    .filter(({ id, fiche }) => fiche && retourDeckAdmissible(id, carte));
+  if (candidates.length < nombre) return null;
+  candidates.sort((a, b) => ((Number(a.fiche.cost) || 0) - (Number(b.fiche.cost) || 0))
+    || Number(a.fiche.kind === 'creature') - Number(b.fiche.kind === 'creature')
+    || a.index - b.index);
+  return candidates.slice(0, nombre).map(({ id }) => id);
 }
 
 /** Conserver un Djinn furtif en main si ses attaques et, en présence d'une
@@ -2274,7 +2253,7 @@ function djinnSansEffetCeTour(duel, cote, carte) {
   if (duel.moba || duel.tour !== cote || duel.phase !== 'principale'
     || (camp.creatures.length && !allieSimpleSousVoile)
     || !carte.furtif || !carte.ephemere || !carte.rapidite || carte.arrivee || carte.destruction
-    || carte.honneur || carte.tenacite || carte.mortAlliee || sacrificesInvocation(carte, duel, cote)
+    || carte.honneur || carte.tenacite || carte.mortAlliee || retoursAuDeckInvocation(carte, duel, cote)
     // Une magie, une arme ou une invocation spéciale pourrait changer le plan.
     || camp.main.some((id) => !duelCardById(id) || duelCardById(id)?.kind === 'site'
       || (id !== carte.id && rpgCarteEmbuscade(id)))
@@ -2433,7 +2412,7 @@ function candidatsCartesIA(duel, cote, options = {}) {
     // les attaques : un furtif sans effet d'arrivée ne pourra pas frapper avant
     // de disparaître. Ne pas écarter les arrivées ou les synergies de mort.
     if (!duel.moba && duel.phase === 'principale2' && carte.furtif && carte.ephemere
-      && !carte.arrivee && !carte.destruction && sacrificesInvocation(carte, duel, cote) === 0
+      && !carte.arrivee && !carte.destruction && retoursAuDeckInvocation(carte, duel, cote) === 0
       && !camp.creatures.some((e) => duelCardById(e.carteId)?.mortAlliee)
       && !etincellePrepareSacrifice(duel, cote, carte, exclus)) continue;
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
@@ -2441,10 +2420,13 @@ function candidatsCartesIA(duel, cote, options = {}) {
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
     if (!moteur.rpgPeutPayer(camp, carte) || !invocationPossible(duel, cote, carte)) continue;
     if (duelCardById(carteId)) {
-      const sacrifices = sacrificesInvocation(carte, duel, cote);
+      // Le prix vient de la main : le plateau ne se vide plus, sauf pour les
+      // matériaux d'une Ascension.
+      const materiaux = carte.ascension ? sacrificesInvocation(carte) : 0;
+      const retours = retoursAuDeckInvocation(carte, duel, cote);
       const maxChamp = duel.modeMana === RPG_MODE_MANA_ESSAI ? 5 : 6;
-      if ((camp.creatures.length - sacrifices) >= maxChamp) continue;
-      if (!sacrifices) {
+      if ((camp.creatures.length - materiaux) >= maxChamp) continue;
+      if (!retours && !materiaux) {
         const memeLigne = camp.creatures.filter((e) => Boolean(e.distance) === Boolean(carte.distance)).length;
         if (memeLigne >= 3) continue;
       }
@@ -2468,27 +2450,32 @@ function candidatsCartesIA(duel, cote, options = {}) {
       if (visee && (estProtegee(visee, cardColors(carte)) || horsDAtteinteDuSort(visee, carte))) continue;
     }
     const destructionNeutre = carte.arrivee?.type === 'destruction-cible' && carte.arrivee?.portee === 'tous';
-    let sacrificeIds = choisirSacrificesInvocationIA(duel, cote, carte, evaluation.cibleId ?? null);
-    if (destructionNeutre && sacrificeIds === null && evaluation.cibleId) {
-      sacrificeIds = choisirSacrificesInvocationIA(duel, cote, carte, null);
+    let retourIds = choisirSacrificesInvocationIA(duel, cote, carte, evaluation.cibleId ?? null);
+    if (destructionNeutre && retourIds === null && evaluation.cibleId) {
+      retourIds = choisirSacrificesInvocationIA(duel, cote, carte, null);
     }
-    if (sacrificeIds === null) continue;
+    if (retourIds === null) continue;
     if (destructionNeutre) {
-      // La cible est choisie après paiement : ne pas annoncer un allié qui
-      // vient d'être sacrifié, et ne pas exiger de cible si c'était le seul.
-      const vue = { ...duel, [cote]: { ...camp, creatures: camp.creatures.filter((e) => !sacrificeIds.includes(e.id)) } };
+      // La cible est choisie après paiement : le plateau ne bouge plus (le prix
+      // vient de la main), mais une Ascension retire bien ses matériaux.
+      const vue = { ...duel, [cote]: { ...camp, creatures: camp.creatures.filter((e) => !retourIds.includes(e.id)) } };
       evaluation.cibleId = choisirCibleAutoIA(vue, cote, carte, { profil, rng });
       const allie = vue[cote].creatures.find((e) => e.id === evaluation.cibleId);
       if (allie) evaluation.score -= valeurEntite(allie);
     }
     candidats.push({
       carteId,
-      ...(sacrificeIds.length ? { sacrificeIds } : {}),
+      ...(retourIds.length ? { retourIds } : {}),
       cibleId: evaluation.cibleId ?? null,
       cibleAllieeId: evaluation.cibleAllieeId ?? null,
-      score: evaluation.score - sacrificeIds.reduce((total, id) => {
+      score: evaluation.score - retourIds.reduce((total, id) => {
+        // Une carte rendue au deck n'est pas perdue : elle coûte seulement son
+        // tempo — plus cher si c'est une créature, et selon son coût imprimé.
+        const fiche = duelCardById(id) ?? cardById(id);
         const victime = camp.creatures.find((e) => e.id === id);
-        return total + 4 + (attaqueDisponiblePourSacrifice(duel, victime) ? 4 : 0);
+        return victime
+          ? total + 4 + (attaqueDisponiblePourSacrifice(duel, victime) ? 4 : 0)
+          : total + 1.5 + (Number(fiche?.cost) || 0) * 0.5;
       }, 0) + (profil.style === 'controle' && carte.kind === 'magie' ? 0.5 : 0),
     });
   }
@@ -2514,7 +2501,7 @@ function simulerCoupCarte(duel, cote, coup) {
     if (armeById(coup.carteId)) {
       resultat = moteur.rpgJouerArme(simulation, cote, coup.carteId, coup.cibleId);
     } else if (duelCardById(coup.carteId)) {
-      resultat = moteur.rpgJouerCreature(simulation, cote, coup.carteId, coup.cibleId, { sacrificeIds: coup.sacrificeIds ?? null });
+      resultat = moteur.rpgJouerCreature(simulation, cote, coup.carteId, coup.cibleId, { retourIds: coup.retourIds ?? coup.sacrificeIds ?? null });
     } else if (magieById(coup.carteId)) {
       resultat = moteur.rpgLancerMagie(
         simulation, cote, coup.carteId, coup.cibleId, coup.cibleAllieeId,
@@ -2615,7 +2602,7 @@ function djinnGagnantImmediat(duel, cote, candidats) {
   const furtifs = candidats.filter((coup) => {
     const carte = duelCardById(coup.carteId);
     return carte?.furtif && carte.ephemere && carte.rapidite && !carte.arrivee
-      && !(coup.sacrificeIds?.length) && !sacrificesInvocation(carte, duel, cote);
+      && !(coup.retourIds?.length ?? coup.sacrificeIds?.length) && !retoursAuDeckInvocation(carte, duel, cote);
   });
   if (!furtifs.length) return null;
   try {

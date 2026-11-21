@@ -8,7 +8,7 @@ import { zoneFormeCarte } from './rpgZoneCartes.js';
 import { entiteDansZone, libelleZone, meilleureZone, zoneValide } from './rpgZones.js';
 import { porteeEffetCarte } from './rpgPorteesCartes.js';
 import { cibleDeLEffetAPortee } from './rpgPortees.js';
-import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour, defausseSacrificeAdmissible } from './rpgInvocation.js';
+import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour, retoursAuDeckInvocation, retourDeckAdmissible } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, ligneDeCase, ligneDePose, lignesActives, RPG_LIGNE_FOND, RPG_LIGNE_FRONT, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
@@ -6616,10 +6616,12 @@ function cibleRespecteTypeImprime(carte, entite) {
  * arrivée qui ne désigne rien (ou qui n'a plus de cible légale) se résout, elle,
  * dans les deux cas avec la pose.
  *
- * `sacrificeIds` — victimes du prix d'invocation : 1 pour un coût de 5–6,
+ * `retourIds` — cartes de la main remises dans le deck pour payer : 1 pour un coût de 5–6,
  * 2 à partir de 7, aucune en dessous. Le mana reste dû. L'IA sélectionne
  * ses victimes ; en JcJ les deux camps doivent les désigner explicitement.
- * `sacrificeId` est l'alias historique pour une seule victime.
+ * `sacrificeIds`/`sacrificeId`/`defausseIds` en sont les alias historiques : le prix
+ * d'invocation ne sacrifie plus rien, il **remet des cartes de la main dans le
+ * deck**. Seule l'Ascension paie encore avec des corps du plateau.
  *
  * `emplacement` — la **case choisie par le joueur** (0 à 4, mode essai) : la
  * créature entre en jeu sur cette case plutôt que sur la première libre. Une
@@ -6641,7 +6643,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false, defausseIds = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false, retourIds = null, defausseIds = null } = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
   if (!camp) return { ok: false, raison: 'camp' };
@@ -6680,56 +6682,72 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     && !rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (rpgArriveeExigeAttaquant(duel, carte) && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
-  // Le prix d'invocation est un **choix** : celui qui présente une victime paie
-  // l'invocation normale — sacrifices imprimés et quota du tour — et n'a donc
-  // pas à défausser en plus la carte qu'exige la condition de l'Invocation
-  // spéciale (Tojiro ne réclame plus un Sabre maudit à qui le sacrifie).
-  const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
-  const sacrificeDemande = Array.isArray(idsDemandes) && idsDemandes.length > 0;
-  // La défausse depuis la main paie le sacrifice imprimé, comme les victimes
-  // présentées : c'est une voie de l'invocation normale, pas un péage spécial.
-  const idsDefausse = Array.isArray(defausseIds) && defausseIds.length > 0
-    ? defausseIds : (dejaPayee ? (attenteMoba?.defausseIds ?? []) : []);
-  const defausseDemandee = idsDefausse.length > 0;
-  const invocationNormaleChoisie = !duel.moba && (invocationNormale || sacrificeDemande || defausseDemandee);
-  const nombreSacrifices = dejaPayee
-    ? (attenteMoba.sacrificeIds.length || (attenteMoba.defausseIds?.length ?? 0))
-    : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
+  // Le prix d'invocation est un **choix** : celui qui remet des cartes de sa
+  // main dans le deck paie l'invocation normale — retours imprimés et quota du
+  // tour — et n'a donc pas à défausser en plus la carte qu'exige la condition
+  // de l'Invocation spéciale (Tojiro ne réclame plus de Sabre maudit).
+  // `sacrificeIds`/`sacrificeId`/`defausseIds` sont d'anciens noms : ils
+  // désignent aujourd'hui les cartes de la main à remettre dans le deck.
+  const idsRetour = [retourIds, defausseIds, sacrificeIds, sacrificeId ? [sacrificeId] : null]
+    .find((liste) => Array.isArray(liste) && liste.length > 0)
+    ?? (dejaPayee ? (attenteMoba?.retourIds ?? attenteMoba?.defausseIds ?? []) : []);
+  const retourDemande = idsRetour.length > 0;
+  const invocationNormaleChoisie = !duel.moba && (invocationNormale || retourDemande);
+  const nombreRetours = dejaPayee
+    ? (attenteMoba.retourIds?.length ?? attenteMoba.defausseIds?.length ?? attenteMoba.sacrificeIds?.length ?? 0)
+    : (ascension
+      ? sacrificesInvocation(carte)
+      : retoursAuDeckInvocation(carte, duel, cote, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined));
   const limiteInvocation = !dejaPayee
     && limiteInvocationMoba(duel, cote, carte, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
   if (limiteInvocation) return { ok: false, raison: limiteInvocation };
   let sacrifices = [];
-  let defausses = [];
-  if (defausseDemandee) {
-    if (idsDefausse.length !== nombreSacrifices
-      || new Set(idsDefausse).size !== idsDefausse.length) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+  let retours = [];
+  if (!ascension && retourDemande) {
+    if (idsRetour.length !== nombreRetours
+      || new Set(idsRetour).size !== idsRetour.length) return { ok: false, raison: 'retour-deck', nombreRetours };
     // La carte jouée ne paie pas sa propre arrivée.
-    if (idsDefausse.includes(carteId)) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+    if (idsRetour.includes(carteId)) return { ok: false, raison: 'retour-deck', nombreRetours };
     const reste = [...zoneSource];
     const idxPose = reste.indexOf(carteId);
     if (idxPose >= 0) reste.splice(idxPose, 1);
-    for (const id of idsDefausse) {
+    for (const id of idsRetour) {
       const idx = reste.indexOf(id);
-      if (idx < 0 || !defausseSacrificeAdmissible(id, carte)) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+      if (idx < 0 || !retourDeckAdmissible(id, carte)) return { ok: false, raison: 'retour-deck', nombreRetours };
       reste.splice(idx, 1);
-      defausses.push(id);
+      retours.push(id);
     }
-  } else if (idsDemandes !== null) {
-    if (!Array.isArray(idsDemandes) || idsDemandes.length !== nombreSacrifices
-      || new Set(idsDemandes).size !== idsDemandes.length) return { ok: false, raison: 'sacrifice', nombreSacrifices };
-    sacrifices = idsDemandes.map(id => camp.creatures.find(e => e.id === id));
-    if (sacrifices.some(e => !e || estSite(e))) return { ok: false, raison: 'sacrifice', nombreSacrifices };
-    if (sacrifices.some(e => e.attaquee)) return { ok: false, raison: 'sacrifice-engage', nombreSacrifices };
-  } else if (nombreSacrifices) {
-    if (cote !== 'sorcier' || duel.pvp) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
-    const disponibles = (ascension ? (combinaisonsAscension(camp, carte)[0] ?? []) : victimesInvocation(camp)).sort((a, b) =>
-      ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0)) || (a.pv ?? 0) - (b.pv ?? 0));
-    sacrifices = disponibles.slice(0, nombreSacrifices);
-    if (sacrifices.length !== nombreSacrifices) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
-  }
-  if (ascension) {
+  } else if (ascension) {
+    // L'Ascension reste le seul prix payé avec le plateau : ses matériaux sont
+    // des corps, imposés par le joueur ou pris du plus faible au plus fort.
+    if (retourDemande) {
+      sacrifices = idsRetour.map(id => camp.creatures.find(e => e.id === id));
+      if (sacrifices.some(e => !e || estSite(e))) return { ok: false, raison: 'sacrifice', nombreSacrifices: nombreRetours };
+      if (sacrifices.some(e => e.attaquee)) return { ok: false, raison: 'sacrifice-engage', nombreSacrifices: nombreRetours };
+    } else {
+      if (cote !== 'sorcier' || duel.pvp) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices: nombreRetours };
+      sacrifices = (combinaisonsAscension(camp, carte)[0] ?? []).slice();
+    }
+    if (sacrifices.length !== nombreRetours) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices: nombreRetours };
     const recette = validerMateriauxAscension(camp, carte, sacrifices.map((e) => e.id));
     if (!recette.ok) return recette;
+  } else if (nombreRetours) {
+    // Personne n'a choisi : le sorcier (IA) remet lui-même ses cartes les moins
+    // utiles ; le joueur reçoit l'erreur qui ouvre la sélection dans sa main.
+    // Les deux sièges choisissent leurs cartes : l'interface envoie toujours la
+    // liste. Le sorcier sans interface (IA locale) se sert lui-même.
+    if (cote !== 'sorcier') return { ok: false, raison: 'retour-requis', nombreRetours };
+    const main = [...zoneSource];
+    const idxPose = main.indexOf(carteId);
+    if (idxPose >= 0) main.splice(idxPose, 1);
+    const candidates = main.filter((id) => retourDeckAdmissible(id, carte));
+    if (candidates.length < nombreRetours) return { ok: false, raison: 'retour-impossible', nombreRetours };
+    retours = candidates
+      .map((id) => ({ id, fiche: cardById(id) }))
+      .sort((a, b) => ((Number(a.fiche?.cost) || 0) - (Number(b.fiche?.cost) || 0))
+        || Number(a.fiche?.kind === 'creature') - Number(b.fiche?.kind === 'creature'))
+      .slice(0, nombreRetours)
+      .map(({ id }) => id);
   }
   if (duel.modeMana === RPG_MODE_MANA_ESSAI
     && camp.creatures.length - sacrifices.length >= champMax(duel)) {
@@ -6913,7 +6931,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     marquerInvocationMoba(duel, cote, carte, invocationSpeciale, invocationSpeciale);
     if (invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, cote, carteId, choixCout);
     zoneSource.splice(zoneSource.indexOf(carteId), 1);
-    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), defausseIds: defausses, invocationSpecialeMoba, ...annoncerCreatureMoba };
+    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours, invocationSpecialeMoba, ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
     duel.log.push(`${carte.name} est annoncée en ${annoncerCreatureMoba.nomVoie}, emplacement ${annoncerCreatureMoba.slot + 1} : réponse ou passage avant son arrivée.`);
     return { ok: true, creatureEnAttente: true };
@@ -6952,11 +6970,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     }
     duel.log.push(`${carte.name} contre ${cible.name} avant son arrivée.`);
   }
-  // Rien n’a été annulé : les sacrifices d’invocation ont lieu maintenant,
-  // juste avant le paiement — la créature entre ensuite sur le champ vidé.
-  // Si le sorcier a contré la créature plus haut, on n'arrive jamais ici :
-  // rien n'a été sacrifié. L'indice de la victime est retenu : la nouvelle
-  // créature prend sa place, au même emplacement du plateau.
+  // Rien n'a été annulé : le prix est payé maintenant, juste avant la pose.
+  // L'Ascension sacrifie ses matériaux — l'indice de la victime est retenu, la
+  // nouvelle créature prend sa place. Une invocation ordinaire, elle, remet des
+  // cartes de la main dans le deck : le plateau ne bouge pas.
   let emplacementSacrifice = null;
   /** La case d'arrivée de la carte, même colonne que la victime — préférée,
    *  jamais imposée. */
@@ -6989,14 +7006,16 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       reservationsInvocation.delete(camp);
     }
   }
-  // La défausse choisie **à la place** du sacrifice : la main se vide, le
-  // plateau reste intact, le cimetière reçoit les cartes nommées. Elle se
-  // règle même quand aucune victime n'a été déchirée.
-  for (const id of defausses) {
-    const idx = camp.main.indexOf(id);
-    if (idx >= 0) camp.main.splice(idx, 1);
-    camp.cimetiere.push(id);
-    duel.log.push(`${cote === 'joueur' ? 'Vous défaussez' : 'Le sorcier défausse'} ${cardById(id)?.name ?? id} pour invoquer ${carte.name}.`);
+  // Le prix d'une invocation ordinaire : les cartes choisies quittent la main
+  // et repartent **dans le deck**, qui est remélangé. Le plateau reste intact.
+  if (retours.length) {
+    const rng = hasardParDuel.get(duel) ?? Math.random;
+    for (const id of retours) {
+      const idx = camp.main.indexOf(id);
+      if (idx >= 0) camp.main.splice(idx, 1);
+    }
+    camp.deck = melangerDeck([...camp.deck, ...retours], rng);
+    duel.log.push(`${cote === 'joueur' ? 'Vous remettez' : 'Le sorcier remet'} ${retours.map((id) => cardById(id)?.name ?? id).join(' et ')} dans ${cote === 'joueur' ? 'votre' : 'son'} deck pour invoquer ${carte.name}.`);
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
@@ -7010,7 +7029,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     || (typeof peutPlacerApresSacrifices === 'function' && !peutPlacerApresSacrifices())) {
     camp.cimetiere.push(carteId);
     duel.log.push(`${carte.name} ne peut plus entrer : ${rpgVainqueur(duel) ? 'la partie est terminée' : "sa case n'est plus disponible"}.`);
-    return { ok: true, dissipe: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id) };
+    return { ok: true, dissipe: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours };
   }
   // La pose est engagée : le sceau du Pilote est dépensé par cette créature
   // (les seuils de SA prise restent lus sur l'instantané de début de pose).
@@ -7067,7 +7086,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
         ...(prises ? { abordage: seuilAbordagePose } : {}) };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours, emplacement: entite.emplacement ?? null };
     }
     if (attaques.length) {
       const choix = attaques.includes(cibleId) ? cibleId : attaques[0];
@@ -7101,7 +7120,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours, emplacement: entite.emplacement ?? null };
     }
     // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
@@ -7137,7 +7156,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
         duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId, abordage: seuilAbordageArrivee };
         rafraichirAuras(duel);
         rpgActionsEtat(duel);
-        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
+        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours, emplacement: entite.emplacement ?? null };
       }
       const cibleAbordage = (cibleId && !arriveeCiblePortee(carte))
         ? duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId)
@@ -7149,7 +7168,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null,
+  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours, emplacement: entite.emplacement ?? null,
     ...(carteContree ? { contre: true, parIA: cote === 'sorcier', carteContree, carteContre: carte.id } : {}) };
 }
 
@@ -10318,7 +10337,7 @@ export function rpgSacrificesAnnonceSorcier(duel) {
   const annonce = duel?.annonce;
   const creature = annonce && duelCardById(annonce.carteId);
   const etatPrepare = { ...duel, annonce: null, fenetreReponse: false };
-  if (!creature || !sacrificesInvocation(creature, etatPrepare, 'sorcier')) return null;
+  if (!creature || !retoursAuDeckInvocation(creature, etatPrepare, 'sorcier')) return null;
   // La recherche IA simule la pose comme à la résolution : l'annonce et la
   // fenêtre de réponse sont fermées, sans modifier le duel affiché.
   return choisirSacrificesInvocationIA(etatPrepare, 'sorcier', creature, annonce.cibleId);
@@ -10333,11 +10352,11 @@ export function rpgSorcierResoudreAnnonce(duel, { sacrificesPrepares = undefined
   // La réponse adverse peut avoir changé le plateau : réévaluer avant de
   // sacrifier plutôt que payer aveuglément avec une créature devenue précieuse.
   const creature = duelCardById(annonce.carteId);
-  const sacrifices = creature && sacrificesInvocation(creature, duel, 'sorcier')
+  const sacrifices = creature && retoursAuDeckInvocation(creature, duel, 'sorcier')
     ? (sacrificesPrepares === undefined ? choisirSacrificesInvocationIA(duel, 'sorcier', creature, annonce.cibleId) : sacrificesPrepares) : null;
-  if (creature && sacrificesInvocation(creature, duel, 'sorcier') && sacrifices === null) {
-    duel.log.push(`Le sorcier renonce à invoquer ${creature.name} : aucun sacrifice avantageux.`);
-    return { ok: false, raison: 'sacrifice-inutile', carteId: annonce.carteId };
+  if (creature && retoursAuDeckInvocation(creature, duel, 'sorcier') && sacrifices === null) {
+    duel.log.push(`Le sorcier renonce à invoquer ${creature.name} : pas de quoi remettre une carte dans son deck.`);
+    return { ok: false, raison: 'retour-impossible', carteId: annonce.carteId };
   }
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
