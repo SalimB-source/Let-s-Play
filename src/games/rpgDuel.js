@@ -8,7 +8,7 @@ import { zoneFormeCarte } from './rpgZoneCartes.js';
 import { entiteDansZone, libelleZone, meilleureZone, zoneValide } from './rpgZones.js';
 import { porteeEffetCarte } from './rpgPorteesCartes.js';
 import { cibleDeLEffetAPortee } from './rpgPortees.js';
-import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour } from './rpgInvocation.js';
+import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour, defausseSacrificeAdmissible } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
 import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, ligneDeCase, ligneDePose, lignesActives, RPG_LIGNE_FOND, RPG_LIGNE_FRONT, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
@@ -6630,7 +6630,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false, defausseIds = null } = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
   if (!camp) return { ok: false, raison: 'camp' };
@@ -6675,14 +6675,35 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // spéciale (Tojiro ne réclame plus un Sabre maudit à qui le sacrifie).
   const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
   const sacrificeDemande = Array.isArray(idsDemandes) && idsDemandes.length > 0;
-  const invocationNormaleChoisie = !duel.moba && (invocationNormale || sacrificeDemande);
-  const nombreSacrifices = dejaPayee ? attenteMoba.sacrificeIds.length
+  // La défausse depuis la main paie le sacrifice imprimé, comme les victimes
+  // présentées : c'est une voie de l'invocation normale, pas un péage spécial.
+  const idsDefausse = Array.isArray(defausseIds) && defausseIds.length > 0
+    ? defausseIds : (dejaPayee ? (attenteMoba?.defausseIds ?? []) : []);
+  const defausseDemandee = idsDefausse.length > 0;
+  const invocationNormaleChoisie = !duel.moba && (invocationNormale || sacrificeDemande || defausseDemandee);
+  const nombreSacrifices = dejaPayee
+    ? (attenteMoba.sacrificeIds.length || (attenteMoba.defausseIds?.length ?? 0))
     : sacrificesInvocation(carte, duel, cote, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
   const limiteInvocation = !dejaPayee
     && limiteInvocationMoba(duel, cote, carte, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
   if (limiteInvocation) return { ok: false, raison: limiteInvocation };
   let sacrifices = [];
-  if (idsDemandes !== null) {
+  let defausses = [];
+  if (defausseDemandee) {
+    if (idsDefausse.length !== nombreSacrifices
+      || new Set(idsDefausse).size !== idsDefausse.length) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+    // La carte jouée ne paie pas sa propre arrivée.
+    if (idsDefausse.includes(carteId)) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+    const reste = [...zoneSource];
+    const idxPose = reste.indexOf(carteId);
+    if (idxPose >= 0) reste.splice(idxPose, 1);
+    for (const id of idsDefausse) {
+      const idx = reste.indexOf(id);
+      if (idx < 0 || !defausseSacrificeAdmissible(id, carte)) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+      reste.splice(idx, 1);
+      defausses.push(id);
+    }
+  } else if (idsDemandes !== null) {
     if (!Array.isArray(idsDemandes) || idsDemandes.length !== nombreSacrifices
       || new Set(idsDemandes).size !== idsDemandes.length) return { ok: false, raison: 'sacrifice', nombreSacrifices };
     sacrifices = idsDemandes.map(id => camp.creatures.find(e => e.id === id));
@@ -6881,7 +6902,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     marquerInvocationMoba(duel, cote, carte, invocationSpeciale, invocationSpeciale);
     if (invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, cote, carteId, choixCout);
     zoneSource.splice(zoneSource.indexOf(carteId), 1);
-    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), invocationSpecialeMoba, ...annoncerCreatureMoba };
+    duel.mobaCreatureEnAttente = { cote, carteId, emplacement, sacrificeIds: sacrifices.map(e => e.id), defausseIds: defausses, invocationSpecialeMoba, ...annoncerCreatureMoba };
     duel.fenetreReponse = true;
     duel.log.push(`${carte.name} est annoncée en ${annoncerCreatureMoba.nomVoie}, emplacement ${annoncerCreatureMoba.slot + 1} : réponse ou passage avant son arrivée.`);
     return { ok: true, creatureEnAttente: true };
@@ -6956,6 +6977,15 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     } finally {
       reservationsInvocation.delete(camp);
     }
+  }
+  // La défausse choisie **à la place** du sacrifice : la main se vide, le
+  // plateau reste intact, le cimetière reçoit les cartes nommées. Elle se
+  // règle même quand aucune victime n'a été déchirée.
+  for (const id of defausses) {
+    const idx = camp.main.indexOf(id);
+    if (idx >= 0) camp.main.splice(idx, 1);
+    camp.cimetiere.push(id);
+    duel.log.push(`${cote === 'joueur' ? 'Vous défaussez' : 'Le sorcier défausse'} ${cardById(id)?.name ?? id} pour invoquer ${carte.name}.`);
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
@@ -10131,8 +10161,10 @@ function commencerNouveauTour(duel) {
   duel.tour = autre(duel.tour);
   for (const cote of ['joueur', 'sorcier']) if (duel[cote].renfortsAscensionJoues) duel[cote].renfortsAscensionJoues = {};
   duel[duel.tour].invocationNormaleJouee = false;
+  duel[duel.tour].invocationsNormalesLignes = [];
   if (duel.moba) {
     duel.moba.creaturesJouees = { joueur: false, sorcier: false };
+    duel.moba.creaturesJoueesLignes = { joueur: [], sorcier: [] };
     duel.moba.embuscadesJouees = { joueur: false, sorcier: false };
     duel.moba.sortsJoues = { joueur: false, sorcier: false };
     duel.moba.armesJouees = { joueur: false, sorcier: false };

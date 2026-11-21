@@ -18,7 +18,7 @@ export { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaCartePourApercu } from './rpgMobaPresentation.js';
 import { SACRIFICE_ANIMATION, instantaneSansSacrificesAnimes } from './rpgSacrificeAnimation.js';
 import { instantanePrisesAnimation, prisesPourAnimation } from './rpgPrisesAnimation.js';
-import { sacrificesInvocation, invocationPossible, rpgInvocationSpecialeSurSonTour, rpgInvocationNormalePossible } from './rpgInvocation.js';
+import { sacrificesInvocation, invocationPossible, rpgInvocationSpecialeSurSonTour, rpgInvocationNormalePossible, defausseSacrificePossible, defausseSacrificeAdmissible } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { cinematiqueCombatClassique, positionsCombatClassique } from './rpgCombatClassiqueCinematique.js';
@@ -33,6 +33,7 @@ import { zoneFormeCarte } from './rpgZoneCartes.js';
 import { casesDeZone, libelleZone } from './rpgZones.js';
 import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp, positionDe } from './rpgChamp.js';
 import { rpgCasesPose } from './rpgRecul.js';
+import { carteLanceBouleDeFeu } from './rpgCartesBouleDeFeu.js';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -1599,12 +1600,21 @@ export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null 
  * la carte n'a pas d'icône d'effet : elle n'est pas un effet, c'est une place
  * sur le champ, et les deux mots-clés se lisent écrits sur la face.
  */
-function CardStatIcon({ type, attaqueCiblee = false, distance = false }) {
+function CardStatIcon({ type, attaqueCiblee = false, distance = false, bouleDeFeu = false }) {
   const arc = type === 'attack' && (attaqueCiblee || distance);
-  return <svg className="rpg-stat-icon" data-stat-icon={arc ? 'arc' : type}
-    data-stat-arc={arc ? (attaqueCiblee ? 'ciblee' : 'distance') : undefined}
+  const feu = arc && bouleDeFeu;
+  const portee = attaqueCiblee ? 'ciblee' : 'distance';
+  return <svg className="rpg-stat-icon" data-stat-icon={arc ? (feu ? 'boule-de-feu' : 'arc') : type}
+    data-stat-arc={arc ? portee : undefined}
     viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    {arc
+    {feu
+      ? <>
+          <path data-boule-corps="" strokeWidth="1.6" d="M15.2 2.8c-.9 2.5.3 3.5 1.8 4.6 2 1.4 2.7 3.7 1.6 6-1.4 2.9-5.2 4-8.1 2.6-2.9-1.4-4.1-4.8-2.7-7.7 1.2-2.5 3.6-3.3 5.6-3.5 1.3-.1 2-.8 1.8-2Z" />
+          <path data-boule-coeur="" strokeWidth="1.5" d="M13.6 11.6c1.1.6 1.4 1.9.8 2.9-.7 1.2-2.4 1.5-3.5.8-1-.6-1.2-1.9-.5-2.8.6-.9 2-1.4 3.2-.9Z" />
+          <path data-boule-tracee="" strokeWidth="1.8" d="M9.2 18.6 3 23.6" />
+          <path data-boule-sillage="" strokeWidth="1.4" d="M14 20.4 10.6 23.4" />
+        </>
+      : arc
       ? <>
           <path d="M2 1.5C18 .7 22.4 8.8 16.3 22.5l-2.2-.8C19.4 9.2 16.4 4 2 3.5Z" fill="currentColor" stroke="none" />
           <path data-arc-corde="" d="M2.7 2.6 15.1 21.7" strokeWidth="1.2" />
@@ -3421,7 +3431,7 @@ export function TableCard({
               className={`rpg-card__stat--atk${classeAttaque ? ` ${classeAttaque}` : ''}`}
               data-stat-variation={classeAttaque === 'is-buffed' ? 'buff' : classeAttaque === 'is-debuffed' ? 'debuff' : undefined}
             >
-              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} /><span className="rpg-stat-value">{entite.atk}</span>
+              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} bouleDeFeu={carteLanceBouleDeFeu(entite.carte ?? entite)} /><span className="rpg-stat-value">{entite.atk}</span>
             </span>
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}
@@ -3876,7 +3886,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       />
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
-          <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
+          <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} bouleDeFeu={!armesEquipees.length && carteLanceBouleDeFeu(carte)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
           <span data-armure={entite?.armure ?? undefined} className={`rpg-card__pt${entite?.blessee ? ' is-wounded' : ''} ${entite ? classeVariationStatCreature(defenseAffichee, carte.def) : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{defenseAffichee}</span></span>
         </footer>
       )}
@@ -4235,7 +4245,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
 
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} /><span className="rpg-stat-value">{carte.atk}</span></span>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} bouleDeFeu={carteLanceBouleDeFeu(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
         </footer>
       )}
@@ -8317,6 +8327,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // `sacrificeEnCours` désigne ses victimes ; `sacrificeFx` montre les
   // déchirures sur la table pour les deux camps.
   const [sacrificeDemande, setSacrificeDemande] = useState(null);
+  // Défausse depuis la main choisie comme prix d'invocation : les cartes
+  // cochées paient à la place des victimes du plateau (`rpgInvocation.js`).
+  const [defausseSacrificeChoix, setDefausseSacrificeChoix] = useState(null);
   const [sacrificeFx, setSacrificeFx] = useState(null);
   const sacrificeEnCoursRef = useRef(null);
   // Fin de tour suspendue à la défausse de fin de tour (main > 5, mode essai) :
@@ -11820,7 +11833,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * referme l'attente (`resoudreCible`). Une arrivée qui ne désigne rien —
    * pioche, jetons, dégâts de zone — se résout avec la pose, comme avant.
    */
-  const finaliserPoseCreature = (carteId, sacrificeIds = null, emplacement = null) => {
+  const finaliserPoseCreature = (carteId, sacrificeIds = null, emplacement = null, defausseIds = null) => {
     const carte = cardById(carteId);
     // Le joueur a pu préférer l'invocation **normale** à l'Invocation spéciale :
     // la référence retient alors `normale`, et le moteur ne réclame plus la
@@ -11841,6 +11854,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       cibleDifferee: true,
       attaquants: combatEntrant?.coteAttaquant === 'sorcier' ? combatEntrant.attaquants : [],
       sacrificeIds,
+      defausseIds,
       choixCoutInvocation,
       invocationNormale,
       emplacement: Number.isInteger(emplacement) ? emplacement : null,
@@ -11907,6 +11921,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * ouvre la désignation de la créature à déchirer sur la table. */
   const annulerSacrifice = () => {
     setSacrificeDemande(null);
+    setDefausseSacrificeChoix(null);
     setSacrificeEnCours(null);
     setSacrificesChoisis([]);
     jouerSfx('annuler');
@@ -11914,11 +11929,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const confirmerSacrifice = () => {
     if (!sacrificeDemande) return;
+    setDefausseSacrificeChoix(null);
     setSacrificesChoisis([]);
     setSacrificeEnCours(sacrificeDemande.carteId);
     setSacrificeDemande(null);
     jouerSfx('select');
     force();
+  };
+  /** La défausse depuis la main paie le sacrifice imprimé : les cartes
+   * cochées partent au cimetière, le plateau ne perd rien. */
+  const confirmerDefausseSacrifice = () => {
+    const demande = sacrificeDemande;
+    const choix = [...(defausseSacrificeChoix ?? [])];
+    if (!demande || !choix.length) return;
+    const carte = cardById(demande.carteId);
+    const nombre = sacrificesInvocation(carte, duel, 'joueur', false, demande.normale ? false : undefined);
+    if (choix.length !== nombre) return;
+    setSacrificeDemande(null);
+    setDefausseSacrificeChoix(null);
+    finaliserPoseCreature(demande.carteId, null, null, choix);
   };
   /** La créature à sacrifier est désignée : sa carte se déchire à sa place,
    * PUIS seulement la nouvelle créature est posée dans l'emplacement libéré
@@ -15710,7 +15739,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} /><span className="rpg-stat-value">{carte.atk}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} bouleDeFeu={carteLanceBouleDeFeu(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
                     </span>
                   )}
@@ -15933,6 +15962,66 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               dégagée(s) à sacrifier sur la table. Une créature engagée ne peut pas être sacrifiée. Rien n’est sacrifié
               avant la validation de toutes les victimes ; vous pouvez annuler.
             </p>
+            {(() => {
+              const cartePrix = cardById(sacrificeDemande.carteId);
+              const nombrePrix = sacrificesInvocation(cartePrix, duel, 'joueur', false, sacrificeDemande.normale ? false : undefined);
+              if (!defausseSacrificePossible(duel, 'joueur', cartePrix, nombrePrix)) return null;
+              if (defausseSacrificeChoix === null) return (
+                <button
+                  type="button"
+                  className="rpg-btn rpg-btn--ghost rpg-sacrifice-choix__defausse-ouvrir"
+                  onClick={() => { setDefausseSacrificeChoix([]); jouerSfx('select'); force(); }}
+                  aria-label="Défausser depuis la main au lieu de sacrifier sur la table"
+                >
+                  🂠 Défausser depuis la main
+                </button>
+              );
+              const admissibles = [...new Set(duel.joueur.main.filter((id) => id !== sacrificeDemande.carteId
+                && defausseSacrificeAdmissible(id, cartePrix)))];
+              return (
+                <div className="rpg-sacrifice-choix__defausse" role="group" aria-label="Cartes à défausser depuis la main">
+                  <p className="rpg-sacrifice-choix__defausse-titre">
+                    Défaussez {nombrePrix} carte{nombrePrix > 1 ? 's' : ''} de votre main — {defausseSacrificeChoix.length}/{nombrePrix} :
+                  </p>
+                  <div className="rpg-sacrifice-choix__defausse-liste">
+                    {admissibles.map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={defausseSacrificeChoix.includes(id)}
+                        className={`rpg-sacrifice-choix__defausse-carte${defausseSacrificeChoix.includes(id) ? ' is-choisie' : ''}`}
+                        onClick={() => {
+                          setDefausseSacrificeChoix(defausseSacrificeChoix.includes(id)
+                            ? defausseSacrificeChoix.filter((x) => x !== id) : [...defausseSacrificeChoix, id]);
+                          jouerSfx('select');
+                          force();
+                        }}
+                      >
+                        {cardById(id)?.name}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="rpg-sacrifice-choix__actions">
+                    <button
+                      type="button"
+                      className="rpg-btn rpg-btn--primary rpg-sacrifice-choix__defausser"
+                      disabled={defausseSacrificeChoix.length !== nombrePrix}
+                      onClick={confirmerDefausseSacrifice}
+                      aria-label="Défausser les cartes choisies et invoquer"
+                    >
+                      🂠 Défausser et invoquer
+                    </button>
+                    <button
+                      type="button"
+                      className="rpg-btn rpg-btn--ghost"
+                      onClick={() => { setDefausseSacrificeChoix(null); jouerSfx('annuler'); force(); }}
+                    >
+                      Retour au sacrifice
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="rpg-sacrifice-choix__actions">
               <button
                 type="button"

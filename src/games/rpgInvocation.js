@@ -2,7 +2,7 @@ import { combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade, rpgConditionEmbuscadeCommune } from './rpgEmbuscade.js';
 import { cardById } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
-import { champMax } from './rpgLignes.js';
+import { champMax, ligneDePose, RPG_LIGNE_FOND } from './rpgLignes.js';
 
 /** Les invocations depuis la main utilisent le coût imprimé pour les sacrifices.
  * Une Invocation spéciale à son tour est sans sacrifice ni quota.
@@ -46,22 +46,63 @@ function embuscade(duel, cote, carte, specialeMoba = false, specialeForcee = und
   return Boolean(duel && cote && cote === duel.tour && (specialeMoba
     || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
+/** Le quota d'invocation normale se tient par ligne : une mêlée ET une
+ *  créature à distance par tour, pas une seule créature. */
+export function ligneQuotaInvocation(carte) {
+  return ligneDePose(carte) === RPG_LIGNE_FOND ? 'distance' : 'melee';
+}
+function lignesQuotaConsommees(duel, cote) {
+  return duel?.moba ? duel.moba?.creaturesJoueesLignes?.[cote] : duel?.[cote]?.invocationsNormalesLignes;
+}
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
   if (carte?.ascension) return null;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
   if (embuscade(duel, cote, carte, specialeMoba, specialeForcee)) return null;
-  return (duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee) ? 'creature-limite' : null;
+  const joue = duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee;
+  if (!joue) return null;
+  // Une mêlée puis une à distance : le quota ne ferme que la ligne déjà prise.
+  // Sans détail de ligne (partie sauvegardée avant la règle), tout reste fermé.
+  const lignes = lignesQuotaConsommees(duel, cote);
+  if (!Array.isArray(lignes) || lignes.length === 0) return 'creature-limite';
+  return lignes.includes(ligneQuotaInvocation(carte)) ? 'creature-limite' : null;
 }
 export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, specialeFixee = null) {
   if (carte?.ascension) return;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return;
   if (duel.moba) {
-    const quota = (specialeFixee ?? embuscade(duel, cote, carte, specialeMoba)) ? 'embuscadesJouees' : 'creaturesJouees';
+    const speciale = specialeFixee ?? embuscade(duel, cote, carte, specialeMoba);
+    const quota = speciale ? 'embuscadesJouees' : 'creaturesJouees';
     (duel.moba[quota] ??= {})[cote] = true;
-  } else if (!(specialeFixee ?? embuscade(duel, cote, carte, specialeMoba))) duel[cote].invocationNormaleJouee = true;
+    if (!speciale) {
+      const ligne = ligneQuotaInvocation(carte);
+      duel.moba.creaturesJoueesLignes ??= {};
+      duel.moba.creaturesJoueesLignes[cote] = [...new Set([...(duel.moba.creaturesJoueesLignes[cote] ?? []), ligne])];
+    }
+  } else if (!(specialeFixee ?? embuscade(duel, cote, carte, specialeMoba))) {
+    duel[cote].invocationNormaleJouee = true;
+    const ligne = ligneQuotaInvocation(carte);
+    duel[cote].invocationsNormalesLignes = [...new Set([...(duel[cote].invocationsNormalesLignes ?? []), ligne])];
+  }
 }
 export function victimesInvocation(camp) {
   return (camp?.creatures ?? []).filter(e => !e.attaquee && cardById(e.carteId)?.kind !== 'site');
+}
+/** Ce que la main peut défausser à la place d'un sacrifice : la fiche le dit
+ *  cas par cas (`defausseSacrifice.types`), sinon toute créature en main. */
+export function typesDefausseSacrifice(carte) {
+  return carte?.defausseSacrifice?.types ?? ['creature'];
+}
+export function defausseSacrificeAdmissible(idMain, cartePosee) {
+  const kind = cardById(idMain)?.kind;
+  return kind != null && typesDefausseSacrifice(cartePosee).includes(kind);
+}
+/** La main du camp porte-t-elle de quoi payer la défausse (hors la carte jouée) ? */
+export function defausseSacrificePossible(duel, cote, carte, nombre) {
+  if (!nombre || !duel?.[cote]?.main) return false;
+  const reste = [...duel[cote].main];
+  const idxPose = reste.indexOf(carte.id ?? carte);
+  if (idxPose >= 0) reste.splice(idxPose, 1);
+  return reste.filter((id) => defausseSacrificeAdmissible(id, carte)).length >= nombre;
 }
 export function invocationPossible(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
   if (!['creature', 'hero', 'site'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return true;
@@ -69,10 +110,15 @@ export function invocationPossible(duel, cote, carte, specialeMoba = false, spec
   const camp = duel[cote];
   if (carte?.ascension && (!camp?.reserveAscension?.includes(carte.id)
     || !combinaisonsAscension(camp, carte).length)) return false;
-  return !limiteInvocationMoba(duel, cote, carte, specialeMoba, specialeForcee)
-    && victimesInvocation(camp).length >= nombre
-    && (duel.modeMana !== RPG_MODE_MANA_ESSAI
-      || camp.creatures.length - nombre < champMax(duel));
+  if (limiteInvocationMoba(duel, cote, carte, specialeMoba, specialeForcee)) return false;
+  const place = duel.modeMana !== RPG_MODE_MANA_ESSAI;
+  const voieSacrifice = victimesInvocation(camp).length >= nombre
+    && (place || camp.creatures.length - nombre < champMax(duel));
+  // La défausse depuis la main paie le même nombre, sans vider le plateau :
+  // il faut donc une case libre devant soi.
+  const voieDefausse = nombre > 0 && defausseSacrificePossible(duel, cote, carte, nombre)
+    && (place || camp.creatures.length < champMax(duel));
+  return voieSacrifice || voieDefausse;
 }
 /** L'invocation **normale** reste offerte quand l'Invocation spéciale l'est
  *  aussi : la condition imprimée de la spéciale (défausser un Sabre maudit pour
