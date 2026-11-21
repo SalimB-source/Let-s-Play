@@ -103,7 +103,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
     blocage: { chance: 0.25, def: 2 },
-    text: 'Défenseur. Esquive — 25 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    contreAttaque: true,
+    text: 'Défenseur. Esquive — 25 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Contre-attaque — Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, Onna-musha des cendres lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui la atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({

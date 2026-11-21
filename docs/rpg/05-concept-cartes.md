@@ -209,7 +209,7 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | **Grand Voile blanc** | `duel.brouillardCombat` : aucun dégât de combat ce tour, des deux côtés | Aucun attaquant n'est déclaré (sauf un porteur d'arme à déclencheur d'attaque), aucun bloqueur posé : la frappe est gardée pour le tour suivant. |
 | **Tenacité** | Une renaissance par partie : la créature meurt normalement (cimetière, arme, capacités de mort, Harakiri), puis sa carte revient en jeu au début du prochain tour de son camp avec 1 point de défense. La renaissance est une **arrivée en jeu** : l'effet d'arrivée de la carte se déclenche de nouveau. L'exil, qui retire la carte de la partie, empêche le retour. | `meurtSous` la tue comme n'importe qui (plus de fausse survie dans la simulation) ; `valeurEntite` lui rend +1 pour le corps gratuit du tour suivant, et une vague de destruction vaut 0,7 de sa valeur contre elle. |
 | **Bouclier** (parade) | Le premier sort adverse qui **atteint** la créature est bloqué, puis le bouclier tombe en entier. Un sort qui la désigne est payé mais aucun effet ne se résout ; un sort de **zone** se résout normalement, mais la parade épargne sa seule porteuse (ni dégât, ni gel, ni destruction, ni malus) via `paradeZoneBloque`, tandis que les autres créatures encaissent la vague. Les sorts du camp de la créature ne réveillent pas la parade, et aucun dégât d'attaque ou de capacité n'est absorbé. | `bouclierQuiBloque` ne regarde que les créatures du camp adverse désignées par `cibleId` ; l'IA évite de gaspiller une magie sur une parade, tout en gardant l'option de la briser. Une zone reste utile : elle ne perd que sa cible à parade. `valeurEntite` la compte comme un forfait, pas comme des PV. |
-| **Salem : Bouclier + Rapidité + Contre-attaque** | Son ancien bouclier de lumière est remplacé par `arrivee: { type: 'bouclier', amount: 1, cible: 'soi' }` : la parade anti-sort se pose sur lui sans désignation. Rapidité reste, Contre-attaque s'ajoute. Un sort bloqué par la parade ne résout rien — **pas même la riposte** ; le sort adverse suivant blesse Salem et fait frapper le sorcier lanceur de 4 dégâts. Une fois la parade tombée, un sort de zone qui l'atteint déclenche la même riposte sur le sorcier lanceur, comme pour toute Contre-attaque. | `cible: 'soi'` n'a aucune portée (`arriveeCiblePortee === null`) : l'IA ne choisit pas d'allié, et un `cibleId` transmis par mégarde ne détourne pas la parade. `valeurEntite` paie la parade comme un sort adverse gâché ; la Contre-attaque vaut son épine habituelle. |
+| **Salem : Bouclier + Rapidité** | Son ancien bouclier de lumière est remplacé par `arrivee: { type: 'bouclier', amount: 1, cible: 'soi' }` : la parade anti-sort se pose sur lui sans désignation. Rapidité reste. La **Contre-attaque lui a été retirée** : c'est un mot-clé de mêlée, et Salem tire — il rend son coup par la règle des deux tireurs (voir plus bas), pas par le mot-clé, donc il ne riposte plus aux sorts. Un sort bloqué par la parade ne résout rien — pas même la riposte. |
 | **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or uniquement) — mécanique distincte, inchangée | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
 | **Overkill** | L'excédent de force qui dépasse les bloqueurs perce jusqu'au sorcier (Serpent du monde) | Compté des deux côtés : en attaque (dégâts au visage) et en défense (ce qu'un petit bloqueur ne retient pas). |
 | **Ancien blocage obligatoire** | `doitBloquer` (Tours), marqueurs `blocageForce` historiques | Conservé pour résoudre les combats collectifs déjà annoncés. Appât de la meute affaiblit maintenant une créature ; Embuscade affaiblit une zone sans imposer de blocage. |
@@ -230,6 +230,18 @@ La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
 (`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
 valkyries n'émettent plus de Résonance viking.
 
+- **La Contre-attaque est un mot-clé de mêlée.** Elle ne se pose jamais sur une
+  créature qui tire (Attaque ciblée ou « À distance ») : celle-là rend son coup
+  par la règle des deux tireurs, et un mot-clé en plus la ferait frapper deux
+  fois. Les porteurs, tous au contact : Eirik du Premier Serment, le Pourfendeur
+  des djinns, le Veilleur du dernier crépuscule, Kusayla, le **Guerrier au
+  bouclier rond** (2, 2/3, Défenseur — la carte qui apprend le mot-clé),
+  l'**Onna-musha des cendres** (4, 3/3, Défenseur + Esquive), le **Chevalier
+  sacré des braises** (4, 4/3), le **Cavalier amazigh du Désert** (5, 4/4,
+  Esquive), le **Gardien de la porte ardente** (3, 2/4, qui garde sa riposte de
+  1 dégât sur Attaque ciblée), **La Barbe Noire** (5, 4/5) et **Le Maître du
+  marteau** (6, 5/5). L'Armure de cendres la donne à son porteur. Les Tours,
+  0 d'attaque, ne la portent pas : sans force, la riposte ne fait rien.
 - **Eirik du Premier Serment** (1 mana, 1/1, mythique, Contre-attaque et
   Compagnie) — une créature légendaire de type Guerrier viking. Une créature qui
   le frappe avec Attaque ciblée ou le cible avec une capacité encaisse ses
@@ -291,12 +303,13 @@ ni échange, ni dégâts au sorcier. Dirigée vers le sorcier adverse, l’attaq
 le touche avec **100 % de précision** ; les bloqueurs s'appliquent normalement.
 Sans proie désignée, le porteur attaque normalement.
 
-**Deux Attaques ciblées se répondent.** Quand la proie porte elle aussi
-l’Attaque ciblée, elle riposte de sa propre volée : le tir reste sans contact
-(pas de capacité « au blocage »), mais l'attaquant encaisse les dégâts de la
-cible, comme deux créatures « À distance » qui s'échangent leurs flèches. Une
-Contre-attaque, elle, a déjà sa riposte et ne frappe pas deux fois pour le même
-coup. Un tireur face à une mêlée garde son tir sans réponse.
+**Deux tireurs se répondent.** Quand la proie porte l’Attaque ciblée **ou**
+« À distance », elle riposte de sa propre volée, dans le **même échange
+simultané** que la frappe (elle touche même si le tir la terrasse) : le tir
+reste sans contact — pas de capacité « au blocage » — et le journal l'écrit
+(« X répond à la volée de Y »). Une Contre-attaque, elle, a déjà sa riposte et
+ne frappe pas deux fois pour le même coup. Un tireur face à une mêlée garde son
+tir sans réponse, et un tireur gelé ne rend rien.
 
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
