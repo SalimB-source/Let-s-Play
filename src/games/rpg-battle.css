@@ -5392,6 +5392,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek__close { min-height: 44px; padding: 8px 20px; }
 }
 
+/* Portrait étroit : comme la fiche du catalogue, l'aperçu d'appui long
+   empile — illustration au-dessus, lecture pleine largeur dessous — au lieu
+   de partager la largeur du téléphone en deux colonnes illisibles. Le volet
+   défile ; le paysage (règle ci-dessus) garde ses deux colonnes. */
+@media (orientation: portrait) and (max-width: 720px),
+  (orientation: portrait) and (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
+  .rpg-card-peek .rpg-hover-card-preview--appui-long {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 12px;
+  }
+  .rpg-card-peek .rpg-hover-card-preview--appui-long .rpg-hover-card-preview__empile {
+    width: min(100%, 288px, 50dvh);
+  }
+  .rpg-card-peek .rpg-hover-card-preview--appui-long .rpg-hover-card-preview__details {
+    width: 100%;
+  }
+}
+
 /* ── La fiche d'une carte : la carte cliquée — ou cliquée droit — en grand ───
    Le jeu est une surface de lecture : un clic sur une carte — au catalogue —,
    ou un clic droit partout où une carte se montre, l'ouvre dans le même volet
