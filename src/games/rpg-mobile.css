@@ -1092,6 +1092,37 @@
 .rpg-battle--touch .rpg-annonce-sort__respond,
 .rpg-battle--touch .rpg-annonce-sort__compact-preview,
 .rpg-battle--touch .rpg-annonce-sort__compact-pass { min-height: max(48px, calc(var(--rpg-touch-combat, 44px) + 4px)); }
+/* Annonce debout : la carte et sa fiche se lisent de haut en bas. Côte à
+   côte, la colonne de détail d'un téléphone en portrait ne laissait qu'une
+   bande étroite (mots-clés sur trois rangs, condition tronquée) ; empilées,
+   la carte garde une taille lisible et la fiche prend toute la largeur,
+   commandes dessous. Le rendu souris et le paysage tactile conservent leurs
+   deux colonnes. */
+@media (orientation: portrait) {
+  .rpg-battle--touch .rpg-annonce-sort .rpg-hover-card-preview--annonce {
+    --rpg-annonce-column-gap: 10px;
+    --rpg-annonce-column-width: min(430px, calc(100vw - 20px));
+  }
+  .rpg-battle--touch .rpg-annonce-sort:not(.rpg-annonce-sort--magie) .rpg-hover-card-preview--annonce {
+    --rpg-annonce-card-width: clamp(120px, min(42vw, 26dvh), 220px);
+  }
+  .rpg-battle--touch .rpg-annonce-sort .rpg-hover-card-preview--annonce .rpg-hover-card-preview__layout {
+    grid-template-columns: minmax(0, var(--rpg-annonce-column-width));
+    grid-template-rows: auto auto;
+    justify-items: center;
+    row-gap: var(--rpg-annonce-column-gap);
+    width: var(--rpg-annonce-column-width);
+    max-height: calc(100% - 12px);
+  }
+  .rpg-battle--touch .rpg-annonce-sort .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details-column {
+    width: 100%;
+    max-height: none;
+    min-height: 0;
+  }
+  .rpg-battle--touch .rpg-annonce-sort .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details {
+    max-height: min(42dvh, 380px);
+  }
+}
 
 /* Un seul emplacement visuel par type de terrain. Une carte seule reste sans
    fausse épaisseur ni compteur ; les doublons forment une pile. Les terrains
