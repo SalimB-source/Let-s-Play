@@ -2435,8 +2435,15 @@ function candidatsCartesIA(duel, cote, options = {}) {
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
     if (!moteur.rpgPeutPayer(camp, carte) || !invocationPossible(duel, cote, carte)) continue;
-    const maxChamp = duel.modeMana === RPG_MODE_MANA_ESSAI ? 5 : 6;
-    if (duelCardById(carteId) && (camp.creatures.length - sacrificesInvocation(carte, duel, cote)) >= maxChamp) continue;
+    if (duelCardById(carteId)) {
+      const sacrifices = sacrificesInvocation(carte, duel, cote);
+      const maxChamp = duel.modeMana === RPG_MODE_MANA_ESSAI ? 5 : 6;
+      if ((camp.creatures.length - sacrifices) >= maxChamp) continue;
+      if (!sacrifices) {
+        const memeLigne = camp.creatures.filter((e) => Boolean(e.distance) === Boolean(carte.distance)).length;
+        if (memeLigne >= 3) continue;
+      }
+    }
     if (!options.seulementInstants && djinnSansEffetCeTour(duel, cote, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees);
     if (!evaluation || !(evaluation.score > 0)) continue;
