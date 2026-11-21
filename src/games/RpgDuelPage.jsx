@@ -1608,12 +1608,8 @@ function CardStatIcon({ type, attaqueCiblee = false, distance = false, bouleDeFe
     data-stat-arc={arc ? portee : undefined}
     viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     {feu
-      ? <>
-          <path data-boule-corps="" strokeWidth="1.6" d="M15.2 2.8c-.9 2.5.3 3.5 1.8 4.6 2 1.4 2.7 3.7 1.6 6-1.4 2.9-5.2 4-8.1 2.6-2.9-1.4-4.1-4.8-2.7-7.7 1.2-2.5 3.6-3.3 5.6-3.5 1.3-.1 2-.8 1.8-2Z" />
-          <path data-boule-coeur="" strokeWidth="1.5" d="M13.6 11.6c1.1.6 1.4 1.9.8 2.9-.7 1.2-2.4 1.5-3.5.8-1-.6-1.2-1.9-.5-2.8.6-.9 2-1.4 3.2-.9Z" />
-          <path data-boule-tracee="" strokeWidth="1.8" d="M9.2 18.6 3 23.6" />
-          <path data-boule-sillage="" strokeWidth="1.4" d="M14 20.4 10.6 23.4" />
-        </>
+      ? <path data-boule-de-feu="" fill="currentColor" stroke="none"
+          d="M18.6 2.4c.7 2 1.4 3 2.4 4.1.8.9 1 2.1.4 3.2-1.4 2.6-4.6 3.6-7.2 2.2-2.6-1.4-3.6-4.6-2.2-7.2 1-1.9 2.9-2.9 4.9-2.8 1 .1 1.5-.5 1.7-1.5Z" />
       : arc
       ? <>
           <path d="M2 1.5C18 .7 22.4 8.8 16.3 22.5l-2.2-.8C19.4 9.2 16.4 4 2 3.5Z" fill="currentColor" stroke="none" />
