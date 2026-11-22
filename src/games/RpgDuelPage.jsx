@@ -328,6 +328,7 @@ import {
   rpgJouerArme,
   rpgModesArme,
   rpgPeutActiverArme,
+  rpgArmeCompatible,
   rpgPeutActiverCapacite,
   rpgPeutEngagerPourMana,
   rpgSorcierActiverArmes,
@@ -15668,7 +15669,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               const peutRepondre = reponseActive && carte.instant;
               // La même règle commande le halo, le clic et le glisser :
               // une carte allumée mais injouable enfermerait le joueur.
-              const baseJouable = !defausseOuverte && peutJouerCarte(carte);
+              const baseJouable = !defausseOuverte && peutJouerCarte(carte)
+                && (!carteEstArme(carte) || duel.joueur.creatures.some((c) => rpgArmeCompatible(carte, c) && !rpgEstProtegee(c, cardColors(carte))));
               const jouable = defausseOuverte || baseJouable;
               // Or uniquement pour une invocation spéciale réellement disponible,
               // pendant son tour, jamais pour une pose normale ou défausse.
