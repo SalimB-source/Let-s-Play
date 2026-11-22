@@ -320,7 +320,7 @@ test('la Takouba de Tin Hinan ne donne plus Attaque ciblée et fait piocher en c
   const pvMur = mur.pv, pvPorteur = porteur.pv, pvSorcier = duel.sorcier.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [mur.id] });
   assert.equal(res.ok, true);
-  assert.equal(mur.pv, pvMur - 5, 'les blessures de combat atteignent le bloqueur');
+  assert.equal(mur.pv, pvMur - 4, 'les blessures de combat atteignent le bloqueur (2 + 2 de la Takouba)');
   assert.equal(porteur.pv, pvPorteur - mur.atk, 'le combat comporte une riposte normale');
   assert.equal(duel.joueur.main.length, mainAvant + 1, 'la créature blessée fait piocher');
   assert.equal(duel.sorcier.pv, pvSorcier);
@@ -346,7 +346,7 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
   const pvSorcier = duel.sorcier.pv;
   const atkAvant = porteur.atk;
   // Aucune proie désignée : le porteur attaque normalement, et aucun bloqueur
-  // n'est assigné — le sorcier encaisse ses 5 dégâts.
+  // n'est assigné — le sorcier encaisse ses 4 dégâts (2 + 2 de la Takouba).
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
   assert.equal(duel.sorcier.pv, pvSorcier - atkAvant, 'le sorcier encaisse la frappe entière');

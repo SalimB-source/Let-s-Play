@@ -2863,10 +2863,14 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Takouba',
 
     rarity: 'mythique',
-    bonus: { atk: 3, def: 2 },
+    // Nerf : la mythique Sable portait +3/+2 en plus de ses deux déclencheurs
+    // (pioche en combat, Chien de sable sur le sorcier) — trop de force brute
+    // pour un simple attachement. Elle descend à +2/+2 : les déclencheurs
+    // restent son identité, le bonus ne fait plus le combat à lui seul.
+    bonus: { atk: 2, def: 2 },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme (Mêlée) — Le porteur gagne +3/+2. Blesser une créature fait piocher 1 carte ; blesser le sorcier crée un Chien de sable 1/1.',
+    text: 'Arme (Mêlée) — Le porteur gagne +2/+2. Blesser une créature fait piocher 1 carte ; blesser le sorcier crée un Chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {
