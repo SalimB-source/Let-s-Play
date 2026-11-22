@@ -1127,6 +1127,8 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
     const montantBouclier = Math.max(1, Number(activation.effet?.amount) || 1);
     cible.bouclier = (cible.bouclier ?? 0) + montantBouclier;
     cible.bouclierTemporaire = (cible.bouclierTemporaire ?? 0) + montantBouclier;
+    projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
+      [{ type: 'creature', cote: cibleCamp, entiteId: cible.id }]);
     duel.log.push(`${carte.name} protège ${cible.name} avec un bouclier jusqu’à la fin du tour.`);
     rpgActionsEtat(duel);
     return { ok: true, cibleId: cible.id, bouclier: true };
@@ -1136,25 +1138,57 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
     const pv = Number(activation.effet?.pv) || 0;
     for (const allie of duel[cote].creatures) {
       allie.atk += atk;
+      // Le plafond d'une créature en jeu s'appelle `pvMax` — `maxPv` n'existe
+      // pas sur l'entité : le renfort relevait donc un champ que rien ne lit,
+      // et le soin suivant (Eirik, une Magie) ramenait les PV gagnés au
+      // plafond imprimé. Même contrat que les auras Sable et Amani : la DEF
+      // suit le plafond.
+      allie.def = Math.max(1, (Number(allie.def) || 0) + pv);
+      allie.pvMax = (Number(allie.pvMax) || allie.pv) + pv;
       allie.pv += pv;
-      allie.maxPv = (allie.maxPv ?? allie.pv) + pv;
     }
+    projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
+      ciblesFxActivationCamp(duel, cote, entiteId));
     duel.log.push(`${carte.name} renforce vos créatures (+${atk}/+${pv}).`);
     rpgActionsEtat(duel);
     return { ok: true };
   }
   if (activation.effet?.type === 'soin-tout') {
     const soin = Math.max(1, Number(activation.effet?.amount) || 2);
-    duel[cote].pv += soin;
+    // La vie du sorcier passe par la voie canonique : la réserve suit la vie
+    // (la barre ne déborde plus au-delà de son maximum) et le journal
+    // n'allume l'éclat que pour un gain réel.
+    const gagneSorcier = rpgGagnerVie(duel, cote, soin);
+    const soignes = [];
     for (const allie of duel[cote].creatures) {
       if (allie.brulure) continue; // la flamme boit le soin
-      allie.pv = Math.min(allie.maxPv ?? (allie.pv + soin), allie.pv + soin);
+      const pvAvant = allie.pv;
+      // Même plafond que le soin ciblé : `pvMax` (à défaut la DEF imprimée),
+      // borné par `plafondSoinCreature`. Une créature déjà pleine ne gagne
+      // rien — et ne voit donc pas un « +2 » qui ne correspond à rien.
+      const plafond = Number(allie.pvMax) || Number(allie.def) || pvAvant + soin;
+      allie.pv = Math.min(plafondSoinCreature(allie, plafond), pvAvant + soin);
+      allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
+      const gagne = allie.pv - pvAvant;
+      if (gagne > 0) {
+        soignes.push(allie.id);
+        journaliserSoin(duel, cote, gagne, allie.id);
+      }
+      // Le soin peut refermer la blessure qui tenait la Furie allumée.
+      synchroniserFurieEntite(duel, allie);
     }
+    projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet), [
+      ...soignes.filter((id) => id !== entiteId)
+        .map((id) => ({ type: 'creature', cote, entiteId: id })),
+      ...(gagneSorcier > 0 ? [{ type: 'sorcier', cote }] : []),
+    ]);
     duel.log.push(`${carte.name} soigne vos créatures et vous de ${soin} PV.`);
     rpgActionsEtat(duel);
     return { ok: true };
   }
   if (activation.effet?.type === 'renvoi-main') {
+    projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
+      [{ type: 'creature', cote: cibleCamp, entiteId: cible.id }]);
     if (paradeZoneBloque(duel, cible, 'capacite', cibleCamp, cote)) return { ok: true, cibleId: cible.id, bouclier: true };
     const idx = duel[cibleCamp].creatures.findIndex((c) => c.id === cible.id);
     if (idx !== -1) {
@@ -1208,8 +1242,17 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
     duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cibleFinale.name}.`);
   }
   if ((activation.effet?.type ?? 'degats') === 'degats') {
-    if (!paradeZoneBloque(duel, cibleFinale, 'capacite', campFinal, cote))
+    projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
+      [{ type: 'creature', cote: campFinal, entiteId: cibleFinale.id }]);
+    if (!paradeZoneBloque(duel, cibleFinale, 'capacite', campFinal, cote)) {
       rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'capacite', carte.id, null, cote);
+      // La Valkyrie des glaces imprime le gel sur son effet activé : la
+      // tempête prend la cible qui survit, comme le ferait le sort de givre.
+      const vivante = duel[campFinal].creatures.find((candidate) => candidate.id === cibleFinale.id);
+      if (activation.effet?.gel && vivante && vivante.pv > 0 && (vivante.gelToursRestants ?? 0) <= 0) {
+        gelerEntite(duel, vivante);
+      }
+    }
   }
   duel.log.push(`${(entite?.name ?? carte.name)} inflige ${montant} blessures à ${cibleFinale.name}.`);
   rpgActionsEtat(duel);
@@ -2659,6 +2702,49 @@ function flammecheCreature(duel, cote, entiteId, cible) {
   if (!entiteId) return;
   journaliserAnimationCombat(duel, { type: 'projectile-combat', variante: 'feu',
     source: { type: 'creature', cote, entiteId }, cible });
+}
+
+/** L'élément de la carte signe le tir de son effet activé : la Braise crache
+ *  le feu, la Neige la tempête, l'Eau la vague, le Sable le grain, les
+ *  Ténèbres l'ombre. Les effets qui ne frappent pas gardent leur propre
+ *  signature — l'égide dorée du bouclier, le tourbillon du renvoi, l'éclat du
+ *  soin, la braise du renfort. */
+const FX_ACTIVATION_ELEMENT = Object.freeze({
+  braise: 'feu', neige: 'tempete', eau: 'vague', sable: 'sable', tenebres: 'ombre',
+});
+const FX_ACTIVATION_EFFET = Object.freeze({
+  'bouclier-tour': 'egide',
+  'renvoi-main': 'renvoi',
+  'soin-tout': 'soin',
+  'buff-allies-tour': 'renfort',
+});
+
+function varianteFxActivation(carte, effet) {
+  return FX_ACTIVATION_EFFET[effet?.type]
+    ?? FX_ACTIVATION_ELEMENT[carte?.element]
+    ?? 'feu';
+}
+
+/** Les tirs décoratifs d'un effet activé : même calque que la flammèche des
+ *  capacités de créature (`projectile-combat`), donc même relevé de cases,
+ *  même respect du mouvement réduit — aucune règle ajoutée. */
+function projectilesActivation(duel, cote, entiteId, variante, cibles) {
+  if (!entiteId || !variante) return;
+  for (const cible of cibles) {
+    if (!cible) continue;
+    journaliserAnimationCombat(duel, { type: 'projectile-combat', variante,
+      source: { type: 'creature', cote, entiteId }, cible });
+  }
+}
+
+/** Les cibles d'un effet qui couvre tout le camp : chaque allié sauf la source
+ *  — un tir qui ne voyage pas ne se voit pas. La plaque du sorcier, elle, se
+ *  cible à part (`{ type: 'sorcier', cote }`) : le calque la résout dans
+ *  `avatarRects`, et le soin d'Eirik ne la vise que si la vie a vraiment monté. */
+function ciblesFxActivationCamp(duel, cote, entiteId) {
+  return duel[cote].creatures
+    .filter((allie) => allie.id !== entiteId)
+    .map((allie) => ({ type: 'creature', cote, entiteId: allie.id }));
 }
 
 /**

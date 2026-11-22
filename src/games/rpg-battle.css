@@ -16277,6 +16277,94 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   clip-path: polygon(0 25%, 75% 25%, 75% 0, 100% 50%, 75% 100%, 75% 75%, 0 75%);
   filter: drop-shadow(0 0 4px #56bdff);
 }
+
+/* Les effets activés tirent dans la signature de leur élément. Le trajet est
+   le même (`rpg-projectile-trajet`) : seule la tête change. Le feu de la
+   Braise est la tête par défaut, au-dessus ; suivent la tempête de la Neige,
+   la vague de l'Eau, le grain du Sable et l'ombre des Ténèbres, puis les
+   signatures non élémentaires — l'égide du bouclier prêté, le tourbillon du
+   renvoi en main, l'éclat du soin et la braise du renfort. Aucune de ces
+   têtes n'anime `transform` : l'angle du tir reste maître, le tourbillon
+   passe par la propriété `rotate`, qui se compose avec elle. */
+.rpg-projectile-combat--tempete .rpg-projectile-combat__tete {
+  width: 28px;
+  height: 11px;
+  top: -5.5px;
+  left: -14px;
+  background: linear-gradient(90deg, transparent, #57bff7 28%, #d9f2ff 66%, #fff);
+  clip-path: polygon(0 38%, 58% 38%, 48% 0, 100% 50%, 48% 100%, 58% 62%, 0 62%);
+  filter: drop-shadow(0 0 6px #7fd8ff) drop-shadow(0 0 14px rgba(160, 225, 255, .5));
+}
+.rpg-projectile-combat--vague .rpg-projectile-combat__tete {
+  width: 26px;
+  height: 15px;
+  top: -7.5px;
+  left: -13px;
+  border-radius: 62% 38% 55% 45%;
+  background: linear-gradient(90deg, transparent, #16708f 30%, #4fd0e8 68%, #dcfbff);
+  filter: drop-shadow(0 0 6px #35c1de);
+}
+.rpg-projectile-combat--sable .rpg-projectile-combat__tete {
+  width: 30px;
+  height: 18px;
+  top: -9px;
+  left: -15px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgba(255, 238, 196, .95), rgba(214, 168, 96, .72) 55%, rgba(150, 108, 56, 0));
+  filter: blur(.4px) drop-shadow(0 0 7px rgba(226, 181, 105, .8));
+}
+.rpg-projectile-combat--ombre .rpg-projectile-combat__tete {
+  width: 28px;
+  height: 11px;
+  top: -5.5px;
+  left: -14px;
+  border-radius: 72% 28% 28% 72%;
+  background: linear-gradient(90deg, transparent, #35184c 28%, #7b3fa8 66%, #ddbaff);
+  filter: drop-shadow(0 0 8px rgba(108, 47, 160, .9));
+}
+.rpg-projectile-combat--egide .rpg-projectile-combat__tete {
+  width: 20px;
+  height: 20px;
+  top: -10px;
+  left: -10px;
+  border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%;
+  background: radial-gradient(closest-side, #fff8d6, #ffd75e 55%, rgba(255, 196, 40, 0));
+  filter: drop-shadow(0 0 9px rgba(255, 214, 25, .85));
+}
+.rpg-projectile-combat--renvoi .rpg-projectile-combat__tete {
+  width: 22px;
+  height: 22px;
+  top: -11px;
+  left: -11px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(226, 250, 255, 0), rgba(87, 200, 245, .85), rgba(226, 250, 255, .95), rgba(31, 111, 158, 0));
+  filter: drop-shadow(0 0 7px rgba(87, 200, 245, .8));
+  animation: rpg-projectile-tourbillon calc(.55s * var(--rpg-anim-scale, 1)) linear both;
+}
+.rpg-projectile-combat--soin .rpg-projectile-combat__tete {
+  width: 18px;
+  height: 18px;
+  top: -9px;
+  left: -9px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #fbfffb, #7cfc9a 52%, rgba(124, 252, 154, 0));
+  filter: drop-shadow(0 0 8px rgba(124, 252, 154, .8));
+}
+.rpg-projectile-combat--renfort .rpg-projectile-combat__tete {
+  width: 20px;
+  height: 14px;
+  top: -7px;
+  left: -10px;
+  border-radius: 60% 40% 45% 55%;
+  background: linear-gradient(90deg, transparent, #ff8c1a 32%, #ffc751 68%, #fff3cf);
+  filter: drop-shadow(0 0 7px rgba(255, 170, 60, .85));
+}
+@keyframes rpg-projectile-tourbillon {
+  from { rotate: 0deg; }
+  to { rotate: 360deg; }
+}
 @keyframes rpg-projectile-trajet {
   0% { transform: translate(0, 0) scale(.65); opacity: 0; }
   12% { opacity: 1; }
@@ -16550,6 +16638,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    1 px de levée au survol. Refermé, le cadre reprend sa marge d'origine. */
 .rpg-card.is-effet-menu {
   overflow-clip-margin: 46px;
+  /* La fenêtre passe AU-DESSUS de toutes les cartes. Les rangées sont des
+     contextes d'empilement (z-index 4, puis 5 en large) : le bouton, même à
+     z-index 20 dans sa carte, restait sous les terrains (41) et sous le dock
+     de la main (42) où il pend justement. Le menu ouvert soulève donc la
+     carte et sa rangée ensemble ; les annonces (46 et plus) et les calques de
+     combat (54 et plus) gardent la priorité. */
+  z-index: 44;
+}
+
+/* La rangée suit sa carte : c'est le CSS qui la lit (`:has`, comme les
+   repères d'éventail de la version tactile), aucune prop n'est ajoutée au JSX
+   — les rangées gardent leur `className` littéral. */
+.card-row:has(.rpg-card.is-effet-menu) {
+  z-index: 44;
 }
 
 .rpg-card__effet-btn {
