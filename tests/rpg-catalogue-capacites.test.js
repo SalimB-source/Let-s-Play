@@ -27,7 +27,7 @@ test('le filtre suit les pierres de capacités, se combine aux autres filtres et
   const tislit = cardById('tislit-des-aures');
   const ecueil = cardById('ecueil');
   assert.ok(carteACapacite(vampire, 'reactionTourAdverse'));
-  assert.ok(carteACapacite(vampire, 'coupRapide'));
+  assert.ok(!carteACapacite(vampire, 'coupRapide'), 'le Sorcier du ressac noir ne vise plus : trop de créatures portaient l’Attaque ciblée');
   assert.ok(carteACapacite(vampire, 'contresort'), 'son contre de créature est une capacité filtrable');
   assert.ok(carteACapacite(tislit, 'coupRapide'));
   assert.ok(!carteACapacite(tislit, 'reactionTourAdverse'));

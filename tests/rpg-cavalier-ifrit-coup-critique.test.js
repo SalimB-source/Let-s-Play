@@ -24,7 +24,7 @@ for (const id of ids) {
     assert.match(c.text, /Coup critique.*25 %.*doubler/);
     assert.ok(pastillesPourCarte(c).some(p => p.cle === 'coupCritique'));
     const { d, a } = classique(id); assert.deepEqual(a.coupCritique, c.coupCritique);
-    if (id === 'ifrit-al-ahmar') { assert.equal(a.coupRapide, true); assert.deepEqual(c.resonance, 2); assert.equal(c.protection.contre, 'eau'); }
+    if (id === 'ifrit-al-ahmar') { assert.equal(a.coupRapide, undefined, 'l’Ifrit ne vise plus'); assert.deepEqual(c.resonance, 2); assert.equal(c.protection.contre, 'eau'); }
     else { assert.equal(a.rapidite, true); assert.equal(c.destruction.amount, 2); }
     d.joueur.main.push('lance-de-la-lune-givree'); assert.ok(rpgJouerArme(d, 'joueur', 'lance-de-la-lune-givree', a.id).ok);
     assert.deepEqual(a.coupCritique, { chance: .5, fois: 2 });

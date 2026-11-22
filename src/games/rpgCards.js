@@ -758,9 +758,8 @@ export const RPG_CREATURE_CARDS = [
     // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
     // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
-    coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -970,10 +969,9 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Djinn',
     art: 'djinn-de-foudre',
     rapidite: true,
-    coupRapide: true,
     furtif: true,
     ephemere: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Furtivité — Détruit à la fin du tour.',
+    text: 'Rapidité. Furtivité — Détruit à la fin du tour.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -1298,8 +1296,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
     reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
-    contreAnnonceCreature: true, coupRapide: true,
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Exilez une Magie Rapide de votre cimetière, au choix. À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire. Attaque ciblée — Lorsqu’il attaque, il doit viser une créature adverse si possible : il lui inflige ses dégâts d’attaque sans riposte, avec 15 % de chances de rater. Sans créature adverse, il peut attaquer le sorcier avec 100 % de chances de toucher.',
+    contreAnnonceCreature: true,
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Exilez une Magie Rapide de votre cimetière, au choix. À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire.',
     flavor: 'Il noie l’invocation avant qu’elle ne touche la rive.',
   },
   {
@@ -1845,12 +1843,11 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Djinn · Démon · Minotaure',
     art: 'ifrit-al-ahmar',
-    // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
-    // sa proie lui-même (Attaque ciblée).
-    coupRapide: true,
+    // Le seigneur des braises ne brûle plus la table en arrivant : il garde
+    // seulement son souffle de crit et sa résonance de djinn.
     coupCritique: { chance: 0.25, fois: 2 },
     resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
-    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1867,10 +1864,9 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     art: 'pere-des-corbeaux',
     envol: true,
-    coupRapide: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 4 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -1910,9 +1906,8 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'dame-des-neuf-mondes',
-    coupRapide: true,
     arrivee: { type: 'soin', amount: 8 },
-    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (15 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
+    text: 'Quand elle arrive : vous récupérez 8 points de vie.',
     flavor: 'Elle tient le fil de toutes les maisons à la fois.',
   },
   {
