@@ -35,12 +35,28 @@ export const listings = {
     "category": "CINEMA · LIVE SHOW",
     "readTime": "3 MIN READ"
   },
+  "/news/cinema/kpop-golden-world-tour-billets-21-novembre": {
+    "title": "KPOP GOLDEN WORLD TOUR",
+    "accent": "THE TOUR MOVES TO TICKETING.",
+    "dek": "After the initial Golden World Tour announcement, Netflix publishes ticket information on 20 November. Our 21 November selection reviews the KPop Demon Hunters show expected from June 2027.",
+    "imageAlt": "Official KPop Demon Hunters Golden World Tour visual published by Netflix Tudum on 20 November 2026. © Netflix / AEG Presents. Promotional image, not a photo of the finished show.",
+    "category": "CINEMA · LIVE SHOW",
+    "readTime": "3 MIN READ"
+  },
   "/news/cinema/mike-ward-modeste-netflix-17-novembre": {
     "title": "MIKE WARD: MODEST",
     "accent": "STAND-UP COMES TO NETFLIX.",
     "dek": "Netflix schedules Mike Ward: Modest for 17 November. The Quebec comedian’s special covers dating after divorce and impulsive decisions, in a style intended for adults.",
     "imageAlt": "Official Mike Ward: Modest visual from Netflix Tudum’s calendar published on 13 November 2026. © Netflix.",
     "category": "CINEMA / SPECIALS · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
+  "/news/cinema/on-behalf-of-my-son-netflix-20-novembre": {
+    "title": "ON BEHALF OF MY SON",
+    "accent": "A JOURNEY THROUGH GRIEF.",
+    "dek": "Netflix lists On Behalf of My Son for 20 November in its weekly calendar. The film follows Vicentina as she seeks victims’ families after a bus crash caused by her son.",
+    "imageAlt": "Official On Behalf of My Son visual in Netflix Tudum’s 20 November 2026 calendar. © Netflix / rights holders.",
+    "category": "CINEMA · NETFLIX",
     "readTime": "3 MIN READ"
   },
   "/news/cinema/steps-netflix-sortie-20-novembre": {
@@ -123,6 +139,22 @@ export const listings = {
     "category": "GAMING · ROCKSTAR GAMES",
     "readTime": "2 MIN READ"
   },
+  "/news/gta-6-the-album-34-titres-20-novembre": {
+    "title": "GTA VI: THE ALBUM",
+    "accent": "VICE CITY TURNS IT UP.",
+    "dek": "On 20 November, Rockstar announces GTA VI: The Album, with 34 original songs created with Atlantic Records. Justice’s score, announced for 11 December, is a separate release.",
+    "imageAlt": "Official GTA VI: The Album visual published by Rockstar on 20 November 2026. © Rockstar Games / Atlantic Records. Album artwork, not a new gameplay screenshot.",
+    "category": "GAMING · MUSIC",
+    "readTime": "3 MIN READ"
+  },
+  "/news/gta-6-the-festival-miami-21-novembre": {
+    "title": "GTA VI: THE FESTIVAL",
+    "accent": "LEONIDA TAKES THE STAGE.",
+    "dek": "GTA VI: The Festival is scheduled for 21 November at Mana Wynwood in Miami. Rockstar and PlayStation announce two stages with artists from the game and its soundtrack.",
+    "imageAlt": "Official GTA VI: The Festival poster published by Rockstar on 9 November 2026. © Rockstar Games / PlayStation. Announced programme, not a photograph of the performances.",
+    "category": "GAMING · MUSIC EVENT",
+    "readTime": "3 MIN READ"
+  },
   "/news/lightyear-frontier-1-0-4-novembre-2026": {
     "title": "LIGHTYEAR FRONTIER",
     "accent": "HITS 1.0.",
@@ -153,6 +185,22 @@ export const listings = {
     "dek": "Google says Gemini Notebook can turn a notebook’s sources into interactive sites: study aids, dashboards or project trackers. The rollout starts on the web for users aged 18 and over.",
     "imageAlt": "Official Google illustration of an interactive periodic table for Gemini Notebook, published on 16 November 2026. Supplier demonstration, not a result produced by our team.",
     "category": "TECH · GOOGLE LABS",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/google-agent-anomaly-detection-multicloud": {
+    "title": "AGENT ANOMALY DETECTION",
+    "accent": "MONITOR BEYOND ONE CLOUD.",
+    "dek": "On 20 November, Google explains how Agent Anomaly Detection analyses agents hosted on AWS, Azure or on-premises. The service remains in Private Preview and depends on telemetry sent to a Google Cloud project.",
+    "imageAlt": "Official Agent Anomaly Detection illustration published by Google Developers on 20 November 2026. © Google. Supplier explanatory visual, not an audit of our infrastructure.",
+    "category": "TECH · AI SECURITY",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/google-agents-controle-outils-semantic-governance": {
+    "title": "SEMANTIC GOVERNANCE",
+    "accent": "CHECK BEFORE ACTING.",
+    "dek": "On 20 November, Google presents Semantic governance policies in Preview in Gemini platform. They evaluate an agent’s proposed tool calls before execution.",
+    "imageAlt": "Official Google diagram illustrating allowed or denied agent actions, published on 20 November 2026. © Google. Supplier example, not an editorial test result.",
+    "category": "TECH · AI AGENTS",
     "readTime": "3 MIN READ"
   },
   "/news/tech/google-home-nouveautes-novembre-2026": {

@@ -703,5 +703,53 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-19",
     "section": "Actualités tech"
+  },
+  "/news/gta-6-the-album-34-titres-20-novembre": {
+    "title": "GTA VI: THE ALBUM VICE CITY MONTE LE SON. — Let’s Play",
+    "description": "Rockstar annonce le 20 novembre la disponibilité de GTA VI: The Album : 34 chansons originales réunies avec Atlantic Records. La partition de Justice, annoncée pour le 11 décembre, est un projet distinct.",
+    "image": "https://media-rockstargames-com.akamaized.net/tina-uploads/posts/k4a8955a93o747/e47c077621ea90ee966fcab7221f8db961e5d60c.jpg",
+    "type": "article",
+    "published": "2026-11-20",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/on-behalf-of-my-son-netflix-20-novembre": {
+    "title": "ON BEHALF OF MY SON LE DEUIL AU BOUT DU VOYAGE. — Let’s Play",
+    "description": "Netflix inscrit On Behalf of My Son au 20 novembre dans son calendrier hebdomadaire. Le film suit Vicentina, déterminée à rencontrer les familles des victimes après un accident de bus causé par son fils.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQaN7pdJrUlJRizZhnwUj0TQvNnsY3q4mCeOReAeEVXGr0ClPosT2vCqx2RhZ2QNHmVgIc0yxigBcVpXJvXbvsgRzBbgf3gUFaX6uSkkaQgsczhtdHExZuoQs1TE3gpoI5YY0WTjduFutVUIckw.jpg?r=3cb",
+    "type": "article",
+    "published": "2026-11-20",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/google-agents-controle-outils-semantic-governance": {
+    "title": "SEMANTIC GOVERNANCE VÉRIFIER AVANT D’AGIR. — Let’s Play",
+    "description": "Google présente le 20 novembre des règles de gouvernance sémantique en Preview dans Gemini platform. Elles évaluent les appels d’outils proposés par un agent avant leur exécution.",
+    "image": "https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/header_2.original.png",
+    "type": "article",
+    "published": "2026-11-20",
+    "section": "Actualités tech"
+  },
+  "/news/gta-6-the-festival-miami-21-novembre": {
+    "title": "GTA VI: THE FESTIVAL LEONIDA PREND LA SCÈNE. — Let’s Play",
+    "description": "GTA VI: The Festival est programmé le 21 novembre au Mana Wynwood, à Miami. Rockstar et PlayStation annoncent deux scènes et des artistes présents dans le jeu et sa bande originale.",
+    "image": "https://media-rockstargames-com.akamaized.net/tina-uploads/posts/o39o87a435a25a/f14b9244ed05b99e611d0376ad7e0ec3b4f84aab.jpg",
+    "type": "article",
+    "published": "2026-11-21",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/kpop-golden-world-tour-billets-21-novembre": {
+    "title": "KPOP GOLDEN WORLD TOUR LA TOURNÉE PASSE À LA BILLETTERIE. — Let’s Play",
+    "description": "Après l’annonce initiale de la Golden World Tour, Netflix publie le 20 novembre les informations de billetterie. Notre sélection du 21 fait le point sur le spectacle KPop Demon Hunters attendu à partir de juin 2027.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQeReRJml3PteamEeWeQZH2-p3-JToN257AxizSa26XPb6gWx3SpnA0tavHQqstRqdXeQXB456vBhLHt38G5X6woukWbt3Pmfop-DdyNG8fAoLNw4dbDFOEO-qhpEJvrvKl-nNb6LRLHVrk0S1JHC_lXssRc.jpg?r=6b5",
+    "type": "article",
+    "published": "2026-11-21",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/google-agent-anomaly-detection-multicloud": {
+    "title": "AGENT ANOMALY DETECTION SURVEILLER AU-DELÀ D’UN CLOUD. — Let’s Play",
+    "description": "Google explique le 20 novembre comment Agent Anomaly Detection analyse des agents hébergés sur AWS, Azure ou sur site. Le service reste en Private Preview et dépend de la télémétrie envoyée au projet Google Cloud.",
+    "image": "https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/00-hero-banner.original.png",
+    "type": "article",
+    "published": "2026-11-21",
+    "section": "Actualités tech"
   }
 };
