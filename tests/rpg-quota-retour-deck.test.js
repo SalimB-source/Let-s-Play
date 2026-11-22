@@ -29,25 +29,33 @@ function duelPret(main = []) {
   return d;
 }
 
-test('plus de quota : autant d’invocations normales que le champ le permet', () => {
+test('une seule invocation normale par tour, même avec les deux lignes libres', () => {
   const d = duelPret([MELEE, MELEE_2, DISTANCE, DISTANCE_2]);
   assert.ok(rpgJouerCreature(d, 'joueur', MELEE).ok, 'la première mêlée passe');
-  assert.ok(rpgJouerCreature(d, 'joueur', MELEE_2).ok, 'une seconde mêlée passe aussi');
-  assert.ok(rpgJouerCreature(d, 'joueur', DISTANCE).ok, 'et la ligne à distance reste ouverte');
-  assert.ok(rpgJouerCreature(d, 'joueur', DISTANCE_2).ok, 'un second tireur aussi');
-  assert.equal(d.joueur.creatures.length, 4, 'les quatre créatures sont en jeu');
-  // L’état note encore les lignes posées : l’IA et les statistiques les lisent.
-  assert.deepEqual(d.joueur.invocationsNormalesLignes, ['melee', 'distance']);
   assert.equal(d.joueur.invocationNormaleJouee, true);
+  // L’état note la ligne posée : l’IA et les statistiques la lisent encore.
+  assert.deepEqual(d.joueur.invocationsNormalesLignes, ['melee']);
+  // Le quota revenu ferme le tour : ni une seconde mêlée, ni la ligne à
+  // distance ne suivent, quel que soit le mana disponible.
+  assert.equal(rpgJouerCreature(d, 'joueur', MELEE_2).raison, 'creature-limite');
+  assert.equal(rpgJouerCreature(d, 'joueur', DISTANCE).raison, 'creature-limite');
+  assert.equal(invocationPossible(d, 'joueur', cardById(DISTANCE_2)), false, 'la main est grisée');
+  assert.equal(d.joueur.creatures.length, 1, 'une seule créature est entrée');
 });
 
-test('le tour suivant rend les deux lignes', () => {
+test('le tour suivant réarme le quota et rend les deux lignes', () => {
   const d = duelPret([MELEE, DISTANCE]);
-  assert.ok(rpgJouerCreature(d, 'joueur', MELEE).ok && rpgJouerCreature(d, 'joueur', DISTANCE).ok);
+  assert.ok(rpgJouerCreature(d, 'joueur', MELEE).ok);
+  assert.equal(rpgJouerCreature(d, 'joueur', DISTANCE).raison, 'creature-limite');
   assert.ok(rpgFinDeTour(d).ok ?? true);
   assert.equal(d.tour, 'sorcier');
   assert.equal(d.sorcier.invocationNormaleJouee, false);
   assert.deepEqual(d.sorcier.invocationsNormalesLignes ?? [], []);
+  rpgFinDeTour(d);
+  assert.equal(d.tour, 'joueur');
+  assert.equal(d.joueur.invocationNormaleJouee, false, 'le quota du joueur est réarmé');
+  assert.deepEqual(d.joueur.invocationsNormalesLignes ?? [], []);
+  assert.ok(rpgJouerCreature(d, 'joueur', DISTANCE).ok, 'la ligne à distance se joue au tour suivant');
 });
 
 test('plus aucun sacrifice : le prix est un retour dans le deck, selon le coût', () => {

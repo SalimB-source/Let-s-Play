@@ -4,6 +4,13 @@ import { cardById } from '../src/games/rpgCards.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgLancerMagie, rpgSortACibleValide, rpgReglerHasard } from '../src/games/rpgDuel.js';
 import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 function scene() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => .99 });
   d.joueur.mana = { sable: 20, eau: 20, neige: 20, braise: 20, tenebres: 20 };
@@ -11,7 +18,8 @@ function scene() {
   return d;
 }
 function poser(d, cote, id) {
-  d[cote].main.push(id); const res = rpgJouerCreature(d, cote, id);
+  d[cote].main.push(id); quotaLibre(d, cote); // scène préparée
+  const res = rpgJouerCreature(d, cote, id);
   assert.equal(res.ok, true, id); return res.entite;
 }
 function preparer(d, id) { d.joueur.main.push(id); return cardById(id); }

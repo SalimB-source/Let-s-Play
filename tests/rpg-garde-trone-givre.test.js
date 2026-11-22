@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColors, cardHasPrintedType, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature } from '../src/games/rpgDuel.js';
+
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
 const id = 'garde-du-trone-givre';
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -22,7 +29,7 @@ test('Furie 1 accorde +1 attaque pendant que le Garde est blessé', () => {
   assert.equal(garde.atk, 2);
   rpgBlesserCreature(d, 'joueur', garde.id, 1);
   assert.equal(garde.atk, 3); assert.equal(garde.furieDeclenchee, true);
-  d.joueur.main.push('yamina'); assert.ok(rpgJouerCreature(d, 'joueur', 'yamina').ok);
+  d.joueur.main.push('yamina');quotaLibre(d, 'joueur');  assert.ok(rpgJouerCreature(d, 'joueur', 'yamina').ok);
   assert.equal(garde.atk, 2); assert.equal(garde.furieDeclenchee, false);
 });
 

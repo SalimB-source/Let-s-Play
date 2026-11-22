@@ -6,6 +6,13 @@ import { rpgMobaNouveauDuel, rpgMobaJouerCreature } from '../src/games/rpgMobaLo
 import { rpgMobaChoisirCreatureIA } from '../src/games/rpgMobaAI.js';
 import { choisirCarteIA } from '../src/games/rpgAI.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 const mana = { braise: 40, eau: 40, sable: 40, neige: 40, tenebres: 40 };
 function partie(moba = false) {
   const deck = Array(30).fill('ashigaru-des-braises');
@@ -17,6 +24,7 @@ function partie(moba = false) {
 }
 function poser(d, side, id, lane = 'left', slot = 0) {
   d[side].main.push(id); d[side].mana = { ...mana }; d[side].manaChoixEnAttente = false;
+  quotaLibre(d, side); // scène préparée, pas une seconde invocation du tour
   const result = d.moba ? rpgMobaJouerCreature(d, side, id, lane, slot) : rpgJouerCreature(d, side, id, null, { cibleDifferee: true });
   assert.ok(result.entite, JSON.stringify(result));
   return result.entite;

@@ -89,10 +89,11 @@ test('avec une créature en face, il entre sans consommer l’invocation normale
 });
 
 test('sans créature en face, il entre comme invocation normale', () => {
-  // Le quota d’invocations normales par tour est retiré : une pose déjà faite
-  // ce tour-ci ne bloque plus la suivante.
+  // Le quota revenu d’une invocation normale par tour s’applique à cette entrée :
+  // une pose déjà faite ce tour-ci la bloque, alors que l’Embuscade (une
+  // créature en face) reste hors quota.
   const utilisee = partie({ creatureAdverse: false, invocationJouee: true });
-  assert.equal(rpgJouerCreature(utilisee, 'joueur', ID).ok, true);
+  assert.equal(rpgJouerCreature(utilisee, 'joueur', ID).raison, 'creature-limite');
   const libre = partie({ creatureAdverse: false, invocationJouee: false });
   assert.equal(rpgJouerCreature(libre, 'joueur', ID).ok, true, 'sinon, invocation normale');
 });

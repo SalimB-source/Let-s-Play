@@ -11,6 +11,13 @@ import { pastillesPourCarte } from '../src/games/effetIcons.js';
 import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR } from '../src/games/rpgCardArt.js';
 import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgAppliquerBannieresAttaque, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 function duelTest(rng = () => 0.5) {
   const duel = rpgNouveauDuel({
     joueurDeck: Array(40).fill('montagne'), sorcierDeck: Array(40).fill('montagne'), rng,
@@ -22,6 +29,7 @@ function duelTest(rng = () => 0.5) {
 }
 function jouer(duel, cote, id, cibleId = null) {
   duel[cote].main.push(id);
+  quotaLibre(duel, cote); // scène préparée, pas une seconde invocation du tour
   let resultat = rpgJouerCreature(duel, cote, id, cibleId);
   if (!resultat.ok && resultat.raison === 'cible') {
     const adv = cote === 'joueur' ? 'sorcier' : 'joueur';

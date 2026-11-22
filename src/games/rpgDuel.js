@@ -6738,6 +6738,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     : (ascension
       ? sacrificesInvocation(carte)
       : retoursAuDeckInvocation(carte, duel, cote, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined));
+  // Une seule invocation **normale** par camp et par tour. Le contrôle porte sur
+  // l'initiation de la pose (`!dejaPayee`) : une annonce déjà payée a consommé
+  // le quota à son annonce, et l'Ascension comme l'Embuscade restent hors quota.
   const limiteInvocation = !dejaPayee
     && limiteInvocationMoba(duel, cote, carte, invocationSpecialeMoba, invocationNormaleChoisie ? false : undefined);
   if (limiteInvocation) return { ok: false, raison: limiteInvocation };

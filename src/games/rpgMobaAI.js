@@ -2,6 +2,7 @@
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
 import { estDefenseur } from './rpgDefenseur.js';
+import { limiteInvocationMoba } from './rpgInvocation.js';
 import { mobaVieMaxPourCamp, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
 import { rpgMobaCiblesIndividuelles } from './rpgMobaAttaqueIndividuelle.js';
 import { choisirCouleurManaIA, rpgCombinaisonsSacrificesIA } from './rpgAI.js';
@@ -347,6 +348,11 @@ function rpgMobaChoisirCreatureIASurCopie(duel, side = 'sorcier') {
   const cards = [...new Set([...duel[side].main, ...(duel[side].reserveAscension ?? [])])].map(cardById)
     .filter((c) => c && ['creature', 'hero', 'site'].includes(c.kind)
       && !(duel.attaqueJouee === side && (c.ephemere || c.furtif)))
+    // Le quota revenu d'une invocation normale par tour s'applique aussi à
+    // l'IA : une seconde créature du même tour ne reste candidate que si son
+    // Embuscade la fait entrer hors quota, comme pour le joueur.
+    .filter((c) => c.kind === 'site'
+      || !limiteInvocationMoba(duel, side, c, rpgMobaInvocationSpecialeDisponible(duel, side, c.id)))
     .sort((a, b) => b.cost - a.cost);
   // Un coût imprimé élevé ne suffit pas à justifier la perte d'une créature.
   // Comparer toutes les invocations légales sur des copies, y compris celles

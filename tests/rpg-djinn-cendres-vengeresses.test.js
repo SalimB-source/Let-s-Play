@@ -5,6 +5,13 @@ import { RPG_ELEMENTS, cardById, cardHasPrintedType, RPG_DECK_SORCIER_BASE } fro
 import { RPG_REVELATIONS_PAR_ETAGE } from '../src/games/rpgCollection.js';
 import { rpgBlesserCreature, rpgJouerCreature, rpgLancerAttaque, rpgLancerMagie, rpgNouveauDuel } from '../src/games/rpgDuel.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 const ID = 'djinn-des-cendres-vengeresses';
 const partie = () => {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -13,6 +20,7 @@ const partie = () => {
 };
 function poser(d, cote, id) {
   d[cote].main.push(id);
+  quotaLibre(d, cote); // scène préparée, pas une seconde invocation du tour
   const resultat = rpgJouerCreature(d, cote, id);
   assert.equal(resultat.ok, true, `${id} : ${resultat.raison}`);
   return resultat.entite;

@@ -16,7 +16,14 @@ function partie() {
   return duel;
 }
 
+/** Scène préparée : plusieurs créatures d'un même camp sur le plateau, alors
+ * que la règle n'autorise qu'une invocation normale par camp et par tour. */
+function quotaLibre(duel, cote) {
+  if (duel.moba) duel.moba.creaturesJouees[cote] = false; else duel[cote].invocationNormaleJouee = false;
+}
+
 function poser(duel, cote, lane, slot = 0) {
+  quotaLibre(duel, cote);
   const result = rpgMobaJouerCreature(duel, cote, 'ashigaru-des-braises', lane, slot);
   assert.equal(result.ok, true, JSON.stringify(result));
   return result.entite;
@@ -112,8 +119,10 @@ test('la Compagnie d’une créature ne compte que ses alliés de sa voie', () =
   assert.equal(result.ok, true, JSON.stringify(result));
   const source = result.entite;
   const baseAtk = source.atk;
+  quotaLibre(duel, 'joueur');
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'viking-des-neiges', 'right', 0).ok, true);
   assert.equal(source.atk, baseAtk);
+  quotaLibre(duel, 'joueur');
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'viking-des-neiges', 'left', 1).ok, true);
   assert.equal(source.atk, baseAtk + 1);
 });

@@ -8,6 +8,13 @@ import {
 } from '../src/games/rpgDuel.js';
 import { magieById } from '../src/games/rpgCards.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 /** Le helper du script d'origine : chaque vérification devient un assert. */
 function ok(nom, condition, detail = '') {
   assert.ok(condition, detail ? `${nom} — ${detail}` : nom);
@@ -213,7 +220,7 @@ for (const cote of ['joueur', 'sorcier']) {
     const duel = duelAvecMains();
     duel[cote].main = ['fennec-des-decombres', 'chien-du-guet'];
     const victime = rpgJouerCreature(duel, cote, 'fennec-des-decombres').entite;
-    const libre = rpgJouerCreature(duel, cote, 'chien-du-guet').entite;
+quotaLibre(duel, cote);     const libre = rpgJouerCreature(duel, cote, 'chien-du-guet').entite;
     duel.tour = adverse;
     duel[adverse].main = ['vipere-de-verre'];
     assert.equal(rpgJouerCreature(duel, adverse, 'vipere-de-verre', victime.id).ok, true);

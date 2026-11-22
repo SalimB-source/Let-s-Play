@@ -50,6 +50,12 @@ import {
 } from '../src/games/rpgDuel.js';
 import { choisirCarteIA } from '../src/games/rpgAI.js';
 import { EFFETS_SPRITE, effetIcon, iconePourLigne, pastillesPourCarte } from '../src/games/effetIcons.js';
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
 
 /* ── Le set Ténèbres : La Balance des Heures (doc 16) ──────────────────────── */
 
@@ -475,6 +481,7 @@ test('Ténèbres : Tribut reste minoritaire et les quatre rôles révisés sont 
 
 const poserTenebres = (duel, id) => {
   duel.joueur.main.push(id);
+  quotaLibre(duel, 'joueur'); // scène préparée, pas une seconde invocation du tour
   const resultat = rpgJouerCreature(duel, 'joueur', id);
   assert.equal(resultat.ok, true, JSON.stringify(resultat));
   return resultat.entite;

@@ -8,6 +8,13 @@ import {
   rpgResoudreContresortBoualem, rpgDissiperContresortBoualem,
 } from '../src/games/rpgDuel.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 const lire = (chemin) => readFileSync(new URL(chemin, import.meta.url), 'utf8');
 
 function duel({ pvp = false } = {}) {
@@ -18,6 +25,7 @@ function duel({ pvp = false } = {}) {
 }
 function poser(d, camp, id, cibleId = null) {
   d[camp].main.push(id);
+  quotaLibre(d, camp); // scène préparée, pas une seconde invocation du tour
   const resultat = rpgJouerCreature(d, camp, id, cibleId);
   assert.equal(resultat.ok, true, `${id} se joue`);
   return resultat.entite;

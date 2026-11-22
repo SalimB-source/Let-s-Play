@@ -13,20 +13,21 @@ function partie() {
 }
 
 for (const side of ['joueur', 'sorcier']) {
-  test(`${side} : plusieurs invocations normales dans le même tour`, () => {
+  test(`${side} : une seule invocation normale par tour, réarmée au tour suivant`, () => {
     const d = partie(); if (d.tour !== side) rpgFinDeTour(d);
     d[side].main = ['ashigaru-des-braises', 'ashigaru-des-braises', 'gardienne-des-portes-de-sable'];
     assert.ok(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite);
-    // Le quota d’invocations normales par tour est retiré : la deuxième et la
-    // troisième pose passent dans le même tour, tant qu’il reste des cases.
-    assert.equal(rpgMobaPeutPayer(d, side, cardById('ashigaru-des-braises')), true);
-    assert.ok(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'right', 0).entite);
-    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), true);
-    assert.ok(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'center', 0).entite);
-    assert.equal(d[side].creatures.length, 3);
     assert.equal(d.moba.creaturesJouees[side], true, 'l’état note la pose normale');
+    // Le quota revenu ferme la main : la deuxième créature du tour n’est plus
+    // jouable, même avec des cases libres et le mana d’essai.
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('ashigaru-des-braises')), false);
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), false);
+    // Le moteur refuse la pose : la règle tient aussi hors de l'interface.
+    assert.equal(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'right', 0).raison, 'creature-limite');
+    assert.equal(d[side].creatures.length, 1);
     rpgFinDeTour(d); rpgFinDeTour(d);
-    assert.equal(d.moba.creaturesJouees[side], false, 'et se réarme au tour suivant');
+    assert.equal(d.moba.creaturesJouees[side], false, 'le quota se réarme au tour suivant');
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), true);
   });
   test(`${side} : Tojiro en Embuscade ne sacrifie pas, même si le Djinn disparaît après l’annonce`, () => {
     const d = partie(), ennemi = side === 'joueur' ? 'sorcier' : 'joueur';
