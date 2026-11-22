@@ -3057,6 +3057,7 @@ export function TableCard({
   pretAAgir = null,
   activationDispo = false,
   onActiver = null,
+  effetMenuOuvert = false,
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
@@ -3399,26 +3400,17 @@ export function TableCard({
           className={`rpg-card-icones--colonne${activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />
       )}
-      {!ascensionSelection && activation && cote === 'joueur' && onActiver && (
-        <span
-          className={`rpg-card__activation${activationDispo ? ' is-pret' : ''}`}
-          role="button"
-          tabIndex={activationDispo ? 0 : -1}
-          aria-label={`Activé sans coût de mana : inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix${activationDispo ? '' : ' (indisponible pour le moment)'}`}
-          onClick={(event) => { event.stopPropagation(); onActiver(); }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              event.stopPropagation();
-              onActiver();
-            }
+      {!ascensionSelection && activation && cote === 'joueur' && onActiver && effetMenuOuvert && activationDispo && (
+        <button
+          type="button"
+          className="rpg-card__effet-btn"
+          onClick={(event) => {
+            event.stopPropagation();
+            onActiver();
           }}
         >
-          <span className="rpg-mana-cost rpg-mana-cost--neige is-compact" aria-hidden="true">
-            <b>0</b>
-            <i><GlyphePierreElement element="neige" /></i>
-          </span>
-        </span>
+          ⚡ Activer l’effet
+        </button>
       )}
         {!estSite && (
           <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${blessee ? ', blessée' : ''}`}>
@@ -8261,6 +8253,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // adverse à choisir — ce champ garde le champion entre les deux clics.
   const [cibleAllieeMagie, setCibleAllieeMagie] = useState(null);
   const [activationEnCours, setActivationEnCours] = useState(null);
+  const [menuEffetEntiteId, setMenuEffetEntiteId] = useState(null);
   // Le lot du Sable : un mode d'arme qui désigne une proie (le Trait de sable
   // de la Jitte) se joue en deux clics — le bouton, puis la créature adverse.
   const [cibleArmeEnCours, setCibleArmeEnCours] = useState(null);
@@ -12656,6 +12649,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
+    const activation = cardById(entite.carteId)?.activation;
+    if (activation?.cible === 'aucune') {
+      const res = rpgActiverCapacite(duel, 'joueur', entite.id, null);
+      if (!res.ok) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
+      jouerSfx('sort');
+      force();
+      return;
+    }
     if (!rpgPeutActiverCapacite(duel, 'joueur', entite.id)) {
       jouerSfx('erreur');
       force();
@@ -12767,6 +12772,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       resoudreCible(entite, 'joueur');
       return;
     }
+    if (monTour && !phase && !cibleAttaqueEnCours && !combatEntrant && !reponseActive
+      && !activationEnCours && rpgPeutActiverCapacite(duel, 'joueur', entite.id)
+      && menuEffetEntiteId !== entite.id) {
+      setMenuEffetEntiteId(entite.id);
+      jouerSfx('select');
+      force();
+      return;
+    }
+    if (menuEffetEntiteId === entite.id) setMenuEffetEntiteId(null);
     if (activationEnCours) {
       resoudreActivation(entite);
       return;
@@ -14949,7 +14963,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive
                         && (activationEnCours === entite.id || rpgPeutActiverCapacite(duel, 'joueur', entite.id)))}
-                      onActiver={() => activerCapacite(entite)}
+                      onActiver={() => { setMenuEffetEntiteId(null); activerCapacite(entite); }}
+                      effetMenuOuvert={menuEffetEntiteId === entite.id}
                       canDragBlocker={Boolean(combatCollectif && reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
                       draggedBlocker={bloqueurGlisse === entite.id}
                       onStartBlockerDrag={commencerGlisserBloqueur}

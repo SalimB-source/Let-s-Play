@@ -1078,17 +1078,19 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
   if (!entite || !activation) return { ok: false, raison: 'capacite' };
   if (duel.tour !== cote) return { ok: false, raison: 'tour' };
+  if (entite.attaquee) return { ok: false, raison: 'deja-attaquee' };
   if (activation.uneFoisParTour && entite.activationUtiliseeCeTour) return { ok: false, raison: 'deja-activee' };
-  const cibleCamp = ['joueur', 'sorcier'].find((possedant) => duel[possedant].creatures
+  const sansCible = activation.cible === 'aucune';
+  const cibleCamp = sansCible ? null : ['joueur', 'sorcier'].find((possedant) => duel[possedant].creatures
     .some((candidate) => candidate.id === cibleId)) ?? null;
-  if (activation.cible === 'creature-amie' && cibleCamp !== cote) return { ok: false, raison: 'cible' };
-  const cible = cibleCamp
+  if (!sansCible && activation.cible === 'creature-amie' && cibleCamp !== cote) return { ok: false, raison: 'cible' };
+  const cible = (!sansCible && cibleCamp)
     ? duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId)
     : null;
-  if (!cible) return { ok: false, raison: 'cible' };
+  if (!sansCible && !cible) return { ok: false, raison: 'cible' };
   const carte = duelCardById(entite.carteId);
   const couleur = activation.couleur ?? carte.element;
-  if (rpgEstProtegee(cible, couleur)) return { ok: false, raison: 'protection' };
+  if (!sansCible && rpgEstProtegee(cible, couleur)) return { ok: false, raison: 'protection' };
   const cout = coutActivation(activation);
   if (!rpgPeutPayer(camp, cout)) return { ok: false, raison: 'mana' };
   payer(duel, cote, cout);
@@ -1107,11 +1109,16 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
   const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
   const activation = carte.activation;
   const couleur = activation.couleur ?? carte.element;
-  const cibleCamp = ['joueur', 'sorcier'].find((camp) => duel[camp].creatures.some((candidate) => candidate.id === cibleId));
-  const cible = cibleCamp && duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId);
-  if (!cible) { duel.log.push(`La cible de ${carte.name} a disparu : l'effet se dissipe.`); return { ok: true, dissipe: true }; }
+  const sansCible = activation.cible === 'aucune';
+  const cibleCamp = sansCible ? null : ['joueur', 'sorcier'].find((camp) => duel[camp].creatures.some((candidate) => candidate.id === cibleId));
+  const cible = (!sansCible && cibleCamp) && duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId);
+  if (!sansCible && !cible) { duel.log.push(`La cible de ${carte.name} a disparu : l'effet se dissipe.`); return { ok: true, dissipe: true }; }
   presenterEffet(duel, cote, carte.id);
-  if (entite) entite.activationUtiliseeCeTour = true;
+  if (entite) {
+    entite.activationUtiliseeCeTour = true;
+    entite.aActiveEffetCeTour = true;
+    entite.ready = false;
+  }
   if (activation.effet?.type === 'bouclier-tour') {
     const montantBouclier = Math.max(1, Number(activation.effet?.amount) || 1);
     cible.bouclier = (cible.bouclier ?? 0) + montantBouclier;
@@ -1119,6 +1126,39 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
     duel.log.push(`${carte.name} protège ${cible.name} avec un bouclier jusqu’à la fin du tour.`);
     rpgActionsEtat(duel);
     return { ok: true, cibleId: cible.id, bouclier: true };
+  }
+  if (activation.effet?.type === 'buff-allies-tour') {
+    const atk = Number(activation.effet?.atk) || 0;
+    const pv = Number(activation.effet?.pv) || 0;
+    for (const allie of duel[cote].creatures) {
+      allie.atk += atk;
+      allie.pv += pv;
+      allie.maxPv = (allie.maxPv ?? allie.pv) + pv;
+    }
+    duel.log.push(`${carte.name} renforce vos créatures (+${atk}/+${pv}).`);
+    rpgActionsEtat(duel);
+    return { ok: true };
+  }
+  if (activation.effet?.type === 'soin-tout') {
+    const soin = Math.max(1, Number(activation.effet?.amount) || 2);
+    duel[cote].pv += soin;
+    for (const allie of duel[cote].creatures) {
+      allie.pv = Math.min(allie.maxPv ?? (allie.pv + soin), allie.pv + soin);
+    }
+    duel.log.push(`${carte.name} soigne vos créatures et vous de ${soin} PV.`);
+    rpgActionsEtat(duel);
+    return { ok: true };
+  }
+  if (activation.effet?.type === 'renvoi-main') {
+    if (paradeZoneBloque(duel, cible, 'capacite', cibleCamp, cote)) return { ok: true, cibleId: cible.id, bouclier: true };
+    const idx = duel[cibleCamp].creatures.findIndex((c) => c.id === cible.id);
+    if (idx !== -1) {
+      duel[cibleCamp].creatures.splice(idx, 1);
+      duel[cibleCamp].main.push(cible.carteId);
+      duel.log.push(`${carte.name} renvoie ${cible.name} dans la main de son propriétaire.`);
+    }
+    rpgActionsEtat(duel);
+    return { ok: true, cibleId: cible.id };
   }
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
@@ -10234,6 +10274,7 @@ function commencerNouveauTour(duel) {
   for (const entite of camp.creatures) {
     entite.malInvocation = false;
     entite.activationUtiliseeCeTour = false;
+    entite.aActiveEffetCeTour = false;
     if (entite.bouclierTemporaire) {
       entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - entite.bouclierTemporaire);
       entite.bouclierTemporaire = 0;

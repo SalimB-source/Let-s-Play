@@ -152,6 +152,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'oni-de-la-fournaise', name: 'Oni de la fournaise', honneur: 0,
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'degats', amount: 2 } },
     cost: 5, atk: 4, def: 5, rarity: 'mythique',
     typeLine: 'Créature — Yōkai · Oni',
     arrivee: { type: 'degats', amount: 3, cible: 'creature', nombre: 2 },
@@ -196,6 +197,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   // ne fait que lui épargner les dégâts (voir `riposteDeContreAttaque`).
   carte({
     id: 'tojiro-le-pourfendeur', name: 'Tojiro, le pourfendeur',
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'degats', amount: 2 } },
     cost: 6, atk: 5, def: 5, rarity: 'mythique',
     // Son prix accepte une créature **ou une arme** de la main remise dans le
     // deck (`rpgInvocation.js`).
@@ -211,6 +213,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'daimyo-du-soleil-rouge', name: 'Daimyō du Soleil rouge',
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'buff-allies-tour', atk: 2, pv: 1 } },
     cost: 5, atk: 3, def: 4, rarity: 'mythique',
     typeLine: 'Créature — Humain · Samouraï',
     // Il lève un Samouraï en arrivant, puis grandit chaque attaque de son
