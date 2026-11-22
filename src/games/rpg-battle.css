@@ -16593,3 +16593,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
   margin-right: 4px;
 }
+
+/* Cartes du bandeau de retour au deck : ne pas compresser le nom */
+.rpg-retour-deck__carte {
+  width: auto !important;
+  min-width: max-content;
+  max-width: none;
+  padding: 6px 12px;
+  gap: 8px;
+}
+
+.rpg-retour-deck__carte-nom {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
