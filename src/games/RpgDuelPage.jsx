@@ -15318,11 +15318,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         <div className="rpg-bottombar" inert={selectionAscension.rituel ? true : undefined}>
-          <ol className="rpg-log" aria-live="polite">
-            {duel.log.slice(-6).map((line, index) => (
-              <li key={`${duel.log.length}-${index}-${line}`} className="rpg-log__line">{line}</li>
-            ))}
-          </ol>
+          <div className="rpg-console-log" aria-live="polite">
+            <div className="rpg-console-log__header">&gt; Invite de commandes</div>
+            <ol className="rpg-log">
+              {duel.log.slice(-6).map((line, index) => (
+                <li key={`${duel.log.length}-${index}-${line}`} className="rpg-log__line">&gt; {line}</li>
+              ))}
+            </ol>
+          </div>
           <details className="rpg-historique">
             <summary>Historique du duel</summary>
             <ol aria-label="Historique du duel, événements les plus récents en premier">
