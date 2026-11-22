@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from '../src/games/rpgAI.js';
+import { armeById } from '../src/games/rpgCards.js';
 import { mobaInfliger } from '../src/games/rpgMoba.js';
 import { rpgChoisirCouleurMana, rpgFinDeTour, rpgReglerHasard } from '../src/games/rpgDuel.js';
 import { MOBA_DECKS, rpgMobaChoisirVoieCentrale, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaResoudreSite, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaJouerArme, MOBA_ARMES, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
@@ -568,7 +569,10 @@ test('AI can counter an announced Javelot without exposing or changing its own s
 
 for (const id of ['cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit','takouba-de-tin-hinan','sphere-de-rotation']) test(`AI evaluates ${id} with isolated attachment probes`, () => {
   const duel=rpgMobaCreerPartie(MOBA_DECKS[0],MOBA_DECKS[0],{rng:()=>.5}).duel;ok(rpgMobaMulligan(duel,'joueur',[]));ok(rpgMobaMulligan(duel,'sorcier',[]));
-  if(duel.joueur.manaChoixEnAttente)ok(rpgChoisirCouleurMana(duel,'joueur',choisirCouleurManaIA(duel,'joueur')));duel.joueur.main=['gardienne-des-portes-de-sable',id];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.mana.tenebres=30;duel.joueur.mana.neige=30;duel.joueur.mana.eau=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','right',0).entite;
+  if(duel.joueur.manaChoixEnAttente)ok(rpgChoisirCouleurMana(duel,'joueur',choisirCouleurManaIA(duel,'joueur')));
+  // Une arme à distance ne va que sur un porteur à distance : la sonde utilise le bon vecteur.
+  const porteurCarte=armeById(id)?.porteeArme==='distance'?'ashigaru-des-braises':'gardienne-des-portes-de-sable';
+  duel.joueur.main=[porteurCarte,id];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.mana.tenebres=30;duel.joueur.mana.neige=30;duel.joueur.mana.eau=30;const porteur=rpgMobaJouerCreature(duel,'joueur',porteurCarte,'right',0).entite;
   let appels=0;rpgReglerHasard(duel,()=>{appels++;return .5;});const avant=JSON.stringify(duel);const choix=rpgMobaChoisirMagieIA(duel,'joueur');assert.equal(choix?.id,id);assert.equal(choix?.cible,porteur.id);assert.equal(JSON.stringify(duel),avant);assert.equal(appels,0);
   ok(rpgMobaJouerArme(duel,'joueur',choix.id,choix.cible));assert.equal(porteur.arme.carteId,id);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });

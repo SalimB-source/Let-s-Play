@@ -192,21 +192,40 @@ export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
  * Le **sorcier adverse** se frappe **à portée**, comme une créature.
  *
  * L'attaque directe — celle qui frappe le sorcier lui-même plutôt qu'une
- * créature — garde ses conditions (`attaqueDirectePermise` : plus rien à
- * frapper, envol sans Défenseur, infiltration seule). Les lignes y ajoutent la
- * leur : le sorcier se tient **derrière le fond** de son camp (`rpgChamp.js`),
- * donc
+ * créature — garde ses conditions de base (`attaqueDirectePermise` : plus rien
+ * à frapper, envol sans Défenseur, infiltration seule). Les lignes y ajoutent
+ * une règle de **portée** : le sorcier se tient derrière le fond de son camp,
+ * et ce qui le protège dépend de la nature de l'attaquant.
  *
- * - une **mêlée** (`portee 1`) doit avoir percé les deux lignes et se tenir sur
- *   le fond adverse pour le frapper ;
- * - une créature **à distance** (`portee 2`) le frappe depuis le front adverse.
+ * - une **mêlée** ne le frappe pas tant qu'une créature **à distance** se tient
+ *   derrière — le tireur du fond couvre le sorcier, même s'il y a une volante
+ *   devant ;
+ * - une créature **à distance** sans Attaque ciblée ne le frappe pas tant que
+ *   des **mêlées** au sol font écran en face ;
+ * - l'**Attaque ciblée** choisit sa cible : elle passe les lignes, mais une
+ *   volante ou un Défenseur adverse attire toujours les coups.
  *
- * C'est la règle demandée : la portée remplace le contact. Une seule
- * exception : **hors des lignes** (`duel.lignes !== true`) ou au MOBA, la
- * fonction rend exactement ce que rendait `attaqueDirectePermise`.
+ * Hors des lignes (`duel.lignes !== true`) ou au MOBA (qui a des voies, pas de
+ * front ni de fond), la fonction rend exactement ce que rendait
+ * `attaqueDirectePermise`.
  */
-export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null) {
-  return attaqueDirectePermise(attaquant, creaturesAdverses, ciblesAtteignables);
+// `cote` fait partie de la signature des appelants : la couverture se lit sur
+// les créatures adverses reçues, pas sur le camp.
+export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null, cote = null) {
+  const adverses = (creaturesAdverses ?? []).filter(Boolean);
+  if (!lignesActives(duel) || duel?.moba) return attaqueDirectePermise(attaquant, adverses, ciblesAtteignables);
+  if (attaquant?.coupRapide) {
+    const atteignables = Array.isArray(ciblesAtteignables) ? ciblesAtteignables : adverses;
+    return !(atteignables.length && adverses.some((entite) => entite.envol || estDefenseur(entite)));
+  }
+  if (!attaqueDirectePermise(attaquant, adverses, ciblesAtteignables)) return false;
+  // À distance : les mêlées au sol font écran au sorcier. Une mêlée volante ne
+  // fait pas écran — elle ne couvre pas le sol — mais l'Envol adverse bloque
+  // déjà tout, plus haut.
+  if (attaquant?.distance) return !adverses.some((entite) => !entite.distance && !entite.envol);
+  // Mêlée : une créature à distance derrière protège le sorcier, qu'il y ait ou
+  // non une volante devant.
+  return !adverses.some((entite) => entite.distance);
 }
 
 /** Le nombre de cases du champ de ce duel : huit quand les lignes sont

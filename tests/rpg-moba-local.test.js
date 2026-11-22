@@ -5098,7 +5098,9 @@ test('Neige noire still resolves after its price lane is conquered in response',
   assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'eclair-du-marteau', 'sorcier', 'left').ok, true);
   assert.equal(mobaVoie(duel.moba, 'left').conqueredBy, 'sorcier'); assert.ok(!duel.joueur.creatures.includes(removedByConquest));
   assert.equal(rpgMobaPasserSort(duel, 'sorcier').ok, true);
-  assert.ok(!duel.joueur.creatures.includes(remaining)); assert.equal(duel.moba.winner, null);
+  // La Neige noire frappe la voie choisie : la créature de la voie de droite,
+  // posée dans le même tour (plus de quota d’invocation normale), reste en jeu.
+  assert.ok(duel.joueur.creatures.includes(remaining)); assert.equal(duel.moba.winner, null);
   assert.equal(duel.joueur.cimetiere.filter(id => id === 'neige-noire').length, 1); assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
 
@@ -7642,7 +7644,7 @@ test('Braise et sable MOBA : le Lien est relu après la réponse et Écueil ne c
 });
 
 for (const id of ['cuirasse-de-sel','braise-et-sable']) test(`${id} MOBA : une arme réservée résiste aux mauvais contres, puis tombe avec son porteur`, () => {
-  const duel=partie();duel.joueur.main=['mousse-des-galiotes',id];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;const porteur=rpgMobaJouerCreature(duel,'joueur','mousse-des-galiotes','right',0).entite;
+  const duel=partie();duel.joueur.main=['ashigaru-des-braises',id];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;const porteur=rpgMobaJouerCreature(duel,'joueur','ashigaru-des-braises','right',0).entite; // porteur à distance : Braise et sable est une arme à distance
   duel.sorcier.main=['ecueil','silence-decume','trait-de-braise'];duel.sorcier.mana.eau=30;duel.sorcier.mana.braise=30;assert.equal(rpgMobaJouerArme(duel,'joueur',id,porteur.id,{ouvrirReponse:true}).sortEnAttente,true);
   for(const contre of ['ecueil','silence-decume']){const before=JSON.stringify(duel);assert.equal(rpgMobaLancerMagie(duel,'sorcier',contre).ok,false);assert.equal(JSON.stringify(duel),before);}assert.equal(rpgMobaLancerMagie(duel,'sorcier','trait-de-braise',porteur.id).ok,true);
   const pass=rpgMobaPasserSort(duel,'sorcier');assert.equal(pass.ok,true,JSON.stringify(pass));assert.equal(pass.dissipe,true);assert.ok(duel.joueur.cimetiere.includes(id));assert.equal(duel.mobaSortEnAttente,null);assert.equal(rpgMobaPlacementCoherent(duel),true);

@@ -52,25 +52,20 @@ function embuscade(duel, cote, carte, specialeMoba = false, specialeForcee = und
   return Boolean(duel && cote && cote === duel.tour && (specialeMoba
     || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
-/** Le quota d'invocation normale se tient par ligne : une mêlée ET une
- *  créature à distance par tour, pas une seule créature. */
+/** Ligne de pose d'une carte normale, conservée dans l'état du camp pour les
+ *  statistiques et l'IA. Elle ne limite plus rien : le quota d'invocations
+ *  normales par tour a été retiré. */
 export function ligneQuotaInvocation(carte) {
   return ligneDePose(carte) === RPG_LIGNE_FOND ? 'distance' : 'melee';
-}
-function lignesQuotaConsommees(duel, cote) {
-  return duel?.moba ? duel.moba?.creaturesJoueesLignes?.[cote] : duel?.[cote]?.invocationsNormalesLignes;
 }
 export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false, specialeForcee = undefined) {
   if (carte?.ascension) return null;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
   if (embuscade(duel, cote, carte, specialeMoba, specialeForcee)) return null;
-  const joue = duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee;
-  if (!joue) return null;
-  // Une mêlée puis une à distance : le quota ne ferme que la ligne déjà prise.
-  // Sans détail de ligne (partie sauvegardée avant la règle), tout reste fermé.
-  const lignes = lignesQuotaConsommees(duel, cote);
-  if (!Array.isArray(lignes) || lignes.length === 0) return 'creature-limite';
-  return lignes.includes(ligneQuotaInvocation(carte)) ? 'creature-limite' : null;
+  // La règle des deux invocations normales par tour (une mêlée + une à distance)
+  // est retirée : on invoque autant de créatures qu'on veut, dans la limite du
+  // mana et des cases libres. Ascension et Embuscade restaient déjà hors quota.
+  return null;
 }
 export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, specialeFixee = null) {
   if (carte?.ascension) return;
