@@ -752,12 +752,15 @@ export const RPG_CREATURE_CARDS = [
     art: 'bouchra-guerriere-des-cretes',
     // La mythique bon marché du Sable : 2/1 pour deux manas, et rien pour se
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
-    // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
-    // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
-    // insaisissable (Esquive, 25 %) : ce qu'elle ne pare pas, elle l'évite.
+    // guerre ne connaît pas le mal d'invocation (Rapidité) — et la pente la
+    // rend insaisissable (Esquive, 25 %) : ce qu'elle ne pare pas, elle
+    // l'évite. Son grand arc la tient **à distance** : deux cases de portée,
+    // une place au fond, et pas de coup en retour d'un corps à corps. Perdre
+    // l'Attaque ciblée ne l'a pas rapprochée de l'ennemi.
     // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
     // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
+    distance: true,
     esquive: true,
     text: 'Rapidité — Peut se déplacer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
@@ -1847,7 +1850,9 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Djinn · Démon · Minotaure',
     art: 'ifrit-al-ahmar',
     // Le seigneur des braises ne brûle plus la table en arrivant : il garde
-    // seulement son souffle de crit et sa résonance de djinn.
+    // seulement son souffle de crit et sa résonance de djinn. Il souffle de
+    // loin — **à distance**, comme avant l'Attaque ciblée qu'il a perdue.
+    distance: true,
     coupCritique: { chance: 0.25, fois: 2 },
     resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
     text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
@@ -1867,6 +1872,9 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     art: 'pere-des-corbeaux',
     envol: true,
+    // Ses corbeaux portent ses coups : il reste **à distance**, deux cases et
+    // le fond, même sans l'Attaque ciblée qu'il a perdue.
+    distance: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 4 },
     text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
@@ -1909,6 +1917,9 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'dame-des-neuf-mondes',
+    // Elle tient le fil des maisons depuis l'autre rive : **à distance**,
+    // comme quand son Attaque ciblée la rangeait déjà au fond.
+    distance: true,
     arrivee: { type: 'soin', amount: 8 },
     text: 'Quand elle arrive : vous récupérez 8 points de vie.',
     flavor: 'Elle tient le fil de toutes les maisons à la fois.',

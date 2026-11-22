@@ -10,7 +10,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
+import { cardById, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgAttaquerSorcier } from '../src/games/rpgDuel.js';
 import {
   rpgCiblesIndividuellesClassique,
@@ -136,6 +136,21 @@ test('la règle est symétrique : le sorcier attaque sous les mêmes conditions'
   const melee = poser('sorcier', MELEE);
   poser(adv, TIREUR);
   assert.equal(directe(d, 'sorcier', melee), false);
+});
+
+test('un tireur par Attaque ciblée couvre aussi son sorcier', () => {
+  // Salem, Fériel et la Chevalière du bâton sacré tirent sans le mot-clé
+  // « À distance » : ils se rangent au fond et couvrent le sorcier comme un
+  // archer, face à une mêlée adverse.
+  for (const id of ['salem', 'feriel', 'chevaliere-du-baton-sacre']) {
+    const carte = cardById(id);
+    assert.equal(carte.coupRapide, true, `${id} a l'Attaque ciblée`);
+    const entite = { id, carteId: id, coupRapide: true, distance: Boolean(carte.distance) };
+    assert.equal(attaqueDirecteSurLesLignes({ lignes: true }, { id: 'mel', carteId: MELEE }, [entite], []), false,
+      `${id} couvre le sorcier contre une mêlée`);
+    assert.equal(attaqueDirecteSurLesLignes({ lignes: true }, { id: 'tir', carteId: TIREUR, distance: true }, [entite], []), true,
+      `un tireur adverse ne fait pas écran contre un autre tireur (${id})`);
+  }
 });
 
 test('hors des lignes, la règle historique reste intacte', () => {

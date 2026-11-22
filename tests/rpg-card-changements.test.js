@@ -11,6 +11,8 @@ import {
 import { choisirCarteIA } from '../src/games/rpgAI.js';
 import { COLLECTION_DEPART } from '../src/games/rpgCollection.js';
 import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
+import { ligneDePose, RPG_LIGNE_FOND } from '../src/games/rpgLignes.js';
+import { porteeDe, RPG_PORTEE_DISTANCE } from '../src/games/rpgPortees.js';
 
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -23,6 +25,25 @@ function poser(d, camp, id) {
   assert.equal(resultat.ok, true, `${id} se joue`);
   return resultat.entite;
 }
+
+test('les créatures qui ont perdu l’Attaque ciblée restent à distance', () => {
+  // L'équilibrage a retiré l'Attaque ciblée de douze fiches : aucune n'est
+  // redevenue un corps à corps pour autant. Elles tirent à deux cases et se
+  // rangent au fond, comme avant.
+  const fichees = [
+    'bouchra-guerriere-des-cretes', 'djinn-de-foudre', 'sorcier-du-ressac-noir', 'ifrit-al-ahmar',
+    'pere-des-corbeaux', 'dame-des-neuf-mondes', 'tercio-de-cuivre', 'kagutsuchi-flamme-originelle',
+    'ureus-du-seuil', 'maitre-des-hieroglyphes', 'faucon-du-zenith', 'dame-aux-ailes-d-or',
+  ];
+  for (const id of fichees) {
+    const carte = cardById(id);
+    assert.ok(carte, `${id} est au catalogue`);
+    assert.equal(carte.coupRapide, undefined, `${id} ne vise plus`);
+    assert.equal(carte.distance, true, `${id} reste « À distance »`);
+    assert.equal(ligneDePose(carte), RPG_LIGNE_FOND, `${id} se range au fond`);
+    assert.equal(porteeDe(carte), RPG_PORTEE_DISTANCE, `${id} frappe à deux cases`);
+  }
+});
 
 test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => {
   const values = (id) => cardById(id);

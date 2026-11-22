@@ -197,18 +197,25 @@ export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
  * une règle de **portée** : le sorcier se tient derrière le fond de son camp,
  * et ce qui le protège dépend de la nature de l'attaquant.
  *
- * - une **mêlée** ne le frappe pas tant qu'une créature **à distance** se tient
+ * - une **mêlée** ne le frappe pas tant qu'un **tireur** adverse se tient
  *   derrière — le tireur du fond couvre le sorcier, même s'il y a une volante
  *   devant ;
- * - une créature **à distance** sans Attaque ciblée ne le frappe pas tant que
- *   des **mêlées** au sol font écran en face ;
+ * - un **tireur** sans Attaque ciblée ne le frappe pas tant que des **mêlées**
+ *   au sol font écran en face ;
  * - l'**Attaque ciblée** choisit sa cible : elle passe les lignes, mais une
  *   volante ou un Défenseur adverse attire toujours les coups.
+ *
+ * « Tireur » se lit comme partout ailleurs (`porteeDe`, `ligneObligee`) :
+ * marqué « À distance » **ou** porteur de l'Attaque ciblée — Salem, Fériel et
+ * la Chevalière du bâton sacré tirent sans le mot-clé « À distance », et ils
+ * couvrent leur sorcier comme les autres.
  *
  * Hors des lignes (`duel.lignes !== true`) ou au MOBA (qui a des voies, pas de
  * front ni de fond), la fonction rend exactement ce que rendait
  * `attaqueDirectePermise`.
  */
+const estTireur = (entite) => Boolean(entite?.distance || entite?.coupRapide);
+
 // `cote` fait partie de la signature des appelants : la couverture se lit sur
 // les créatures adverses reçues, pas sur le camp.
 export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = [], ciblesAtteignables = null, cote = null) {
@@ -222,10 +229,10 @@ export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = 
   // À distance : les mêlées au sol font écran au sorcier. Une mêlée volante ne
   // fait pas écran — elle ne couvre pas le sol — mais l'Envol adverse bloque
   // déjà tout, plus haut.
-  if (attaquant?.distance) return !adverses.some((entite) => !entite.distance && !entite.envol);
-  // Mêlée : une créature à distance derrière protège le sorcier, qu'il y ait ou
-  // non une volante devant.
-  return !adverses.some((entite) => entite.distance);
+  if (estTireur(attaquant)) return !adverses.some((entite) => !estTireur(entite) && !entite.envol);
+  // Mêlée : un tireur derrière protège le sorcier, qu'il y ait ou non une
+  // volante devant.
+  return !adverses.some(estTireur);
 }
 
 /** Le nombre de cases du champ de ce duel : huit quand les lignes sont
