@@ -35,12 +35,28 @@ export const listings = {
     "category": "سينما · عرض حي",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/cinema/kpop-golden-world-tour-billets-21-novembre": {
+    "title": "KPOP GOLDEN WORLD TOUR",
+    "accent": "الجولة تنتقل إلى التذاكر.",
+    "dek": "بعد الإعلان الأول عن Golden World Tour، تنشر نتفليكس معلومات التذاكر في 20 نوفمبر. يراجع اختيارنا ليوم 21 عرض KPop Demon Hunters المنتظر ابتداءً من يونيو 2027.",
+    "imageAlt": "صورة رسمية لجولة KPop Demon Hunters Golden World Tour نشرتها Netflix Tudum في 20 نوفمبر 2026. © Netflix / AEG Presents. صورة ترويجية، لا صورة للعرض المكتمل.",
+    "category": "سينما · عرض حي",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/cinema/mike-ward-modeste-netflix-17-novembre": {
     "title": "MIKE WARD: MODEST",
     "accent": "الستاند أب يصل إلى نتفليكس.",
     "dek": "تبرمج نتفليكس عرض Mike Ward: Modest ليوم 17 نوفمبر. يتناول عرض الكوميدي الكيبيكي المواعدة بعد الطلاق والقرارات الاندفاعية، بأسلوب موجّه للبالغين.",
     "imageAlt": "صورة رسمية لعرض Mike Ward: Modest ضمن تقويم Netflix Tudum المنشور في 13 نوفمبر 2026. © Netflix.",
     "category": "سينما / عروض · نتفليكس",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/cinema/on-behalf-of-my-son-netflix-20-novembre": {
+    "title": "ON BEHALF OF MY SON",
+    "accent": "رحلة في الحداد.",
+    "dek": "تدرج نتفليكس On Behalf of My Son في 20 نوفمبر ضمن تقويمها الأسبوعي. يتبع الفيلم فيسنتينا، التي تبحث عن عائلات الضحايا بعد حادث حافلة تسبب فيه ابنها.",
+    "imageAlt": "صورة رسمية لفيلم On Behalf of My Son في تقويم Netflix Tudum ليوم 20 نوفمبر 2026. © Netflix / أصحاب الحقوق.",
+    "category": "سينما · نتفليكس",
     "readTime": "قراءة في 3 دقائق"
   },
   "/news/cinema/steps-netflix-sortie-20-novembre": {
@@ -123,6 +139,22 @@ export const listings = {
     "category": "ألعاب · ROCKSTAR GAMES",
     "readTime": "قراءة دقيقتين"
   },
+  "/news/gta-6-the-album-34-titres-20-novembre": {
+    "title": "GTA VI: THE ALBUM",
+    "accent": "فايس سيتي ترفع الصوت.",
+    "dek": "تعلن روكستار في 20 نوفمبر إتاحة GTA VI: The Album مع 34 أغنية أصلية بالتعاون مع Atlantic Records. أما موسيقى Justice التصويرية، المعلنة في 11 ديسمبر، فهي إصدار منفصل.",
+    "imageAlt": "صورة رسمية لألبوم GTA VI نشرتها روكستار في 20 نوفمبر 2026. © Rockstar Games / Atlantic Records. رسم للألبوم، لا لقطة لعب جديدة.",
+    "category": "ألعاب · موسيقى",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/gta-6-the-festival-miami-21-novembre": {
+    "title": "GTA VI: THE FESTIVAL",
+    "accent": "ليونيدا تصعد إلى المسرح.",
+    "dek": "مهرجان GTA VI مقرر في 21 نوفمبر في Mana Wynwood بميامي. تعلن روكستار وبلايستيشن عن مسرحين وفنانين يشاركون في موسيقى اللعبة وألبومها.",
+    "imageAlt": "ملصق رسمي لمهرجان GTA VI نشرته روكستار في 9 نوفمبر 2026. © Rockstar Games / PlayStation. برنامج معلن، لا صورة من الحفلات.",
+    "category": "ألعاب · حدث موسيقي",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/lightyear-frontier-1-0-4-novembre-2026": {
     "title": "لايت يير فرونتير",
     "accent": "يبلغ الإصدار 1.0.",
@@ -153,6 +185,22 @@ export const listings = {
     "dek": "تعلن غوغل أن Gemini Notebook يستطيع تحويل مصادر دفتر إلى مواقع تفاعلية: مواد للمراجعة ولوحات بيانات وأدوات لتتبّع المشاريع. يبدأ الإطلاق على الويب للمستخدمين من عمر 18 عاماً فما فوق.",
     "imageAlt": "رسم رسمي من غوغل لجدول دوري تفاعلي في Gemini Notebook، نُشر في 16 نوفمبر 2026. عرض توضيحي من المورّد، لا نتيجة أنتجها فريقنا.",
     "category": "تقنية · GOOGLE LABS",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/google-agent-anomaly-detection-multicloud": {
+    "title": "AGENT ANOMALY DETECTION",
+    "accent": "مراقبة تتجاوز سحابة واحدة.",
+    "dek": "تشرح غوغل في 20 نوفمبر كيف يحلل Agent Anomaly Detection وكلاء مستضافين على AWS أو Azure أو محلياً. تبقى الخدمة في معاينة خاصة وتعتمد على بيانات الرصد المرسلة إلى مشروع Google Cloud.",
+    "imageAlt": "رسم رسمي لخدمة Agent Anomaly Detection نشره Google Developers في 20 نوفمبر 2026. © Google. توضيح من المورّد، لا تدقيق لبنيتنا التحتية.",
+    "category": "تقنية · أمن الذكاء الاصطناعي",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/google-agents-controle-outils-semantic-governance": {
+    "title": "SEMANTIC GOVERNANCE",
+    "accent": "تحقق قبل التنفيذ.",
+    "dek": "تقدّم غوغل في 20 نوفمبر قواعد Semantic governance في مرحلة المعاينة ضمن Gemini platform. تقيّم هذه القواعد استدعاءات الأدوات التي يقترحها الوكيل قبل تنفيذها.",
+    "imageAlt": "رسم رسمي من غوغل يوضح أفعال وكيل مسموحة أو مرفوضة، نُشر في 20 نوفمبر 2026. © Google. مثال من المورّد، لا نتيجة اختبار لفريقنا.",
+    "category": "تقنية · وكلاء الذكاء الاصطناعي",
     "readTime": "قراءة في 3 دقائق"
   },
   "/news/tech/google-home-nouveautes-novembre-2026": {

@@ -112,6 +112,50 @@ export function trailerWatchUrl(id) {
 
 export const articleTrailers = {
 
+  "gta-6-the-album-34-titres-20-novembre": {
+    "label": "GTA VI: THE ALBUM",
+    "meta": "ROCKSTAR GAMES",
+    "items": [],
+    "credit": "Visuel officiel de GTA VI: The Album publié par Rockstar le 20 novembre 2026. © Rockstar Games / Atlantic Records. Illustration de l’album, pas une nouvelle capture de gameplay.",
+    "pending": "Aucune vidéo officielle propre à cette sortie d’album n’a été vérifiée pour intégration. Les liens d’écoute sont disponibles dans le communiqué Rockstar en source."
+  },
+  "cinema/on-behalf-of-my-son-netflix-20-novembre": {
+    "label": "ON BEHALF OF MY SON",
+    "meta": "NETFLIX TUDUM",
+    "items": [],
+    "credit": "Visuel officiel de On Behalf of My Son dans le calendrier Netflix Tudum du 20 novembre 2026. © Netflix / ayants droit.",
+    "pending": "Aucune bande-annonce YouTube officielle n’a été vérifiée pour cet article. La fiche du film est accessible depuis le calendrier Netflix lié en source."
+  },
+  "tech/google-agents-controle-outils-semantic-governance": {
+    "label": "SEMANTIC GOVERNANCE",
+    "meta": "GOOGLE DEVELOPERS",
+    "items": [],
+    "credit": "Schéma officiel Google illustrant des actions d’agent autorisées ou refusées, publié le 20 novembre 2026. © Google. Exemple du fournisseur, pas un résultat de test de la rédaction.",
+    "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Les schémas et explications sont consultables dans le billet Google en source."
+  },
+  "gta-6-the-festival-miami-21-novembre": {
+    "label": "GTA VI: THE FESTIVAL",
+    "meta": "ROCKSTAR GAMES",
+    "items": [],
+    "credit": "Affiche officielle GTA VI: The Festival publiée par Rockstar le 9 novembre 2026. © Rockstar Games / PlayStation. Programme annoncé, pas une photographie des concerts.",
+    "pending": "Aucune vidéo ou captation officielle dédiée à ce festival n’a été vérifiée pour intégration. L’affiche illustre le programme ; un ancien trailer du jeu ne remplace pas une captation."
+  },
+  "cinema/kpop-golden-world-tour-billets-21-novembre": {
+    "label": "KPOP GOLDEN WORLD TOUR",
+    "meta": "NETFLIX TUDUM",
+    "items": [],
+    "credit": "Visuel officiel KPop Demon Hunters Golden World Tour publié par Netflix Tudum le 20 novembre 2026. © Netflix / AEG Presents. Image promotionnelle, pas une photo du spectacle terminé.",
+    "pending": "Aucune vidéo officielle dédiée à la tournée n’a été vérifiée pour intégration. Le clip Golden proposé sur Tudum concerne le film et n’est pas présenté comme une bande-annonce du spectacle."
+  },
+  "tech/google-agent-anomaly-detection-multicloud": {
+    "label": "AGENT ANOMALY DETECTION",
+    "meta": "GOOGLE DEVELOPERS",
+    "items": [],
+    "credit": "Illustration officielle Agent Anomaly Detection publiée par Google Developers le 20 novembre 2026. © Google. Visuel explicatif du fournisseur, pas un audit de notre infrastructure.",
+    "pending": "Aucune vidéo officielle dédiée à cette extension multicloud n’a été vérifiée. Les schémas et exemples sont ceux du billet Google lié en source."
+  }
+,
+
   "gta-6-19-novembre-consoles-points-verifies": {
     "label": "GTA VI",
     "meta": "ROCKSTAR GAMES",

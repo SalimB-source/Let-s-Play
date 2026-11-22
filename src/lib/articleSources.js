@@ -31,6 +31,9 @@ export function officialSourceUrl(value) {
     if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
     const host = url.hostname.toLowerCase();
     // Only these individually reviewed pages, never the whole hosting platform.
+    // Google Developers vendor articles, not arbitrary googleblog.com blogs.
+    if (['https://developers.googleblog.com/check-what-your-ai-agents-do-before-they-do-it-with-semantic-governance-policies/',
+      'https://developers.googleblog.com/agent-anomaly-detection-safeguarding-agents-across-other-clouds/'].includes(url.href)) return url.href;
     // Official Miami HEAT event page reviewed for the 18 November edition.
     if (url.href === 'https://www.nba.com/heat/uniforms/2627-heat-vice-city-uniform-collection') return url.href;
     // Official Discord product announcement, not a community server or user content.
