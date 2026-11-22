@@ -1002,6 +1002,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'eirik-du-premier-serment',
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'soin-tout', amount: 2 } },
     name: 'Eirik du Premier Serment',
     element: 'neige',
     cost: 1,
@@ -1137,6 +1138,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'valkyrie-des-glaces',
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'degats', amount: 2, gel: true } },
     name: 'Valkyrie des glaces',
     element: 'neige',
     cost: 6,
@@ -1203,6 +1205,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'leviathan',
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'renvoi-main' } },
     name: 'Léviathan',
     element: 'eau',
     cost: 8,
