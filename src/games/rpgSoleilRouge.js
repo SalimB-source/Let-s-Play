@@ -229,12 +229,14 @@ export const RPG_SOLEIL_ROUGE_ARMES = [
     id: 'braise-et-sable', name: 'Braise et sable',
     kind: 'arme',  rarity: 'rare',
     colors: ['braise', 'sable'],
+    porteeArme: 'distance',
     typeLine: 'Arme — Lame de braise et de sable',
     bonus: { atk: 1, def: 0 }, donne: { coupRapide: true, coupCritique: 0.25 }, durabilite: 1,
-    // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
-    // une fois de plus. Attaque ciblée et coup critique restent intacts.
+    // Arme à distance : seul un porteur à distance peut la tenir. Le Lien du
+    // deuxième sabre veille — tant que le Cavalier des deux sabres est en jeu,
+    // la lame mord une fois de plus. Attaque ciblée et coup critique intacts.
     lien: { ancre: 'cavalier-des-deux-sabres', bonus: { atk: 2, def: 0 } },
-    text: 'Arme — +1/+0, Attaque ciblée, Coup critique (25 %). Endurance 1 : détruite après une attaque ou une défense. Avec Cavalier des deux sabres en jeu : +2/+0.',
+    text: 'Arme (À distance) — +1/+0, Attaque ciblée, Coup critique (25 %). Endurance 1 : détruite après une attaque ou une défense. Avec Cavalier des deux sabres en jeu : +2/+0.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
 ];
