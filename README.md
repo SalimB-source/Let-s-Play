@@ -135,16 +135,18 @@ Le site a porté un troisième thème temporaire, `vice`, pour la sortie de
 d'origine (sombre, clair), sa barre et son tiroir habituels.
 
 Il reste **une seule chose** de cet habillage : la clé d'art du héros fournie
-par le propriétaire du site — Jason et Lucia devant la station-service —
-dans `public/gta6-jason-lucia-hero.jpg`, servie par `src/theme/viceTheme.js`.
+par le propriétaire du site — Jason et Lucia marchant dans le champ devant la
+voiture en feu — dans `public/gta6-jason-lucia-hero.jpg`, servie par
+`src/theme/viceTheme.js` (avec une variante portrait recadrée pour téléphone,
+`gta6-jason-lucia-hero-portrait.jpg`).
 
 - Le héros garde **le voile du site** (`.hero-shade` dans `styles.css`) : un
   dégradé sombre à gauche qui porte le titre clair. Aucune teinte rose, aucun
   cadre spécial. C'est ce voile, et lui seul, qui garantit le contraste sur
-  cette photo de nuit — ne pas le retirer sans remesurer.
+  le ciel clair de cette image — ne pas le retirer sans remesurer.
 - C'est un **hommage non officiel** : Let's Play n'est affilié ni à Rockstar
-  Games ni à Take-Two. L'image vient du propriétaire du site, ce n'est pas une
-  image générée — ne pas la remplacer par une vue de jour produite pour un skin.
+  Games ni à Take-Two. L'image vient du propriétaire du site — ne pas la
+  remplacer sans son accord.
 - Un visiteur qui avait `vice` mémorisé dans `lp-theme` retombe sur le sombre
   tout seul : la valeur est ignorée au chargement comme au démarrage.
 

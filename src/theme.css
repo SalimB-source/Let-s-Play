@@ -560,12 +560,6 @@
 [data-theme='light'] .comment-form textarea,
 [data-theme='light'] .comment-report-field select,
 [data-theme='light'] .countdown-unit{background:var(--panel)}
-[data-theme='light'] .hero-countdown-eyebrow{color:var(--yellow);text-shadow:0 0 18px rgba(255,214,25,.3)}
-[data-theme='light'] .hero-countdown-unit{background:rgba(18,22,46,.88);border-color:rgba(255,180,0,.75);box-shadow:inset 0 0 22px rgba(255,214,25,.12), 0 6px 22px rgba(0,0,0,.22), 0 0 22px rgba(255,180,0,.25)}
-[data-theme='light'] .hero-countdown-unit b{color:#ffb400;text-shadow:0 0 18px rgba(255,180,0,.6), 0 2px 4px rgba(0,0,0,.5)}
-[data-theme='light'] .hero-countdown-unit i{color:rgba(255,230,160,.95);text-shadow:0 1px 2px rgba(0,0,0,.5)}
-[data-theme='light'] .hero-countdown-meta{color:rgba(255,238,200,.96);text-shadow:0 1px 2px rgba(0,0,0,.7),0 0 12px rgba(0,0,0,.35)}
-[data-theme='light'] .hero-countdown-out{background:rgba(18,22,46,.88);border-color:rgba(255,180,0,.75);color:#ffb400;text-shadow:0 0 18px rgba(255,180,0,.5)}
 [data-theme='light'] .comment-report-field select{color:var(--ink)}
 [data-theme='light'] .social-page-tabs{
   background-color:#fff;
