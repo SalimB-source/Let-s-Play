@@ -102,12 +102,18 @@ test('TableCard distingue les Défenseurs sans changer leurs règles', async () 
   } finally { await vite.close(); }
 });
 
-test('les Défenseurs posés utilisent la silhouette SVG sans masquer les repères', () => {
+test('les Défenseurs posés gardent un cadre plein : l’écusson se pose sur la peinture', () => {
   const svg = readFileSync(new URL('../src/games/assets/bouclier-defenseur.svg', import.meta.url), 'utf8');
   assert.match(svg, /viewBox="0 0 16 16" preserveAspectRatio="none"/);
   assert.match(svg, /M4\.35009 13\.3929L8 16L11\.6499 13\.3929/);
-  assert.match(css, /mask: url\('\.\/assets\/bouclier-defenseur\.svg'\) center \/ 100% 100% no-repeat/);
-  assert.match(css, /\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost/);
+  // L'écusson de bronze est un calque posé SUR la carte (pseudo-élément),
+  // découpé dans le SVG : la peinture, elle, reste pleine et non masquée.
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::after/);
+  assert.match(css, /mask: url\('\.\/assets\/bouclier-defenseur\.svg'\)/);
+  assert.doesNotMatch(css, /\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost/,
+    'la peinture n’est plus découpée : l’intérieur du cadre reste opaque');
+  assert.doesNotMatch(css, /background: transparent/,
+    'aucun fond transparent : le plateau ne doit pas se voir à travers la carte');
   assert.doesNotMatch(css, /mask:[^;]*;[^}]*\.rpg-card-icone/);
   assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre/s);
 });
@@ -121,9 +127,8 @@ test('l’Envol élève les cartes et les wrappers de pile, cale et Conquête', 
 
 test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gabarit', () => {
   // La feuille Défenseur ne contient AUCUNE règle de taille sur les repères :
-  // c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi. La seule exception
-  // est le `translate` du pied, testé plus bas : il ne touche à aucun sélecteur
-  // de pastille et ne change aucune mesure.
+  // c'est `rpg-battle.css` / `rpg-mobile.css` qui font foi. Elle ne touche pas
+  // davantage au pied : le cadre plein garde les pastilles à leur place usuelle.
   for (const selectors of [
     'rpg-card__stat--atk', 'rpg-card__pt', 'rpg-hand__stats',
     'rpg-hand__stat', 'rpg-card-icones--colonne',
@@ -139,41 +144,14 @@ test('ATQ/DÉF et les autres repères gardent exactement leur taille et leur gab
   assert.match(battleCss, /\.rpg-card\.has-garde/, 'sonar orange toujours présent');
 });
 
-test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement', () => {
-  // « remonte plus vers le milieu de la carte » : 20cqw, soit 20 % de la
-  // LARGEUR de la carte (≈ 16 % de sa hauteur en 4:5). UNE seule règle, UNE
-  // seule propriété, sur le pied des seules cartes POSÉES. La valeur est
-  // proportionnelle : elle suit toutes les tailles de carte sans media query.
-  const regles = [...css.matchAll(/\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{([^}]*)\}/g)];
-  assert.equal(regles.length, 1, 'une unique règle de remontée du pied');
-  const corps = regles[0][1];
-  assert.match(corps, /translate:\s*0 -20cqw;/, 'décalage de 20cqw vers le haut');
-  assert.equal(corps.trim(), 'translate: 0 -20cqw;', 'rien d’autre que ce décalage');
-  assert.match(battleCss, /\.rpg-card--img,\s*[\s\S]{0,200}?container-type: inline-size;/,
-    'la carte est bien son propre conteneur : cqw se résout sur sa largeur');
-  assert.doesNotMatch(corps, /\d+px/, 'pas de valeur fixe en px : la mesure suit la carte');
-
-  // Aucun agrandissement, aucun déplacement latéral, aucun changement de
-  // taille, de police, de marge ou de point d'ancrage.
-  for (const interdit of [
-    /\bwidth\s*:/, /\bheight\s*:/, /\bmax-width\s*:/, /\bmin-width\s*:/,
-    /\bbottom\s*:/, /\btop\s*:/, /\bleft\s*:/, /\bright\s*:/, /\bmargin\s*:/,
-    /\bfont-size\s*:/, /\bpadding\s*:/, /\bgap\s*:/,
-    /\bscale\s*:/, /\bzoom\s*:/, /\btransform\s*:/, /!important/,
-    /--rpg-defenseur-echelle/,
-  ]) assert.doesNotMatch(corps, interdit, `ni ${interdit} dans la remontée`);
-
-  // La carte Défenseur reprend la même taille que les autres cartes.
-  assert.doesNotMatch(css, /--rpg-defenseur-echelle|scale:\s*calc\(1 \/ var\(--rpg-defenseur-echelle/);
-
-  // Ciblage étroit : pas de main, mulligan, aperçu, vignette ni variante mobile.
-  for (const exclu of [
-    'rpg-hand__card', 'rpg-mulligan__card', 'rpg-hover-card-preview__face',
-    'rpg-card-catalogue__art', 'rpg-atelier__carte-art', 'rpg-card-guide__example',
-    'rpg-souk__carte', '.card-row', '.moba__',
-  ]) assert.doesNotMatch(regles[0][0], new RegExp(exclu.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
-    `${exclu} n’est pas visé`);
-  assert.doesNotMatch(css, /@media[^{]*\{[^}]*rpg-card__foot/, 'aucune variante par écran');
+test('sur le plateau, le pied des Défenseurs reste à sa place ordinaire', () => {
+  // Le cadre redevenu plein, les pastilles ATQ/DÉF retrouvent exactement la
+  // même place que sur les autres créatures : la feuille Défenseur ne porte
+  // PLUS aucune règle de remontée du pied, ni sur la table ni sur l'aperçu.
+  assert.doesNotMatch(css, /rpg-card__foot/, 'aucune règle de pied dans la feuille Défenseur');
+  assert.doesNotMatch(css, /translate:\s*0 -20cqw/, 'plus aucun décalage de pied');
+  assert.doesNotMatch(battleCss, /rpg-hover-card-preview__face\.rpg-carte-bouclier > \.rpg-card__foot/,
+    'l’aperçu ne remonte plus le pied des Défenseurs');
 
   // Les gabarits d'origine des autres feuilles restent intacts : le pied d'une
   // carte normale (et celui des aperçus / mulligan) ne bouge pas d'un pixel.
@@ -181,14 +159,16 @@ test('sur le plateau, ATQ et DÉF remontent vers le milieu, sans agrandissement'
     'bottom: 4 % des cartes normales inchangé');
   assert.match(mobileCss, /bottom: var\(--rpg-field-foot, 3%\)/, 'bottom du tactile inchangé');
   for (const [nom, source] of [
-    ['rpg-battle.css', battleCss.replace(/\.rpg-hover-card-preview \.rpg-hover-card-preview__face\.rpg-carte-bouclier > \.rpg-card__foot \{[^}]*\}/, '')], ['rpg-mobile.css', mobileCss], ['rpg-moba.css', lire('rpg-moba.css')],
+    ['rpg-battle.css', battleCss], ['rpg-mobile.css', mobileCss], ['rpg-moba.css', lire('rpg-moba.css')],
   ]) assert.doesNotMatch(source, /rpg-card__foot[^{]*\{[^}]*translate\s*:/s,
-    `${nom} ne remonte pas le pied des autres cartes`);
+    `${nom} ne remonte le pied d'aucune carte`);
+  assert.doesNotMatch(css, /@media[^{]*\{[^}]*rpg-card__foot/, 'aucune variante par écran');
 });
 
 test('aperçu : attaque au-dessus de défense comme sur la table', () => {
   assert.match(battleCss, /\.rpg-hover-card-preview \.rpg-hover-card-preview__face > \.rpg-card__foot \{[^}]*left: 5%; right: auto; bottom: 4%;[^}]*grid-template-columns: max-content; grid-template-rows: auto auto/s);
-  assert.match(battleCss, /\.rpg-hover-card-preview \.rpg-hover-card-preview__face\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw/);
+  assert.doesNotMatch(battleCss, /rpg-carte-bouclier > \.rpg-card__foot/,
+    'l’aperçu d’un Défenseur garde le pied ordinaire, comme la table');
   assert.match(duel, /entite\?\.atk \?\?/);
   assert.match(duel, /entite\?\.pv \?\?/);
 });

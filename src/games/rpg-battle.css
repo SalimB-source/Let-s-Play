@@ -10597,14 +10597,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 800 10px/1 var(--display);
   letter-spacing: .16em;
 }
+/* Le nom tient en toutes lettres : il passe sur deux lignes plutôt que d'être
+   coupé aux points de suspension — « Faussoyeur des dunes » doit se lire
+   entier, même dans l'aperçu rapide d'une créature posée. */
 .rpg-hover-card-preview__name {
   display: block;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   color: #ffe9a0;
   font: 700 clamp(20px, 2.5vw, 28px)/1.1 Georgia, serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: normal;
+  text-wrap: balance;
 }
 /* Annonce : le texte jaune (CARTE ANNONCÉE + nom) est retiré — la carte
    se suffit à elle-même visuellement, le détail se lit en dessous. */
@@ -16529,11 +16533,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview .rpg-hover-card-preview__face .rpg-card__foot .rpg-stat-icon {
   width: .85em; height: .85em; flex-basis: .85em;
 }
-/* Les statistiques restent légèrement remontées sur l'aperçu d'un Défenseur ;
-   la face elle-même conserve sa forme et son absence de cadre. */
-.rpg-hover-card-preview .rpg-hover-card-preview__face.rpg-carte-bouclier > .rpg-card__foot {
-  translate: 0 -20cqw; z-index: 7;
-}
 
 /* Petite fenêtre d'effet activé style Duel Links en dessous de la carte */
 .rpg-card__effet-btn {
@@ -16594,17 +16593,30 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   margin-right: 4px;
 }
 
-/* Cartes du bandeau de retour au deck : ne pas compresser le nom */
+/* Cartes du bandeau de retour au deck : ne pas compresser le nom. Le bandeau
+   accepte de passer sur plusieurs rangées et la liste des cartes admissibles
+   ne se laisse plus écraser entre le texte et les boutons — sans quoi le
+   jeton était rogné au milieu du nom (« Faussoyeur » au lieu de « Faussoyeur
+   des dunes »). En dernier recours, sur un écran très étroit, le nom passe
+   sur deux lignes au lieu d'être coupé. */
+.rpg-retour-deck {
+  flex-wrap: wrap;
+}
+.rpg-retour-deck__liste {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
 .rpg-retour-deck__carte {
   width: auto !important;
-  min-width: max-content;
-  max-width: none;
+  min-width: 0;
+  max-width: 100%;
   padding: 6px 12px;
   gap: 8px;
 }
 
 .rpg-retour-deck__carte-nom {
-  white-space: nowrap;
+  white-space: normal;
   overflow: visible;
   text-overflow: clip;
+  text-wrap: balance;
 }

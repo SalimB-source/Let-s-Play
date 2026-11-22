@@ -52,13 +52,23 @@ test('les Défenseurs gardent la couleur de leur carte, sans aucun cadre', async
   } finally { await vite.close(); }
 });
 
-test('la silhouette Défenseur garde la taille ordinaire et la pierre marron doré', () => {
+test('le Défenseur posé garde un cadre PLEIN : écusson de bronze, ni découpe ni transparence', () => {
   const css = readFileSync(new URL('../src/games/rpg-bouclier.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /--rpg-ecusson|clip-path|rpg-card__liseret-garde|rpg-card__ombre-garde/);
+  // L'écusson est découpé dans le SVG fourni, posé SUR la peinture : il ne
+  // découpe plus la carte elle-même.
   assert.match(css, /mask: url\('\.\/assets\/bouclier-defenseur\.svg'\)/);
   assert.doesNotMatch(css, /--rpg-cadre-decoupe|cadre-le-sablier/);
   assert.doesNotMatch(css, /--rpg-defenseur-echelle/);
-  assert.match(css, /\.rpg-card\.rpg-carte-bouclier > \.rpg-card__foot \{\s*translate: 0 -20cqw;/);
-  assert.match(css, /box-shadow: none !important/);
+  // L'intérieur du cadre doit rester opaque : ni fond transparent, ni peinture
+  // masquée, ni pied remonté — le plateau ne doit plus se voir à travers.
+  assert.doesNotMatch(css, /background: transparent/);
+  assert.doesNotMatch(css, /border-color: transparent/);
+  assert.doesNotMatch(css, /\.rpg-card__img, \.rpg-card__blood/);
+  assert.doesNotMatch(css, /rpg-card__foot/);
+  // Les halos d'état (sélection, ciblage, blocage) restent lisibles : aucune
+  // règle ne peut plus éteindre l'ombre des Défenseurs.
+  assert.doesNotMatch(css, /box-shadow: none !important/);
+  assert.match(css, /\.rpg-card\.rpg-carte-bouclier::after/);
   assert.match(css, /data-effet='defenseur'][^{}]*\{[^}]*animation: rpg-defenseur-pierre/s);
 });
