@@ -1,30 +1,23 @@
-/* La silhouette suit le SVG fourni (commit 3a5afcd), étiré au format 4:5
-   de la carte. Seule la peinture et ses voiles sont découpés : les pierres,
-   chiffres, zones de clic et animations de combat peuvent encore déborder. */
-.rpg-card.rpg-carte-bouclier,
-.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card) {
-  background: transparent !important;
-  border-color: transparent;
+/* Le repère Défenseur (commit 3a5afcd pour la silhouette d'origine).
+   En jeu, la carte reste PLEINE : l'intérieur du cadre doit être opaque, comme
+   chaque autre créature. La ancienne découpe en silhouette de bouclier rendait
+   le cadre transparent — le plateau se voyait à travers la carte, les pastilles
+   d'attaque et de défense flottaient sans support. Le Défenseur se lit
+   désormais à deux repères solides : l'écusson de bronze posé sur la peinture
+   (ci-dessous, découpé dans le SVG fourni) et la pierre d'effet pulsante qui
+   explique déjà le mot-clé. Les pierres, chiffres, zones de clic et animations
+   de combat ne sont plus rognés. */
+.rpg-card.rpg-carte-bouclier::after,
+.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 214, 11, .34), rgba(215, 172, 104, .14));
+  mask: url('./assets/bouclier-defenseur.svg') center 56% / 46% auto no-repeat;
+  -webkit-mask: url('./assets/bouclier-defenseur.svg') center 56% / 46% auto no-repeat;
+  opacity: .55;
 }
-/* L'ombre rectangulaire ne doit pas trahir la silhouette au repos. Les halos
-   interactifs existants restent cependant disponibles pour sélection/ciblage. */
-.rpg-card.rpg-carte-bouclier:not(.is-active, .is-selected, .is-blocking, .is-blocker-assigned, .is-blocker-target-hover, .is-blocker-selected, .is-sacrifice, .is-sacrifice-target, .is-ascension-chosen, .is-attacking, .is-target, .is-ciblable, .is-declared-attacker, .is-spell-target, .is-coup-rapide-cible),
-.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card, .is-attacking, .is-blocking, .is-target) {
-  box-shadow: none !important;
-}
-.rpg-card.rpg-carte-bouclier > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost, .rpg-card__brume, .rpg-card__envol),
-.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card) > img {
-  mask: url('./assets/bouclier-defenseur.svg') center / 100% 100% no-repeat;
-  -webkit-mask: url('./assets/bouclier-defenseur.svg') center / 100% 100% no-repeat;
-}
-/* Le mode Conquête autonome affiche un texte de secours à la place des pierres. */
-.moba .moba__slot.has-creature.rpg-carte-bouclier:not(.rpg-card) .moba__slot-label {
-  bottom: 18%;
-  background: none;
-  text-shadow: 0 1px 3px #000, 0 0 5px #000;
-}
-
-.rpg-card.rpg-carte-bouclier > .rpg-card__foot { translate: 0 -20cqw; }
 
 /* Une pulsation douce met en évidence la pierre, sans faire disparaître son
    pictogramme ni animer les autres effets de la carte. */
