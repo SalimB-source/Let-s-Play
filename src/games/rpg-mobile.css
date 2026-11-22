@@ -536,7 +536,10 @@
 .rpg-battle--touch .rpg-wizard-plate--joueur { grid-template-columns: var(--rpg-plate-avatar) minmax(0, 1fr) auto; }
 .rpg-battle--touch .rpg-wizard-plate--joueur .rpg-wizard-plate__pv { grid-column: 3; grid-row: 1; }
 .rpg-battle--touch .rpg-wizard-plate--joueur .rpg-wizard-plate__zones { grid-column: 1 / -1; grid-row: 2; }
-.rpg-battle--touch .rpg-mobile-zones { display: inline; }
+/* Pas de `display: inline` ici : il annulerait le `display: contents` ci-dessus
+   et remettrait « Paquet 24 » et « Cimetière 0 » dans une seule boîte inline,
+   collée au compteur précédent (« Main · 4Paquet 24Cimet… »). En `contents`,
+   chaque compteur redevient un élément de la flexion et reçoit son écart. */
 /* Le paquet et le cimetière restent comptés dans la pastille (deuxième ligne) :
    au doigt, leurs piles encombreraient la colonne de gauche, déjà prise par la
    plaque et les terrains. Le PC, lui, les pose en vraies piles sur la table. */
@@ -751,6 +754,19 @@
   padding: 8px 12px;
   font-size: clamp(11px, calc(var(--duel-card) * .19), 14px);
 }
+/* L'invite de commandes reste annoncée aux lecteurs d'écran (aria-live), mais
+   sa boîte ne se peint plus au doigt : en colonne, son cadre noir coiffait la
+   rangée de commandes et recouvrait le bouton « Fin du tour ». Hauteur nulle
+   et contenu rogné — pas `display: none`, qui couperait aussi l'annonce. */
+.rpg-battle--touch .rpg-bottombar .rpg-console-log {
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: hidden;
+}
+.rpg-battle--touch .rpg-bottombar .rpg-console-log__header { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-log { display: none; }
 .rpg-battle--touch .rpg-bottombar .rpg-actions { display: grid; gap: 5px; }
 /* Le rail du tour : ancré au bas de la colonne de droite, juste au-dessus de
