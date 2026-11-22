@@ -26,7 +26,7 @@ test('fiches, capacités conservées et descriptions adaptées', () => {
   assert.equal(v.tribut, 1); assert.equal(v.arrivee.type, 'payer-vie-pioche');
   assert.ok(c.butin); assert.deepEqual(c.blocage, { chance: .25, def: 2 });
   assert.equal(p.arrivee.type, 'reanimation'); assert.deepEqual(p.malediction, { atk: 1, def: 0 });
-  assert.ok(dame.envol && dame.volDeVie && dame.coupRapide && dame.destruction.amount === 5);
+  assert.ok(dame.envol && dame.volDeVie && dame.destruction.amount === 5);
   const shield = pastillesPourCarte(dame).find(p => p.label === 'Bouclier parfait'); assert.ok(shield); assert.match(definitionPastille(shield), /attaque ou magie/);
   const curse = pastillesPourCarte(p).find(p => p.cle === 'malediction'); assert.equal(curse.valeur, 1); assert.match(definitionPastille(curse), /perdent 1 point/);
   assert.match(definitionPastille(pastillesPourCarte(cardById('la-barbe-noire')).find(p => p.cle === 'malediction')), /perdent 2 points/);

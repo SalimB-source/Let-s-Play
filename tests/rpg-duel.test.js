@@ -395,7 +395,7 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'le journal annonce la riposte d’Eirik');
 });
 
-test('Bouchra, guerrière des crêtes : une mythique Sable 2/1 pour 2, Rapidité, Esquive et Attaque ciblée', () => {
+test('Bouchra, guerrière des crêtes : une mythique Sable 2/1 pour 2, Rapidité et Esquive', () => {
   const carte = cardById('bouchra-guerriere-des-cretes');
   assert.deepEqual(
     {
@@ -411,7 +411,6 @@ test('Bouchra, guerrière des crêtes : une mythique Sable 2/1 pour 2, Rapidité
   assert.equal(cardHasPrintedType(carte, 'guerrière'), true);
   assert.deepEqual(cardColors(carte), ['sable'], 'elle reste mono-Sable, comme sa montagne');
   assert.equal(carte.rapidite, true, 'sa chèvre de guerre ne connaît pas le mal d’invocation');
-  assert.equal(carte.coupRapide, true, 'son grand arc frappe où elle veut');
   assert.equal(carte.esquive, true, 'la pente la rend insaisissable');
   assert.equal(cardCopyLimit(carte), 1, 'une mythique reste unique');
   assert.equal(RPG_DUEL_CARDS.some((candidate) => candidate.id === carte.id), true);
@@ -2290,12 +2289,12 @@ test('Rapidité permet au Fennec d’attaquer dès son tour de pose', () => {
   assert.equal(fennec.attaquee, true, 'l’attaque immédiate est bien consommée pour le tour');
 });
 
-test('le Djinn de foudre gagne Rapidité en plus de son Attaque ciblée', () => {
+test('le Djinn de foudre gagne Rapidité et Furtivité', () => {
   const djinn = cardById('djinn-de-foudre');
-  assert.deepEqual({ cost: djinn.cost, atk: djinn.atk, def: djinn.def, rapidite: djinn.rapidite, coupRapide: djinn.coupRapide }, {
-    cost: 2, atk: 2, def: 1, rapidite: true, coupRapide: true,
+  assert.deepEqual({ cost: djinn.cost, atk: djinn.atk, def: djinn.def, rapidite: djinn.rapidite, furtif: djinn.furtif }, {
+    cost: 2, atk: 2, def: 1, rapidite: true, furtif: true,
   });
-  assert.match(djinn.text, /^Rapidité.*Attaque ciblée — /);
+  assert.match(djinn.text, /^Rapidité/);
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -2526,8 +2525,8 @@ test('les capacités de feu punissent les bloqueurs et rendent les djinns distin
   assert.equal(duel.joueur.creatures.length, 1,
     'l’Ifrit al-Ahmar ne balaie plus la table à son arrivée : le Chien survit');
   assert.equal(chien.pv, pvChien - 1, 'seule la morsure posthume du Ghul l’avait entamé');
-  assert.equal(cardById('ifrit-al-ahmar').coupRapide, true,
-    'l’Ifrit al-Ahmar porte désormais Attaque ciblée');
+  assert.equal(cardById('ifrit-al-ahmar').coupRapide, undefined,
+    'l’Ifrit al-Ahmar ne porte plus Attaque ciblée : trop de créatures visaient');
 });
 
 test('le Ghul des cendres : son contrôleur désigne la créature frappée à sa mort', () => {

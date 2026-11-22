@@ -159,9 +159,8 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     def: 4,
     rarity: 'commune',
     croissanceTour: { atk: 1, maximum: 3 },
-    coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: 'Au début de chacun de vos tours, le Tercio gagne +1/+0, jusqu’à +3/+0. Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (15 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Au début de chacun de vos tours, le Tercio gagne +1/+0, jusqu’à +3/+0.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({

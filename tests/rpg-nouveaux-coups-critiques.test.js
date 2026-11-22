@@ -26,7 +26,8 @@ for (const id of ids) {
   test(`${id} : coup critique imprimé, pastille et ancienne Attaque ciblée`, () => {
     const carte = cardById(id);
     assert.deepEqual(carte.coupCritique, { chance: .25, fois: 2 });
-    assert.equal(carte.coupRapide, true);
+    if (id === 'ureus-du-seuil') assert.equal(carte.coupRapide, undefined, 'l’Uraeus ne vise plus : trop de créatures portaient l’Attaque ciblée');
+    else assert.equal(carte.coupRapide, true);
     assert.ok(pastillesPourCarte(carte).some(p => p.cle === 'coupCritique'));
     assert.match(effetsDetailles(carte).pastilles.find(p => p.cle === 'coupCritique').description, /25 %.*doubler.*créature ou l’adversaire/);
     assert.deepEqual(classique(id).a.coupCritique, { chance: .25, fois: 2 });
@@ -42,7 +43,7 @@ for (const id of ids) {
       if (multiple === 2) assert.equal(r.resume.critiques[0].fois, 2);
     });
   }
-  test(`${id} : attaque ciblée touche puis applique le critique à une créature`, () => {
+  if (id !== 'ureus-du-seuil') test(`${id} : attaque ciblée touche puis applique le critique à une créature`, () => {
     const { duel, a } = classique(id);
     duel.sorcier.creatures.push({ id: 'cible', carteId: 'chien-du-guet', name: 'Chien', atk: 2, def: 20, pv: 20, pvMax: 20, ready: true });
     // Attaque ciblée : réussite, gel (Archère uniquement), puis critique.

@@ -164,9 +164,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     // Son prix accepte aussi un sort de la main remis dans le deck.
     retourDeck: { types: ['creature', 'magie'] },
     typeLine: 'Créature légendaire — Kami · Feu',
-    coupRapide: true,
     coupCritique: { chance: 0.25, fois: 4 },
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — En combat, 25 % de chances de frapper 4 fois la créature ou l’adversaire.',
+    text: 'Coup critique — En combat, 25 % de chances de frapper 4 fois la créature ou l’adversaire.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.

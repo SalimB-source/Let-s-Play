@@ -465,7 +465,7 @@ test('Ténèbres : Tribut reste minoritaire et les quatre rôles révisés sont 
     assert.doesNotMatch(carte.text, /tribut/iu);
     assert.ok(!pastillesPourCarte(carte).some((p) => p.label === 'Tribut'));
   }
-  assert.equal(cardById('ureus-du-seuil').coupRapide, true);
+  assert.equal(cardById('ureus-du-seuil').coupRapide, undefined, 'l’Uraeus ne vise plus : trop de créatures portaient l’Attaque ciblée');
   assert.equal(cardById('ureus-du-seuil').atk, 2);
   assert.equal(cardById('ureus-du-seuil').def, 1);
   assert.equal(cardById('celle-qui-pese').arrivee.type, 'defausse-adverse');
