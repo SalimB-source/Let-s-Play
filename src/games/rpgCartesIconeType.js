@@ -86,3 +86,29 @@ export function entiteIconeType(entite) {
   const carte = (entite.carteId && cardById(entite.carteId)) || entite.carte || entite;
   return iconeTypeDe(carte) || iconeTypeDe(entite);
 }
+
+/** Une chance sur quatre : la fréquence commune du jeu (Esquive, coup critique,
+ *  raté des créatures À distance) — celle des effets d'élément ci-dessous. */
+export const RPG_PROC_ELEMENT_CHANCE = 0.25;
+
+/** L'élément signé par l'emblème donne son effet à la portée : la Braise
+ *  brûle, la Neige gèle, le Sable emporte un butin, les Ténèbres transfèrent
+ *  la vie. L'Eau ne signe aucun effet propre. */
+export const PROCS_ELEMENT_DISTANCE = Object.freeze({
+  braise: 'brulure',
+  neige: 'gel',
+  sable: 'butin',
+  tenebres: 'transfert',
+});
+
+/**
+ * L'effet d'élément d'une créature **à distance** qui frappe de sa propre
+ * nature (emblème d'élément à la place de l'arc), ou `null` : une archère qui
+ * bande un arc reste un tir, pas un élément. Le moteur s'en sert quand
+ * l'attaque touche : une chance sur quatre d'éveiller l'effet de l'élément.
+ */
+export function procElementDistance(carte) {
+  if (!carte?.distance) return null;
+  if (!SANS_ARME_VISIBLE.has(carte.id)) return null;
+  return PROCS_ELEMENT_DISTANCE[iconeTypeDe(carte)] ?? null;
+}

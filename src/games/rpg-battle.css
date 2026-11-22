@@ -1241,6 +1241,14 @@
     0 10px 26px rgba(0, 0, 0, .6);
 }
 
+/* Effet activé (1/tour) déjà déclenché : la peinture s'éteint, comme un sort
+   dépensé. Seule l'illustration grise — le cadre, les pierres d'effets et les
+   chiffres ATQ/DÉF restent lisibles, et le givre d'une créature gelée continue
+   de se voir par-dessus (`.rpg-card__frost`). */
+.rpg-card.is-activation-epuisee .rpg-card__img {
+  filter: grayscale(.92) brightness(.6);
+}
+
 .rpg-card.is-down {
   filter: grayscale(1) brightness(.6);
   opacity: .55;
@@ -16534,7 +16542,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: .85em; height: .85em; flex-basis: .85em;
 }
 
-/* Petite fenêtre d'effet activé style Duel Links en dessous de la carte */
+/* Petite fenêtre d'effet activé style Duel Links en dessous de la carte.
+   Le bouton pend sous le cadre : les cartes qui rognent leur débordement
+   (`.rpg-card--img` et `.has-arme` à 24 px, `.has-garde` et les résonances à
+   58 px) coupaient son bas. Tant que le menu est ouvert, la carte ouvre son
+   rognage de quoi loger le bouton entier — 6 px d'écart, ~30 px de hauteur,
+   1 px de levée au survol. Refermé, le cadre reprend sa marge d'origine. */
+.rpg-card.is-effet-menu {
+  overflow-clip-margin: 46px;
+}
+
 .rpg-card__effet-btn {
   position: absolute;
   left: 50%;
@@ -16557,6 +16574,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   cursor: pointer;
   white-space: nowrap;
   animation: rpgEffetBtnPop .16s ease-out both;
+}
+
+/* L'éclair garde sa propre boîte : dans un bouton `inline-flex` serré, le
+   glyphe nu hérite de la hauteur de ligne du texte et se fait rogner. */
+.rpg-card__effet-btn-eclair {
+  flex: none;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .rpg-card__effet-btn:hover {

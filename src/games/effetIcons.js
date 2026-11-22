@@ -485,6 +485,9 @@ export function effetsEpuisesPourEntite(carte, entite) {
   if (!carte || !entite) return [];
   const epuises = [];
   if (carte.tenacite && entite.tenaciteDisponible === false) epuises.push('tenacite');
+  // Effet activé (1/tour) déjà déclenché : la capacité est dépensée jusqu'au
+  // prochain tour du contrôleur (`activationUtiliseeCeTour` remis à zéro là).
+  if (carte.activation?.uneFoisParTour && entite.activationUtiliseeCeTour) epuises.push('activation');
   if (carte.protection && !entite.protection) epuises.push('protection');
   const bouclierImprime = [carte.arrivee?.type, carte.effet?.type]
     .some((type) => type === 'bouclier' || type === 'bouclier-lumiere')
