@@ -68,8 +68,8 @@ test('classique : les simulations de frappes et de jetons ne consomment pas les 
   const { duel, forte, faible } = partie();
   duel.sorcier.main = ['takouba-de-tin-hinan'];
   assert.ok(rpgJouerArme(duel, 'sorcier', 'takouba-de-tin-hinan', forte.id).ok);
-  assert.equal(forte.atk, 5); assert.equal(faible.atk, 1);
-  duel.joueur.pv = 6;
+  assert.equal(forte.atk, 4, 'la Takouba de Tin Hinan donne +2/+2'); assert.equal(faible.atk, 1);
+  duel.joueur.pv = 5;
   const uid = rpgNoterCompteurEntites(duel);
   const avant = JSON.stringify(duel);
   let jets = 0; rpgReglerHasard(duel, () => { jets++; return .5; });
