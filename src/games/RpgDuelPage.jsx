@@ -12687,12 +12687,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     const activation = cardById(entite.carteId)?.activation;
     if (activation?.cible === 'aucune') {
+      // Sans cible, l'effet couvre le camp : le relevé du champ avant/après est
+      // ce qui allume les tirs de l'élément, les éclats de soin et les lueurs.
+      const etatAvantAction = JSON.stringify(duel);
+      const champAvantAction = prendreInstantaneChamp();
+      const debutJournalDestructions = rpgNombreDestructions(duel);
+      if (modePvp) rpgSyncCompteurEntites(duel);
       const res = rpgActiverCapacite(duel, 'joueur', entite.id, null);
       if (!res.ok) {
         jouerSfx('erreur');
         force();
         return;
       }
+      if (modePvp) void envoyerIntentionPvp({ type: 'activer', capacite: true, entiteId: entite.id, cibleId: null });
+      conserverAnnulation(etatAvantAction);
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       jouerSfx('sort');
       force();
       return;
@@ -12725,10 +12734,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const resoudreActivation = (entite) => {
     const sourceId = activationEnCours;
     setActivationEnCours(null);
+    const etatAvantAction = JSON.stringify(duel);
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
     if (modePvp) rpgSyncCompteurEntites(duel);
     const res = rpgActiverCapacite(duel, 'joueur', sourceId, entite.id);
     if (modePvp && res.ok) {
       void envoyerIntentionPvp({ type: 'activer', capacite: true, entiteId: sourceId, cibleId: entite.id });
+    }
+    if (res.ok) {
+      conserverAnnulation(etatAvantAction);
+      // Le tir de l'élément (feu, tempête, vague, sable, ombre), l'impact sur
+      // la cible, le givre : tout se lit dans le relevé avant/après.
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
     }
     jouerSfx(res.ok ? 'player_attack_hit' : 'erreur');
     force();
