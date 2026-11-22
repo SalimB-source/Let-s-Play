@@ -4,6 +4,13 @@ import { existsSync } from 'node:fs';
 import { cardById, cardColorCost, cardColors, cardHasPrintedType, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgJouerCreature, rpgNouveauDuel, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgLancerAttaque, rpgFinDeTour, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 const ids = ['archonte-du-sablier-noir', 'danseuse-des-ombres-de-dune', 'veilleur-du-dernier-crepuscule'];
 function jouerArchonte(d) {
   d.joueur.main.push('chien-du-guet');
@@ -79,7 +86,7 @@ test('un bonus temporaire de défense expiré ne retire pas deux fois les blessu
     const d = duel();
     d.joueur.main.push('danseuse-des-ombres-de-dune', 'porte-etendard-de-leclipse');
     const danseuse = rpgJouerCreature(d, 'joueur', 'danseuse-des-ombres-de-dune').entite;
-    assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
+quotaLibre(d, 'joueur');     assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
     assert.deepEqual([danseuse.pv, danseuse.pvMax], [4, 4]);
     if (degats) rpgBlesserCreature(d, 'joueur', danseuse.id, degats);
     rpgFinDeTour(d);
@@ -104,8 +111,8 @@ test('plusieurs bonus temporaires expirent sans retirer deux fois les blessures'
   const d = duel();
   d.joueur.main.push('danseuse-des-ombres-de-dune', 'porte-etendard-de-leclipse', 'porte-etendard-de-leclipse');
   const danseuse = rpgJouerCreature(d, 'joueur', 'danseuse-des-ombres-de-dune').entite;
-  assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
-  assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
+quotaLibre(d, 'joueur');   assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
+quotaLibre(d, 'joueur');   assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
   assert.deepEqual([danseuse.pv, danseuse.pvMax], [6, 6]);
   rpgBlesserCreature(d, 'joueur', danseuse.id, 4);
   rpgFinDeTour(d);

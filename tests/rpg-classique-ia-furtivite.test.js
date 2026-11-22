@@ -228,20 +228,22 @@ for (const inverse of [false, true]) test(`classique : invoquer le Djinn qui gag
   assert.ok(duel.joueur.pv <= 0);
 });
 
-test('classique : un bouclier ne fait plus choisir entre le Djinn et la Gardienne', () => {
+test('classique : un bouclier fait préférer la Gardienne durable, puis le tour est clos', () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
   rpgFinDeTour(duel); duel.joueur.pv = 2; duel.joueur.bouclier = 1;
   duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'gardienne-des-portes-de-sable'];
-  // Une invocation par tour faisait préférer la Gardienne durable ; les deux
-  // lignes libres posent le Djinn (à distance) puis la Gardienne (mêlée).
-  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
-  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
-  assert.deepEqual(duel.sorcier.invocationsNormalesLignes, ['distance']);
+  // Une seule invocation normale par tour : l'IA préfère la Gardienne durable,
+  // et le Djinn ne peut plus suivre sur le même tour malgré sa ligne libre.
   assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'gardienne-des-portes-de-sable');
+  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  assert.deepEqual(duel.sorcier.invocationsNormalesLignes, ['melee']);
+  assert.equal(duel.sorcier.invocationNormaleJouee, true);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null, 'le quota du tour est dépensé');
+  assert.equal(duel.sorcier.main.length, 1, 'le Djinn reste en main');
 });
 
-test('classique : un Défenseur détourne le Djinn, la mêlée suit sur son quota', () => {
+test('classique : un Défenseur détourne la pose, le quota ne permet pas une seconde mêlée', () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
   duel.joueur.main = ['gardienne-des-portes-de-sable'];
@@ -249,12 +251,14 @@ test('classique : un Défenseur détourne le Djinn, la mêlée suit sur son quot
   assert.ok(defenseur);
   rpgFinDeTour(duel); duel.joueur.pv = 2;
   duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'gardienne-des-portes-de-sable'];
-  // Le Défenseur interdit toujours la victoire directe, mais ne coûte plus la
-  // pose : le Djinn frappe la Défenseuse, puis la Gardienne arrive en mêlée.
-  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
-  const pose = rpgSorcierResoudreAnnonce(duel); assert.ok(pose.ok);
-  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), { attaquantId: pose.entite.id, cibleId: defenseur.id });
+  // Le Défenseur interdit toujours la victoire directe ; la Gardienne durable
+  // prend la seule pose du tour, et le Djinn attend le tour suivant.
   assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'gardienne-des-portes-de-sable');
+  const pose = rpgSorcierResoudreAnnonce(duel); assert.ok(pose.ok);
+  assert.equal(pose.entite.carteId, 'gardienne-des-portes-de-sable');
+  assert.deepEqual(rpgChoisirAttaqueIndividuelleClassiqueIA(duel), null, 'aucun attaquant individuel ne passe le Défenseur');
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null);
+  assert.equal(duel.sorcier.main.length, 1, 'le Djinn reste en main');
 });
 
 test('classique : la recherche d’invocation gagnante ne modifie ni duel ni hasard ni identifiants', () => {
@@ -269,7 +273,7 @@ test('classique : la recherche d’invocation gagnante ne modifie ni duel ni has
   assert.equal(rpgNoterCompteurEntites(duel), uid);
 });
 
-test('classique : l’allié déjà présent conclut, les deux lignes se remplissent', () => {
+test('classique : l’allié déjà présent conclut, une seule ligne se remplit', () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const duel = rpgNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
   rpgFinDeTour(duel); duel.sorcier.main = ['chacal-du-seuil'];
@@ -277,14 +281,16 @@ test('classique : l’allié déjà présent conclut, les deux lignes se remplis
   assert.ok(allie); rpgFinDeTour(duel); rpgFinDeTour(duel);
   duel.joueur.pv = 2;
   duel.sorcier.main = ['djinn-de-la-premiere-etincelle', 'gardienne-des-portes-de-sable'];
-  // L'allié déjà présent conclut toujours ; les deux lignes libres permettent
-  // en plus de poser le Djinn (distance) puis la Gardienne (mêlée).
+  // L'allié déjà présent conclut toujours ; la seule pose normale du tour va à
+  // la Gardienne durable, le Djinn attend.
   const annonce = rpgSorcierAnnonceSuivante(duel, () => .5);
-  assert.equal(annonce?.carteId, 'djinn-de-la-premiere-etincelle');
+  assert.equal(annonce?.carteId, 'gardienne-des-portes-de-sable');
   assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
   const choix = rpgChoisirAttaqueIndividuelleClassiqueIA(duel);
   assert.deepEqual(choix, { attaquantId: allie.id, cibleId: null });
-  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'gardienne-des-portes-de-sable');
+  assert.deepEqual(duel.sorcier.invocationsNormalesLignes, ['melee']);
+  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5), null);
+  assert.equal(duel.sorcier.creatures.length, 2, 'la deuxième pose attend le tour suivant');
 });
 
 test('classique : le Djinn de la flamme mourante peut gagner dès son arrivée malgré sa pioche', () => {
@@ -1042,8 +1048,8 @@ test('classique : l’IA garde le Djinn spécial sous le Voile et peut le jouer 
   assert.ok(duel.sorcier.creatures.includes(allie));
   assert.ok(duel.sorcier.main.includes('djinn-de-la-premiere-etincelle'));
   assert.ok(!duel.sorcier.cimetiere.includes('djinn-de-la-premiere-etincelle'));
-  // Le quota d’invocations normales est retiré : l’IA peut poser une autre
-  // créature avant le Djinn, qui arrive tout de même dans ce tour.
+  // Une seule invocation normale par tour : l’IA pose le Djinn conservé sous le
+  // Voile dès ce tour, puis plus rien tant que le quota n’est pas réarmé.
   for (let essai = 0; essai < 2
     && !duel.sorcier.creatures.some((entite) => entite.carteId === 'djinn-de-la-premiere-etincelle'); essai += 1) {
     const annonce = rpgSorcierAnnonceSuivante(duel, () => .5);

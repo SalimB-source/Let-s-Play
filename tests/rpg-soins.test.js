@@ -26,6 +26,13 @@ import {
 } from '../src/games/rpgSoins.js';
 import { RPG_SFX_NAMES, rpgSfx } from '../src/games/rpgAudio.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 /* ── Le journal des soins du moteur ──────────────────────────────────────────
    Chaque gain de vie RÉEL laisse `{ cote, entityId, montant }` — l'éclat vert
    et le son du soin en sont tirés à la table. Le journal observe sans rien
@@ -93,13 +100,13 @@ test('journal : Yamina soigne ses créatures blessées — chacune la sienne, et
   donner(duel, 'joueur', 'yamina');
   donnerMana(duel, 'joueur', 9);
   const porteuse = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+quotaLibre(duel, 'joueur');   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   assert.ok(porteuse && chien);
   assert.equal(rpgBlesserCreature(duel, 'joueur', porteuse.id, 2, 'braise').ok, true);
   assert.equal(porteuse.pv, 1, 'la Porteuse ne tient plus qu’à 1 PV');
   rpgConsommerSoins(duel);
   donnerMana(duel, 'joueur', 9);
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'yamina').ok, true);
+quotaLibre(duel, 'joueur');   assert.equal(rpgJouerCreature(duel, 'joueur', 'yamina').ok, true);
   assert.equal(porteuse.pv, 3, 'la Porteuse remonte de 2');
   assert.equal(chien.pv, chien.pvMax, 'le Chien, intact, n’a rien à regagner');
   assert.deepEqual(rpgConsommerSoins(duel), [{ cote: 'joueur', entityId: porteuse.id, montant: 2 }],

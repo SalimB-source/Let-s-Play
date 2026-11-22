@@ -9,6 +9,13 @@ import { rpgMobaCartePourApercu, rpgMobaNotesCarte } from '../src/games/rpgMobaP
 import { rpgMobaChoisirEmbuscadeIA } from '../src/games/rpgMobaAI.js';
 import { rpgMobaNouveauDuel, rpgMobaPeutEmbuscade, rpgMobaJouerCreature, rpgMobaPasserCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaPlacementCoherent, rpgMobaResoudreArrivee } from '../src/games/rpgMobaLocal.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 const parties = () => {
   const deck = Array(30).fill('ashigaru-des-braises');
   const d = rpgMobaNouveauDuel({ joueurDeck: deck, sorcierDeck: deck, rng: () => .5 });
@@ -58,7 +65,7 @@ test('duel classique : Rapidité imprimée et accordée par les Sandales restent
   d.joueur.mana.sable = 30;
   d.joueur.main = ['fennec-des-decombres', 'gardienne-des-portes-de-sable', 'sandales-de-tislit'];
   const rapide = rpgJouerCreature(d, 'joueur', 'fennec-des-decombres').entite;
-  const porteur = rpgJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable').entite;
+quotaLibre(d, 'joueur');   const porteur = rpgJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable').entite;
   assert.equal(rapide.rapidite, true);
   assert.equal(rpgPeutAttaquer(rapide), true);
   assert.equal(rpgPeutAttaquer(porteur), false);

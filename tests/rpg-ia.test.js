@@ -35,6 +35,13 @@ import {
 } from '../src/games/rpgAI.js';
 import { cardById, cardColors } from '../src/games/rpgCards.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 /** Duel prêt à être joué sans dépendre du mélange : mains vides, tables vides. */
 const duelNu = (opts = {}) => rpgNouveauDuel({
   joueurDeck: [],
@@ -64,7 +71,7 @@ test('l’IA vise le kill, pas la première créature venue', () => {
   donner(duel, 'joueur', 'vipere-de-verre');
   donner(duel, 'joueur', 'chien-du-guet');
   const vipere = rpgJouerCreature(duel, 'joueur', 'vipere-de-verre').entite;
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+quotaLibre(duel, 'joueur');   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   // Seul le Chien meurt sous les 3 dégâts du Trait (la Vipère est trop pleine).
   Object.assign(vipere, { pv: 6, def: 6, pvMax: 6 });
 
@@ -1038,7 +1045,7 @@ test('l’IA privilégie les cibles sans bouclier pour les sorts de renvoi et de
   donner(duel, 'joueur', 'dune-marchante');
   const grande = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
   donner(duel, 'joueur', 'chien-du-guet');
-  const petite = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+quotaLibre(duel, 'joueur');   const petite = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   grande.protection = { contre: ['eau', 'tenebres'] };
   assert.equal(choisirCibleAutoIA(duel, 'sorcier', cardById('ressac')), petite.id);
   assert.equal(choisirCibleAutoIA(duel, 'sorcier', cardById('le-jugement-des-colosses')), grande.id,

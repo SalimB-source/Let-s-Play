@@ -5,6 +5,13 @@ import { cardById, cardColors, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour, rpgResoudreArriveeCiblee, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { cardArt } from '../src/games/rpgCardArt.js';
+
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
 const ids = ['eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune', 'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree'];
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -12,7 +19,8 @@ function duel() {
   return d;
 }
 function poser(d, cote, id, cible = null, options = {}) {
-  d[cote].main.push(id); const res = rpgJouerCreature(d, cote, id, cible, options); assert.ok(res.ok, res.raison); return res.entite;
+  d[cote].main.push(id); quotaLibre(d, cote); // scène préparée, pas une seconde invocation du tour
+  const res = rpgJouerCreature(d, cote, id, cible, options); assert.ok(res.ok, res.raison); return res.entite;
 }
 test('Six soldats illustrés, bicolores et jouables normalement pendant leur tour', () => {
   const elements = ['sable', 'sable', 'eau', 'braise', 'sable', 'neige'];
@@ -105,6 +113,7 @@ test('La Veilleuse est à la fois Viking et Vampire', async () => {
 test('L’arrivée différée du Gardien confère le bouclier et +0/+2 à la même cible', () => {
   const d = duel(); const allie = poser(d, 'joueur', 'chien-du-guet');
   d.joueur.main.push(ids[1]);
+  quotaLibre(d, 'joueur'); // le Gardien suit le Chien sur la même scène préparée
   const pose = rpgJouerCreature(d, 'joueur', ids[1], null, { cibleDifferee: true });
   assert.ok(pose.ok && pose.arriveeEnAttente);
   assert.equal(rpgResoudreArriveeCiblee(d, 'joueur', allie.id).ok, true);

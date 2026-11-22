@@ -99,6 +99,13 @@ import { choisirMulliganIA } from '../src/games/rpgAI.js';
 import { RPG_DECKS_THEMATIQUES } from '../src/games/rpgDecksThematiques.js';
 import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR, cardArtFurie } from '../src/games/rpgCardArt.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 /** Main de départ générique, mélangée de façon fixe. */
 const duelDeBase = (opts = {}) => rpgNouveauDuel({
   joueurDeck: ['chien-du-guet', 'chien-du-guet', 'fennec-des-decombres', 'porteuse-de-cruches', 'guetteur-du-beffroi', 'dune-marchante', 'seigneur-des-machoires', 'vipere-de-verre', 'sonneur-fele', 'djinn-du-souk', 'scribe-de-la-liste', 'chien-du-guet'],
@@ -300,10 +307,10 @@ test('la Compagnie d’Eirik : +1/+1 par autre créature viking de son camp', ()
   const eirik = rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment').entite;
   assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [1, 1, 1], 'seul sur la table, il reste le 1/1 imprimé');
 
-  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  quotaLibre(duel, 'joueur'); const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
   assert.deepEqual([eirik.atk, eirik.def, eirik.pv, eirik.pvMax], [2, 2, 2, 2],
     'un frère d’armes : 2/2, PV compris');
-  rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers');
+  quotaLibre(duel, 'joueur'); rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers');
   assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [3, 3, 3], 'deux frères : 3/3');
   assert.ok(duel.log.some((ligne) => ligne.startsWith('Compagnie : Eirik du Premier Serment grandit')),
     'le journal raconte la montée en compagnie');
@@ -365,7 +372,7 @@ test('la Compagnie retombe sans tuer : Eirik blessé garde 1 PV quand son dernie
   donner(duel, 'joueur', 'eirik-du-premier-serment');
   donner(duel, 'joueur', 'berserk-des-trois-hivers');
   const eirik = rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment').entite;
-  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  quotaLibre(duel, 'joueur'); const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
   assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [2, 2, 2], 'avec un frère : 2/2');
 
   eirik.pv = 1; // blessé sous son plafond
@@ -3370,7 +3377,7 @@ test('capacité à l’arrivée : la Porteuse soigne son sorcier, et la vie pass
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 2);
   duel.joueur.pv = RPG_PV_JOUEUR - 1;
   donner(duel, 'joueur', 'porteuse-de-cruches');
-  rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
+  quotaLibre(duel, 'joueur'); rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches');
   assert.equal(duel.joueur.pv, RPG_PV_JOUEUR + 2, 'le soin ne s’arrête plus à 25 PV');
   assert.equal(duel.joueur.pvMax, RPG_PV_JOUEUR + 2, 'le maximum suit la vie gagnée');
 });
@@ -3463,7 +3470,7 @@ test('la Veilleuse diffère sa désignation sur la table, puis la résout sur un
   donner(duel, 'joueur', 'chien-du-guet');
   const allie = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   donner(duel, 'joueur', 'veilleuse-des-citernes');
-  const pose = rpgJouerCreature(duel, 'joueur', 'veilleuse-des-citernes', null, { cibleDifferee: true });
+  quotaLibre(duel, 'joueur'); const pose = rpgJouerCreature(duel, 'joueur', 'veilleuse-des-citernes', null, { cibleDifferee: true });
   assert.equal(pose.ok, true);
   assert.equal(pose.arriveeEnAttente, true);
   assert.equal(allie.bouclier ?? 0, 0, 'le bouclier attend le choix de la cible');
@@ -3751,7 +3758,7 @@ test('Yamina soigne toutes les créatures alliées de 2 et rend 5 PV au joueur',
   duel.joueur.pv -= 7;
   const pvAvant = duel.joueur.pv;
   donner(duel, 'joueur', 'yamina');
-  const yamina = rpgJouerCreature(duel, 'joueur', 'yamina').entite;
+  quotaLibre(duel, 'joueur'); const yamina = rpgJouerCreature(duel, 'joueur', 'yamina').entite;
   assert.equal(chien.pv, 2);
   assert.equal(yamina.pv, 4);
   assert.equal(duel.joueur.pv, pvAvant + 5, 'son arrivée rend aussi 5 PV au joueur');
@@ -4140,7 +4147,7 @@ test('phase d’attaque sans bloqueur : tous les attaquants frappent le sorcier'
   donner(duel, 'joueur', 'chien-du-guet');
   donner(duel, 'joueur', 'dune-marchante');
   rpgJouerCreature(duel, 'joueur', 'chien-du-guet');
-  rpgJouerCreature(duel, 'joueur', 'dune-marchante');
+  quotaLibre(duel, 'joueur'); rpgJouerCreature(duel, 'joueur', 'dune-marchante');
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
   const ids = duel.joueur.creatures.map((e) => e.id);
@@ -4165,7 +4172,7 @@ test('une déclaration refusée ne consomme pas la phase d’attaque du tour', (
   donner(duel, 'joueur', 'chien-du-guet');
   donner(duel, 'joueur', 'dune-marchante');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-  const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  quotaLibre(duel, 'joueur'); const dune = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
   chien.attaquee = true; // le Chien s’est déjà engagé : sa déclaration est refusée

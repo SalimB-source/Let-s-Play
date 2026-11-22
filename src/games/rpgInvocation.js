@@ -53,8 +53,8 @@ function embuscade(duel, cote, carte, specialeMoba = false, specialeForcee = und
     || (!duel.moba && rpgInvocationSpecialeSurSonTour(duel, cote, carte))));
 }
 /** Ligne de pose d'une carte normale, conservée dans l'état du camp pour les
- *  statistiques et l'IA. Elle ne limite plus rien : le quota d'invocations
- *  normales par tour a été retiré. */
+ *  statistiques et l'IA. Le quota, lui, ne compte plus les lignes : une seule
+ *  invocation normale par camp et par tour, quelle que soit sa ligne. */
 export function ligneQuotaInvocation(carte) {
   return ligneDePose(carte) === RPG_LIGNE_FOND ? 'distance' : 'melee';
 }
@@ -62,10 +62,18 @@ export function limiteInvocationMoba(duel, cote, carte, specialeMoba = false, sp
   if (carte?.ascension) return null;
   if (!duel || !['creature', 'hero'].includes(carte?.kind ?? cardById(carte?.id)?.kind)) return null;
   if (embuscade(duel, cote, carte, specialeMoba, specialeForcee)) return null;
-  // La règle des deux invocations normales par tour (une mêlée + une à distance)
-  // est retirée : on invoque autant de créatures qu'on veut, dans la limite du
-  // mana et des cases libres. Ascension et Embuscade restaient déjà hors quota.
-  return null;
+  // Une seule invocation normale par camp et par tour : la règle revenue ferme
+  // la main dès la première créature posée, dans la limite du mana et des cases
+  // libres pour les suivantes. Ascension et Embuscade restent hors quota —
+  // l'Invocation spéciale de son tour ne paie ni ce quota ni les retours.
+  //
+  // La lecture est partagée : `invocationPossible` (main grisée, IA),
+  // `rpgMobaLimiteCarte` (cases et messages de la Conquête) et le garde-fou
+  // d'initiation de `rpgJouerCreature`, qui refuse `'creature-limite'` tant en
+  // PvE qu'en PvP. La résolution d'une annonce déjà payée (`dejaPayee`) ne le
+  // repasse pas : son quota a été consommé à l'annonce.
+  const joue = duel.moba ? duel.moba.creaturesJouees?.[cote] : duel[cote]?.invocationNormaleJouee;
+  return joue ? 'creature-limite' : null;
 }
 export function marquerInvocationMoba(duel, cote, carte, specialeMoba = false, specialeFixee = null) {
   if (carte?.ascension) return;

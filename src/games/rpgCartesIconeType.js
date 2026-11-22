@@ -13,7 +13,7 @@
  * (oiseau, bête, ou figure) se lit sur la ligne de type imprimée, pour qu'une
  * carte future sans arme trouve son icône sans retoucher les glyphes.
  */
-import { cardById } from './rpgCards.js';
+import { cardById, cardColors, RPG_ELEMENTS } from './rpgCards.js';
 
 /** Vingt peintures sans arme de tir : la créature attaque de sa propre nature. */
 const SANS_ARME_VISIBLE = new Set([
@@ -48,13 +48,10 @@ const SANS_ARME_VISIBLE = new Set([
   'dame-des-neuf-mondes',
 ]);
 
-/** Le type imprimé décide du glyphe : d'abord les natures ailées… */
-const NATURES_OISEAU = /\b(tengu|corbeau|corneille|oiseau|aigle|faucon|phenix|anqa|hibou|pie)\b/i;
-/** …puis les bêtes qui mordent, piquent ou fouettent de leur corps. */
-const NATURES_BETE = /\b(manticore|lion|lionne|loup|ours|panthere|leopard|scorpion|belier|taureau|sanglier|hyene|serpent)\b/i;
-
-/** Normalise une ligne de type avant de la lire (accents, casses). */
-const normaliser = (texte) => String(texte ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+/** Le type d'une créature, c'est sa couleur : le sablier du Sable, la tête de
+ *  mort des Ténèbres, la flamme de la Braise, le flocon de la Neige, la goutte
+ *  de l'Eau — les emblèmes partagés de `rpgEmblemes.jsx`. Une carte hybride
+ *  montre sa première couleur dans l'ordre canonique, comme son cadre. */
 
 /**
  * Le glyphe de type d'une carte, ou `null` si elle garde l'arc (ou l'étoile).
@@ -67,12 +64,8 @@ export function iconeTypeDe(carte) {
   if (carte.kind === 'arme' || carte.porteeArme) return null;
   if ('iconeType' in carte) return carte.iconeType ?? null;
   if (!SANS_ARME_VISIBLE.has(carte.id)) return null;
-  // Seule la ligne de type imprimée décide du glyphe — jamais le nom : la
-  // Veilleuse AU corbeau noir reste une figure, son corbeau n'est pas son type.
-  const nature = normaliser(carte.typeLine ?? '');
-  if (NATURES_OISEAU.test(nature)) return 'oiseau';
-  if (NATURES_BETE.test(nature)) return 'bete';
-  return 'figure';
+  const presentes = cardColors(carte);
+  return RPG_ELEMENTS.find((element) => presentes.includes(element)) ?? 'sable';
 }
 
 /** Vrai quand la peinture de cette créature ne montre aucune arme de tir. */

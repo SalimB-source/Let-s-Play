@@ -3,8 +3,15 @@ import assert from 'node:assert/strict';
 import { rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgLancerAttaque, rpgLancerMagie, rpgReglerHasard, rpgAttaquerCreature, rpgFinDeTour } from '../src/games/rpgDuel.js';
 import { armeById } from '../src/games/rpgCards.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 const mana = (d, side) => { d[side].mana = { sable: 20, eau: 20, neige: 20, braise: 20, tenebres: 20 }; };
-function poser(d, side, id) { mana(d, side); d[side].main.push(id); const r = rpgJouerCreature(d, side, id); assert.equal(r.ok, true); return r.entite; }
+function poser(d, side, id) { mana(d, side); d[side].main.push(id); quotaLibre(d, side); const r = rpgJouerCreature(d, side, id); assert.equal(r.ok, true); return r.entite; }
 function equiper(d, side, unit, id) { mana(d, side); d[side].main.push(id); assert.equal(rpgJouerArme(d, side, id, unit.id).ok, true); }
 function scene(arme, cote = 'joueur') {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => .9 });

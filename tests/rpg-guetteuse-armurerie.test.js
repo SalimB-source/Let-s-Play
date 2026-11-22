@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature, rpgResoudreArriveeCiblee, rpgFinDeTour, rpgLancerMagie, rpgSortACibleValide } from '../src/games/rpgDuel.js';
 import { cardById } from '../src/games/rpgCards.js';
 function partie() { const d = rpgNouveauDuel({joueurDeck: [], sorcierDeck: []}); for (const c of ['joueur','sorcier']) d[c].mana = { sable: 30, eau: 30, braise: 30, neige: 30, tenebres: 30 }; return d; }
-function pose(d,c,id) { d[c].main.push(id); let r=rpgJouerCreature(d,c,id); assert.equal(r.ok,true,JSON.stringify(r)); return r.entite; }
+function pose(d,c,id) { d[c].main.push(id); let r=rpgJouerCreature(d,c,id); assert.equal(r.ok,true,JSON.stringify(r)); d[c].invocationNormaleJouee = false; return r.entite; }
 test('la Guetteuse exile un autre allié à son arrivée, puis il revient en fin de tour', () => {
  const d = partie(), a = pose(d, 'joueur', 'chien-du-guet');
  const fiche = cardById('guetteuse-des-marees');

@@ -14,6 +14,13 @@ import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
 import { ligneDePose, RPG_LIGNE_FOND } from '../src/games/rpgLignes.js';
 import { porteeDe, RPG_PORTEE_DISTANCE } from '../src/games/rpgPortees.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
   for (const camp of ['joueur', 'sorcier']) d[camp].mana = { eau: 50, sable: 50, braise: 50, neige: 50, tenebres: 50 };
@@ -21,6 +28,7 @@ function duel() {
 }
 function poser(d, camp, id) {
   d[camp].main.push(id);
+  quotaLibre(d, camp); // scène préparée, pas une seconde invocation du tour
   const resultat = rpgJouerCreature(d, camp, id);
   assert.equal(resultat.ok, true, `${id} se joue`);
   return resultat.entite;

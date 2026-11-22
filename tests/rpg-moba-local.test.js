@@ -9,6 +9,13 @@ import { CARTES_COMBAT_AUDITEES } from '../src/games/rpgMobaAudit.js';
 import { validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
 import { mobaInfliger, mobaRetirer, mobaVoie } from '../src/games/rpgMoba.js';
 
+/** Scène préparée : la règle n'autorise qu'une invocation normale par camp et
+ * par tour, mais un test qui installe un plateau en pose plusieurs. */
+function quotaLibre(duel, cote) {
+  if (duel?.moba) duel.moba.creaturesJouees[cote] = false;
+  else if (duel?.[cote]) duel[cote].invocationNormaleJouee = false;
+}
+
 function terminerEtPasser(duel, side) {
   const result = rpgMobaTerminerTour(duel, side);
   return result.reponse ? rpgMobaPasserFinDeTour(duel, result.reponse) : result;
@@ -1488,6 +1495,7 @@ test('Veilleuse chooses a friendly creature, including across lanes, to shield',
   const duel = partieCombat();
   duel.joueur.main.push('veilleuse-des-citernes'); duel.joueur.mana.eau = 10;
   const ally = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  quotaLibre(duel, 'joueur');
   const veilleuse = rpgMobaJouerCreature(duel, 'joueur', 'veilleuse-des-citernes', 'right', 0);
   assert.equal(veilleuse.arriveeEnAttente, true);
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', 'sorcier').raison, 'cible');
@@ -1604,11 +1612,13 @@ test('allied arrival choices heal or grant infiltration without affecting unrela
   duel.joueur.mana.neige = 10; duel.joueur.mana.sable = 10;
   duel.joueur.main.push('volva-soigneuse', 'faiseur-de-passage');
   const ally = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  quotaLibre(duel, 'joueur');
   const volva = rpgMobaJouerCreature(duel, 'joueur', 'volva-soigneuse', 'right', 0);
   assert.equal(volva.arriveeEnAttente, true);
   volva.entite.pv = 1;
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', volva.entite.id).ok, true);
   assert.equal(volva.entite.pv, volva.entite.pvMax);
+  quotaLibre(duel, 'joueur');
   const faiseur = rpgMobaJouerCreature(duel, 'joueur', 'faiseur-de-passage', 'center', 0);
   assert.equal(faiseur.arriveeEnAttente, true);
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', faiseur.entite.id).raison, 'cible');
@@ -1759,6 +1769,7 @@ test('only a defender in the same lane attracts targeted attacks', () => {
   const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 10;
   duel.sorcier.main.push('ashigaru-des-braises', 'ashigaru-des-braises');
   const target = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  quotaLibre(duel, 'sorcier');
   const defender = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 1).entite;
   defender.defenseur = true;
   rpgFinDeTour(duel); duel.joueur.mana.braise = 10; duel.joueur.main.push('feriel');
@@ -1891,6 +1902,7 @@ test('Celle qui pèse discards on arrival and Ibis and Routier draw before a cho
   const celle = rpgMobaJouerCreature(duel, 'joueur', 'celle-qui-pese', 'left', 0);
   assert.equal(celle.ok, true, JSON.stringify(celle)); assert.equal(duel.sorcier.main.length, beforeEnemy - 1);
   const beforeDeck = duel.joueur.deck.length;
+  quotaLibre(duel, 'joueur');
   const ibis = rpgMobaJouerCreature(duel, 'joueur', 'ibis-des-comptes', 'center', 0);
   assert.equal(ibis.ok, true, JSON.stringify(ibis)); assert.equal(duel.joueur.deck.length, beforeDeck - 1);
   assert.equal(duel.defausseEnAttente.cote, 'joueur');
@@ -2253,8 +2265,10 @@ test('Amani adjacency stays within a MOBA lane and expires when she leaves', () 
   const duel = partieCombat(); duel.joueur.mana.sable = 20; duel.joueur.mana.tenebres = 20;
   duel.joueur.main = ['amani-des-ksour', 'gardienne-des-portes-de-sable', 'gardienne-des-portes-de-sable', 'le-jugement-des-colosses'];
   const ally = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  quotaLibre(duel, 'joueur');
   const distant = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'center', 0).entite;
   const before = [ally.pvMax, distant.pvMax];
+  quotaLibre(duel, 'joueur');
   const amani = rpgMobaJouerCreature(duel, 'joueur', 'amani-des-ksour', 'left', 1).entite;
   assert.equal(ally.pvMax, before[0] + 1); assert.equal(distant.pvMax, before[1]);
   assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'le-jugement-des-colosses', amani.id).ok, true);
@@ -2311,6 +2325,7 @@ test('Harakiri conquest clears its lane and a second conquest ends the match coh
   const duel = partieCombat(); duel.joueur.mana.braise = 20; duel.joueur.mana.tenebres = 20;
   duel.joueur.main = ['hatamoto-des-cendres', 'hatamoto-des-cendres', 'effacement-des-faibles', 'effacement-des-faibles'];
   const left = rpgMobaJouerCreature(duel, 'joueur', 'hatamoto-des-cendres', 'left', 0).entite;
+  quotaLibre(duel, 'joueur');
   const right = rpgMobaJouerCreature(duel, 'joueur', 'hatamoto-des-cendres', 'right', 0).entite;
   mobaInfliger(duel.moba, 'joueur', 'left', 9); mobaInfliger(duel.moba, 'joueur', 'right', 9);
   assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'effacement-des-faibles', left.id).ok, true);
@@ -2842,6 +2857,7 @@ test('Guetteur conquest prevents other exiled Guetteurs from ringing, but its dr
   const duel = partieCombat(); duel.joueur.mana.sable = 20;
   duel.joueur.main = ['guetteur-du-beffroi', 'guetteur-du-beffroi'];
   const first = rpgMobaJouerCreature(duel, 'joueur', 'guetteur-du-beffroi', 'left', 0).entite;
+  quotaLibre(duel, 'joueur');
   const second = rpgMobaJouerCreature(duel, 'joueur', 'guetteur-du-beffroi', 'left', 1).entite;
   first.heures.restants = second.heures.restants = 1;
   mobaInfliger(duel.moba, 'joueur', 'left', 8);
@@ -5089,6 +5105,7 @@ test('new hand, deck and priced-wave windows remain opt-in, reject invalid targe
 test('Neige noire still resolves after its price lane is conquered in response', () => {
   const duel = partie(); duel.joueur.mana.sable = 10;
   const removedByConquest = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  quotaLibre(duel, 'joueur');
   const remaining = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).entite;
   mobaInfliger(duel.moba, 'sorcier', 'left', 5);
   duel.joueur.main = ['neige-noire']; duel.joueur.mana.neige = 10; duel.joueur.mana.tenebres = 10;
@@ -5099,7 +5116,7 @@ test('Neige noire still resolves after its price lane is conquered in response',
   assert.equal(mobaVoie(duel.moba, 'left').conqueredBy, 'sorcier'); assert.ok(!duel.joueur.creatures.includes(removedByConquest));
   assert.equal(rpgMobaPasserSort(duel, 'sorcier').ok, true);
   // La Neige noire frappe la voie choisie : la créature de la voie de droite,
-  // posée dans le même tour (plus de quota d’invocation normale), reste en jeu.
+  // posée sur la scène préparée de ce test, reste en jeu.
   assert.ok(duel.joueur.creatures.includes(remaining)); assert.equal(duel.moba.winner, null);
   assert.equal(duel.joueur.cimetiere.filter(id => id === 'neige-noire').length, 1); assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
@@ -5835,6 +5852,7 @@ test('Annonce de créature : le soin de voie et la pioche se produisent seulemen
   assert.equal(result.healingEvents[0]?.laneId,'right'); assert.equal(result.healingEvents[0]?.healing,3);
   duel.joueur.main=['sahir-des-braises']; duel.joueur.mana.braise=20;
   const deck=duel.joueur.deck.length;
+  quotaLibre(duel, 'joueur');
   assert.equal(rpgMobaJouerCreature(duel,'joueur','sahir-des-braises','left',0,{ouvrirReponse:true}).creatureEnAttente,true);
   assert.equal(duel.joueur.deck.length,deck);
   assert.equal(rpgMobaPasserCreature(duel,'sorcier').ok,true); assert.equal(duel.joueur.deck.length,deck-1);
@@ -6958,7 +6976,7 @@ test('Brûlot MOBA : réanimation crée une nouvelle mort sans réutiliser le jo
 
 test('Brûlot MOBA : victoire à la fin du tour arrête les éphémères suivants et annonce les dégâts', () => {
   const duel=partie();duel.joueur.main=['le-brulot','gardienne-des-portes-de-sable'];duel.joueur.mana.braise=30;duel.joueur.mana.sable=30;
-  const b=rpgMobaJouerCreature(duel,'joueur','le-brulot','right',0).entite;const other=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','center',0).entite;b.detruireFinDuTour=true;other.detruireFinDuTour=true;
+  const b=rpgMobaJouerCreature(duel,'joueur','le-brulot','right',0).entite;quotaLibre(duel,'joueur');const other=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','center',0).entite;b.detruireFinDuTour=true;other.detruireFinDuTour=true;
   mobaInfliger(duel.moba,'joueur','left',10);mobaInfliger(duel.moba,'joueur','right',8);
   assert.equal(rpgMobaTerminerTour(duel,'joueur').reponse,'sorcier');const result=rpgMobaPasserFinDeTour(duel,'sorcier');assert.equal(result.ok,true,JSON.stringify(result));
   assert.equal(duel.moba.winner,'joueur');assert.equal(duel.tour,'joueur');assert.ok(duel.joueur.creatures.includes(other));assert.equal(result.damageEvents.length,1);assert.equal(result.damageEvents[0].winner,'joueur');assert.equal(rpgMobaPlacementCoherent(duel),true);
@@ -8393,6 +8411,7 @@ test('Poison MOBA : une victoire à la mort arrête les doses suivantes du débu
   mobaInfliger(duel.moba, 'joueur', 'right', 8);
   duel.joueur.main = ['le-brulot', 'chien-du-guet']; duel.joueur.mana.braise = 30; duel.joueur.mana.sable = 30;
   const brulot = rpgMobaJouerCreature(duel, 'joueur', 'le-brulot', 'right', 0).entite;
+  quotaLibre(duel, 'joueur');
   const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'center', 0).entite;
   brulot.pv = 1; brulot.poison = { degats: 1, toursRestants: 2, sourceCarteId: 'scorpion-du-seuil' };
   chien.poison = { degats: 1, toursRestants: 2, sourceCarteId: 'scorpion-du-seuil' };
@@ -8532,7 +8551,9 @@ for (const side of ['joueur', 'sorcier']) test(`Djinn des cendres vengeresses MO
   duel.tour = side; Object.assign(duel[side].mana, { braise: 30, sable: 30 });
   duel[side].main = ['djinn-des-cendres-vengeresses', 'djinn-des-cendres-vengeresses', 'chien-du-guet'];
   const first = rpgMobaJouerCreature(duel, side, 'djinn-des-cendres-vengeresses', 'left', 0).entite;
+  quotaLibre(duel, side);
   const second = rpgMobaJouerCreature(duel, side, 'djinn-des-cendres-vengeresses', 'right', 0).entite;
+  quotaLibre(duel, side);
   const ally = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'center', 0).entite;
   duel.tour = enemy; duel[enemy].main = ['trait-de-braise']; duel[enemy].mana.braise = 30;
   const wizard = duel[enemy].pv, result = rpgMobaLancerMagie(duel, enemy, 'trait-de-braise', ally.id);
@@ -8577,6 +8598,7 @@ test('Djinn vengeur MOBA : renvoi ou conquête ne sont pas des morts', () => {
     const duel = partieCombat(); duel.joueur.mana.braise = 30; duel.joueur.mana.sable = 30;
     duel.joueur.main = ['djinn-des-cendres-vengeresses', 'chien-du-guet'];
     rpgMobaJouerCreature(duel, 'joueur', 'djinn-des-cendres-vengeresses', 'right', 0);
+    quotaLibre(duel, 'joueur');
     const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'left', 0).entite;
     if (mode === 'renvoi') {
       rpgFinDeTour(duel); duel.sorcier.main = ['ressac']; duel.sorcier.mana.eau = 30;
@@ -8784,6 +8806,7 @@ test('Guetteuse MOBA : conquête de la voie annule le retour sans déclencher de
   const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30, neige: 30 });
   duel.joueur.main = ['chien-du-guet', 'guetteuse-des-marees', 'eclair-du-marteau'];
   const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  quotaLibre(duel, 'joueur');
   rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0);
   assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true);
   mobaInfliger(duel.moba, 'joueur', 'right', 9);
@@ -8801,6 +8824,7 @@ test('Guetteuse MOBA : pas de cible seule ou avec un Site, protection alliée ig
     let allie;
     if (cible !== 'aucune') allie = rpgMobaJouerCreature(duel, 'joueur', cible === 'site' ? 'le-tresor-de-lima' : 'chien-du-guet', 'right', 0).entite;
     if (cible === 'protegee') { allie.protection = { contre: ['eau'] }; allie.bouclierLumiere = true; }
+    quotaLibre(duel, 'joueur');
     const g = rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0);
     assert.equal(Boolean(g.arriveeEnAttente), cible === 'protegee');
     if (cible === 'protegee') { assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true); assert.ok(duel.joueur.exil.includes(allie.carteId)); }
@@ -8825,6 +8849,7 @@ for (const id of ['porteuse-de-cruches', 'pretre-de-la-bouche', 'braisier-du-sou
   const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30, braise: 30, tenebres: 30 });
   duel.joueur.main = [id, 'guetteuse-des-marees'];
   const allie = rpgMobaJouerCreature(duel, 'joueur', id, 'right', 0).entite;
+  quotaLibre(duel, 'joueur');
   const guetteuse = rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0);
   assert.equal(guetteuse.arriveeEnAttente, true); assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true);
   mobaInfliger(duel.moba, 'sorcier', 'right', 3);
@@ -8859,8 +8884,11 @@ test('Guetteuse MOBA : une arrivée gagnante annule les retours suivants', () =>
   const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30, braise: 30, neige: 30 });
   duel.joueur.main = ['braisier-du-souk', 'chien-du-guet', 'guetteuse-des-marees', 'guetteuse-des-marees', 'eclair-du-marteau'];
   const braisier = rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'right', 0).entite;
+  quotaLibre(duel, 'joueur');
   const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'center', 0).entite;
+  quotaLibre(duel, 'joueur');
   rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0); rpgMobaResoudreArrivee(duel, 'joueur', braisier.id);
+  quotaLibre(duel, 'joueur');
   rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 1); rpgMobaResoudreArrivee(duel, 'joueur', chien.id);
   mobaInfliger(duel.moba, 'joueur', 'left', 9); assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier', 'left').ok, true); mobaInfliger(duel.moba, 'joueur', 'right', 8);
   const result = terminerEtPasser(duel, 'joueur'); assert.equal(result.ok, true, JSON.stringify(result));
@@ -8904,6 +8932,7 @@ test('Guetteuse MOBA : une réponse contre la créature empêche son arrivée et
   const duel = partieCombat(); Object.assign(duel.joueur.mana, { eau: 30, sable: 30 });
   duel.joueur.main = ['chien-du-guet', 'guetteuse-des-marees'];
   const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  quotaLibre(duel, 'joueur');
   assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
   duel.sorcier.main = ['contresort-des-abimes']; duel.sorcier.mana.eau = 30;
   assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'contresort-des-abimes').contre, true);
