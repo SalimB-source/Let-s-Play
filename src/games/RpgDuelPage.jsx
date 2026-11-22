@@ -15779,7 +15779,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   )}
                   {carteEstArme(carte) && (
                     <span className="rpg-hand__stats" aria-label={`Porteur : ${signeBonus(bonusArme(carte)?.atk)} attaque, ${signeBonus(bonusArme(carte)?.def)} défense`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" distance={carte.porteeArme === 'distance'} /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" distance={carte.porteeArme === 'distance'} element={carte.element} /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.atk)}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{signeBonus(bonusArme(carte)?.def)}</span></span>
                     </span>
                   )}
