@@ -61,7 +61,7 @@ test('étoile : visible sur le plateau, depuis la créature en jeu', () => {
 test('étoile : l’icône d’ATQ dessine une étoile à huit branches entrelacées, centrée', () => {
   const page = lire('RpgDuelPage.jsx');
   const moba = lire('RpgMobaBoard.jsx');
-  assert.match(page, /data-stat-icon=\{arc \? \(etoile \? 'etoile' : 'arc'\) : type\}/);
+  assert.match(page, /data-stat-icon=\{nature \? `type-\$\{nature\}` : arc \? \(etoile \? 'etoile' : 'arc'\) : type\}/);
   // Huit branches entrelacées : 16 pointes, une sur deux rentrée vers le cœur.
   assert.match(page, /data-stat-etoile="" d="M12 2\.2 13\.7 8\.5 17\.5 3\.5 15\.7 9\.8 21\.6 8\.2 16\.8 12 21\.6 15\.8 15\.7 14\.2 17\.5 20\.5 13\.7 15\.5 12 21\.8 10\.3 15\.5 6\.5 20\.5 8\.3 14\.2 2\.4 15\.8 7\.2 12 2\.4 8\.2 8\.3 9\.8 6\.5 3\.5 10\.3 8\.5Z"/);
   assert.doesNotMatch(page, /boule-de-feu|data-boule-/);
@@ -71,5 +71,5 @@ test('étoile : l’icône d’ATQ dessine une étoile à huit branches entrelac
   assert.match(page, /magique=\{carteLanceEtoile\(carte\)\}/);
   assert.match(moba, /magique=\{carteLanceEtoile\(card\)\}/);
   // Les armes gardent l'arc : la fiche d'arme ne reçoit pas l'étoile.
-  assert.match(page, /<CardStatIcon type="attack" distance=\{carte\.porteeArme === 'distance'\} \/>/);
+  assert.match(page, /<CardStatIcon type="attack" distance=\{carte\.porteeArme === 'distance'\} element=\{carte\.element\} \/>/);
 });
