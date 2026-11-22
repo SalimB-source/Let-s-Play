@@ -3824,6 +3824,21 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           </figure>
         </div>
       )}
+      {carte.activation && (
+        <p className="rpg-hover-card-preview__activation">
+          <span className="rpg-activation-bolt" aria-hidden="true">⚡</span>
+          {carte.activation.uneFoisParTour ? '1/tour — ' : ''}
+          {carte.activation.effet?.type === 'bouclier-tour'
+            ? 'La créature alliée ciblée gagne un bouclier jusqu’à la fin du tour.'
+            : carte.activation.effet?.type === 'buff-allies-tour'
+              ? `Vos créatures gagnent +${carte.activation.effet?.atk ?? 0}/+${carte.activation.effet?.pv ?? 0}.`
+              : carte.activation.effet?.type === 'soin-tout'
+                ? `Soigne vos créatures et vous de ${carte.activation.effet?.amount ?? 2} PV.`
+                : carte.activation.effet?.type === 'renvoi-main'
+                  ? 'Renvoie une créature ciblée dans la main de son propriétaire.'
+                  : `Inflige ${carte.activation.effet?.amount ?? 0} dégâts à une créature ciblée${carte.activation.effet?.gel ? ' et la gèle' : ''}.`}
+        </p>
+      )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
       {modifCarte && !carteEstArme(carte) && !statsDejaExpliquees && (
         <p className={`rpg-hover-card-preview__stats rpg-hover-card-preview__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}>
