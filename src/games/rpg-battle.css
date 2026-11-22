@@ -16569,3 +16569,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   from { opacity: 0; transform: translateX(-50%) scale(.75); }
   to { opacity: 1; transform: translateX(-50%) scale(1); }
 }
+
+/* Invite de commandes (journal des actions des créatures) */
+.rpg-console-log {
+  background: rgba(8, 12, 20, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.rpg-console-log__header {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #facc15;
+  margin-bottom: 4px;
+}
+
+.rpg-activation-bolt {
+  color: #facc15;
+  text-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+  margin-right: 4px;
+}
