@@ -10,6 +10,7 @@ import { porteeEffetCarte } from './rpgPorteesCartes.js';
 import { cibleDeLEffetAPortee } from './rpgPortees.js';
 import { sacrificesInvocation, victimesInvocation, invocationPossible, limiteInvocationMoba, marquerInvocationMoba, rpgInvocationSpecialeSurSonTour, retoursAuDeckInvocation, retourDeckAdmissible } from './rpgInvocation.js';
 import { ciblesDefenseur, estDefenseur } from './rpgDefenseur.js';
+import { procElementDistance, RPG_PROC_ELEMENT_CHANCE } from './rpgCartesIconeType.js';
 import { attaqueDirecteSurLesLignes, caseAutorisee, caseChoisissable, caseParDefaut, casesLibresPour, champMax, filtreLigne, ligneDeCase, ligneDePose, lignesActives, RPG_LIGNE_FOND, RPG_LIGNE_FRONT, positionDeCase, RPG_LIGNES_CASES } from './rpgLignes.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie, mobaVoieCombat, mobaVoiesCombat, mobaPartageVoie, mobaVoieJouable } from './rpgMoba.js';
@@ -1050,6 +1051,9 @@ export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
   if (!activation || duel.tour !== cote) return false;
+  // L'effet est dépensé pour ce tour : ni le bouton, ni le menu, ni l'IA ne
+  // doivent plus le proposer — la carte grise le dit à la place.
+  if (activation.uneFoisParTour && entite.activationUtiliseeCeTour) return false;
   return rpgPeutPayer(duel[cote], coutActivation(activation));
 }
 
@@ -1143,6 +1147,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
     const soin = Math.max(1, Number(activation.effet?.amount) || 2);
     duel[cote].pv += soin;
     for (const allie of duel[cote].creatures) {
+      if (allie.brulure) continue; // la flamme boit le soin
       allie.pv = Math.min(allie.maxPv ?? (allie.pv + soin), allie.pv + soin);
     }
     duel.log.push(`${carte.name} soigne vos créatures et vous de ${soin} PV.`);
@@ -1863,6 +1868,9 @@ function creerEntiteCreature(carte, duel) {
     // Poison du Scorpion : 1 PV au début des deux prochains tours du
     // contrôleur. Une nouvelle blessure remet la durée à deux (sans empiler).
     poison: null,
+    // Brûlure (effet d'élément de la Braise) : 1 PV au début de chaque tour du
+    // contrôleur, et aucun soin ne l'éteint — jusqu'à la mort.
+    brulure: false,
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
@@ -2969,6 +2977,21 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
         sourceCarteId: source.carteId,
       };
     }
+    // Effet d'élément d'une créature À distance qui frappe de son emblème au
+    // lieu d'un arc : un seul jet par attaquant et par victime, quand le coup
+    // d'attaque touche. Braise et Neige signent la créature touchée ; Sable et
+    // Ténèbres signent le contact du sorcier (`declencherProcsElement`).
+    const proc = coup.sourceType === 'attaque' && source ? procElementDistance(duelCardById(source.carteId)) : null;
+    if (proc === 'brulure' || proc === 'gel') {
+      blessure.procsElement ??= [];
+      if (!blessure.procsElement.some((jet) => jet.sourceId === source.id)) {
+        blessure.procsElement.push({
+          sourceId: source.id,
+          proc,
+          ok: (hasardParDuel.get(duel) ?? Math.random)() < RPG_PROC_ELEMENT_CHANCE,
+        });
+      }
+    }
     if (source && !blessure.sources.some((candidate) => candidate.id === source.id)) {
       blessure.sources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
       if (coup.sourceType === 'attaque') {
@@ -2998,6 +3021,14 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
       // Une seconde piqûre renouvelle les deux tours, sans créer deux doses.
       entite.poison = blessure.poison;
       duel.log.push(`${entite.name} est empoisonnée pour ${entite.poison.toursRestants} tours.`);
+    }
+    if (entite.pv > 0) for (const jet of blessure.procsElement ?? []) {
+      if (!jet.ok) continue;
+      if (jet.proc === 'brulure' && !entite.brulure) {
+        entite.brulure = true;
+        duel.log.push(`Brûlure : ${entite.name} perd 1 PV à chaque début de tour et ne peut plus être soignée.`);
+      }
+      if (jet.proc === 'gel' && (entite.gelToursRestants ?? 0) <= 0) gelerEntite(duel, entite);
     }
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
     // fois, quels que soient le nombre d'attaquants et de bloqueurs. Tenacité
@@ -3481,6 +3512,47 @@ function declencherTributs(duel, cote, bilans, surTransfertMoba = null) {
     if (duel.moba?.winner) break;
   }
   return declenche;
+}
+
+/** Contacts de sorcier d'une créature À distance à l'emblème d'élément.
+ *
+ * Le Sable emporte un **butin** : le sorcier adverse touché, c'est une carte
+ * piochée puis une carte défaussée, exactement comme le Butin imprimé. Les
+ * Ténèbres **transfèrent** : le sorcier adverse perd 1 PV et le sorcier du
+ * tireur en gagne 1, par le même chemin que le Tribut. Un jet d'une chance sur
+ * quatre par contact, hors MOBA : sur les voies les coups se comptent en
+ * dizaines et un proc permanent fausserait l'économie des lignes.
+ */
+function declencherProcsElement(duel, cote, contacts) {
+  if (duel.moba || !contacts?.length) return;
+  let declenche = false;
+  for (const contact of contacts) {
+    if (duel.moba?.winner) break;
+    const entite = duel[cote].creatures.find((c) => c.id === contact.id);
+    if (!entite || !(Number(contact.sorcier) > 0)) continue;
+    const carte = duelCardById(entite.carteId);
+    const proc = procElementDistance(carte);
+    if (proc !== 'butin' && proc !== 'transfert') continue;
+    // Un seul jet par contact, comme le Butin et le Tribut imprimés : ce n'est
+    // pas « par point de dégât », sinon un gros tir déclencherait plusieurs
+    // transferts d'affilée.
+    const hasard = hasardParDuel.get(duel) ?? Math.random;
+    if (hasard() < RPG_PROC_ELEMENT_CHANCE) {
+      declenche = true;
+      if (proc === 'butin') {
+        appliquer(duel, cote, { type: 'pioche-defausse', pioche: 1, defausse: 1 },
+          null, entite.id, cardColors(carte), 'capacite', carte.id);
+        duel.log.push(`Butin : ${entite.name} touche le sorcier — pioche 1, défausse 1.`);
+      } else {
+        const { perdu, gagne } = transfertVie(duel, cote, 1, carte.id);
+        if (perdu > 0) {
+          duel.log.push(`Transfert : ${entite.name} touche le sorcier — le sorcier adverse perd ${perdu} PV, le vôtre en gagne ${gagne}.`);
+        }
+      }
+    }
+  }
+  if (!declenche) return;
+  rpgActionsEtat(duel);
 }
 
 /* ── La cale des corsaires (set Lettres de Marque, doc 18) ────────────────────
@@ -4599,7 +4671,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             Number(duelCardById(entite.carteId)?.def) || 0,
           );
         entite.pvMax = plafond;
-        entite.pv = Math.min(plafondSoinCreature(entite, plafond), pvAvant + montant);
+        // Brûlée, elle ne peut pas être soignée : la flamme boit tout soin.
+        if (!entite.brulure) entite.pv = Math.min(plafondSoinCreature(entite, plafond), pvAvant + montant);
         entite.def = Math.min(plafond, Math.max(Number(entite.def) || 0, entite.pv));
         const gagne = entite.pv - pvAvant;
         if (gagne > 0) {
@@ -9436,6 +9509,7 @@ export function rpgLancerAttaque(
   }));
   declencherButins(duel, cote, bilansContact);
   declencherTributs(duel, cote, bilansContact, surTransfertMoba);
+  declencherProcsElement(duel, cote, bilansContact);
   if (duel.moba?.winner) return { ok: true, resume };
   // Chaque attaquant et chaque bloqueur use l’arme qu’il a portée dans cet
   // échange, même s’il n’a pas survécu jusqu’à la fenêtre des déclencheurs.
@@ -9645,6 +9719,7 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
     const bilans = [{ id: attaquantId, sorcier: degatsVoie, sourceExileeParConquete }];
     declencherButins(duel, cote, bilans);
     declencherTributs(duel, cote, bilans, surTransfertMoba);
+    declencherProcsElement(duel, cote, bilans);
   }
   retirerUnCompteurDurabiliteArme(duel, cote, attaquantId, 'attaque');
   if (cibleId !== null && !ciblee) retirerUnCompteurDurabiliteArme(duel, adv, cibleId, 'défense');
@@ -9742,6 +9817,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   }]);
   declencherButins(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
   declencherTributs(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
+  declencherProcsElement(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
   retirerUnCompteurDurabiliteArme(duel, cote, attaquant.id, 'attaque');
   rpgActionsEtat(duel);
   return { ok: true };
@@ -9984,7 +10060,8 @@ function appliquerDeclencheRetour(duel, cote, carte) {
       const soin = Math.max(0, Number(carte.retourDeclenche.soin) || 0);
       const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
       const pvAvant = allie.pv;
-      allie.pv = Math.min(plafondSoinCreature(allie, plafond), allie.pv + soin);
+      // Brûlée, elle ne peut pas être soignée : la flamme boit tout soin.
+      if (!allie.brulure) allie.pv = Math.min(plafondSoinCreature(allie, plafond), allie.pv + soin);
       allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
       if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
       synchroniserFurieEntite(duel, allie);
@@ -10065,6 +10142,21 @@ function detruireEphemeres(duel) {
         || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.effetCreatureEnAttente) return;
     }
     if (!trouve) break;
+  }
+}
+
+/** La braise de la Braise ne s'éteint pas : 1 PV au début de chaque tour du
+ *  contrôleur, jusqu'à la mort. Aucun décompte, aucun antidote — et aucun soin
+ *  ne remonte ces PV-là tant que la créature brûle. */
+function resoudreBrulures(duel, cote) {
+  for (const entite of [...duel[cote].creatures]) {
+    if (duel.moba?.winner) break;
+    if (!duel[cote].creatures.includes(entite)) continue;
+    if (!entite.brulure || entite.pv <= 0) continue;
+    duel.log.push(`Brûlure : ${entite.name} perd 1 PV.`);
+    // Perte différée, comme le Poison : ni Esquive, ni bouclier, ni immunité
+    // élémentaire ne l'arrêtent une fois la braise prise.
+    rpgBlesserCreature(duel, cote, entite.id, 1, null, null, 'brulure', entite.carteId);
   }
 }
 
@@ -10300,6 +10392,7 @@ function commencerNouveauTour(duel) {
 
 function terminerTransitionRetours(duel) {
   resoudrePoisons(duel, duel.tour); // deux débuts de tour de la victime
+  resoudreBrulures(duel, duel.tour); // la braise brûle au début du tour du contrôleur
   if (duel.moba?.winner) return duel;
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   if (duel.moba?.winner || duel.mobaDebutTourEnAttente) return duel;
