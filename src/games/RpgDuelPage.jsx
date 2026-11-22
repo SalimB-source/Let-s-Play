@@ -35,6 +35,7 @@ import { campDeLaCreature, campPoseDe, caseLocale, envahisseurs, occupantsDeCamp
 import { rpgCasesPose } from './rpgRecul.js';
 import { carteLanceEtoile, entiteLanceEtoile } from './rpgCartesEtoile.js';
 import { iconeTypeDe, entiteIconeType } from './rpgCartesIconeType.js';
+import { ELEMENT_GLYPHES } from './rpgEmblemes.jsx';
 import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { actualiserStatsApercu } from './rpgApercuStatistiques.js';
@@ -1605,8 +1606,9 @@ export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null 
 function CardStatIcon({ type, attaqueCiblee = false, distance = false, magique = false, iconeType = null }) {
   const arc = type === 'attack' && (attaqueCiblee || distance);
   const etoile = arc && magique;
-  // Ni arme de tir ni nature qui convoque : c'est le TYPE de la créature qui
-  // frappe de loin (chant, glas, feuillet, bâton, queue, ailes) — son glyphe
+  // Ni arme de tir ni nature qui convoque : c'est le TYPE de la créature — sa
+  // couleur — qui frappe de loin (chant, glas, feuillet, bâton, queue, ailes).
+  // L'emblème d'élément partagé (sablier, crâne, flamme, flocon, goutte)
   // remplace alors l'arc que la peinture dément. Voir rpgCartesIconeType.js.
   const nature = arc && !etoile && iconeType;
   const portee = attaqueCiblee ? 'ciblee' : 'distance';
@@ -1615,12 +1617,8 @@ function CardStatIcon({ type, attaqueCiblee = false, distance = false, magique =
     viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     {etoile
       ? <path data-stat-etoile="" d="M12 2.2 13.7 8.5 17.5 3.5 15.7 9.8 21.6 8.2 16.8 12 21.6 15.8 15.7 14.2 17.5 20.5 13.7 15.5 12 21.8 10.3 15.5 6.5 20.5 8.3 14.2 2.4 15.8 7.2 12 2.4 8.2 8.3 9.8 6.5 3.5 10.3 8.5Z" />
-      : nature === 'oiseau'
-      ? <path data-stat-nature="" fill="currentColor" stroke="none" d="M2.2 8.6c4.6.6 7.6 2.6 9.8 6 2.2-3.4 5.2-5.4 9.8-6-2.9 2.7-4.5 5.2-4.9 8.5-1.6-1.9-3.2-2.8-4.9-2.8s-3.3.9-4.9 2.8c-.4-3.3-2-5.8-4.9-8.5Z" />
-      : nature === 'bete'
-      ? <path data-stat-nature="" d="M6.2 3.6c-1.6 5.4-1.6 11.4 0 16.8M12 2.8c-1.7 6.1-1.7 12.3 0 18.4M17.8 3.6c-1.6 5.4-1.6 11.4 0 16.8" />
-      : nature === 'figure'
-      ? <><circle data-stat-nature="" cx="12" cy="7.2" r="3.6" /><path d="M4.8 20.4c1.1-4.6 3.7-6.9 7.2-6.9s6.1 2.3 7.2 6.9" /></>
+      : nature
+      ? <g data-stat-nature="">{ELEMENT_GLYPHES[nature]}</g>
       : arc
       ? <>
           <path d="M2 1.5C18 .7 22.4 8.8 16.3 22.5l-2.2-.8C19.4 9.2 16.4 4 2 3.5Z" fill="currentColor" stroke="none" />
