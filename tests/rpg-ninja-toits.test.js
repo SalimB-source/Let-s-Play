@@ -88,9 +88,11 @@ test('avec une créature en face, il entre sans consommer l’invocation normale
   assert.deepEqual([res.entite.atk, res.entite.pv, res.entite.distance], [2, 1, true]);
 });
 
-test('sans créature en face, il attend son invocation normale', () => {
+test('sans créature en face, il entre comme invocation normale', () => {
+  // Le quota d’invocations normales par tour est retiré : une pose déjà faite
+  // ce tour-ci ne bloque plus la suivante.
   const utilisee = partie({ creatureAdverse: false, invocationJouee: true });
-  assert.equal(rpgJouerCreature(utilisee, 'joueur', ID).raison, 'creature-limite');
+  assert.equal(rpgJouerCreature(utilisee, 'joueur', ID).ok, true);
   const libre = partie({ creatureAdverse: false, invocationJouee: false });
   assert.equal(rpgJouerCreature(libre, 'joueur', ID).ok, true, 'sinon, invocation normale');
 });

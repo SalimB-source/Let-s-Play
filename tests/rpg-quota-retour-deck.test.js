@@ -29,15 +29,14 @@ function duelPret(main = []) {
   return d;
 }
 
-test('une mêlée ET une à distance par tour, pas une de plus par ligne', () => {
+test('plus de quota : autant d’invocations normales que le champ le permet', () => {
   const d = duelPret([MELEE, MELEE_2, DISTANCE, DISTANCE_2]);
   assert.ok(rpgJouerCreature(d, 'joueur', MELEE).ok, 'la première mêlée passe');
-  const secondeMelee = rpgJouerCreature(d, 'joueur', MELEE_2);
-  assert.equal(secondeMelee.ok, false);
-  assert.equal(secondeMelee.raison, 'creature-limite', 'deux mêlées le même tour : non');
-  assert.ok(rpgJouerCreature(d, 'joueur', DISTANCE).ok, 'la ligne à distance reste ouverte');
-  const secondeDistance = rpgJouerCreature(d, 'joueur', DISTANCE_2);
-  assert.equal(secondeDistance.raison, 'creature-limite', 'deux tireurs le même tour : non');
+  assert.ok(rpgJouerCreature(d, 'joueur', MELEE_2).ok, 'une seconde mêlée passe aussi');
+  assert.ok(rpgJouerCreature(d, 'joueur', DISTANCE).ok, 'et la ligne à distance reste ouverte');
+  assert.ok(rpgJouerCreature(d, 'joueur', DISTANCE_2).ok, 'un second tireur aussi');
+  assert.equal(d.joueur.creatures.length, 4, 'les quatre créatures sont en jeu');
+  // L’état note encore les lignes posées : l’IA et les statistiques les lisent.
   assert.deepEqual(d.joueur.invocationsNormalesLignes, ['melee', 'distance']);
   assert.equal(d.joueur.invocationNormaleJouee, true);
 });

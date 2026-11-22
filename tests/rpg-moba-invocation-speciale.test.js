@@ -13,17 +13,20 @@ function partie() {
 }
 
 for (const side of ['joueur', 'sorcier']) {
-  test(`${side} : quota unique d’invocation normale et réinitialisation`, () => {
+  test(`${side} : plusieurs invocations normales dans le même tour`, () => {
     const d = partie(); if (d.tour !== side) rpgFinDeTour(d);
-    d[side].main = ['ashigaru-des-braises', 'anqa-des-braises'];
-    const petite = rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite;
-    assert.ok(petite);
-    assert.equal(rpgMobaPeutPayer(d, side, cardById('anqa-des-braises')), false);
-    const avant = JSON.stringify(d);
-    assert.equal(rpgMobaJouerCreature(d, side, 'anqa-des-braises', 'left', 0, { sacrificeIds: [petite.id] }).raison, 'creature-limite');
-    assert.equal(JSON.stringify(d), avant);
+    d[side].main = ['ashigaru-des-braises', 'ashigaru-des-braises', 'gardienne-des-portes-de-sable'];
+    assert.ok(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite);
+    // Le quota d’invocations normales par tour est retiré : la deuxième et la
+    // troisième pose passent dans le même tour, tant qu’il reste des cases.
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('ashigaru-des-braises')), true);
+    assert.ok(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'right', 0).entite);
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), true);
+    assert.ok(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'center', 0).entite);
+    assert.equal(d[side].creatures.length, 3);
+    assert.equal(d.moba.creaturesJouees[side], true, 'l’état note la pose normale');
     rpgFinDeTour(d); rpgFinDeTour(d);
-    assert.ok(rpgMobaJouerCreature(d, side, 'anqa-des-braises', 'left', 0, { sacrificeIds: [petite.id] }).ok);
+    assert.equal(d.moba.creaturesJouees[side], false, 'et se réarme au tour suivant');
   });
   test(`${side} : Tojiro en Embuscade ne sacrifie pas, même si le Djinn disparaît après l’annonce`, () => {
     const d = partie(), ennemi = side === 'joueur' ? 'sorcier' : 'joueur';

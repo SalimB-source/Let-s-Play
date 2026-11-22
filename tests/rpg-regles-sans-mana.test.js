@@ -31,7 +31,11 @@ test('une invocation normale, sacrifices imprimés et réinitialisation par camp
   const premiere = rpgJouerCreature(d, 'joueur', 'chien-du-guet');
   assert.ok(premiere.ok, premiere.raison);
   assert.ok(rpgPeutAttaquer(premiere.entite));
-  assert.equal(rpgJouerCreature(d, 'joueur', 'anqa-des-braises', null, { sacrificeIds: [premiere.entite.id] }).raison, 'creature-limite');
+  // Le quota d’invocations normales est retiré : ce qui arrête l’Anqâ, c’est
+  // son prix — deux cartes à remettre dans le deck — et non plus le tour.
+  const anqa = rpgJouerCreature(d, 'joueur', 'anqa-des-braises', null, { sacrificeIds: [premiere.entite.id] });
+  assert.equal(anqa.ok, false);
+  assert.match(anqa.raison, /^retour-/);
   rpgFinDeTour(d);
   d.sorcier.main = ['chien-du-guet'];
   assert.ok(rpgJouerCreature(d, 'sorcier', 'chien-du-guet').ok);
@@ -112,7 +116,7 @@ test('une ancienne attente de choix de mana ne bloque plus le jeu', () => {
   assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'attaquer', declarer: true, attaquants: [d.joueur.creatures[0].id] }).ok);
 });
 
-test('une invocation normale contrée consomme le quota sans payer de mana', () => {
+test('une invocation normale contrée ne bloque plus la suivante et ne paie pas de mana', () => {
   const d = partie();
   d.tour = 'sorcier';
   d.joueur.main = ['ecueil'];
@@ -120,7 +124,7 @@ test('une invocation normale contrée consomme le quota sans payer de mana', () 
   d.annonce = { cote: 'sorcier', carteId: 'chien-du-guet' };
   d.fenetreReponse = true;
   assert.ok(rpgLancerMagie(d, 'joueur', 'ecueil').contre);
-  assert.equal(d.sorcier.invocationNormaleJouee, true);
-  assert.equal(rpgJouerCreature(d, 'sorcier', 'chien-du-guet').raison, 'creature-limite');
+  assert.equal(d.sorcier.invocationNormaleJouee, true, 'l’état note la pose annoncée');
+  assert.equal(rpgJouerCreature(d, 'sorcier', 'chien-du-guet').ok, true, 'plus de quota d’invocation normale');
   assert.ok(Object.values(d.sorcier.mana).every(n => n === 0));
 });

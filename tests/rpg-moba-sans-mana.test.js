@@ -86,29 +86,28 @@ test('le Prix en PV reste obligatoire et indépendant du coût en mana', () => {
 });
 
 for (const side of ['joueur', 'sorcier']) {
-  test(`${side} : une seule créature par tour, mais un sort reste possible`, () => {
+  test(`${side} : plusieurs créatures dans le même tour, et un sort reste possible`, () => {
     const d = partie(); if (side === 'sorcier') rpgFinDeTour(d);
-    d[side].main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable', 'anqa-des-braises', 'trait-de-braise'];
-    const petite = rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite;
-    assert.ok(petite);
-    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), false);
-    let avant = JSON.stringify(d);
-    assert.equal(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'right', 0).raison, 'creature-limite');
-    assert.equal(JSON.stringify(d), avant, 'refus sans mutation ni perte de carte');
+    d[side].main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable', 'ashigaru-des-braises', 'trait-de-braise'];
+    assert.ok(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'left', 0).entite);
+    // Le quota d’invocations normales par tour est retiré.
+    assert.equal(rpgMobaPeutPayer(d, side, cardById('gardienne-des-portes-de-sable')), true);
+    assert.ok(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'right', 0).ok);
     assert.ok(rpgMobaLancerMagie(d, side, 'trait-de-braise', 'sorcier', 'center').ok);
-    assert.equal(rpgMobaJouerCreature(d, side, 'anqa-des-braises', 'left', 0, { sacrificeIds: [petite.id] }).raison, 'creature-limite');
+    assert.ok(rpgMobaJouerCreature(d, side, 'ashigaru-des-braises', 'center', 0).ok, 'une troisième pose passe');
     assert.equal(d.moba.creaturesJouees[side], true);
     rpgFinDeTour(d); rpgFinDeTour(d);
-    assert.ok(rpgMobaJouerCreature(d, side, 'gardienne-des-portes-de-sable', 'right', 0).ok, 'quota réarmé au tour suivant');
+    assert.equal(d.moba.creaturesJouees[side], false, 'l’état de pose se réarme au tour suivant');
   });
 }
 
-test('une petite créature annoncée réserve le quota même si elle est contrée', () => {
+test('une annonce contrée n’empêche pas une autre invocation normale', () => {
   const d = partie(); d.joueur.main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable']; d.sorcier.main = ['ecueil'];
   assert.equal(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
   assert.ok(rpgMobaLancerMagie(d, 'sorcier', 'ecueil').contre);
-  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).raison, 'creature-limite');
-  assert.deepEqual(d.joueur.main, ['gardienne-des-portes-de-sable']);
+  assert.deepEqual(d.joueur.main, ['gardienne-des-portes-de-sable'], 'l’annonce contrée rend la carte');
+  assert.equal(d.moba.creaturesJouees.joueur, true, 'l’état note la pose annoncée');
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).ok, 'plus de quota');
 });
 
 test('une annonce illégale ne consomme pas le quota, sa résolution reste possible, et les Sites sont distincts', () => {
@@ -121,12 +120,13 @@ test('une annonce illégale ne consomme pas le quota, sa résolution reste possi
   assert.ok(rpgMobaJouerCreature(d, 'joueur', 'source-de-bimini', 'right', 0).ok, 'Site non soumis au quota de créatures');
 });
 
-test('le choix de l’IA respecte la limite des petites créatures sans modifier le duel', () => {
+test('le choix de l’IA propose une seconde créature sans modifier le duel', () => {
   const d = partie(); rpgFinDeTour(d); d.sorcier.main = ['ashigaru-des-braises', 'gardienne-des-portes-de-sable'];
   assert.ok(rpgMobaJouerCreature(d, 'sorcier', 'ashigaru-des-braises', 'left', 0).ok);
   const avant = JSON.stringify(d);
-  assert.equal(rpgMobaChoisirCreatureIA(d, 'sorcier'), null);
-  assert.equal(JSON.stringify(d), avant);
+  const choix = rpgMobaChoisirCreatureIA(d, 'sorcier');
+  assert.equal(JSON.stringify(d), avant, 'la lecture de l’IA ne modifie rien');
+  assert.equal(choix?.id, 'gardienne-des-portes-de-sable', 'plus de quota : la pose suivante est libre');
 });
 
 test('une réanimation ne consomme pas le quota de petite créature et reste légale après une invocation', () => {
@@ -136,23 +136,27 @@ test('une réanimation ne consomme pas le quota de petite créature et reste lé
   assert.ok(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).ok);
   assert.ok(rpgMobaLancerMagie(d, 'joueur', 'reanimation', null, 'right', null, { emplacementReanimation: 0 }).ok);
   assert.equal(d.joueur.creatures.length, 2);
-  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'left', 1).raison, 'creature-limite');
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'left', 1).ok, 'plus de quota');
 });
 
-test('après une créature à sacrifice, une petite créature est refusée dans le même tour', () => {
+test('après une grande invocation, une petite créature se joue encore dans le même tour', () => {
   const d = partie();
   d.joueur.main = ['ashigaru-des-braises'];
-  const victime = rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'ashigaru-des-braises', 'left', 0).entite);
   rpgFinDeTour(d); rpgFinDeTour(d);
-  d.joueur.main = ['anqa-des-braises', 'gardienne-des-portes-de-sable'];
-  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'anqa-des-braises', 'left', 0, { sacrificeIds: [victime.id] }).ok);
-  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).raison, 'creature-limite');
+  // L'Anqâ (coût 5) rend une carte de la main dans le deck, puis la Gardienne
+  // arrive dans le même tour : plus aucun quota d'invocation normale.
+  d.joueur.main = ['anqa-des-braises', 'ashigaru-des-braises', 'gardienne-des-portes-de-sable'];
+  const grande = rpgMobaJouerCreature(d, 'joueur', 'anqa-des-braises', 'left', 1, { retourIds: ['ashigaru-des-braises'] });
+  assert.ok(grande.ok, grande.raison);
+  assert.ok(d.joueur.deck.includes('ashigaru-des-braises'), 'la carte payée repart dans le deck');
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).ok, 'plus de quota');
 });
 
-test('une carte Embuscade jouée normalement à son propre tour consomme le quota approprié', () => {
+test('une carte Embuscade jouée normalement à son propre tour ne bloque pas la suivante', () => {
   const d = partie();
   d.joueur.main = ['garde-du-trone-givre', 'gardienne-des-portes-de-sable'];
   assert.ok(rpgMobaJouerCreature(d, 'joueur', 'garde-du-trone-givre', 'left', 0).ok);
-  assert.equal(d.moba.creaturesJouees.joueur, true);
-  assert.equal(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).raison, 'creature-limite');
+  assert.equal(d.moba.creaturesJouees.joueur, true, 'l’état note la pose normale');
+  assert.ok(rpgMobaJouerCreature(d, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).ok, 'plus de quota');
 });

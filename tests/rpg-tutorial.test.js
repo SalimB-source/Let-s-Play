@@ -321,16 +321,16 @@ for (const [lecon, premiere, suivante] of [
   ['serment-du-soleil-rouge', 'ashigaru-des-braises', 'samourai-du-torii'],
   ['serment-des-neuf-hivers', 'guerrier-au-bouclier-rond', 'valkyrie-au-corbeau'],
 ]) {
-  test(`${lecon} : la deuxième invocation attend réellement le tour suivant`, () => {
+  test(`${lecon} : deux invocations normales se jouent dans le même tour`, () => {
     const tutoriel = tutorielParId(lecon);
     const duel = duelDeLecon(tutoriel);
     const entree = rpgJouerCreature(duel, 'joueur', premiere, null, { cibleDifferee: true });
-    assert.ok(entree.ok);
+    assert.ok(entree.ok, entree.raison);
     if (duel.arriveeEnAttente) assert.ok(rpgResoudreArriveeCiblee(duel, 'joueur', entree.entite.id).ok);
-    const tentative = rpgJouerCreature(duel, 'joueur', suivante, null, { cibleDifferee: true });
-    assert.equal(tentative.raison, 'creature-limite');
-    assert.ok(duel.joueur.main.includes(suivante));
-    rpgFinDeTour(duel); rpgFinDeTour(duel);
-    assert.ok(rpgJouerCreature(duel, 'joueur', suivante, null, { cibleDifferee: true }).ok);
+    // La règle des deux invocations normales par tour est retirée : la leçon
+    // pose ses deux créatures à la suite, sans attendre le tour suivant.
+    const seconde = rpgJouerCreature(duel, 'joueur', suivante, null, { cibleDifferee: true });
+    assert.ok(seconde.ok, seconde.raison);
+    assert.ok(duel.joueur.creatures.some((entite) => entite.carteId === suivante));
   });
 }

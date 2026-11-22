@@ -1042,8 +1042,16 @@ test('classique : l’IA garde le Djinn spécial sous le Voile et peut le jouer 
   assert.ok(duel.sorcier.creatures.includes(allie));
   assert.ok(duel.sorcier.main.includes('djinn-de-la-premiere-etincelle'));
   assert.ok(!duel.sorcier.cimetiere.includes('djinn-de-la-premiere-etincelle'));
-  assert.equal(rpgSorcierAnnonceSuivante(duel, () => .5)?.carteId, 'djinn-de-la-premiere-etincelle');
-  assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  // Le quota d’invocations normales est retiré : l’IA peut poser une autre
+  // créature avant le Djinn, qui arrive tout de même dans ce tour.
+  for (let essai = 0; essai < 2
+    && !duel.sorcier.creatures.some((entite) => entite.carteId === 'djinn-de-la-premiere-etincelle'); essai += 1) {
+    const annonce = rpgSorcierAnnonceSuivante(duel, () => .5);
+    assert.ok(annonce, 'l’IA joue ce tour-ci');
+    assert.ok(rpgSorcierResoudreAnnonce(duel).ok);
+  }
+  assert.ok(duel.sorcier.creatures.some((entite) => entite.carteId === 'djinn-de-la-premiere-etincelle'),
+    'le Djinn conservé sous le Voile est bien joué au tour suivant');
 });
 
 test('classique : l’effet du filtre avec l’Ashigaru ne dépend pas des cartes cachées', () => {
