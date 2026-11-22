@@ -16645,3 +16645,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-overflow: clip;
   text-wrap: balance;
 }
+
+/* Agrandir la carte dans la fenêtre de validation / réponse de sort */
+.rpg-reponse .rpg-card,
+.rpg-reponse .rpg-hand__card,
+.rpg-annonce .rpg-card,
+.rpg-annonce .rpg-hand__card {
+  width: 148px !important;
+  min-width: 148px !important;
+  height: 208px !important;
+}
