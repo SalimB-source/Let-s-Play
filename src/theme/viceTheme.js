@@ -12,36 +12,34 @@
  * par ce retrait.
  *
  * ⚠️ Hommage NON OFFICIEL : Let's Play n'est affilié ni à Rockstar Games ni à
- * Take-Two. Les visuels sont fournis par le propriétaire du site (couple GTA 6
- * sur la voiture rouge, avant la station-service puis la vue nocturne de Vice
- * City) : ce ne sont pas des images générées, et il ne faut pas les remplacer
- * par une vue de jour produite pour un skin (essayé, puis retiré à sa demande).
+ * Take-Two. Le visuel est fourni par le propriétaire du site (Jason et Lucia
+ * marchant dans le champ devant la voiture en feu, silos en arrière-plan) :
+ * il ne faut pas le remplacer sans son accord.
  *
  * Pour tout retirer : repointer `Home.jsx` sur `defaultHeroImage`, supprimer ce
  * fichier et `public/gta6-jason-lucia-hero.jpg`.
  */
 
 /**
- * Clé d'art du héros : Jason et Lucia assis sur la voiture rouge au coucher
- * de soleil (visuel fourni par le propriétaire du site, version « Lock and
- * Load » — palmiers, avion et sac de sport). C'est l'image de communication
- * de GTA 6, pas une capture de jeu.
+ * Clé d'art du héros : Jason et Lucia avancent dans un champ de blé devant une
+ * voiture en feu, silos et fumée en arrière-plan (visuel fourni par le
+ * propriétaire du site). C'est une image 16:9.
  *
  * Le voile et la géométrie du héros sont ceux du site (voir `styles.css`,
  * `.hero-shade`) : un dégradé sombre à gauche qui porte le titre clair, sans
- * aucune teinte rose. C'est ce voile qui garantit le contraste sur un ciel
- * clair en haut à gauche — ne pas le retirer sans remesurer.
+ * aucune teinte rose. C'est ce voile qui garantit le contraste sur les zones
+ * claires du ciel — ne pas le retirer sans remesurer.
  */
 export const viceHeroImage = `${import.meta.env.BASE_URL}gta6-jason-lucia-hero.jpg`;
 
 /**
- * Même image, recadrée en PORTRAIT (900×1414) pour le téléphone.
+ * Même image, recadrée en PORTRAIT (900×990) pour le téléphone.
  *
- * L'original est un panoramique 2,1:1 : posé dans un héros presque vertical, il
- * ne garde qu'une bande de ciel et un bras. On ne pouvait pas rattraper ça au
- * `object-position` — aucun cadrage d'une image si large ne garde un couple
- * étalé sur toute la longueur. Ce cadrage vertical garde Lucia en entier, avec
- * la voiture et Jason en amorce à droite.
+ * L'original est un 16:10 (1280×720) : posé dans un héros presque vertical,
+ * `object-fit: cover` ne garderait qu'une fine bande et couperait les deux
+ * personnages. Ce cadrage vertical recentre sur Jason et Lucia (depuis la
+ * crosse du fusil jusqu'à Jason), avec un morceau de la voiture en feu à
+ * gauche — les deux restent lisibles sur un écran de téléphone.
  *
  * Le basculement se fait en CSS (`@media` téléphone), pas en JavaScript : pas de
  * `matchMedia` à écouter, et l'image lourde reste hors du chemin critique sur

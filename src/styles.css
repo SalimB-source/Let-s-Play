@@ -871,12 +871,12 @@ img{max-width:100%}
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
-  /* Cadrage : les visuels du héros sont des panoramiques 16:9 / 2,1:1 dont le
-     sujet occupe la moitié haute. Recadrés en bandeau sur téléphone, ils
-     coupaient les têtes — cadrage légèrement remonté sur ordinateur. Sur
-     téléphone, c'est une variante portrait dédiée qui porte son propre
-     cadrage (voir `Home.jsx` et `viceHeroPortraitImage`) ; on descend un peu
-     le point d'accroche pour que le soleil et les palmiers restent visibles
+  /* Cadrage : l'image du héros est un 16:9 (Jason et Lucia dans le champ,
+     voiture en feu à gauche, silos en fond). Recadrée en bandeau sur
+     téléphone, elle couperait les personnages — cadrage légèrement remonté sur
+     ordinateur. Sur téléphone, c'est une variante portrait dédiée qui porte son
+     propre cadrage (voir `Home.jsx` et `viceHeroPortraitImage`) ; on descend un
+     peu le point d'accroche pour que le ciel et les silos restent visibles
      dans la partie voilée à gauche. */
   object-position:center 30%;
   background-position:center;background-size:cover;background-repeat:no-repeat;
@@ -889,9 +889,11 @@ img{max-width:100%}
 }
 .hero-shade{
   position:absolute;inset:0;z-index:3;
-  /* Le visuel du héros est déjà très sombre (luminance moyenne ~21/255) : le
-     voile reste mesuré pour ne pas l'écraser, tout en garantissant le contraste
-     du texte blanc/jaune posé à gauche (≈18:1 mesuré sous le titre). */
+  /* Le visuel du héros est clair (luminance moyenne ~123/255, ciel en haut) :
+     le voile porte donc le contraste — sous le titre, la luminance effective
+     tombe à ~18/255 en médiane et le pire écart mesuré du texte blanc reste à
+     ≈7,3:1 (au-dessus du seuil WCAG AAA). Ne pas alléger ce dégradé sans
+     remesurer. */
   background:
     linear-gradient(90deg, rgba(0,0,0,.76) 0%, rgba(0,0,0,.56) 30%, rgba(0,0,0,.22) 62%, rgba(0,0,0,.04) 100%),
     linear-gradient(180deg, rgba(5,6,15,.5) 0%, rgba(5,6,15,.04) 18%, rgba(5,6,15,0) 36%, rgba(5,6,15,.3) 64%, rgba(5,6,15,.9) 92%, rgba(5,6,15,.95) 100%),
@@ -2007,10 +2009,10 @@ img{max-width:100%}
   [dir=\"rtl\"] .mobile-menu-hud{right:auto;left:0}
 
   .hero{padding:104px 0 92px}
-  /* Cadrage portrait du héros : Lucia à droite, soleil et palmiers derrière
-     le voile à gauche, sac/voiture en bas. L'image fournie est un panoramique
-     très large (2,4:1) — aucun cadrage vertical ne peut garder les deux
-     personnages, mais le héros ne doit pas sembler vide à gauche. */
+  /* Cadrage portrait du héros : variante dédiée (900×990) centrée sur Jason
+     et Lucia, voiture en feu en amorce à gauche. L'image d'origine est un
+     16:9 — un recadrage vertical nu ne garderait qu'une bande et couperait les
+     deux personnages ; le héros ne doit pas sembler vide à gauche non plus. */
   .hero-bg{object-position:center top}
   /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
      ne tenait plus dans la colonne et le titre du héros passait à quatre
@@ -2342,20 +2344,3 @@ img{max-width:100%}
 .search-result-card.is-finished h2,
 .search-result-card.is-finished p { color: var(--dim); }
 .nav-search-result.is-finished strong { color: var(--dim); }
-
-/* Compte à rebours GTA VI dans le héros — grille 4 chiffres, néon cyan sur
-   fond semi-transparent, comme les cadres HUD du reste du site. */
-.hero-countdown{margin-top:28px;max-width:560px;filter:drop-shadow(0 4px 18px rgba(255,214,25,.12))}
-.hero-countdown-eyebrow{display:inline-flex;align-items:center;gap:10px;margin:0 0 12px;font:500 10px var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--yellow);text-shadow:0 0 14px rgba(255,214,25,.25)}
-.hero-countdown-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.hero-countdown-unit{padding:16px 8px 12px;text-align:center;background:rgba(5,6,15,.62);border:1px solid rgba(255,214,25,.55);box-shadow:inset 0 0 28px rgba(255,214,25,.08), 0 0 22px rgba(0,0,0,.5), 0 0 24px rgba(255,214,25,.18)}
-.hero-countdown-unit b{display:block;color:var(--yellow);font:800 clamp(32px,5.4vw,46px)/1 var(--display);letter-spacing:.02em;text-shadow:0 0 22px rgba(255,214,25,.55), 0 0 4px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
-.hero-countdown-unit i{display:block;margin-top:8px;color:rgba(255,214,25,.92);font:9px var(--mono);letter-spacing:.2em;font-style:normal;text-shadow:0 1px 2px rgba(0,0,0,.55)}
-.hero-countdown-out{grid-column:1/-1;padding:16px;color:var(--yellow);font:800 clamp(26px,4.4vw,36px)/1 var(--display);letter-spacing:.08em;text-align:center;text-shadow:0 0 18px rgba(255,214,25,.35);background:rgba(5,6,15,.55);border:1px solid rgba(255,214,25,.45)}
-.hero-countdown-meta{margin:10px 0 0;color:rgba(232,235,255,.86);font:10px var(--mono);letter-spacing:.16em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.55)}
-.hero-countdown.is-out .hero-countdown-meta{color:var(--yellow)}
-@media(max-width:800px){
-  .hero-countdown{margin-top:22px;max-width:none}
-  .hero-countdown-grid{gap:8px}
-  .hero-countdown-unit{padding:12px 4px 8px}
-}
