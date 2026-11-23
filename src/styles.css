@@ -871,13 +871,13 @@ img{max-width:100%}
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
-  /* Cadrage : l'image du héros est un 16:9 (Jason et Lucia dans le champ,
-     voiture en feu à gauche, silos en fond). Recadrée en bandeau sur
-     téléphone, elle couperait les personnages — cadrage légèrement remonté sur
-     ordinateur. Sur téléphone, c'est une variante portrait dédiée qui porte son
-     propre cadrage (voir `Home.jsx` et `viceHeroPortraitImage`) ; on descend un
-     peu le point d'accroche pour que le ciel et les silos restent visibles
-     dans la partie voilée à gauche. */
+  /* Cadrage : l'image du héros est un 16:9 (le guerrier de Phantom Blade Zero
+     de dos, face à deux créatures spectrales). Recadrée en bandeau sur
+     téléphone, elle couperait le personnage — le point d'accroche est donc
+     remonté sur ordinateur pour garder les silhouettes dans la zone visible.
+     Sur téléphone, une variante portrait dédiée porte son propre cadrage
+     (voir `Home.jsx` et `heroPortraitImage`) : le guerrier et ses deux
+     adversaires y restent entiers sous le voile. */
   object-position:center 30%;
   background-position:center;background-size:cover;background-repeat:no-repeat;
   transform:scale(1.06);
@@ -889,11 +889,10 @@ img{max-width:100%}
 }
 .hero-shade{
   position:absolute;inset:0;z-index:3;
-  /* Le visuel du héros est clair (luminance moyenne ~123/255, ciel en haut) :
-     le voile porte donc le contraste — sous le titre, la luminance effective
-     tombe à ~18/255 en médiane et le pire écart mesuré du texte blanc reste à
-     ≈7,3:1 (au-dessus du seuil WCAG AAA). Ne pas alléger ce dégradé sans
-     remesurer. */
+  /* Le visuel du héros est très sombre (médiane ~36/255 sur la moitié gauche,
+     contre ~138/255 pour l'ancien key art GTA VI) : le voile existant reste en
+     place, il ne fait que renforcer le contraste du texte blanc. Ne pas
+     l'alléger sans remesurer. */
   background:
     linear-gradient(90deg, rgba(0,0,0,.76) 0%, rgba(0,0,0,.56) 30%, rgba(0,0,0,.22) 62%, rgba(0,0,0,.04) 100%),
     linear-gradient(180deg, rgba(5,6,15,.5) 0%, rgba(5,6,15,.04) 18%, rgba(5,6,15,0) 36%, rgba(5,6,15,.3) 64%, rgba(5,6,15,.9) 92%, rgba(5,6,15,.95) 100%),
@@ -2009,10 +2008,10 @@ img{max-width:100%}
   [dir=\"rtl\"] .mobile-menu-hud{right:auto;left:0}
 
   .hero{padding:104px 0 92px}
-  /* Cadrage portrait du héros : variante dédiée (900×990) centrée sur Jason
-     et Lucia, voiture en feu en amorce à gauche. L'image d'origine est un
-     16:9 — un recadrage vertical nu ne garderait qu'une bande et couperait les
-     deux personnages ; le héros ne doit pas sembler vide à gauche non plus. */
+  /* Cadrage portrait du héros : variante dédiée (900×990) centrée sur le
+     guerrier de Phantom Blade Zero et ses deux adversaires spectraux. L'image
+     d'origine est un 16:9 — un recadrage vertical nu ne garderait qu'une bande
+     et couperait le personnage ; le héros ne doit pas sembler vide à gauche. */
   .hero-bg{object-position:center top}
   /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
      ne tenait plus dans la colonne et le titre du héros passait à quatre

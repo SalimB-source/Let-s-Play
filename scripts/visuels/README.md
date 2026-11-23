@@ -65,3 +65,27 @@ python3 scripts/visuels/make_kojima_xbox_visual.py
 ```
 
 Les fontes sont embarquées localement afin que le rendu reste déterministe.
+
+## Carte Instagram — test de Modern Warfare 4 (arabe)
+
+`make_mw4_review_ar.py` produit `instagram/cod-mw4-test-arabe.png` : visuel
+officiel de campagne en haut, logo Let’s Play, panneau arrondi avec la note à
+gauche et cinq lignes de résumé en arabe à droite.
+
+Pillow de cet environnement n’est pas compilé avec libraqm : ni `direction` ni
+`language` ne sont acceptés. La composition arabe passe donc par HarfBuzz, qui
+fournit les glyphes liés, leurs positions et les marques de base, puis FreeType
+dessine chaque glyphe. D’où :
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/visuels/requirements.txt uharfbuzz freetype-py
+.venv/bin/python scripts/visuels/make_mw4_review_ar.py
+```
+
+`arabic_text.py` expose la classe `ArabicText` (`draw`, `width`, `wrap`) et sert
+de point de départ pour toute carte en arabe de l’atelier.
+
+Le key art utilisé est `instagram/assets/mw4-keyart.png` (voir le fichier
+`CREDITS.txt` du même dossier). Le visuel est recadré, le panneau se dimensionne
+sur les cinq lignes de texte, et la carte laisse une marge basse constante.

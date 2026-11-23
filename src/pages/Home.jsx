@@ -12,7 +12,7 @@ import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-23';
-import { viceHeroImage, viceHeroPortraitImage } from '../theme/viceTheme';
+import { heroImage, heroPortraitImage } from '../theme/viceTheme';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -214,17 +214,17 @@ export default function Home() {
     <>
       <section className="hero" id="top">
         {/* Visuel du héros : plein cadre, avec le voile existant pour
-            conserver le contraste du contenu éditorial. Jason et Lucia marchent
-            dans le champ devant la voiture en feu — visuel fourni par le
-            propriétaire du site (voir src/theme/viceTheme.js).
+            conserver le contraste du contenu éditorial. Key art officiel de
+            Phantom Blade Zero (voir src/theme/viceTheme.js), fourni par le
+            propriétaire du site.
             `srcSet` : l'image large est un 16:9 — sur téléphone, la
-            variante portrait est la seule qui garde les deux personnages
-            lisibles dans le héros vertical. */}
+            variante portrait est la seule qui garde le guerrier et les deux
+            créatures lisibles dans le héros vertical. */}
         <picture className="hero-picture">
-          <source media="(max-width:800px)" srcSet={viceHeroPortraitImage} />
+          <source media="(max-width:800px)" srcSet={heroPortraitImage} />
           <img
             className="hero-bg hero-bg--keyart"
-            src={viceHeroImage}
+            src={heroImage}
             alt=""
             aria-hidden="true"
             fetchPriority="high"
