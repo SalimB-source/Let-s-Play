@@ -121,13 +121,21 @@ test('la Contre-attaque reste une affaire de mêlée : aucun tireur ne la porte'
   const porteurs = RPG_DUEL_CARDS.filter((carte) => carte.contreAttaque).map((carte) => carte.id);
   for (const id of [
     'eirik-du-premier-serment', 'pourfendeur-des-djinns', 'veilleur-du-dernier-crepuscule',
-    'kusayla-roi-des-imazighen', 'guerrier-au-bouclier-rond', 'onna-musha-des-cendres',
+    'kusayla-roi-des-imazighen', 'guerrier-au-bouclier-rond',
     'chevalier-sacre-des-braises', 'cavalier-amazigh-du-desert', 'gardien-de-la-porte-ardente',
     'la-barbe-noire', 'maitre-du-marteau',
   ]) {
     assert.ok(porteurs.includes(id), `${id} porte la Contre-attaque`);
   }
   assert.ok(!porteurs.includes('salem'), 'SALEM tire : il rend sa volée par la règle des tireurs');
+  // L'Onna-musha des cendres ne rend plus les coups : elle garde l'Esquive et
+  // le Blocage, et Tojiro reste le samouraï qui riposte.
+  assert.ok(!porteurs.includes('onna-musha-des-cendres'),
+    'l’Onna-musha des cendres ne porte plus la Contre-attaque');
+  const onna = RPG_DUEL_CARDS.find((carte) => carte.id === 'onna-musha-des-cendres');
+  assert.doesNotMatch(onna.text, /Contre-attaque/u, 'la fiche ne l’annonce plus');
+  assert.equal(onna.esquive, true, 'l’Esquive reste');
+  assert.deepEqual(onna.blocage, { chance: 0.25, def: 2 }, 'le Blocage reste');
   // Aucune Tour : sans force, la riposte ne ferait rien.
   for (const id of porteurs) {
     const carte = RPG_DUEL_CARDS.find((c) => c.id === id);
