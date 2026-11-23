@@ -198,8 +198,9 @@ export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
  * et ce qui le protège dépend de la nature de l'attaquant.
  *
  * - une **mêlée** ne le frappe pas tant qu'un **tireur** adverse se tient
- *   derrière — le tireur du fond couvre le sorcier, même s'il y a une volante
- *   devant ;
+ *   derrière — le tireur au sol couvre le sorcier, même s'il y a une volante
+ *   devant. Un tireur volant ne couvre pas contre une mêlée au sol : elle ne
+ *   peut pas le viser ;
  * - un **tireur** sans Attaque ciblée ne le frappe pas tant que des **mêlées**
  *   au sol font écran en face ;
  * - l'**Attaque ciblée** choisit sa cible : elle passe les lignes, mais une
@@ -227,12 +228,13 @@ export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = 
   }
   if (!attaqueDirectePermise(attaquant, adverses, ciblesAtteignables)) return false;
   // À distance : les mêlées au sol font écran au sorcier. Une mêlée volante ne
-  // fait pas écran — elle ne couvre pas le sol — mais l'Envol adverse bloque
-  // déjà tout, plus haut.
+  // fait pas écran — elle ne couvre pas le sol. Les cibles atteignables
+  // restent soumises aux conditions de frappe directe, plus haut.
   if (estTireur(attaquant)) return !adverses.some((entite) => !estTireur(entite) && !entite.envol);
-  // Mêlée : un tireur derrière protège le sorcier, qu'il y ait ou non une
-  // volante devant.
-  return !adverses.some(estTireur);
+  // Mêlée : un tireur au sol protège le sorcier, même derrière une volante.
+  // Mais une mêlée terrestre ne peut pas viser un tireur volant : lui seul
+  // ne doit pas empêcher la frappe directe. Une mêlée volante peut le viser.
+  return !adverses.some((entite) => estTireur(entite) && (attaquant?.envol || !entite.envol));
 }
 
 /** Le nombre de cases du champ de ce duel : huit quand les lignes sont
