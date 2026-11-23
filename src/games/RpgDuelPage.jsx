@@ -2066,23 +2066,6 @@ export function TempeteSableZone({ effet, onTermine = null }) {
         className="rpg-fx-video"
         onEnded={() => onTermine?.(effet.effectId)}
       />
-      <i className="rpg-tempete-sable-zone__voile" />
-      <i className="rpg-tempete-sable-zone__lame">
-        <i className="rpg-tempete-sable-zone__front" />
-      </i>
-      {GRAINS_TEMPETE_ZONE.map((grain) => (
-        <i
-          key={grain.x}
-          className="rpg-tempete-sable-zone__grain"
-          style={{
-            '--x': `${grain.x}%`,
-            '--dx': `${grain.dx}px`,
-            '--dy': `${grain.dy}px`,
-            '--d': `${grain.d}ms`,
-            '--taille': `${grain.t}px`,
-          }}
-        />
-      ))}
     </div>
   );
 }
