@@ -225,9 +225,9 @@ test('la page du duel emploie les deux animations, sans changer la structure', (
   assert.match(page, /base=\{RPG_PV_SORCIER_BASE\}/, 'le maximum d’origine du sorcier est transmis');
   assert.match(page, /base=\{RPG_PV_JOUEUR\}/, 'celui du joueur aussi');
   assert.match(page, /<CompteurCarte type="heures" valeur=\{entite\.heures\.restants\} \/>/);
-  assert.match(page, /rpg-card__arme-compteurs[\s\S]*?<CompteurCarte type="durabilite" valeur=\{durabiliteArme\}/,
-    'les compteurs de durabilité de l’arme s’affichent dans sa vignette');
-  assert.match(page, /<CompteurCarte type="sable" valeur=\{entite\.arme\.compteurs\}/,
+  assert.match(page, /rpg-card__arme-compteurs[\s\S]*?<CompteurCarte type="durabilite" valeur=\{durabilite\}/,
+    'les compteurs de durabilité de l’arme s’affichent sur sa carte');
+  assert.match(page, /<CompteurCarte type="sable" valeur=\{sable\}/,
     'les compteurs de sable de l’arme s’affichent');
   assert.doesNotMatch(page, /<span className="rpg-wizard-plate__hp-value">\{duel\./,
     'la page ne rend plus les chiffres de vie à la main');

@@ -3038,6 +3038,7 @@ export function TableCard({
   porteeVisible = false,
   declaredAttacker = false,
   onClick,
+  onInspectWeapon,
   canDragBlocker = false,
   canReceiveBlocker = false,
   draggedBlocker = false,
@@ -3332,18 +3333,6 @@ export function TableCard({
           <span>z</span><span>Z</span><span>Z</span><span>Z</span>
         </span>
       )}
-      {cartesArmes.length > 0 && (
-        <span className={`rpg-card__arme-vignette${durabiliteArme > 0 || entite.arme?.compteurs > 0 ? ' has-compteurs' : ''}`} data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
-          <img src={cardArt(cartesArmes[0])} alt="" />
-          {(durabiliteArme > 0 || entite.arme?.compteurs > 0) && (
-            <span className="rpg-card__arme-compteurs">
-              {durabiliteArme > 0 && <CompteurCarte type="durabilite" valeur={durabiliteArme} titre={`${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité`} />}
-              {entite.arme?.compteurs > 0 && <CompteurCarte type="sable" valeur={entite.arme.compteurs} titre="Compteurs de sable de l’arme" />}
-            </span>
-          )}
-          {cartesArmes.length > 1 && <span className="rpg-card__arme-nombre">+{cartesArmes.length - 1}</span>}
-        </span>
-      )}
       {moba && <span className="moba__sr-only">{nom}</span>}
       {ascensionSelection?.eligible && <span className="rpg-ascension-material-mark" aria-hidden="true">
         <b>{ascensionSelection.numero || '+'}</b><span>Coût <strong>{ascensionSelection.cout}</strong></span>
@@ -3492,20 +3481,13 @@ export function TableCard({
       </button>
   );
 
-  // La carte prisonnière, DERRIÈRE son capteur : la créature prise en cale
-  // reste sur la table, glissée sous le ravisseur — elle dépasse par le haut
-  // et la droite, inclinée, assombrie, derrière les chaînes, son nom en haut
-  // de la carte visible. Décorative (pointer-events none, aria-hidden) : la
-  // cale se lit dans l'aria du capteur et dans sa fiche, qui empile les deux
-  // créatures en perspective. Le wrapper
-  // n'existe qu'avec une prisonnière : sans prise, le DOM reste celui
-  // d'avant, une carte = un bouton. Le wrapper reste une CARTE de la rangée :
-  // il reçoit la case du mode sans terrains (la grille de cinq colonnes le
-  // placerait sinon au hasard) et se laisse mesurer comme ses voisines.
-  if (!prisonniereCarte) return carteRendue;
+  // La prisonnière et les cartes d'armes vivent derrière la créature, dans
+  // une boîte de la taille d'une case. Les armes sont des boutons séparés :
+  // leur consultation ne déclenche jamais l'action de combat du porteur.
+  if (!prisonniereCarte && !cartesArmes.length) return carteRendue;
   return (
     <span
-      className="rpg-card-prison"
+      className={`rpg-card-prison${cartesArmes.length ? ' rpg-card-avec-arme' : ''}`}
       style={caseEssai ? {
         '--case-essai': caseEssai,
         '--case-col': ((caseEssai - 1) % RPG_LIGNES_CASES) + 1,
@@ -3513,11 +3495,29 @@ export function TableCard({
       data-case-essai={caseEssai ?? undefined}
       data-ligne={caseEssai ? ligneDeCase(caseEssai - 1) : undefined}
     >
-      <span className="rpg-card__prisonniere" aria-hidden="true">
+      {prisonniereCarte && <span className="rpg-card__prisonniere" aria-hidden="true">
         <span className="rpg-card__prisonniere-nom">{entite.enCale.name}</span>
         <img className="rpg-card__prisonniere-art" src={cardArt(prisonniereCarte)} alt="" />
         <span className="rpg-card__prisonniere-chaine">⛓</span>
-      </span>
+      </span>}
+      {armes.map((id, index) => {
+        const arme = cardById(id);
+        if (!arme) return null;
+        const indexMagie = index - (entite.arme?.carteId ? 1 : 0);
+        const durabilite = index === 0 ? durabiliteArme : (entite.durabilitesArmes?.[indexMagie] ?? 2);
+        const sable = index === 0 ? (entite.arme?.compteurs ?? 0) : 0;
+        return <button type="button" className="rpg-card__arme-derriere" key={`${arme.id}-${index}`}
+          style={{ '--rpg-arme-index': index }} data-card-id={arme.id} data-arme-equipee={arme.id}
+          aria-label={`Voir l’arme ${arme.name}${durabilite > 0 ? `, ${durabilite} compteur${durabilite > 1 ? 's' : ''} de durabilité` : ''}${sable > 0 ? `, ${sable} compteur${sable > 1 ? 's' : ''} de sable` : ''}`}
+          title={`Voir ${arme.name}`} onClick={(event) => { event.stopPropagation(); onInspectWeapon?.(arme, event); }}>
+          <img src={cardArt(arme)} alt="" draggable="false" />
+          <span className="rpg-card__arme-titre">{arme.name}</span>
+          {(durabilite > 0 || sable > 0) && <span className="rpg-card__arme-compteurs" aria-hidden="true">
+            {durabilite > 0 && <CompteurCarte type="durabilite" valeur={durabilite} />}
+            {sable > 0 && <CompteurCarte type="sable" valeur={sable} />}
+          </span>}
+        </button>;
+      })}
       {carteRendue}
     </span>
   );
@@ -3893,14 +3893,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
     >
       <img src={estEnFurie ? cardArtFurie(carte) : (entite?.art ?? cardArt(carte))} alt="" />
       <RpgCadreCarte carte={carte} />
-      {entite && armesEquipees.length > 0 && <span className={`rpg-card__arme-vignette${entite.durabiliteArme > 0 || entite.compteursArme > 0 ? ' has-compteurs' : ''}`} aria-hidden="true">
-        <img src={cardArt(armesEquipees[0])} alt="" />
-        {(entite.durabiliteArme > 0 || entite.compteursArme > 0) && <span className="rpg-card__arme-compteurs">
-          {entite.durabiliteArme > 0 && <CompteurCarte type="durabilite" valeur={entite.durabiliteArme} />}
-          {entite.compteursArme > 0 && <CompteurCarte type="sable" valeur={entite.compteursArme} />}
-        </span>}
-        {armesEquipees.length > 1 && <span className="rpg-card__arme-nombre">+{armesEquipees.length - 1}</span>}
-      </span>}
       {estEnFurie && <VignetteFurie />}
       {entite && ((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />}
       {entite?.protection && <EgideBouclier couleurs={[entite.protection.contre].flat(Infinity).filter(Boolean)} />}
@@ -14913,6 +14905,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       critiqueFx={critiqueDeCarte(entite, pile, deployee)}
                       bouclierFx={bouclierDeCarte(entite, pile, deployee)}
                       porteeVisible={Boolean(porteeSurvol?.cibles?.has(entite.id))}
+                      onInspectWeapon={(arme, event) => {
+                        // Brise-lame vise le porteur : cliquer l'arme désigne
+                        // aussi ce porteur, sans changer les règles du sort.
+                        if (cibleEnCours && carteCiblee?.effet?.type === 'destruction-arme') {
+                          if (proprietaire === 'joueur') cliquerCreatureJoueur(entite);
+                          else cliquerCreatureEnnemie(entite);
+                          return;
+                        }
+                        carteSourceApercuRef.current = event.currentTarget;
+                        ouvrirApercuCatalogue(arme, { surface: 'LE SABLIER' });
+                      }}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       ascensionSelection={selectionAscension.pourCreature(duel, 'sorcier', entite, reserveAscensionDisponible)}
@@ -15055,6 +15058,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         && rpgPeutEngagerPourMana(duel, 'joueur', entite.id)}
                       onEngagerMana={() => engagerPourMana(entite)}
                       playerTurn={tourDuJoueur}
+                      onInspectWeapon={(arme, event) => {
+                        // Brise-lame vise le porteur : cliquer l'arme désigne
+                        // aussi ce porteur, sans changer les règles du sort.
+                        if (cibleEnCours && carteCiblee?.effet?.type === 'destruction-arme') {
+                          if (proprietaire === 'joueur') cliquerCreatureJoueur(entite);
+                          else cliquerCreatureEnnemie(entite);
+                          return;
+                        }
+                        carteSourceApercuRef.current = event.currentTarget;
+                        ouvrirApercuCatalogue(arme, { surface: 'LE SABLIER' });
+                      }}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
                       ascensionSelection={selectionAscension.pourCreature(duel, 'joueur', entite, reserveAscensionDisponible)}

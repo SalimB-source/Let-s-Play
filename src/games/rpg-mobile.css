@@ -1096,8 +1096,7 @@
 /* Les effets et le bonus de l'arme ne s'impriment pas sur la carte posée.
    Les compteurs (Heures sur la créature, sable sur la Jitte) restent sous le
    repère de couleur en petits losanges, même si la carte rétrécit au doigt.
-   Une vignette en losange indique l'arme au-dessus de la créature sans changer son
-   cadre ; la carte complète et ses effets restent disponibles dans l'aperçu. */
+   La carte d'arme dépasse derrière la créature et ouvre sa propre fiche. */
 .rpg-battle--touch .card-row .rpg-card { container-type: inline-size; }
 .rpg-battle--touch .rpg-card__foot .rpg-stat-icon,
 .rpg-battle--touch .rpg-hand__stats .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
