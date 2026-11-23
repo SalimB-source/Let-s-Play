@@ -12,7 +12,7 @@ import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-23';
-import { heroImage, heroPortraitImage } from '../theme/viceTheme';
+import { HERO_SLIDE_MS, heroFallbackImage, heroSlides } from '../theme/homeHero';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -67,6 +67,9 @@ export default function Home() {
   const [liveVideoId, setLiveVideoId] = useState(null);
   const isLive = Boolean(liveVideoId);
   const [featuredTrailer, setFeaturedTrailer] = useState(null);
+  // Diaporama du héros : un visuel toutes les 3 s, en boucle. `prefers-reduced-
+  // motion` fige le premier visuel (voir l'effet plus bas).
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   // La une suit la langue de lecture comme les autres cartes (src/news/localized/).
   const [localizedFeatured] = useLocalizedListings([featuredStory], lang);
   const featuredNews = {
@@ -74,6 +77,22 @@ export default function Home() {
     video: featuredTrailer?.id,
     videoTitle: featuredTrailer?.title,
   };
+
+  // Diaporama automatique du héros : une image toutes les 3 s. Le minuteur est
+  // suspendu quand l'onglet est en arrière-plan (le navigateur gèle déjà les
+  // `setInterval`, mais on repart proprement au retour) et désactivé si
+  // l'utilisateur a demandé moins d'animations : il garde alors le premier
+  // visuel, sans fondu.
+  useEffect(() => {
+    if (heroSlides.length < 2) return undefined;
+    const reduced = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return undefined;
+    const timer = setInterval(() => {
+      setActiveHeroSlide((index) => (index + 1) % heroSlides.length);
+    }, HERO_SLIDE_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   // Les métadonnées de bande-annonce couvrent tout le catalogue d'articles :
   // elles ne sont nécessaires qu'à la une, après le premier rendu de l'accueil.
@@ -213,24 +232,36 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        {/* Visuel du héros : plein cadre, avec le voile existant pour
-            conserver le contraste du contenu éditorial. Key art officiel de
-            Phantom Blade Zero (voir src/theme/viceTheme.js), fourni par le
-            propriétaire du site.
-            `srcSet` : l'image large est un 16:9 — sur téléphone, la
-            variante portrait est la seule qui garde le guerrier et les deux
-            créatures lisibles dans le héros vertical. */}
-        <picture className="hero-picture">
-          <source media="(max-width:800px)" srcSet={heroPortraitImage} />
-          <img
-            className="hero-bg hero-bg--keyart"
-            src={heroImage}
-            alt=""
-            aria-hidden="true"
-            fetchPriority="high"
-            decoding="async"
-          />
-        </picture>
+        {/* Visuel du héros : diaporama automatique en fondu enchaîné, un
+            visuel toutes les 3 s (voir `src/theme/homeHero.js`). Les trois clés
+            d'art — Phantom Blade Zero, The Blood of Dawnwalker (emblème et
+            titre retirés de l'image), The Legend of Zelda — sont fournies par
+            le propriétaire du site.
+            Toutes les images sont montées et empilées : le fondu est purement
+            CSS (`opacity`), donc aucune n'est rechargée au changement. La
+            première est prioritaire, les suivantes se chargent en différé.
+            `srcSet` : chaque visuel a sa variante portrait, seule à garder le
+            sujet lisible dans le héros vertical du téléphone. */}
+        <div className="hero-slides">
+          {heroSlides.map((slide, index) => (
+            <picture
+              key={slide.id}
+              className={`hero-picture${index === activeHeroSlide ? ' is-active' : ''}${slide.light ? ' hero-picture--light' : ''}`}
+              aria-hidden="true"
+            >
+              <source media="(max-width:800px)" srcSet={slide.portrait} />
+              <img
+                className="hero-bg hero-bg--keyart"
+                src={slide.image || heroFallbackImage}
+                alt=""
+                aria-hidden="true"
+                fetchPriority={index === 0 ? 'high' : 'low'}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+            </picture>
+          ))}
+        </div>
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">

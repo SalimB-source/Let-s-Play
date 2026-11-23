@@ -864,11 +864,21 @@ img{max-width:100%}
   background:#05060f;
   padding:120px 0 110px;
 }
-/* Le héros affiche l'image Let's Play en plein cadre, le voile `.hero-shade`
-   gardant le texte lisible à gauche. Le `<picture>` qui l'enveloppe ne doit pas
-   changer sa mise en page : il n'existe que pour choisir la variante portrait
-   en téléphone (voir `Home.jsx`). */
-.hero-picture{position:absolute;inset:0;display:block}
+/* Diaporama du héros : les visuels sont empilés dans `.hero-slides` et
+   n'échangent que leur `opacity` (fondu enchaîné d'1 s toutes les 3 s, voir
+   `HERO_SLIDE_MS` dans `src/theme/homeHero.js`). Les `<picture>` restent en
+   position absolue pour ne pas changer la mise en page du héros : ils
+   n'existent que pour choisir la variante portrait en téléphone. */
+.hero-slides{position:absolute;inset:0;z-index:0}
+.hero-picture{
+  position:absolute;inset:0;display:block;
+  opacity:0;transition:opacity 1s ease-in-out;
+  pointer-events:none;
+}
+.hero-picture.is-active{opacity:1}
+@media (prefers-reduced-motion: reduce){
+  .hero-picture{transition:none}
+}
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
@@ -883,6 +893,16 @@ img{max-width:100%}
   background-position:center;background-size:cover;background-repeat:no-repeat;
   transform:scale(1.06);
   animation:hero-drift 24s ease-in-out infinite alternate;
+}
+/* Visuel lumineux (la forêt de Zelda) : la moitié gauche de l'image est claire,
+   le voile commun n'y suffit pas. Cette couche supplémentaire est posée SOUS
+   `.hero-shade` (z-index 2) et ne couvre que la zone du titre ; elle s'efface
+   vers la droite : le sujet (Link et la fée) reste intact. */
+.hero-picture--light::after{
+  content:'';position:absolute;inset:0;z-index:2;
+  background:
+    linear-gradient(90deg, rgba(5,6,15,.58) 0%, rgba(5,6,15,.34) 36%, rgba(5,6,15,.08) 68%, rgba(5,6,15,0) 100%),
+    linear-gradient(0deg, rgba(5,6,15,.36) 0%, rgba(5,6,15,0) 34%);
 }
 @keyframes hero-drift{to{transform:scale(1.1)}}
 @media (prefers-reduced-motion: reduce){
