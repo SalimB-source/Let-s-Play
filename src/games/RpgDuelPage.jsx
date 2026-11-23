@@ -3419,6 +3419,15 @@ export function TableCard({
           className={`rpg-card-icones--colonne${activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />
       )}
+      {activation && !estSite && (
+        <span
+          className="rpg-card__effet-badge"
+          title="Créature avec effet activé"
+          aria-hidden="true"
+        >
+          ⚡
+        </span>
+      )}
       {boutonEffetVisible && (
         <div className="rpg-card__effet-menu" role="group" aria-label="Actions de la créature">
           <button

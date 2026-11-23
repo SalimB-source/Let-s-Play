@@ -16880,3 +16880,47 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #fef08a;
   font-weight: 700;
 }
+
+/* Badge triangulaire avec éclair jaune pour les créatures ayant un effet activé */
+.rpg-card__effet-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 8;
+  width: 22px;
+  height: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+  font-size: 11px;
+  line-height: 1;
+  color: #fde047;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85));
+  pointer-events: none;
+}
+
+/* Boutons 3D centrés horizontalement sous la créature */
+.rpg-card__effet-menu {
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  justify-content: center;
+}
+
+.rpg-card__effet-menu .rpg-card__effet-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #fde047;
+  border-bottom: 4px solid #b45309;
+  background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform .1s ease, border-bottom-width .1s ease, filter .12s ease;
+}
+
+.rpg-card__effet-menu .rpg-card__effet-btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
