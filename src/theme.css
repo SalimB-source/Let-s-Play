@@ -1686,11 +1686,30 @@
     background:rgba(255,214,25,.22);
     border-color:rgba(138,97,0,.32);
   }
+  /* Ici la pilule de recherche est BLANCHE (posée sur l'île violette du
+     bureau) : ses encres doivent donc redevenir celles du thème clair. Les
+     règles de §6 (« île claire », avant cette requête média) blanchissaient le
+     texte, la loupe et le raccourci — blanc sur blanc, champ illisible. */
   [data-theme='light'] .nav .nav-search{
     background:rgba(255,255,255,.94);
     border-color:rgba(255,255,255,.48);
   }
   [data-theme='light'] .nav .nav-search:focus-within{background:#fff}
+  [data-theme='light'] .nav .nav-search input{color:var(--ink)}
+  [data-theme='light'] .nav .nav-search input::placeholder{color:rgba(35,32,70,.45)}
+  /* `--dim` plutôt que l'alpha 0,42 utilisé hors de l'île : composité sur le
+     blanc de la pilule, ce gris garde ≈ 4,5:1 pour le pictogramme. */
+  [data-theme='light'] .nav .nav-search-icon{color:var(--dim)}
+  [data-theme='light'] .nav .nav-search-kbd{
+    color:rgba(35,32,70,.72);
+    border-color:rgba(86,70,190,.22);
+    background-color:rgba(86,70,190,.06);
+  }
+  [data-theme='light'] .nav .nav-search button{
+    background:rgba(86,70,190,.08);
+    color:var(--muted);
+  }
+  [data-theme='light'] .nav .nav-search button:hover{background:var(--yellow);color:var(--ink)}
   [data-theme='light'] .nav .theme-toggle{
     background:rgba(255,255,255,.12);
     border-color:rgba(255,255,255,.28);
