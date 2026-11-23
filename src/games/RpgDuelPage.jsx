@@ -3451,7 +3451,7 @@ export function TableCard({
               className={`rpg-card__stat--atk${classeAttaque ? ` ${classeAttaque}` : ''}`}
               data-stat-variation={classeAttaque === 'is-buffed' ? 'buff' : classeAttaque === 'is-debuffed' ? 'debuff' : undefined}
             >
-              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} magique={entiteLanceEtoile(entite)} iconeType={armes.length ? null : entiteIconeType(entite)} /><span className="rpg-stat-value">{entite.atk}</span>
+              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} distance={entite.distance} iconeType={armes.length ? null : entiteIconeType(entite)} /><span className="rpg-stat-value">{entite.atk}</span>
             </span>
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}
@@ -3922,7 +3922,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       />
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
-          <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} magique={!armesEquipees.length && carteLanceEtoile(carte)} iconeType={!armesEquipees.length && iconeTypeDe(carte)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
+          <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} iconeType={!armesEquipees.length && iconeTypeDe(carte)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
           <span data-armure={entite?.armure ?? undefined} className={`rpg-card__pt${entite?.blessee ? ' is-wounded' : ''} ${entite ? classeVariationStatCreature(defenseAffichee, carte.def) : ''}`}><CardStatIcon type="defense" /><span className="rpg-stat-value">{defenseAffichee}</span></span>
         </footer>
       )}
@@ -4281,7 +4281,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
 
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} magique={carteLanceEtoile(carte)} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
         </footer>
       )}
@@ -15859,7 +15859,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} magique={carteLanceEtoile(carte)} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
                     </span>
                   )}
