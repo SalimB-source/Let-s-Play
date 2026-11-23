@@ -208,7 +208,7 @@
     "check:rpg-art": "node --test tests/rpg-art-allegee.test.js",
     "check:rpg-plateau-mobile": "node --test tests/rpg-plateau-mobile.test.js",
     "check:rpg-portrait": "node --test tests/rpg-duel-portrait.test.js tests/rpg-session-sablier.test.js",
-    "check:rpg-lignes": "node --test tests/rpg-lignes.test.js tests/rpg-lignes-duel.test.js tests/rpg-lignes-css.test.js",
+    "check:rpg-lignes": "node --test tests/rpg-lignes.test.js tests/rpg-lignes-duel.test.js tests/rpg-lignes-css.test.js tests/rpg-melee-volante.test.js",
     "check:rpg-zones": "node --test tests/rpg-zones.test.js tests/rpg-portees-effets.test.js && node scripts/rpg-zones-ui-check.mjs",
     "check:rpg-main-cale": "node --test tests/rpg-main-impaire.test.js tests/rpg-hud-rail-gauche.test.js && node scripts/rpg-main-cale-check.mjs",
     "check:rpg-avancee": "node --test tests/rpg-mouvement.test.js tests/rpg-avancee-scenario.test.js tests/rpg-avancee-cases.test.js tests/rpg-avancee-ui.test.js tests/rpg-attaque-selection.test.js tests/rpg-recul.test.js tests/rpg-invocation-poussee.test.js tests/rpg-plateau-mobile.test.js tests/rpg-portees.test.js tests/rpg-tir-riposte.test.js tests/rpg-lignes-duel.test.js tests/rpg-sorcier-objectif.test.js && node scripts/rpg-avancee-ui-check.mjs",
