@@ -13,10 +13,10 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 214, 11, .34), rgba(215, 172, 104, .14));
-  mask: url('./assets/bouclier-defenseur.svg') center 56% / 46% auto no-repeat;
-  -webkit-mask: url('./assets/bouclier-defenseur.svg') center 56% / 46% auto no-repeat;
-  opacity: .55;
+  background: linear-gradient(180deg, rgba(255, 224, 92, .62), rgba(215, 172, 104, .32));
+  mask: url('./assets/bouclier-defenseur.svg') center 52% / 74% auto no-repeat;
+  -webkit-mask: url('./assets/bouclier-defenseur.svg') center 52% / 74% auto no-repeat;
+  opacity: .88;
 }
 
 /* Une pulsation douce met en évidence la pierre, sans faire disparaître son

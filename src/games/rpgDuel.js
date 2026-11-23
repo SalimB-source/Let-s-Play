@@ -9725,6 +9725,11 @@ function resoudreEchangeIndividuel(duel, cote, attaquantId, cibleId, ciblee, { r
       if (!rate) {
         gelerAdversaireDePorteur(duel, attaquant, cible);
         if (auContact) gelerAdversaireDePorteur(duel, cible, attaquant);
+        if (ciblee && cardColors(duelCardById(attaquant.carteId)).includes('sable') && !attaquant.bouclier && rng() < 0.25) {
+          attaquant.bouclier = true;
+          attaquant.bouclierEpuise = false;
+          duel.log.push(`${attaquant.name} s’équipe d’un bouclier suite à son attaque à distance de sable !`);
+        }
       }
       // Le gel se résout avant les blessures des deux côtés, sans favoriser
       // l'attaquant ; les deux forces sont ensuite déterminées avant l'échange.
