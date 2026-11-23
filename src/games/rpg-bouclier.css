@@ -13,10 +13,10 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 224, 92, .62), rgba(215, 172, 104, .32));
+  background: linear-gradient(180deg, rgba(255, 224, 92, .52), rgba(215, 172, 104, .26));
   mask: url('./assets/bouclier-defenseur.svg') center 52% / 74% auto no-repeat;
   -webkit-mask: url('./assets/bouclier-defenseur.svg') center 52% / 74% auto no-repeat;
-  opacity: .88;
+  opacity: .72;
 }
 
 /* Une pulsation douce met en évidence la pierre, sans faire disparaître son
