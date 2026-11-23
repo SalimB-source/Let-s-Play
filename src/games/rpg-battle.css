@@ -16787,7 +16787,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Animation organique et granuleuse pour les sorts de zone de sable */
 .rpg-zone-fx--sable,
-.rpg-sort-zone--sable {
+.rpg-sort-zone--sable,
+.rpg-tempete-sable-zone {
   background:
     radial-gradient(2px 2px at 14% 28%, rgba(253, 230, 138, 0.9), transparent),
     radial-gradient(1.5px 1.5px at 32% 64%, rgba(245, 158, 11, 0.85), transparent),
@@ -16824,7 +16825,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Animation organique et incandescente pour les sorts de zone de feu (braise) */
 .rpg-zone-fx--braise,
-.rpg-sort-zone--braise {
+.rpg-sort-zone--braise,
+.rpg-roue-feu {
   background:
     radial-gradient(2.5px 2.5px at 18% 72%, rgba(254, 240, 138, 0.95), transparent),
     radial-gradient(2px 2px at 36% 42%, rgba(251, 146, 60, 0.9), transparent),
@@ -16935,4 +16937,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   list-style: none;
   background: transparent;
   border: none;
+}
+
+/* Forme de bouclier pour les créatures Défenseur et ombre portée suivant le contour */
+.rpg-card.has-garde {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 72%, 50% 100%, 0% 72%);
+}
+.rpg-creature-slot:has(> .rpg-card.has-garde) {
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.82)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
 }
