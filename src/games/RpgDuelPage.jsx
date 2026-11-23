@@ -15030,6 +15030,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                             || Boolean(carteCiblee?.arrivee?.cibleSoi))
                           && (carteCiblee?.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carteCiblee)))
                           && (!(carteCiblee?.arrivee?.type === 'exil-temporaire' || carteCiblee?.arrivee?.donneDefenseur) || cardById(entite.carteId)?.kind !== 'site')
+                          && (!carteEstArme(carteCiblee) || rpgArmeCompatible(carteCiblee, entite))
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
                           && cibleRespecteCoutMax(carteCiblee, entite)
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
