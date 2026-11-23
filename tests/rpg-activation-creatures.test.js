@@ -203,27 +203,91 @@ test('attaquer et effet activé s’ouvrent au-dessus de la carte, plus grands e
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   const blocs = (selecteur) => css.match(new RegExp(`${selecteur.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{[^}]*\\}`, 'gu')) ?? [];
 
+  // Une seule définition du menu : la seconde contredisait la première.
+  const menus = blocs('.rpg-card__effet-menu');
+  assert.equal(menus.length, 1, 'une seule définition du menu');
+  assert.match(menus[0], /bottom:\s*calc\(100% \+ 10px\)/u, 'au-dessus de la carte');
+  assert.match(menus[0], /top:\s*auto/u, 'plus rien ne le pend en dessous');
+  assert.match(menus[0], /left:\s*50%/u);
+  assert.match(menus[0], /transform:\s*translateX\(-50%\)/u, 'centré sur la créature');
+  assert.match(menus[0], /justify-content:\s*center/u);
+
+  // Les boutons sont des cases de la barre, plus des boîtes absolues : c'est le
+  // menu qui se place, et la paire reste centrée sur la carte.
   const bouton = blocs('.rpg-card__effet-btn')[0];
   assert.ok(bouton, 'le bouton d’effet a sa règle');
-  assert.match(bouton, /bottom:\s*calc\(100% \+ 10px\)/u, 'au-dessus de la carte');
-  assert.match(bouton, /top:\s*auto/u, 'plus rien ne le pend en dessous');
-  assert.match(bouton, /left:\s*50%/u);
-  assert.match(bouton, /transform:\s*translateX\(-50%\)/u, 'centré sur la carte');
+  assert.match(bouton, /position:\s*static/u, 'le bouton ne se place plus tout seul');
+  assert.doesNotMatch(bouton, /transform:/u, 'aucun `transform` que l’animation viendrait figer');
+  assert.match(bouton, /width:\s*52px/u);
+  assert.match(bouton, /height:\s*52px/u);
+  assert.match(bouton, /justify-content:\s*center/u);
+  assert.match(bouton, /touch-action:\s*manipulation/u, 'la case reste la cible au doigt');
 
-  const menus = blocs('.rpg-card__effet-menu');
-  assert.equal(menus.length, 2, 'les deux définitions du menu suivent la même place');
-  for (const menu of menus) {
-    assert.match(menu, /bottom:\s*calc\(100% \+ 10px\)/u);
-    assert.match(menu, /top:\s*auto/u);
-    assert.match(menu, /left:\s*50%/u);
-    assert.match(menu, /transform:\s*translateX\(-50%\)/u);
-  }
-  // Les deux boutons du menu (⚔ et ⚡) grandissent ensemble.
-  for (const regle of blocs('.rpg-card__effet-menu .rpg-card__effet-btn')) {
-    assert.match(regle, /width:\s*46px/u);
-    assert.match(regle, /height:\s*46px/u);
-    assert.match(regle, /font-size:\s*22px/u);
-  }
-  // Un menu au-dessus se rogne sinon sur le haut du cadre : le rognage s’ouvre.
-  assert.match(css, /\.rpg-card\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*58px/u);
+  // L'apparition ne joue que sur `scale`/`opacity` : un `transform` en image
+  // clé remplacerait celui du bouton et, remplissage `both` oblige, le
+  // laisserait décalé d'une demi-largeur — les deux cases se chevauchaient.
+  const pop = css.match(/@keyframes rpgEffetBtnPop\s*\{[^@]*?\}\s*\}/u)?.[0] ?? '';
+  assert.ok(pop.length > 0, 'l’animation d’apparition existe');
+  assert.doesNotMatch(pop, /transform/u, 'aucun `transform` dans les images clés');
+
+  // Le retour à l'appui se voit, sinon le clic semble perdu.
+  assert.match(css, /\.rpg-card__effet-btn:active\s*\{[^}]*transform:\s*translateY\(2px\)/u);
+  assert.match(css, /\.rpg-card__effet-btn:focus-visible\s*\{/u);
+
+  // Un bouton rogné ne reçoit aucun clic : le cadre s'ouvre assez, y compris
+  // sur les créatures équipées ou gardées dont les variantes pèsent trois
+  // classes (`.has-arme.has-garde`, `.has-arme:is(.has-resonance, …)`).
+  const rognage = blocs('.rpg-card.is-effet-menu')[0] ?? '';
+  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*78px/u,
+    `le rognage s'ouvre pour le menu : ${rognage.slice(0, 80)}`);
+
+  // Au doigt, la case grandit encore.
+  assert.match(css, /@media \(hover: none\) and \(pointer: coarse\)\s*\{[^@]*?\.rpg-card__effet-btn\s*\{[^}]*width:\s*58px/su);
+});
+
+test('l’éclair d’effet activé se range sous le coût de la carte, et grandit', () => {
+  const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  const bloc = css.match(/\.rpg-battle \.rpg-card--img \.rpg-card__effet-badge\s*\{[^}]*\}/u)?.[0] ?? '';
+  assert.ok(bloc.length > 0, 'le badge a sa place sur la table');
+  // Sous le losange de coût, sur le même axe de gauche que lui.
+  assert.match(bloc, /top:\s*calc\(var\(--rpg-card-element-marker-top, 5%\) \+ var\(--rpg-cout-taille, 26\.88px\)/u);
+  assert.match(bloc, /left:\s*0/u);
+  assert.match(bloc, /transform:\s*translateX\(-36%\)/u, 'le même décalage que le coût');
+  assert.match(bloc, /bottom:\s*auto/u, 'il ne pend plus au coin du cadre');
+  // Un peu plus grand qu'en coin (22×20, glyphe 11 px).
+  assert.match(bloc, /width:\s*30px/u);
+  assert.match(bloc, /height:\s*27px/u);
+  assert.match(bloc, /font-size:\s*16px/u);
+});
+
+test('Salem endurcit une alliée : +0/+2 jusqu’à la fin du tour', () => {
+  const d = duel();
+  d.tour = 'joueur';
+  const salem = poser(d, 'joueur', 'salem');
+  const allie = poser(d, 'joueur', 'dune-marchante');
+  const adverse = poser(d, 'sorcier', 'chien-du-guet');
+  const legales = rpgCiblesActivationLegales(d, 'joueur', salem.id);
+  assert.deepEqual(legales, [salem.id, allie.id], 'le Sondeur ne vise que son camp, lui compris');
+  assert.ok(!legales.includes(adverse.id), 'jamais une créature adverse');
+  const { res, tirs } = activer(d, salem.id, allie.id);
+  assert.equal(res.ok, true);
+  assert.equal(allie.def, 6, '+0/+2');
+  assert.equal(allie.atk, 2, 'l’attaque ne bouge pas');
+  assert.deepEqual(tirs.map((t) => t.v), ['renfort']);
+  assert.match(texteActivation(cardById('salem')), /\+0\/\+2 jusqu’à la fin du tour/u);
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  assert.equal(allie.def, 4, 'le renfort tombe avec le tour');
+});
+
+test('l’aperçu au survol s’efface devant la fenêtre d’effet ouverte', () => {
+  const jsx = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+  // Devenu interactif après 450 ms, l'aperçu prend les clics des deux boutons
+  // s'il les recouvre : la créature au menu ouvert n'a donc plus d'aperçu.
+  const rendus = jsx.match(/apercuSurvol\.entiteId !== menuEffetEntiteId/gu) ?? [];
+  assert.equal(rendus.length, 2, 'les deux emplacements de l’aperçu gardent la même priorité');
+  // Les boutons arrêtent la propagation : un clic sur ⚔ ou ⚡ ne referme pas le
+  // menu en déclenchant le clic de la carte.
+  const menu = jsx.slice(jsx.indexOf('rpg-card__effet-menu"'), jsx.indexOf('rpg-card__foot'));
+  assert.equal((menu.match(/event\.stopPropagation\(\)/gu) ?? []).length, 2,
+    'chaque bouton garde son clic');
 });

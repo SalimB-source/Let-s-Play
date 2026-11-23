@@ -16652,16 +16652,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Fenêtre d'effet activé style Duel Links, AU-DESSUS de la carte.
-   Les deux commandes (⚔ attaquer, ⚡ activer l'effet) pendent au-dessus du
+   Les deux commandes (⚔ attaquer, ⚡ activer l'effet) flottent au-dessus du
    cadre, centrées sur la carte : les cartes qui rognent leur débordement
    (`.rpg-card--img` et `.has-arme` à 24 px, `.has-garde` et les résonances à
-   58 px) coupaient le bas du menu quand il pendait sous le cadre, et il
-   tombait dans le dock de la main. Tant que le menu est ouvert, la carte
-   ouvre son rognage de quoi loger les boutons entiers — 10 px d'écart, 46 px
-   de hauteur, 1 px de levée au survol. Refermé, le cadre reprend sa marge
-   d'origine. */
-.rpg-card.is-effet-menu {
-  overflow-clip-margin: 58px;
+   58 px) coupaient le menu quand il pendait sous le cadre, et il tombait dans
+   le dock de la main. Tant que le menu est ouvert, la carte ouvre son rognage
+   de quoi loger les boutons entiers — 10 px d'écart, 52 px de hauteur (58 au
+   doigt), 1 px de levée au survol, plus l'ombre. Refermé, le cadre reprend sa
+   marge d'origine.
+
+   Un bouton rogné n'est pas seulement coupé : ce qui dépasse du rognage ne
+   reçoit plus aucun clic. D'où la marge large, et la seconde ligne de
+   sélecteurs — `.rpg-card.has-arme.has-garde` et
+   `.rpg-card.has-arme:is(.has-resonance, …)` pèsent trois classes et
+   repassaient à 58 px sur les créatures équipées. */
+.rpg-card.is-effet-menu,
+.rpg-card:is(.has-arme, .has-garde, .has-resonance, .has-aura, .has-malediction).is-effet-menu {
+  overflow-clip-margin: 78px;
   /* La fenêtre passe AU-DESSUS de toutes les cartes. Les rangées sont des
      contextes d'empilement (z-index 4, puis 5 en large) : les boutons, même à
      z-index 90 dans leur carte, restaient sous les terrains (41) et sous le
@@ -16679,47 +16686,81 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 .rpg-card__effet-btn {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 10px);
-  top: auto;
-  transform: translateX(-50%);
-  z-index: 20;
+  /* Le bouton ne se place plus tout seul : c'est le menu qui flotte au-dessus
+     de la carte et centre ses deux cases. Un `transform` ici serait repris —
+     et figé — par l'animation d'apparition (remplissage `both`), ce qui
+     décalait chaque bouton d'une demi-largeur vers la gauche : la paire
+     n'était plus centrée sur la créature et les deux cases se chevauchaient
+     à moitié, d'où les clics qui tombaient sur le mauvais bouton. */
+  position: static;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 11px;
-  border-radius: 8px;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 12px;
   border: 1.5px solid #fde047;
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-bottom: 4px solid #b45309;
+  background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
   color: #fef08a;
-  font-size: 11px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: .03em;
-  text-transform: uppercase;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .75), 0 0 0 1px rgba(253, 224, 71, .35);
+  line-height: 1;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, .75), inset 0 1px 0 rgba(255, 255, 255, .2);
   cursor: pointer;
-  white-space: nowrap;
+  /* Au doigt, la case reste la cible : pas de zoom au double tap, pas de
+     lueur bleue, et un retour à l'appui qui se voit. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .1s ease, border-bottom-width .1s ease, filter .12s ease;
   animation: rpgEffetBtnPop .16s ease-out both;
 }
 
 /* L'éclair garde sa propre boîte : dans un bouton `inline-flex` serré, le
-   glyphe nu hérite de la hauteur de ligne du texte et se fait rogner. Le même
-   glyphe sert d'amorce à la ligne de règle au survol — là, il suit le texte. */
+   glyphe nu hérite de la hauteur de ligne du texte et se fait rogner, et sa
+   marge droite de libellé (« ⚡ texte ») le décentre. Le même glyphe sert
+   d'amorce à la ligne de règle au survol — là, il suit le texte. */
 .rpg-card__effet-btn .rpg-activation-bolt {
   flex: none;
-  line-height: 1;
   margin-right: 0;
+  font-size: 24px;
+  line-height: 1;
 }
 
 .rpg-card__effet-btn:hover {
-  filter: brightness(1.12);
-  transform: translateX(-50%) translateY(-1px);
+  filter: brightness(1.14);
+  transform: translateY(-1px);
 }
 
+/* Le bouton s'enfonce : l'appui se voit avant que le menu ne se referme. */
+.rpg-card__effet-btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  filter: brightness(1.05);
+}
+
+.rpg-card__effet-btn:focus-visible {
+  outline: 2px solid #fde047;
+  outline-offset: 2px;
+}
+
+/* L'apparition ne joue que sur `scale` et `opacity` : un `transform` dans une
+   image clé remplacerait celui du bouton — et, remplissage `both` oblige, le
+   garderait figé après l'animation. */
 @keyframes rpgEffetBtnPop {
-  from { opacity: 0; transform: translateX(-50%) scale(.75); }
-  to { opacity: 1; transform: translateX(-50%) scale(1); }
+  from { opacity: 0; scale: .78; }
+  to { opacity: 1; scale: 1; }
+}
+
+/* Au doigt, la case grandit encore : 58 px sous le pouce, 26 px de glyphe. */
+@media (hover: none) and (pointer: coarse) {
+  .rpg-card__effet-btn {
+    width: 58px;
+    height: 58px;
+    font-size: 26px;
+  }
+  .rpg-card__effet-btn .rpg-activation-bolt { font-size: 26px; }
 }
 
 /* Invite de commandes (journal des actions des créatures) */
@@ -16788,6 +16829,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    carte, centrées sur elle : `left: 50%` + `translateX(-50%)` place la paire
    sur l'axe de la carte, `bottom: calc(100% + 10px)` la pose au-dessus du
    cadre, sans jamais mordre sur le dock de la main. */
+/* Le menu est la seule boîte placée : au-dessus de la carte, centrée sur elle
+   (`left: 50%` + `translateX(-50%)`), ses deux cases côte à côte. Il n'existe
+   qu'une définition — la seconde, plus bas dans le fichier, la contredisait
+   silencieusement. */
 .rpg-card__effet-menu {
   position: absolute;
   left: 50%;
@@ -16798,31 +16843,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-}
-
-.rpg-card__effet-menu .rpg-card__effet-btn {
-  position: static;
-  transform: none;
-  width: 46px;
-  height: 46px;
-  padding: 0;
-  justify-content: center;
-  font-size: 22px;
-  line-height: 1;
-  border-radius: 11px;
-}
-
-/* L'éclair du bouton ⚡ porte une marge droite héritée des libellés « ⚡ texte »
-   de l'aperçu : seul dans son bouton, il le décentrait. */
-.rpg-card__effet-menu .rpg-activation-bolt {
-  margin-right: 0;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.rpg-card__effet-menu .rpg-card__effet-btn:hover {
-  transform: translateY(-1px);
+  gap: 12px;
 }
 
 /* Animation époustouflante multi-couches pour la tempête de sable */
@@ -17035,29 +17056,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
 }
 
-/* Boutons 3D centrés horizontalement au-dessus de la créature */
-.rpg-card__effet-menu {
-  left: 50%;
-  bottom: calc(100% + 10px);
-  top: auto;
-  transform: translateX(-50%);
-  justify-content: center;
-}
-
-.rpg-card__effet-menu .rpg-card__effet-btn {
-  width: 46px;
-  height: 46px;
-  font-size: 22px;
-  border: 1.5px solid #fde047;
-  border-bottom: 4px solid #b45309;
-  background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: transform .1s ease, border-bottom-width .1s ease, filter .12s ease;
-}
-
-.rpg-card__effet-menu .rpg-card__effet-btn:active {
-  transform: translateY(2px);
-  border-bottom-width: 2px;
+/* Sur la table, l'éclair quitte le coin du cadre et se range SOUS le losange
+   de coût, sur le même axe de gauche (le coût est en `left: 0` puis
+   `translateX(-36%)`), et il grandit : 22×20 px dans un coin, c'était trop
+   petit pour dire « cette créature a un effet activé ». La place est libre —
+   les marqueurs de créature (heures, cale) sont au centre de la carte et la
+   colonne des pierres d'effets à droite. */
+.rpg-battle .rpg-card--img .rpg-card__effet-badge {
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 2px);
+  bottom: auto;
+  left: 0;
+  right: auto;
+  transform: translateX(-36%);
+  width: 30px;
+  height: 27px;
+  padding-top: 3px;
+  font-size: 16px;
 }
 
 /* Forcer l'affichage de la liste dans l'invite de commandes (même sur desktop) */
