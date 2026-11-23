@@ -12501,7 +12501,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   top: 0;
   width: 34%;
   aspect-ratio: 1;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
   filter: drop-shadow(0 3px 4px #000c);
   pointer-events: auto;
 }
@@ -12510,7 +12510,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   position: absolute;
   inset: 0;
   background: #d4b57a;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 .rpg-card__arme-vignette > img {
   position: absolute;
@@ -12519,7 +12519,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: calc(100% - 4px);
   height: calc(100% - 4px);
   object-fit: cover;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 /* Durabilité et sable sont dans le losange de l'arme, jamais sur le corps de
    la créature. La vignette s'élargit juste assez sur les plus petites cartes
