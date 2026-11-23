@@ -6,7 +6,8 @@ import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById } from '../src/games/rpgCards.js
 import { retoursAuDeckInvocation } from '../src/games/rpgInvocation.js';
 import {
   rpgActiverCapacite, rpgCiblesActivationLegales, rpgConsommerSoins, rpgFinDeTour,
-  rpgJouerCreature, rpgNouveauDuel, rpgPeutActiverCapacite,
+  rpgJouerCreature, rpgLancerAttaque, rpgNouveauDuel, rpgPeutActiverCapacite,
+  rpgPeutAttaquer,
 } from '../src/games/rpgDuel.js';
 import { texteActivation } from '../src/games/rpgActivationTexte.js';
 import { choisirActivationIA } from '../src/games/rpgAI.js';
@@ -60,6 +61,28 @@ test('une créature qui vient d’arriver n’active pas son effet', () => {
   assert.equal(rpgPeutActiverCapacite(d, 'joueur', scribe.id), true);
   assert.equal(activer(d, scribe.id).res.ok, true);
   assert.equal(d.joueur.main.length, 1, 'l’effet part une fois la créature dégagée');
+});
+
+test('l’attaque et l’effet sont le même geste : ni l’un après l’autre', () => {
+  const d = duel();
+  d.tour = 'joueur';
+  const oni = poser(d, 'joueur', 'oni-de-la-fournaise');
+  const proie = poser(d, 'sorcier', 'dune-marchante');
+
+  // L'effet d'abord : la créature retombe, l'attaque ne se propose plus.
+  assert.equal(rpgPeutAttaquer(oni), true, 'elle pouvait frapper');
+  assert.equal(activer(d, oni.id, proie.id).res.ok, true);
+  assert.equal(oni.ready, false, 'activer fait tomber `ready`');
+  assert.equal(rpgPeutAttaquer(oni), false, 'et donc l’attaque du tour');
+
+  // L'attaque d'abord : le bouton ⚡ ne doit pas rester allumé.
+  const tojiro = poser(d, 'joueur', 'tojiro-le-pourfendeur');
+  const coup = rpgLancerAttaque(d, 'joueur', [tojiro.id]);
+  assert.equal(coup.ok, true, `attaque : ${coup.raison}`);
+  assert.equal(tojiro.attaquee, true);
+  assert.equal(rpgPeutActiverCapacite(d, 'joueur', tojiro.id), false,
+    'la fenêtre d’effet ne se propose plus après la frappe');
+  assert.equal(rpgActiverCapacite(d, 'joueur', tojiro.id).raison, 'deja-attaquee');
 });
 
 // ── Demande 2 : les sorts confiés à des créatures ───────────────────────────
