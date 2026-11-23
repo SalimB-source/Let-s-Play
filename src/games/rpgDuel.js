@@ -1055,6 +1055,11 @@ export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   // celle qui vient d'arriver n'active rien avant le prochain tour de son camp.
   // La Rapidité l'en dispense, comme pour l'attaque.
   if (rpgSouffreMalInvocation(entite)) return false;
+  // L'attaque et l'effet sont le même geste : la créature qui a déjà frappé
+  // n'active rien. Sans ce garde, le bouton ⚡ restait allumé sur elle alors
+  // que le moteur refusait l'effet (`deja-attaquee`) — un clic pour rien, et
+  // l'IA proposait un coup qu'elle ne pouvait pas jouer.
+  if (entite.attaquee) return false;
   // L'effet est dépensé pour ce tour : ni le bouton, ni le menu, ni l'IA ne
   // doivent plus le proposer — la carte grise le dit à la place.
   if (activation.uneFoisParTour && entite.activationUtiliseeCeTour) return false;
