@@ -139,8 +139,9 @@ img{max-width:100%}
 .wrap{width:min(1240px,calc(100% - 56px));margin:auto}
 
 /* ============ NAV — GLASS ISLAND (Option A) ============ */
-/* Île flottante centrée : verre dépoli sombre, bords arrondis 16px,
-   ombre douce. Au scroll elle se resserre (64px → 58px) et s'opacifie.
+/* Île flottante centrée : verre dépoli sombre, bords bien arrondis
+   (pilule, radius 999px → 32px sur la hauteur de 64px), ombre douce.
+   Au scroll elle se resserre (64px → 58px) et s'opacifie.
    Sur l'accueil (hero plein écran) elle démarre semi-transparente puis
    rejoint le même verre au scroll. Le mobile (≤800px) repasse en barre
    pleine largeur — voir media query plus bas. */
@@ -153,7 +154,7 @@ img{max-width:100%}
   backdrop-filter:blur(18px) saturate(1.35);
   -webkit-backdrop-filter:blur(18px) saturate(1.35);
   border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;
+  border-radius:999px;
   box-shadow:0 10px 30px -12px rgba(0,0,0,.62), 0 4px 12px -6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
   transition:background .32s cubic-bezier(.16,1,.3,1), border-color .32s, box-shadow .32s, height .32s cubic-bezier(.16,1,.3,1), transform .32s;
   animation:navIslandIn .7s cubic-bezier(.16,1,.3,1) both;
