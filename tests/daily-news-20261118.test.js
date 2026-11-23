@@ -23,7 +23,7 @@ test('18 novembre : quatre articles officiels, Game Awards 2026 à la une, SEO e
  }
 });
 test('une et archives : édition du 18 intégrée sans supprimer le 17',()=>{
- for(const page of ['Home','News'])assert.ok(read(`src/pages/${page}.jsx`).includes("daily/2026-11-21'"));
+ for(const page of ['Home','News'])assert.ok(read(`src/pages/${page}.jsx`).includes("daily/2026-11-23'"));
  for(const file of ['src/pages/CurrentNews.jsx','src/pages/AllNews.jsx','src/pages/GamingNews.jsx','src/pages/CinemaNews.jsx','src/pages/TechNews.jsx','src/search/searchIndex.js']){
   const s=read(file);assert.ok(s.includes("daily/2026-11-18'"));assert.ok(s.includes("daily/2026-11-17'"));
  }

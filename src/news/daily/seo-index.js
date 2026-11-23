@@ -751,5 +751,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-21",
     "section": "Actualités tech"
+  },
+  "/news/gta-6-calendrier-xbox-23-27-novembre": {
+    "title": "SORTIES XBOX L’AGENDA DES INDÉS. — Let’s Play",
+    "description": "Xbox Wire détaille les sorties prévues du 23 au 27 novembre 2026 : Jaden Industries et The Spotter ouvrent la semaine, avant une fin de semaine chargée. Les dates restent susceptibles de changer.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/nwox-hero-f37af1684711fca65783.jpg",
+    "type": "article",
+    "published": "2026-11-23",
+    "section": "Actualités gaming"
+  },
+  "/news/tech/openai-perplexite-intelligence-22-novembre": {
+    "title": "PERPLEXITÉ MESURER LA PROGRESSION. — Let’s Play",
+    "description": "Dans une note publiée le 22 novembre, Jakub Pachocki, scientifique en chef d’OpenAI, propose la perplexité comme mesure commune des progrès de l’IA et plaide pour des limites partagées entre laboratoires.",
+    "image": "https://images.ctfassets.net/kftzwdyauwt9/6rIIhCRSKrhIfe385Onmcz/aca2d190553c62fd5d49efb5d5ce1eb6/perplexity-and-intelligence-social.png?w=1600&h=900&fit=fill",
+    "type": "article",
+    "published": "2026-11-23",
+    "section": "Actualités tech"
+  },
+  "/news/cinema/netflix-sorties-23-novembre-2026": {
+    "title": "NETFLIX DU 23 TROIS RENDEZ-VOUS. — Let’s Play",
+    "description": "Netflix met en ligne trois nouveautés le 23 novembre 2026 : la saison 9 des fêtes du Great British Baking Show, le volume 4 de Sesame Street et la série documentaire The Trials of Karen Read.",
+    "image": "https://dnm.nflximg.net/api/v6/s0XAg4q_jvYbSSbLvySyUsliNSg/AAAAQVQlRPIwVwuknF4-NPXojs3Wibn87UY-SNMvq2aWzpEvmq2uUVx4pXM7UbMmV4yJ6i-yZzKUG0PtNFBVf4XPVLAgda0mgeohAINnTCgqBp4UiKfp4VqYF5_3bMOJzs1DI9mUT1O_vTWzqFExHw.jpg?r=a60",
+    "type": "article",
+    "published": "2026-11-23",
+    "section": "Actualités cinéma"
   }
 };
