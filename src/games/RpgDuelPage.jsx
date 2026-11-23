@@ -10120,7 +10120,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onFermer={fermerMonteeNiveau}
           onPlaySfx={jouerSfx}
         />
-        {apercuSurvol && (
+        {/* L'aperçu au survol devient interactif après 450 ms : s'il recouvre
+            la fenêtre d'effet ouverte au-dessus de la carte, il prend les clics
+            des deux boutons. La créature dont le menu est ouvert n'a donc pas
+            d'aperçu — le menu passe avant la fiche. */}
+        {apercuSurvol && apercuSurvol.entiteId !== menuEffetEntiteId && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             furieDeclenchee={Boolean(apercuSurvol.furie)}
@@ -15929,7 +15933,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
 
-        {apercuSurvol && !reserveAscensionOuverte && !mulligan && !apercuAnnonceOuvert && (
+        {apercuSurvol && apercuSurvol.entiteId !== menuEffetEntiteId
+          && !reserveAscensionOuverte && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
             lienActif={lienAllumeDansLApercu(cardById(apercuSurvol.carteId))}

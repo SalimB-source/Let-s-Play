@@ -1747,8 +1747,11 @@ export const RPG_HERO_CARDS = [
     // mot-clé — il ne riposte donc plus aux sorts, ce qui était le propre du
     // corps à corps.
     rapidite: true,
-    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'bouclier-tour', amount: 1 } },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant. Effet activé (1/tour) — La créature alliée ciblée gagne un bouclier jusqu’à la fin du tour.',
+    // Effet activé (1/tour) — le Sondeur endurcit un allié : +0/+2 jusqu'à la
+    // fin du tour, le même contrat que le Rempart de dunes. Le bouclier d'un
+    // tour reste l'affaire de la Guetteuse des marées.
+    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'buff', cible: 'creature-amie', atk: 0, def: 2, tours: 1 } },
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant. Effet activé (1/tour) — La créature alliée ciblée gagne +0/+2 jusqu’à la fin du tour.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {

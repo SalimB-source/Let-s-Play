@@ -196,8 +196,8 @@ test('la table grise la peinture et ouvre le rognage le temps du menu d’effet'
   const jsx = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   // Le menu s'ouvre au-dessus de la carte : le cadre qui rogne doit s'ouvrir
-  // pour lui (6px d'écart + 46px de bouton + la marge de survol).
-  assert.match(css, /\.rpg-card\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*58px/u);
+  // pour lui (10px d'écart + 52px de bouton + 1px de levée + l'ombre).
+  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*78px/u);
   assert.match(jsx, /boutonEffetVisible \? 'is-effet-menu' : ''/u);
   // L'éclair a sa propre boîte dans le bouton : il ne peut plus être rogné.
   assert.match(jsx, /className="rpg-card__effet-btn rpg-card__effet-btn--effet"/u);

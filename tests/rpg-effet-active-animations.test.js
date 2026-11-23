@@ -101,14 +101,19 @@ test('Eau — le Léviathan renvoie sa cible dans le tourbillon', () => {
   assert.ok(d.sorcier.main.includes('dune-marchante'), 'elle est rentrée en main');
 });
 
-test('Sable — Salem prête l’égide dorée à une alliée', () => {
+test('Sable — Salem endurcit une alliée jusqu’à la fin du tour', () => {
   const d = duel();
   const salem = poser(d, 'joueur', 'salem');
   const dune = poser(d, 'joueur', 'dune-marchante');
   const tirs = activer(d, salem.id, dune.id);
-  assert.deepEqual(tirs.map((tir) => tir.variante), ['egide']);
+  assert.deepEqual(tirs.map((tir) => tir.variante), ['renfort'], 'l’éclair de ce qui grandit');
   assert.deepEqual(tirs[0].cible, { type: 'creature', cote: 'joueur', entiteId: dune.id });
-  assert.equal(dune.bouclier, 1, 'le bouclier tient jusqu’à la fin du tour');
+  assert.equal(dune.def, 6, '+0/+2 : la défense suit le plafond relevé');
+  assert.equal(dune.pv, 6);
+  assert.equal(dune.atk, 2, 'l’attaque ne bouge pas');
+  assert.equal(dune.bouclier ?? 0, 0, 'l’égide d’un tour reste l’affaire de la Guetteuse');
+  rpgFinDeTour(d); rpgFinDeTour(d);
+  assert.equal(dune.def, 4, 'le renfort tombe avec le tour');
 });
 
 test('Neige — Eirik soigne : un éclat par allié soigné et pour le sorcier', () => {
@@ -178,7 +183,8 @@ test('la fenêtre d’effet activé passe au-dessus de toutes les cartes', () =>
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   // Les rangées sont des contextes d'empilement à 4/5, sous les terrains (41)
   // et le dock de la main (42) : le menu ouvert soulève la carte ET sa rangée.
-  assert.match(css, /\.rpg-card\.is-effet-menu\s*\{[^}]*z-index:\s*44/u);
+  // La carte et ses variantes équipées/gardées portent la même levée.
+  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*z-index:\s*44/u);
   assert.match(css, /\.card-row:has\(\.rpg-card\.is-effet-menu\)\s*\{\s*z-index:\s*44/u);
   // La levée se lit dans le CSS, aucune prop n'est câblée dans le JSX : les
   // deux rangées gardent leur `className` littéral.
