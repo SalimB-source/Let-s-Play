@@ -51,6 +51,14 @@ export const listings = {
     "category": "سينما / عروض · نتفليكس",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/cinema/netflix-sorties-23-novembre-2026": {
+    "title": "نتفليكس 23 نوفمبر",
+    "accent": "ثلاثة مواعيد.",
+    "dek": "تضيف نتفليكس ثلاثة أعمال في 23 نوفمبر 2026: الموسم التاسع الاحتفالي من The Great British Baking Show، والجزء الرابع من Sesame Street، والمسلسل الوثائقي The Trials of Karen Read.",
+    "imageAlt": "صورة رسمية للمسلسل الوثائقي The Trials of Karen Read نشرتها Netflix Tudum. © Netflix. صورة ترويجية، لا صورة من المحاكمة.",
+    "category": "سينما ومسلسلات · نتفليكس",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/cinema/on-behalf-of-my-son-netflix-20-novembre": {
     "title": "ON BEHALF OF MY SON",
     "accent": "رحلة في الحداد.",
@@ -105,6 +113,14 @@ export const listings = {
     "dek": "19 نوفمبر هو الموعد المعلن للعبة GTA VI على PS5 وXbox Series X|S. نراجع معلومات روكستار الموثقة عن الأجهزة والسحابة والأهداف التقنية، من دون الخلط بينها وبين اختبارات أجراها فريقنا.",
     "imageAlt": "صورة رسمية من منشور روكستار حول التحميل المسبق، نُشر في 10 نوفمبر 2026. © Rockstar Games. رسم ترويجي، لا لقطة التقطها فريقنا.",
     "category": "ألعاب · ROCKSTAR GAMES",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/gta-6-calendrier-xbox-23-27-novembre": {
+    "title": "إصدارات XBOX",
+    "accent": "أجندة الألعاب المستقلة.",
+    "dek": "ينشر Xbox Wire تفاصيل الإصدارات المقررة من 23 إلى 27 نوفمبر 2026: Jaden Industries وThe Spotter يفتتحان الأسبوع قبل أيام مزدحمة. التواريخ قابلة للتغيير.",
+    "imageAlt": "صورة رسمية لقسم «Next Week on Xbox» نشرها Xbox Wire في 20 نوفمبر 2026. © Microsoft / الناشرون المعنيون. رسم تقويم، لا لقطة من اللعبة.",
+    "category": "ألعاب · جدول الإصدارات",
     "readTime": "قراءة في 3 دقائق"
   },
   "/news/gta-6-calendrier-xbox-semaine-16-20-novembre": {
@@ -209,6 +225,14 @@ export const listings = {
     "dek": "تفصّل غوغل تحديثات Home ليوم 17 نوفمبر: مفاتيح رقمية وأوصاف صوتية لأحداث الكاميرا وتحسينات Gemini. ولا تتشارك كل الوظائف شروط الوصول نفسها.",
     "imageAlt": "رسم رسمي لتحديثات Google Home نُشر في 17 نوفمبر 2026. © Google. صورة ترويجية، لا اختبار أجراه فريقنا.",
     "category": "تقنية · GOOGLE NEST",
+    "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/openai-perplexite-intelligence-22-novembre": {
+    "title": "الحيرة",
+    "accent": "قياس التقدّم.",
+    "dek": "في مذكرة نُشرت في 22 نوفمبر، يقترح جاكوب باتشوكي، كبير العلماء في OpenAI، مقياس «الحيرة» (perplexity) مقياساً مشتركاً لتقدّم الذكاء الاصطناعي، ويدعو إلى حدود مشتركة بين المختبرات.",
+    "imageAlt": "صورة المشاركة الرسمية لمذكرة «Perplexity and Intelligence» التي نشرتها OpenAI في 22 نوفمبر 2026. © OpenAI. رسم علامة تجارية، لا نتيجة تجريبية من غرفتنا.",
+    "category": "تقنية · أبحاث الذكاء الاصطناعي",
     "readTime": "قراءة في 3 دقائق"
   },
   "/news/tech/openai-pierre-acquisition-codex-5-novembre": {

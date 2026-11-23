@@ -51,6 +51,14 @@ export const listings = {
     "category": "CINEMA / SPECIALS · NETFLIX",
     "readTime": "3 MIN READ"
   },
+  "/news/cinema/netflix-sorties-23-novembre-2026": {
+    "title": "NETFLIX, 23 NOV",
+    "accent": "THREE APPOINTMENTS.",
+    "dek": "Netflix releases three new titles on 23 November 2026: the ninth holiday season of The Great British Baking Show, Sesame Street volume 4 and the documentary series The Trials of Karen Read.",
+    "imageAlt": "Official artwork for the documentary series The Trials of Karen Read published by Netflix Tudum. © Netflix. Promotional image, not a photograph of the trial.",
+    "category": "CINEMA & SERIES · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
   "/news/cinema/on-behalf-of-my-son-netflix-20-novembre": {
     "title": "ON BEHALF OF MY SON",
     "accent": "A JOURNEY THROUGH GRIEF.",
@@ -105,6 +113,14 @@ export const listings = {
     "dek": "19 November is the announced date for GTA VI on PS5 and Xbox Series X|S. Here are Rockstar’s documented console, cloud and technical details, without confusing them with our own tests.",
     "imageAlt": "Official visual from Rockstar’s preload post, published on 10 November 2026. © Rockstar Games. Promotional illustration, not a screenshot captured by our team.",
     "category": "GAMING · ROCKSTAR GAMES",
+    "readTime": "3 MIN READ"
+  },
+  "/news/gta-6-calendrier-xbox-23-27-novembre": {
+    "title": "XBOX RELEASES",
+    "accent": "THE INDIE AGENDA.",
+    "dek": "Xbox Wire details releases planned from 23 to 27 November 2026: Jaden Industries and The Spotter open the week, ahead of a crowded weekend. Dates remain subject to change.",
+    "imageAlt": "Official artwork for the “Next Week on Xbox” feature published by Xbox Wire on 20 November 2026. © Microsoft / respective publishers. Calendar illustration, not a gameplay capture.",
+    "category": "GAMING · RELEASE CALENDAR",
     "readTime": "3 MIN READ"
   },
   "/news/gta-6-calendrier-xbox-semaine-16-20-novembre": {
@@ -209,6 +225,14 @@ export const listings = {
     "dek": "Google details its 17 November Home updates: digital keys, audio descriptions of camera events and Gemini improvements. The features do not all have the same access conditions.",
     "imageAlt": "Official Google Home updates illustration published on 17 November 2026. © Google. Promotional visual, not an editorial test.",
     "category": "TECH · GOOGLE NEST",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/openai-perplexite-intelligence-22-novembre": {
+    "title": "PERPLEXITY",
+    "accent": "MEASURING PROGRESS.",
+    "dek": "In a note published on 22 November, OpenAI chief scientist Jakub Pachocki proposes perplexity as a shared measure of AI progress and argues for common limits between labs.",
+    "imageAlt": "Official share image for the note “Perplexity and Intelligence” published by OpenAI on 22 November 2026. © OpenAI. Brand illustration, not an experimental result from our newsroom.",
+    "category": "TECH · AI RESEARCH",
     "readTime": "3 MIN READ"
   },
   "/news/tech/openai-pierre-acquisition-codex-5-novembre": {

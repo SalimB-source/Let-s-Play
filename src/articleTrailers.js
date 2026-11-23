@@ -1316,6 +1316,30 @@ export const articleTrailers = {
     label: 'SÉRIE ANIMÉE DIABLO', meta: 'BLIZZARD · NETFLIX',
     pending: 'Aucune bande-annonce : la série animée Diablo annoncée pour Netflix n’a encore aucune image en mouvement — Blizzard et Netflix n’ont publié ni teaser, ni casting, ni date de diffusion.',
   },
+
+  // ---- Édition du 23 novembre 2026 ----------------------------------------
+  "gta-6-calendrier-xbox-23-27-novembre": {
+    "label": "SORTIES XBOX",
+    "meta": "XBOX WIRE",
+    "items": [],
+    "credit": "Visuel officiel de la rubrique « Next Week on Xbox » publié par Xbox Wire le 20 novembre 2026. © Microsoft / éditeurs respectifs. Illustration de calendrier, pas une capture de jeu.",
+    "pending": "Aucune vidéo officielle dédiée à ce calendrier n’a été vérifiée pour intégration. Les fiches de jeu liées par Xbox Wire restent la référence ; une bande-annonce ancienne ne remplace pas ce programme."
+  },
+  "tech/openai-perplexite-intelligence-22-novembre": {
+    "label": "PERPLEXITÉ",
+    "meta": "OPENAI",
+    "items": [],
+    "credit": "Visuel de partage officiel de la note « Perplexity and Intelligence » publiée par OpenAI le 22 novembre 2026. © OpenAI. Illustration de marque, pas un résultat expérimental de notre rédaction.",
+    "pending": "Aucune vidéo officielle accompagnant cette note n’a été vérifiée pour intégration. Le graphique publié par OpenAI est visible dans la note liée en source ; il n’est pas reproduit ici."
+  },
+  "cinema/netflix-sorties-23-novembre-2026": {
+    "label": "NETFLIX DU 23",
+    "meta": "NETFLIX TUDUM",
+    "items": [],
+    "credit": "Visuel officiel de la série documentaire The Trials of Karen Read publié par Netflix Tudum. © Netflix. Image promotionnelle, pas une photographie du procès.",
+    "pending": "Aucune bande-annonce officielle dédiée à ces trois sorties du 23 novembre n’a été vérifiée pour intégration. La page officielle de chaque titre reste la référence ; un extrait d’une autre production ne remplacerait pas ces images."
+  },
+
 };
 
 /**

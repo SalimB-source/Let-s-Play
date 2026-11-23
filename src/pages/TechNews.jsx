@@ -1,4 +1,5 @@
-import { dailyNewsListing as news20261121, editionDate } from '../news/daily/2026-11-21';
+import { dailyNewsListing as news20261123, editionDate } from '../news/daily/2026-11-23';
+import { dailyNewsListing as news20261121 } from '../news/daily/2026-11-21';
 import { dailyNewsListing as news20261120 } from '../news/daily/2026-11-20';
 import { dailyNewsListing as news20261119 } from '../news/daily/2026-11-19';
 import { dailyNewsListing as news20261118 } from '../news/daily/2026-11-18';
@@ -120,6 +121,7 @@ export default function TechNews() {
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   // Source brute, en français : traduite plus bas par `useLocalizedListings`.
   const rawArticles = useMemo(() => [
+    ...news20261123.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261121.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261120.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261119.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
