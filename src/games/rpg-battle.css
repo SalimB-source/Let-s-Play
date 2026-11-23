@@ -7822,6 +7822,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 57;
   overflow: hidden;
   pointer-events: none;
+  animation: rpg-tempete-sable-zone-vie calc(1.1s * var(--rpg-anim-scale, 1)) ease-out both;
 }
 /* Le sorcier tient la moitié haute de la table, le joueur la basse. */
 .rpg-tempete-sable-zone--sorcier {
@@ -15987,7 +15988,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-attack-arrow__tip { fill: #ff4141; }
 
 /* L'orage bicolore alterne les éclairs glacés et les impacts de Braise. */
-.rpg-eclair-marteau--braise { animation: none; }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__ciel { filter: drop-shadow(0 0 7px rgba(255, 108, 28, .7)); }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__eclair--halo { stroke: rgba(255, 95, 30, .7); }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__eclair--coeur { stroke: #fff1cf; }
