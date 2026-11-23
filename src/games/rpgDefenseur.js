@@ -56,7 +56,6 @@ export function ciblesDefenseur(cibles = [], attaquant = null) {
  * frappe. */
 export function attaqueDirectePermise(attaquant, creaturesAdverses = [], ciblesAtteignables = null) {
   if (Array.isArray(ciblesAtteignables) && ciblesAtteignables.length === 0) return true;
-  if (creaturesAdverses.some((creature) => creature?.envol)) return false;
   return creaturesAdverses.length === 0
     || (creaturesAdverses.length === 1 && Boolean(creaturesAdverses[0]?.infiltration))
     || Boolean(attaquant?.envol && !creaturesAdverses.some(estDefenseur));

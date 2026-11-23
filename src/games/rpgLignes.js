@@ -223,7 +223,7 @@ export function attaqueDirecteSurLesLignes(duel, attaquant, creaturesAdverses = 
   if (!lignesActives(duel) || duel?.moba) return attaqueDirectePermise(attaquant, adverses, ciblesAtteignables);
   if (attaquant?.coupRapide) {
     const atteignables = Array.isArray(ciblesAtteignables) ? ciblesAtteignables : adverses;
-    return !(atteignables.length && adverses.some((entite) => entite.envol || estDefenseur(entite)));
+    return !(atteignables.length && adverses.some(estDefenseur));
   }
   if (!attaqueDirectePermise(attaquant, adverses, ciblesAtteignables)) return false;
   // À distance : les mêlées au sol font écran au sorcier. Une mêlée volante ne

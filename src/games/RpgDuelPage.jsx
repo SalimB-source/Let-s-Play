@@ -15672,7 +15672,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <span className="rpg-turn-indicator__lamp" aria-hidden="true" />
             <strong>{indicateurTour}</strong>
           </div>
-          <PhaseTrack current={phaseDuelActive} jouees={attaqueJouee ? ['attaque'] : []} />
+          {/* Phases du duel masquées */}
           <div className="rpg-actions__turn" role="group" aria-label="Actions de tour">
             {!phase && (combatCollectif || attaqueTousDisponible) && (
                   <button
