@@ -692,3 +692,6 @@
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-row[data-lignes="true"] {
   --essai-colonne: clamp(64px, min(9.5vw, 13.5vh), 140px);
 }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-row[data-lignes="true"] .rpg-creature-slots {
+  row-gap: clamp(18px, 2.6vh, 30px);
+}
