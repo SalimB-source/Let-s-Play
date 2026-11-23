@@ -1148,10 +1148,13 @@
   --essai-colonne: clamp(44px, min(7vw, 10.6vh), 116px);
   grid-template-rows: repeat(2, min-content);
   align-content: start;
-  row-gap: clamp(6px, .8vh, 11px);
+  /* Même écart pour les cartes et les cases : les tireurs respirent derrière
+     le front, sans désaligner les cibles de pose et de déplacement. */
+  --rpg-lignes-gap: clamp(28px, 4.2vh, 48px);
+  row-gap: var(--rpg-lignes-gap);
   /* Deux hauteurs de carte (ratio 4/5) plus leur gouttière : même vide, la
      rangée garde ses huit cases à l'écran. */
-  min-height: calc(var(--essai-colonne) * 2.5 + clamp(6px, .8vh, 11px));
+  min-height: calc(var(--essai-colonne) * 2.5 + var(--rpg-lignes-gap));
   column-gap: clamp(14px, 1.2vw, 22px);
 }
 /* La carte posée prend sa colonne (1 à 4) et la rangée de sa ligne. La pile
@@ -1183,7 +1186,7 @@
 .card-row[data-lignes="true"] .rpg-creature-slots {
   grid-template-rows: repeat(2, min-content);
   align-content: start;
-  row-gap: clamp(6px, .8vh, 11px);
+  row-gap: var(--rpg-lignes-gap);
 }
 .card-row[data-lignes="true"] .rpg-creature-slot {
   grid-column: var(--case-col, auto);
@@ -1234,16 +1237,18 @@
    hauteur. Sans ce plafond, la colonne ne dépendait que de la carte, les deux
    rangées du joueur débordaient de leur bande — par-dessus l'avatar — et
    poussaient la main à moitié hors de l'écran. Le plancher de 24 px évite une
-   grille écrasée sur un écran minuscule ; `- 16px` réserve la gouttière des
-   rangées et la marge intérieure de la rangée, plus 4 px d'air. */
+   grille écrasée sur un écran minuscule ; le plafond réserve la gouttière des
+   rangées et 12 px pour les marges et un peu d'air. */
 .rpg-battle--touch[data-mode-mana="essai"] .card-row[data-lignes="true"] {
+  /* Un peu plus d’air, sauf sur les téléphones paysage les plus courts. */
+  --rpg-lignes-gap: clamp(4px, calc(10vh - 28px), 8px);
   --essai-colonne: clamp(24px,
     min(calc(var(--rpg-field-card, var(--duel-card, 64px)) * .72),
-      calc((var(--rpg-board-band, 120px) - 16px) / 2.5)),
+      calc((var(--rpg-board-band, 120px) - var(--rpg-lignes-gap) - 12px) / 2.5)),
     var(--rpg-field-card, var(--duel-card, 64px)));
   column-gap: max(6px, calc(var(--duel-card, 64px) * .12));
-  row-gap: 4px;
-  min-height: calc(var(--essai-colonne) * 2.5 + 4px);
+  row-gap: var(--rpg-lignes-gap);
+  min-height: calc(var(--essai-colonne) * 2.5 + var(--rpg-lignes-gap));
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

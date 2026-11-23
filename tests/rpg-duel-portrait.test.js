@@ -164,7 +164,7 @@ test('les cases et les cartes posées reprennent toute la largeur debout', () =>
   // la colonne se mesure sur `--rpg-field-card`, plafonnée par le viewport,
   // et non par un pourcentage hérité qui rétrécirait cases et cartes à 9 px.
   assert.match(bloc, /--essai-colonne:\s*min\(var\(--rpg-field-card\),\s*calc\(\(100vw - 16px - 4 \* var\(--rpg-field-gap\)\) \/ 5\)\)/);
-  assert.match(bloc, /\.card-row\[data-lignes="true"\][\s\S]*?row-gap:\s*var\(--rpg-field-gap\)/);
+  assert.match(bloc, /\.card-row\[data-lignes="true"\][\s\S]*?row-gap:\s*var\(--rpg-lignes-gap\)/);
   assert.match(bloc, /grid-template-rows:\s*repeat\(2,\s*calc\(var\(--essai-colonne\) \* 1\.25\)\)/);
   assert.match(bloc, /width:\s*min\(100%,\s*var\(--essai-colonne\)\)/,
     'les cartes posées et les cases dessinées partagent la même largeur');
