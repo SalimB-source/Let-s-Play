@@ -16939,8 +16939,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border: none;
 }
 
-/* Forme de bouclier pour les créatures Défenseur et ombre portée suivant le contour */
+/* Forme de bouclier pour les créatures Défenseur : clip-path sur l'art uniquement pour ne pas rogner les icônes, sans cadre gris */
 .rpg-card.has-garde {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.rpg-card.has-garde .rpg-card__art {
   clip-path: polygon(0% 0%, 100% 0%, 100% 72%, 50% 100%, 0% 72%);
 }
 .rpg-creature-slot:has(> .rpg-card.has-garde) {

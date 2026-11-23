@@ -663,13 +663,9 @@
   justify-content: flex-start;
   gap: 6px;
 }
-.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand > :is(.rpg-hand__card:not(.rpg-card-flight), .rpg-hand__pile) {
-  width: clamp(54px, 5.2vw, 78px);
-  max-width: clamp(54px, 5.2vw, 78px);
-}
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand__ecart {
   display: none;
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-creature-slot {
-  width: clamp(82px, min(13.5vw, 22vh), 185px);
+  width: clamp(104px, min(16vw, 25vh), 220px);
 }
