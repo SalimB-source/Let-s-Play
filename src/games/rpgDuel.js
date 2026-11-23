@@ -1317,18 +1317,17 @@ function positionsDuCamp(duel, cote) {
   return positions;
 }
 
-/** La source et la cible occupent-elles deux cases voisines du même camp ? */
+/** La source et la cible occupent-elles deux cases voisines (gauche, droite, haut, bas) du même camp ? */
 function voisines(positions, source, cible, moba = false) {
   if (!source || !cible || source === cible) return false;
   const a = positions.get(source);
   const b = positions.get(cible);
   if (!a || !b) return false;
-  // Le voisinage d'une aura reste **latéral** : la même rangée, une colonne
-  // d'écart. Deux créatures de part et d'autre de la ligne neutre ne sont
-  // jamais voisines, même si leurs cases locales se suivent.
   if (a.camp !== b.camp) return false;
-  if (a.rangee !== null && b.rangee !== null && a.rangee !== b.rangee) return false;
-  if (Math.abs(a.colonne - b.colonne) !== 1) return false;
+  const dCol = Math.abs(a.colonne - b.colonne);
+  const memeRangee = a.rangee === null || b.rangee === null || a.rangee === b.rangee;
+  const estAdjacent = (memeRangee && dCol === 1) || (!memeRangee && dCol === 0);
+  if (!estAdjacent) return false;
   // Dans le MOBA, les cases 0–1, 2 et 3–4 appartiennent à trois voies
   // distinctes : les bords voisins de deux voies ne sont pas adjacents.
   const voie = (colonne) => colonne < 2 ? 'left' : colonne === 2 ? 'center' : colonne < 5 ? 'right' : null;
@@ -7646,8 +7645,9 @@ export function rpgDissiperContresortBoualem(duel) {
  */
 export const rpgArmeCompatible = (arme, entite) => {
   if (!arme || !entite) return true;
-  if (arme.porteeArme === 'melee' && entite.distance) return false;
-  if (arme.porteeArme === 'distance' && !entite.distance) return false;
+  const estDistance = Boolean(entite.distance || entite.coupRapide);
+  if (arme.porteeArme === 'melee' && estDistance) return false;
+  if (arme.porteeArme === 'distance' && !estDistance) return false;
   return true;
 };
 

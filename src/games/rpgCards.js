@@ -1718,6 +1718,7 @@ export const RPG_HERO_CARDS = [
     atk: 3,
     def: 4,
     coupRapide: true,
+    distance: true,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
