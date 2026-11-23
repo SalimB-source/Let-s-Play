@@ -3420,17 +3420,30 @@ export function TableCard({
         />
       )}
       {boutonEffetVisible && (
-        <button
-          type="button"
-          className="rpg-card__effet-btn"
-          onClick={(event) => {
-            event.stopPropagation();
-            onActiver();
-          }}
-        >
-          <span className="rpg-card__effet-btn-eclair" aria-hidden="true">⚡</span>
-          Activer l’effet
-        </button>
+        <div className="rpg-card__effet-menu" role="group" aria-label="Actions de la créature">
+          <button
+            type="button"
+            className="rpg-card__effet-btn rpg-card__effet-btn--atk"
+            aria-label="Attaquer"
+            onClick={(event) => {
+              event.stopPropagation();
+              onClick?.();
+            }}
+          >
+            ⚔
+          </button>
+          <button
+            type="button"
+            className="rpg-card__effet-btn rpg-card__effet-btn--effet"
+            aria-label="Activer l’effet"
+            onClick={(event) => {
+              event.stopPropagation();
+              onActiver();
+            }}
+          >
+            <span className="rpg-activation-bolt" aria-hidden="true">⚡</span>
+          </button>
+        </div>
       )}
         {!estSite && (
           <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${entite.brulure ? ', brûlée : perd 1 PV au début de chacun de ses tours et ne peut plus être soignée' : ''}${blessee ? ', blessée' : ''}`}>
