@@ -185,7 +185,10 @@ test('la fenêtre d’effet activé passe au-dessus de toutes les cartes', () =>
   // et le dock de la main (42) : le menu ouvert soulève la carte ET sa rangée.
   // La carte et ses variantes équipées/gardées portent la même levée.
   assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*z-index:\s*44/u);
-  assert.match(css, /\.card-row:has\(\.rpg-card\.is-effet-menu\)\s*\{\s*z-index:\s*44/u);
+  // La rangée ET ses wrappers de pile/prison suivent la carte soulevée, et la
+  // levée est `!important` : en mode mana d'essai, chaque carte de la rangée
+  // porte un `z-index: 1` donné par une règle plus spécifique.
+  assert.match(css, /\.card-row:has\(\.rpg-card\.is-effet-menu\),\s*\.card-row > :is\(\.rpg-card-stack, \.rpg-card-prison\):has\(\.rpg-card\.is-effet-menu\)\s*\{\s*z-index:\s*44\s*!important/u);
   // La levée se lit dans le CSS, aucune prop n'est câblée dans le JSX : les
   // deux rangées gardent leur `className` littéral.
   assert.match(jsx, /className="card-row card-row--equipe"/u);
