@@ -147,8 +147,10 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
     assert.equal(carte.combat, undefined);
     // Esquive : Susanoo, l’Onna-musha et Tojiro, le pourfendeur.
     assert.equal(carte.esquive, ['susanoo', 'onna-musha-des-cendres', 'tojiro-le-pourfendeur'].includes(carte.id) ? true : undefined, carte.id);
+    // La Contre-attaque n'est plus imprimée que par Tojiro : l'Onna-musha garde
+    // l'Esquive et le Blocage, elle ne rend plus les coups.
     assert.equal(carte.contreAttaque,
-      ['tojiro-le-pourfendeur', 'onna-musha-des-cendres'].includes(carte.id) ? true : undefined, carte.id);
+      carte.id === 'tojiro-le-pourfendeur' ? true : undefined, carte.id);
   }
   assert.equal(cardById('tengu-du-mont-ardent').resonance, 1);
   const kagutsuchiCarte = cardById('kagutsuchi-flamme-originelle');
