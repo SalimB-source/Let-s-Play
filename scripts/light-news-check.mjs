@@ -81,7 +81,46 @@ function normalizeCss(source) {
   });
   return out.toResult().css;
 }
+/* Le balayage général ne peut pas voir les règles écrites sous une requête
+   média (jsdom ne les évalue pas). Le bloc « recherche de la barre » plus bas a
+   besoin du format BUREAU : on aplatit donc une seconde feuille, où les media
+   queries applicables à 1280 px sont dépliées et les autres écartées. */
+const DESKTOP_WIDTH = 1280;
+function evalDesktopQuery(query) {
+  const q = query
+    .replace(/max-device-width\s*:\s*(\d+)px/gi, (_, n) => (DESKTOP_WIDTH <= Number(n) ? 'true' : 'false'))
+    .replace(/min-device-width\s*:\s*(\d+)px/gi, (_, n) => (DESKTOP_WIDTH >= Number(n) ? 'true' : 'false'))
+    .replace(/max-width\s*:\s*(\d+)px/gi, (_, n) => (DESKTOP_WIDTH <= Number(n) ? 'true' : 'false'))
+    .replace(/min-width\s*:\s*(\d+)px/gi, (_, n) => (DESKTOP_WIDTH >= Number(n) ? 'true' : 'false'))
+    .replace(/hover\s*:\s*hover/gi, 'true')
+    .replace(/hover\s*:\s*none/gi, 'false')
+    .replace(/pointer\s*:\s*coarse/gi, 'false')
+    .replace(/pointer\s*:\s*fine/gi, 'true')
+    .replace(/orientation\s*:\s*portrait/gi, 'false')
+    .replace(/orientation\s*:\s*landscape/gi, 'true')
+    .replace(/prefers-reduced-motion\s*:\s*reduce/gi, 'false')
+    .replace(/prefers-color-scheme\s*:\s*light/gi, 'true')
+    .replace(/prefers-color-scheme\s*:\s*dark/gi, 'false')
+    .replace(/\band\b/gi, '&&')
+    .replace(/\bor\b/gi, '||')
+    .replace(/,/g, '||');
+  try {
+    // eslint-disable-next-line no-new-func
+    return Boolean(Function(`return (${q});`)());
+  } catch {
+    return false;
+  }
+}
+function flattenDesktop(source) {
+  const out = postcss.parse(source);
+  out.walkAtRules('media', (rule) => {
+    if (evalDesktopQuery(rule.params)) rule.replaceWith(rule.nodes);
+    else rule.remove();
+  });
+  return out.toResult().css;
+}
 const sheet = normalizeCss(css);
+const desktopSheet = flattenDesktop(css);
 
 /* --------------------------------------------------------------- jetons --- */
 const TOKENS = new Map();
@@ -369,6 +408,50 @@ for (const { path: route, html } of pages) {
       if (ratio < 4.5) {
         FAIL.push(`PANNEAU ${panelSelector} ${selector}  ENCRE ${ratio.toFixed(2)}:1  ${hex(ink)} sur ${hex(base)}`);
       }
+    }
+  }
+}
+
+/* ---- Barre de recherche (format bureau, île violette) ------------------- */
+/* La pilule de recherche est l'un des rares blocs de l'île à passer au BLANC en
+   thème clair (`§6bis`, requête média bureau). Ses encres doivent donc être
+   celles du thème clair : texte, loupe, raccourci et bouton d'envoi. Un blanc
+   sur blanc y était invisible (texte, loupe et « ⌘K » à 1:1), et le balayage
+   générique ne pouvait pas le voir : jsdom n'évalue pas la requête média, donc
+   il mesurait les règles « île violette » où le blanc est correct.
+   On mesure ici les sélecteurs explicitement demandés au propriétaire du site. */
+{
+  const { document, getComputedStyle } = new JSDOM(
+    `<!doctype html><html data-theme="light"><head><style>${desktopSheet}</style></head><body>${pages[0].html}</body></html>`,
+    { pretendToBeVisual: true },
+  ).window;
+  /* Le bouton d'envoi est une pastille dont le fond porte le pictogramme (le
+     SVG prend `currentColor`) : on mesure donc son encre sur le fond du bouton,
+     pas sur celui de la pilule. */
+  const probes = [
+    ['.nav-search input', 'champ de recherche', true, null],
+    ['.nav-search-icon', 'loupe', false, null], // pictogramme : seuil 3:1
+    ['.nav-search-kbd', 'raccourci ⌘K', false, null],
+    ['.nav-search-submit', 'bouton envoyer', false, '.nav-search-submit'],
+  ];
+  for (const [selector, label, isText, ownBgSelector] of probes) {
+    const el = document.querySelector(selector);
+    if (!el) {
+      FAIL.push(`RECHERCHE ${selector}  INTROUVABLE`);
+      continue;
+    }
+    const cs = getComputedStyle(el);
+    const ink = parseColor(cs.color);
+    if (!ink || ink.a === 0) {
+      FAIL.push(`RECHERCHE ${selector}  ENCRE INDÉFINIE`);
+      continue;
+    }
+    const bgTarget = ownBgSelector ? document.querySelector(ownBgSelector) || el : el;
+    const bg = backgroundOf(document.defaultView, bgTarget);
+    const ratio = contrast(over(ink, bg.color), bg.color);
+    const min = isText ? 4.5 : 3;
+    if (ratio < min) {
+      FAIL.push(`RECHERCHE ${selector}  ENCRE ${ratio.toFixed(2)}:1  ${hex(ink)} sur ${hex(bg.color)}  ${label} (seuil ${min}:1)`);
     }
   }
 }
