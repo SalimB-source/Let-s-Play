@@ -16361,6 +16361,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: linear-gradient(90deg, transparent, #ff8c1a 32%, #ffc751 68%, #fff3cf);
   filter: drop-shadow(0 0 7px rgba(255, 170, 60, .85));
 }
+/* Les sorts confiés à des créatures gardent la signature du sort d'origine :
+   la plume de ce qui se pioche ou se défausse, la ruine de ce qui tombe
+   (détruit, exilé, brisé). */
+.rpg-projectile-combat--plume .rpg-projectile-combat__tete {
+  width: 22px;
+  height: 9px;
+  top: -4.5px;
+  left: -11px;
+  border-radius: 78% 22% 68% 32%;
+  background: linear-gradient(90deg, transparent, #d8c48c 30%, #fbf3d2 68%, #fff);
+  filter: drop-shadow(0 0 6px rgba(251, 243, 210, .75));
+}
+.rpg-projectile-combat--ruine .rpg-projectile-combat__tete {
+  width: 24px;
+  height: 16px;
+  top: -8px;
+  left: -12px;
+  background: linear-gradient(90deg, transparent, #4a0d0d 26%, #b91c1c 62%, #ffb066);
+  clip-path: polygon(0 46%, 34% 12%, 46% 44%, 68% 0, 100% 50%, 66% 100%, 44% 58%, 30% 88%);
+  filter: drop-shadow(0 0 7px rgba(185, 28, 28, .85));
+}
 @keyframes rpg-projectile-tourbillon {
   from { rotate: 0deg; }
   to { rotate: 360deg; }
@@ -16630,20 +16651,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: .85em; height: .85em; flex-basis: .85em;
 }
 
-/* Petite fenêtre d'effet activé style Duel Links en dessous de la carte.
-   Le bouton pend sous le cadre : les cartes qui rognent leur débordement
+/* Fenêtre d'effet activé style Duel Links, AU-DESSUS de la carte.
+   Les deux commandes (⚔ attaquer, ⚡ activer l'effet) pendent au-dessus du
+   cadre, centrées sur la carte : les cartes qui rognent leur débordement
    (`.rpg-card--img` et `.has-arme` à 24 px, `.has-garde` et les résonances à
-   58 px) coupaient son bas. Tant que le menu est ouvert, la carte ouvre son
-   rognage de quoi loger le bouton entier — 6 px d'écart, ~30 px de hauteur,
-   1 px de levée au survol. Refermé, le cadre reprend sa marge d'origine. */
+   58 px) coupaient le bas du menu quand il pendait sous le cadre, et il
+   tombait dans le dock de la main. Tant que le menu est ouvert, la carte
+   ouvre son rognage de quoi loger les boutons entiers — 10 px d'écart, 46 px
+   de hauteur, 1 px de levée au survol. Refermé, le cadre reprend sa marge
+   d'origine. */
 .rpg-card.is-effet-menu {
-  overflow-clip-margin: 46px;
+  overflow-clip-margin: 58px;
   /* La fenêtre passe AU-DESSUS de toutes les cartes. Les rangées sont des
-     contextes d'empilement (z-index 4, puis 5 en large) : le bouton, même à
-     z-index 20 dans sa carte, restait sous les terrains (41) et sous le dock
-     de la main (42) où il pend justement. Le menu ouvert soulève donc la
-     carte et sa rangée ensemble ; les annonces (46 et plus) et les calques de
-     combat (54 et plus) gardent la priorité. */
+     contextes d'empilement (z-index 4, puis 5 en large) : les boutons, même à
+     z-index 90 dans leur carte, restaient sous les terrains (41) et sous le
+     dock de la main (42). Le menu ouvert soulève donc la carte et sa rangée
+     ensemble ; les annonces (46 et plus) et les calques de combat (54 et plus)
+     gardent la priorité. */
   z-index: 44;
 }
 
@@ -16657,7 +16681,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card__effet-btn {
   position: absolute;
   left: 50%;
-  top: calc(100% + 6px);
+  bottom: calc(100% + 10px);
+  top: auto;
   transform: translateX(-50%);
   z-index: 20;
   display: inline-flex;
@@ -16679,11 +16704,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* L'éclair garde sa propre boîte : dans un bouton `inline-flex` serré, le
-   glyphe nu hérite de la hauteur de ligne du texte et se fait rogner. */
-.rpg-card__effet-btn-eclair {
+   glyphe nu hérite de la hauteur de ligne du texte et se fait rogner. Le même
+   glyphe sert d'amorce à la ligne de règle au survol — là, il suit le texte. */
+.rpg-card__effet-btn .rpg-activation-bolt {
   flex: none;
-  font-size: 13px;
   line-height: 1;
+  margin-right: 0;
 }
 
 .rpg-card__effet-btn:hover {
@@ -16758,27 +16784,41 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   height: 208px !important;
 }
 
-/* Deux petites fenêtres côte à côte (Attaquer / Activer l'effet) en dessous de la carte */
+/* Les deux commandes côte à côte (Attaquer / Activer l'effet) AU-DESSUS de la
+   carte, centrées sur elle : `left: 50%` + `translateX(-50%)` place la paire
+   sur l'axe de la carte, `bottom: calc(100% + 10px)` la pose au-dessus du
+   cadre, sans jamais mordre sur le dock de la main. */
 .rpg-card__effet-menu {
   position: absolute;
   left: 50%;
-  top: calc(100% + 6px);
+  bottom: calc(100% + 10px);
+  top: auto;
   transform: translateX(-50%);
   z-index: 90;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .rpg-card__effet-menu .rpg-card__effet-btn {
   position: static;
   transform: none;
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 46px;
   padding: 0;
   justify-content: center;
-  font-size: 16px;
-  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 11px;
+}
+
+/* L'éclair du bouton ⚡ porte une marge droite héritée des libellés « ⚡ texte »
+   de l'aperçu : seul dans son bouton, il le décentrait. */
+.rpg-card__effet-menu .rpg-activation-bolt {
+  margin-right: 0;
+  font-size: 22px;
+  line-height: 1;
 }
 
 .rpg-card__effet-menu .rpg-card__effet-btn:hover {
@@ -16995,17 +17035,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
 }
 
-/* Boutons 3D centrés horizontalement sous la créature */
+/* Boutons 3D centrés horizontalement au-dessus de la créature */
 .rpg-card__effet-menu {
   left: 50%;
-  top: calc(100% + 8px);
+  bottom: calc(100% + 10px);
+  top: auto;
   transform: translateX(-50%);
   justify-content: center;
 }
 
 .rpg-card__effet-menu .rpg-card__effet-btn {
-  width: 36px;
-  height: 36px;
+  width: 46px;
+  height: 46px;
+  font-size: 22px;
   border: 1.5px solid #fde047;
   border-bottom: 4px solid #b45309;
   background: linear-gradient(180deg, #334155 0%, #0f172a 100%);

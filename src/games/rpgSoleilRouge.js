@@ -161,6 +161,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'kagutsuchi-flamme-originelle', distance: true, name: 'Kagutsuchi, Flamme originelle', honneur: 0,
+    // Effet activé (1/tour) — le Grand Hiver devenu brasier : 2 dégâts à toutes les autres créatures.
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'degats', amount: 2, cible: 'toutes-autres' } },
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     // Son prix accepte aussi un sort de la main remis dans le deck.
     retourDeck: { types: ['creature', 'magie'] },

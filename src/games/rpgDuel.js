@@ -1045,16 +1045,52 @@ function coutActivation(activation) {
   };
 }
 
-/** La capacité activée d'une créature en jeu (le Père des corbeaux) : elle
- *  s'active à son tour, tant qu'on peut en payer le mana de glace. */
+/** La capacité activée d'une créature en jeu : un sort confié à la créature,
+ *  qui se joue à son tour — une fois par tour, et jamais en arrivant. */
 export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
   if (!activation || duel.tour !== cote) return false;
+  // Le mal d'invocation tient la créature entière, pas seulement son attaque :
+  // celle qui vient d'arriver n'active rien avant le prochain tour de son camp.
+  // La Rapidité l'en dispense, comme pour l'attaque.
+  if (rpgSouffreMalInvocation(entite)) return false;
   // L'effet est dépensé pour ce tour : ni le bouton, ni le menu, ni l'IA ne
   // doivent plus le proposer — la carte grise le dit à la place.
   if (activation.uneFoisParTour && entite.activationUtiliseeCeTour) return false;
   return rpgPeutPayer(duel[cote], coutActivation(activation));
+}
+
+/**
+ * Les cibles légales de l'effet activé d'une créature — la même liste pour le
+ * surlignage de la page, le refus du moteur et le choix de l'IA. Renvoie
+ * `null` quand l'effet ne désigne personne (`cible: 'aucune'` : le camp, les
+ * deux sorciers, la main), sinon les identifiants des créatures visables.
+ *
+ * Une cible est écartée quand l'effet ne peut pas l'atteindre : protection
+ * contre la couleur de l'effet, seuil de coût (`coutMax`/`coutMin` de
+ * l'Effacement des faibles), site indestructible pour ce qui détruit ou
+ * exile, créature sans arme pour ce qui brise les armes.
+ */
+export function rpgCiblesActivationLegales(duel, cote, entiteId) {
+  const entite = duel?.[cote]?.creatures.find((candidate) => candidate.id === entiteId);
+  const carte = entite ? duelCardById(entite.carteId) : null;
+  const activation = carte?.activation;
+  if (!activation || activation.cible === 'aucune') return null;
+  const couleur = activation.couleur ?? carte.element;
+  const effet = activation.effet ?? {};
+  const camps = activation.cible === 'creature-amie' ? [cote] : ['joueur', 'sorcier'];
+  const cibles = [];
+  for (const camp of camps) {
+    for (const candidate of duel[camp].creatures) {
+      if (rpgEstProtegee(candidate, couleur)) continue;
+      if (!cibleRespecteCoutMax({ effet }, candidate)) continue;
+      if (estSite(candidate) && ['destruction-cible', 'exil', 'retour-main', 'renvoi-main'].includes(effet.type)) continue;
+      if (effet.type === 'destruction-arme' && !armesPortees(candidate).length) continue;
+      cibles.push(candidate.id);
+    }
+  }
+  return cibles;
 }
 
 /** Réserve l'effet ciblé jusqu'au choix « répondre ou passer » du défenseur.
@@ -1083,6 +1119,9 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   if (!entite || !activation) return { ok: false, raison: 'capacite' };
   if (duel.tour !== cote) return { ok: false, raison: 'tour' };
   if (entite.attaquee) return { ok: false, raison: 'deja-attaquee' };
+  // Le mal d'invocation tient toute la créature : celle qui vient d'arriver
+  // n'active rien avant le prochain tour de son camp (la Rapidité l'en dispense).
+  if (rpgSouffreMalInvocation(entite)) return { ok: false, raison: 'mal-invocation' };
   if (activation.uneFoisParTour && entite.activationUtiliseeCeTour) return { ok: false, raison: 'deja-activee' };
   const sansCible = activation.cible === 'aucune';
   const cibleCamp = sansCible ? null : ['joueur', 'sorcier'].find((possedant) => duel[possedant].creatures
@@ -1095,6 +1134,11 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   const carte = duelCardById(entite.carteId);
   const couleur = activation.couleur ?? carte.element;
   if (!sansCible && rpgEstProtegee(cible, couleur)) return { ok: false, raison: 'protection' };
+  // Le reste de la légalité se lit à la même enseigne que le surlignage de la
+  // page : seuil de coût, site indestructible, arme à briser.
+  if (!sansCible && !rpgCiblesActivationLegales(duel, cote, entiteId)?.includes(cibleId)) {
+    return { ok: false, raison: 'cible' };
+  }
   const cout = coutActivation(activation);
   if (!rpgPeutPayer(camp, cout)) return { ok: false, raison: 'mana' };
   payer(duel, cote, cout);
@@ -1198,6 +1242,22 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
     }
     rpgActionsEtat(duel);
     return { ok: true, cibleId: cible.id };
+  }
+  // Tout le reste vient du catalogue des sorts : l'effet passe par l'entrée
+  // unique (`appliquer`), donc par la protection, la parade, l'Esquive, la
+  // Contre-attaque et le journal — exactement comme le sort dont il vient.
+  // Une zone (`toutes-creatures`, `toutes-autres`…) n'a pas de cible unique :
+  // elle passe par là aussi, y compris en dégâts.
+  const typeEffet = activation.effet?.type ?? 'degats';
+  if (typeEffet !== 'degats' || FX_ACTIVATION_ZONE.has(activation.effet?.cible)) {
+    const ciblesFx = ciblesFxActivationEffet(duel, cote, entiteId, activation.effet, cible, cibleCamp);
+    // L'annonce ouvre le journal : ce que l'effet raconte vient après.
+    duel.log.push(`${(entite?.name ?? carte.name)} active son effet${cible ? ` sur ${cible.name}` : ''}.`);
+    appliquer(duel, cote, activation.effet, sansCible ? null : cibleId, entiteId, couleur, 'capacite', carte.id,
+      cibleCamp, duel.moba ? { mobaLane: entite?.mobaLane } : null);
+    projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet), ciblesFx);
+    rpgActionsEtat(duel);
+    return { ok: true, cibleId: cible?.id ?? null };
   }
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
@@ -2707,7 +2767,10 @@ function flammecheCreature(duel, cote, entiteId, cible) {
  *  le feu, la Neige la tempête, l'Eau la vague, le Sable le grain, les
  *  Ténèbres l'ombre. Les effets qui ne frappent pas gardent leur propre
  *  signature — l'égide dorée du bouclier, le tourbillon du renvoi, l'éclat du
- *  soin, la braise du renfort. */
+ *  soin, la braise du renfort, la plume de ce qui se pioche ou se défausse,
+ *  la ruine de ce qui tombe. Un sort confié à une créature garde la signature
+ *  du sort dont il vient ; le maléfice qui maigrit la table adverse part à
+ *  l'ombre. */
 const FX_ACTIVATION_ELEMENT = Object.freeze({
   braise: 'feu', neige: 'tempete', eau: 'vague', sable: 'sable', tenebres: 'ombre',
 });
@@ -2716,9 +2779,51 @@ const FX_ACTIVATION_EFFET = Object.freeze({
   'renvoi-main': 'renvoi',
   'soin-tout': 'soin',
   'buff-allies-tour': 'renfort',
+  bouclier: 'egide',
+  'bouclier-lumiere': 'egide',
+  soin: 'soin',
+  'soin-creatures': 'soin',
+  buff: 'renfort',
+  'retour-main': 'renvoi',
+  'retour-apres-tours': 'renvoi',
+  'exil-temporaire': 'renvoi',
+  pioche: 'plume',
+  'pioche-defausse': 'plume',
+  'defausse-adverse': 'plume',
+  defaussePaquet: 'plume',
+  'destruction-cible': 'ruine',
+  'destruction-arme': 'ruine',
+  'destruction-coutmax': 'ruine',
+  'destruction-totale': 'ruine',
+  exil: 'ruine',
+  debuff: 'ombre',
+  malediction: 'ombre',
+  transfert: 'ombre',
+});
+
+/** Les effets qui balaient le champ sans désigner personne. */
+const FX_ACTIVATION_ZONE = Object.freeze(new Set([
+  'toutes-creatures', 'toutes-autres', 'toutes-alliees', 'creatures-adverses',
+]));
+
+/** Où se lit un effet qui ne vise pas une créature unique : la plaque d'un
+ *  sorcier (ce qui se pioche, ce qui se prend à l'adversaire), le camp entier
+ *  (les soins et les renforts de zone), ou les deux camps (le brouillard, les
+ *  vagues). */
+const FX_ACTIVATION_PORTEE = Object.freeze({
+  pioche: 'sorcier-allie',
+  'pioche-defausse': 'sorcier-allie',
+  'defausse-adverse': 'sorcier-adverse',
+  defaussePaquet: 'sorcier-adverse',
+  transfert: 'sorcier-adverse',
+  'soin-creatures': 'allies',
+  'buff-allies-tour': 'allies',
 });
 
 function varianteFxActivation(carte, effet) {
+  // Le renfort retourné contre la table adverse (l'Embuscade) est un
+  // maléfice : il part à l'ombre, pas à la braise qui grandit un allié.
+  if (effet?.type === 'buff' && effet?.cible === 'creatures-adverses') return 'ombre';
   return FX_ACTIVATION_EFFET[effet?.type]
     ?? FX_ACTIVATION_ELEMENT[carte?.element]
     ?? 'feu';
@@ -2744,6 +2849,22 @@ function ciblesFxActivationCamp(duel, cote, entiteId) {
   return duel[cote].creatures
     .filter((allie) => allie.id !== entiteId)
     .map((allie) => ({ type: 'creature', cote, entiteId: allie.id }));
+}
+
+/** Les cibles du tir d'un sort confié à une créature : la créature désignée
+ *  s'il y en a une, sinon la portée de l'effet (une plaque de sorcier, un
+ *  camp, les deux). La liste se calcule AVANT la résolution — une créature
+ *  détruite par l'effet reste joignable, comme pour la flammèche. */
+function ciblesFxActivationEffet(duel, cote, entiteId, effet, cible, cibleCamp) {
+  if (cible) return [{ type: 'creature', cote: cibleCamp, entiteId: cible.id }];
+  const portee = FX_ACTIVATION_PORTEE[effet?.type]
+    ?? (FX_ACTIVATION_ZONE.has(effet?.cible) ? 'table' : 'sorcier-allie');
+  if (portee === 'sorcier-allie') return [{ type: 'sorcier', cote }];
+  if (portee === 'sorcier-adverse') return [{ type: 'sorcier', cote: autre(cote) }];
+  const camps = portee === 'allies' || effet?.cible === 'toutes-alliees' ? [cote]
+    : effet?.cible === 'creatures-adverses' ? [autre(cote)]
+      : ['joueur', 'sorcier'];
+  return camps.flatMap((camp) => ciblesFxActivationCamp(duel, camp, entiteId));
 }
 
 /**
@@ -10666,8 +10787,8 @@ export function rpgSorcierActiverArmes(duel) {
   return actives;
 }
 
-/** Le sorcier convertit son mana de glace restant en capacités activées (la
- *  foudre du Père des corbeaux), tant qu'un coup en vaut la peine. */
+/** Le sorcier déclenche les effets activés de ses créatures, tant qu'un coup
+ *  en vaut la peine — chacun se paie de l'attaque de la créature. */
 export function rpgSorcierActiverCapacitesIA(duel, rng = Math.random) {
   const actives = [];
   let garde = 6;

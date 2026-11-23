@@ -2661,11 +2661,100 @@ function choisirCarteIAInterne(duel, cote, options) {
  * moins précieuse — un terrain excédentaire si la table est déjà garnie,
  * sinon la carte au score le plus faible.
  */
+/** La carte vue comme le sort dont son effet activé vient : ni son arrivée
+ *  (elle ne se rejoue pas), ni son statut de créature — juste l'effet, avec
+ *  ses couleurs pour la protection. */
+function sortDeActivation(carte, activation) {
+  // La portée d'une activation vit sur l'activation (`cible: 'creature'`,
+  // `'creature-amie'`), alors que le choix de cible d'un sort la lit dans
+  // l'effet : on la recopie pour que les deux se parlent.
+  const effet = { ...activation.effet };
+  if (activation.cible && activation.cible !== 'aucune' && !effet.cible) effet.cible = activation.cible;
+  return { ...carte, kind: 'magie', arrivee: null, effet };
+}
+
+/** Les PV qui manquent réellement à une créature (son plafond, pas sa DEF). */
+function pvManquants(entite) {
+  const plafond = Number.isFinite(Number(entite.pvMax))
+    ? Number(entite.pvMax)
+    : Math.max(Number(entite.pv) || 0, Number(entite.def) || 0);
+  return Math.max(0, plafond - (Number(entite.pv) || 0));
+}
+
 /**
- * Capacité activée en jeu (la foudre du Père des corbeaux) : le mana de
- * glace est cher, on ne le dépense que pour achever une vraie proie ou
- * estropier une menace assez grosse pour le valoir. Retourne null quand
- * aucun coup ne mérite son mana.
+ * Un effet qui ne désigne personne (le camp, un sorcier, la main) vaut-il
+ * d'être dépensé ? Activer fait tomber `ready` : la créature n'attaque plus
+ * ce tour-là — c'est le prix de chaque effet activé, l'IA ne le paie pas pour
+ * rien.
+ */
+function activationSansCibleVaut(duel, cote, entite, effet) {
+  const adv = autre(cote);
+  const montant = Math.max(0, Number(effet.amount) || 0);
+  const allies = duel[cote].creatures;
+  switch (effet.type) {
+    case 'pioche':
+      return duel[cote].deck.length > 0 && duel[cote].main.length <= 5;
+    case 'transfert':
+      return duel[adv].pv <= montant || duel[cote].pv < duel[adv].pv;
+    case 'soin':
+      return duel[cote].pvMax - duel[cote].pv >= montant;
+    case 'soin-tout':
+    case 'soin-creatures':
+      return allies.reduce((total, allie) => total + pvManquants(allie), 0) >= montant;
+    case 'buff-allies-tour':
+      // Le renfort du camp se paie d'une attaque : il faut du monde à grandir.
+      return allies.length >= 2;
+    case 'buff':
+      if (effet.cible === 'creatures-adverses') {
+        return duel[adv].creatures.some((adversaire) => (Number(adversaire.atk) || 0) > 0);
+      }
+      return allies.length >= 2;
+    case 'defausse-adverse':
+      return duel[adv].main.length > 0;
+    case 'degats': {
+      // La vague ne part que si elle rapporte plus qu'elle ne coûte : ce
+      // qu'elle abat chez l'adversaire contre ce qu'elle abat chez nous.
+      const tombe = (liste) => liste.filter((creature) => creature.id !== entite.id
+        && (Number(creature.pv) || 0) <= montant);
+      const victimes = tombe(duel[adv].creatures);
+      if (!victimes.length) return false;
+      const pertes = effet.cible === 'toutes-autres' ? tombe(allies) : [];
+      return victimes.reduce((total, creature) => total + valeurEntite(creature), 0)
+        > pertes.reduce((total, creature) => total + valeurEntite(creature), 0);
+    }
+    default:
+      return false;
+  }
+}
+
+/**
+ * La cible d'un effet activé : le moteur donne la liste légale (protection,
+ * seuil de coût, site indestructible, arme absente), l'IA y prend la meilleure
+ * en rejouant le choix du sort dont l'effet vient.
+ */
+function cibleActivationIA(duel, cote, entite, sort, activation, options) {
+  const { profil, rng } = optionsIA(duel, cote, options);
+  const effet = activation.effet;
+  const amie = activation.cible === 'creature-amie';
+  const legales = new Set(moteur.rpgCiblesActivationLegales(duel, cote, entite.id) ?? []);
+  const choisie = ['soin', 'soin-creatures'].includes(effet.type) && amie
+    ? meilleureCibleSoinIA(duel, cote, sort)
+    : ['retour-main', 'renvoi-main'].includes(effet.type)
+      ? meilleureCibleRenvoiIA(duel, cote, sort)
+      : ['debuff', 'blocage-force', 'empeche-blocage'].includes(effet.type)
+        ? meilleureCibleMarqueeIA(duel, cote, sort)?.id ?? null
+        : amie
+          ? meilleureCibleAmie(duel, cote, sort, entite.id)
+          : choisirCibleAutoIA(duel, cote, sort, { ...options, profil, rng, sourceId: entite.id });
+  return choisie && legales.has(choisie) ? choisie : null;
+}
+
+/**
+ * Capacité activée en jeu : l'effet d'un sort confié à une créature. Activer
+ * fait tomber `ready` — la créature n'attaque plus ce tour — donc le coup ne
+ * se joue que s'il rapporte : achever une proie, estropier une menace, panser
+ * un allié qui tient, piocher quand la main est courte. Retourne null quand
+ * rien ne mérite d'être dépensé.
  */
 export function choisirActivationIA(duel, cote, options = {}) {
   const { profil = rpgProfilIA(duel?.[cote]?.ia), rng = Math.random } = options;
@@ -2675,19 +2764,42 @@ export function choisirActivationIA(duel, cote, options = {}) {
     const activation = carte?.activation;
     if (!activation?.effet) continue;
     if (!moteur.rpgPeutActiverCapacite(duel, cote, entite.id)) continue;
-    const montant = Math.max(0, Number(activation.effet.amount) || 0);
-    const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
-      montant,
-      sourceType: 'capacite',
-      portee: 'creature',
-      profil,
-      rng,
-    });
-    if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') continue;
-    const cible = duel[adv].creatures.find((candidate) => candidate.id === meilleure.cibleId);
+    const effet = activation.effet;
+    const montant = Math.max(0, Number(effet.amount) || 0);
+    if (activation.cible === 'aucune') {
+      if (activationSansCibleVaut(duel, cote, entite, effet)) return { entiteId: entite.id, cibleId: null };
+      continue;
+    }
+    const sort = sortDeActivation(carte, activation);
+    const cibleId = cibleActivationIA(duel, cote, entite, sort, activation, { ...options, profil, rng });
+    if (!cibleId) continue;
+    const cible = [...duel[cote].creatures, ...duel[adv].creatures].find((candidate) => candidate.id === cibleId);
     if (!cible) continue;
-    const vautLeMana = meilleure.kill ? valeurEntite(cible) >= 3 : menace(cible) >= 7;
-    if (vautLeMana) return { entiteId: entite.id, cibleId: meilleure.cibleId };
+    const alliee = duel[cote].creatures.some((candidate) => candidate.id === cibleId);
+    // Une créature qui n'attaque pas de toute façon (un mur, une créature
+    // gelée, une créature qui ne peut pas attaquer) dépense son effet pour
+    // rien : elle n'a aucune attaque à perdre. Les autres paient la leur.
+    const gratuite = estDefenseur(entite) || !moteur.rpgPeutAttaquer(entite);
+    let vautLeCoup = false;
+    if (effet.type === 'degats') {
+      const kill = montant >= (Number(cible.pv) || 0);
+      vautLeCoup = (kill && valeurEntite(cible) >= 3) || (gratuite && menace(cible) >= 4);
+    } else if (alliee) {
+      if (['soin', 'soin-creatures'].includes(effet.type)) {
+        vautLeCoup = pvManquants(cible) >= 1 && (gratuite || valeurEntite(cible) >= 2 || menace(cible) >= 4);
+      } else if (['bouclier', 'bouclier-tour', 'bouclier-lumiere'].includes(effet.type)) {
+        vautLeCoup = !cible.bouclier && duel[adv].creatures.length > 0 && valeurEntite(cible) >= 2;
+      } else {
+        vautLeCoup = moteur.rpgPeutAttaquer(cible) || valeurEntite(cible) >= 4;
+      }
+    } else if (['retour-main', 'renvoi-main'].includes(effet.type)) {
+      vautLeCoup = menace(cible) >= 7 || valeurEntite(cible) >= 4;
+    } else if (effet.type === 'debuff') {
+      vautLeCoup = menace(cible) >= 4;
+    } else if (['destruction-cible', 'exil', 'destruction-arme'].includes(effet.type)) {
+      vautLeCoup = valeurEntite(cible) >= 2 || armesPortees(cible).length > 0;
+    }
+    if (vautLeCoup) return { entiteId: entite.id, cibleId };
   }
   return null;
 }
