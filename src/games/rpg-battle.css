@@ -17042,7 +17042,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   clip-path: polygon(0% 0%, 100% 0%, 100% 72%, 50% 100%, 0% 72%);
 }
 .rpg-creature-slot:has(> .rpg-card.has-garde) {
-  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.82)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.35));
+  filter:
+    drop-shadow(2px 0 0 #8b5a2b)
+    drop-shadow(-2px 0 0 #8b5a2b)
+    drop-shadow(0 2px 0 #8b5a2b)
+    drop-shadow(0 -2px 0 #8b5a2b)
+    drop-shadow(0 10px 16px rgba(0, 0, 0, 0.82));
 }
 
 .rpg-fx-video {
