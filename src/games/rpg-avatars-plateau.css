@@ -656,16 +656,36 @@
   left: 14px;
   right: auto;
   width: auto;
-  max-width: min(36vw, 430px);
+  max-width: min(52vw, 620px);
   padding-left: 0;
 }
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand-dock .rpg-hand {
   justify-content: flex-start;
   gap: 6px;
 }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand > :is(.rpg-hand__card:not(.rpg-card-flight), .rpg-hand__pile) {
+  flex: 0 0 clamp(76px, 6.4vw, 98px);
+  width: clamp(76px, 6.4vw, 98px);
+  max-width: clamp(76px, 6.4vw, 98px);
+}
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-hand__ecart {
   display: none;
 }
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--ennemi,
+.rpg-battle[data-scene="duel"][data-mode-mana="essai"]:not(.rpg-battle--touch) .card-table > .rpg-wizard-plate--ennemi {
+  right: 14px;
+  left: auto;
+  top: 14px;
+  bottom: auto;
+  transform: scale(0.88);
+  transform-origin: top right;
+  z-index: 12;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-facedown-hand {
+  justify-content: flex-end;
+  margin-left: auto;
+  margin-right: 14px;
+}
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-creature-slot {
-  width: clamp(104px, min(16vw, 25vh), 220px);
+  width: clamp(78px, min(11.5vw, 19vh), 165px);
 }
