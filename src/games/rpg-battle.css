@@ -332,14 +332,6 @@
   transform: translateX(-50%);
   pointer-events: none;
 }
-/* La vignette d'arme chevauche le haut au centre : réserver sa pointe et un
-   interstice avant le premier losange, sans déplacer les compteurs de l'arme. */
-.rpg-card.has-arme > .rpg-card__compteurs-creature {
-  top: max(
-    calc(var(--rpg-card-element-marker-top, 5%) + (var(--rpg-cout-taille, 26.88px) - var(--rpg-card-counter-size)) / 2),
-    calc(max(34cqw, 26px) / 2 + var(--rpg-card-counter-size) * .21 + 2px)
-  );
-}
 .rpg-card__compteur {
   display: grid;
   place-items: center;
@@ -4981,26 +4973,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__empile {
   position: relative;
   display: grid;
-}
-/* Le losange chevauche le haut de la face : réserver son débord dans la
-   grille pour qu'il reste visible même dans le panneau défilant ou sur mobile.
-   Sa moitié mesure 17 % de la largeur de la face, plus l'ombre portée. */
-.rpg-hover-card-preview__empile.has-arme::before {
-  content: '';
-  display: block;
-  width: 100%;
-  aspect-ratio: 100 / 17;
-  margin-bottom: 5px;
-}
-.rpg-hover-card-preview__empile.has-arme > .rpg-hover-card-preview__face {
-  overflow: visible;
-}
-/* Comme sur la table, les compteurs de la créature restent sous l'arme. */
-.rpg-hover-card-preview__empile.has-arme .rpg-card__compteurs-creature {
-  top: max(
-    calc(var(--rpg-card-element-marker-top, 5%) + (var(--rpg-cout-taille, 26.88px) - var(--rpg-card-counter-size)) / 2),
-    calc(max(34cqw, 26px) / 2 + var(--rpg-card-counter-size) * .21 + 2px)
-  );
 }
 .rpg-hover-card-preview__prisonniere {
   border-color: rgba(127, 212, 200, .72);
@@ -12480,61 +12452,65 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: saturate(.7) brightness(1.1) blur(.4px);
 }
 
-/* Le losange de l'arme s'accroche à cheval sur le bord supérieur sans remplacer le cadre
-   de la créature. Le clic droit sur le losange consulte l’arme ; le clic
-   ordinaire conserve la cible de la créature. */
+/* L'arme reste une vraie carte, derrière le porteur, dont seule la bande
+   supérieure dépasse. Les boutons sont frères (jamais imbriqués) : chaque
+   arme est consultable sans déclencher le clic de combat de la créature. */
 .rpg-card.has-arme {
   overflow: clip;
   overflow-clip-margin: 24px;
 }
-.rpg-card.has-arme:is(.has-resonance, .has-aura, .has-malediction) {
-  overflow-clip-margin: 58px;
-}
+.rpg-card.has-arme:is(.has-resonance, .has-aura, .has-malediction),
 .rpg-card.has-arme.has-garde { overflow-clip-margin: 58px; }
-.rpg-card.has-arme > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
-  border-radius: inherit;
+.rpg-card.has-arme > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) { border-radius: inherit; }
+/* La bande visible doit rester au-dessus d'une rangée voisine sur téléphone. */
+.rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card-avec-arme { z-index: 3; }
+.rpg-card-avec-arme > .rpg-card { z-index: 10; }
+.rpg-card-avec-arme:has(> .rpg-card.is-sacrifice-animating) > .rpg-card__arme-derriere {
+  visibility: hidden;
+  pointer-events: none;
 }
-.rpg-card__arme-vignette {
+.rpg-card__arme-derriere {
   position: absolute;
-  z-index: 12;
-  left: 50%;
+  z-index: calc(9 - var(--rpg-arme-index, 0));
+  /* Dix pixels au minimum restent visibles et touchables sur petit écran. */
+  top: calc(-1 * max(12%, 10px) - var(--rpg-arme-index, 0) * max(9%, 8px));
+  left: 4%;
+  width: 92%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid #d4b57a;
+  border-radius: var(--rpg-card-radius, 0px);
+  background: #17120f;
+  box-shadow: 0 2px 6px #000b;
+  transform: rotate(-5deg);
+  transform-origin: center center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.rpg-card__arme-derriere:focus-visible { outline: 3px solid #ffe4a1; outline-offset: 2px; }
+.rpg-card__arme-derriere > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.rpg-card__arme-titre {
+  position: absolute;
   top: 0;
-  width: 34%;
-  aspect-ratio: 1;
-  transform: translate(-50%, 0);
-  filter: drop-shadow(0 3px 4px #000c);
-  pointer-events: auto;
+  left: 0;
+  right: 0;
+  padding: 2px 3px;
+  color: #fff1d3;
+  background: rgba(20, 15, 13, .88);
+  font: 700 clamp(7px, 1vw, 11px)/1.1 system-ui, sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.rpg-card__arme-vignette::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #d4b57a;
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
-}
-.rpg-card__arme-vignette > img {
-  position: absolute;
-  inset: 2px;
-  display: block;
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
-  object-fit: cover;
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
-}
-/* Durabilité et sable sont dans le losange de l'arme, jamais sur le corps de
-   la créature. La vignette s'élargit juste assez sur les plus petites cartes
-   pour conserver deux chiffres lisibles sans sortir de son cadre. */
-.rpg-card__arme-vignette.has-compteurs { width: max(34%, 26px); }
 .rpg-card__arme-compteurs {
-  --rpg-card-counter-size: clamp(10px, 8cqw, 12px);
+  --rpg-card-counter-size: clamp(10px, 8cqw, 14px);
   position: absolute;
-  z-index: 1;
-  top: 54%;
-  left: 50%;
+  top: 1px;
+  right: 2px;
   display: flex;
-  gap: 1px;
-  width: max-content;
-  transform: translate(-50%, -50%);
+  gap: 2px;
   pointer-events: none;
 }
 .rpg-card__arme-compteurs .rpg-card__compteur {
@@ -12546,29 +12522,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-card__arme-compteurs .rpg-card__compteur--durabilite { border-color: #d5b3ff; }
 .rpg-card__arme-compteurs .rpg-card__compteur--sable { border-color: #f0d497; background: rgba(68, 41, 14, .94); }
-.rpg-card__arme-compteurs .rpg-card__compteur > span {
-  font: 900 clamp(10px, 6cqw, 9px)/1 system-ui, sans-serif;
-  transform: none;
-}
+.rpg-card__arme-compteurs .rpg-card__compteur > span { font: 900 10px/1 system-ui, sans-serif; transform: none; }
 .rpg-card__arme-compteurs .rpg-card__compteur--durabilite > span { color: #ead9ff; }
 .rpg-card__arme-compteurs .rpg-card__compteur--sable > span { color: #ffdf9b; }
-/* Les anciennes animations tournent les chiffres des losanges de 45° : ici
-   seule la pastille clignote lors d'un changement, le chiffre reste droit. */
 .rpg-card__arme-compteurs .rpg-card__compteur:is(.is-perte--a, .is-perte--b) > span { animation: none; }
 .rpg-card__arme-compteurs .rpg-card__compteur.is-derniere::after { inset: 0; border-radius: inherit; }
-.rpg-card__arme-nombre {
-  position: absolute;
-  right: -3px;
-  bottom: -2px;
-  min-width: 15px;
-  padding: 1px 2px;
-  border: 1px solid #d4b57a;
-  border-radius: 9px;
-  background: #17120f;
-  color: #fff1d3;
-  font: 700 10px/1 system-ui, sans-serif;
-  text-align: center;
-}
 
 .rpg-card__brume {
   position: absolute;

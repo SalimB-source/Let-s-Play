@@ -9840,3 +9840,21 @@ de zone de sort restent intacts, comme le paysage et le PC.
 npm run check:rpg-portrait   # 19/19 — géométrie, repères du plateau, rail complet
 npm run build                # le bundle se construit
 ```
+
+## Le Sablier : les armes derrière leur porteur
+
+Sur le plateau du duel et de la Conquête, chaque arme équipée est une carte
+inclinée derrière la créature : son haut dépasse et garde ses compteurs de
+sable ou de durabilité. Plusieurs armes sont visibles en éventail ; chacune
+possède son propre bouton, accessible au clavier, au clic ou au doigt, pour
+ouvrir sa fiche sans activer la créature. Le clic droit et l'appui long restent
+des gestes de consultation. Pendant la désignation de Brise-lame, cliquer une
+arme cible son porteur selon les règles existantes du sort.
+
+La carte et sa créature partagent toujours la même case ; le wrapper fonctionne
+aussi avec une créature en cale et disparaît quand l'équipement est retiré.
+
+```bash
+node --test tests/rpg-vignette-arme.test.js tests/rpg-arme-derriere-ui.test.js tests/rpg-card-stacks.test.js tests/rpg-vie-compteurs.test.js
+npm run build
+```

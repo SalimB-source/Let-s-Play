@@ -103,6 +103,8 @@
 .moba .moba__real-slot { position: relative; flex: 0 1 132px; min-width: 0; width: 132px; padding-bottom: 24px; }
 /* Les pierres du duel débordent du cadre ; sur les petites cartes MOBA,
    plusieurs pierres empilées peuvent aussi dépasser le bas de la face. */
+.moba .moba__real-slot .rpg-card-prison { width: 100%; }
+.moba .moba__real-slot:has(.rpg-card-avec-arme) { z-index: 3; }
 .moba .moba__real-slot .rpg-card.moba__slot { display: flex; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; border-radius: var(--rpg-card-radius, 0px); overflow: visible; overflow: clip; overflow-clip-margin: 64px; }
 .moba .moba__real-slot .rpg-card.moba__slot:disabled { filter: none; opacity: 1; }
 /* Une créature du MOBA qui a déjà attaqué est grisée comme sur la table du
@@ -924,11 +926,13 @@
 .moba .moba__lane.is-sealed { background: none; animation: none; }
 .moba__lane.is-sealed .moba__lane-state { display: none; }
 .moba__lane.is-sealed .moba__health,
-.moba__lane.is-sealed .moba__slot { visibility: hidden; }
+.moba__lane.is-sealed .moba__slot,
+.moba__lane.is-sealed .rpg-card__arme-derriere { visibility: hidden; }
 .moba .moba__lane.is-center-conquered { background: none; }
 .moba .moba__lane.is-conquered .moba__side.is-joined-center { z-index: 3; }
 .moba__side.is-lost-center .moba__health,
-.moba__side.is-lost-center .moba__slot { visibility: hidden; }
+.moba__side.is-lost-center .moba__slot,
+.moba__side.is-lost-center .rpg-card__arme-derriere { visibility: hidden; }
 
 /* La fiche classique anime le lancement au centre. Ce rappel compact reste
    visible jusqu'au passage ou au contre, y compris sur les écrans tactiles où
@@ -1030,7 +1034,8 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 /* The victim remains visible for the first beat of the ritual, even when
    the engine has already placed the new creature in its vacated slot. The
    shared duel seal is anchored to the slot rather than to screen coordinates. */
-.moba .moba__slot.is-invoking { visibility: hidden; }
+.moba .moba__slot.is-invoking,
+.moba .rpg-card-avec-arme:has(.moba__slot.is-invoking) .rpg-card__arme-derriere { visibility: hidden; }
 .moba .moba__sacrifice-zone { position: absolute; inset: 0 0 24px; z-index: 60; pointer-events: none; overflow: visible; }
 .moba .moba__plain-slot .moba__sacrifice-zone,
 .moba .moba__ghost-slot .moba__sacrifice-zone { inset: 0; }

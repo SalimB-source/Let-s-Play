@@ -53,7 +53,7 @@ test('Défenseur ou Provocation portent une seule aura orange dans les deux mode
       const avecDon = rendre({ ...ancienne, defenseurAccorde: true }, cote, moba);
       assert.equal(avecDon.querySelector('[data-effet="defenseur"] .rpg-effet-icone')?.getAttribute('data-pierre'), 'bronze');
       const avecArme = rendre(entite({ defenseur: true, arme: { carteId: 'armure-de-cendres' } }), cote, moba);
-      assert.ok(avecArme.querySelector('.rpg-card.has-garde.has-arme .rpg-card__arme-vignette'));
+      assert.ok(avecArme.querySelector('.rpg-card-prison:has(.rpg-card.has-garde.has-arme) .rpg-card__arme-derriere'));
       const cumul = rendre(entite({ carteId: 'la-barbe-noire', defenseur: true }), cote, moba);
       assert.ok(cumul.querySelector('.rpg-card__resonance--malediction'));
       assert.ok(cumul.querySelector('.rpg-card__resonance--garde'));

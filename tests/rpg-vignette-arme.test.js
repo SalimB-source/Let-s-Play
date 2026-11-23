@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import React from 'react';
+import React, { act } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { createRoot } from 'react-dom/client';
 import { createServer } from 'vite';
 import { JSDOM } from 'jsdom';
 import { cibleApercuClicDroit } from '../src/games/rpgApercuCible.js';
@@ -11,118 +12,97 @@ import { cardById } from '../src/games/rpgCards.js';
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const entite = (extra = {}) => ({ id: 'c1', carteId: 'chien-du-guet', name: 'Chien du guet', atk: 2, def: 2, pv: 2, pvMax: 2, ready: true, ...extra });
 
-test('la vignette suit les armes réelles des deux camps et leur disparition', async () => {
+test('les armes sont des cartes distinctes derrière le porteur, dans les deux camps et modes', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
   try {
     const { TableCard } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
-    const rendre = (e, cote = 'joueur') => new JSDOM(renderToStaticMarkup(React.createElement(TableCard, { entite: e, cote }))).window.document;
-    assert.equal(rendre(entite()).querySelector('.rpg-card__arme-vignette'), null);
-    for (const cote of ['joueur', 'ennemi']) {
-      const doc = rendre(entite({ arme: { carteId: 'armure-de-cendres', durabilite: 2 } }), cote);
-      const badge = doc.querySelector('.rpg-card__arme-vignette');
-      assert.equal(badge?.dataset.armeVignette, 'armure-de-cendres');
-      assert.match(badge.querySelector('img').getAttribute('src'), /armure-de-cendres/);
-      assert.equal(badge.getAttribute('aria-hidden'), 'true');
-      assert.match(badge.title, /Clic droit/);
-      assert.equal(cibleApercuClicDroit(badge.querySelector('img')).carteId, 'armure-de-cendres');
-      assert.equal(cibleApercuClicDroit(badge.querySelector('img')).arme, true);
-      assert.equal(cibleApercuClicDroit(doc.querySelector('.rpg-card__img')).carteId, 'chien-du-guet');
-      assert.match(doc.querySelector('button.rpg-card').getAttribute('aria-label'), /armes équipées : Armure de cendres/);
-      assert.equal(badge.querySelector('[data-compteur="durabilite"]')?.textContent, '2');
-      assert.equal(doc.querySelector('.rpg-card__compteurs [data-compteur="durabilite"]'), null);
+    const rendre = (e, cote = 'joueur', moba = null) => new JSDOM(renderToStaticMarkup(React.createElement(TableCard, { entite: e, cote, moba, caseEssai: 6 }))).window.document;
+    assert.equal(rendre(entite()).querySelector('.rpg-card-avec-arme'), null);
+    for (const cote of ['joueur', 'ennemi']) for (const moba of [null, { className: 'moba__slot', disabled: true }]) {
+      const doc = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 }, heures: { restants: 2 } }), cote, moba);
+      const pile = doc.querySelector('.rpg-card-avec-arme');
+      const arme = pile.querySelector('button.rpg-card__arme-derriere');
+      const creature = pile.querySelector('button.rpg-card');
+      assert.equal(pile.dataset.ligne, 'fond');
+      assert.equal(pile.style.getPropertyValue('--case-col'), '2');
+      assert.equal(arme.dataset.cardId, 'jitte-d-amayas');
+      assert.equal(arme.dataset.armeEquipee, 'jitte-d-amayas');
+      assert.match(arme.querySelector('img').getAttribute('src'), /jitte-d-amayas/);
+      assert.match(arme.getAttribute('aria-label'), /2 compteurs de durabilité, 3 compteurs de sable/);
+      assert.equal(arme.querySelector('[data-compteur="durabilite"]').textContent, '2');
+      assert.equal(arme.querySelector('[data-compteur="sable"]').textContent, '3');
+      assert.equal(creature.querySelector('.rpg-card__arme-vignette'), null);
+      assert.ok(arme.compareDocumentPosition(creature) & doc.defaultView.Node.DOCUMENT_POSITION_FOLLOWING);
+      assert.equal(creature.contains(arme), false, 'aucun bouton imbriqué');
+      assert.equal(creature.querySelector('.rpg-card__compteurs-creature [data-compteur="heures"]').textContent, '2');
+      assert.equal(cibleApercuClicDroit(arme.querySelector('img')).carteId, 'jitte-d-amayas');
+      assert.equal(cibleApercuClicDroit(arme).arme, true);
+      assert.equal(cibleApercuClicDroit(creature.querySelector('.rpg-card__img')).carteId, 'chien-du-guet');
     }
-    const jitte = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 }, heures: { restants: 2 } }));
-    const vignette = jitte.querySelector('.rpg-card__arme-vignette');
-    assert.deepEqual([...vignette.querySelectorAll('[data-compteur]')].map((node) => [node.dataset.compteur, node.textContent]), [['durabilite', '2'], ['sable', '3']]);
-    assert.deepEqual([...jitte.querySelectorAll('.rpg-card__compteurs-creature [data-compteur]')].map((node) => node.dataset.compteur), ['heures']);
-    const moba = new JSDOM(renderToStaticMarkup(React.createElement(TableCard, {
-      entite: entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 2, compteurs: 3 } }),
-      moba: { className: 'moba__slot', disabled: true, ariaLabel: 'Créature équipée' },
-    }))).window.document;
-    assert.equal(moba.querySelector('.rpg-card__arme-vignette [data-compteur="sable"]')?.textContent, '3');
-    const hybride = rendre(entite({ carteId: 'chercheuse-des-armes-ensevelies', arme: { carteId: 'jitte-d-amayas', durabilite: 1, compteurs: 1 } }));
-    assert.equal(hybride.querySelector('.rpg-card__arme-vignette [data-compteur="durabilite"]')?.textContent, '1');
-    assert.equal(hybride.querySelector('.rpg-card__arme-vignette [data-compteur="sable"]')?.textContent, '1');
-    assert.equal(hybride.querySelector('.rpg-card__compteurs--cale [data-compteur="durabilite"]'), null);
-    const avecCale = rendre(entite({ carteId: 'rais-de-la-galiote', arme: { carteId: 'armure-de-cendres', durabilite: 1 }, enCale: { name: 'Prisonnière', carteId: 'chien-du-guet' } }));
-    assert.equal(avecCale.querySelector('.rpg-card__arme-vignette [data-compteur="durabilite"]')?.textContent, '1');
-    assert.equal(avecCale.querySelector('.rpg-card__compteurs-creature [data-compteur="cale"]')?.textContent, '⛓');
-    const epuisee = rendre(entite({ arme: { carteId: 'jitte-d-amayas', durabilite: 0, compteurs: 0 } }));
-    assert.equal(epuisee.querySelector('.rpg-card__arme-compteurs'), null);
-    assert.equal(epuisee.querySelector('.rpg-card__compteurs [data-compteur="sable"]'), null);
-    const multi = rendre(entite({ arme: { carteId: 'armure-de-cendres' }, armes: ['sabre-maudit'] }));
-    assert.equal(multi.querySelector('.rpg-card__arme-nombre').textContent, '+1');
-    assert.equal(cibleApercuClicDroit(multi.querySelector('.rpg-card__arme-nombre')).carteId, 'armure-de-cendres');
-    assert.match(multi.querySelector('button.rpg-card').getAttribute('aria-label'), /Armure de cendres, Sabre maudit/i);
-    const magie = rendre(entite({ armes: ['sabre-maudit'] }));
-    assert.equal(magie.querySelector('.rpg-card__arme-vignette')?.dataset.armeVignette, 'sabre-maudit');
-    assert.ok(magie.querySelector('[data-compteur="durabilite"]'));
-    const usee = rendre(entite({ armes: ['sabre-maudit'], durabilitesArmes: [1] }));
-    assert.match(usee.querySelector('button.rpg-card').getAttribute('aria-label'), /1 compteur de durabilité/);
-    assert.equal(rendre(entite({ armes: [], durabilitesArmes: [] })).querySelector('[data-compteur="durabilite"]'), null);
-    assert.equal(rendre(entite({ arme: { carteId: 'inconnue' } })).querySelector('.rpg-card__arme-vignette'), null);
+    const multi = rendre(entite({ arme: { carteId: 'armure-de-cendres', durabilite: 1 }, armes: ['sabre-maudit'], durabilitesArmes: [2] }));
+    const armes = [...multi.querySelectorAll('.rpg-card__arme-derriere')];
+    assert.deepEqual(armes.map((a) => a.dataset.cardId), ['armure-de-cendres', 'sabre-maudit']);
+    assert.deepEqual(armes.map((a) => a.querySelector('[data-compteur="durabilite"]').textContent), ['1', '2']);
+    assert.equal(armes[1].style.getPropertyValue('--rpg-arme-index'), '1');
+    assert.equal(cibleApercuClicDroit(armes[1]).carteId, 'sabre-maudit');
+    const cale = rendre(entite({ arme: { carteId: 'armure-de-cendres', durabilite: 1 }, enCale: { name: 'Prisonnière', carteId: 'chien-du-guet' } }));
+    assert.ok(cale.querySelector('.rpg-card__prisonniere'));
+    assert.ok(cale.querySelector('.rpg-card__arme-derriere'));
+    assert.equal(rendre(entite({ arme: { carteId: 'inconnue' } })).querySelector('.rpg-card__arme-derriere'), null);
   } finally { await vite.close(); }
 });
 
-test('la fiche réserve le débord du losange et conserve les compteurs des armes', async () => {
+test('le clic et le clavier consultent l’arme sans cliquer la créature', async () => {
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/', pretendToBeVisual: true });
+  const anciens = {};
+  for (const cle of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'IS_REACT_ACT_ENVIRONMENT']) anciens[cle] = Object.getOwnPropertyDescriptor(globalThis, cle);
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, Node: dom.window.Node, IS_REACT_ACT_ENVIRONMENT: true });
+  Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
+  dom.window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  let root;
+  try {
+    const { TableCard } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    let ouvert = null, clics = 0;
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(TableCard, { entite: entite({ arme: { carteId: 'armure-de-cendres' }, armes: ['sabre-maudit'] }),
+      onClick: () => { clics += 1; }, onInspectWeapon: (arme) => { ouvert = arme.id; } })));
+    const armes = document.querySelectorAll('.rpg-card__arme-derriere');
+    await act(async () => armes[1].click());
+    assert.equal(ouvert, 'sabre-maudit');
+    assert.equal(clics, 0);
+    armes[0].focus();
+    assert.equal(document.activeElement, armes[0], 'le bouton est accessible au clavier');
+    await act(async () => armes[0].click());
+    assert.equal(ouvert, 'armure-de-cendres');
+    await act(async () => document.querySelector('.rpg-card').click());
+    assert.equal(clics, 1, 'la créature garde son action');
+    document.getElementById('root').setAttribute('inert', '');
+    assert.equal(cibleApercuClicDroit(armes[0]), null);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await vite.close();
+    dom.window.close();
+    for (const cle of Object.keys(anciens)) { if (anciens[cle]) Object.defineProperty(globalThis, cle, anciens[cle]); else delete globalThis[cle]; }
+  }
+});
+
+test('l’aperçu conserve la liste des armes sans replacer l’icône sur la créature', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
   try {
-    const { HoverCardPreview, RPG_RENDU_MOBA } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
-    const carte = cardById('chien-du-guet');
-    const armes = [cardById('jitte-d-amayas'), cardById('sabre-maudit')];
-    const visuel = entite({ durabiliteArme: 2, compteursArme: 3, heures: { restants: 1 } });
-    const rendre = (component, props) => new JSDOM(renderToStaticMarkup(React.createElement(component, props))).window.document;
+    const { HoverCardPreview } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
     for (const variante of ['', 'catalogue', 'appui-long']) {
-      const doc = rendre(HoverCardPreview, { carte, armes, entite: visuel, variante });
-      const pile = doc.querySelector('.rpg-hover-card-preview__empile.has-arme');
-      const badge = pile.querySelector('.rpg-hover-card-preview__face > .rpg-card__arme-vignette');
-      assert.match(badge.querySelector('img').getAttribute('src'), /jitte-d-amayas/);
-      assert.deepEqual([...badge.querySelectorAll('[data-compteur]')].map((n) => [n.dataset.compteur, n.textContent]), [['durabilite', '2'], ['sable', '3']]);
-      assert.equal(badge.querySelector('.rpg-card__arme-nombre').textContent, '+1');
-      assert.equal(pile.querySelector('.rpg-card__compteurs-creature [data-compteur="heures"]').textContent, '1');
-      assert.equal(rendre(HoverCardPreview, { carte, entite: visuel, variante }).querySelector('.has-arme'), null);
-      assert.equal(rendre(HoverCardPreview, { carte, armes, variante }).querySelector('.rpg-card__arme-vignette'), null);
+      const doc = new JSDOM(renderToStaticMarkup(React.createElement(HoverCardPreview, { carte: cardById('chien-du-guet'), armes: [cardById('jitte-d-amayas')], entite: entite(), variante }))).window.document;
+      assert.ok(doc.querySelector('.rpg-hover-card-preview__weapon[data-arme-equipee="jitte-d-amayas"]'));
+      assert.equal(doc.querySelector('.rpg-card__arme-vignette'), null);
     }
-    const moba = rendre(RPG_RENDU_MOBA.ApercuCarteAppuiLong, { carte, armes, entite: visuel, onFermer: () => {} });
-    assert.ok(moba.querySelector('.rpg-card-peek .rpg-hover-card-preview__empile.has-arme .rpg-card__arme-vignette'));
   } finally { await vite.close(); }
-  assert.match(css, /\.rpg-hover-card-preview__empile\.has-arme::before\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*100\s*\/\s*17;[^}]*margin-bottom:/s);
-  assert.match(css, /\.rpg-hover-card-preview__empile\.has-arme > \.rpg-hover-card-preview__face\s*\{[^}]*overflow:\s*visible/s);
-  assert.match(css, /\.rpg-hover-card-preview__empile\.has-arme \.rpg-card__compteurs-creature\s*\{[^}]*34cqw/s);
 });
 
-test('le losange est centré à cheval, interactif, sans boîtier métallique', () => {
-  assert.match(css, /\.rpg-card__arme-vignette\s*\{[^}]*left:\s*50%;[^}]*top:\s*0;[^}]*transform:\s*translate\(-50%,\s*-50%\)/s);
-  assert.match(css, /\.rpg-card__arme-vignette\s*\{[^}]*pointer-events:\s*auto/s);
-  assert.match(css, /\.rpg-card__arme-vignette > img\s*\{[^}]*clip-path:\s*polygon\(50% 0, 100% 50%, 50% 100%, 0 50%\)/s);
-  assert.match(css, /\.rpg-card__arme-vignette\.has-compteurs\s*\{\s*width: max\(34%, 26px\)/);
-  assert.match(css, /\.rpg-card__arme-compteurs\s*\{[^}]*position: absolute;[^}]*top: 54%;[^}]*left: 50%;[^}]*transform: translate\(-50%, -50%\)/s);
-  assert.match(css, /\.rpg-card__arme-compteurs \.rpg-card__compteur > span\s*\{[^}]*transform: none;/s);
-  assert.match(css, /\.rpg-card\.has-arme:is\(\.has-resonance, \.has-aura, \.has-malediction\)\s*\{[^}]*overflow-clip-margin:\s*58px/s);
-  assert.match(css, /\.rpg-card\.has-arme\s*\{[^}]*overflow-clip-margin:/s);
-  assert.doesNotMatch(css, /\.rpg-card\.has-arme::before\s*\{/);
-});
-
-test('le clic droit vise l’arme sans modifier le clic de jeu, et respecte les éléments inertes', () => {
-  const dom = new JSDOM('<div id="jeu"><button data-card-id="chien-du-guet" data-armes="sabre-maudit"><img class="face"><span data-arme-vignette="sabre-maudit"><img class="arme"></span></button></div>');
-  const { document, MouseEvent } = dom.window;
-  const jeu = document.querySelector('#jeu'), porteur = jeu.querySelector('button');
-  let consultation = null, clics = 0;
-  jeu.addEventListener('contextmenu', e => { e.preventDefault(); consultation = cibleApercuClicDroit(e.target); });
-  porteur.addEventListener('click', () => { clics += 1; });
-  const arme = jeu.querySelector('.arme');
-  const droit = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 });
-  arme.dispatchEvent(droit);
-  assert.equal(droit.defaultPrevented, true);
-  assert.equal(consultation.carteId, 'sabre-maudit');
-  assert.equal(consultation.hote, porteur);
-  assert.equal(clics, 0);
-  jeu.querySelector('.face').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
-  assert.equal(consultation.carteId, 'chien-du-guet');
-  assert.equal(consultation.arme, false);
-  arme.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }));
-  assert.equal(clics, 1, 'le clic gauche reste celui de la créature');
-  jeu.setAttribute('inert', '');
-  assert.equal(cibleApercuClicDroit(arme), null);
-  dom.window.close();
+test('la carte d’arme dépasse et reste derrière la face', () => {
+  assert.match(css, /\.rpg-card__arme-derriere\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*calc\(9 - var\(--rpg-arme-index, 0\)\);[^}]*top:\s*calc\(-1 \* max\(12%, 10px\)/s);
+  assert.match(css, /\.rpg-card__arme-derriere\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5;[^}]*transform:\s*rotate\(-5deg\)/s);
+  assert.match(css, /\.rpg-card-avec-arme > \.rpg-card\s*\{[^}]*z-index:\s*10/s);
+  assert.match(css, /\.rpg-card__arme-derriere:focus-visible/);
+  assert.doesNotMatch(css, /\.rpg-card__arme-vignette\s*\{/);
 });
