@@ -1489,10 +1489,11 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine · Chevalière',
+    defenseur: true,
     coupCritique: { chance: 0.25, fois: 2 },
     blocage: { chance: 0.25, def: 2 },
     bonusContreElement: { element: 'tenebres', amount: 1 },
-    text: 'Blocage — 25 % de chances de gagner +2 en défense lorsqu’elle bloque. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. +1 dégât contre les créatures Ténèbres.',
+    text: 'Défenseur. Blocage — 25 % de chances de gagner +2 en défense lorsqu’elle bloque. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. +1 dégât contre les créatures Ténèbres.',
     flavor: 'Là où son frère se jette dans la bataille, elle tient la ligne.',
   },
   {

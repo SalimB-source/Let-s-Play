@@ -2058,6 +2058,14 @@ export function TempeteSableZone({ effet, onTermine = null }) {
         onTermine?.(effet.effectId);
       }}
     >
+      <video
+        src="/Dust explosion.mp4"
+        autoPlay
+        muted
+        playsInline
+        className="rpg-fx-video"
+        onEnded={() => onTermine?.(effet.effectId)}
+      />
       <i className="rpg-tempete-sable-zone__voile" />
       <i className="rpg-tempete-sable-zone__lame">
         <i className="rpg-tempete-sable-zone__front" />
@@ -2921,21 +2929,32 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
         onTermine?.(effet.effectId);
       }}
     >
-      <i className="rpg-eclair-marteau__flash" />
-      <i className="rpg-eclair-marteau__onde" />
-      {/* Le ciel fendu et les arcs, dessinés : un seul calque SVG posé sur
-          la face, qui déborde vers le haut d'où tombe la foudre. */}
-      <svg
-        className="rpg-eclair-marteau__ciel"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-        focusable="false"
-      >
-        {/* L'éclair principal et la décharge, en deux couches : le halo bleu
-            qui éclaire, le cœur blanc qui se voit — comme les langues de feu. */}
-        <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--halo" d={CHEMIN_ECLAIR_PRINCIPAL} />
-        <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--coeur" d={CHEMIN_ECLAIR_PRINCIPAL} />
+      {effet.tempeteBraise ? (
+        <video
+          src="/Fire effect.mp4"
+          autoPlay
+          muted
+          playsInline
+          className="rpg-fx-video"
+          onEnded={() => onTermine?.(effet.effectId)}
+        />
+      ) : (
+        <>
+          <i className="rpg-eclair-marteau__flash" />
+          <i className="rpg-eclair-marteau__onde" />
+          {/* Le ciel fendu et les arcs, dessinés : un seul calque SVG posé sur
+              la face, qui déborde vers le haut d'où tombe la foudre. */}
+          <svg
+            className="rpg-eclair-marteau__ciel"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            {/* L'éclair principal et la décharge, en deux couches : le halo bleu
+                qui éclaire, le cœur blanc qui se voit — comme les langues de feu. */}
+            <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--halo" d={CHEMIN_ECLAIR_PRINCIPAL} />
+            <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--coeur" d={CHEMIN_ECLAIR_PRINCIPAL} />
         <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--halo" d={CHEMIN_ECLAIR_DECHARGE} />
         <path className="rpg-eclair-marteau__eclair rpg-eclair-marteau__eclair--coeur" d={CHEMIN_ECLAIR_DECHARGE} />
         {CHEMINS_ECLAIR_FOURCHES.map((chemin) => (
@@ -2966,6 +2985,8 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
           }}
         />
       ))}
+        </>
+      )}
     </div>
   );
 }
