@@ -3214,8 +3214,8 @@ export function TableCard({
         selected ? 'is-selected' : '',
         selectedBlocker ? 'is-blocker-selected' : '',
         blocking ? 'is-blocking' : '',
-        entite.attaquee ? 'is-attacked' : '',
-        declaredAttacker && !entite.attaquee ? 'is-declared-attacker' : '',
+        (entite.attaquee || entite.aActiveEffetCeTour) ? 'is-attacked' : '',
+        declaredAttacker && !entite.attaquee && !entite.aActiveEffetCeTour ? 'is-declared-attacker' : '',
         (pretAAgir ?? rpgPeutAttaquer(entite)) ? 'is-pret' : '',
         malInvocation ? 'is-summoning-sick' : '',
         blessee ? 'is-wounded' : '',
@@ -15387,17 +15387,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           <div className="rpg-console-log" aria-live="polite">
             <div className="rpg-console-log__header">&gt; Invite de commandes</div>
             <ol className="rpg-log">
-              {duel.log.slice(-6).map((line, index) => (
-                <li key={`${duel.log.length}-${index}-${line}`} className="rpg-log__line">&gt; {line}</li>
+              {duel.log.slice(-5).map((line, index, arr) => (
+                <li
+                  key={`${duel.log.length}-${index}-${line}`}
+                  className={`rpg-log__line${index === arr.length - 1 ? ' is-latest' : ''}`}
+                >
+                  {index === arr.length - 1 ? '▶ ' : '· '}{line}
+                </li>
               ))}
             </ol>
           </div>
-          <details className="rpg-historique">
-            <summary>Historique du duel</summary>
-            <ol aria-label="Historique du duel, événements les plus récents en premier">
-              {[...duel.log.slice(-100)].reverse().map((line, index) => <li key={`${duel.log.length}-${index}`}>{line}</li>)}
-            </ol>
-          </details>
           <div className="rpg-actions">
             {!modePvp && combatEntrant?.coteAttaquant === 'joueur' && apercuBlocages.some((echange) => echange.bloqueurs.length > 1) && (
               <details className="rpg-repartition-menu">

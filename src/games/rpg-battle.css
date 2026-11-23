@@ -16858,3 +16858,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     filter: blur(4px) brightness(0.95);
   }
 }
+
+/* Invite de commandes visible façon boîte de dialogue Pokémon */
+.rpg-console-log {
+  flex: 1 1 320px;
+  min-width: 260px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(9, 13, 24, 0.98) 100%);
+  border: 2px solid rgba(250, 204, 21, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.rpg-console-log .rpg-log__line {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.rpg-console-log .rpg-log__line.is-latest {
+  color: #fef08a;
+  font-weight: 700;
+}
