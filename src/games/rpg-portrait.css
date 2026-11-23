@@ -180,15 +180,16 @@
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-table > .card-row[data-lignes="true"] {
     --essai-colonne: min(calc(var(--rpg-field-card) * 1.15), calc((100vw - 16px - 2 * var(--rpg-field-gap)) / 3));
     column-gap: var(--rpg-field-gap);
-    row-gap: var(--rpg-field-gap);
-    min-height: calc(var(--essai-colonne) * 2.5 + var(--rpg-field-gap) + 4px);
+    --rpg-lignes-gap: 8px;
+    row-gap: var(--rpg-lignes-gap);
+    min-height: calc(var(--essai-colonne) * 2.5 + var(--rpg-lignes-gap) + 4px);
     justify-content: center;
     justify-items: center;
   }
   .rpg-battle[data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots,
   .rpg-battle[data-scene="duel"][data-mode-mana="essai"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slots {
     column-gap: var(--rpg-field-gap);
-    row-gap: var(--rpg-field-gap);
+    row-gap: var(--rpg-lignes-gap);
     justify-content: center;
     justify-items: center;
   }

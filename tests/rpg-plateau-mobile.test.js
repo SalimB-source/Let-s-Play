@@ -39,12 +39,13 @@ function mesures(largeur, hauteur) {
   // demie : c'est le maximum de la bande adverse (`grid-template-rows`).
   const libre = hauteur - 2 * PAD - 3 * GAP - nav - main;
   const bande = Math.min(0.5 * hauteur - PAD - nav - 1.5 * GAP, libre / 2); // --rpg-board-band
+  const gapLignes = clamp(4, 0.1 * hauteur - 28, 8);       // --rpg-lignes-gap
   const colonne = clamp(24,
-    Math.min(champ * 0.72, (bande - 16) / 2.5),           // --essai-colonne (doigt)
+    Math.min(champ * 0.72, (bande - gapLignes - 12) / 2.5),           // --essai-colonne (doigt)
     champ);
   // Une rangée : deux hauteurs de carte (4/5), la gouttière des deux rangées
   // et sa marge intérieure haute et basse (4 px chacune).
-  const contenu = colonne * 2.5 + GAP + 8;
+  const contenu = colonne * 2.5 + gapLignes + 8;
   return { carte, avatar, nav, main, champ, bande, colonne, contenu, libre, largeur };
 }
 
@@ -61,10 +62,11 @@ test('la colonne du plateau au doigt est plafonnée par la bande, pas par la car
   const regle = essai.match(/\.rpg-battle--touch\[data-mode-mana="essai"\] \.card-row\[data-lignes="true"\] \{([^}]*)\}/);
   assert.ok(regle, 'la règle tactile du plateau à deux lignes existe');
   const corps = regle[1];
+  assert.match(corps, /--rpg-lignes-gap: clamp\(4px, calc\(10vh - 28px\), 8px\)/);
   assert.match(corps, /--essai-colonne: clamp\(24px,/, 'un plancher de 24 px');
   assert.match(corps, /var\(--rpg-field-card[^}]*\* \.72\)/, 'la mesure de la carte reste la borne de départ');
   assert.match(corps, /var\(--rpg-board-band, 120px\)/, 'la hauteur de la bande plafonne la colonne');
-  assert.match(corps, /min-height: calc\(var\(--essai-colonne\) \* 2\.5 \+ 4px\)/, 'la rangée garde la hauteur de ses deux lignes');
+  assert.match(corps, /min-height: calc\(var\(--essai-colonne\) \* 2\.5 \+ var\(--rpg-lignes-gap\)\)/, 'la rangée garde la hauteur de ses deux lignes');
 });
 
 test('la table mesure la bande dont deux lignes disposent, svh compris', () => {

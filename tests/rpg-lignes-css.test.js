@@ -141,3 +141,17 @@ test('sans le drapeau des lignes, rien de tout cela ne s’applique', () => {
   assert.equal(simple.window.getComputedStyle(carte).gridRow, '1', 'une seule ligne, une seule rangée');
   assert.equal(simple.window.getComputedStyle(carte).gridColumn, 'var(--case-essai, auto)');
 });
+
+
+test('un espace commun sépare les deux lignes sans décaler les cases des cartes', () => {
+  for (const cote of ['equipe', 'ennemi']) {
+    const row = dom.window.document.querySelector(`.card-row--${cote}`);
+    const slots = row.querySelector('.rpg-creature-slots');
+    assert.equal(dom.window.getComputedStyle(row).rowGap, 'var(--rpg-lignes-gap)');
+    assert.equal(dom.window.getComputedStyle(slots).rowGap, 'var(--rpg-lignes-gap)');
+    assert.equal(dom.window.getComputedStyle(row).getPropertyValue('--rpg-lignes-gap').trim(), 'clamp(28px,4.2vh,48px)');
+  }
+  const portrait = readFileSync(new URL('../src/games/rpg-portrait.css', import.meta.url), 'utf8');
+  assert.match(portrait, /--rpg-lignes-gap:\s*8px/);
+  assert.match(portrait, /\.rpg-creature-slots\s*\{[^}]*row-gap:\s*var\(--rpg-lignes-gap\)/);
+});
