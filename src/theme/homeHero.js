@@ -18,9 +18,11 @@
  * - Dawnwalker : sur bureau, le personnage est à droite → le voile de gauche
  *   garde le titre lisible ; en portrait, le recadrage est centré sur le
  *   cavalier et son cercle de lumière.
- * - Zelda : visuel très clair et lumineux → voir `.hero-bg--light` dans
- *   `src/styles.css`, qui renforce le voile à gauche pour que le titre blanc
- *   reste lisible.
+ * - Zelda : visuel très clair et lumineux → voir `.hero-picture--light` dans
+ *   `src/styles.css`, qui renforce le voile côté titre. **Image inversée
+ *   horizontalement** (« flop ») à la demande du propriétaire : Link regarde
+ *   désormais vers la gauche, ce qui équilibre la forêt à droite et libère la
+ *   zone du titre.
  *
  * ⚠️ Let's Play n'est affilié à aucun de ces éditeurs. Visuels promotionnels
  * fournis par le propriétaire du site : ne pas les remplacer sans son accord.
@@ -64,7 +66,8 @@ export const heroSlides = [
     label: 'The Legend of Zelda',
     image: asset('zelda-totk-hero.jpg'),
     portrait: asset('zelda-totk-hero-portrait.jpg'),
-    // Forêt très lumineuse : voile renforcé sous le titre.
+    // Forêt très lumineuse : voile renforcé sous le titre. Visuel inversé
+    // horizontalement (Link tourné vers la gauche).
     light: true,
   },
 ];
