@@ -16924,3 +16924,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: translateY(2px);
   border-bottom-width: 2px;
 }
+
+/* Forcer l'affichage de la liste dans l'invite de commandes (même sur desktop) */
+.rpg-battle .rpg-bottombar .rpg-console-log .rpg-log {
+  display: block !important;
+  max-height: 110px !important;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: transparent;
+  border: none;
+}
