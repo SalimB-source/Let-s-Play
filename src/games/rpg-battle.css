@@ -16784,3 +16784,40 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card__effet-menu .rpg-card__effet-btn:hover {
   transform: translateY(-1px);
 }
+
+/* Animation organique et granuleuse pour les sorts de zone de sable */
+.rpg-zone-fx--sable,
+.rpg-sort-zone--sable {
+  background:
+    radial-gradient(2px 2px at 14% 28%, rgba(253, 230, 138, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 32% 64%, rgba(245, 158, 11, 0.85), transparent),
+    radial-gradient(2.5px 2.5px at 48% 22%, rgba(254, 243, 199, 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 67% 72%, rgba(217, 119, 6, 0.85), transparent),
+    radial-gradient(2px 2px at 84% 38%, rgba(253, 224, 71, 0.8), transparent),
+    radial-gradient(ellipse 90% 55% at 50% 55%, rgba(217, 119, 6, 0.36), rgba(146, 64, 14, 0.14) 55%, transparent 78%);
+  background-size: 160px 120px, 190px 140px, 140px 110px, 210px 150px, 175px 130px, 100% 100%;
+  animation: rpgSableTourbillon 1.05s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes rpgSableTourbillon {
+  0% {
+    opacity: 0;
+    transform: translate(-10%, 6%) scale(0.86) rotate(-4deg);
+    filter: blur(3px);
+  }
+  28% {
+    opacity: 0.95;
+    transform: translate(2%, -3%) scale(1.03) rotate(2deg);
+    filter: blur(0.6px);
+  }
+  65% {
+    opacity: 0.82;
+    transform: translate(6%, 2%) scale(1.07) rotate(-1.5deg);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(12%, -5%) scale(1.14) rotate(3deg);
+    filter: blur(4px);
+  }
+}
