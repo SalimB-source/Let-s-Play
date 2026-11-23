@@ -1118,7 +1118,11 @@
     --rpg-annonce-column-gap: 10px;
     --rpg-annonce-column-width: min(430px, calc(100vw - 20px));
   }
-  .rpg-battle--touch .rpg-annonce-sort:not(.rpg-annonce-sort--magie) .rpg-hover-card-preview--annonce {
+  /* Toutes les annonces, sorts compris : côte à côte, la vignette de 68 px
+     d'un sort laissait toute la colonne à la fiche ; empilée, elle ne serait
+     qu'un timbre-poste perdu au milieu d'une colonne de 330 px. La carte
+     annoncée reprend donc le gabarit lisible des créatures. */
+  .rpg-battle--touch .rpg-annonce-sort .rpg-hover-card-preview--annonce {
     --rpg-annonce-card-width: clamp(120px, min(42vw, 26dvh), 220px);
   }
   .rpg-battle--touch .rpg-annonce-sort .rpg-hover-card-preview--annonce .rpg-hover-card-preview__layout {

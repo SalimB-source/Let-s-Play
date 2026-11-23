@@ -38,6 +38,26 @@ test('le texte des annonces ne se comprime pas et la fiche entière défile', ()
   assert.equal(declaration(`${tactile} .rpg-hover-card-preview__pastilles`, 'flex-wrap'), 'wrap');
 });
 
+test('debout au doigt, le sort annoncé se lit comme une créature', () => {
+  // La fiche mobile empile la carte et sa colonne de détail : la vignette de
+  // 68 px du format côte à côte y devenait un timbre-poste. `rpg-mobile.css`
+  // rend au sort le même gabarit que les créatures annoncées.
+  const mobile = postcss.parse(readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8'));
+  const valeurs = [];
+  mobile.walkRules((regle) => {
+    if (!regle.selectors?.some((selecteur) => selecteur.includes('.rpg-annonce-sort')
+      && selecteur.includes('.rpg-hover-card-preview--annonce'))) return;
+    for (const node of regle.nodes) {
+      if (node.type === 'decl' && node.prop === '--rpg-annonce-card-width') valeurs.push(node.value);
+    }
+  });
+  assert.ok(valeurs.length > 0, 'le gabariat de la carte annoncée est réglé au doigt');
+  for (const valeur of valeurs) {
+    assert.match(valeur, /clamp\(120px, min\(42vw, 26dvh\), 220px\)/u,
+      `aucune annonce debout ne retombe sous 120 px : ${valeur}`);
+  }
+});
+
 test('sur PC la fenêtre de magie reste agrandie', () => {
   const pc = '.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-annonce-sort--magie';
   assert.match(declaration(`${pc} .rpg-hover-card-preview__layout`, 'width'), /680px/);
