@@ -195,12 +195,14 @@ test('un effet activé dépensé grise la créature et ferme le bouton', () => {
 test('la table grise la peinture et ouvre le rognage le temps du menu d’effet', () => {
   const jsx = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-  // Le bouton pend sous la carte : le cadre qui rogne doit s'ouvrir pour lui.
-  assert.match(css, /\.rpg-card\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*46px/u);
+  // Le menu s'ouvre au-dessus de la carte : le cadre qui rogne doit s'ouvrir
+  // pour lui (6px d'écart + 46px de bouton + la marge de survol).
+  assert.match(css, /\.rpg-card\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*58px/u);
   assert.match(jsx, /boutonEffetVisible \? 'is-effet-menu' : ''/u);
-  // L'éclair a sa propre boîte : il ne peut plus être rogné par la ligne de texte.
-  assert.match(jsx, /<span className="rpg-card__effet-btn-eclair" aria-hidden="true">⚡<\/span>/u);
-  assert.match(css, /\.rpg-card__effet-btn-eclair\s*\{[^}]*line-height:\s*1/u);
+  // L'éclair a sa propre boîte dans le bouton : il ne peut plus être rogné.
+  assert.match(jsx, /className="rpg-card__effet-btn rpg-card__effet-btn--effet"/u);
+  assert.match(jsx, /<span className="rpg-activation-bolt" aria-hidden="true">⚡<\/span>/u);
+  assert.match(css, /\.rpg-card__effet-btn \.rpg-activation-bolt\s*\{[^}]*line-height:\s*1/u);
   // Effet activé dépensé : la créature grise, ses chiffres restent lisibles.
   assert.match(jsx, /activationEpuisee \? 'is-activation-epuisee' : ''/u);
   assert.match(css, /\.rpg-card\.is-activation-epuisee \.rpg-card__img\s*\{[^}]*grayscale\(/u);

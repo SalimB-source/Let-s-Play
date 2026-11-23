@@ -146,6 +146,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'celle-qui-pese',
+    // Effet activé (1/tour) — Le Poids : le cœur pèse une fois par tour.
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'transfert', amount: 1 } },
     name: 'Celle qui pèse',
     cost: 4,
     atk: 3,
@@ -158,6 +160,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'la-devoreuse',
+    // Effet activé (1/tour) — l'Effacement des faibles : une petite proie, avalée.
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'destruction-cible', cible: 'creature', coutMax: 2 } },
     name: 'La Dévoreuse',
     cost: 6,
     atk: 4,
@@ -220,6 +224,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'lecteur-du-dernier-nom', distance: true, name: 'Lecteur du dernier nom',
+    // Effet activé (1/tour) — le Nom effacé : une carte de la main adverse part au cimetière.
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'defausse-adverse' } },
     cost: 5, atk: 3, def: 4, rarity: 'rare',
     arrivee: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
     typeLine: 'Créature — Humain · Scribe',

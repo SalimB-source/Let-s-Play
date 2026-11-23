@@ -517,6 +517,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'guetteuse-des-marees', distance: true, name: 'Guetteuse des marées', element: 'eau',
+    // Effet activé (1/tour) — la Parade de verre : un bouclier sur une alliée choisie.
+    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' } },
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
     arrivee: { type: 'exil-temporaire', cible: 'creature-amie', choisirCible: true },
     text: 'À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
@@ -660,6 +662,8 @@ export const RPG_CREATURE_CARDS = [
     },
   {
     id: 'scribe-de-la-liste',
+    // Effet activé (1/tour) — le Papyrus du set Ténèbres, sans son prix en PV :
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'pioche', amount: 1 } },
     name: 'Scribe de la Liste',
     element: 'sable',
     cost: 3,
@@ -767,6 +771,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'amani-des-ksour',
+    // Effet activé (1/tour) — le Festin des vaillants, sur une seule alliée choisie.
+    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'soin-creatures', amount: 2, cible: 'creature-amie' } },
     name: 'Amani, gardienne des ksour',
     element: 'sable',
     cost: 4,
@@ -852,6 +858,8 @@ export const RPG_CREATURE_CARDS = [
     // devenu l'Ifrit furtif, 5/3, et sa disparition en fin de tour se nomme
     // désormais le mot-clé Furtif (le moteur lit toujours `ephemere`).
     id: 'ifrit-des-ergs', distance: true,
+    // Effet activé (1/tour) — le Brise-lame : l'arme équipée fond, une carte piochée.
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 } },
     name: 'Ifrit furtif',
     element: 'braise',
     cost: 5,
@@ -983,6 +991,11 @@ export const RPG_CREATURE_CARDS = [
   // marteau), comme on les appelait pour ne pas les appeler.
   {
     id: 'gardien-viking-du-fjord', name: 'Gardien viking du fjord',
+    // Effet activé (1/tour) — l'Embuscade : la ligne adverse frappe et encaisse
+    // 2 de moins jusqu'à la fin du tour. Le voile blanc, lui, ne se joue qu'au
+    // tour de l'adversaire : activé à son propre tour, il n'éteindrait que ses
+    // propres attaques — le gardien tend donc l'embuscade, pas le brouillard.
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'buff', cible: 'creatures-adverses', atk: -2, def: -2, minimum: 1, tours: 1 } },
     element: 'neige', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Guerrier viking', defenseur: true, furie: 1,
     text: 'Défenseur. Furie 1 — Tant qu’il est blessé, il gagne +1/+0.',
@@ -996,6 +1009,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'archere-viking-du-givre', distance: true, name: 'Archère viking du givre', element: 'neige',
+    // Effet activé (1/tour) — l'Appât de la meute : la proie visée frappe 2 de moins.
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1 } },
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,
@@ -1067,6 +1082,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'volva-soigneuse',
+    // Effet activé (1/tour) — l'Eau de la source : elle panse son maître, pas ses alliés.
+    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'soin', amount: 2 } },
     distance: true,
     name: 'Völva soigneuse',
     set: 'serment-des-neuf-hivers',
@@ -1299,6 +1316,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'sorcier-du-ressac-noir', distance: true, set: 'soldats-de-la-lune', name: 'Sorcier du ressac noir',
+    // Effet activé (1/tour) — le Ressac : la créature ciblée retourne dans sa main.
+    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'retour-main', cible: 'creature' } },
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
     reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
