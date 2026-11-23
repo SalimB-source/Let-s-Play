@@ -35,3 +35,21 @@ https://github.com/rsms/inter
 
 Anton et Inter sont distribuées sous SIL Open Font License 1.1. Le texte
 complet de la licence figure dans scripts/visuels/fonts/OFL.txt.
+
+VISUEL DU HÉROS — PHANTOM BLADE ZERO
+====================================
+
+Fichiers : phantom-blade-zero-hero.jpg (2560 × 1440)
+          phantom-blade-zero-hero-portrait.jpg (900 × 990, recadrage)
+
+Key art officiel de Phantom Blade Zero, fourni par le propriétaire du site pour
+le héros de l’accueil (Soul de dos, chapeau d’ombrelle, sabre, face aux deux
+guerriers spectraux). Il remplace le visuel de Grand Theft Auto VI utilisé pour
+la sortie du 19 novembre 2026, dont les deux fichiers restent dans le dépôt
+mais ne sont plus affichés.
+
+Seul traitement appliqué : redimensionnement 16:9 et recadrage portrait, pour
+les deux formats du héros. Aucun ajout génératif.
+
+© S-Game / éditeur du jeu. Image conservée ici pour l’habillage éditorial du
+site ; sa présence dans ce dépôt ne lui attribue pas une licence libre.

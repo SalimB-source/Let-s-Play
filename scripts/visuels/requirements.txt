@@ -1,2 +1,7 @@
 numpy>=1.26,<3
 Pillow>=10,<13
+
+# Composition arabe des cartes (voir scripts/visuels/arabic_text.py) :
+# HarfBuzz pour les ligatures et FreeType pour le rendu, PIL n’ayant pas libraqm ici.
+uharfbuzz>=0.37
+freetype-py>=2.4
