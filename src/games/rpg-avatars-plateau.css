@@ -740,3 +740,21 @@
     transform: translateY(-6px) rotateX(6deg);
   }
 }
+
+/* Au doigt, il n'y a pas de survol : le relief doit se lire dès le repos.
+   Une ombre séparée n'écrase pas les contours de sélection et de combat. */
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-row > .rpg-card:not(.is-envol),
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-row > :is(.rpg-card-prison, .rpg-card-stack) {
+  rotate: x 16deg;
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-row > .rpg-card.is-envol:not(
+  [data-combat-tilted="true"], .is-down, .fx-enter, .fx-lunge, .fx-hit,
+  .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+) {
+  transform: rotateX(16deg);
+}
+.rpg-battle[data-scene="duel"].rpg-battle--touch .card-row .rpg-card > .rpg-relief-ombre {
+  opacity: .8;
+  box-shadow: 0 5px 8px 1px #000c;
+  transition: none;
+}

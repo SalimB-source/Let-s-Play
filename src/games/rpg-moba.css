@@ -1897,3 +1897,58 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 }
 
 .moba__critique-disparue { position: absolute; z-index: 12; inset: 0 0 var(--moba-slot-padding, 24px); pointer-events: none; }
+
+/* Même relief que le duel, sur les cartes occupées des voies uniquement.
+   La perspective appartient à la case : les autres effets de la case, les
+   compteurs et les cibles restent en place. Une arme glisse avec son porteur. */
+.moba {
+  --moba-relief-angle: 6deg;
+}
+.moba .moba__slots > :is(.moba__real-slot, .moba__plain-slot, .moba__ghost-slot) {
+  perspective: 900px;
+}
+.moba .moba__real-slot > :is(.rpg-card:not(.is-envol), .rpg-card-prison),
+.moba :is(.moba__plain-slot, .moba__ghost-slot) > .moba__slot.has-creature {
+  rotate: x var(--moba-relief-angle);
+}
+/* La lévitation utilise déjà rotate : ne pas remplacer sa rotation animée. */
+.moba .moba__real-slot > .rpg-card.is-envol:not(
+  [data-combat-tilted="true"], .is-down, .fx-enter, .fx-lunge, .fx-hit,
+  .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+) {
+  transform: rotateX(var(--moba-relief-angle));
+}
+
+/* Pour les armes, déplacer l'ensemble et non la face seule. Ne pas ajouter
+   d'élévation pendant un état de combat ou une cinématique. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .moba:not(.is-reduced, .is-reduced *) .moba__real-slot > .rpg-card-prison:not(:has(
+    .is-down, .is-declared-attacker, .is-selected, .is-active, .is-blocking,
+    .is-attacking, .is-invoking, .is-sacrifice-animating, .is-blocker-dragging,
+    [data-combat-tilted="true"], .fx-enter, .fx-lunge, .fx-hit, .fx-combat-impact,
+    .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+  )) { transition: translate .2s ease; }
+  .moba:not(.is-reduced, .is-reduced *) .moba__real-slot:is(:hover, :focus-within) > .rpg-card-prison:not(:has(
+    .is-down, .is-declared-attacker, .is-selected, .is-active, .is-blocking,
+    .is-attacking, .is-invoking, .is-sacrifice-animating, .is-blocker-dragging,
+    [data-combat-tilted="true"], .fx-enter, .fx-lunge, .fx-hit, .fx-combat-impact,
+    .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+  )) { translate: 0 -6px; }
+  .moba:not(.is-reduced, .is-reduced *) .moba__real-slot .rpg-card-prison > .rpg-card:hover:not(
+    .is-down, .is-declared-attacker, .is-selected, .is-active, .is-blocking,
+    .is-attacking, .is-invoking, .is-sacrifice-animating, .is-blocker-dragging,
+    [data-combat-tilted="true"], .fx-enter, .fx-lunge, .fx-hit, .fx-combat-impact,
+    .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+  ) { transform: none; }
+}
+
+/* Portrait comme paysage : sur les petits écrans et au doigt, l'inclinaison
+   et l'ombre de repos restent visibles sans dépendre d'un faux survol. */
+@media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  .moba { --moba-relief-angle: 16deg; }
+  .moba .moba__real-slot .rpg-card > .rpg-relief-ombre {
+    opacity: .8;
+    box-shadow: 0 5px 8px 1px #000c;
+    transition: none;
+  }
+}
