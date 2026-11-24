@@ -46,7 +46,7 @@ for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', '
 });
 for (const mode of ['classique', 'pvp', 'moba']) test(`${mode} : Envol protège contre une attaque normale au sol et permet de viser une créature volante`, () => {
   const moba = mode === 'moba', pvp = mode === 'pvp', d = partie(moba, pvp), serpent = invoquer(d, 'joueur', pvp);
-  const sol = poser(d, 'sorcier', 'ashigaru-des-braises', 0), vol = poser(d, 'sorcier', 'djinn-des-ailes-de-cendre', 1);
+  const sol = poser(d, 'sorcier', 'chien-du-guet', 0), vol = poser(d, 'sorcier', 'djinn-des-ailes-de-cendre', 1);
   const choixSol = moba ? rpgMobaCiblesIndividuelles(d, 'sorcier', sol.id) : rpgCiblesIndividuellesClassique(d, 'sorcier', sol.id);
   assert.ok(!choixSol.cibles.includes(serpent.id));
   d.tour = 'joueur'; const choix = moba ? rpgMobaCiblesIndividuelles(d, 'joueur', serpent.id) : rpgCiblesIndividuellesClassique(d, 'joueur', serpent.id);

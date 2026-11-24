@@ -12,7 +12,7 @@ const soloClassique = (duel, cote) => Boolean(duel && !duel.moba && camps.includ
 
 function accessible(attaquant, cible, ciblee) {
   if (!creature(cible) || rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) return false;
-  return ciblee || (!cible.infiltration && (attaquant.envol || !cible.envol));
+  return ciblee || (!cible.infiltration && (attaquant.envol || attaquant.distance || !cible.envol));
 }
 
 /** Mêmes priorités que le MOBA, sans restriction de voie. */

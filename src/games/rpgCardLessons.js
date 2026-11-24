@@ -155,7 +155,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['anqa-des-braises', 'valkyrie-au-corbeau'],
     title: 'Envol survole les créatures',
-    text: 'Une créature avec Envol peut attaquer les créatures au sol ou en vol et frapper directement le sorcier même si des créatures adverses sont présentes, à condition qu’aucun Défenseur ni créature avec Envol ne soit en jeu. Si la seule créature adverse a Infiltration et n’a pas Envol, l’attaque directe reste possible. En Conquête, ces conditions concernent la voie attaquée.',
+    text: 'Une créature avec Envol peut attaquer les créatures au sol ou en vol. Une créature À distance peut aussi attaquer une créature volante si elle est accessible. Envol permet de frapper directement le sorcier même si des créatures adverses sont présentes, à condition qu’aucun Défenseur ni créature avec Envol ne soit en jeu. Si la seule créature adverse a Infiltration et n’a pas Envol, l’attaque directe reste possible. En Conquête, ces conditions concernent la voie attaquée.',
   },
   {
     id: 'infiltration',
@@ -168,8 +168,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'a-distance',
     section: 'Capacités des créatures',
     cardIds: ['tiziri-du-djurdjura', 'guetteur-du-beffroi', 'scalde-des-runes', 'archere-viking-du-givre'],
-    title: '« À distance » tient le fond et frappe sans riposte',
-    text: 'Le champ se lit en deux lignes : les corps à corps tiennent le front, et les créatures marquées « À distance » — archères, guetteurs, djinns, scribes, artilleurs — se rangent derrière, et l’Attaque ciblée range son porteur au même endroit : frapper sans recevoir de coup en retour, c’est frapper de loin (Salem, Fériel, l’Ifrit al-Ahmar tirent depuis le fond). Une créature à distance frappe sans recevoir de coup en retour : la créature visée ne la rejoint pas, elle ne rend donc pas son coup. Mais tirer de loin ne fait pas traverser la ligne : tant qu’une créature alliée tient le front, rien — pas même une flèche — ne peut viser le fond. Ce passage reste le privilège de l’Attaque ciblée et de l’Infiltration. Dès que le front tombe, le fond redevient une cible ordinaire : une armée réduite à ses archers reste attaquable. Les sorts, eux, ne sont jamais arrêtés par la ligne.',
+    title: '« À distance » tient le fond et frappe de loin',
+    text: 'Le champ se lit en deux lignes : les corps à corps tiennent le front, et les créatures marquées « À distance » — archères, guetteurs, djinns, scribes, artilleurs — se rangent derrière, et l’Attaque ciblée range son porteur au même endroit : frapper sans recevoir de coup en retour, c’est frapper de loin (Salem, Fériel, l’Ifrit al-Ahmar tirent depuis le fond). Une créature à distance peut attaquer une créature volante si elle est accessible. Une créature à distance frappe sans recevoir de coup en retour d’une cible de mêlée, qui ne la rejoint pas ; une cible à distance peut riposter par un tir. Mais tirer de loin ne fait pas traverser la ligne : tant qu’une créature alliée tient le front, rien — pas même une flèche — ne peut viser le fond. Ce passage reste le privilège de l’Attaque ciblée et de l’Infiltration. Dès que le front tombe, le fond redevient une cible ordinaire : une armée réduite à ses archers reste attaquable. Les sorts, eux, ne sont jamais arrêtés par la ligne.',
   },
   {
     id: 'infiltration-tin-hinan',
