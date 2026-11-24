@@ -109,3 +109,18 @@ Sorties : PNG **1080 × 1350** et JPEG qualité 92, dans
 `instagram/gta-trevor-jason/`. Les matières premières (rendu détouré de Trevor,
 clé d'art du ponton) vivent dans `instagram/assets/`, exclu du dépôt : le script
 seul suffit à régénérer la carte sur une machine qui a ces deux fichiers.
+
+## Fiches personnages — Trevor / Jason, en arabe
+
+`make_gta_fiches_45.py` produit **deux** cartes 4:5 de la même série (même
+gabarit, même charte, un accent de couleur par personnage) : un « ملف شخصي »
+par héros, avec rôle, ville, passé, activité et trait dominant — cinq lignes,
+en arabe, composées avec HarfBuzz.
+
+```bash
+python3 scripts/visuels/make_gta_fiches_45.py             # → instagram/fiches-personnages/
+python3 scripts/visuels/make_gta_fiches_45.py --out /tmp  # autre dossier
+```
+
+Sorties : `fiche-trevor-ar-1080x1350.png/.jpg` et
+`fiche-jason-ar-1080x1350.png/.jpg`.
