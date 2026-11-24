@@ -233,3 +233,20 @@ python3 scripts/visuels/add_cover_title.py cover.png --text "…" --size 190 --b
 ```
 
 Sortie : `instagram/gta-trevor-jason/cover-titre-4k-2160x2700.png/.jpg`.
+
+## Cover question — « jouer sans la map ? »
+
+Deuxième visuel du même gabarit : question `هل يمكنكم اللعب بدون الخريطة؟`
+(« Pouvez-vous jouer sans la carte ? ») sur une illustration 3D originale
+(Jason à moto, Lucia carte en main, plein jour à Vice City).
+
+```bash
+python3 scripts/visuels/upscale_cover.py instagram/assets/gta6-cover-map-3d.jpg \
+    --out instagram/gta-trevor-jason/cover-map-4k-2160x2700 --focus 0.42
+python3 scripts/visuels/add_cover_title.py instagram/gta-trevor-jason/cover-map-4k-2160x2700.png \
+    --out instagram/gta-trevor-jason/cover-map-titre-4k-2160x2700 \
+    --text "هل يمكنكم اللعب بدون الخريطة؟"
+```
+
+Sorties : `cover-map-4k-2160x2700` (image seule) et `cover-map-titre-4k-2160x2700`
+(titre + logos), en PNG et JPEG.
