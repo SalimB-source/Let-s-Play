@@ -155,7 +155,7 @@ def feather_bottom(art, height_px):
     return out
 
 
-def shared_world(im, trevor, jason, background):
+def shared_world(im, trevor, background):
     """Un seul visuel : Trevor au premier plan, la clé d'art de GTA VI derrière.
 
     Le fond est la clé d'art officielle de GTA VI (Jason et Lucia devant la
@@ -302,14 +302,13 @@ def main():
     args.out.mkdir(parents=True, exist_ok=True)
 
     trevor = Image.open(ASSETS / "gta5-trevor-render.png").convert("RGBA")
-    jason = Image.open(ASSETS / "gta6-jason.jpg").convert("RGB")
     # Décor : la vue de Vice City au coucher de soleil (palmiers, skyline,
     # décapotable), publiée sur le site avec /jeu/vice-city-rush.
     background = Image.open(ASSETS / "gta6-keyart.jpg").convert("RGB")
 
     im = ground()
     masthead(im)
-    shared_world(im, trevor, jason, background)
+    shared_world(im, trevor, background)
     name_plates(im)
     comparison(im, (TREVOR, JASON))
     footer(im)
