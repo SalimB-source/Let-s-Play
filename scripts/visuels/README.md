@@ -217,3 +217,16 @@ python3 scripts/visuels/upscale_cover.py chemin/vers/cover.jpg --focus 0.30
 ```
 
 Sortie : `instagram/gta-trevor-jason/cover-4k-2160x2700.png/.jpg`.
+
+## Titre arabe sur une cover
+
+`add_cover_title.py` pose le titre arabe seul sur une cover, sans layout :
+Tajawal Black, dégradé jaune chaud, contour et relief en encre, halo sombre et
+dégradé de lisibilité en bas de l'image.
+
+```bash
+python3 scripts/visuels/add_cover_title.py instagram/gta-trevor-jason/cover-jason-lucia-tempete-3d-4k-2160x2700.png
+python3 scripts/visuels/add_cover_title.py cover.png --text "…" --size 190 --bottom 300
+```
+
+Sortie : `instagram/gta-trevor-jason/cover-titre-4k-2160x2700.png/.jpg`.
