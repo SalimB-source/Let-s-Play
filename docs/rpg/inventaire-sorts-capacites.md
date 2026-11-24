@@ -5,6 +5,11 @@ modifie ni les cartes ni les règles. Les « créatures » ci-dessous comprennen
 les héros jouables, mais pas les Sites. Les associations sont des propositions
 thématiques, pas des liens déjà implémentés entre les cartes.
 
+**Règle retenue pour les associations proposées :** chaque créature ne peut
+activer son effet qu'**une seule fois**, et non une fois par tour. L'application
+concrète de cette règle aux capacités existantes et le cas d'une créature qui
+quitte le jeu puis revient restent à définir et à implémenter.
+
 ## Périmètre et lecture
 
 Le catalogue contient **58 cartes de type magie** : 53 sorts examinés ici,
@@ -109,15 +114,17 @@ compter à tort comme des équivalences parfaites.
   Déflection (`maree-contraire`).
 - **Sabre maudit** est une magie dont l'effet est `arme` : exclu de cette liste,
   et non oublié. Aucune arme n'est convertie en capacité ici.
-- Une capacité activée existante est généralement utilisable une fois par
-  tour, pendant le tour de son contrôleur, au lieu d'attaquer ; elle n'est pas
+- **État actuel du jeu :** une capacité activée existante est généralement
+  utilisable une fois par tour, pendant le tour de son contrôleur, au lieu
+  d'attaquer. Cette liste ne change pas encore ce comportement pour appliquer
+  la règle retenue d'une seule activation par créature. Une capacité n'est pas
   automatiquement l'équivalent d'une magie rapide, d'un coût en PV, d'un
   choix multiple, d'un effet lié ou d'une invocation depuis une autre zone.
 - Les 36 propositions sont des **idées à équilibrer**, pas des capacités
   activées prêtes à jouer. Il faudra préciser prix, cibles, temporalité,
   restrictions d'invocation, effets différés, lien avec l'ancre, protection et
-  choix joueur/IA. Une destruction totale répétable ou une réanimation à
-  chaque tour ne doit pas être ajoutée gratuitement sans décision d'équilibrage.
+  choix joueur/IA. Même utilisables une seule fois par créature, une destruction
+  totale ou une réanimation demandent une décision d'équilibrage.
 - La couleur de la créature diffère de celle du sort pour certains
   rapprochements déjà existants ; l'activation utilise normalement la couleur
   de sa créature. Cette différence affecte notamment les protections.
