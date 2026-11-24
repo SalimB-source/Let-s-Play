@@ -101,7 +101,7 @@ def main():
         lp = lp.resize((round(lh * lp.width / lp.height), lh), Image.Resampling.LANCZOS)
         base.alpha_composite(lp, (margin, round(margin * 0.85)))
 
-        game = Image.open(ROOT / "instagram/assets/gta6-logo.webp").convert("RGBA")
+        game = Image.open(ROOT / "instagram/assets/gta6-logo.png").convert("RGBA")
         game = game.crop(game.getchannel("A").getbbox())
         gh = args.game_h
         game = game.resize((round(gh * game.width / game.height), gh), Image.Resampling.LANCZOS)
