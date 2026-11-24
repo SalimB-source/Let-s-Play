@@ -113,16 +113,18 @@ seul suffit à régénérer la carte sur une machine qui a ces deux fichiers.
 ## Fiches personnages — Trevor / Jason, en arabe
 
 `make_gta_fiches_45.py` produit **deux** cartes 4:5 de la même série (même
-gabarit, même charte, un accent de couleur par personnage) : un « ملف شخصي »
-par héros, avec rôle, ville, passé, activité et trait dominant — cinq lignes,
-en arabe, composées avec HarfBuzz. Habillage **brandé Let's Play** : l'illustration
-officielle occupe toute la carte (aucun cadre), elle se dissout vers le bas dans
-l'encre `#05060F`, un filet violet → cyan ouvre la carte, le logo ouvre le
-bandeau de marque, et le nom arabe est posé sur une ombre décalée dans la
-couleur du personnage (jaune `#FFD619` / cyan `#22D3EE`), comme le lettrage du
-site.
+gabarit, même charte) : un « ملف شخصي » par héros, avec rôle, ville, passé,
+activité et trait dominant — cinq lignes, en arabe, composées avec HarfBuzz.
 
-Illustrations utilisées : artwork officiel de Trevor à Sandy Shores
+Gabarit des visuels maison, repris tel quel : fond violet avec triangles et
+étincelles, **logo Let's Play** en haut à gauche, **logo du jeu** en haut à
+droite (numéral en dégradé + lettrage latin, redessiné — aucun fichier de marque
+Rockstar n'est utilisé), **bandeau arrondi** pour le titre en crème,
+**fenêtre photo** à coins coupés qui occupe le centre, lignes de données sur le
+violet avec étiquettes jaunes, et **bandeau jaune** pleine largeur
+« شاركنا رأيك في التعليقات » en pied.
+
+Illustrations : artwork officiel de Trevor à Sandy Shores
 (`instagram/assets/gta5-trevor-artwork.jpg`) et clé d'art du ponton de Vice City
 pour Jason (`instagram/assets/gta6-pier-keyart.jpg`) ; les deux fichiers sont
 exclus du dépôt, le script seul suffit à régénérer les cartes.
