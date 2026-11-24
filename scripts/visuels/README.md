@@ -136,3 +136,18 @@ python3 scripts/visuels/make_gta_fiches_45.py --out /tmp  # autre dossier
 
 Sorties : `fiche-trevor-ar-1080x1350.png/.jpg` et
 `fiche-jason-ar-1080x1350.png/.jpg`.
+
+## Visuel duo — Trevor et Jason côte à côte, en arabe
+
+`make_gta_duo_45.py` réunit les deux héros sur **une seule** carte 4:5, dans le
+même gabarit promo : deux fenêtres photo à coins coupés (Trevor à gauche, 2013 ;
+Jason à droite, 2026), nom et jeu posés en bas de chaque fenêtre, deux colonnes
+de données séparées par un filet, bandeau-titre « من هو الأقرب إليك؟ » et pied
+jaune « شاركنا اختيارك في التعليقات ».
+
+```bash
+python3 scripts/visuels/make_gta_duo_45.py             # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_duo_45.py --out /tmp  # autre dossier
+```
+
+Sortie : `gta-trevor-jason-duo-ar-1080x1350.png/.jpg`.
