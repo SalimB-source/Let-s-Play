@@ -34,3 +34,7 @@ demo-coffret/bundle.css
 # Aperçu du plateau figé (artefact généré, pas livré) — se régénère avec
 # `node scripts/apercu-plateau-deux-lignes.mjs`
 docs/plateau-deux-lignes.html
+
+# Flux JSON mobile généré automatiquement au build (`npm run mobile:feed`)
+public/mobile-feed/
+

@@ -1,0 +1,157 @@
+# Compile et signe l'APK Android native (React Native / Expo) de Let's Play
+# depuis le dossier mobile/, puis la publie :
+#   - en artefact téléchargeable (« lets-play-mobile-apk ») ;
+#   - en GitHub Release sur le tag « apk-mobile » (lien permanent direct).
+
+name: APK Mobile (React Native)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+    paths:
+      - 'mobile/**'
+      - 'scripts/generate-mobile-feed.mjs'
+      - '.github/workflows/mobile-apk.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-apk
+  cancel-in-progress: true
+
+jobs:
+  mobile-apk:
+    runs-on: ubuntu-latest
+    env:
+      CI: '1'
+      EXPO_PUBLIC_SITE_URL: ${{ vars.EXPO_PUBLIC_SITE_URL || 'https://let-s-play-nu.vercel.app' }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL || 'https://lxgquqxlhhzvotesczuy.supabase.co' }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || vars.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_u_1E2mFf-ZScotI9wjUWmA_w8G3-W2Z' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accepter les licences Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+
+      - name: Restaurer la clé de signature (secrets ou clé du dépôt)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$GITHUB_WORKSPACE/letsplay-release.p12"
+            echo "ANDROID_KEYSTORE_FILE=$GITHUB_WORKSPACE/letsplay-release.p12" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=letsplay" >> "$GITHUB_ENV"
+            echo "→ clé chargée depuis les secrets GitHub."
+          else
+            echo "→ signature avec la clé du dépôt (android/keystore/letsplay-release.p12)."
+          fi
+
+      - name: Calculer la version Android
+        run: |
+          set -euo pipefail
+          CODE=$(git rev-list --count HEAD)
+          echo "ANDROID_VERSION_CODE=$CODE" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.0.$CODE" >> "$GITHUB_ENV"
+          echo "→ versionCode $CODE, versionName 1.0.$CODE"
+
+      - name: Actualiser le flux embarqué d'actualités
+        run: |
+          npm ci
+          npm run mobile:feed
+
+      - name: Installer les dépendances mobiles et générer le projet Android natif
+        working-directory: mobile
+        run: |
+          npm ci
+          npx expo prebuild --platform android --no-install --clean
+
+      - name: Compiler l'APK React Native signée (Release)
+        working-directory: mobile/android
+        run: |
+          set -o pipefail
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/mobile-build.log"
+
+      - name: Diagnostic en cas d'échec
+        if: failure()
+        run: |
+          grep -E "FAILURE|What went wrong|Caused by|error:|Error:|FAILED|Exception" "$GITHUB_WORKSPACE/mobile-build.log" | head -40 | while IFS= read -r l; do
+            echo "::error::${l:0:400}"
+          done
+
+      - name: Vérifier et préparer l'APK
+        run: |
+          APK_SRC="mobile/android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK_SRC" || { echo "::error::APK absente : $APK_SRC"; exit 1; }
+          AAPT=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging "$APK_SRC")
+          echo "$BADGING" | grep -E "^package:|^application-label" || true
+          echo "$BADGING" | grep -q "package: name='dz.letsplay.mobile'" \
+            || { echo "::error::applicationId inattendu (attendu dz.letsplay.mobile)"; exit 1; }
+          cp "$APK_SRC" "lets-play-mobile-v${ANDROID_VERSION_NAME}.apk"
+          cp "$APK_SRC" "lets-play-mobile-latest.apk"
+          ls -lh lets-play-mobile-*.apk
+
+      - name: Publier l'artefact Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: lets-play-mobile-apk
+          path: lets-play-mobile-v*.apk
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Publier l'APK dans GitHub Releases (apk-mobile)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(ls lets-play-mobile-v*.apk)
+          {
+            echo "Application mobile hybride **React Native (Expo)** de **Let's Play**."
+            echo ""
+            echo "### Contenu"
+            echo "- **Actus (FR / EN / العربية)** avec mode hors-ligne instantané"
+            echo "- **Jeux en plein écran** (*Le Sablier de Bab El*, *Vice City Rush*, *Mirage Rush*) avec haptique native et transfert automatique de session"
+            echo "- **Messages & Amis** en temps réel (Supabase Realtime) + mode Démo"
+            echo "- **Profil & Notifications Push** natives"
+            echo ""
+            echo "### Installation sur Android"
+            echo "Téléchargez **\`lets-play-mobile-latest.apk\`** sur votre téléphone, ouvrez le fichier et autorisez l'installation si demandé."
+            echo ""
+            echo "- **Fichier** : \`$APK\` (\`versionCode $ANDROID_VERSION_CODE\`)"
+            echo "- **Package** : \`dz.letsplay.mobile\`"
+            echo "- **Commit** : \`${GITHUB_SHA::7}\`"
+          } > notes-mobile.md
+          gh release delete "apk-mobile" --yes --cleanup-tag 2>/dev/null || true
+          git push origin ":refs/tags/apk-mobile" 2>/dev/null || true
+          gh release create "apk-mobile" "$APK" "lets-play-mobile-latest.apk" \
+            --title "Let's Play Mobile (React Native) — $APK" \
+            --notes-file notes-mobile.md
+          echo "Release publiée : apk-mobile ($APK + lets-play-mobile-latest.apk)"

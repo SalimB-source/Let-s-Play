@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Let's Play",
+    "slug": "lets-play",
+    "scheme": "letsplay",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#05060f",
+    "splash": {
+      "image": "./assets/lets-play-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#05060f"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dz.letsplay.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "dz.letsplay.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#05060f",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#7c3aed"
+        }
+      ],
+      "expo-secure-store",
+      "expo-screen-orientation",
+      "./plugins/withReleaseSigning"
+    ]
+  }
+}
