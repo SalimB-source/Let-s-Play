@@ -67,9 +67,9 @@ TITLE_Y = 906
 FACTS_Y = 1072
 CTA_TOP = 1230
 
-TITLE = "هاربون من العاصفة"
-SUBTITLE = "جيسون ولوسيا يقطران شوارع فايس سيتي تحت المطر"
-FACTS = (("01", "مطاردة بوليسية"), ("02", "فايس سيتي"), ("03", "GTA VI · 2026"))
+TITLE = "ما أكثر تغيّر مفاجئ في الطقس أذهلك؟"
+SUBTITLE = "من صحو مشمس إلى عاصفة في دقائق — جيسون ولوسيا في فايس سيتي"
+FACTS = (("01", "عاصفة مفاجئة"), ("02", "فايس سيتي"), ("03", "GTA VI · 2026"))
 
 
 def px(n):
@@ -171,18 +171,26 @@ def title_block(im):
     d = ImageDraw.Draw(im)
 
     # Sur-titre : petit trait + mention du jeu.
-    latin(im, W - MARGIN, TITLE_Y - 52, "GTA VI · 2026", 16, CYAN,
-          face="bold", tracking=2.4, anchor="r")
-    d.line([(px(W - MARGIN - 152), px(TITLE_Y - 32)), (px(W - MARGIN), px(TITLE_Y - 32))],
-           fill=CYAN + (200,), width=px(2))
+    d.line([(px(W - MARGIN), px(TITLE_Y - 30)), (px(W - MARGIN - 150), px(TITLE_Y - 30))],
+           fill=CYAN + (190,), width=px(2))
 
-    size = 96
-    while size > 56 and ArabicText(AR["display"], px(size)).width(TITLE) / S > W - 2 * MARGIN:
-        size -= 4
-    ar_text(im, W - MARGIN + 5, TITLE_Y + 5, TITLE, size, CYAN, face="display")
-    ar_text(im, W - MARGIN, TITLE_Y, TITLE, size, CREAM, face="display")
+    size = 88
+    while size > 54 and ArabicText(AR["display"], px(size)).width(TITLE) / S > W - 2 * MARGIN:
+        size -= 2
+    # Deux lignes si la question est trop longue pour la largeur utile.
+    body = ArabicText(AR["display"], px(size))
+    max_w = W - 2 * MARGIN
+    if body.width(TITLE) / S > max_w:
+        lines = body.wrap(TITLE, max_w)
+    else:
+        lines = [TITLE]
+    y = TITLE_Y
+    for line in lines:
+        ar_text(im, W - MARGIN + 4, y + 4, line, size, CYAN, face="display")
+        ar_text(im, W - MARGIN, y, line, size, CREAM, face="display")
+        y += round(size * 1.12)
 
-    ar_text(im, W - MARGIN, TITLE_Y + size + 26, SUBTITLE, 25, (222, 214, 246), face="regular")
+    ar_text(im, W - MARGIN, y + 12, SUBTITLE, 24, (222, 214, 246), face="regular")
 
 
 def facts(im):
@@ -208,14 +216,14 @@ def facts(im):
 
 def credit(im):
     """Crédit honnête : illustration originale, pas une capture officielle."""
-    ar_text(im, W - MARGIN, CTA_TOP - 54, "رسم توضيحي مستوحى من عالم اللعبة", 15,
+    ar_text(im, W - MARGIN, CTA_TOP - 54, "رسم توضيحي مستوحى من عالم اللعبة", 14,
             (186, 176, 220), face="regular")
 
 
 def cta(im):
     d = ImageDraw.Draw(im)
     d.rectangle([0, px(CTA_TOP), px(W), px(H)], fill=YELLOW)
-    ar_text(im, W / 2 - 30, (CTA_TOP + H) / 2, "المطاردة كاملة في التعليقات", 40, INK,
+    ar_text(im, W / 2 - 30, (CTA_TOP + H) / 2, "شاركنا تجربتك في التعليقات", 40, INK,
             face="display", anchor="mm")
     cx, cy = px(W / 2 + 250), px((CTA_TOP + H) / 2)
     d.line([(cx, cy - px(20)), (cx, cy + px(14))], fill=INK + (255,), width=px(7))
