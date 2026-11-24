@@ -190,3 +190,18 @@ python3 scripts/visuels/make_gta_storm_45.py --out /tmp  # autre dossier
 ```
 
 Sortie : `gta6-jason-lucia-tempete-ar-1080x1350.png/.jpg`.
+
+## Couverture 4:5 — Jason et Lucia devant la tempête (sans layout)
+
+`make_gta_cover_45.py` exporte l'illustration **seule**, en 4:5 plein cadre :
+aucun logo, aucun texte, aucun bandeau. Utile comme cover de carrousel ou comme
+base pour un habillage ultérieur.
+
+```bash
+python3 scripts/visuels/make_gta_cover_45.py --src dessin   # version dessinée (par défaut : 3d)
+python3 scripts/visuels/make_gta_cover_45.py --src 3d
+python3 scripts/visuels/make_gta_cover_45.py --focus 0.4    # recadrage plus bas
+```
+
+Sorties : `cover-jason-lucia-tempete-1080x1350.png/.jpg` (dessinée) et
+`cover-jason-lucia-tempete-3d-1080x1350.png/.jpg` (rendu 3D).
