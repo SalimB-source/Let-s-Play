@@ -6,9 +6,10 @@ Auto V* (2013), face à Jason Duval, le vétéran plus posé de *Grand Theft Aut
 VI* (19 novembre 2026).
 
 Mise en page : **un seul visuel, sans séparation**. Pas de cadre, pas de
-couture, pas de badge « VS » : les deux personnages partagent le même décor
-(une brume tirée de la clé d'art, floutée et unifiée), la même lumière et la
-même échelle de visage. Les noms sont posés à même l'image, et les quatre axes
+couture, pas de badge « VS ». Le fond est la clé d'art officielle de *GTA VI*
+(Jason et Lucia devant la ferme en feu), floutée pour rester en arrière-plan ;
+le duo y est repiqué net, dans la même lumière. Trevor, détouré, occupe le
+premier plan à gauche. Les noms sont posés à même l'image, et les quatre axes
 de comparaison tiennent dans la bande sombre du bas.
 
 Sortie : PNG 1080 × 1350 px (4:5) et JPEG qualité 92 pour Instagram.
@@ -16,9 +17,9 @@ Sortie : PNG 1080 × 1350 px (4:5) et JPEG qualité 92 pour Instagram.
 Sources
 - Trevor : rendu officiel Rockstar (fond transparent), fourni via
   `instagram/assets/gta5-trevor-render.png`.
-- Jason : clé d'art officielle *GTA VI* (Jason et Lucia), déjà publiée sur le
-  site (`public/gta6-jason-lucia-hero.jpg`), recadrée sur Jason dans
-  `instagram/assets/gta6-jason.jpg`.
+- Fond et Jason : clé d'art officielle *GTA VI* (Jason et Lucia devant la ferme
+  en feu), déjà publiée sur le site (`public/gta6-jason-lucia-hero.jpg`), copiée
+  dans `instagram/assets/gta6-keyart.jpg`.
 
 Usage :
     python3 scripts/visuels/make_gta_trevor_jason_45.py [--out DOSSIER]
@@ -141,26 +142,6 @@ def cutout_portrait(source, spec, width, height):
     return art
 
 
-def photo_portrait(source, spec, width, height):
-    """Photo plein cadre (Jason) : même échelle de visage, fondu bas et latéral."""
-    w, h = source.size
-    head_h = max(0.01, (spec["chin"] - spec["head"][1]) * h)
-    scale = (px(spec["head_px"]) * (height / px(ART_H))) / head_h
-    art = source.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS)
-    if art.width < width:
-        art = art.resize((width, round(art.height * width / art.width)), Image.Resampling.LANCZOS)
-    head_x, head_y = spec["head"]
-    left = round(head_x * art.width - width * spec["align_x"])
-    top = round(head_y * art.height - height * spec["head_at"])
-    left = min(max(left, 0), max(0, art.width - width))
-    top = min(max(top, 0), max(0, art.height - height))
-    art = art.crop((left, top, left + width, top + height)).convert("RGBA")
-    # La clé d'art est pâle : on remonte le contraste avant un voile très léger.
-    art = ImageEnhance.Brightness(art.convert("RGB")).enhance(1.12).convert("RGBA")
-    art = ImageEnhance.Contrast(art).enhance(1.06)
-    return Image.alpha_composite(art, Image.new("RGBA", art.size, INK + (26,)))
-
-
 def feather_bottom(art, height_px):
     """Fondu vers l'encre sur le bas d'un portrait, pour asseoir les noms."""
     shade = Image.new("L", art.size, 0)
@@ -174,59 +155,53 @@ def feather_bottom(art, height_px):
     return out
 
 
-def shared_world(im, trevor, jason):
-    """Un seul décor : les deux personnages côte à côte, sans séparation.
+def shared_world(im, trevor, jason, background):
+    """Un seul visuel : Trevor au premier plan, la clé d'art de GTA VI derrière.
 
-    Le fond est commun (halo prune), les deux figures se chevauchent légèrement
-    et partagent la même lumière basse — rien ne les coupe en deux.
+    Le fond est la clé d'art officielle de GTA VI (Jason et Lucia devant la
+    ferme en feu), floutée ; le duo y est repiqué net, dans la même lumière.
+    Trevor, détouré, occupe le premier plan à gauche. Aucune couture, aucun
+    cadre : les deux époques partagent une seule image.
     """
     band_h = px(ART_H)
     base_y = px(ART_TOP)
 
-    # Décor commun : une brume tirée de la clé d'art (ciel et blé), floutée et
-    # étirée sur toute la bande. Les deux personnages baignent ainsi dans la
-    # même lumière, sans bord de photo visible.
-    sky = jason.crop((0, 0, jason.width, round(jason.height * 0.42)))
-    cover = max(px(W) / sky.width, band_h / sky.height)
-    sky = sky.resize((round(sky.width * cover) + 2, round(sky.height * cover) + 2),
-                     Image.Resampling.LANCZOS)
-    wx = round((sky.width - px(W)) / 2)
-    wy = round((sky.height - band_h) / 2)
-    sky = sky.crop((wx, wy, wx + px(W), wy + band_h)).convert("RGB")
-    sky = sky.filter(ImageFilter.GaussianBlur(px(26)))
-    # Ce ciel est très clair : on le ramène dans l'ombre, plus dense à gauche.
-    sky = ImageEnhance.Brightness(sky).enhance(0.62)
-    world = sky.convert("RGBA")
-    world = Image.alpha_composite(world, Image.new("RGBA", world.size, INK + (150,)))
-    left_dim = Image.new("RGBA", world.size, (0, 0, 0, 0))
-    ld = ImageDraw.Draw(left_dim)
-    for x in range(px(520)):
-        a = round(120 * (1 - x / px(520)) ** 1.3)
-        ld.line([(x, 0), (x, band_h)], fill=INK + (a,))
-    world = Image.alpha_composite(world, left_dim)
-    im.alpha_composite(world, (0, base_y))
+    # Décor : la clé d'art officielle de GTA VI (Jason et Lucia devant la
+    # ferme en feu). Elle est floutée pour rester en arrière-plan, puis Jason y
+    # est redécoupé NET à sa place exacte : même image, même lumière, donc
+    # aucune couture possible entre le premier plan et le fond.
+    keyart = background
+    cover = max(px(W) / keyart.width, band_h / keyart.height)
+    world = keyart.resize((round(keyart.width * cover) + 2, round(keyart.height * cover) + 2),
+                          Image.Resampling.LANCZOS)
+    wx = round((world.width - px(W)) * 0.62)
+    wy = max(0, round((world.height - band_h) * 0.12))
+    wx = min(wx, max(0, world.width - px(W)))
+    wy = min(wy, max(0, world.height - band_h))
+    sharp = world.crop((wx, wy, wx + px(W), wy + band_h)).convert("RGB")
 
-    # Jason (photo) se pose sur ce décor ; son bord gauche se fond dans l'encre.
-    jason_w = px(600)
-    jacket = photo_portrait(jason, JASON, jason_w, band_h)
-    side = Image.new("L", jacket.size, 255)
-    sd = ImageDraw.Draw(side)
-    span = px(230)
-    for i in range(span):
-        sd.line([(i, 0), (i, jacket.height)], fill=round(255 * i / span))
-    back = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
-    back.paste(jacket, (px(W - 600), 0), side)
-    # La photo de Jason commence sous le haut de la bande : on adoucit cette
-    # arête horizontale pour qu'elle se dissolve dans la brume.
-    top_edge = Image.new("L", (px(W), band_h), 0)
-    te = ImageDraw.Draw(top_edge)
-    edge = px(120)
-    for i in range(edge):
-        te.line([(0, i), (px(W), i)], fill=round(255 * i / edge))
-    te.rectangle([0, edge, px(W), band_h], fill=255)
-    back.putalpha(Image.composite(back.getchannel("A"), Image.new("L", back.size, 0), top_edge))
-    back = feather_bottom(back, px(260))
-    im.alpha_composite(back, (0, base_y))
+    blurred = sharp.filter(ImageFilter.GaussianBlur(px(9)))
+    blurred = ImageEnhance.Brightness(blurred).enhance(0.72)
+
+    # Voile : léger en haut (la scène reste lisible), dense en bas (noms et
+    # lignes de comparaison doivent tenir le contraste).
+    veil = np.zeros((band_h, px(W), 4), dtype=float)
+    gy = np.linspace(0, 1, band_h)[:, None]
+    veil[..., :3] = np.array(INK)
+    veil[..., 3] = np.clip(40 + 170 * gy ** 1.5, 0, 255)
+    world = Image.alpha_composite(blurred.convert("RGBA"), Image.fromarray(np.uint8(veil), "RGBA"))
+
+    # Le duo de GTA VI (Lucia et Jason) est repiqué NET dans la MÊME image :
+    # masque elliptique très doux, pour qu'il se détache du fond flouté sans
+    # laisser voir de bord de photo.
+    cx, cy = int(px(W) * 0.71), int(band_h * 0.46)
+    keep = Image.new("L", sharp.size, 0)
+    kd = ImageDraw.Draw(keep)
+    rx, ry = px(330), px(330)
+    kd.ellipse([cx - rx, cy - ry, cx + rx, cy + ry * 1.15], fill=255)
+    keep = keep.filter(ImageFilter.GaussianBlur(px(110)))
+    world.paste(sharp.convert("RGBA"), (0, 0), keep)
+    im.alpha_composite(world, (0, base_y))
 
     # Halo derrière Trevor : il se découpe sur la lumière, pas sur une ligne.
     glow = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
@@ -328,10 +303,13 @@ def main():
 
     trevor = Image.open(ASSETS / "gta5-trevor-render.png").convert("RGBA")
     jason = Image.open(ASSETS / "gta6-jason.jpg").convert("RGB")
+    # Décor : la vue de Vice City au coucher de soleil (palmiers, skyline,
+    # décapotable), publiée sur le site avec /jeu/vice-city-rush.
+    background = Image.open(ASSETS / "gta6-keyart.jpg").convert("RGB")
 
     im = ground()
     masthead(im)
-    shared_world(im, trevor, jason)
+    shared_world(im, trevor, jason, background)
     name_plates(im)
     comparison(im, (TREVOR, JASON))
     footer(im)
