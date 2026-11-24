@@ -207,9 +207,9 @@ export function filtreLigne(attaquant, creaturesCible = [], cibles = []) {
  *   volante ou un Défenseur adverse attire toujours les coups.
  *
  * « Tireur » se lit comme partout ailleurs (`porteeDe`, `ligneObligee`) :
- * marqué « À distance » **ou** porteur de l'Attaque ciblée — Salem, Fériel et
- * la Chevalière du bâton sacré tirent sans le mot-clé « À distance », et ils
- * couvrent leur sorcier comme les autres.
+ * marqué « À distance » **ou** porteur de l'Attaque ciblée — Salem et Fériel
+ * tirent sans le mot-clé « À distance », et couvrent leur sorcier comme les
+ * autres tireurs, dont la Chevalière à l’arbalète.
  *
  * Hors des lignes (`duel.lignes !== true`) ou au MOBA (qui a des voies, pas de
  * front ni de fond), la fonction rend exactement ce que rendait
