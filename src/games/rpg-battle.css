@@ -16632,15 +16632,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      z-index 90 dans leur carte, restaient sous les terrains (41) et sous le
      dock de la main (42). Le menu ouvert soulève donc la carte et sa rangée
      ensemble ; les annonces (46 et plus) et les calques de combat (54 et plus)
-     gardent la priorité. */
-  z-index: 44;
+     gardent la priorité.
+
+     Le `!important` n'est pas décoratif : en mode mana d'essai, TOUTES les
+     cartes de la rangée portent `z-index: 1` par une règle à quatre classes
+     (`.rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card`), qui pèse
+     plus lourd que les deux classes du menu ouvert. À égalité de plan, c'est
+     l'ordre du DOM qui peignait : une créature jouée après Salem, posée juste
+     au-dessus de lui, recouvrait la fenêtre. Même combat pour les wrappers de
+     pile et de prison, que la même règle d'essai hisse à 1. */
+  z-index: 44 !important;
 }
 
 /* La rangée suit sa carte : c'est le CSS qui la lit (`:has`, comme les
    repères d'éventail de la version tactile), aucune prop n'est ajoutée au JSX
-   — les rangées gardent leur `className` littéral. */
-.card-row:has(.rpg-card.is-effet-menu) {
-  z-index: 44;
+   — les rangées gardent leur `className` littéral. Les wrappers de pile et de
+   prison suivent aussi : sans eux, leur `z-index: 1` d'essai refermerait le
+   contexte d'empilement sur la carte soulevée. */
+.card-row:has(.rpg-card.is-effet-menu),
+.card-row > :is(.rpg-card-stack, .rpg-card-prison):has(.rpg-card.is-effet-menu) {
+  z-index: 44 !important;
 }
 
 .rpg-card__effet-btn {

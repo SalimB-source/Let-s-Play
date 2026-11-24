@@ -253,6 +253,15 @@ test('attaquer et effet activé s’ouvrent au-dessus de la carte, plus grands e
   assert.ok(pop.length > 0, 'l’animation d’apparition existe');
   assert.doesNotMatch(pop, /transform/u, 'aucun `transform` dans les images clés');
 
+  // La levée doit battre les règles qui donnent un z-index à chaque carte de
+  // la rangée — en mode mana d'essai, toutes portent `z-index: 1` par une
+  // règle à quatre classes : sans `!important`, la créature jouée après (plus
+  // tard dans le DOM, posée juste au-dessus) repeignait par-dessus la fenêtre.
+  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*z-index:\s*44\s*!important/u,
+    'la carte au menu ouvert prime sur tous les z-index de carte');
+  assert.match(css, /\.card-row:has\(\.rpg-card\.is-effet-menu\),\s*\.card-row > :is\(\.rpg-card-stack, \.rpg-card-prison\):has\(\.rpg-card\.is-effet-menu\)\s*\{[^}]*z-index:\s*44\s*!important/u,
+    'la rangée et ses wrappers de pile/prison suivent la carte soulevée');
+
   // Le retour à l'appui se voit, sinon le clic semble perdu.
   assert.match(css, /\.rpg-card__effet-btn:active\s*\{[^}]*transform:\s*translateY\(2px\)/u);
   assert.match(css, /\.rpg-card__effet-btn:focus-visible\s*\{/u);
