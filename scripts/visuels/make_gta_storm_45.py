@@ -62,10 +62,10 @@ AR = {
 }
 
 MARGIN = 48
-PHOTO_BOTTOM = 1000       # l'illustration se dissout jusqu'ici
-TITLE_Y = 742
-FACTS_Y = 1042
-CTA_TOP = 1240
+WINDOW = (36, 306, 1044, 862)   # fenêtre 16:9 à coins coupés       # l'illustration se dissout jusqu'ici
+TITLE_Y = 906
+FACTS_Y = 1072
+CTA_TOP = 1230
 
 TITLE = "هاربون من العاصفة"
 SUBTITLE = "جيسون ولوسيا يقطران شوارع فايس سيتي تحت المطر"
@@ -117,46 +117,34 @@ def base():
 
 
 def artwork():
-    """Illustration recadrée en 4:5, cadrée sur la moto et l'orage."""
+    """Illustration entière, sans recadrage : les deux visages restent dans le cadre."""
     art = Image.open(ASSETS / "gta6-fuite-tempete.jpg").convert("RGB")
-    target = px(W) / px(PHOTO_BOTTOM)
-    # Recadrage horizontal : les deux héros sont à droite du cadre d'origine.
-    crop_w = round(art.height * target)
-    focus = 0.68
-    left = round((art.width - crop_w) * focus)
-    art = art.crop((left, 0, left + crop_w, art.height))
-    art = art.resize((px(W), px(PHOTO_BOTTOM)), Image.Resampling.LANCZOS)
-    art = ImageEnhance.Color(art).enhance(1.08)
-    art = ImageEnhance.Contrast(art).enhance(1.05)
+    w, h = WINDOW[2] - WINDOW[0], WINDOW[3] - WINDOW[1]
+    art = art.resize((px(w), px(h)), Image.Resampling.LANCZOS)
+    art = ImageEnhance.Color(art).enhance(1.06)
+    art = ImageEnhance.Contrast(art).enhance(1.04)
     return art
 
 
 def blend_art(im, art):
-    """Bas de l'illustration fondu dans l'encre, bords latéraux adoucis."""
-    mask = Image.new("L", (1, art.height), 255)
-    d = ImageDraw.Draw(mask)
-    band = px(300)
-    for i in range(band):
-        d.point((0, art.height - 1 - i), fill=round(255 * (i / band) ** 1.5))
-    mask = mask.resize(art.size, Image.BILINEAR)
-    im.paste(art, (0, 0), mask.filter(ImageFilter.GaussianBlur(px(2))))
+    """Fenêtre à coins coupés, ombre portée et liseré clair."""
+    x0, y0, x1, y1 = WINDOW
+    cut = 34
+    poly = [(x0 + 20, y0), (x1 - cut, y0), (x1, y0 + cut),
+            (x1, y1 - cut), (x1 - cut, y1), (x0 + cut, y1),
+            (x0, y1 - cut), (x0, y0 + 20)]
+    mask = Image.new("L", (px(W), px(H)), 0)
+    ImageDraw.Draw(mask).polygon([(px(a), px(b)) for a, b in poly], fill=255)
 
-    # Voile haut (bandeau de marque) et voile bas (titre + infos).
-    w, h = im.size
-    gy = np.linspace(0, 1, h)[:, None]
-    veil = np.zeros((h, w, 4), dtype=float)
-    veil[..., :3] = np.array(INK)
-    veil[..., 3] = np.clip((0.20 - gy) / 0.20, 0, 1) ** 1.4 * 200
-    im.alpha_composite(Image.fromarray(np.uint8(veil), "RGBA"))
+    shadow = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    shadow.paste((6, 2, 16, 220), (0, 0), mask)
+    im.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(px(16))), (0, px(10)))
 
-    veil[..., 3] = np.clip((gy - 0.575) / 0.16, 0, 1) ** 1.2 * 225
-    im.alpha_composite(Image.fromarray(np.uint8(veil), "RGBA"))
-
-    # Vignettage léger : les coins s'éteignent, l'orage gagne en relief.
-    yy, xx = np.mgrid[0:h, 0:w].astype(float)
-    r = np.sqrt(((xx - w / 2) / (w / 2)) ** 2 + ((yy - h * 0.34) / (h / 2)) ** 2)
-    veil[..., 3] = np.clip((r - 0.62) / 0.8, 0, 1) ** 1.5 * 130
-    im.alpha_composite(Image.fromarray(np.uint8(veil), "RGBA"))
+    canvas = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    canvas.paste(art, (px(x0), px(y0)))
+    im.paste(canvas, (0, 0), mask)
+    ImageDraw.Draw(im).line([(px(a), px(b)) for a, b in poly] + [(px(poly[0][0]), px(poly[0][1]))],
+                            fill=(255, 255, 255, 80), width=px(2))
 
 
 def header(im):
