@@ -115,10 +115,12 @@ seul suffit à régénérer la carte sur une machine qui a ces deux fichiers.
 `make_gta_fiches_45.py` produit **deux** cartes 4:5 de la même série (même
 gabarit, même charte, un accent de couleur par personnage) : un « ملف شخصي »
 par héros, avec rôle, ville, passé, activité et trait dominant — cinq lignes,
-en arabe, composées avec HarfBuzz. L'illustration officielle occupe toute la
-carte (aucun cadre, aucun panneau flottant) ; un voile d'encre montant du bas
-porte les informations et le nom est composé en gros caractères penchés avec un
-dégradé néon, comme les logos de la série.
+en arabe, composées avec HarfBuzz. Habillage **brandé Let's Play** : l'illustration
+officielle occupe toute la carte (aucun cadre), elle se dissout vers le bas dans
+l'encre `#05060F`, un filet violet → cyan ouvre la carte, le logo ouvre le
+bandeau de marque, et le nom arabe est posé sur une ombre décalée dans la
+couleur du personnage (jaune `#FFD619` / cyan `#22D3EE`), comme le lettrage du
+site.
 
 Illustrations utilisées : artwork officiel de Trevor à Sandy Shores
 (`instagram/assets/gta5-trevor-artwork.jpg`) et clé d'art du ponton de Vice City
