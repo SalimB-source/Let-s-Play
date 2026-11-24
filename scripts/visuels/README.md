@@ -205,3 +205,15 @@ python3 scripts/visuels/make_gta_cover_45.py --focus 0.4    # recadrage plus bas
 
 Sorties : `cover-jason-lucia-tempete-1080x1350.png/.jpg` (dessinée) et
 `cover-jason-lucia-tempete-3d-1080x1350.png/.jpg` (rendu 3D).
+
+## Montée en 4K d'une cover
+
+`upscale_cover.py` agrandit une cover 4:5 en **2160 × 2700** (sans la déformer),
+lisse les grains de compression et renforce les détails (netteté locale, léger
+contraste). C'est un agrandissement, pas une régénération : rien n'est ajouté.
+
+```bash
+python3 scripts/visuels/upscale_cover.py chemin/vers/cover.jpg --focus 0.30
+```
+
+Sortie : `instagram/gta-trevor-jason/cover-4k-2160x2700.png/.jpg`.
