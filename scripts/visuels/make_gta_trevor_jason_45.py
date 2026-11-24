@@ -5,10 +5,11 @@ Deux bras droits, deux époques : Trevor Philips, l'imprévisible de *Grand Thef
 Auto V* (2013), face à Jason Duval, le vétéran plus posé de *Grand Theft Auto
 VI* (19 novembre 2026).
 
-Mise en page : **sans cadres**. Les deux portraits occupent toute la largeur du
-haut de la carte, dos à dos, séparés par une couture diagonale jaune / cyan ;
-les noms sont posés directement sur les images et les quatre axes de
-comparaison tiennent dans une bande sombre en bas.
+Mise en page : **un seul visuel, sans séparation**. Pas de cadre, pas de
+couture, pas de badge « VS » : les deux personnages partagent le même décor
+(une brume tirée de la clé d'art, floutée et unifiée), la même lumière et la
+même échelle de visage. Les noms sont posés à même l'image, et les quatre axes
+de comparaison tiennent dans la bande sombre du bas.
 
 Sortie : PNG 1080 × 1350 px (4:5) et JPEG qualité 92 pour Instagram.
 
@@ -52,8 +53,6 @@ FONTS = {
 }
 
 MARGIN = 52
-SEAM = W / 2                 # couture entre les deux portraits
-FEATHER = 46                 # largeur du dégradé qui fond une image dans l'autre
 ART_TOP, ART_H = 244, 772    # bande des portraits (bas = 1016)
 ROWS_TOP = 1042
 ROW_H = 56
@@ -128,13 +127,25 @@ def ground():
     return im.resize((px(W), px(H)), Image.Resampling.BICUBIC).convert("RGBA")
 
 
-def panel(source, spec, width, height, *, cutout=False):
-    """Portrait à l'échelle commune du visage, crâne ancré, sans bord ni cadre."""
+def cutout_portrait(source, spec, width, height):
+    """Rendu détouré, mis à l'échelle commune, calé sur le crâne."""
     w, h = source.size
-    head_h = max(0.01, (spec["chin"] - spec["head"][1]) * h)  # hauteur de tête (px source)
-    # La bande est suréchantillonnée : on convertit la cible en pixels réels.
-    target_head = px(spec["head_px"]) * (height / px(ART_H))
-    scale = target_head / head_h
+    head_h = max(0.01, (spec["chin"] - spec["head"][1]) * h)
+    scale = (px(spec["head_px"]) * (height / px(ART_H))) / head_h
+    art = source.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS)
+    # Le personnage complet doit tenir dans la bande : on réduit si besoin.
+    if head_h * scale > height * (1 - spec["head_at"] - 0.10):
+        shrink = (height * (1 - spec["head_at"] - 0.10)) / (head_h * scale)
+        art = art.resize((max(1, round(art.width * shrink)), max(1, round(art.height * shrink))),
+                         Image.Resampling.LANCZOS)
+    return art
+
+
+def photo_portrait(source, spec, width, height):
+    """Photo plein cadre (Jason) : même échelle de visage, fondu bas et latéral."""
+    w, h = source.size
+    head_h = max(0.01, (spec["chin"] - spec["head"][1]) * h)
+    scale = (px(spec["head_px"]) * (height / px(ART_H))) / head_h
     art = source.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS)
     if art.width < width:
         art = art.resize((width, round(art.height * width / art.width)), Image.Resampling.LANCZOS)
@@ -144,74 +155,121 @@ def panel(source, spec, width, height, *, cutout=False):
     left = min(max(left, 0), max(0, art.width - width))
     top = min(max(top, 0), max(0, art.height - height))
     art = art.crop((left, top, left + width, top + height)).convert("RGBA")
-    if cutout:
-        # Rendu détouré : aplat sombre teinté de l'encre du personnage, l'image
-        # n'a plus de fond propre — pas de cadre, elle se fond dans la carte.
-        plate = np.zeros((art.height, art.width, 3), dtype=float)
-        gy, gx = np.ogrid[:art.height, :art.width]
-        glow = np.exp(-(((gx - art.width * 0.42) / (art.width * 0.9)) ** 2
-                        + ((gy - art.height * 0.32) / (art.height * 0.8)) ** 2))
-        plate += np.array(INK) + glow[..., None] * np.array([74, 42, 104])
-        back = Image.fromarray(np.uint8(np.clip(plate, 0, 255)), "RGB").convert("RGBA")
-        back.alpha_composite(art)
-        art = back
-    # Bas de la bande : fondu vers l'encre, pour poser les noms dessus.
+    # La clé d'art est pâle : on remonte le contraste avant un voile très léger.
+    art = ImageEnhance.Brightness(art.convert("RGB")).enhance(1.12).convert("RGBA")
+    art = ImageEnhance.Contrast(art).enhance(1.06)
+    return Image.alpha_composite(art, Image.new("RGBA", art.size, INK + (26,)))
+
+
+def feather_bottom(art, height_px):
+    """Fondu vers l'encre sur le bas d'un portrait, pour asseoir les noms."""
     shade = Image.new("L", art.size, 0)
     sd = ImageDraw.Draw(shade)
-    fade_h = px(300)
-    for i in range(fade_h):
-        t = i / fade_h
-        sd.line([(0, art.height - fade_h + i), (art.width, art.height - fade_h + i)], fill=int(250 * t ** 1.5))
-    art.paste(Image.new("RGBA", art.size, INK + (255,)), (0, 0), shade)
-    return art
+    for i in range(height_px):
+        t = i / height_px
+        sd.line([(0, art.height - height_px + i), (art.width, art.height - height_px + i)],
+                fill=int(250 * t ** 1.5))
+    out = art.copy()
+    out.paste(Image.new("RGBA", art.size, INK + (255,)), (0, 0), shade)
+    return out
 
 
-def seam_mask(width, height, *, left_side):
-    """Masque en dégradé : les deux portraits se croisent sans bord visible."""
-    mask = Image.new("L", (width, height), 0)
-    span = px(FEATHER)
-    draw = ImageDraw.Draw(mask)
-    for i in range(width):
-        if left_side:
-            # Opaque, puis extinction sur les derniers pixels de la couture.
-            v = 255 if i <= width - span else round(255 * (width - i) / span)
-        else:
-            # Transparent sur la couture, puis pleinement opaque.
-            v = 255 if i >= span else round(255 * i / span)
-        draw.line([(i, 0), (i, height)], fill=v)
-    return mask.filter(ImageFilter.GaussianBlur(px(1.5)))
+def shared_world(im, trevor, jason):
+    """Un seul décor : les deux personnages côte à côte, sans séparation.
 
-
-def art_band(im, trevor, jason):
-    """Les deux portraits dos à dos, pleine largeur, sans cadre."""
+    Le fond est commun (halo prune), les deux figures se chevauchent légèrement
+    et partagent la même lumière basse — rien ne les coupe en deux.
+    """
     band_h = px(ART_H)
-    half = round(SEAM + FEATHER)
+    base_y = px(ART_TOP)
 
-    left = panel(trevor, TREVOR, px(half), band_h, cutout=True)
-    right = panel(jason, JASON, px(half), band_h)
-    # Jason : la clé d'art est pâle (poussière, ciel) ; on remonte un peu le
-    # contraste avant un voile léger, pour l'accorder au rendu sombre de Trevor.
-    right = right.convert("RGB")
-    right = ImageEnhance.Brightness(right).enhance(1.14)
-    right = ImageEnhance.Contrast(right).enhance(1.08)
-    right = right.convert("RGBA")
-    right = Image.alpha_composite(right, Image.new("RGBA", right.size, INK + (24,)))
-    layer = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
-    layer.paste(left, (0, 0), seam_mask(px(half), band_h, left_side=True))
-    layer.paste(right, (px(SEAM - FEATHER), 0), seam_mask(px(half), band_h, left_side=False))
+    # Décor commun : une brume tirée de la clé d'art (ciel et blé), floutée et
+    # étirée sur toute la bande. Les deux personnages baignent ainsi dans la
+    # même lumière, sans bord de photo visible.
+    sky = jason.crop((0, 0, jason.width, round(jason.height * 0.42)))
+    cover = max(px(W) / sky.width, band_h / sky.height)
+    sky = sky.resize((round(sky.width * cover) + 2, round(sky.height * cover) + 2),
+                     Image.Resampling.LANCZOS)
+    wx = round((sky.width - px(W)) / 2)
+    wy = round((sky.height - band_h) / 2)
+    sky = sky.crop((wx, wy, wx + px(W), wy + band_h)).convert("RGB")
+    sky = sky.filter(ImageFilter.GaussianBlur(px(26)))
+    # Ce ciel est très clair : on le ramène dans l'ombre, plus dense à gauche.
+    sky = ImageEnhance.Brightness(sky).enhance(0.62)
+    world = sky.convert("RGBA")
+    world = Image.alpha_composite(world, Image.new("RGBA", world.size, INK + (150,)))
+    left_dim = Image.new("RGBA", world.size, (0, 0, 0, 0))
+    ld = ImageDraw.Draw(left_dim)
+    for x in range(px(520)):
+        a = round(120 * (1 - x / px(520)) ** 1.3)
+        ld.line([(x, 0), (x, band_h)], fill=INK + (a,))
+    world = Image.alpha_composite(world, left_dim)
+    im.alpha_composite(world, (0, base_y))
 
-    # Haut de la bande : un fondu court évite l'arête nette sous le titre.
-    top_fade = Image.new("L", (px(W), band_h), 0)
-    tf = ImageDraw.Draw(top_fade)
-    for i in range(px(26)):
-        tf.line([(0, i), (px(W), i)], fill=round(255 * (1 - i / px(26))))
-    layer.paste(Image.new("RGBA", layer.size, INK + (255,)), (0, 0), top_fade)
+    # Jason (photo) se pose sur ce décor ; son bord gauche se fond dans l'encre.
+    jason_w = px(600)
+    jacket = photo_portrait(jason, JASON, jason_w, band_h)
+    side = Image.new("L", jacket.size, 255)
+    sd = ImageDraw.Draw(side)
+    span = px(230)
+    for i in range(span):
+        sd.line([(i, 0), (i, jacket.height)], fill=round(255 * i / span))
+    back = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
+    back.paste(jacket, (px(W - 600), 0), side)
+    # La photo de Jason commence sous le haut de la bande : on adoucit cette
+    # arête horizontale pour qu'elle se dissolve dans la brume.
+    top_edge = Image.new("L", (px(W), band_h), 0)
+    te = ImageDraw.Draw(top_edge)
+    edge = px(120)
+    for i in range(edge):
+        te.line([(0, i), (px(W), i)], fill=round(255 * i / edge))
+    te.rectangle([0, edge, px(W), band_h], fill=255)
+    back.putalpha(Image.composite(back.getchannel("A"), Image.new("L", back.size, 0), top_edge))
+    back = feather_bottom(back, px(260))
+    im.alpha_composite(back, (0, base_y))
 
-    # Couture diagonale : un trait jaune, doublé d'un filet cyan.
-    d = ImageDraw.Draw(layer)
-    d.line([(px(SEAM - 22), 0), (px(SEAM + 22), band_h)], fill=CYAN, width=px(2))
-    d.line([(px(SEAM - 26), 0), (px(SEAM + 18), band_h)], fill=YELLOW, width=px(5))
-    im.alpha_composite(layer, (0, px(ART_TOP)))
+    # Halo derrière Trevor : il se découpe sur la lumière, pas sur une ligne.
+    glow = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    cx, cy, r = px(300), round(band_h * 0.46), px(330)
+    for k in range(28, 0, -1):
+        rr = round(r * k / 28)
+        alpha = round(46 * (1 - k / 28) ** 1.6)
+        gd.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=(74, 42, 104, alpha))
+    im.alpha_composite(glow, (0, base_y))
+
+    # Trevor (rendu détouré) à gauche, à la même échelle de visage.
+    trevor_art = cutout_portrait(trevor, TREVOR, px(620), band_h)
+    head_x, head_y = TREVOR["head"]
+    # Le crâne doit tomber à `head_at` de la bande ; le buste descend ensuite
+    # jusqu'au fondu bas. `left` centre la tête dans la moitié gauche.
+    left = round(px(300) - head_x * trevor_art.width)
+    top = round(px(TREVOR["head_at"]) * band_h - head_y * trevor_art.height)
+    front = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
+    front.paste(trevor_art, (left, top), trevor_art)
+    front = feather_bottom(front, px(200))
+    im.alpha_composite(front, (0, base_y))
+
+    # Haze d'unification : une brume prune posée sur les DEUX personnages, plus
+    # dense sur les bords, pour qu'ils baignent dans la même lumière.
+    haze = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
+    hd = ImageDraw.Draw(haze)
+    for i in range(px(150)):
+        a = round(190 * (1 - i / px(150)) ** 1.4)
+        hd.line([(0, i), (px(W), i)], fill=INK + (a,))
+    for i in range(px(120)):
+        a = round(210 * (1 - i / px(120)) ** 1.2)
+        hd.line([(0, band_h - 1 - i), (px(W), band_h - 1 - i)], fill=INK + (a,))
+    # Voile latéral : les bords rentrent dans l'ombre, le centre reste éclairé.
+    # Décroissance exponentielle continue (pas de marche au bord, qui laissait
+    # une couture verticale visible).
+    lateral = np.zeros((band_h, px(W), 4), dtype=float)
+    gx = np.arange(px(W))
+    falloff = np.exp(-(gx / (px(W) * 0.16)) ** 2) + np.exp(-((px(W) - 1 - gx) / (px(W) * 0.16)) ** 2)
+    lateral[..., :3] = np.array(INK)
+    lateral[..., 3] = np.clip(120 * falloff, 0, 255)
+    im.alpha_composite(Image.fromarray(np.uint8(lateral), "RGBA"), (0, base_y))
+    im.alpha_composite(haze, (0, base_y))
 
 
 def masthead(im):
@@ -225,14 +283,6 @@ def masthead(im):
     text(im, MARGIN, 190, "GTA V (2013) face à GTA VI (2026) : deux bras droits, deux époques.",
          23, GREY, face="regular")
     ImageDraw.Draw(im).line([(px(MARGIN), px(230)), (px(MARGIN + 88), px(230))], fill=CYAN, width=px(4))
-
-
-def vs_badge(im, cx, cy):
-    r = 38
-    d = ImageDraw.Draw(im)
-    d.ellipse([px(cx - r - 5), px(cy - r - 5), px(cx + r + 5), px(cy + r + 5)], fill=INK)
-    d.ellipse([px(cx - r), px(cy - r), px(cx + r), px(cy + r)], fill=YELLOW)
-    text(im, cx, cy - 18, "VS", 33, INK, face="black", align="center")
 
 
 def name_plates(im):
@@ -281,8 +331,7 @@ def main():
 
     im = ground()
     masthead(im)
-    art_band(im, trevor, jason)
-    vs_badge(im, SEAM, ART_TOP + ART_H - 232)
+    shared_world(im, trevor, jason)
     name_plates(im)
     comparison(im, (TREVOR, JASON))
     footer(im)
