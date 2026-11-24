@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """Fiches personnages Instagram 4:5 — Trevor (GTA V) et Jason (GTA VI), en arabe.
 
-Deux cartes de la même série : même gabarit, même charte, deux personnages.
-Chacune est un « ملف شخصي » (fiche de personnage) : nom, rôle, ville, passé,
-trait dominant — le texte est en arabe (sens droite → gauche), composé avec
-HarfBuzz via `arabic_text.py`. Seuls les nombres et « GTA V / GTA VI » restent
-en caractères latins.
+Deux cartes de la même série, beaucoup plus colorées que la première version :
+chaque fiche a son propre dégradé (coucher de soleil de Sandy Shores pour
+Trevor, crépuscule pastel de Vice City pour Jason), un très gros numéro en
+filigrane, un macaron de jeu, un panneau translucide flottant pour les
+informations et une bande diagonale de la couleur du personnage.
+
+Le texte est en arabe (sens droite → gauche), composé avec HarfBuzz via
+`arabic_text.py` ; seuls les nombres et « GTA V / GTA VI » restent en latin.
 
 Sortie : un PNG et un JPEG 1080 × 1350 par personnage, dans
 `instagram/fiches-personnages/`.
 
 Sources
 - Trevor : rendu officiel Rockstar détouré, `instagram/assets/gta5-trevor-render.png`.
-- Jason : clé d'art officielle *GTA VI* (ponton de Vice City), recadrée sur lui
-  dans `instagram/assets/gta6-pier-keyart.jpg`.
+- Jason : clé d'art officielle *GTA VI* en portrait (Jason et Lucia sur le
+  ponton), `instagram/assets/gta6-jason-portrait.jpg`.
 
-Éléments factuels repris des jeux : Trevor Philips, ancien pilote de l'US Air
-Force devenu trafiquant d'armes et de méthamphétamine à Sandy Shores ; Jason
-Duval, ancien soldat ayant grandi en Leonida parmi les trafiquants, qui tente
-de refaire sa vie avec Lucia.
+Repères factuels : Trevor Philips, ancien pilote de l'US Air Force devenu
+trafiquant d'armes et de méthamphétamine à Sandy Shores ; Jason Duval, ancien
+soldat ayant grandi en Leonida parmi les trafiquants, qui tente de refaire sa
+vie avec Lucia.
 
 Usage :
     python3 scripts/visuels/make_gta_fiches_45.py [--out DOSSIER]
@@ -39,12 +42,14 @@ ASSETS = ROOT / "instagram/assets"
 
 W, H, S = 1080, 1350, 2
 
-INK = (12, 10, 18)
-PAPER = (247, 245, 255)
-GREY = (206, 200, 226)
+INK = (14, 10, 26)
+PAPER = (255, 255, 255)
+SOFT = (236, 231, 255)
 YELLOW = (255, 214, 25)
 CYAN = (34, 211, 238)
-VIOLET = (186, 156, 255)
+ORANGE = (255, 122, 61)
+VIOLET = (168, 132, 255)
+PINK = (255, 92, 176)
 
 FONTS = {
     "black": HERE / "fonts/Anton.ttf",
@@ -57,9 +62,7 @@ AR = {
     "regular": HERE / "fonts/Tajawal-Regular.ttf",
 }
 
-MARGIN = 56
-PANEL_TOP = 812
-
+MARGIN = 52
 LABEL = "ملف شخصي"
 
 FICHES = [
@@ -70,9 +73,12 @@ FICHES = [
         "full": "تريفور فيليبس",
         "game": "GTA V",
         "year": "2013",
-        "color": YELLOW,
-        "accent": (124, 58, 237),
         "index": "01",
+        # Dégradé « désert de Sandy Shores » : ocre, orange, magenta.
+        "sky": [(0.00, (86, 26, 74)), (0.34, (168, 54, 92)), (0.56, (236, 108, 62)), (0.72, (255, 176, 74))],
+        "accent": YELLOW,
+        "pill": (24, 16, 40),
+        "cutout": True,
         "rows": [
             ("الدور", "بطل رئيسي في GTA V"),
             ("المدينة", "ساندي شورز، سان أندرياس"),
@@ -80,21 +86,22 @@ FICHES = [
             ("العمل", "أسلحة ومخدّرات، ومهام بلا رحمة"),
             ("السمة", "عنف مفاجئ ووفاء غريب"),
         ],
-        # Buste : on ne garde que le haut du rendu (il va jusqu'aux pieds).
-        "crop": (0.0, 0.0, 1.0, 0.54),
-        "focus": 0.50,
-        "cutout": True,  # PNG détouré : pas de fond à masquer
     },
     {
         "slug": "jason",
-        "art": "gta6-pier-keyart.jpg",
+        "art": "gta6-jason-portrait.jpg",
         "name": "جيسون",
         "full": "جيسون دوفال",
         "game": "GTA VI",
         "year": "2026",
-        "color": VIOLET,
-        "accent": (12, 74, 110),
         "index": "02",
+        # Dégradé « crépuscule de Vice City » : indigo, violet, rose, cyan.
+        "sky": [(0.00, (36, 22, 82)), (0.32, (96, 44, 132)), (0.55, (196, 76, 148)), (0.74, (86, 190, 214))],
+        "accent": CYAN,
+        "pill": (16, 22, 48),
+        "cutout": False,
+        # Cadrage sur Jason seul (Lucia sort du cadre) dans la clé d'art portrait.
+        "crop": (0.40, 0.20, 1.0, 0.56),
         "rows": [
             ("الدور", "بطل رئيسي في GTA VI"),
             ("المدينة", "فايس سيتي، ليونيدا"),
@@ -102,11 +109,6 @@ FICHES = [
             ("العمل", "سرقات مع لوسيا، بحثاً عن مخرج"),
             ("السمة", "هدوء وحذر… وحياة أخرى"),
         ],
-        # Jason est au centre-droit de la clé d'art du ponton.
-        "crop": (0.478, 0.155, 0.725, 1.0),
-        "focus": 0.50,
-        "height": 764,
-        "cutout": False,  # photo : masque elliptique très doux
     },
 ]
 
@@ -137,146 +139,157 @@ def latin(im, x, y, s, size, color=PAPER, *, face="bold", tracking=0, align="lef
     return total / S
 
 
-def wash(accent, color):
-    """Fond de carte : encre + halo de la couleur du personnage."""
-    y, x = np.ogrid[:H, :W]
-    glow = np.exp(-(((x - 780) / 620) ** 2 + ((y - 380) / 520) ** 2))
-    ink = np.array(INK) + glow[..., None] * np.array([46, 26, 70])
-    tint = np.exp(-(((x - 240) / 520) ** 2 + ((y - 980) / 460) ** 2))
-    ink = ink + tint[..., None] * (np.array(accent) - np.array(INK)) * 0.30
-    grain = np.random.default_rng(3).normal(0, 0.6, (H, W, 1))
-    im = Image.fromarray(np.uint8(np.clip(ink + grain, 0, 255)), "RGB")
-    return im.resize((px(W), px(H)), Image.Resampling.BICUBIC).convert("RGBA")
-
-
-def figure(art: Image.Image, fiche):
-    """Personnage : détouré (PNG) posé sur le fond, ou photo en bande pleine largeur.
-
-    - cutout : on n'applique aucun rectangle, le PNG a déjà son alpha.
-    - photo : on la traite en BANDE qui touche les deux bords de la carte, puis
-      on éteint son haut et son bas vers l'encre. Comme elle est pleine largeur,
-      aucun bord vertical ne peut apparaître.
-    """
-    x0, y0, x1, y1 = fiche["crop"]
-    box = (round(x0 * art.width), round(y0 * art.height), round(x1 * art.width), round(y1 * art.height))
-    fig = art.crop(box)
-
-    if fiche["cutout"]:
-        target_h = px(700)
-        scale = target_h / fig.height
-        fig = fig.resize((max(1, round(fig.width * scale)), target_h), Image.Resampling.LANCZOS)
-        return fig.convert("RGBA"), fig.getchannel("A")
-
-    # Photo : bande pleine largeur (1080 px), hauteur fixée par la mise en page.
-    band_h = px(620)
-    scale = (px(W) / fig.width)
-    fig = fig.resize((px(W), max(band_h, round(fig.height * scale))), Image.Resampling.LANCZOS)
-    top_crop = max(0, round((fig.height - band_h) * 0.22))
-    fig = fig.crop((0, top_crop, px(W), top_crop + band_h))
-    fig = ImageEnhance.Brightness(fig.convert("RGB")).enhance(0.78)
-    fig = ImageEnhance.Contrast(fig).enhance(1.14)
-    fig = Image.blend(fig, Image.new("RGB", fig.size, INK), 0.18).convert("RGBA")
-
-    w, h = fig.size
-    yy, xx = np.mgrid[0:h, 0:w].astype(float)
-    alpha = np.clip(yy / (h * 0.30), 0, 1) ** 1.2
-    alpha *= np.clip((h - yy) / (h * 0.22), 0, 1) ** 0.9
-    mask = Image.fromarray(np.uint8(alpha * 255), "L").filter(ImageFilter.GaussianBlur(px(18)))
-    return fig, mask
-
-
 def wrap(text, size, max_w, face="regular"):
-    """Découpe une ligne arabe sur plusieurs lignes qui tiennent dans la carte."""
     body = ArabicText(AR[face], px(size))
     return body.wrap(text, px(max_w))
 
 
-def fiche_image(fiche):
+def backdrop(fiche):
+    """Dégradé vertical plein cadre + halo lumineux + grain (fini « affiche »)."""
+    stops = fiche["sky"]
+    ys = np.linspace(0, 1, H)
+    col = np.zeros((H, 3), dtype=float)
+    for (p0, c0), (p1, c1) in zip(stops, stops[1:]):
+        m = (ys >= p0) & (ys <= p1)
+        t = ((ys[m] - p0) / max(1e-6, p1 - p0))[:, None]
+        col[m] = np.array(c0) + (np.array(c1) - np.array(c0)) * t
+    img = np.repeat(col[:, None, :], W, axis=1)
+
+    # Grand disque lumineux : le « soleil » de l'affiche, en haut à gauche.
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    r = np.sqrt((xx - W * 0.24) ** 2 + ((yy - H * 0.06) * 1.2) ** 2)
+    glow = np.clip(1 - r / (W * 0.9), 0, 1) ** 1.8
+    img += glow[..., None] * np.array([255, 196, 120]) * 0.35
+
+    # Bandes diagonales très discrètes : texture de fond.
+    diag = ((xx + yy * 0.55) % 190) < 2
+    img[diag] = img[diag] * 0.92 + np.array([255, 255, 255]) * 0.08
+
+    img += np.random.default_rng(7).normal(0, 0.7, (H, W, 1))
+    return Image.fromarray(np.uint8(np.clip(img, 0, 255)), "RGB").resize(
+        (px(W), px(H)), Image.Resampling.BICUBIC).convert("RGBA")
+
+
+def figure(fiche):
+    """Personnage : détouré sur le dégradé (Trevor) ou photo en bande pleine largeur."""
     art = Image.open(ASSETS / fiche["art"]).convert("RGBA")
-    im = wash(fiche["accent"], fiche["color"])
-    fig, mask = figure(art, fiche)
 
-    # Halo de la couleur du personnage derrière la silhouette : elle se détache
-    # du fond sans passer par un cadre.
-    halo = Image.new("RGBA", (px(W), px(H)), (0, 0, 0, 0))
-    hd = ImageDraw.Draw(halo)
-    cx, cy, r = px(W * 0.5), px(430), px(400)
-    for k in range(24, 0, -1):
-        rr = round(r * k / 24)
-        hd.ellipse([cx - rr, cy - rr, cx + rr, cy + rr],
-                   fill=fiche["color"] + (round(10 * (1 - k / 24) ** 1.6),))
-    im = Image.alpha_composite(im, halo)
-
-    # Position : photo pleine largeur juste sous le bloc de titre ; détourage
-    # centré sur `focus`.
     if fiche["cutout"]:
-        left = round(px(W) * fiche["focus"] - fig.width / 2)
-        top = px(196)
-    else:
-        left, top = 0, px(214)
-    im.paste(fig, (left, top), mask)
+        bust = art.crop((0, 0, art.width, round(art.height * 0.56)))
+        target = px(760)
+        scale = target / bust.height
+        fig = bust.resize((max(1, round(bust.width * scale)), target), Image.Resampling.LANCZOS)
+        # Liseré clair + ombre : le rendu se détache du dégradé.
+        alpha = fig.getchannel("A")
+        shade = Image.new("RGBA", fig.size, INK + (255,))
+        shade.putalpha(alpha.filter(ImageFilter.GaussianBlur(px(16))).point(lambda v: int(v * 0.55)))
+        rim = Image.new("RGBA", fig.size, fiche["accent"] + (0,))
+        rim.putalpha(alpha.filter(ImageFilter.GaussianBlur(px(4))).point(lambda v: min(120, int(v * 0.5))))
+        out = Image.new("RGBA", fig.size, (0, 0, 0, 0))
+        out.alpha_composite(shade)
+        out.alpha_composite(rim)
+        out.alpha_composite(fig)
+        return out, None
 
-    # Voile bas + voile haut : le texte garde son contraste sur l'image.
-    veil = np.zeros((px(H), px(W), 4), dtype=float)
-    gy = np.linspace(0, 1, px(H))[:, None]
-    veil[..., :3] = np.array(INK)
-    veil[..., 3] = np.clip(np.clip((gy - 0.60) / 0.26, 0, 1) ** 1.2 * 240
-                           + np.clip((0.24 - gy) / 0.24, 0, 1) ** 1.9 * 232, 0, 240)
-    im = Image.alpha_composite(im, Image.fromarray(np.uint8(veil), "RGBA"))
-    return im
+    # Photo : bande pleine largeur qui touche les deux bords, haut et bas éteints
+    # vers le décor (aucun bord vertical visible).
+    band_h = px(700)
+    x0, y0, x1, y1 = fiche["crop"]
+    box = (round(x0 * art.width), round(y0 * art.height), round(x1 * art.width), round(y1 * art.height))
+    fig = art.crop(box)
+    scale = px(W) / fig.width
+    fig = fig.resize((px(W), max(band_h, round(fig.height * scale))), Image.Resampling.LANCZOS)
+    top = max(0, round((fig.height - band_h) * 0.20))
+    fig = fig.crop((0, top, px(W), top + band_h))
+    fig = ImageEnhance.Brightness(fig.convert("RGB")).enhance(0.94)
+    fig = ImageEnhance.Color(fig).enhance(1.12)
+    fig = fig.convert("RGBA")
+
+    w, h = fig.size
+    yy, _ = np.mgrid[0:h, 0:w].astype(float)
+    alpha = np.clip(yy / (h * 0.34), 0, 1) ** 1.35 * np.clip((h - yy) / (h * 0.30), 0, 1) ** 1.0
+    mask = Image.fromarray(np.uint8(alpha * 255), "L").filter(ImageFilter.GaussianBlur(px(16)))
+    return fig, mask
 
 
 def header(im, fiche):
-    """Surtitre + nom + jeu, alignés à droite (lecture arabe)."""
+    """Sur-titre, nom arabe, nom complet et macaron du jeu, alignés à droite."""
     x = W - MARGIN
-    ar_text(im, x, 58, LABEL, 22, YELLOW, face="bold")
-    latin(im, MARGIN, 60, f"FICHE {fiche['index']} / 02", 18, GREY, tracking=3.0)
-    ar_text(im, x, 92, fiche["name"], 104, PAPER, face="display")
-    ar_text(im, x, 216, fiche["full"], 30, GREY, face="regular")
-    # Étiquette du jeu, en pastille, sous le nom complet.
+    # Macaron du jeu, en haut à gauche : GTA V / GTA VI + année.
     label = f"{fiche['game']} · {fiche['year']}"
-    f = ImageFont.truetype(str(FONTS["semi"]), px(22))
+    f = ImageFont.truetype(str(FONTS["bold"]), px(24))
     tw = f.getlength(label) / S
     d = ImageDraw.Draw(im)
-    box = (W - MARGIN - tw - 34, 262, W - MARGIN, 306)
-    d.rounded_rectangle([px(v) for v in box], radius=px(22), fill=fiche["color"] + (255,))
-    latin(im, W - MARGIN - 17, 270, label, 22, INK, face="semi", tracking=1.2, align="right")
-    # Filet de la couleur du personnage, côté opposé.
-    d.line([(px(MARGIN), px(284)), (px(MARGIN + 96), px(284))], fill=fiche["color"], width=px(5))
+    top, bottom = 46, 92
+    d.rounded_rectangle([px(MARGIN), px(top), px(MARGIN + tw + 40), px(bottom)],
+                        radius=px(23), fill=fiche["accent"] + (255,))
+    latin(im, MARGIN + 20, top + 8, label, 24, INK, face="bold", tracking=1.4)
+    # Index de la série, en pastille cerclée juste sous le macaron du jeu.
+    idx_w = ImageFont.truetype(str(FONTS["bold"]), px(20)).getlength(f"{fiche['index']} / 02") / S
+    d.rounded_rectangle([px(MARGIN), px(104), px(MARGIN + idx_w + 34), px(146)], radius=px(21),
+                        outline=(255, 255, 255, 170), width=px(2))
+    latin(im, MARGIN + 17, 112, f"{fiche['index']} / 02", 20, PAPER, face="bold", tracking=1.6)
+
+    ar_text(im, x, 40, LABEL, 24, PAPER, face="bold")
+    ar_text(im, x, 78, fiche["name"], 118, PAPER, face="display")
+    ar_text(im, x, 214, fiche["full"], 32, SOFT, face="regular")
+    d.line([(px(x - 120), px(258)), (px(x), px(258))], fill=fiche["accent"], width=px(6))
 
 
 def panel(im, fiche):
-    """Panneau des informations : cinq lignes étiquette / valeur, en bas."""
+    """Panneau translucide flottant : cinq lignes étiquette / valeur."""
     d = ImageDraw.Draw(im)
-    top = px(PANEL_TOP)
-    d.rounded_rectangle([px(MARGIN), top, px(W - MARGIN), px(1272)], radius=px(26),
-                        fill=INK + (236,), outline=fiche["color"] + (110,), width=px(2))
-    x = W - MARGIN - 26
-    inner = W - 2 * MARGIN - 52
-    y = PANEL_TOP + 24
+    top, bottom = 792, 1244
+    d.rounded_rectangle([px(MARGIN), px(top), px(W - MARGIN), px(bottom)], radius=px(34),
+                        fill=(16, 12, 32, 205))
+    # Filet dégradé dans l'accent du personnage, sur le bord gauche du panneau.
+    for i in range(px(bottom - top - 40)):
+        a = round(255 * (1 - i / px(bottom - top - 40)) ** 2)
+        d.line([(px(MARGIN + 6), px(top + 20 + i / S)), (px(MARGIN + 6), px(top + 21 + i / S))],
+               fill=fiche["accent"] + (a,), width=px(6))
+
+    x = W - MARGIN - 30
+    inner = W - 2 * MARGIN - 84
+    y = top + 26
     for i, (label, value) in enumerate(fiche["rows"]):
-        ar_text(im, x, y, label, 17, fiche["color"], face="bold")
-        lines = wrap(value, 26, inner)
+        ar_text(im, x, y, label, 18, fiche["accent"], face="bold")
+        lines = wrap(value, 27, inner)
         for k, line in enumerate(lines):
-            ar_text(im, x, y + 28 + k * 40, line, 26, PAPER, face="regular")
-        y += 28 + len(lines) * 40 + 16
+            ar_text(im, x, y + 28 + k * 42, line, 27, PAPER, face="regular")
+        y += 28 + len(lines) * 42 + 16
         if i < len(fiche["rows"]) - 1:
-            d.line([(px(MARGIN + 26), px(y - 12)), (px(W - MARGIN - 26), px(y - 12))],
-                   fill=(70, 58, 104, 180), width=px(1))
+            d.line([(px(MARGIN + 34), px(y - 12)), (px(W - MARGIN - 30), px(y - 12))],
+                   fill=(255, 255, 255, 46), width=px(1))
 
 
 def footer(im, fiche):
-    y = 1296
+    d = ImageDraw.Draw(im)
+    y = 1272
+    d.rounded_rectangle([px(MARGIN), px(y), px(W - MARGIN), px(1318)], radius=px(23),
+                        fill=(16, 12, 32, 170))
     logo = Image.open(ROOT / "public/lets-play-logo.png").convert("RGBA")
     logo = logo.crop(logo.getchannel("A").getbbox())
-    logo.thumbnail((px(92), px(66)), Image.Resampling.LANCZOS)
-    im.alpha_composite(logo, (px(MARGIN), px(y)))
-    latin(im, MARGIN + 96, y + 10, "L’info jeu vidéo, sans filtre", 16, GREY, face="semi", tracking=0.6)
-    ar_text(im, W - MARGIN, y, "صور رسمية من روكستار غيمز", 16, GREY, face="regular")
+    logo.thumbnail((px(78), px(56)), Image.Resampling.LANCZOS)
+    im.alpha_composite(logo, (px(MARGIN + 16), px(y + 12)))
+    latin(im, MARGIN + 104, y + 20, "L’info jeu vidéo, sans filtre", 17, SOFT, face="semi")
+    ar_text(im, W - MARGIN - 18, y + 16, "صور رسمية من روكستار غيمز", 16, SOFT, face="regular")
 
 
 def build(fiche):
-    im = fiche_image(fiche)
+    im = backdrop(fiche)
+    fig, mask = figure(fiche)
+    if mask is None:
+        left = round(px(W) * 0.46 - fig.width / 2)
+        top = px(212)
+        im.alpha_composite(fig, (left, top))
+    else:
+        im.paste(fig, (0, px(214)), mask)
+    # Fondu bas : le panneau doit se poser sur une zone calme.
+    fade = Image.new("L", (px(W), px(H)), 0)
+    fd = ImageDraw.Draw(fade)
+    for i in range(px(420)):
+        fd.line([(0, px(H) - 1 - i), (px(W), px(H) - 1 - i)], fill=round(200 * (1 - i / px(420)) ** 1.4))
+    im.paste(Image.new("RGBA", (px(W), px(H)), (18, 10, 34, 255)), (0, 0), fade)
     header(im, fiche)
     panel(im, fiche)
     footer(im, fiche)
