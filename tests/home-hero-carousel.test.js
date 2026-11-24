@@ -11,15 +11,15 @@ import { HERO_SLIDE_MS, heroSlides, heroFallbackImage } from '../src/theme/homeH
 const root = new URL('../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), 'utf8');
 
-test('diaporama : quatre visuels, 2,5 secondes, ordre Phantom → Dawnwalker → Zelda → Cyberpunk', () => {
+test('diaporama : cinq visuels, 2,5 secondes, ordre Phantom → Dawnwalker → Zelda → Cyberpunk → GTA VI', () => {
   assert.equal(HERO_SLIDE_MS, 2500);
   assert.deepEqual(
     heroSlides.map((slide) => slide.id),
-    ['phantom-blade-zero', 'dawnwalker', 'zelda', 'cyberpunk'],
+    ['phantom-blade-zero', 'dawnwalker', 'zelda', 'cyberpunk', 'gta-vi'],
   );
   assert.deepEqual(
     heroSlides.map((slide) => slide.label),
-    ['Phantom Blade Zero', 'The Blood of Dawnwalker', 'The Legend of Zelda', 'Cyberpunk'],
+    ['Phantom Blade Zero', 'The Blood of Dawnwalker', 'The Legend of Zelda', 'Cyberpunk', 'Grand Theft Auto VI'],
   );
 });
 
@@ -40,11 +40,11 @@ test('diaporama : chaque visuel a sa variante portrait et un fichier présent', 
 test('diaporama : seul le visuel lumineux demande un voile renforcé', () => {
   assert.deepEqual(
     heroSlides.map((slide) => slide.light),
-    [false, false, true, false],
+    [false, false, true, false, false],
   );
 });
 
-test('accueil : le héros monte les quatre visuels et fait tourner l’index toutes les 2,5 s', () => {
+test('accueil : le héros monte les cinq visuels et fait tourner l’index toutes les 2,5 s', () => {
   const home = read('src/pages/Home.jsx');
   assert.match(home, /import \{ HERO_SLIDE_MS, heroFallbackImage, heroSlides \} from '\.\.\/theme\/homeHero';/);
   assert.match(home, /heroSlides\.map\(/);

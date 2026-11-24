@@ -1,7 +1,7 @@
 /**
  * DIAPORAMA DU HÉROS — ACCUEIL
  * --------------------------------------------------------------------------
- * Le héros de l'accueil fait défiler quatre visuels fournis par le propriétaire
+ * Le héros de l'accueil fait défiler cinq visuels fournis par le propriétaire
  * du site, en fondu enchaîné automatique toutes les 2,5 secondes :
  *
  *   1. Phantom Blade Zero — key art officiel déjà en place (reste le premier) ;
@@ -9,7 +9,8 @@
  *      l'image à la demande du propriétaire (le site affiche son propre titre
  *      dans le héros : le logotype du jeu doublonnait) ;
  *   3. The Legend of Zelda — key art fourni (Link et la fée dans la forêt) ;
- *   4. Cyberpunk — visuel fourni, titre d'origine retiré de l'image.
+ *   4. Cyberpunk — visuel fourni, titre d'origine retiré de l'image ;
+ *   5. Grand Theft Auto VI — key art fourni.
  *
  * Les fichiers sources d'origine (`launch-art-fhd.jpg`, `1414762.png`) ne sont
  * pas versionnés : `public/*-hero*.jpg` contient les recadrages 16:9 (bureau)
@@ -78,6 +79,15 @@ export const heroSlides = [
     portrait: asset('cyberpunk-hero-portrait.jpg'),
     // Visuel cyberpunk fourni : le titre d'origine a été retiré de l'image
     // (le héros affiche son propre titre). Scène sombre : voile standard.
+    light: false,
+  },
+  {
+    id: 'gta-vi',
+    label: 'Grand Theft Auto VI',
+    image: asset('gta-vi-hero.jpg'),
+    portrait: asset('gta-vi-hero-portrait.jpg'),
+    // Key art Grand Theft Auto VI fourni : scène lumineuse / néon. Voile
+    // standard (le titre du héros reste lisible).
     light: false,
   },
 ];
