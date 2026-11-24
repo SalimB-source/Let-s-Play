@@ -180,7 +180,7 @@ recadrage ne coupe les visages), suivie de la question arabe
 repères factuels et du pied jaune « شاركنا تجربتك في التعليقات ». En-tête :
 logo Let's Play + logo GTA VI.
 
-L'illustration (`instagram/assets/gta6-fuite-tempete.jpg`) est **originale**,
+L'illustration (`instagram/assets/gta6-fuite-tempete-3d.jpg`, rendu 3D) est **originale**,
 dans l'esprit des key arts du jeu : elle est créditée comme telle dans l'affiche
 (« رسم توضيحي مستوحى من عالم اللعبة »), pas comme une capture officielle.
 

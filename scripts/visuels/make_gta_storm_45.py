@@ -19,9 +19,9 @@ Composition « plein cadre » du gabarit Let's Play :
 Le texte est en arabe (droite → gauche), composé avec HarfBuzz via
 `arabic_text.py` ; seuls les nombres et « GTA VI » restent en latin.
 
-Visuel : `instagram/assets/gta6-fuite-tempete.jpg` (illustration originale dans
-l'esprit des key arts de *GTA VI*, pas une capture officielle — elle est donc
-créditée comme illustration, pas comme image Rockstar).
+Visuel : `instagram/assets/gta6-fuite-tempete-3d.jpg` — rendu 3D photoréaliste
+original (pas une capture officielle : il est donc crédité comme illustration,
+pas comme image Rockstar).
 
 Usage :
     python3 scripts/visuels/make_gta_storm_45.py [--out DOSSIER]
@@ -118,7 +118,7 @@ def base():
 
 def artwork():
     """Illustration entière, sans recadrage : les deux visages restent dans le cadre."""
-    art = Image.open(ASSETS / "gta6-fuite-tempete.jpg").convert("RGB")
+    art = Image.open(ASSETS / "gta6-fuite-tempete-3d.jpg").convert("RGB")
     w, h = WINDOW[2] - WINDOW[0], WINDOW[3] - WINDOW[1]
     art = art.resize((px(w), px(h)), Image.Resampling.LANCZOS)
     art = ImageEnhance.Color(art).enhance(1.06)
