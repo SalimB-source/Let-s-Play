@@ -540,10 +540,10 @@ function executerIntention(duel, cote, intention) {
     case 'activer': {
       const entite = duel[cote]?.creatures?.find((candidat) => candidat.id === intention.entiteId);
       if (!entite) return { ok: false, raison: 'entite-inconnue' };
-      if (intention.arme || entite.armeId || (entite.arme && intention.options && !intention.capacite)) {
+      if (intention.arme || (!intention.capacite && (entite.armeId || (entite.arme && intention.options)))) {
         return rpgActiverArme(duel, cote, intention.entiteId, intention.options ?? {});
       }
-      return rpgActiverCapacite(duel, cote, intention.entiteId, intention.cibleId ?? null) ?? { ok: true };
+      return rpgActiverCapacite(duel, cote, intention.entiteId, intention.cibleId ?? null, { zone: intention.zone ?? null, armeCarteId: intention.armeCarteId ?? null, championId: intention.championId ?? null }) ?? { ok: true };
     }
     case 'attaquer': {
       // Une intention ne peut déclarer qu'une seule attaque, jamais la

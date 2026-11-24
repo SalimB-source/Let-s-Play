@@ -183,7 +183,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['baton-des-citernes'],
     title: 'Les capacités activées',
-    text: 'Une capacité activée peut être utilisée sans payer de mana. Ses autres conditions et coûts, par exemple des compteurs ou une cible légale, restent applicables.',
+    text: 'Une capacité activée de créature peut être utilisée une seule fois par présence en jeu, sans payer de mana. Une créature qui quitte le jeu puis revient peut de nouveau activer son effet. Ses autres conditions et coûts, par exemple des points de vie ou une cible légale, restent applicables.',
   },
   {
     id: 'tenacite',

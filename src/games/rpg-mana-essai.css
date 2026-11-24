@@ -753,11 +753,7 @@
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone small {
   display: none;
 }
-/* Le coin haut droit déjà pris — losanges de compteurs d'une hybride, ou
-   bouton de capacité activée — : la colonne passe dessous. */
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--sous-activation {
-  top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 3cqw);
-}
+/* Quand les losanges de compteurs occupent le coin, la colonne passe dessous. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--sous-compteurs {
   top: calc(5% + var(--rpg-card-marker-size, 27cqw) + 6cqw + clamp(8px, calc(var(--rpg-card-marker-size, 27cqw) * .58), 18px) * 1.3);
 }

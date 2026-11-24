@@ -51,7 +51,7 @@ import { rpgAttaqueTousMobaDisponible, rpgVagueDirecteMoba } from './rpgAttaqueT
 import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgSouffreMalInvocation, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgNombreBlessures, rpgBlessuresDepuis, rpgRenvoisEnMain, rpgExils, rpgConsommerSoins, rpgConsommerPresentations, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
 import {
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, MOBA_DECKS, rpgMobaValiderDeck, MOBA_ARMES, MOBA_CONTRESORTS, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_HOSTILES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_NEUTRES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_VOIES, MOBA_MAGIES_SOINS, MOBA_MAGIES_PRIX, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_ZONE_REPONSE, MOBA_MAGIES_ZONE_TOTALE_REPONSE, MOBA_MAGIES_RENFORT_REPONSE, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCiblesPrise, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaCiblesAttaque, rpgMobaDeclarerAttaque, rpgMobaDeclarerBlocages, rpgMobaDefausser, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaJouerCreature, rpgMobaJouerArme,
-  rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan,
+  rpgMobaActiverCapacite, rpgMobaChoixActivation, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan,
   rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserFinDeTour, rpgMobaPeutPayer, rpgMobaSacrificesInvocation, rpgMobaResoudreArrivee, rpgMobaTerminerTour,
 } from './rpgMobaLocal.js';
 import RpgMobaDeckEditor from './RpgMobaDeckEditor.jsx';
@@ -62,7 +62,7 @@ import { MOBA_PLATEAUX, MOBA_PLATEAU_PAR_DEFAUT } from './rpgMobaPlateaux.js';
 import { MOBA_HISTOIRE, prochainChapitreMoba } from './rpgMobaHistoire.js';
 import { RpgConqueteMusic } from './rpgConqueteMusic.js';
 import { choisirDefausseIA, choisirMulliganIA } from './rpgAI.js';
-import { rpgMobaChoisirAttaqueIndividuelleIA, rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA, rpgMobaChoisirEmbuscadeIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA } from './rpgMobaAI.js';
+import { rpgMobaChoisirActivationIA, rpgMobaChoisirAttaqueIndividuelleIA, rpgMobaChoisirRechercheIA, rpgMobaChoisirSiteIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA, rpgMobaChoisirEmbuscadeIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA } from './rpgMobaAI.js';
 import './rpg-moba.css';
 import './rpgMobaHistoire.css';
 
@@ -230,6 +230,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const [duel, setDuel] = useState(initialiser);
   const [version, redraw] = useReducer((n) => n + 1, 0);
   const [carte, setCarte] = useState(null);
+  const [activationSource, setActivationSource] = useState(null);
   const [sacrificesChoisis, setSacrificesChoisis] = useState([]);
   // Prix d'invocation payé depuis la main plutôt que sur les voies.
   // Le prix d'invocation se choisit dans la main : les cartes cochées
@@ -998,6 +999,16 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier');
     setCarte(null); setEtape(duel.mobaCreatureEnAttente ? 'reponse-creature' : duel.mobaSortEnAttente ? 'reponse-sort' : duel.effetCreatureEnAttente ? 'reponse-arrivee' : duel.finDeTour ? 'fin' : embuscadeCombat && duel.combatDeclare ? 'blocage' : 'tour');
   };
+  const activerCapacite = (side, sourceId, choix) => {
+    const avant = instantaneDestructions();
+    const result = rpgMobaActiverCapacite(duel, side, sourceId, choix);
+    if (!afficherResultat(result)) return;
+    montrerDestructions(avant);
+    if (result.damageEvents?.length) setEvents(result.damageEvents);
+    if (result.healingEvents?.length) setSoinsVoies(result.healingEvents);
+    setActivationSource(null); setCarte(null); setAttaquants([]); setCible(null);
+    if (result.effetEnAttente) setEtape('reponse-arrivee');
+  };
   const choisirRecherche = (side, id, index) => {
     const avant = instantaneDestructions();
     const decksAvant = ['joueur', 'sorcier'].map(c => duel[c].deck.length);
@@ -1350,7 +1361,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     declarer(prochaine.id, null, prochaine.voie);
   };
 
-  const nouvellePartie = (partie = null) => { rituelSacrificeRef.current = null; setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setChoixCoutDemande(null); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerSecousseEcran(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
+  const nouvellePartie = (partie = null) => { rituelSacrificeRef.current = null; setActivationSource(null); setPageMain(0); setPageJournal(0); setVueJournal('texte'); setApercu(null); setCimetiere(null); setConfirmerSortie(false); setDuel(partie ?? initialiser()); setCarte(null); setSacrificesChoisis([]); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setCibleVoieEnCours(null); setBlocages({}); setCible(null); setEtape(partie || initialiser !== nouveau ? 'mulligan' : 'choix'); setMulliganIndices([]); setErreur(''); setChoixCoutDemande(null); setIaBloquee(false); setPrixLane(null); setCibleSortPrimaire(null); setEvents([]); setSoinsVoies([]); effacerSoinsCreatures(); effacerBoucliers(); effacerEntrees(); effacerConquetes(); effacerSorties(); effacerRetoursExil(); setAnnonceSort(null); setAnnoncesApercues([]); setSortFx({}); setCombatFx({}); effacerRetoursCombat(); effacerImpactsIndividuels(); effacerRipostes(); effacerProjectiles(); effacerSignatures(); effacerChocs(); effacerSecousseEcran(); effacerParades(); setFantomes([]); setCerclesSacrifice([]); };
   const demarrerHistoire = () => {
     const deck = modeHistoire && deckCampagneRef.current ? deckCampagneRef.current : deckPour('joueur');
     if (!deck || !rpgMobaValiderDeck(deck).ok) return;
@@ -1440,9 +1451,11 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         const result = rpgMobaDefausser(duel, 'sorcier', choisirDefausseIA(duel, 'sorcier'));
         if (afficherResultat(result) && !result.restant && finDeTour) finTour();
       } else if (etape === 'tour') {
+          const activationIA = rpgMobaChoisirActivationIA(duel);
           const creature = rpgMobaChoisirCreatureIA(duel);
           const magie = rpgMobaChoisirMagieIA(duel);
-          if (magie && (!creature || magie.score >= 35)) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
+          if (activationIA) activerCapacite('sorcier', activationIA.sourceId, activationIA.choix);
+          else if (magie && (!creature || magie.score >= 35)) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
           else if (creature) {
             const choixCreature = creature;
             const avant = instantaneDestructions();
@@ -1820,6 +1833,20 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       </section>)}
     </div></div></div>
     {annonceSort && rendu?.SpellAnnouncement && <div className="rpg-spell-played-stack moba__spell-stack" key={annonceSort.token}><rendu.SpellAnnouncement annonce={annonceSort} camp={annonceSort.camp} nomLanceur={noms[annonceSort.camp]} /></div>}
+    {etape === 'tour' && actif === 'joueur' && !fini && !defausse && !destruction && !site && !recherche && !carte && !selectionAscension.rituel && <section className="moba__controls" aria-label="Capacités des créatures">
+      <div className="moba__buttons">
+        {!activationSource ? duel.joueur.creatures.filter(e => rpgMobaChoixActivation(duel, 'joueur', e.id).length > 0).map(e =>
+          <button type="button" key={e.id} onClick={() => { setActivationSource(e.id); setAttaquants([]); setCible(null); }}>Activer {e.name}</button>)
+          : <><strong>Choisissez les cibles de {duel.joueur.creatures.find(e => e.id === activationSource)?.name} :</strong>
+            {rpgMobaChoixActivation(duel, 'joueur', activationSource).map(choix => {
+              const cible = [...duel.joueur.creatures, ...duel.sorcier.creatures].find(e => e.id === choix.cibleId);
+              const champion = duel.joueur.creatures.find(e => e.id === choix.championId);
+              const nomVoie = e => { const cote = duel.joueur.creatures.includes(e) ? 'joueur' : 'sorcier'; const voie = duel.moba.lanes.find(l => l.slots[cote].includes(e?.id)); return voie ? `${voies[voie.id]}, case ${voie.slots[cote].indexOf(e.id) + 1}` : ''; };
+              return <button type="button" key={`${choix.cibleId}:${choix.championId ?? choix.armeCarteId}`} onClick={() => activerCapacite('joueur', activationSource, choix)}>{choix.cibleId === null ? 'Résoudre la capacité' : champion ? `${champion.name} (${nomVoie(champion)}) contre ${cible?.name} (${nomVoie(cible)})` : `${cardById(choix.armeCarteId)?.name} → ${cible?.name} (${nomVoie(cible)})`}</button>;
+            })}
+            <button type="button" onClick={() => setActivationSource(null)}>Annuler</button></>}
+      </div>
+    </section>}
     <div className="moba__controls" inert={selectionAscension.rituel ? true : undefined}><div className="moba__phase"><span>✦</span><div><small>VOTRE STRATÉGIE</small><strong>{etape === 'arrivee' ? 'Choix de la cible' : etape === 'reponse-creature' ? 'Réponse à la créature' : etape === 'reponse-sort' ? 'Réponse au sort' : etape === 'reponse-arrivee' ? 'Réponse à la capacité' : etape === 'fin' ? 'Réponse de fin de tour' : etape === 'blocage' ? 'Réponse à l’attaque' : defausse ? 'Défausse' : duel.attaqueJouee === actif ? 'Après le combat' : 'Phase principale'}</strong></div></div>{duel.brouillardCombat && <abbr className="moba__fog" title="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour." aria-label="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour">☁<span> Voile</span></abbr>}{camp.prochaineArriveeAbordage && <abbr className="moba__boarding" title="La prochaine créature jouée ce tour a Abordage." aria-label="La prochaine créature jouée ce tour a Abordage">⚓<span> Abordage</span></abbr>}{rendu?.PhaseTrack && <div className="moba__phase-track"><rendu.PhaseTrack current={phaseVisuelle} jouees={[]} steps={MOBA_PHASE_STEPS} ariaLabel="Repères du tour MOBA" currentSuffix="repère actuel" /></div>}<div className="moba__buttons">
       {annonceRepondable && !apercuAnnonceOuvert && <button type="button" ref={boutonRevoirAnnonce} aria-label={`Voir l’annonce de ${carteAnnonce.name}`} onClick={() => setAnnoncesApercues((anciennes) => anciennes.filter((item) => item !== attenteAnnonce))}>Voir l’annonce</button>}
       {destruction || site ? null : etape === 'tour' ? <>{attaqueTousDisponible && <button type="button" className="moba__attack-all" data-attaque-directe="tous" onClick={lancerAttaqueTous}>Attaquer avec tous ({vagueAttaqueTous.length})</button>}{cibleRapideEnCours && cibleVoieEnCours && <div role="group" aria-label="Choisir la voie de l’attaque"><span>Choisissez la voie de cette attaque :</span>{mobaVoiesCombat(duel.moba, getEntity(actif, cibleRapideEnCours)?.mobaLane).filter((voie) => rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, voie).cibles.includes(cibleVoieEnCours)).map((voie) => <button key={voie} type="button" onClick={() => declarer(cibleRapideEnCours, cibleVoieEnCours, voie)}>{voies[voie]}</button>)}<button type="button" onClick={() => setCibleVoieEnCours(null)}>Changer de cible</button></div>}

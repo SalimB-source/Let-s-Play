@@ -3,12 +3,12 @@
  * preconstructed or validated custom decks from an audited pool; most card
  * effects and online play are not yet supported. Never bypass the audit gate.
  */
-import { armeById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
+import { armeById, cardById, carteEstArme, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
 import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale } from './rpgMobaAttaqueIndividuelle.js';
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import { candidatsRenfortChoisi } from './rpgRenforts.js';
 import {
-  rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
+  rpgPeutActiverCapacite, rpgCiblesActivationLegales, rpgChampionsActivationLegales, rpgActiverCapacite, rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgResoudreEchangeIndividuelMoba, rpgRessacMobaArrivee, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgPresenterRechercheMoba,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
@@ -711,7 +711,7 @@ export function rpgMobaPasserEffetCreature(duel, side) {
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   const attente = duel.effetCreatureEnAttente;
   if (!MOBA_SIDES.includes(side) || !attente || side === attente.cote || (attente.cote !== duel.tour && !duel.mobaEmbuscadeArrivee)
-    || ![...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(attente.carteId) || !duel.fenetreReponse || duel.destructionsEnAttente?.length) return fail('aucun-effet');
+    || !(attente.type === 'activation' || [...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(attente.carteId)) || !duel.fenetreReponse || duel.destructionsEnAttente?.length) return fail('aucun-effet');
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
   const result = rpgResoudreEffetCreatureEnAttente(duel, side);
@@ -928,6 +928,54 @@ function observerRetour(damageEvents, healingEvents) {
   };
 }
 
+/** Choix Conquête audités : effets de pioche et capacités à deux désignations.
+ * Le centre partage les deux voies actives, sans confondre voie et case physique. */
+export function rpgMobaChoixActivation(duel, side, sourceId) {
+  if (!duel?.moba || !MOBA_SIDES.includes(side) || !rpgMobaPlacementCoherent(duel)
+    || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul || duel.tour !== side
+    || !duel.manaEssaiDemarre || !['principale', 'principale2'].includes(duel.phase)
+    || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.moba.centerChoice
+    || duel.mobaRechercheEnAttente || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente
+    || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length
+    || duel.defausseEnAttente || duel.siteEnAttente || duel.renfortChoixEnAttente
+    || duel.annonce || duel.boualemEnAttente || duel[side].manaChoixEnAttente) return [];
+  const source = duel[side].creatures.find(e => e.id === sourceId);
+  const effet = duelCardById(source?.carteId)?.activation?.effet;
+  const sansCible = ['rapport-du-greffier', 'les-feuillets', 'le-routier', 'lettre-de-marque'].includes(duelCardById(source?.carteId)?.activation?.sortAssocie);
+  if (!source || (!sansCible && !['combat', 'equiper-cimetiere'].includes(effet?.type)) || !rpgPeutActiverCapacite(duel, side, sourceId)) return [];
+  if (MOBA_SIDES.some(c => duel[c].creatures.some(e => !combatAudite(e) || !equipementAudite(e) || !caleAuditee(duel, c, e)))) return [];
+  if (sansCible) return [{ cibleId: null }];
+  const enJeu = (c, e) => duel.moba.lanes.some(l => mobaVoieJouable(duel.moba, c, l.id) && l.slots[c].includes(e.id));
+  const cibles = new Set(rpgCiblesActivationLegales(duel, side, sourceId) ?? []);
+  if (effet.type === 'combat') {
+    const champions = new Set(rpgChampionsActivationLegales(duel, side, sourceId));
+    const adv = side === 'joueur' ? 'sorcier' : 'joueur';
+    return duel[side].creatures.filter(e => champions.has(e.id) && enJeu(side, e)).flatMap(champion =>
+      duel[adv].creatures.filter(e => cibles.has(e.id) && enJeu(adv, e) && mobaPartageVoie(duel.moba, champion.mobaLane, e.mobaLane))
+        .map(cible => ({ championId: champion.id, cibleId: cible.id })));
+  }
+  // Le Bâton crée un jeton à son attachement : son placement explicite n'est
+  // pas encore adapté à cette voie d'entrée. Ne pas corrompre les cases.
+  const armes = [...new Set(duel[side].cimetiere)].filter(id => id !== 'baton-des-citernes' && (MOBA_ARMES.includes(id) || id === 'sabre-maudit') && carteEstArme(cardById(id)));
+  return duel[side].creatures.filter(e => cibles.has(e.id) && enJeu(side, e)).flatMap(porteur =>
+    armes.filter(id => !rpgEstProtegee(porteur, cardColors(cardById(id))))
+      .map(armeCarteId => ({ cibleId: porteur.id, armeCarteId })));
+}
+
+/** Annonce payée uniquement après validation de tous les choix. */
+export function rpgMobaActiverCapacite(duel, side, sourceId, choix = {}) {
+  const legal = rpgMobaChoixActivation(duel, side, sourceId).some(c => c.cibleId === choix.cibleId
+    && (c.championId ?? null) === (choix.championId ?? null) && (c.armeCarteId ?? null) === (choix.armeCarteId ?? null));
+  if (!legal) return fail('cible');
+  rpgConsommerSoinsCreatureMoba(duel); rpgConsommerDegatsCapaciteMoba(duel);
+  const result = rpgActiverCapacite(duel, side, sourceId, choix.cibleId,
+    { championId: choix.championId ?? null, armeCarteId: choix.armeCarteId ?? null, attendreReponse: true, optionsMobaValide: true });
+  const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
+  const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
+  if (result.ok) synchroniserSorties(duel);
+  return { ...result, healingEvents, damageEvents };
+}
+
 /** Printed weapons attach only to a legal allied bearer in an active lane.
  * The paid announcement shares the existing response window, but remains an
  * armament (only a counter targeting a card can counter it, not a spell). */
@@ -978,7 +1026,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   const reaction = (auteurImbrique && side !== auteurImbrique) || (duel.tour !== side && (
     (duel.phase === 'blocage' && duel.combatDeclare?.cote === duel.tour)
     || (duel.phase === 'fin' && duel.finDeTour?.cote === duel.tour && duel.fenetreReponse)
-    || (duel.effetCreatureEnAttente?.cote === duel.tour && [...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(duel.effetCreatureEnAttente?.carteId) && duel.fenetreReponse)
+    || (duel.effetCreatureEnAttente?.cote === duel.tour && (duel.effetCreatureEnAttente?.type === 'activation' || [...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(duel.effetCreatureEnAttente?.carteId)) && duel.fenetreReponse)
     || (duel.mobaSortEnAttente?.cote === duel.tour && duel.fenetreReponse)
     || (duel.mobaCreatureEnAttente?.cote === duel.tour && duel.fenetreReponse)
   ));

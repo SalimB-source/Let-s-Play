@@ -10,9 +10,40 @@ import { rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgEstProtegee, rpgReglerHasa
 import {
   MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES,
   MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaResoudreRecherche, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
+  rpgMobaChoixActivation, rpgMobaResoudreRecherche, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaSacrificesInvocation, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
 } from './rpgMobaLocal.js';
+
+/** N'engager l'activation que si l'échange ou l'équipement est favorable. */
+export function rpgMobaChoisirActivationIA(duel, side = 'sorcier') {
+  let meilleur = null;
+  for (const source of duel[side].creatures) {
+    for (const choix of rpgMobaChoixActivation(duel, side, source.id)) {
+      const cible = [...duel.joueur.creatures, ...duel.sorcier.creatures].find(e => e.id === choix.cibleId);
+      let score = 0;
+      if (choix.cibleId === null) {
+        const type = cardById(source.carteId)?.activation?.effet?.type;
+        if (['pioche', 'pioche-defausse'].includes(type)) score = duel[side].deck.length && duel[side].main.length <= 5 ? 3 : 0;
+        else if (type === 'defaussePaquet') score = duel[autre(side)].deck.length ? 2 : 0;
+        else if (type === 'prochaine-arrivee-abordage') score = !duel[side].prochaineArriveeAbordage && (duel[side].deck.length || duel[side].main.some(id => ['creature', 'hero'].includes(cardById(id)?.kind))) ? 3 : 0;
+      } else if (choix.championId) {
+        const champion = duel[side].creatures.find(e => e.id === choix.championId);
+        if (!champion || !cible || cible.bouclier || cible.bouclierLumiere) continue;
+        const donne = champion.gelToursRestants > 0 ? 0 : Math.max(0, champion.atk || 0);
+        const recoit = cible.gelToursRestants > 0 ? 0 : Math.max(0, cible.atk || 0);
+        score = Math.min(donne, cible.pv) + (donne >= cible.pv ? valeurCreature(cible) : 0)
+          - Math.min(recoit, champion.pv) - (recoit >= champion.pv ? valeurCreature(champion) : 0);
+      } else {
+        const arme = cardById(choix.armeCarteId);
+        const prix = Math.max(0, Number(arme?.blessurePorteur) || 0) + Math.max(0, -(Number(arme?.effet?.def) || 0));
+        if (!cible || cible.pv <= prix) continue;
+        score = 3 + (Number(arme?.bonus?.atk) || 0) + (Number(arme?.bonus?.def) || 0);
+      }
+      if (score > 0 && (!meilleur || score > meilleur.score)) meilleur = { sourceId: source.id, choix, score };
+    }
+  }
+  return meilleur;
+}
 
 /** Choisir un renfort en évaluant ses effets réels sur une copie du plateau.
  * Une recherche qui ajoute à la main reste distincte : elle ne met encore

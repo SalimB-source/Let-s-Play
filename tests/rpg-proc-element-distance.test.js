@@ -187,9 +187,10 @@ test('un effet activé dépensé grise la créature et ferme le bouton', () => {
   assert.equal(rpgActiverCapacite(d, 'joueur', eirik.id).raison, 'deja-activee');
   assert.deepEqual(effetsEpuisesPourEntite(carte, eirik), ['activation'], 'la fiche le dit au survol');
   rpgFinDeTour(d);
-  rpgFinDeTour(d); // le tour du joueur revient : l'effet se recharge
+  rpgFinDeTour(d); // le tour du joueur revient, mais l'effet reste dépensé
   assert.equal(eirik.activationUtiliseeCeTour, false);
-  assert.equal(rpgPeutActiverCapacite(d, 'joueur', eirik.id), true);
+  assert.equal(eirik.activationUtiliseeMatch, true);
+  assert.equal(rpgPeutActiverCapacite(d, 'joueur', eirik.id), false);
 });
 
 test('la table grise la peinture et ouvre le rognage le temps du menu d’effet', () => {
@@ -206,5 +207,5 @@ test('la table grise la peinture et ouvre le rognage le temps du menu d’effet'
   // Effet activé dépensé : la créature grise, ses chiffres restent lisibles.
   assert.match(jsx, /activationEpuisee \? 'is-activation-epuisee' : ''/u);
   assert.match(css, /\.rpg-card\.is-activation-epuisee \.rpg-card__img\s*\{[^}]*grayscale\(/u);
-  assert.match(jsx, /effet activé déjà utilisé ce tour/u);
+  assert.match(jsx, /effet activé déjà utilisé pendant cette présence/u);
 });

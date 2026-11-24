@@ -12,6 +12,8 @@
  * aucune importation du moteur, donc aucun cycle.
  */
 
+import { zoneFormeCarte } from './rpgZoneCartes.js';
+
 /** Les portées de zone, dans les mots de la table. */
 const CIBLES_ZONE = Object.freeze({
   'toutes-creatures': 'toutes les créatures',
@@ -81,28 +83,47 @@ export function texteEffetActivation(effet = {}) {
             : 'Vos créatures';
       const duree = Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : '';
       const stats = `${signe(effet.atk)}/${signe(effet.def)}`;
+      if (effet.caleOccupeeSeulement) return `Vos créatures dont la cale est occupée gagnent ${stats} et Overkill${duree}.`;
+      const motsCles = `${effet.tribut ? ` et Tribut ${effet.tribut}` : ''}${effet.overkill ? ' et Overkill' : ''}`;
       const plancher = Number.isFinite(effet.minimum) ? `, aucune ne tombe sous ${effet.minimum}` : '';
       if (!sujet) return `Elle gagne ${stats}${duree}.`;
-      return `${sujet} gagne${sujet.startsWith('Une') ? '' : 'nt'} ${stats}${duree}${plancher}.`;
+      return `${sujet} gagne${sujet.startsWith('Une') ? '' : 'nt'} ${stats}${motsCles}${duree}${plancher}.`;
     }
     case 'debuff': {
       const plancher = Number.isFinite(effet.minimum) ? `, son attaque ne descend pas sous ${effet.minimum}` : '';
-      return `La créature ciblée gagne ${signe(effet.atk)}/${signe(effet.def)}${Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : ''}${plancher}.`;
+      return `La créature ciblée gagne ${signe(effet.atk)}/${signe(effet.def)}${Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : ''}${plancher}${effet.exilEnMourant ? ' ; si sa défense tombe sous 1, elle est exilée' : ''}.`;
     }
     case 'pioche':
       return `Piochez ${nombreCartes(montant)}.`;
     case 'pioche-defausse':
       return `Piochez ${Number(effet.pioche) || 0} carte${cartes(Number(effet.pioche) || 0)}, puis défaussez-en ${Number(effet.defausse) || 0}.`;
     case 'transfert':
-      return `Le sorcier adverse perd ${montant} PV et vous en gagnez ${montant}.`;
+      return `Le sorcier adverse perd ${montant} PV et vous en gagnez ${montant}${effet.pioche ? `, puis piochez ${nombreCartes(Number(effet.pioche))}` : ''}.`;
     case 'defausse-adverse':
       return 'L’adversaire défausse une carte.';
     case 'defaussePaquet':
       return `Les ${montant} cartes du dessus du paquet adverse partent au cimetière.`;
+    case 'renfort-ascension':
+      if (effet.zone === 'deck') return 'Invoquez spécialement le premier Élémental Sable de coût 4 depuis le dessus de votre pioche.';
+      return 'Invoquez spécialement depuis votre main jusqu’à deux Djinns Braise : le premier de coût 1, puis le premier de coût 3.';
+    case 'renfort-choisi':
+      if (effet.dessus) return 'Parmi les trois cartes du dessus du deck, invoquez spécialement une créature Eau de coût 3 ou moins choisie ; placez les autres dessous, dans l’ordre.';
+      if (effet.ephemere) return 'Invoquez spécialement une créature Braise de coût 3 choisie dans votre main ; détruisez-la à la fin du tour.';
+      return 'Invoquez spécialement une créature de coût 5 choisie dans votre main.';
+    case 'reanimation':
+      return effet.sansAscension ? 'Réanimez une créature Ténèbres non-Ascension de coût 3 ou moins choisie dans votre cimetière.' : 'Réanimez une créature choisie dans votre cimetière.';
+    case 'destruction-totale':
+      return 'Détruisez toutes les créatures des deux camps.';
+    case 'prochaine-arrivee-abordage':
+      return 'La prochaine créature jouée ce tour gagne Abordage au seuil de son coût moins un. Piochez une carte.';
     case 'destruction-cible':
       if (Number.isFinite(effet.coutMax)) return `Détruisez une créature ciblée de coût ${effet.coutMax} ou moins.`;
       if (Number.isFinite(effet.coutMin)) return `Détruisez une créature ciblée de coût ${effet.coutMin} ou plus.`;
       return 'Détruisez une créature ciblée.';
+    case 'combat':
+      return 'Une créature alliée choisie se bat avec une créature adverse choisie : chacune subit des dégâts égaux à l’attaque de l’autre.';
+    case 'equiper-cimetiere':
+      return 'Équipez une créature alliée ciblée avec une arme choisie dans votre cimetière.';
     case 'destruction-arme':
       return `Détruisez une arme équipée à une créature ciblée${Number(effet.pioche) > 0 ? `, puis piochez ${nombreCartes(Number(effet.pioche))}` : ''}.`;
     case 'exil':
@@ -121,6 +142,22 @@ export function texteEffetActivation(effet = {}) {
 export function texteActivation(carte) {
   const activation = carte?.activation;
   if (!activation) return null;
-  const frequence = activation.uneFoisParTour ? '1/tour — ' : '';
-  return `${frequence}${texteEffetActivation(activation.effet)}`;
+  const frequence = '1/présence — ';
+  const prix = activation.prixPv > 0 ? `Payez ${activation.prixPv} PV : ` : '';
+  const forme = zoneFormeCarte(activation.sortAssocie);
+  const effet = activation.effet;
+  if (forme && effet?.type === 'retour-main' && effet.exclutType === 'Vampire') {
+    return `${frequence}${prix}Dans une rangée choisie, renvoyez les créatures sauf les Vampires dans la main de leur propriétaire.`;
+  }
+  if (forme && effet?.type === 'destruction-coutmax' && effet.gel) {
+    return `${frequence}${prix}Dans un carré, détruisez les créatures de coût ${effet.coutMax} ou moins, puis gelez les survivantes de ce carré.`;
+  }
+  if (forme && effet?.type === 'degats') {
+    const zone = forme === 'rangee' ? 'une rangée' : forme === 'colonne' ? 'une colonne' : 'un carré';
+    const cibles = effet.cible === 'toutes-autres' || effet.inclutAllies ? 'toutes les créatures' : 'les créatures adverses';
+    const gel = effet.gel ? ' et les gèle' : effet.gelChance ? `, avec ${Math.round(effet.gelChance * 100)} % de chances de geler chacune` : '';
+    const echo = effet.echo ? ` ; ${effet.echo.amount} dégât supplémentaire aux créatures adverses au début de votre prochain tour` : '';
+    return `${frequence}${prix}Inflige ${effet.amount} ${degats(effet.amount)} à ${cibles} dans ${zone}${gel}${echo}.`;
+  }
+  return `${frequence}${prix}${texteEffetActivation(effet)}`;
 }
