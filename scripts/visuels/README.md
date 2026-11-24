@@ -169,3 +169,22 @@ python3 scripts/visuels/make_gta_vs_45.py --out /tmp  # autre dossier
 ```
 
 Sortie : `gta-trevor-jason-poster-ar-1080x1350.png/.jpg`.
+
+## Affiche « fuite dans la tempête » — Jason et Lucia, en arabe
+
+`make_gta_storm_45.py` compose une affiche 4:5 plein cadre : illustration de
+Jason et Lucia sur une moto fuyant un orage tropical à Vice City, fondue vers le
+bas dans l'encre, **titre arabe** « هاربون من العاصفة » avec ombre cyan, ligne de
+contexte, trois repères factuels séparés par des filets et pied jaune
+« المطاردة كاملة في التعليقات ». En-tête : logo Let's Play + logo GTA VI.
+
+L'illustration (`instagram/assets/gta6-fuite-tempete.jpg`) est **originale**,
+dans l'esprit des key arts du jeu : elle est créditée comme telle dans l'affiche
+(« رسم توضيحي مستوحى من عالم اللعبة »), pas comme une capture officielle.
+
+```bash
+python3 scripts/visuels/make_gta_storm_45.py             # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_storm_45.py --out /tmp  # autre dossier
+```
+
+Sortie : `gta6-jason-lucia-tempete-ar-1080x1350.png/.jpg`.
