@@ -12,7 +12,7 @@ function cibleAccessible(duel, attaquant, cible, ciblee, voieAttaque) {
   if (rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) return false;
   if (ciblee) return true;
   return mobaPartageVoie(duel.moba, cible.mobaLane, voieAttaque) && !cible.infiltration
-    && (attaquant.envol || !cible.envol);
+    && (attaquant.envol || attaquant.distance || !cible.envol);
 }
 
 /** Cibles légales depuis une voie donnée. Pour le centre conquis, sans voie
