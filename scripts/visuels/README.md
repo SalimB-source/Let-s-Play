@@ -240,13 +240,16 @@ Deuxième visuel du même gabarit : question `هل يمكنكم اللعب بد�
 (« Pouvez-vous jouer sans la carte ? ») sur une illustration 3D originale
 (Jason à moto, Lucia carte en main, plein jour à Vice City). Lucia porte un
 pull en maille côtelée ivoire (manches retroussées) plutôt que le crop top.
+Cadrage de trois quarts arrière, au-dessus de la carte : Jason et Lucia se
+retournent vers l'objectif en lisant la carte dépliée entre eux, côté imprimé
+visible dans l'image.
 
 ```bash
 python3 scripts/visuels/upscale_cover.py instagram/assets/gta6-cover-map-3d.jpg \
-    --out instagram/gta-trevor-jason/cover-map-4k-2160x2700 --focus 0.42
+    --out instagram/gta-trevor-jason/cover-map-4k-2160x2700 --focus 0.0
 python3 scripts/visuels/add_cover_title.py instagram/gta-trevor-jason/cover-map-4k-2160x2700.png \
     --out instagram/gta-trevor-jason/cover-map-titre-4k-2160x2700 \
-    --text "هل يمكنكم اللعب بدون الخريطة؟"
+    --text "هل يمكنكم اللعب بدون الخريطة؟" --bottom 190 --size 172
 ```
 
 Sorties : `cover-map-4k-2160x2700` (image seule) et `cover-map-titre-4k-2160x2700`
