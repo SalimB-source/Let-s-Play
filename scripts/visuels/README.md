@@ -115,7 +115,15 @@ seul suffit à régénérer la carte sur une machine qui a ces deux fichiers.
 `make_gta_fiches_45.py` produit **deux** cartes 4:5 de la même série (même
 gabarit, même charte, un accent de couleur par personnage) : un « ملف شخصي »
 par héros, avec rôle, ville, passé, activité et trait dominant — cinq lignes,
-en arabe, composées avec HarfBuzz.
+en arabe, composées avec HarfBuzz. L'illustration officielle occupe toute la
+carte (aucun cadre, aucun panneau flottant) ; un voile d'encre montant du bas
+porte les informations et le nom est composé en gros caractères penchés avec un
+dégradé néon, comme les logos de la série.
+
+Illustrations utilisées : artwork officiel de Trevor à Sandy Shores
+(`instagram/assets/gta5-trevor-artwork.jpg`) et clé d'art du ponton de Vice City
+pour Jason (`instagram/assets/gta6-pier-keyart.jpg`) ; les deux fichiers sont
+exclus du dépôt, le script seul suffit à régénérer les cartes.
 
 ```bash
 python3 scripts/visuels/make_gta_fiches_45.py             # → instagram/fiches-personnages/
