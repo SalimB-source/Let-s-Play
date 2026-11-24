@@ -155,7 +155,7 @@ def background():
     d.polygon([(px(0), px(1160)), (px(0), px(CTA_TOP)), (px(140), px(CTA_TOP))], fill=(74, 38, 150, 160))
     d.line([(px(28), px(238)), (px(150), px(238))], fill=(255, 255, 255, 40), width=px(1))
 
-    for cx, cy, s_, alpha in ((px(1046), px(196), px(20), 220), (px(30), px(1198), px(16), 190)):
+    for cx, cy, s_, alpha in ((px(30), px(1198), px(16), 190),):
         d.polygon([(cx, cy - s_), (cx + s_ * 0.22, cy - s_ * 0.22), (cx + s_, cy),
                    (cx + s_ * 0.22, cy + s_ * 0.22), (cx, cy + s_),
                    (cx - s_ * 0.22, cy + s_ * 0.22), (cx - s_, cy),
@@ -173,14 +173,12 @@ def header(im):
     latin(im, 28, 214, "L'INFO JEU VIDÉO, SANS FILTRE", 10, (208, 196, 238),
           face="bold", tracking=1.7)
 
-    x = W - 26
-    for hero in (RIGHT, LEFT):
-        art = Image.open(ASSETS / hero["logo"]).convert("RGBA")
-        art = art.crop(art.getchannel("A").getbbox())
-        hh = px(112)
-        art = art.resize((round(hh * art.width / art.height), hh), Image.Resampling.LANCZOS)
-        im.alpha_composite(art, (px(x) - art.width, px(30)))
-        x -= art.width / S + 20
+    # Un seul logo dans l'en-tête : GTA VI, plus grand, calé au bord droit.
+    art = Image.open(ASSETS / RIGHT["logo"]).convert("RGBA")
+    art = art.crop(art.getchannel("A").getbbox())
+    hh = px(196)
+    art = art.resize((round(hh * art.width / art.height), hh), Image.Resampling.LANCZOS)
+    im.alpha_composite(art, (px(W - 28) - art.width, px(34)))
 
 
 def seam_x(y):
@@ -230,36 +228,6 @@ def portraits(im):
         ga[..., :3] = np.array((44, 22, 94))
         ga[..., 3] = (np.clip(1 - gy, 0, 1) ** 1.1 * 200) if up else (np.clip(gy, 0, 1) ** 1.1 * 210)
         im.alpha_composite(Image.fromarray(np.uint8(ga), "RGBA"), (0, px(band_top)))
-
-
-def vs_badge(im):
-    """Badge VS au centre de la couture, avec éclairs de part et d'autre."""
-    cx, cy = px(520), px(604)
-    r = px(72)
-    d = ImageDraw.Draw(im, "RGBA")
-
-    # Halo derrière le badge.
-    glow = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse([cx - r - px(26), cy - r - px(26), cx + r + px(26), cy + r + px(26)],
-                                 fill=YELLOW + (90,))
-    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(px(18))))
-
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=YELLOW + (255,))
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=INK + (255,), width=px(7))
-
-    f = ImageFont.truetype(str(FONTS["black"]), px(68))
-    layer = Image.new("RGBA", (px(260), px(160)), (0, 0, 0, 0))
-    ImageDraw.Draw(layer).text((px(130), px(80)), "VS", font=f, fill=INK, anchor="mm")
-    bbox = layer.getchannel("A").getbbox()
-    im.alpha_composite(layer.crop(bbox), (cx - (bbox[2] - bbox[0]) // 2, cy - (bbox[3] - bbox[1]) // 2))
-
-    # Éclairs (petits triangles jaunes) de part et d'autre du badge.
-    for side in (-1, 1):
-        bx = cx + side * px(114)
-        d.polygon([(bx, cy - px(34)), (bx + side * px(30), cy - px(2)),
-                   (bx + side * px(6), cy + px(2)), (bx + side * px(26), cy + px(34)),
-                   (bx - side * px(10), cy + px(4)), (bx + side * px(10), cy - px(2))],
-                  fill=YELLOW + (235,))
 
 
 def names(im):
@@ -320,7 +288,6 @@ def build():
     im = background()
     portraits(im)
     names(im)
-    vs_badge(im)
     header(im)
     table(im)
     cta(im)
@@ -336,7 +303,7 @@ def main():
 
     img = build()
     icc = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
-    base = out / "gta-jason-vs-trevor-ar-1080x1350"
+    base = out / "gta-trevor-jason-poster-ar-1080x1350"
     img.save(base.with_suffix(".png"), icc_profile=icc)
     img.save(base.with_suffix(".jpg"), quality=92, subsampling=0, icc_profile=icc, optimize=True)
     print(f"{base}.png  /  .jpg")

@@ -154,18 +154,18 @@ python3 scripts/visuels/make_gta_duo_45.py --out /tmp  # autre dossier
 
 Sortie : `gta-trevor-jason-duo-ar-1080x1350.png/.jpg`.
 
-## Affiche « Jason vs Trevor », en arabe
+## Affiche Trevor + Jason, en arabe
 
-`make_gta_vs_45.py` compose **une** affiche 4:5 de confrontation, plus travaillée
-que la carte duo : deux portraits plein cadre reliés par une **couture en
-biais**, badge **VS** cerclé de jaune avec éclairs, nom et millésime de chaque
-héros posés sur sa moitié, **tableau comparatif** à trois colonnes (étiquette
-centrale, valeur de Trevor, valeur de Jason) et pied jaune
-« أيهما تختار؟ اكتب في التعليقات ».
+`make_gta_vs_45.py` compose **une** affiche 4:5 réunissant les deux héros : deux
+portraits plein cadre reliés par une couture en biais (sans badge ni éclair),
+nom et millésime de chaque héros posés sur sa moitié, **tableau comparatif** à
+trois colonnes (étiquette centrale, valeur de Trevor, valeur de Jason) et pied
+jaune « أيهما تختار؟ اكتب في التعليقات ». En-tête : logo Let's Play à gauche,
+**logo GTA VI** en grand à droite.
 
 ```bash
 python3 scripts/visuels/make_gta_vs_45.py             # → instagram/gta-trevor-jason/
 python3 scripts/visuels/make_gta_vs_45.py --out /tmp  # autre dossier
 ```
 
-Sortie : `gta-jason-vs-trevor-ar-1080x1350.png/.jpg`.
+Sortie : `gta-trevor-jason-poster-ar-1080x1350.png/.jpg`.
