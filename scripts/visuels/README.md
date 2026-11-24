@@ -220,9 +220,11 @@ Sortie : `instagram/gta-trevor-jason/cover-4k-2160x2700.png/.jpg`.
 
 ## Titre arabe sur une cover
 
-`add_cover_title.py` pose le titre arabe seul sur une cover, sans layout :
-Tajawal Black, dégradé jaune chaud, contour et relief en encre, halo sombre et
-dégradé de lisibilité en bas de l'image.
+`add_cover_title.py` pose le titre arabe et les deux logos sur une cover, sans
+layout complet : Tajawal Black, dégradé jaune chaud, contour et relief en encre,
+halo sombre et dégradé de lisibilité en bas de l'image ; logo **Let's Play** en
+haut à gauche et logo **GTA VI** en haut à droite, sur un dégradé sombre discret
+(`--no-logos` pour les retirer, `--logo-h` / `--game-h` pour les tailles).
 
 ```bash
 python3 scripts/visuels/add_cover_title.py instagram/gta-trevor-jason/cover-jason-lucia-tempete-3d-4k-2160x2700.png

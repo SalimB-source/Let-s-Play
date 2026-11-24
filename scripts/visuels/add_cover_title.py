@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Ajoute le titre arabe jaune stylisé sur une cover, sans layout complet.
+"""Ajoute le titre arabe jaune stylisé et les logos sur une cover.
+
+Pas de layout complet : seulement le titre, le logo Let's Play en haut à gauche
+et le logo GTA VI en haut à droite (avec un dégradé sombre discret pour la
+lisibilité).
 
 Le titre est composé en Tajawal Black, rempli d'un dégradé jaune chaud, avec
 contour et relief en encre, halo sombre et dégradé de lisibilité en bas de
@@ -49,6 +53,9 @@ def main():
     ap.add_argument("--size", type=int, default=190)
     ap.add_argument("--bottom", type=int, default=300, help="marge basse du bloc titre")
     ap.add_argument("--depth", type=int, default=16, help="épaisseur du relief")
+    ap.add_argument("--no-logos", action="store_true", help="ne pas poser les logos")
+    ap.add_argument("--logo-h", type=int, default=250, help="hauteur du logo Let's Play")
+    ap.add_argument("--game-h", type=int, default=310, help="hauteur du logo GTA VI")
     args = ap.parse_args()
 
     base = Image.open(args.src).convert("RGBA")
@@ -76,6 +83,29 @@ def main():
         a = round(235 * t ** 1.7)
         gd.line([(0, H - scrim_h + y), (W, H - scrim_h + y)], fill=INK + (a,))
     base.alpha_composite(scrim)
+
+    # 2 bis. dégradé haut + logos (Let's Play à gauche, GTA VI à droite)
+    if not args.no_logos:
+        top_h = int(H * 0.30)
+        top_scrim = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        td = ImageDraw.Draw(top_scrim)
+        for y in range(top_h):
+            t = y / (top_h - 1)
+            td.line([(0, y), (W, y)], fill=(8, 4, 22, round(150 * (1 - t) ** 1.6)))
+        base.alpha_composite(top_scrim)
+
+        margin = round(W * 0.043)
+        lp = Image.open(ROOT / "public/lets-play-logo.png").convert("RGBA")
+        lp = lp.crop(lp.getchannel("A").getbbox())
+        lh = args.logo_h
+        lp = lp.resize((round(lh * lp.width / lp.height), lh), Image.Resampling.LANCZOS)
+        base.alpha_composite(lp, (margin, round(margin * 0.85)))
+
+        game = Image.open(ROOT / "instagram/assets/gta6-logo.webp").convert("RGBA")
+        game = game.crop(game.getchannel("A").getbbox())
+        gh = args.game_h
+        game = game.resize((round(gh * game.width / game.height), gh), Image.Resampling.LANCZOS)
+        base.alpha_composite(game, (W - margin - game.width, round(margin * 0.62)))
 
     # 3. halo sombre derrière le titre
     halo = Image.new("L", (W, H), 0)
