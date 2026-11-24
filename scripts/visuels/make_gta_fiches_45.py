@@ -80,13 +80,14 @@ FICHES = [
     {
         "slug": "trevor",
         "art": "gta5-trevor-artwork.jpg",
+        "logo": "gta5-logo.png",
         "numeral": "V",
         "words": ("GRAND", "THEFT", "AUTO"),
         "game": "GTA V",
         "year": "2013",
         "title": "من هو تريفور فيليبس؟",
         "accent": YELLOW,
-        "crop": (1010, 40, 3410, 1340),
+        "crop": (830, 180, 2730, 1120),
         "rows": [
             ("الدور", "بطل رئيسي في GTA V"),
             ("المدينة", "ساندي شورز، سان أندرياس"),
@@ -97,14 +98,15 @@ FICHES = [
     },
     {
         "slug": "jason",
-        "art": "gta6-pier-keyart.jpg",
+        "art": "gta6-jason-artwork.jpg",
+        "logo": "gta6-logo.webp",
         "numeral": "VI",
         "words": ("GRAND", "THEFT", "AUTO"),
         "game": "GTA VI",
         "year": "2026",
         "title": "من هو جيسون دوفال؟",
         "accent": YELLOW,
-        "crop": (1550, 230, 3300, 1290),
+        "crop": (760, 0, 1860, 545),
         "rows": [
             ("الدور", "بطل رئيسي في GTA VI"),
             ("المدينة", "فايس سيتي، ليونيدا"),
@@ -194,40 +196,12 @@ def logo_lets_play(im):
 
 
 def logo_game(im, fiche):
-    """Logo du jeu redessiné : numéral en dégradé + lettrage latin empilé."""
-    right = W - 44
-    # Numéral : dégradé rose → orange → bleu, contour noir épais.
-    size = 236 if fiche["numeral"] == "V" else 206
-    f = ImageFont.truetype(str(FONTS["black"]), px(size))
-    box = (px(320), px(size * 1.5))
-    layer = Image.new("RGBA", box, (0, 0, 0, 0))
-    ImageDraw.Draw(layer).text((box[0] // 2, box[1] // 2), fiche["numeral"],
-                               font=f, fill=(255, 255, 255, 255), anchor="mm")
-    bbox = layer.getchannel("A").getbbox()
-    mask = layer.getchannel("A").crop(bbox)
-    fill = vgrad(mask.size, [(255, 96, 190), (255, 122, 96), (255, 196, 96), (120, 170, 255)])
-    fill.putalpha(mask)
-    num_w = mask.width / S
-
-    words_w = 178
-    num_x = right - words_w - 18 - num_w
-    num_y = 44
-    # Contour : même glyphe, gonflé puis noirci sous le remplissage.
-    outline = mask.filter(ImageFilter.MaxFilter(px(7) // 2 * 2 + 1))
-    dark = Image.new("RGBA", outline.size, (12, 6, 26, 255))
-    dark.putalpha(outline)
-    im.alpha_composite(dark, (px(num_x - 4), px(num_y - 4)))
-    im.alpha_composite(fill, (px(num_x), px(num_y)))
-
-    # Lettrage empilé, blanc, contour noir, aligné à droite.
-    fw = ImageFont.truetype(str(FONTS["black"]), px(37))
-    y = num_y + 12
-    for word in fiche["words"]:
-        tw = fw.getlength(word) / S
-        ImageDraw.Draw(im).text((px(right), px(y)), word, font=fw, fill=WHITE, anchor="ra",
-                                stroke_width=px(4), stroke_fill=(18, 8, 34))
-        y += 44
-        _ = tw
+    """Logo officiel du jeu, posé en haut à droite."""
+    art = Image.open(ASSETS / fiche["logo"]).convert("RGBA")
+    art = art.crop(art.getchannel("A").getbbox())
+    h = px(132)
+    art = art.resize((round(h * art.width / art.height), h), Image.Resampling.LANCZOS)
+    im.alpha_composite(art, (px(W - 40) - art.width, px(34)))
 
 
 def banner(im, fiche):

@@ -62,21 +62,22 @@ AR = {
 }
 
 MARGIN = 44
-BANNER = (44, 250, 1036, 396)
-WINDOWS = ((36, 414, 532, 894), (548, 414, 1044, 894))   # gauche V, droite VI
+BANNER = (44, 250, 1036, 382)
+WINDOWS = ((34, 402, 534, 936), (546, 402, 1046, 936))   # gauche V, droite VI
 COLS = ((532, 300), (1044, 300))                          # colonnes de données (droite, largeur)
-ROWS_TOP = 946
-ROW_GAP = 52
-CTA_TOP = 1258
+ROWS_TOP = 978
+ROW_GAP = 58
+CTA_TOP = 1240
 
 HEROES = [
     {
         "slug": "trevor",
         "art": "gta5-trevor-artwork.jpg",
+        "logo": "gta5-logo.png",
         "name": "تريفور",
         "meta": "GTA V · 2013",
-        "numeral": "V",
-        "crop": (1010, 40, 3410, 1340),
+        "focus": 0.5,
+        "crop": (930, 147, 1870, 1192),
         "rows": [
             ("الدور", "بطل رئيسي"),
             ("المدينة", "ساندي شورز"),
@@ -86,11 +87,12 @@ HEROES = [
     },
     {
         "slug": "jason",
-        "art": "gta6-pier-keyart.jpg",
+        "art": "gta6-jason-artwork.jpg",
+        "logo": "gta6-logo.webp",
         "name": "جيسون",
         "meta": "GTA VI · 2026",
-        "numeral": "VI",
-        "crop": (1550, 230, 3300, 1290),
+        "focus": 0.5,
+        "crop": (900, 0, 1780, 979),
         "rows": [
             ("الدور", "بطل رئيسي"),
             ("المدينة", "فايس سيتي"),
@@ -167,29 +169,24 @@ def background():
 
 
 def header(im):
-    """Logo Let's Play + accroche de comparaison."""
+    """Logo Let's Play + les deux logos officiels des jeux."""
     logo = Image.open(ROOT / "public/lets-play-logo.png").convert("RGBA")
     logo = logo.crop(logo.getchannel("A").getbbox())
-    lw = px(268)
+    lw = px(250)
     logo = logo.resize((lw, round(lw * logo.height / logo.width)), Image.Resampling.LANCZOS)
-    im.alpha_composite(logo, (px(30), px(22)))
+    im.alpha_composite(logo, (px(26), px(26)))
+    latin(im, 32, 212, "L'INFO JEU VIDÉO, SANS FILTRE", 11, (188, 176, 226),
+          face="bold", tracking=2.0)
 
-    # Deux numéros de la série, du plus ancien au plus récent, en badge.
-    x = W - 40
-    for label, numeral in (("GTA V · 2013", "V"), ("GTA VI · 2026", "VI")):
-        f = ImageFont.truetype(str(FONTS["black"]), px(64 if numeral == "V" else 58))
-        tw = f.getlength(numeral) / S
-        box_w = max(96, tw + 44)
-        d = ImageDraw.Draw(im)
-        d.rounded_rectangle([px(x - box_w), px(40), px(x), px(148)], radius=px(24),
-                            fill=(38, 20, 84, 220), outline=(150, 108, 235, 120), width=px(2))
-        mask = Image.new("L", (px(140), px(96)), 0)
-        ImageDraw.Draw(mask).text((px(70), px(48)), numeral, font=f, fill=255, anchor="mm")
-        bbox = mask.getbbox()
-        fill = vgrad((bbox[2] - bbox[0], bbox[3] - bbox[1]), [(255, 96, 190), (255, 150, 96), (120, 170, 255)])
-        fill.putalpha(mask.crop(bbox))
-        im.alpha_composite(fill, (px(x - box_w / 2) - (bbox[2] - bbox[0]) // 2, px(94 - (bbox[3] - bbox[1]) / 2)))
-        x -= box_w + 18
+    x = W - 30
+    for hero in reversed(HEROES):
+        art = Image.open(ASSETS / hero["logo"]).convert("RGBA")
+        art = art.crop(art.getchannel("A").getbbox())
+        h = px(124)
+        w = round(h * art.width / art.height)
+        art = art.resize((w, h), Image.Resampling.LANCZOS)
+        im.alpha_composite(art, (px(x) - w, px(34)))
+        x -= w / S + 22
 
 
 def banner(im):
@@ -205,7 +202,8 @@ def banner(im):
     ar_text(im, (x0 + x1) / 2, (y0 + y1) / 2, title, size, CREAM, face="display", anchor="mm")
 
 
-def photo_window(im, box, crop, art_name, mirror=False):
+def photo_window(im, box, hero):
+    """Fenêtre photo à coins coupés, cadrée sur le visage du personnage."""
     x0, y0, x1, y1 = box
     cut = 30
     poly = [(x0 + 18, y0), (x1 - cut, y0), (x1, y0 + cut),
@@ -214,12 +212,25 @@ def photo_window(im, box, crop, art_name, mirror=False):
     mask = Image.new("L", (px(W), px(H)), 0)
     ImageDraw.Draw(mask).polygon([(px(a), px(b)) for a, b in poly], fill=255)
 
-    art = Image.open(ASSETS / art_name).convert("RGB").crop(crop)
+    art = Image.open(ASSETS / hero["art"]).convert("RGB").crop(hero["crop"])
     tw, th = px(x1 - x0), px(y1 - y0)
     scale = max(tw / art.width, th / art.height)
     art = art.resize((round(art.width * scale), round(art.height * scale)), Image.Resampling.LANCZOS)
-    art = art.crop(((art.width - tw) // 2, (art.height - th) // 2,
-                    (art.width - tw) // 2 + tw, (art.height - th) // 2 + th))
+    # `focus` = position horizontale du sujet dans le cadre (0 → 1).
+    left = round((art.width - tw) * hero["focus"])
+    left = max(0, min(art.width - tw, left))
+    top = round((art.height - th) * 0.5)
+    art = art.crop((left, top, left + tw, top + th))
+
+    # Fondu vers l'encre en bas de la photo : la légende s'y pose sans arête.
+    fade = Image.new("L", (1, th))
+    fd = ImageDraw.Draw(fade)
+    band = round(th * 0.34)
+    for i in range(band):
+        fd.point((0, th - 1 - i), fill=round(255 * (i / band) ** 1.4))
+    fade = fade.resize((tw, th), Image.BILINEAR)
+    dark = Image.new("RGB", (tw, th), (26, 13, 58))
+    art = Image.composite(dark, art, fade)
 
     shadow = Image.new("RGBA", im.size, (0, 0, 0, 0))
     shadow.paste((8, 3, 20, 210), (0, 0), mask)
@@ -230,23 +241,21 @@ def photo_window(im, box, crop, art_name, mirror=False):
     canvas.paste(art, (px(x0), px(y0)))
     im.paste(canvas, (0, 0), mask)
     ImageDraw.Draw(im).line([(px(a), px(b)) for a, b in poly] + [(px(poly[0][0]), px(poly[0][1]))],
-                            fill=(255, 255, 255, 70), width=px(2))
+                            fill=(255, 255, 255, 80), width=px(2))
 
 
 def captions(im, heroes):
-    """Nom + jeu sous chaque portrait, posés sur un dégradé sombre."""
+    """Bandeau de légende plein, en bas de chaque photo : jeu puis nom."""
+    d = ImageDraw.Draw(im)
     for hero, (x0, y0, x1, y1) in zip(heroes, WINDOWS):
-        h = px(y1 - y0)
-        veil = Image.new("RGBA", (px(x1 - x0), px(160)), (0, 0, 0, 0))
-        arr = np.zeros((veil.size[1], veil.size[0], 4), dtype=float)
-        gy = np.linspace(0, 1, veil.size[1])[:, None]
-        arr[..., :3] = np.array((24, 10, 52))
-        arr[..., 3] = np.clip(gy / 0.85, 0, 1) ** 1.15 * 242
-        im.alpha_composite(Image.fromarray(np.uint8(arr), "RGBA"), (px(x0), px(y1 - 160)))
-
-        latin(im, x1 - 22, y1 - 140, hero["meta"], 15, YELLOW, face="bold", tracking=1.2, anchor="r")
-        ar_text(im, x1 - 22, y1 - 108, hero["name"], 62, WHITE, face="display")
-        _ = h
+        plate = (x0, y1 - 116, x1, y1)
+        d.rectangle([px(plate[0]), px(plate[1]), px(plate[2]), px(plate[3])],
+                    fill=(28, 14, 62, 235))
+        d.rectangle([px(plate[0]), px(plate[1]), px(plate[0] + 6), px(plate[3])],
+                    fill=YELLOW + (255,))
+        latin(im, x1 - 22, y1 - 104, hero["meta"], 16, YELLOW, face="bold",
+              tracking=1.4, anchor="r")
+        ar_text(im, x1 - 22, y1 - 74, hero["name"], 58, WHITE, face="display")
 
 
 def data_columns(im, heroes):
@@ -277,8 +286,8 @@ def cta(im):
 
 def build():
     im = background()
-    photo_window(im, WINDOWS[0], HEROES[0]["crop"], HEROES[0]["art"])
-    photo_window(im, WINDOWS[1], HEROES[1]["crop"], HEROES[1]["art"])
+    photo_window(im, WINDOWS[0], HEROES[0])
+    photo_window(im, WINDOWS[1], HEROES[1])
     captions(im, HEROES)
     banner(im)
     header(im)

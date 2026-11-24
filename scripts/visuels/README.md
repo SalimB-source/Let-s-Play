@@ -117,17 +117,18 @@ gabarit, même charte) : un « ملف شخصي » par héros, avec rôle, ville,
 activité et trait dominant — cinq lignes, en arabe, composées avec HarfBuzz.
 
 Gabarit des visuels maison, repris tel quel : fond violet avec triangles et
-étincelles, **logo Let's Play** en haut à gauche, **logo du jeu** en haut à
-droite (numéral en dégradé + lettrage latin, redessiné — aucun fichier de marque
-Rockstar n'est utilisé), **bandeau arrondi** pour le titre en crème,
+étincelles, **logo Let's Play** en haut à gauche, **logo officiel du jeu** en
+haut à droite (`instagram/assets/gta5-logo.png`, `gta6-logo.webp`), **bandeau
+arrondi** pour le titre en crème,
 **fenêtre photo** à coins coupés qui occupe le centre, lignes de données sur le
 violet avec étiquettes jaunes, et **bandeau jaune** pleine largeur
 « شاركنا رأيك في التعليقات » en pied.
 
 Illustrations : artwork officiel de Trevor à Sandy Shores
-(`instagram/assets/gta5-trevor-artwork.jpg`) et clé d'art du ponton de Vice City
-pour Jason (`instagram/assets/gta6-pier-keyart.jpg`) ; les deux fichiers sont
-exclus du dépôt, le script seul suffit à régénérer les cartes.
+(`instagram/assets/gta5-trevor-artwork.jpg`) et capture officielle de Jason sur
+sa moto à Vice City (`instagram/assets/gta6-jason-artwork.jpg`), recadrées sur
+le visage. Les fichiers sont exclus du dépôt, le script seul suffit à régénérer
+les cartes.
 
 ```bash
 python3 scripts/visuels/make_gta_fiches_45.py             # → instagram/fiches-personnages/
@@ -141,7 +142,8 @@ Sorties : `fiche-trevor-ar-1080x1350.png/.jpg` et
 
 `make_gta_duo_45.py` réunit les deux héros sur **une seule** carte 4:5, dans le
 même gabarit promo : deux fenêtres photo à coins coupés (Trevor à gauche, 2013 ;
-Jason à droite, 2026), nom et jeu posés en bas de chaque fenêtre, deux colonnes
+Jason à droite, 2026) recadrées sur le visage, bas de photo fondu dans l'encre,
+nom et jeu posés dans chaque fenêtre, deux colonnes
 de données séparées par un filet, bandeau-titre « من هو الأقرب إليك؟ » et pied
 jaune « شاركنا اختيارك في التعليقات ».
 
