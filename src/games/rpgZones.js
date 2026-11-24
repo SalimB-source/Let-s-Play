@@ -200,8 +200,8 @@ export function meilleureZone(duel, cote, forme, pesee = null) {
   for (const zone of zonesPossibles(forme, cote)) {
     let score = 0;
     for (const camp of ['joueur', 'sorcier']) {
-      for (const entite of duel[camp]?.creatures ?? []) {
-        if (entiteDansZone(zone, camp, entite)) score += poids(entite, camp);
+      for (const [index, entite] of (duel[camp]?.creatures ?? []).entries()) {
+        if (entiteDansZone(zone, camp, entite, index)) score += poids(entite, camp);
       }
     }
     if (score > meilleurScore) { meilleurScore = score; meilleure = zone; }

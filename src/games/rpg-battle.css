@@ -1233,7 +1233,7 @@
     0 10px 26px rgba(0, 0, 0, .6);
 }
 
-/* Effet activé (1/tour) déjà déclenché : la peinture s'éteint, comme un sort
+/* Effet activé (1/match) déjà déclenché : la peinture s'éteint, comme un sort
    dépensé. Seule l'illustration grise — le cadre, les pierres d'effets et les
    chiffres ATQ/DÉF restent lisibles, et le givre d'une créature gelée continue
    de se voir par-dessus (`.rpg-card__frost`). */
@@ -17025,18 +17025,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
 }
 
-/* Sur la table, l'éclair quitte le coin du cadre et se range SOUS le losange
-   de coût, sur le même axe de gauche (le coût est en `left: 0` puis
-   `translateX(-36%)`), et il grandit : 22×20 px dans un coin, c'était trop
-   petit pour dire « cette créature a un effet activé ». La place est libre —
-   les marqueurs de créature (heures, cale) sont au centre de la carte et la
-   colonne des pierres d'effets à droite. */
+/* Sur la table, le badge chevauche le milieu du bord inférieur. Il reste
+   décoratif : la carte et son menu conservent leurs propres zones de clic. */
 .rpg-battle .rpg-card--img .rpg-card__effet-badge {
-  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-cout-taille, 26.88px) + 2px);
-  bottom: auto;
-  left: 0;
+  top: auto;
+  bottom: 0;
+  left: 50%;
   right: auto;
-  transform: translateX(-36%);
+  transform: translate(-50%, 50%);
   width: 30px;
   height: 27px;
   padding-top: 3px;

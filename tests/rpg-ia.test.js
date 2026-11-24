@@ -491,7 +491,7 @@ test('l’IA connaît la Résonance : une source vaut plus que ses seules statis
     'le Trait de braise tue la source de Résonance plutôt que le 3/3 nu');
 });
 
-test('le Père des corbeaux n’a plus de foudre activée : l’IA n’a rien à déclencher', () => {
+test('le Père des corbeaux active la Tempête dans une colonne choisie par l’IA', () => {
   const duel = duelNu();
   duel.tour = 'sorcier';
   duel.sorcier.mana = { braise: 0, eau: 0, sable: 0, neige: 6 };
@@ -506,13 +506,11 @@ test('le Père des corbeaux n’a plus de foudre activée : l’IA n’a rien à
   duel.sorcier.creatures.push(pere);
   duel.joueur.creatures.push(chien);
 
-  // Sa foudre a disparu : même gorgée de mana de glace, l'IA ne trouve
-  // aucune capacité à activer, et le moteur refuse de toute façon.
-  assert.equal(choisirActivationIA(duel, 'sorcier'), null,
-    'plus de capacité activée sur le Père des corbeaux');
-  assert.equal(rpgActiverCapacite(duel, 'sorcier', 'pere', 'chien').ok, false,
-    'le moteur ne connaît plus cette activation');
-  assert.equal(duel.joueur.creatures.includes(chien), true, 'le Chien reste en vie');
+  const choix = choisirActivationIA(duel, 'sorcier');
+  assert.equal(choix?.entiteId, 'pere');
+  assert.deepEqual(choix?.zone, { forme: 'colonne', colonne: 0 });
+  assert.ok(rpgActiverCapacite(duel, 'sorcier', 'pere', null, { zone: choix.zone }).ok);
+  assert.equal(duel.joueur.creatures.includes(chien), false, 'la Tempête abat le Chien');
 });
 
 // ── Arrivées qui désignent leur cible ───────────────────────────────────────

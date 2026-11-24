@@ -47,6 +47,9 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
+import { champMax } from './rpgLignes.js';
+import { zoneFormeCarte } from './rpgZoneCartes.js';
+import { entiteDansZone, zonesPossibles } from './rpgZones.js';
 import { candidatsRenfortChoisi, planRenfortAscension, renfortDejaJoue } from './rpgRenforts.js';
 import { armesPortees } from './rpgCardStacks.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from './rpgCombatIndividuelClassique.js';
@@ -2692,8 +2695,21 @@ function activationSansCibleVaut(duel, cote, entite, effet) {
   const montant = Math.max(0, Number(effet.amount) || 0);
   const allies = duel[cote].creatures;
   switch (effet.type) {
+    case 'renfort-ascension':
+      return planRenfortAscension(duel[cote], effet).length > 0;
+    case 'renfort-choisi':
+      return (duel.modeMana !== RPG_MODE_MANA_ESSAI || allies.length < champMax(duel))
+        && candidatsRenfortChoisi(duel[cote], effet).length > 0;
+    case 'reanimation':
+      return candidatsRenfortChoisi(duel[cote], { ...effet, type: 'renfort-choisi', zone: 'cimetiere', ascensionAutorisee: !effet.sansAscension }).length > 0;
     case 'pioche':
+    case 'pioche-defausse':
       return duel[cote].deck.length > 0 && duel[cote].main.length <= 5;
+    case 'prochaine-arrivee-abordage':
+      return !duel[cote].prochaineArriveeAbordage && duel[cote].main.some(id => ['creature', 'hero'].includes(duelCardById(id)?.kind));
+    case 'destruction-totale':
+      return duel[adv].creatures.reduce((total, cible) => total + valeurEntite(cible), 0)
+        > allies.reduce((total, allie) => total + valeurEntite(allie), 0);
     case 'transfert':
       return duel[adv].pv <= montant || duel[cote].pv < duel[adv].pv;
     case 'soin':
@@ -2705,12 +2721,15 @@ function activationSansCibleVaut(duel, cote, entite, effet) {
       // Le renfort du camp se paie d'une attaque : il faut du monde à grandir.
       return allies.length >= 2;
     case 'buff':
+      if (effet.caleOccupeeSeulement) return allies.some(allie => allie.enCale && allie.id !== entite.id);
       if (effet.cible === 'creatures-adverses') {
         return duel[adv].creatures.some((adversaire) => (Number(adversaire.atk) || 0) > 0);
       }
       return allies.length >= 2;
     case 'defausse-adverse':
       return duel[adv].main.length > 0;
+    case 'defaussePaquet':
+      return duel[adv].deck.length > 0;
     case 'degats': {
       // La vague ne part que si elle rapporte plus qu'elle ne coûte : ce
       // qu'elle abat chez l'adversaire contre ce qu'elle abat chez nous.
@@ -2767,7 +2786,72 @@ export function choisirActivationIA(duel, cote, options = {}) {
     const effet = activation.effet;
     const montant = Math.max(0, Number(effet.amount) || 0);
     if (activation.cible === 'aucune') {
+      const forme = zoneFormeCarte(activation.sortAssocie);
+      if (forme && ['degats', 'retour-main', 'destruction-coutmax'].includes(effet.type)) {
+        let meilleur = null; let scoreMax = Math.max(0, Number(activation.prixPv) || 0) * 0.75;
+        for (const zone of zonesPossibles(forme, cote)) {
+          let score = 0;
+          for (const camp of [cote, adv]) {
+            if (camp === cote && effet.cible !== 'toutes-autres' && !effet.inclutAllies) continue;
+            for (const [index, cible] of duel[camp].creatures.entries()) {
+              if (!entiteDansZone(zone, camp, cible, index) || cardById(cible.carteId)?.kind === 'site'
+                || moteur.rpgEstProtegee(cible, activation.couleur ?? carte.element)
+                || (effet.exclutType && cardHasPrintedType(cible.carteId, effet.exclutType))) continue;
+              let valeur;
+              if (effet.type === 'degats') {
+                const impact = Math.min(montant, Math.max(0, Number(cible.pv) || 0));
+                valeur = impact + (cible.pv <= montant ? valeurEntite(cible) : 0);
+              } else if (effet.type === 'retour-main') {
+                valeur = valeurEntite(cible) * 0.6;
+              } else {
+                valeur = moteur.rpgCoutEntite(cible) <= effet.coutMax ? valeurEntite(cible)
+                  : (effet.gel && !cible.gelToursRestants ? valeurEntite(cible) * 0.35 : 0);
+              }
+              score += camp === adv ? valeur : -valeur;
+            }
+          }
+          if (score > scoreMax) { scoreMax = score; meilleur = zone; }
+        }
+        if (meilleur) return { entiteId: entite.id, cibleId: null, zone: meilleur };
+        continue;
+      }
       if (activationSansCibleVaut(duel, cote, entite, effet)) return { entiteId: entite.id, cibleId: null };
+      continue;
+    }
+    if (effet.type === 'combat' && effet.sourceCible === 'creature-amie') {
+      const cibles = new Set(moteur.rpgCiblesActivationLegales(duel, cote, entite.id) ?? []);
+      const champions = new Set(moteur.rpgChampionsActivationLegales(duel, cote, entite.id));
+      let meilleur = null; let scoreMax = 0;
+      for (const adversaire of duel[adv].creatures) {
+        if (!cibles.has(adversaire.id) || moteur.rpgBouclierEstActif(adversaire)) continue;
+        for (const champion of duel[cote].creatures) {
+          if (!champions.has(champion.id)) continue;
+          const dommageAdverse = (champion.gelToursRestants > 0 || moteur.rpgEstProtegee(adversaire, activation.couleur ?? carte.element)) ? 0 : Math.max(0, champion.atk ?? 0);
+          const dommageChampion = (adversaire.gelToursRestants > 0 || moteur.rpgEstProtegee(champion, cardColors(duelCardById(adversaire.carteId)))) ? 0 : Math.max(0, adversaire.atk ?? 0);
+          const score = Math.min(dommageAdverse, adversaire.pv) * 0.4
+            + (dommageAdverse >= adversaire.pv ? valeurEntite(adversaire) : 0)
+            - Math.min(dommageChampion, champion.pv) * 0.4
+            - (dommageChampion >= champion.pv ? valeurEntite(champion) : 0);
+          if (score > scoreMax) { scoreMax = score; meilleur = { entiteId: entite.id, cibleId: adversaire.id, championId: champion.id }; }
+        }
+      }
+      if (meilleur) return meilleur;
+      continue;
+    }
+    if (effet.type === 'equiper-cimetiere') {
+      const armes = [...duel[cote].cimetiere].reverse().filter((id) => carteEstArme(cardById(id)));
+      const legales = new Set(moteur.rpgCiblesActivationLegales(duel, cote, entite.id) ?? []);
+      const porteurs = duel[cote].creatures.filter((candidate) => legales.has(candidate.id))
+        .sort((a, b) => valeurEntite(b) - valeurEntite(a));
+      for (const armeCarteId of armes) {
+        const arme = cardById(armeCarteId);
+        // Une hache mord avant son bonus ; le Sabre maudit retire de la DEF.
+        // Ne pas dépenser la capacité sur une arme qui tuerait son porteur.
+        const cout = Math.max(0, Number(arme.blessurePorteur) || 0)
+          + Math.max(0, -(Number(arme.effet?.def) || 0));
+        const porteur = porteurs.find((candidate) => candidate.pv > cout);
+        if (porteur) return { entiteId: entite.id, cibleId: porteur.id, armeCarteId };
+      }
       continue;
     }
     const sort = sortDeActivation(carte, activation);

@@ -82,6 +82,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'scribe-des-feuillets', distance: true,
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'les-feuillets', effet: { type: 'defaussePaquet', amount: 3 } },
     name: 'Scribe des feuillets',
     cost: 2,
     atk: 2,
@@ -119,6 +120,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'momie-de-lin',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'offrande-de-lin', prixPv: 1, effet: { type: 'buff', atk: 1, def: 0, tribut: 1, tours: 1 } },
     name: 'Momie de lin',
     cost: 3,
     atk: 2,
@@ -146,8 +148,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'celle-qui-pese',
-    // Effet activé (1/tour) — Le Poids : le cœur pèse une fois par tour.
-    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'transfert', amount: 1 } },
+    // Effet activé (1/match) — Le Poids : le cœur pèse une fois par match.
+    activation: { cible: 'aucune', uneFoisParMatch: true, effet: { type: 'transfert', amount: 1 } },
     name: 'Celle qui pèse',
     cost: 4,
     atk: 3,
@@ -160,8 +162,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'la-devoreuse',
-    // Effet activé (1/tour) — l'Effacement des faibles : une petite proie, avalée.
-    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'destruction-cible', cible: 'creature', coutMax: 2 } },
+    // Effet activé (1/match) — l'Effacement des faibles : une petite proie, avalée.
+    activation: { cible: 'creature', uneFoisParMatch: true, effet: { type: 'destruction-cible', cible: 'creature', coutMax: 2 } },
     name: 'La Dévoreuse',
     cost: 6,
     atk: 4,
@@ -174,6 +176,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'celui-qui-juge',
+    activation: { cible: 'creature', uneFoisParMatch: true, sortAssocie: 'le-jugement-des-colosses', effet: { type: 'destruction-cible', cible: 'creature', coutMin: 4 } },
     name: 'Celui qui juge',
     cost: 6,
     atk: 3,
@@ -224,8 +227,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'lecteur-du-dernier-nom', distance: true, name: 'Lecteur du dernier nom',
-    // Effet activé (1/tour) — le Nom effacé : une carte de la main adverse part au cimetière.
-    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'defausse-adverse' } },
+    // Effet activé (1/match) — le Nom effacé : une carte de la main adverse part au cimetière.
+    activation: { cible: 'aucune', uneFoisParMatch: true, effet: { type: 'defausse-adverse' } },
     cost: 5, atk: 3, def: 4, rarity: 'rare',
     arrivee: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
     typeLine: 'Créature — Humain · Scribe',
@@ -235,6 +238,7 @@ export const RPG_TENEBRES_CREATURES = [
   // ── Les grandes figures d’Égypte : nommées par leur attribut, jamais « dieux » ──
   carte({
     id: 'passeur-au-masque-de-chacal',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'la-grande-pesee', prixPv: 1, effet: { type: 'transfert', amount: 3, pioche: 2 } },
     name: 'Le Passeur au masque de chacal',
     element: 'tenebres',
     cost: 6,
@@ -263,6 +267,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'faucon-du-zenith', distance: true,
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'tempete-de-sable', effet: { type: 'degats', amount: 3, cible: 'toutes-creatures' } },
     name: 'Le Faucon du zénith',
     element: 'sable',
     cost: 5,
@@ -313,6 +318,7 @@ export const RPG_TENEBRES_CREATURES = [
   }),
   carte({
     id: 'seigneur-des-machoires',
+    activation: { cible: 'creature', uneFoisParMatch: true, sortAssocie: 'lame-de-mer', effet: { type: 'debuff', atk: -3, def: -3, cible: 'creature', exilEnMourant: true } },
     name: 'Le Seigneur des mâchoires',
     element: 'eau',
     cost: 6,

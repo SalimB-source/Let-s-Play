@@ -453,6 +453,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'chercheuse-des-armes-ensevelies', name: 'Chercheuse des armes ensevelies',
+    activation: { cible: 'creature-amie', uneFoisParMatch: true, sortAssocie: 'memoire-de-l-armurerie', effet: { type: 'equiper-cimetiere', cible: 'creature-amie' } },
     element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine · Éclaireuse',
@@ -517,8 +518,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'guetteuse-des-marees', distance: true, name: 'Guetteuse des marées', element: 'eau',
-    // Effet activé (1/tour) — la Parade de verre : un bouclier sur une alliée choisie.
-    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' } },
+    // Effet activé (1/match) — la Parade de verre : un bouclier sur une alliée choisie.
+    activation: { cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' } },
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
     arrivee: { type: 'exil-temporaire', cible: 'creature-amie', choisirCible: true },
     text: 'À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
@@ -618,6 +619,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'guetteur-du-beffroi', distance: true,
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'rapport-du-greffier', effet: { type: 'pioche', amount: 2 } },
     name: 'Guetteur du beffroi',
     element: 'sable',
     cost: 3,
@@ -642,6 +644,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'dune-marchante',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'eveil-des-dunes', effet: { type: 'renfort-ascension', zone: 'deck', roles: [{ type: 'elemental', element: 'sable', cout: 4 }] } },
     name: 'Dune marchante',
     element: 'sable',
     cost: 4,
@@ -662,8 +665,8 @@ export const RPG_CREATURE_CARDS = [
     },
   {
     id: 'scribe-de-la-liste',
-    // Effet activé (1/tour) — le Papyrus du set Ténèbres, sans son prix en PV :
-    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'pioche', amount: 1 } },
+    // Effet activé (1/match) — le Papyrus du set Ténèbres, sans son prix en PV :
+    activation: { cible: 'aucune', uneFoisParMatch: true, effet: { type: 'pioche', amount: 1 } },
     name: 'Scribe de la Liste',
     element: 'sable',
     cost: 3,
@@ -689,6 +692,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'veilleuse-des-citernes', distance: true,
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'appel-des-marees', effet: { type: 'renfort-choisi', zone: 'deck', dessus: 3, element: 'eau', coutMax: 3, reste: 'dessous' } },
     name: 'Veilleuse des citernes',
     element: 'eau',
     cost: 3,
@@ -771,8 +775,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'amani-des-ksour',
-    // Effet activé (1/tour) — le Festin des vaillants, sur une seule alliée choisie.
-    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'soin-creatures', amount: 2, cible: 'creature-amie' } },
+    // Effet activé (1/match) — le Festin des vaillants, sur une seule alliée choisie.
+    activation: { cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'soin-creatures', amount: 2, cible: 'creature-amie' } },
     name: 'Amani, gardienne des ksour',
     element: 'sable',
     cost: 4,
@@ -858,8 +862,8 @@ export const RPG_CREATURE_CARDS = [
     // devenu l'Ifrit furtif, 5/3, et sa disparition en fin de tour se nomme
     // désormais le mot-clé Furtif (le moteur lit toujours `ephemere`).
     id: 'ifrit-des-ergs', distance: true,
-    // Effet activé (1/tour) — le Brise-lame : l'arme équipée fond, une carte piochée.
-    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 } },
+    // Effet activé (1/match) — le Brise-lame : l'arme équipée fond, une carte piochée.
+    activation: { cible: 'creature', uneFoisParMatch: true, effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 } },
     name: 'Ifrit furtif',
     element: 'braise',
     cost: 5,
@@ -991,11 +995,11 @@ export const RPG_CREATURE_CARDS = [
   // marteau), comme on les appelait pour ne pas les appeler.
   {
     id: 'gardien-viking-du-fjord', name: 'Gardien viking du fjord',
-    // Effet activé (1/tour) — l'Embuscade : la ligne adverse frappe et encaisse
+    // Effet activé (1/match) — l'Embuscade : la ligne adverse frappe et encaisse
     // 2 de moins jusqu'à la fin du tour. Le voile blanc, lui, ne se joue qu'au
     // tour de l'adversaire : activé à son propre tour, il n'éteindrait que ses
     // propres attaques — le gardien tend donc l'embuscade, pas le brouillard.
-    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'buff', cible: 'creatures-adverses', atk: -2, def: -2, minimum: 1, tours: 1 } },
+    activation: { cible: 'aucune', uneFoisParMatch: true, effet: { type: 'buff', cible: 'creatures-adverses', atk: -2, def: -2, minimum: 1, tours: 1 } },
     element: 'neige', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Guerrier viking', defenseur: true, furie: 1,
     text: 'Défenseur. Furie 1 — Tant qu’il est blessé, il gagne +1/+0.',
@@ -1009,8 +1013,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'archere-viking-du-givre', distance: true, name: 'Archère viking du givre', element: 'neige',
-    // Effet activé (1/tour) — l'Appât de la meute : la proie visée frappe 2 de moins.
-    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1 } },
+    // Effet activé (1/match) — l'Appât de la meute : la proie visée frappe 2 de moins.
+    activation: { cible: 'creature', uneFoisParMatch: true, effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1 } },
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,
@@ -1020,7 +1024,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'eirik-du-premier-serment',
-    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'soin-tout', amount: 2 } },
+    activation: { cible: 'aucune', uneFoisParMatch: true, effet: { type: 'soin-tout', amount: 2 } },
     name: 'Eirik du Premier Serment',
     element: 'neige',
     cost: 1,
@@ -1082,8 +1086,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'volva-soigneuse',
-    // Effet activé (1/tour) — l'Eau de la source : elle panse son maître, pas ses alliés.
-    activation: { cible: 'aucune', uneFoisParTour: true, effet: { type: 'soin', amount: 2 } },
+    // Effet activé (1/match) — l'Eau de la source : elle panse son maître, pas ses alliés.
+    activation: { cible: 'aucune', uneFoisParMatch: true, effet: { type: 'soin', amount: 2 } },
     distance: true,
     name: 'Völva soigneuse',
     set: 'serment-des-neuf-hivers',
@@ -1115,6 +1119,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'valkyrie-au-corbeau',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'ralliement-des-neiges', effet: { type: 'renfort-choisi', zone: 'main', coutExact: 5 } },
     name: 'Valkyrie au corbeau',
     element: 'neige',
     cost: 4,
@@ -1144,6 +1149,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'jarl-au-marteau-de-guerre',
+    activation: { cible: 'creature', uneFoisParMatch: true, sortAssocie: 'defi-du-jarl', effet: { type: 'combat', cible: 'creature', sourceCible: 'creature-amie' } },
     name: 'Jarl au marteau de guerre',
     element: 'neige',
     cost: 5,
@@ -1158,7 +1164,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'valkyrie-des-glaces',
-    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'degats', amount: 2, gel: true } },
+    activation: { cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 2, gel: true } },
     name: 'Valkyrie des glaces',
     element: 'neige',
     cost: 6,
@@ -1177,6 +1183,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'geant-des-banquises',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'hurlement-du-blizzard', effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gelChance: 0.15 } },
     name: 'Géant des banquises',
     element: 'neige',
     cost: 6,
@@ -1193,6 +1200,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'drakkar-a-tete-de-dragon',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'mur-de-boucliers', effet: { type: 'buff', atk: 2, def: 0, overkill: true, tours: 1 } },
     name: 'Drakkar à tête de dragon',
     element: 'neige',
     cost: 5,
@@ -1225,7 +1233,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'leviathan',
-    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'renvoi-main' } },
+    activation: { cible: 'creature', uneFoisParMatch: true, effet: { type: 'renvoi-main' } },
     name: 'Léviathan',
     element: 'eau',
     cost: 8,
@@ -1238,6 +1246,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'bakunawa',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'le-routier', effet: { type: 'pioche-defausse', pioche: 2, defausse: 1 } },
     name: 'Bakunawa',
     element: 'eau',
     cost: 4,
@@ -1308,6 +1317,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'traqueur-des-nuits-sans-lune', set: 'soldats-de-la-lune', name: 'Traqueur des nuits sans lune',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'ressac-de-la-lune-noire', couleur: ['eau', 'tenebres'], effet: { type: 'retour-main', cible: 'toutes-autres', exclutType: 'Vampire' } },
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     arrivee: { type: 'renvoi-ou-destruction', cible: 'creature', coutRenvoiMin: 4, coutDestructionMax: 3 },
@@ -1316,8 +1326,8 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'sorcier-du-ressac-noir', distance: true, set: 'soldats-de-la-lune', name: 'Sorcier du ressac noir',
-    // Effet activé (1/tour) — le Ressac : la créature ciblée retourne dans sa main.
-    activation: { cible: 'creature', uneFoisParTour: true, effet: { type: 'retour-main', cible: 'creature' } },
+    // Effet activé (1/match) — le Ressac : la créature ciblée retourne dans sa main.
+    activation: { cible: 'creature', uneFoisParMatch: true, effet: { type: 'retour-main', cible: 'creature' } },
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
     reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
@@ -1346,6 +1356,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'veilleuse-de-la-lune-givree', distance: true, set: 'soldats-de-la-lune', name: 'Veilleuse de la lune givrée',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'brume-du-fjord', effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.15 } },
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
     arrivee: { type: 'gel', cible: 'creature' },
@@ -1419,6 +1430,7 @@ export const RPG_CREATURE_CARDS = [
     // Eau + Neige — la mer qui prend. Le gel de zone du Géant des banquises,
     // sans sa morsure : une mythique de contrôle qui fige la table entière.
     id: 'le-cavalier-du-ressac-gele', name: 'Le cavalier du ressac gelé',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'verglas', effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gel: true } },
     element: 'eau', colors: ['eau', 'neige'], colorCost: { eau: 1, neige: 1 },
     cost: 6, atk: 4, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Cavalier · Élémental',
@@ -1720,6 +1732,7 @@ export function creatureById(id) {
 export const RPG_HERO_CARDS = [
   {
     id: 'souverain-de-la-lune-noire', name: 'Souverain de la lune noire',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'reanimation', effet: { type: 'reanimation' } },
     set: 'soldats-de-la-lune', element: 'sable', colors: ['sable', 'tenebres'],
     colorCost: { sable: 1, tenebres: 1 }, cost: 6, atk: 5, def: 5,
     rarity: 'mythique', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
@@ -1747,11 +1760,11 @@ export const RPG_HERO_CARDS = [
     // mot-clé — il ne riposte donc plus aux sorts, ce qui était le propre du
     // corps à corps.
     rapidite: true,
-    // Effet activé (1/tour) — le Sondeur endurcit un allié : +0/+2 jusqu'à la
+    // Effet activé (1/match) — le Sondeur endurcit un allié : +0/+2 jusqu'à la
     // fin du tour, le même contrat que le Rempart de dunes. Le bouclier d'un
     // tour reste l'affaire de la Guetteuse des marées.
-    activation: { cible: 'creature-amie', uneFoisParTour: true, effet: { type: 'buff', cible: 'creature-amie', atk: 0, def: 2, tours: 1 } },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant. Effet activé (1/tour) — La créature alliée ciblée gagne +0/+2 jusqu’à la fin du tour.',
+    activation: { cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'buff', cible: 'creature-amie', atk: 0, def: 2, tours: 1 } },
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant. Effet activé (1/présence) — La créature alliée ciblée gagne +0/+2 jusqu’à la fin du tour.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1860,6 +1873,7 @@ export const RPG_HERO_CARDS = [
   },
   {
     id: 'ifrit-al-ahmar',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'confluence-des-etincelles', effet: { type: 'renfort-ascension', zone: 'main', roles: [{ type: 'djinn', element: 'braise', cout: 1 }, { type: 'djinn', element: 'braise', cout: 3 }] } },
     name: 'Ifrit al-Ahmar, seigneur des braises',
     role: 'Souverain des cendres',
     element: 'braise',
@@ -1883,6 +1897,7 @@ export const RPG_HERO_CARDS = [
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
   {
     id: 'pere-des-corbeaux',
+    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'tempete-de-foudre-et-de-givre', effet: { type: 'degats', amount: 3, cible: 'toutes-autres' } },
     name: 'LE PÈRE DES CORBEAUX',
     role: 'Celui qui sait',
     element: 'neige',
