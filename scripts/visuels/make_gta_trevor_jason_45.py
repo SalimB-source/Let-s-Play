@@ -28,7 +28,7 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageCms, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageCms, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -58,13 +58,22 @@ ART_TOP, ART_H = 244, 772    # bande des portraits (bas = 1016)
 ROWS_TOP = 1042
 ROW_H = 56
 
+# Les deux visages sont mis à la MÊME hauteur de tête (`head_px`, en unités de
+# maquette) et posés à la même hauteur dans la bande (`head_at`) : les
+# personnages paraissent ainsi de la même taille, malgré un rendu en buste
+# pour Trevor et un plan plus large pour Jason.
+#   head / chin : sommet du crâne et bas du menton, en fractions de l'image
+#   source ; le rapport des deux donne la hauteur de tête dans cette image.
 TREVOR = {
     "name": "TREVOR",
     "game": "GTA V · 2013",
     "color": YELLOW,
     "points": ["Imprévisible", "Violence gratuite", "Loyauté brute", "Aucune limite"],
-    "focus": (0.50, 0.26),
-    "zoom": 1.12,
+    "head": (0.50, 0.006),
+    "chin": 0.163,
+    "head_px": 150,
+    "head_at": 0.075,
+    "align_x": 0.50,
 }
 
 JASON = {
@@ -72,8 +81,11 @@ JASON = {
     "game": "GTA VI · 2026",
     "color": VIOLET,
     "points": ["Posé", "Violence choisie", "Doute permanent", "La famille d’abord"],
-    "focus": (0.52, 0.20),
-    "zoom": 1.0,
+    "head": (0.46, 0.120),
+    "chin": 0.267,
+    "head_px": 150,
+    "head_at": 0.075,
+    "align_x": 0.47,
 }
 
 
@@ -117,14 +129,20 @@ def ground():
 
 
 def panel(source, spec, width, height, *, cutout=False):
-    """Portrait recadré à la largeur de la bande, sans bord ni cadre."""
+    """Portrait à l'échelle commune du visage, crâne ancré, sans bord ni cadre."""
     w, h = source.size
-    scale = max(width / w, height / h) * spec.get("zoom", 1.0)
-    art = source.resize((max(width, round(w * scale)), max(height, round(h * scale))),
-                        Image.Resampling.LANCZOS)
-    fx, fy = spec["focus"]
-    left = min(max(0, round(fx * art.width - width / 2)), art.width - width)
-    top = min(max(0, round(fy * art.height - height * 0.30)), art.height - height)
+    head_h = max(0.01, (spec["chin"] - spec["head"][1]) * h)  # hauteur de tête (px source)
+    # La bande est suréchantillonnée : on convertit la cible en pixels réels.
+    target_head = px(spec["head_px"]) * (height / px(ART_H))
+    scale = target_head / head_h
+    art = source.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS)
+    if art.width < width:
+        art = art.resize((width, round(art.height * width / art.width)), Image.Resampling.LANCZOS)
+    head_x, head_y = spec["head"]
+    left = round(head_x * art.width - width * spec["align_x"])
+    top = round(head_y * art.height - height * spec["head_at"])
+    left = min(max(left, 0), max(0, art.width - width))
+    top = min(max(top, 0), max(0, art.height - height))
     art = art.crop((left, top, left + width, top + height)).convert("RGBA")
     if cutout:
         # Rendu détouré : aplat sombre teinté de l'encre du personnage, l'image
@@ -171,9 +189,13 @@ def art_band(im, trevor, jason):
 
     left = panel(trevor, TREVOR, px(half), band_h, cutout=True)
     right = panel(jason, JASON, px(half), band_h)
-    # Jason : la clé d'art est très claire (poussière, ciel) ; un voile léger
-    # l'accorde au traitement sombre de la moitié gauche.
-    right = Image.alpha_composite(right, Image.new("RGBA", right.size, INK + (46,)))
+    # Jason : la clé d'art est pâle (poussière, ciel) ; on remonte un peu le
+    # contraste avant un voile léger, pour l'accorder au rendu sombre de Trevor.
+    right = right.convert("RGB")
+    right = ImageEnhance.Brightness(right).enhance(1.14)
+    right = ImageEnhance.Contrast(right).enhance(1.08)
+    right = right.convert("RGBA")
+    right = Image.alpha_composite(right, Image.new("RGBA", right.size, INK + (24,)))
     layer = Image.new("RGBA", (px(W), band_h), (0, 0, 0, 0))
     layer.paste(left, (0, 0), seam_mask(px(half), band_h, left_side=True))
     layer.paste(right, (px(SEAM - FEATHER), 0), seam_mask(px(half), band_h, left_side=False))
