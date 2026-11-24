@@ -12,7 +12,11 @@ réutiliser son effet. Les créatures de même nom ont chacune leur propre usage
 **État d'implémentation :** 29 associations sont ajoutées au catalogue et
 au moteur classique/PvP, sans appliquer les Liens des sorts. Les sept magies
 rapides proposées initialement restent exclues ; aucune proposition ne reste à
-associer. En Conquête, la page et l'IA proposent désormais le Défi du Jarl,
+associer. Ces 29 sorts ne sont plus des cartes jouables : leur effet est
+conservé comme capacité de créature. Leurs anciennes fiches restent uniquement
+en archive pour les sauvegardes et effets existants. Les anciens decks qui les
+contiennent doivent être modifiés dans l'atelier ; aucune acquisition n'est
+effacée automatiquement. En Conquête, la page et l'IA proposent le Défi du Jarl,
 la récupération d'équipement de la Chercheuse, ainsi que Rapport du greffier,
 Les feuillets, Le routier et Lettre de marque. Le Bâton des citernes reste exclu
 de cette récupération : son jeton exige un placement adapté. Les prix en PV,
@@ -21,11 +25,11 @@ complet et ne sont pas proposés dans cette page.
 
 ## Périmètre et lecture
 
-Le catalogue contient **58 cartes de type magie** : 53 sorts examinés ici,
+L'inventaire initial contenait **58 cartes de type magie** : 53 sorts examinés ici,
 4 contresorts exclus et une arme-sort (Sabre maudit) écartée parce qu'elle
 s'équipe comme une arme. Les 24 cartes de type arme ne sont pas incluses.
 
-- **Implémenté** : association ajoutée avec l'effet de base du sort, sans Lien.
+- **Implémenté** : association ajoutée avec l'effet de base du sort, sans Lien ; la carte du sort est retirée du jeu.
 - **Exclu — magie rapide** : le sort reste jouable comme magie rapide,
   y compris en réponse pendant le tour adverse. Une capacité préexistante
   éventuellement ressemblante est conservée, mais ne constitue pas une

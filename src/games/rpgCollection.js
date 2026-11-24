@@ -1,3 +1,4 @@
+import { sortTransfere } from './rpgSortsTransferes.js';
 /**
  * La collection du Sablier — les cartes que le joueur possède.
  *
@@ -81,7 +82,7 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
  * premières cartes de Neige ; le Fjord découvre les figures du Nord ; la
  * Nécropole révèle les Ténèbres — la Balance des Heures.
  */
-export const RPG_REVELATIONS_PAR_ETAGE = {
+const REVELATIONS_HISTORIQUES = {
   // Tour des Listes — Sable et Braise, l'apprentissage. Chaque étage ne
   // révèle que des cartes encore au catalogue : Sentence de la Liste, Rafale
   // du minaret et Fureur du souk en sont sorties, donc plus aucun étage ne les
@@ -145,6 +146,12 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'corbeau-4': ['maitre-des-corbeaux'],
 };
 
+// Les données historiques restent consultables en mémoire, mais ne révèlent
+// plus des cartes sorties du jeu. Les acquisitions des joueurs sont inchangées.
+export const RPG_REVELATIONS_PAR_ETAGE = Object.fromEntries(
+  Object.entries(REVELATIONS_HISTORIQUES).map(([etage, ids]) => [etage, ids.filter(id => !sortTransfere(id))]),
+);
+
 /** Ne garde que des identifiants de cartes connus, sans doublon, ordre préservé. */
 export function normaliserCollection(value) {
   const vues = new Set();
@@ -160,11 +167,12 @@ export function normaliserCollection(value) {
 /** Les cartes qu'un étage révèle (identifiants connus), liste vide sinon. */
 export function cartesReveleesParEtage(etageId) {
   const revelation = RPG_REVELATIONS_PAR_ETAGE[etageId];
-  return Array.isArray(revelation) ? revelation.filter((id) => cardById(id)) : [];
+  return Array.isArray(revelation) ? revelation.filter((id) => !sortTransfere(id) && cardById(id)) : [];
 }
 
 /** L'étage qui révèle une carte hors dotation : `{ etageId, etage, tour }`, sinon `null`. */
 export function carteReveleePar(cardId) {
+  if (sortTransfere(cardId)) return null;
   for (const [etageId, revelation] of Object.entries(RPG_REVELATIONS_PAR_ETAGE)) {
     if (!Array.isArray(revelation) || !revelation.includes(cardId)) continue;
     const histoire = etageHistoireParId(etageId);

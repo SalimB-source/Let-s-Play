@@ -1,3 +1,5 @@
+import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
+import { sortTransfere } from './rpgSortsTransferes.js';
 /**
  * Experimental local-only integration with the real duel engine. The UI uses
  * preconstructed or validated custom decks from an audited pool; most card
@@ -107,27 +109,14 @@ export const MOBA_MAGIES_CIBLEES = Object.freeze([
   'poigne-de-givre', 'ressac', 'appat-de-la-meute', 'frappe-iaijutsu', 'courant-de-retour', 'haut-fond', 'lame-de-mer', 'feux-de-kitsune', 'defi-du-jarl', 'brise-lame',
   ...MOBA_MAGIES_VOIES, ...MOBA_MAGIES_ALLIEES, ...MOBA_MAGIES_NEUTRES,
 ]);
-const ancienDeckEssai = Object.freeze([
-  ...MOBA_CARTES_ESSAI.flatMap((id) => ['anqa-des-braises', 'viking-des-neiges'].includes(id) ? [id] : [id, id]),
-  ...MOBA_MAGIES_ESSAI.filter((id) => id !== 'rempart-de-dunes').flatMap((id) =>
-    ['mur-de-boucliers', 'grand-voile-blanc', 'grand-hiver', 'verglas', 'brume-du-fjord'].includes(id) ? [id] : [id, id]),
-  'poigne-de-givre', 'poigne-de-givre', ...MOBA_MAGIES_VOIES, 'festin-des-vaillants',
-]);
-// Le paquet historique reste une fixture de compatibilité pour les tests du moteur ;
-// les decks réellement proposés sont désormais construits indépendamment.
-const sansBraise = (id) => ({
-  'ashigaru-des-braises': 'scalde-des-runes',
-  'anqa-des-braises': 'geant-des-banquises',
-  'tempete-de-foudre-et-de-givre': 'defi-du-jarl',
-  'trait-de-braise': 'hache-de-la-banquise',
-}[id] ?? id);
-export const MOBA_DECK_ESSAI = Object.freeze(ancienDeckEssai.map(sansBraise));
+// Le deck d'essai reste légal après le transfert des sorts aux créatures.
+export const MOBA_DECK_ESSAI = RPG_DECKS_THEMATIQUES[0].cardIds;
 export { RPG_DECKS_THEMATIQUES as MOBA_DECKS } from './rpgDecksThematiques.js';
 
 /** Only this audited pool may be used by a player-built MOBA deck. */
 export const MOBA_CARTES_AUTORISEES = Object.freeze([...new Set([
   ...CARTES_COMBAT_AUDITEES, ...MOBA_ARMES, ...MOBA_MAGIES_ESSAI, ...MOBA_MAGIES_IMMEDIATES, ...MOBA_MAGIES_CIBLEES, ...MOBA_MAGIES_SOINS, ...MOBA_MAGIES_PRIX, ...MOBA_MAGIES_TRANSFERT, ...MOBA_MAGIES_REANIMATION, ...MOBA_CONTRESORTS,
-])].filter((id) => !duelCardById(id)?.ascension));
+])].filter((id) => !sortTransfere(id) && !duelCardById(id)?.ascension));
 const CARTES_AUTORISEES = new Set(MOBA_CARTES_AUTORISEES);
 
 /** The normal mana-essai deck rules plus the MOBA effect audit gate. */
@@ -1011,6 +1000,7 @@ export function rpgMobaJouerArme(duel, side, cardId, cibleId = null, { ouvrirRep
  * validates protection, payment and resolves the printed text. The local UI
  * opts in to the limited main-phase spell window; probes resolve immediately. */
 export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = null, prixLaneId = null, { ouvrirReponse = false, cibleSecondaireId = null, emplacementReanimation = null } = {}) {
+  if (sortTransfere(cardId)) return fail('sort-transfere');
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');

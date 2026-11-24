@@ -1,3 +1,4 @@
+import { RPG_SORTS_TRANSFERES, sortTransfere } from './rpgSortsTransferes.js';
 /**
  * Catalogue de cartes de l’univers « Le Sablier ».
  *
@@ -2041,7 +2042,7 @@ export const RARETES_A_LETAL = Object.freeze(['inhabituelle', 'rare', 'mythique'
 export const carteVendueALUnite = (carte) => carteJouableSansTerrain(carte)
   && RARETES_A_LETAL.includes(carte.rarity);
 
-export const RPG_CARTES_HORS_FORMAT = Object.freeze([]);
+export const RPG_CARTES_HORS_FORMAT = RPG_SORTS_TRANSFERES;
 export const carteJouableSansTerrain = (carte) => Boolean(carte && carte.kind !== 'terrain' && !carte.ascension
   && !RPG_CARTES_HORS_FORMAT.includes(carte.id));
 
@@ -2084,6 +2085,7 @@ export function rpgValiderDeck(deck) {
   const couleurs = new Set();
   for (const id of deck) {
     const carte = cardById(id);
+    if (sortTransfere(id)) return { ok: false, raison: `${carte?.name ?? id} est devenu une capacité de créature : remplacez cette carte.` };
     if (!carteJouableSansTerrain(carte)) return { ok: false, raison: `carte hors format : ${id}` };
     cardColors(carte).forEach((c) => couleurs.add(c));
     comptes[id] = (comptes[id] ?? 0) + 1;
@@ -2110,7 +2112,7 @@ export function terrainById(id) {
  * consommées. Comme à Magic, certaines ciblent les créatures,
  * d'autres (parfois) les sorciers.
  */
-export const RPG_MAGIE_CARDS = [
+const RPG_MAGIE_CARDS_ARCHIVES = [
   ...RPG_ASCENSION_SUPPORT_SPELLS,
   ...RPG_SORTS_INVOCATION,
   {
@@ -3008,6 +3010,8 @@ export function armeById(id) {
     ?? null;
 }
 
+export const RPG_MAGIE_CARDS = RPG_MAGIE_CARDS_ARCHIVES.filter((carte) => !sortTransfere(carte.id));
+
 /** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
 export const RPG_DUEL_CARDS = [
   ...[...RPG_CREATURE_CARDS, ...RPG_TOUR_CARDS].map((card) => ({ ...card, kind: card.kind ?? 'creature' })),
@@ -3018,7 +3022,7 @@ export const RPG_DUEL_CARDS = [
 ];
 
 export function magieById(id) {
-  return RPG_MAGIE_CARDS.find((card) => card.id === id)
+  return RPG_MAGIE_CARDS_ARCHIVES.find((card) => card.id === id)
     ?? RPG_TOUR_OUBLIEE_MAGIES.find((card) => card.id === id)
     ?? null;
 }
@@ -3032,6 +3036,8 @@ export function magieById(id) {
 const CATALOG = new Map(
   [
     ...RPG_DUEL_CARDS,
+    // Les fiches retirées restent lisibles pour les sauvegardes et les échos.
+    ...RPG_MAGIE_CARDS_ARCHIVES.filter((carte) => sortTransfere(carte.id)),
     ...RPG_ASCENSION_CARDS,
     ...RPG_JETON_CARDS,
     // Le set de la Tour Oubliée est **connu du moteur mais hors catalogue** :

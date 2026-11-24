@@ -1,3 +1,4 @@
+import { sortTransfere } from './rpgSortsTransferes.js';
 /**
  * Les decks maison — les decks créés par le joueur dans l'atelier.
  *
@@ -108,7 +109,8 @@ export function maintenantIso() {
 
 /**
  * Un enregistrement de deck maison, ou `null`. Les identifiants de cartes
- * inconnus et hors format (terrains, effets liés aux terrains) sont retirés : le
+ * inconnus et hors format (terrains, effets liés aux terrains) sont retirés ;
+ * les anciens sorts transférés restent visibles pour que le joueur les remplace : le
  * deck devient « incomplet », jamais cassé. Aucune carte supplémentaire n’est
  * ajoutée ni acquise automatiquement : le joueur complète son deck dans l’atelier. L'état civil chromatique est
  * recalculé à chaque lecture — l'affichage ne dépend jamais d'une donnée
@@ -120,7 +122,7 @@ export function normaliserDeckMaison(value) {
   if (!id) return null;
   const nomBrut = typeof value.nom === 'string' ? value.nom.trim().slice(0, RPG_DECK_NOM_MAX) : '';
   const cardIds = (Array.isArray(value.cardIds) ? value.cardIds : [])
-    .filter((idCarte) => typeof idCarte === 'string' && carteJouableSansTerrain(cardById(idCarte)));
+    .filter((idCarte) => typeof idCarte === 'string' && (sortTransfere(idCarte) || carteJouableSansTerrain(cardById(idCarte))));
   const boxArt = typeof value.boxArt === 'string' && cardById(value.boxArt) ? value.boxArt : null;
   const couleurs = couleursDeckMaison(cardIds);
   return {
@@ -283,6 +285,7 @@ export function compteExemplaires(cardIds) {
 export function peutAjouterCarte(cardId, cardIds, collection = null, comptes = null) {
   const carte = cardById(cardId);
   if (!carte) return { ok: false, raison: 'Carte inconnue.' };
+  if (sortTransfere(cardId)) return { ok: false, raison: 'Ce sort est devenu une capacité de créature et ne peut plus être ajouté.' };
   if (!carteJouableSansTerrain(carte)) return { ok: false, raison: 'Carte hors format : le mana est automatique, sans terrain.' };
   if (cardIds.length >= RPG_DECK_TAILLE) return { ok: false, raison: 'Deck plein : 30 cartes au maximum.' };
   if (collection && !collection.includes(cardId)) {
@@ -318,6 +321,9 @@ export function peutAjouterCarte(cardId, cardIds, collection = null, comptes = n
 export function reparerDeckHorsStock(cardIds, collection = null, comptes = null) {
   const bruts = Array.isArray(cardIds) ? cardIds : [];
   const rendu = { cardIds: [...bruts], retires: 0, ajoutes: 0, modifie: false };
+  // Garder les listes sauvegardées intactes : le joueur choisit lui-même
+  // leurs remplacements dans l'atelier, sans perte silencieuse ni achat.
+  if (bruts.some(sortTransfere)) return rendu;
   if (!Array.isArray(collection) || collection.length === 0) return rendu;
   const limiteDe = (carte) => (carte ? exemplairesPossedables(collection, carte.id, comptes) : 0);
   const bornes = convertirDeckSansTerrain(bruts, collection, limiteDe);

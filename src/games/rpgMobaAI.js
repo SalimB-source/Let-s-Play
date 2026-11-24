@@ -1,3 +1,4 @@
+import { sortTransfere } from './rpgSortsTransferes.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
 import { cardById, cardColors, lienSatisfait } from './rpgCards.js';
@@ -247,7 +248,7 @@ function rpgMobaChoisirMagieIASurCopie(duel, side = 'sorcier', reaction = false)
   const creatures = duel[enemy].creatures;
   const allies = duel[side].creatures;
   const cards = [...new Set(duel[side].main)].map(cardById)
-    .filter((c) => (c?.kind === 'magie' || (!reaction && MOBA_ARMES.includes(c?.id))) && (!reaction || c.instant));
+    .filter((c) => c && !sortTransfere(c.id) && (c.kind === 'magie' || (!reaction && MOBA_ARMES.includes(c.id))) && (!reaction || c.instant));
   let initial = valeurPosition(duel, side);
   if (reaction && (duel.mobaSortEnAttente || duel.mobaCreatureEnAttente || duel.effetCreatureEnAttente)) {
     const baseline = copie(duel);
