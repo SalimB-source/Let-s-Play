@@ -89,3 +89,21 @@ de point de départ pour toute carte en arabe de l’atelier.
 Le key art utilisé est `instagram/assets/mw4-keyart.png` (voir le fichier
 `CREDITS.txt` du même dossier). Le visuel est recadré, le panneau se dimensionne
 sur les cinq lignes de texte, et la carte laisse une marge basse constante.
+
+## Trevor (GTA V) vs Jason (GTA VI) — carte Instagram 4:5
+
+`make_gta_trevor_jason_45.py` compose une comparaison entre Trevor Philips
+(*GTA V*, 2013) et Jason Duval (*GTA VI*, 19 novembre 2026) : deux portraits
+pleine hauteur, quatre axes de comparaison en vis-à-vis, charte prune / jaune /
+violet du site.
+
+```bash
+python3 -m pip install -r scripts/visuels/requirements.txt
+python3 scripts/visuels/make_gta_trevor_jason_45.py            # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_trevor_jason_45.py --out /tmp  # autre dossier
+```
+
+Sorties : PNG **1080 × 1350** et JPEG qualité 92, dans
+`instagram/gta-trevor-jason/`. Les matières premières (rendu détouré de Trevor,
+recadrage de Jason) vivent dans `instagram/assets/`, exclu du dépôt : le script
+seul suffit à régénérer la carte sur une machine qui a ces deux fichiers.
