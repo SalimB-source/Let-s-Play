@@ -257,10 +257,13 @@ test('Attaque ciblée = tir : tous ces tireurs se rangent au fond, Salem compris
   const devant = rapides.filter((carte) => !estDefenseur(carte) && ligneObligee(carte) !== RPG_LIGNE_FOND);
   assert.deepEqual(devant.map((carte) => carte.id), [], 'aucun tireur devant');
   assert.equal(ligneObligee(cardById('salem')), RPG_LIGNE_FOND, 'Salem tire, Salem recule');
-  // Le Défenseur garde la priorité : c'est un mur avant d'être un tireur.
+});
+
+test('la Chevalière à l’arbalète est à distance et se range au fond', () => {
   const chevaliere = cardById('chevaliere-du-baton-sacre');
-  assert.equal(estDefenseur(chevaliere), true);
-  assert.equal(ligneObligee(chevaliere), RPG_LIGNE_FRONT);
+  assert.equal(estDefenseur(chevaliere), false);
+  assert.equal(chevaliere.distance, true);
+  assert.equal(ligneObligee(chevaliere), RPG_LIGNE_FOND);
 });
 
 test('Salem posé derrière : la case du front est refusée, aucune mêlée ne le voit', () => {

@@ -1,16 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardFrameInfo, carteJouableSansTerrain } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, armeById, cardColors, cardFrameInfo, carteJouableSansTerrain } from '../src/games/rpgCards.js';
 import { effetsDetailles } from '../src/games/effetIcons.js';
 import { sacrificesInvocation } from '../src/games/rpgInvocation.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgReglerHasard } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgReglerHasard, rpgArmeCompatible } from '../src/games/rpgDuel.js';
 import { rpgCiblesIndividuellesClassique, rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from '../src/games/rpgCombatIndividuelClassique.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, rpgMobaPlacementCoherent, MOBA_CARTES_AUTORISEES, rpgMobaValiderDeck } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaCiblesIndividuelles } from '../src/games/rpgMobaAttaqueIndividuelle.js';
 import { RPG_DECKS_THEMATIQUES } from '../src/games/rpgDecksThematiques.js';
 import { mobaVoie } from '../src/games/rpgMoba.js';
+import { estDefenseur } from '../src/games/rpgDefenseur.js';
+import { ligneObligee, ligneDe, RPG_LIGNE_FOND } from '../src/games/rpgLignes.js';
 
 const ID = 'chevaliere-du-baton-sacre';
 const autre = side => side === 'joueur' ? 'sorcier' : 'joueur';
@@ -46,60 +48,97 @@ function resoudre(d, mode, side) {
       : rpgResoudreAttaqueIndividuelleClassique(d, side);
 }
 
-test('fiche 2/3, coût 3, Sable et Braise, avec ses trois capacités et son illustration', () => {
+test('fiche : tireuse sans Défenseur, capacités et caractéristiques conservées', () => {
   const c = cardById(ID); assert.ok(c && RPG_DUEL_CARDS.some(carte => carte.id === ID));
   assert.deepEqual([c.kind, c.cost, c.atk, c.def], ['creature', 3, 2, 3]);
   assert.deepEqual(new Set(cardColors(c)), new Set(['sable', 'braise']));
   assert.deepEqual(c.colorCost, { sable: 1, braise: 1 }); assert.equal(cardFrameInfo(c).key, 'hybride-braise-sable');
   assert.equal(sacrificesInvocation(c), 0); assert.ok(carteJouableSansTerrain(c));
-  assert.equal(c.coupRapide, true); assert.equal(c.defenseur, true); assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
-  assert.notEqual(c.rapidite, true); assert.notEqual(c.volDeVie, true);
-  for (const cle of ['coupRapide', 'coupCritique', 'defenseur']) assert.ok(effetsDetailles(c).pastilles.find(p => p.cle === cle)?.description, cle);
-  assert.match(c.text, /Attaque ciblée/); assert.match(c.text, /Coup critique/); assert.match(c.text, /Défenseur/);
+  assert.equal(c.distance, true); assert.equal(estDefenseur(c), false); assert.notEqual(c.coupRapide, true);
+  assert.deepEqual(c.coupCritique, { chance: .25, fois: 2 });
+  assert.deepEqual(c.blocage, { chance: .25, def: 2 });
+  assert.deepEqual(c.bonusContreElement, { element: 'tenebres', amount: 1 });
+  for (const cle of ['coupCritique', 'blocage']) assert.ok(effetsDetailles(c).pastilles.find(p => p.cle === cle)?.description, cle);
+  assert.ok(!effetsDetailles(c).pastilles.some(p => p.cle === 'defenseur'));
+  assert.match(c.text, /À distance/); assert.match(c.text, /Coup critique/); assert.doesNotMatch(c.text, /Défenseur/);
   assert.ok(existsSync(new URL(`../public/cards/${ID}.jpg`, import.meta.url)));
 });
 
+test('elle se pose au fond et utilise les armes à distance', () => {
+  const d = partie('classique'); d.lignes = true;
+  const e = poser(d, 'classique', 'joueur', ID);
+  assert.equal(ligneObligee(cardById(ID)), RPG_LIGNE_FOND);
+  assert.equal(ligneDe(e), RPG_LIGNE_FOND);
+  assert.equal(rpgArmeCompatible(armeById('javelot-du-beffroi'), e), true);
+  assert.equal(rpgArmeCompatible(armeById('takouba-des-pistes'), e), false);
+});
+
 for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) {
-  test(`${mode} ${side} : attaque ciblée critique ×2 sans riposte`, () => {
-    const d = partie(mode), cible = poser(d, mode, autre(side), 'ashigaru-des-braises'), a = poser(d, mode, side, ID);
-    cible.pv = cible.pvMax = cible.def = 20; cible.atk = 7; d.tour = side;
-    const jets = [.9, .1]; rpgReglerHasard(d, () => jets.shift() ?? .9);
-    assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
-    assert.equal(cible.pv, 16); assert.equal(a.pv, 3);
-    assert.ok(d.combatAnimations.some(e => e.type === 'coup-critique' && e.entiteId === a.id && e.fois === 2));
+  test(`${mode} ${side} : entité à distance sans priorité Défenseur`, () => {
+    const d = partie(mode), chevaliere = poser(d, mode, autre(side), ID, 0);
+    const allie = poser(d, mode, autre(side), 'viking-des-neiges', 1);
+    const attaquant = poser(d, mode, side, 'viking-des-neiges'); d.tour = side;
+    assert.equal(chevaliere.distance, true);
+    assert.equal(estDefenseur(chevaliere), false);
+    assert.deepEqual(chevaliere.blocage, { chance: .25, def: 2 });
+    assert.deepEqual(chevaliere.coupCritique, { chance: .25, fois: 2 });
+    const cibles = d.moba ? rpgMobaCiblesIndividuelles(d, side, attaquant.id) : rpgCiblesIndividuellesClassique(d, side, attaquant.id);
+    assert.ok(cibles.cibles.includes(allie.id), 'un allié accessible reste ciblable');
+    assert.ok(declarer(d, mode, side, attaquant, allie).ok, 'la chevalière n’impose pas sa priorité');
     if (d.moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
-  test(`${mode} ${side} : attaque ciblée manquée, sans critique`, () => {
-    const d = partie(mode), cible = poser(d, mode, autre(side), 'ashigaru-des-braises'), a = poser(d, mode, side, ID);
-    d.tour = side; rpgReglerHasard(d, () => 0);
-    assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
-    assert.equal(cible.pv, cible.pvMax); assert.equal(a.pv, 3);
-    assert.ok(!(d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === a.id));
-  });
-  for (const jet of [.249, .25]) test(`${mode} ${side} : critique en défense au seuil ${jet}`, () => {
-    const d = partie(mode), gardienne = poser(d, mode, autre(side), ID), attaquant = poser(d, mode, side, 'ashigaru-des-braises');
-    attaquant.pv = attaquant.pvMax = attaquant.def = 20; d.tour = side; rpgReglerHasard(d, () => jet);
-    assert.ok(declarer(d, mode, side, attaquant, gardienne).ok); assert.ok(resoudre(d, mode, side).ok);
-    assert.equal(attaquant.pv, jet < .25 ? 16 : 18);
-    assert.equal((d.combatAnimations ?? []).some(e => e.type === 'coup-critique' && e.entiteId === gardienne.id), jet < .25);
-  });
-  test(`${mode} ${side} : Défenseur impose sa priorité aux attaquants adverses`, () => {
-    const d = partie(mode), gardienne = poser(d, mode, autre(side), ID, 0);
-    const allie = poser(d, mode, autre(side), 'ashigaru-des-braises', 1);
-    const attaquant = poser(d, mode, side, 'ashigaru-des-braises'); d.tour = side;
+  test(`${mode} ${side} : même une Attaque ciblée peut viser une autre créature`, () => {
+    const d = partie(mode), chevaliere = poser(d, mode, autre(side), ID, 0);
+    const allie = poser(d, mode, autre(side), 'viking-des-neiges', 1);
+    const attaquant = poser(d, mode, side, 'viking-des-neiges');
+    attaquant.coupRapide = true; d.tour = side;
     const cibles = d.moba ? rpgMobaCiblesIndividuelles(d, side, attaquant.id) : rpgCiblesIndividuellesClassique(d, side, attaquant.id);
-    assert.deepEqual(cibles, { cibles: [gardienne.id], directe: false });
-    assert.equal(declarer(d, mode, side, attaquant, allie).ok, false);
-    assert.equal(declarer(d, mode, side, attaquant).ok, false);
-    assert.ok(declarer(d, mode, side, attaquant, gardienne).ok);
+    assert.ok(cibles.cibles.includes(allie.id)); assert.ok(cibles.cibles.includes(chevaliere.id));
+    assert.ok(declarer(d, mode, side, attaquant, allie).ok);
+  });
+  test(`${mode} ${side} : Blocage de la chevalière fonctionne toujours`, () => {
+    const d = partie(mode), chevaliere = poser(d, mode, autre(side), ID);
+    const attaquant = poser(d, mode, side, 'viking-des-neiges'); d.tour = side;
+    rpgReglerHasard(d, () => 0);
+    assert.ok(declarer(d, mode, side, attaquant, chevaliere).ok);
+    assert.equal(chevaliere.pv, 5); assert.equal(chevaliere.pvMax, 5);
     assert.ok(resoudre(d, mode, side).ok);
   });
-  test(`${mode} ${side} : critique direct contre l’adversaire`, () => {
+  test(`${mode} ${side} : le bonus contre Ténèbres est conservé`, () => {
+    const d = partie(mode), cible = poser(d, mode, autre(side), 'chacal-du-seuil'), a = poser(d, mode, side, ID);
+    cible.pv = cible.pvMax = cible.def = 20; d.tour = side;
+    rpgReglerHasard(d, () => .9);
+    assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
+    assert.equal(cible.pv, 17);
+  });
+  test(`${mode} ${side} : le tir peut toucher sans riposte de mêlée`, () => {
+    const d = partie(mode), cible = poser(d, mode, autre(side), 'viking-des-neiges'), a = poser(d, mode, side, ID);
+    cible.pv = cible.pvMax = cible.def = 20; cible.atk = 7; d.tour = side;
+    rpgReglerHasard(d, () => .9);
+    assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
+    assert.equal(cible.pv, 18); assert.equal(a.pv, 3);
+  });
+  test(`${mode} ${side} : coup critique sur un tir réussi`, () => {
+    const d = partie(mode), cible = poser(d, mode, autre(side), 'viking-des-neiges'), a = poser(d, mode, side, ID);
+    cible.pv = cible.pvMax = cible.def = 20; cible.atk = 0; d.tour = side;
+    const jets = [.9, .1]; rpgReglerHasard(d, () => jets.shift() ?? .9);
+    assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
+    assert.equal(cible.pv, 16);
+    assert.ok(d.combatAnimations.some(e => e.type === 'coup-critique' && e.entiteId === a.id && e.fois === 2));
+  });
+  test(`${mode} ${side} : tir direct critique`, () => {
     const d = partie(mode), a = poser(d, mode, side, ID), adv = autre(side);
     const avant = d.moba ? mobaVoie(d.moba, 'left').hp[adv] : d[adv].pv;
     rpgReglerHasard(d, () => .1);
     assert.ok(declarer(d, mode, side, a).ok); assert.ok(resoudre(d, mode, side).ok);
     assert.equal(d.moba ? mobaVoie(d.moba, 'left').hp[adv] : d[adv].pv, avant - 4);
+  });
+  test(`${mode} ${side} : un tir peut rater`, () => {
+    const d = partie(mode), cible = poser(d, mode, autre(side), 'viking-des-neiges'), a = poser(d, mode, side, ID);
+    cible.pv = cible.pvMax = cible.def = 20; d.tour = side;
+    rpgReglerHasard(d, () => 0);
+    assert.ok(declarer(d, mode, side, a, cible).ok); assert.ok(resoudre(d, mode, side).ok);
+    assert.equal(cible.pv, 20); assert.equal(a.pv, 3);
   });
 }
 
@@ -110,7 +149,7 @@ test('la chevalière est disponible dans un deck hybride MOBA', () => {
   assert.deepEqual(rpgMobaValiderDeck({ ...deck, cardIds }), { ok: true });
 });
 
-test('les trois pierres et son illustration figurent sur table et aperçu', async () => {
+test('la table et l’aperçu montrent les capacités conservées, sans Défenseur', async () => {
   const { createServer } = await import('vite'); const React = (await import('react')).default;
   const { renderToStaticMarkup } = await import('react-dom/server'); const { JSDOM } = await import('jsdom');
   const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' });
@@ -121,22 +160,15 @@ test('les trois pierres et son illustration figurent sur table et aperçu', asyn
     const a = poser(partie('classique'), 'classique', 'joueur', ID), c = cardById(ID);
     for (const moba of [null, { className: 'moba__slot' }]) {
       const doc = new JSDOM(renderToStaticMarkup(React.createElement(TableCard, { entite: a, cote: 'joueur', moba }))).window.document;
-      for (const cle of ['coupRapide', 'coupCritique', 'defenseur']) assert.ok(doc.querySelector(`[data-effet="${cle}"]`), cle);
+      for (const cle of ['coupCritique', 'blocage']) assert.ok(doc.querySelector(`[data-effet="${cle}"]`), cle);
+      assert.equal(doc.querySelector('[data-effet="defenseur"]'), null);
+      assert.ok(doc.querySelector('[data-stat-icon="arc"][data-stat-arc="distance"]'));
       assert.match(doc.body.innerHTML, /chevaliere-du-baton-sacre\.jpg/);
     }
     const doc = new JSDOM(renderToStaticMarkup(React.createElement(HoverCardPreview, { carte: c, entite: a }))).window.document;
-    for (const cle of ['coupRapide', 'coupCritique', 'defenseur']) assert.ok(doc.querySelector(`[data-effet="${cle}"]`), cle);
-    assert.match(doc.body.textContent, /Chevalière du bâton sacré/);
+    for (const cle of ['coupCritique', 'blocage']) assert.ok(doc.querySelector(`[data-effet="${cle}"]`), cle);
+    assert.equal(doc.querySelector('[data-effet="defenseur"]'), null);
+    assert.ok(doc.querySelector('[data-stat-icon="arc"][data-stat-arc="distance"]'));
+    assert.match(doc.body.textContent, /Chevalière à l’arbalète/);
   } finally { await vite.close(); }
-});
-
-for (const mode of ['classique', 'pvp', 'moba']) for (const side of ['joueur', 'sorcier']) test(`${mode} ${side} : Défenseur protège aussi contre l’Attaque ciblée`, () => {
-  const d = partie(mode), gardienne = poser(d, mode, autre(side), ID, 0);
-  const allie = poser(d, mode, autre(side), 'ashigaru-des-braises', 1);
-  const attaquant = poser(d, mode, side, 'djinn-de-foudre');
-  d.tour = side;
-  const cibles = d.moba ? rpgMobaCiblesIndividuelles(d, side, attaquant.id) : rpgCiblesIndividuellesClassique(d, side, attaquant.id);
-  assert.deepEqual(cibles, { cibles: [gardienne.id], directe: false });
-  assert.equal(declarer(d, mode, side, attaquant, allie).ok, false);
-  assert.ok(declarer(d, mode, side, attaquant, gardienne).ok);
 });
