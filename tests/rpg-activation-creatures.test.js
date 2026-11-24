@@ -562,8 +562,9 @@ test('une créature capturée puis libérée en jeu retrouve son activation', ()
   const pirate = rpgJouerCreature(d, 'sorcier', pirateId, scribe.id, { retourIds });
   assert.ok(pirate.ok, JSON.stringify(pirate));
   assert.equal(pirate.entite.enCale?.entite?.id, scribe.id);
-  d.tour = 'joueur'; d.joueur.main.push('le-jugement-des-colosses');
-  assert.ok(rpgLancerMagie(d, 'joueur', 'le-jugement-des-colosses', pirate.entite.id).ok);
+  d.tour = 'joueur';
+  const juge = poser(d, 'joueur', 'celui-qui-juge');
+  assert.ok(rpgActiverCapacite(d, 'joueur', juge.id, pirate.entite.id).ok);
   const revenue = d.joueur.creatures.find(e => e.id === scribe.id);
   assert.ok(revenue, 'la prisonnière revient sur le champ');
   assert.equal(revenue.activationUtiliseeMatch, false);
@@ -1136,12 +1137,12 @@ test('Mémoire : les blessures liées à l’arme et les morts sont résolues', 
   }
 });
 
-test('le sort Mémoire de l’armurerie continue d’équiper l’arme choisie', () => {
+test('la carte Mémoire de l’armurerie retirée ne peut plus être jouée', () => {
   const d = duel(); const porteur = poser(d, 'joueur', 'kraken');
   d.joueur.cimetiere.push('sabre-maudit'); d.joueur.main.push('memoire-de-l-armurerie');
-  assert.ok(rpgLancerMagie(d, 'joueur', 'memoire-de-l-armurerie', porteur.id, 'sabre-maudit').ok);
-  assert.ok(porteur.armes.includes('sabre-maudit')); assert.ok(porteur.volDeVie);
-  assert.ok(d.joueur.cimetiere.includes('memoire-de-l-armurerie'));
+  assert.equal(rpgLancerMagie(d, 'joueur', 'memoire-de-l-armurerie', porteur.id, 'sabre-maudit').raison, 'sort-transfere');
+  assert.ok(!(porteur.armes ?? []).includes('sabre-maudit')); assert.ok(d.joueur.cimetiere.includes('sabre-maudit'));
+  assert.ok(d.joueur.main.includes('memoire-de-l-armurerie'));
 });
 
 test('Mémoire : un mur ne peut pas être choisi comme porteur', () => {
@@ -1323,18 +1324,12 @@ test('PvP : un Ressac rapide qui renvoie le champion dissipe le défi payé', ()
   assert.equal(cible.pv, vie); assert.ok(jarl.activationUtiliseeMatch);
 });
 
-test('le Défi activé et la sorcellerie donnent le même échange de base', () => {
-  const echanger = (avecSort) => {
-    const d = duel(); const jarl = poser(d, 'joueur', 'jarl-au-marteau-de-guerre');
-    const champion = poser(d, 'joueur', 'kraken'); const cible = poser(d, 'sorcier', 'kraken');
-    champion.atk = 3; cible.atk = 2;
-    if (avecSort) {
-      d.joueur.main.push('defi-du-jarl');
-      assert.ok(rpgLancerMagie(d, 'joueur', 'defi-du-jarl', cible.id, champion.id).ok);
-    } else assert.ok(rpgActiverCapacite(d, 'joueur', jarl.id, cible.id, { championId: champion.id }).ok);
-    return [champion.pv, cible.pv];
-  };
-  assert.deepEqual(echanger(false), echanger(true));
+test('le Défi activé conserve les blessures simultanées de ses combattants', () => {
+  const d = duel(); const jarl = poser(d, 'joueur', 'jarl-au-marteau-de-guerre');
+  const champion = poser(d, 'joueur', 'kraken'); const cible = poser(d, 'sorcier', 'kraken');
+  champion.atk = 3; cible.atk = 2; const avant = [champion.pv, cible.pv];
+  assert.ok(rpgActiverCapacite(d, 'joueur', jarl.id, cible.id, { championId: champion.id }).ok);
+  assert.deepEqual([champion.pv, cible.pv], [avant[0] - 2, avant[1] - 3]);
 });
 
 test('un champion gelé ne frappe pas dans le défi, mais subit le coup adverse', () => {

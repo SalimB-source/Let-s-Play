@@ -20,7 +20,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'terrain-hybride',
     section: 'Types de cartes',
-    cardIds: ['vent-rouge'],
+    cardIds: ['veilleuse-de-la-lune-givree'],
     title: 'Les couleurs du deck',
     text: 'Un deck contient une à deux couleurs. Les couleurs définissent les cartes qu’il peut contenir, mais les cartes ne coûtent plus de mana.',
   },
@@ -41,30 +41,30 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'rituel-ephemere',
     section: 'Magies',
-    cardIds: ['tempete-de-sable', 'rempart-de-dunes', 'parade-du-verre'],
+    cardIds: ['serment-de-la-forge', 'rempart-de-dunes', 'parade-du-verre'],
     title: 'Rituel ou éphémère ?',
     text: 'Un rituel se lance pendant votre tour, hors réponse. Un éphémère peut aussi être joué pendant la fenêtre de réponse à une annonce ou à un combat. Le type est indiqué sur la ligne de la carte.',
   },
   {
     id: 'cible-ou-zone',
     section: 'Magies',
-    cardIds: ['trait-de-braise', 'tempete-de-sable', 'vent-rouge'],
+    cardIds: ['trait-de-braise', 'faucon-du-zenith', 'tengu-du-mont-ardent'],
     title: 'Choisir une cible ou frapper une zone',
-    text: 'Le Trait de braise demande une cible légale : une créature ou le sorcier. La Tempête de sable et le Vent rouge touchent toutes les créatures adverses. Le Vent rouge est hybride : son cadre porte les couleurs Braise et Sable. Sa ligne de type indique qu’il s’agit d’une Sorcellerie. Regardez toujours la cible et la portée écrites sur la carte.',
+    text: 'Le Trait de braise demande une cible légale : une créature ou le sorcier. Le Faucon du zénith et le Tengu du mont ardent possèdent des capacités activées qui frappent une zone. Regardez toujours les cibles et la portée indiquées ; en Conquête, ces capacités de zone ne sont pas encore disponibles.',
   },
   {
     id: 'soin-et-pioche',
     section: 'Magies',
-    cardIds: ['eau-de-la-source', 'yamina', 'rapport-du-greffier'],
+    cardIds: ['eau-de-la-source', 'yamina', 'guetteur-du-beffroi'],
     title: 'Soigner ou renouveler ses ressources',
-    text: 'Eau de la source soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. Rapport du greffier fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
+    text: 'Eau de la source soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. La capacité activée du Guetteur du beffroi fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
   },
   {
     id: 'bonus-temporaires-et-durables',
     section: 'Magies',
-    cardIds: ['rempart-de-dunes', 'mur-de-boucliers', 'tin-hinan'],
+    cardIds: ['rempart-de-dunes', 'drakkar-a-tete-de-dragon', 'tin-hinan'],
     title: 'Vérifiez combien de temps dure un bonus',
-    text: 'Le Rempart de dunes (+0/+3) et le Mur de boucliers (+2/+0 et Overkill) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
+    text: 'Le Rempart de dunes (+0/+3) et la capacité du Drakkar à tête de dragon (+2/+0 et Overkill) donnent leur bonus jusqu’à la fin du tour : le jeu le retire au bon moment. D’autres gains restent acquis — le +2/+0 du ralliement de Tin Hinan ne s’efface pas, et le bonus d’une arme dure tant qu’elle reste attachée. La durée se lit toujours sur la carte.',
   },
   {
     id: 'boucliers',
@@ -76,9 +76,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'degats-et-gel',
     section: 'Magies',
-    cardIds: ['hurlement-du-blizzard', 'brume-du-fjord', 'poigne-de-givre'],
+    cardIds: ['geant-des-banquises', 'veilleuse-de-la-lune-givree', 'poigne-de-givre'],
     title: 'Des dégâts qui peuvent geler',
-    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Le Hurlement du blizzard (2 dégâts) et la Brume du fjord (1 dégât) frappent toutes les créatures adverses, puis chaque survivante tire sa chance : une sur deux est gelée par le Hurlement, mais la Brume ne gèle qu’avec 15 % de chances. Une créature gelée ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour ; les créatures tuées par les dégâts n’ont plus rien à geler.',
+    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Les capacités activées du Géant des banquises (2 dégâts) et de la Veilleuse de la lune givrée (1 dégât) frappent une zone ; chaque survivante a 15 % de chances d’être gelée. Ces capacités de zone ne sont pas encore disponibles en Conquête. Une créature gelée ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour ; les créatures tuées par les dégâts n’ont plus rien à geler.',
   },
   {
     id: 'contresorts',
@@ -97,9 +97,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'effet-differe',
     section: 'Magies',
-    cardIds: ['nuage-de-cendres'],
+    cardIds: ['susanoo'],
     title: 'Un effet peut revenir plus tard',
-    text: 'Nuage de cendres frappe une première fois à sa résolution, puis programme une seconde vague au début de votre tour suivant : elle brûle alors ce que le sorcier a posé entre-temps, et le journal du duel en garde la trace.',
+    text: 'La capacité activée de Susanoo frappe une première fois, puis programme une seconde vague au début de votre tour suivant : elle brûle alors ce que le sorcier a posé entre-temps, et le journal du duel en garde la trace.',
   },
   {
     id: 'arrivee-en-jeu',
@@ -258,9 +258,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'overkill-et-protection',
     section: 'Capacités des créatures',
-    cardIds: ['serpent-du-monde', 'mur-de-boucliers'],
+    cardIds: ['serpent-du-monde', 'drakkar-a-tete-de-dragon'],
     title: 'Overkill perce, la protection anti-magie blinde',
-    text: 'Le Serpent du monde cumule deux défenses d’exception. Son bouclier bloque une fois un sort ou un effet de créature adverse, puis disparaît ; les attaques et les effets alliés passent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. Le Mur de boucliers prête le même Overkill à toutes vos créatures, avec +2/+0, jusqu’à la fin du tour.',
+    text: 'Le Serpent du monde cumule deux défenses d’exception. Son bouclier bloque une fois un sort ou un effet de créature adverse, puis disparaît ; les attaques et les effets alliés passent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. La capacité activée du Drakkar à tête de dragon prête aussi Overkill et +2/+0 à vos créatures jusqu’à la fin du tour.',
   },
   {
     id: 'magie-gratuite',

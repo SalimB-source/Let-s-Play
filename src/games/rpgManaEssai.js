@@ -1,3 +1,4 @@
+import { sortTransfere } from './rpgSortsTransferes.js';
 /**
  * Règles du mana sans terrains et douze archétypes bicolores partagés.
  * Le nom historique « essai » reste stable pour les états du moteur.
@@ -8,6 +9,7 @@ import {
   cardById,
   cardColors,
   cardCopyLimit,
+  carteJouableSansTerrain,
 } from './rpgCards.js';
 
 export const RPG_MODE_MANA_ESSAI = 'essai';
@@ -50,7 +52,8 @@ export function validerDeckManaEssai(deck) {
   const quantites = new Map();
   for (const id of ids) {
     const carte = cardById(id);
-    if (!carte || carte.kind === 'terrain' || carte.ascension) return { ok: false, raison: `carte interdite : ${id}` };
+    if (sortTransfere(id)) return { ok: false, raison: `${carte?.name ?? id} est devenu une capacité de créature : remplacez cette carte.` };
+    if (!carteJouableSansTerrain(carte)) return { ok: false, raison: `carte interdite : ${id}` };
     if (!cardColors(carte).every((couleur) => couleurs.includes(couleur))) {
       return { ok: false, raison: `hors identité : ${id}` };
     }

@@ -1,3 +1,4 @@
+import { sortTransfere } from './rpgSortsTransferes.js';
 import { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
 import { campPoseDe, positionDe } from './rpgChamp.js';
 export { rpgSouffreMalInvocation } from './rpgStatutsCreature.js';
@@ -8481,6 +8482,7 @@ function equiperDepuisCimetiere(duel, cote, porteur, armeId) {
 
 /** Lancer une magie : sorcellerie pendant son tour, magie rapide aussi en réponse. */
 export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeId = null, options = null) {
+  if (sortTransfere(carteId)) return { ok: false, raison: 'sort-transfere' };
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
   const adv = autre(cote);
@@ -10420,6 +10422,7 @@ export function rpgOuvrirFinDeTour(duel) {
  *  sort sans cible valide non plus.) */
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
+    if (sortTransfere(id)) return false;
     const carte = magieById(id) ?? duelCardById(id);
     // Les créatures avec Invocation spéciale ne sont jamais des réponses.
     if (carte?.kind === 'creature' || carte?.kind === 'hero') return false;

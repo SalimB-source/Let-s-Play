@@ -1,3 +1,4 @@
+import { sortTransfere } from './rpgSortsTransferes.js';
 import { ascensionDisponible, combinaisonsAscension } from './rpgAscension.js';
 import { rpgCarteEmbuscade } from './rpgEmbuscade.js';
 import { invocationPossible, rpgInvocationSpecialeSurSonTour, retoursAuDeckInvocation, retourDeckAdmissible, sacrificesInvocation, victimesInvocation, ligneQuotaInvocation } from './rpgInvocation.js';
@@ -2407,6 +2408,7 @@ function candidatsCartesIA(duel, cote, options = {}) {
   const candidats = [];
   const ciblesCondamnees = options.seulementInstants ? ciblesCondamneesAuCombat(duel, cote, options.combat) : null;
   for (const carteId of [...camp.main, ...(camp.reserveAscension ?? [])]) {
+    if (sortTransfere(carteId)) continue;
     const carte = duelCardById(carteId) ?? magieById(carteId) ?? armeById(carteId);
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
     if (exclus.has(carteId)) continue;
