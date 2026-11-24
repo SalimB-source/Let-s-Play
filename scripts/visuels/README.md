@@ -238,7 +238,8 @@ Sortie : `instagram/gta-trevor-jason/cover-titre-4k-2160x2700.png/.jpg`.
 
 Deuxième visuel du même gabarit : question `هل يمكنكم اللعب بدون الخريطة؟`
 (« Pouvez-vous jouer sans la carte ? ») sur une illustration 3D originale
-(Jason à moto, Lucia carte en main, plein jour à Vice City).
+(Jason à moto, Lucia carte en main, plein jour à Vice City). Lucia porte un
+pull en maille côtelée ivoire (manches retroussées) plutôt que le crop top.
 
 ```bash
 python3 scripts/visuels/upscale_cover.py instagram/assets/gta6-cover-map-3d.jpg \
