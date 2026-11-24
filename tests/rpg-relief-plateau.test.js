@@ -73,3 +73,78 @@ test('les sélecteurs visent les vraies cartes, piles et armes, pas leurs cases 
     assert.equal(envol.matches(ruleWith('transform', 'rotateX(6deg)').selector), false);
   } finally { await vite.close(); }
 });
+
+const mobaCss = readFileSync(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
+const mobaRules = [];
+postcss.parse(mobaCss).walkRules(rule => mobaRules.push(rule));
+const mobaRuleWith = (prop, value) => mobaRules.find(rule => decl(rule, prop) === value);
+
+test('relief Conquête : seules les cartes occupées et les armes sont inclinées', async () => {
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom', logLevel: 'error' });
+  try {
+    const { TableCard } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const render = (id, extra = {}) => renderToStaticMarkup(React.createElement(TableCard, {
+      entite: { id, carteId: 'chien-du-guet', name: 'Chien du guet', atk: 2, def: 2, pv: 2, pvMax: 2, ready: true, ...extra }, cote: 'joueur',
+      moba: { className: 'moba__slot has-creature' },
+    }));
+    const dom = new JSDOM(`<div class="rpg-battle rpg-battle--moba"><main class="moba"><div class="moba__slots">
+      <div class="moba__real-slot">${render('simple')}<span class="moba__summon-fx"></span></div>
+      <div class="moba__real-slot">${render('equipee', { arme: { carteId: 'sabre-maudit' } })}<span class="moba__shield-fx"></span></div>
+      <div class="moba__real-slot">${render('volante', { envol: true })}</div>
+      <div class="moba__plain-slot"><button class="moba__slot is-empty"></button></div>
+      <div class="moba__plain-slot"><button class="moba__slot has-creature"></button></div>
+      <div class="moba__ghost-slot"><button class="moba__slot has-creature"></button><span class="moba__ghost-zone"></span></div>
+    </div></main></div>`);
+    const doc = dom.window.document;
+    const rotation = mobaRuleWith('rotate', 'x var(--moba-relief-angle)');
+    assert.ok(rotation);
+    const cibles = [...doc.querySelectorAll(rotation.selector)];
+    assert.equal(cibles.length, 4, 'carte, wrapper équipé et deux cartes autonomes');
+    assert.equal(cibles.filter(el => el.classList.contains('rpg-card-prison')).length, 1);
+    assert.ok(cibles.some(el => el.querySelector('[data-arme-equipee="sabre-maudit"]')));
+    for (const selecteur of ['.moba__slot.is-empty', '.moba__real-slot', '.moba__summon-fx', '.moba__shield-fx', '.moba__ghost-zone']) {
+      assert.equal(doc.querySelector(selecteur).matches(rotation.selector), false, selecteur);
+    }
+    assert.equal(decl(rotation, 'transform'), undefined);
+    const perspective = mobaRuleWith('perspective', '900px');
+    assert.equal(doc.querySelectorAll(perspective.selector).length, 6);
+    const envolRule = mobaRuleWith('transform', 'rotateX(var(--moba-relief-angle))');
+    const envol = doc.querySelector('.rpg-card.is-envol');
+    assert.equal(envol.matches(envolRule.selector), false, 'pose animée');
+    envol.classList.remove('fx-enter');
+    assert.ok(envol.matches(envolRule.selector));
+    for (const etat of ['fx-lunge', 'fx-hit', 'fx-dodge']) {
+      envol.classList.add(etat); assert.equal(envol.matches(envolRule.selector), false, etat); envol.classList.remove(etat);
+    }
+    envol.dataset.combatTilted = 'true';
+    assert.equal(envol.matches(envolRule.selector), false);
+    dom.window.close();
+  } finally { await vite.close(); }
+});
+
+test('mobile : relief visible au repos, portrait et paysage, sans ajouter de mouvement', () => {
+  const mobileDuel = ruleWith('rotate', 'x 16deg');
+  assert.match(mobileDuel.selector, /rpg-battle--touch/);
+  assert.match(mobileDuel.selector, /rpg-card-prison, \.rpg-card-stack/);
+  const mobileEnvol = ruleWith('transform', 'rotateX(16deg)');
+  assert.match(mobileEnvol.selector, /fx-enter/);
+  const mobileMoba = mobaRuleWith('--moba-relief-angle', '16deg');
+  assert.match(mobileMoba.parent.params, /max-width:\s*700px/);
+  assert.match(mobileMoba.parent.params, /hover:\s*none/);
+  assert.match(mobileMoba.parent.params, /pointer:\s*coarse/);
+  assert.doesNotMatch(mobileMoba.parent.params, /orientation/);
+  assert.equal(decl(mobileMoba, 'transition'), undefined);
+  const ombreDuel = rules.find(rule => rule.selector.includes('rpg-battle--touch') && rule.selector.includes('rpg-relief-ombre'));
+  const ombreMoba = mobaRules.find(rule => rule.selector.includes('rpg-relief-ombre') && decl(rule, 'opacity') === '.8');
+  assert.equal(decl(ombreDuel, 'transition'), 'none');
+  assert.equal(decl(ombreMoba, 'transition'), 'none');
+});
+
+test('survol Conquête des armes désactivé en mouvement réduit et pendant les combats', () => {
+  const elevation = mobaRuleWith('translate', '0 -6px');
+  assert.ok(elevation);
+  assert.match(elevation.parent.params, /prefers-reduced-motion:\s*no-preference/);
+  assert.match(elevation.selector, /is-reduced/);
+  assert.match(elevation.selector, /focus-within/);
+  for (const etat of ['is-attacking', 'is-blocking', 'data-combat-tilted', 'fx-enter', 'fx-lunge', 'fx-hit']) assert.ok(elevation.selector.includes(etat), etat);
+});
