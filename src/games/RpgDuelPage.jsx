@@ -3254,10 +3254,8 @@ export function TableCard({
         miss ? 'is-miss' : '',
         moba?.className ?? '',
       ].filter(Boolean).join(' ')}
-      /* Une carte POSÉE sur la table est toujours droite : l'éventail et ses
-         inclinaisons n'appartiennent qu'à la main. Seuls les états de combat
-         (attaquant déclaré, créature engagée) la font pencher, et ils sont
-         écrits dans la feuille (`data-combat-tilted`). */
+      /* L'inclinaison latérale de combat reste distincte du léger relief 3D
+         du plateau ; l'éventail, lui, n'appartient qu'à la main. */
       style={{
         // Quand la créature est en furie, l'illustration occupe tout l'espace :
         // aucun cadre ni bordure ne vient rogner la peinture pleine page.

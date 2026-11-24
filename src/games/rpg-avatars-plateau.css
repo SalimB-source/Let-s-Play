@@ -692,3 +692,51 @@
 .rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .card-row[data-lignes="true"] {
   --essai-colonne: clamp(64px, min(9.5vw, 13.5vh), 140px);
 }
+
+/* Relief discret des cartes du plateau. Les .rpg-creature-slot sont les cases
+   de ciblage d'un calque séparé : les cartes ne sont pas leurs enfants. La
+   perspective est donc partagée par la rangée réelle et par les cases, sans
+   déplacer leurs grilles ni intercepter les clics. */
+.rpg-battle[data-scene="duel"] .card-row,
+.rpg-battle[data-scene="duel"] .rpg-creature-slot {
+  perspective: 900px;
+}
+
+/* Les cartes simples ont déjà des transforms de combat et des animations :
+   la rotation individuelle ajoute le même rotateX(6deg) sans les remplacer.
+   Pour les piles et les cartes équipées, on incline le wrapper une seule fois
+   afin que la prisonnière, les armes et leurs boutons restent solidaires. */
+.rpg-battle[data-scene="duel"] .card-row > .rpg-card:not(.is-envol),
+.rpg-battle[data-scene="duel"] .card-row > :is(.rpg-card-prison, .rpg-card-stack) {
+  rotate: x 6deg;
+}
+/* L'Envol anime déjà la propriété rotate : utiliser transform pour la seule
+   carte volante sans wrapper, hors inclinaison de combat et cinématiques. */
+.rpg-battle[data-scene="duel"] .card-row > .rpg-card.is-envol:not(
+  [data-combat-tilted="true"], .is-down, .fx-enter, .fx-lunge, .fx-hit,
+  .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+) {
+  transform: rotateX(6deg);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Une carte simple conserve son survol existant ; une pile ou une arme
+     monte avec son porteur, y compris lorsque son bouton reçoit le focus. */
+  .rpg-battle[data-scene="duel"]:not(.is-reduced) .card-row > :is(.rpg-card-prison, .rpg-card-stack) {
+    transition: translate .2s ease;
+  }
+  .rpg-battle[data-scene="duel"]:not(.is-reduced) .card-row > :is(.rpg-card-prison, .rpg-card-stack):is(:hover, :focus-within) {
+    translate: 0 -6px;
+    z-index: 20;
+  }
+  /* Éviter un second saut de la face sans défaire la rotation de combat. */
+  .rpg-battle[data-scene="duel"]:not(.is-reduced) .card-row > :is(.rpg-card-prison, .rpg-card-stack) .rpg-card:hover:not(.is-down) {
+    transform: none;
+  }
+  .rpg-battle[data-scene="duel"]:not(.is-reduced) .card-row > .rpg-card.is-envol:not(
+    [data-combat-tilted="true"], .is-down, .fx-enter, .fx-lunge, .fx-hit,
+    .fx-combat-impact, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge
+  ):is(:hover, :focus-visible) {
+    transform: translateY(-6px) rotateX(6deg);
+  }
+}
