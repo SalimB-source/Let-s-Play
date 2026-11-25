@@ -181,15 +181,12 @@ test('le renfort ne se défait pas au soin suivant : le plafond relevé tient', 
 test('la fenêtre d’effet activé passe au-dessus de toutes les cartes', () => {
   const jsx = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-  // Les rangées sont des contextes d'empilement à 4/5, sous les terrains (41)
-  // et le dock de la main (42) : le menu ouvert soulève la carte ET sa rangée.
-  // La carte et ses variantes équipées/gardées portent la même levée.
-  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*z-index:\s*44/u);
-  // La rangée ET ses wrappers de pile/prison suivent la carte soulevée, et la
-  // levée est `!important` : en mode mana d'essai, chaque carte de la rangée
-  // porte un `z-index: 1` donné par une règle plus spécifique.
-  assert.match(css, /\.card-row:has\(\.rpg-card\.is-effet-menu\),\s*\.card-row > :is\(\.rpg-card-stack, \.rpg-card-prison\):has\(\.rpg-card\.is-effet-menu\)\s*\{\s*z-index:\s*44\s*!important/u);
-  // La levée se lit dans le CSS, aucune prop n'est câblée dans le JSX : les
+  // Le portail échappe aux piles et rangées tout en restant dans la table,
+  // sous ses annonces et ses effets de combat.
+  assert.match(jsx, /closest\('\.card-table'\)/u);
+  assert.match(jsx, /createPortal\(/u);
+  assert.match(css, /\.rpg-card__effet-menu\s*\{[^}]*z-index:\s*44/u);
+  // Aucune prop n'est câblée sur les rangées en JSX : les
   // deux rangées gardent leur `className` littéral.
   assert.match(jsx, /className="card-row card-row--equipe"/u);
   assert.match(jsx, /className="card-row card-row--ennemi"/u);
@@ -210,8 +207,10 @@ test('les tirs des effets activés ont chacun leur tête, et l’activation les 
   // Sans le relevé du champ avant/après, aucun tir ne s'allume : les deux
   // chemins d'activation (avec et sans cible) le font maintenant.
   const resoudre = jsx.slice(jsx.indexOf('const resoudreActivation = (entite)'), jsx.indexOf('const basculerAttaquant'));
-  assert.match(resoudre, /prendreInstantaneChamp\(\)/u);
-  assert.match(resoudre, /animerModificationsChamp\(champAvantAction, \[\], debutJournalDestructions\)/u);
+  assert.match(resoudre, /executerActivation\(sourceId, entite\.id/u);
+  const executer = jsx.slice(jsx.indexOf('const executerActivation ='), jsx.indexOf('const resoudreActivation = (entite)'));
+  assert.match(executer, /prendreInstantaneChamp\(\)/u);
+  assert.match(executer, /animerModificationsChamp\(champAvantAction, \[\], debutJournalDestructions\)/u);
   const sansCible = jsx.slice(jsx.indexOf("if (activation?.cible === 'aucune')"), jsx.indexOf('const engagerPourMana'));
   assert.match(sansCible, /prendreInstantaneChamp\(\)/u);
   assert.match(sansCible, /animerModificationsChamp\(champAvantAction, \[\], debutJournalDestructions\)/u);

@@ -246,7 +246,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   }),
   carte({
     id: 'le-chasseur-d-ocracoke', distance: true,
-    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'lettre-de-marque', effet: { type: 'prochaine-arrivee-abordage', pioche: 1 } },
+    activation: { nom: 'Lettre de marque', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'lettre-de-marque', effet: { type: 'prochaine-arrivee-abordage', pioche: 1 } },
     name: 'Le Chasseur d’Ocracoke',
     element: 'sable',
     colors: ['sable', 'eau'],
@@ -315,7 +315,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   }),
   carte({
     id: 'la-barbe-rousse',
-    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'le-grand-debarquement', effet: { type: 'buff', atk: 2, def: 2, overkill: true, caleOccupeeSeulement: true, cible: 'toutes-alliees', tours: 1 } },
+    activation: { nom: 'Le Grand Débarquement', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'le-grand-debarquement', effet: { type: 'buff', atk: 2, def: 2, overkill: true, caleOccupeeSeulement: true, cible: 'toutes-alliees', tours: 1 } },
     name: 'La Barbe-Rousse, amiral des deux mers',
     element: 'sable',
     colors: ['sable', 'eau'],

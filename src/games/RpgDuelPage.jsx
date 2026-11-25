@@ -49,6 +49,7 @@ import { convertirDeckSansTerrain } from './rpgCards.js';
  */
 
 import { Fragment, memo, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './rpg-battle.css';
 import './rpg-relief-visuel.css';
 import './rpg-mobile.css';
@@ -3016,6 +3017,66 @@ export function RpgMassFreezeFx({ effet }) {
   );
 }
 
+// Hors de la carte et de ses rangées rognées : les deux boutons restent de
+// vraies commandes indépendantes, même sur une carte équipée ou animée.
+function MenuActionsCreature({ cardRef, onAttaquer, onActiver, onFermer }) {
+  const menuRef = useRef(null);
+  const [hote, setHote] = useState(null);
+
+  useLayoutEffect(() => {
+    const carte = cardRef.current;
+    setHote(carte?.closest('.card-table') ?? carte?.closest('.rpg-battle') ?? carte?.ownerDocument.body ?? null);
+  }, [cardRef]);
+
+  useLayoutEffect(() => {
+    if (!hote || !menuRef.current) return undefined;
+    const menu = menuRef.current;
+    const win = hote.ownerDocument.defaultView;
+    let frame;
+    const placer = () => {
+      const carte = cardRef.current;
+      if (!carte) return;
+      const r = carte.getBoundingClientRect();
+      const base = hote === hote.ownerDocument.body
+        ? { left: 0, top: 0, right: win.innerWidth, bottom: win.innerHeight }
+        : hote.getBoundingClientRect();
+      const largeur = menu.offsetWidth;
+      const hauteur = menu.offsetHeight;
+      const marge = 4;
+      const x = Math.max(base.left + marge, Math.min(r.left + r.width / 2 - largeur / 2, base.right - largeur - marge));
+      const auDessus = r.top - hauteur - 10;
+      const y = Math.max(base.top + marge, Math.min(auDessus >= base.top + marge ? auDessus : r.bottom + 10, base.bottom - hauteur - marge));
+      menu.style.left = `${x - base.left}px`;
+      menu.style.top = `${y - base.top}px`;
+      menu.style.visibility = carte.closest('[inert]') || r.bottom <= base.top || r.top >= base.bottom || r.right <= base.left || r.left >= base.right ? 'hidden' : 'visible';
+      frame = win.requestAnimationFrame(placer);
+    };
+    placer();
+    if (menu.style.visibility === 'visible') menu.querySelector('button')?.focus({ preventScroll: true });
+    return () => win.cancelAnimationFrame(frame);
+  }, [cardRef, hote]);
+
+  if (!hote) return null;
+  return createPortal(
+    <div ref={menuRef} className="rpg-card__effet-menu" role="group" aria-label="Actions de la créature"
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && onFermer) {
+          event.stopPropagation();
+          onFermer();
+          cardRef.current?.focus({ preventScroll: true });
+        }
+      }}>
+      <button type="button" className="rpg-card__effet-btn rpg-card__effet-btn--atk"
+        aria-label="Attaquer" onClick={(event) => { event.stopPropagation(); onAttaquer?.(); }}>⚔</button>
+      <button type="button" className="rpg-card__effet-btn rpg-card__effet-btn--effet"
+        aria-label="Activer l’effet" onClick={(event) => { event.stopPropagation(); onActiver(); }}>
+        <span className="rpg-activation-bolt" aria-hidden="true">⚡</span>
+      </button>
+    </div>, hote,
+  );
+}
+
 export function TableCard({
   entite,
   cote,
@@ -3072,6 +3133,7 @@ export function TableCard({
   activationDispo = false,
   onActiver = null,
   effetMenuOuvert = false,
+  onFermerMenuEffet = null,
   tutorialTarget,
   onHoverCard,
   onLeaveHoverCard,
@@ -3124,8 +3186,7 @@ export function TableCard({
   const activation = carte?.activation;
   // Effet activé dépensé pour cette présence : le bouton reste indisponible.
   const activationEpuisee = Boolean(activation && (entite.activationUtiliseeMatch || entite.activationUtiliseeCeTour));
-  // Le petit bouton « Activer l'effet » pend SOUS la carte : la carte doit
-  // ouvrir son rognage le temps du menu, sinon le cadre coupe le bouton.
+  // Les commandes sortent de la carte et de ses conteneurs rognés.
   const boutonEffetVisible = Boolean(!ascensionSelection && activation && cote === 'joueur'
     && onActiver && effetMenuOuvert && activationDispo);
   const malInvocation = !estSite && rpgSouffreMalInvocation(entite);
@@ -3224,7 +3285,6 @@ export function TableCard({
         blessee ? 'is-wounded' : '',
         entite.furieDeclenchee ? 'is-furie' : '',
         activationEpuisee ? 'is-activation-epuisee' : '',
-        boutonEffetVisible ? 'is-effet-menu' : '',
         canTarget ? 'is-ciblable' : '',
         sacrificeTarget ? 'is-sacrifice-target' : '',
         reserveAscension ? 'rpg-ascension-reserve-card' : '',
@@ -3406,40 +3466,14 @@ export function TableCard({
           className="rpg-card-icones--colonne"
         />
       )}
-      {activation && !estSite && (
+      {activation && !estSite && !activationEpuisee && (
         <span
           className="rpg-card__effet-badge"
-          title="Créature avec effet activé"
+          title={activation.nom}
           aria-hidden="true"
         >
           ⚡
         </span>
-      )}
-      {boutonEffetVisible && (
-        <div className="rpg-card__effet-menu" role="group" aria-label="Actions de la créature">
-          <button
-            type="button"
-            className="rpg-card__effet-btn rpg-card__effet-btn--atk"
-            aria-label="Attaquer"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClick?.();
-            }}
-          >
-            ⚔
-          </button>
-          <button
-            type="button"
-            className="rpg-card__effet-btn rpg-card__effet-btn--effet"
-            aria-label="Activer l’effet"
-            onClick={(event) => {
-              event.stopPropagation();
-              onActiver();
-            }}
-          >
-            <span className="rpg-activation-bolt" aria-hidden="true">⚡</span>
-          </button>
-        </div>
       )}
         {!estSite && (
           <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${entite.brulure ? ', brûlée : perd 1 PV au début de chacun de ses tours et ne peut plus être soignée' : ''}${blessee ? ', blessée' : ''}`}>
@@ -3482,8 +3516,10 @@ export function TableCard({
   // La prisonnière et les cartes d'armes vivent derrière la créature, dans
   // une boîte de la taille d'une case. Les armes sont des boutons séparés :
   // leur consultation ne déclenche jamais l'action de combat du porteur.
-  if (!prisonniereCarte && !cartesArmes.length) return carteRendue;
+  const menuActions = boutonEffetVisible && <MenuActionsCreature cardRef={cardRef} onAttaquer={onClick} onActiver={onActiver} onFermer={onFermerMenuEffet} />;
+  if (!prisonniereCarte && !cartesArmes.length) return <>{carteRendue}{menuActions}</>;
   return (
+    <>
     <span
       className={`rpg-card-prison${cartesArmes.length ? ' rpg-card-avec-arme' : ''}`}
       style={caseEssai ? {
@@ -3518,6 +3554,8 @@ export function TableCard({
       })}
       {carteRendue}
     </span>
+    {menuActions}
+    </>
   );
 }
 
@@ -3751,11 +3789,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier' || cle === 'activation');
   // L'état posé prime ; sinon la Furie garantit ses gains imprimés.
+  const activationApercuEpuisee = effetsEpuisesActifs.includes('activation') || Boolean(entite?.activationUtiliseeMatch || entite?.activationUtiliseeCeTour);
   const effetsInactifsActifs = effetsFurieInactifs(carte, entite ?? (estEnFurie ? carte?.furieGains : null));
   const mentionsEffetsEpuises = [
     effetsEpuisesActifs.includes('tenacite') && 'Tenacité déjà utilisée',
     effetsEpuisesActifs.includes('bouclier') && 'Bouclier tombé',
-    effetsEpuisesActifs.includes('activation') && 'Effet activé déjà utilisé pendant cette présence',
+    activationApercuEpuisee && 'Effet activé déjà utilisé pendant cette présence',
   ].filter(Boolean);
   // La modification chiffrée que la carte inflige (-2/-2 pour la Lame de mer).
   const modifCarte = modificationStats(carte);
@@ -3861,6 +3900,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           {/* La règle vient du module partagé : la même phrase pour l'aperçu,
               la carte posée (aria-label) et le journal. */}
           {texteActivation(carte)}
+          {activationApercuEpuisee && <small> — Déjà utilisé pendant cette présence</small>}
         </p>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
@@ -3912,6 +3952,9 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         effetsEpuises={effetsEpuisesActifs}
         effetsInactifs={effetsInactifsActifs}
       />
+      {estCreature && carte.activation && !activationApercuEpuisee && (
+        <span className="rpg-card__effet-badge" title={carte.activation.nom} aria-hidden="true">⚡</span>
+      )}
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
           <span className={`rpg-card__stat--atk ${entite ? classeVariationStatCreature(attaqueAffichee, carte.atk) : ''}`}><CardStatIcon type="attack" attaqueCiblee={entite?.coupRapide ?? (carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide))} distance={entite?.distance ?? (carte.distance || armesEquipees.some((arme) => arme.donne?.distance || arme.effet?.distance))} iconeType={!armesEquipees.length && iconeTypeDe(carte)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
@@ -3931,7 +3974,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden={variante === 'graveyard' ? 'true' : undefined}
       data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
       data-effets-inactifs={effetsInactifsActifs.length ? effetsInactifsActifs.join(' ') : undefined}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain || carte.cost == null ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${description ? `, effet ${description}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) && !statsDejaExpliquees ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain || carte.cost == null ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${description ? `, effet ${description}` : ''}${carte.activation ? `, effet activé : ${texteActivation(carte)}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) && !statsDejaExpliquees ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
       style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
       {variante === 'annonce' ? (
@@ -4262,7 +4305,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
       data-card-id={carte.id}
       data-mulligan-index={index}
       aria-pressed={selectionnee}
-      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : estArme ? ` — bonus d’arme ${bonusArmeTexte(carte)}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
+      aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${carte.activation ? ` — effet activé : ${texteActivation(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : estArme ? ` — bonus d’arme ${bonusArmeTexte(carte)}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
       <RpgCadreCarte carte={carte} />
@@ -4271,6 +4314,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
       {afficherIcones && <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />}
 
+      {estCreature && carte.activation && <span className="rpg-card__effet-badge" title={carte.activation.nom} aria-hidden="true">⚡</span>}
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
@@ -15119,6 +15163,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         && (activationEnCours === entite.id || rpgPeutActiverCapacite(duel, 'joueur', entite.id)))}
                       onActiver={() => { setMenuEffetEntiteId(null); activerCapacite(entite); }}
                       effetMenuOuvert={menuEffetEntiteId === entite.id}
+                      onFermerMenuEffet={() => setMenuEffetEntiteId(null)}
                       canDragBlocker={Boolean(combatCollectif && reponseActive && !reponseApresBlocage && bloqueursDisponibles.some((bloqueur) => bloqueur.id === entite.id))}
                       draggedBlocker={bloqueurGlisse === entite.id}
                       onStartBlockerDrag={commencerGlisserBloqueur}

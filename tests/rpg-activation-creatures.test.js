@@ -99,7 +99,10 @@ test('chaque effet activé est annoncé, jouable et dit ce qu’il fait', () => 
     assert.ok(activation.effet?.type, `${carte.id} : un effet, pas seulement un coût`);
 
     const phrase = texteActivation(carte);
-    assert.match(phrase, /^1\/présence — .+\.$/u, `${carte.id} : « ${phrase} »`);
+    assert.ok(activation.nom?.trim(), `${carte.id} possède un nom de capacité`);
+    assert.ok(phrase.startsWith(`${activation.nom} — `), `${carte.id} : « ${phrase} »`);
+    assert.doesNotMatch(phrase, /1\s*\/\s*(?:tour|présence)/u);
+    assert.match(phrase, /\.$/u);
     assert.doesNotMatch(phrase, /undefined|NaN|\[object/u, `${carte.id} : « ${phrase} »`);
 
     // La liste de cibles suit la portée : rien à désigner, ou des identifiants.
@@ -231,10 +234,8 @@ test('attaquer et effet activé s’ouvrent au-dessus de la carte, plus grands e
   // Une seule définition du menu : la seconde contredisait la première.
   const menus = blocs('.rpg-card__effet-menu');
   assert.equal(menus.length, 1, 'une seule définition du menu');
-  assert.match(menus[0], /bottom:\s*calc\(100% \+ 10px\)/u, 'au-dessus de la carte');
-  assert.match(menus[0], /top:\s*auto/u, 'plus rien ne le pend en dessous');
-  assert.match(menus[0], /left:\s*50%/u);
-  assert.match(menus[0], /transform:\s*translateX\(-50%\)/u, 'centré sur la créature');
+  assert.match(menus[0], /position:\s*absolute/u, 'menu sur la couche du duel');
+  assert.match(menus[0], /z-index:\s*44/u);
   assert.match(menus[0], /justify-content:\s*center/u);
 
   // Les boutons sont des cases de la barre, plus des boîtes absolues : c'est le
@@ -255,25 +256,9 @@ test('attaquer et effet activé s’ouvrent au-dessus de la carte, plus grands e
   assert.ok(pop.length > 0, 'l’animation d’apparition existe');
   assert.doesNotMatch(pop, /transform/u, 'aucun `transform` dans les images clés');
 
-  // La levée doit battre les règles qui donnent un z-index à chaque carte de
-  // la rangée — en mode mana d'essai, toutes portent `z-index: 1` par une
-  // règle à quatre classes : sans `!important`, la créature jouée après (plus
-  // tard dans le DOM, posée juste au-dessus) repeignait par-dessus la fenêtre.
-  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*z-index:\s*44\s*!important/u,
-    'la carte au menu ouvert prime sur tous les z-index de carte');
-  assert.match(css, /\.card-row:has\(\.rpg-card\.is-effet-menu\),\s*\.card-row > :is\(\.rpg-card-stack, \.rpg-card-prison\):has\(\.rpg-card\.is-effet-menu\)\s*\{[^}]*z-index:\s*44\s*!important/u,
-    'la rangée et ses wrappers de pile/prison suivent la carte soulevée');
-
   // Le retour à l'appui se voit, sinon le clic semble perdu.
   assert.match(css, /\.rpg-card__effet-btn:active\s*\{[^}]*transform:\s*translateY\(2px\)/u);
   assert.match(css, /\.rpg-card__effet-btn:focus-visible\s*\{/u);
-
-  // Un bouton rogné ne reçoit aucun clic : le cadre s'ouvre assez, y compris
-  // sur les créatures équipées ou gardées dont les variantes pèsent trois
-  // classes (`.has-arme.has-garde`, `.has-arme:is(.has-resonance, …)`).
-  const rognage = blocs('.rpg-card.is-effet-menu')[0] ?? '';
-  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*78px/u,
-    `le rognage s'ouvre pour le menu : ${rognage.slice(0, 80)}`);
 
   // Au doigt, la case grandit encore.
   assert.match(css, /@media \(hover: none\) and \(pointer: coarse\)\s*\{[^@]*?\.rpg-card__effet-btn\s*\{[^}]*width:\s*58px/su);
@@ -324,9 +309,10 @@ test('l’aperçu au survol s’efface devant la fenêtre d’effet ouverte', ()
   assert.equal(rendus.length, 2, 'les deux emplacements de l’aperçu gardent la même priorité');
   // Les boutons arrêtent la propagation : un clic sur ⚔ ou ⚡ ne referme pas le
   // menu en déclenchant le clic de la carte.
-  const menu = jsx.slice(jsx.indexOf('rpg-card__effet-menu"'), jsx.indexOf('rpg-card__foot'));
-  assert.equal((menu.match(/event\.stopPropagation\(\)/gu) ?? []).length, 2,
-    'chaque bouton garde son clic');
+  const menu = jsx.slice(jsx.indexOf('function MenuActionsCreature'), jsx.indexOf('export function TableCard'));
+  assert.equal((menu.match(/event\.stopPropagation\(\)/gu) ?? []).length, 4,
+    'clics, pointeur et Échap restent dans le menu');
+  assert.match(menu, /createPortal/u, 'commandes séparées du bouton de carte');
 });
 
 test('trois associations reprennent l’effet de base du sort, sans Lien ni contresort', () => {
@@ -422,7 +408,7 @@ test('les nouvelles capacités reprennent leurs sorts de base sans le Lien', () 
     const carte = cardById(id); const magie = magieById(sort);
     assert.equal(carte.activation.sortAssocie, sort);
     assert.deepEqual(carte.activation.effet, magie.effet);
-    assert.match(texteActivation(carte), /^1\/présence — /u);
+    assert.ok(texteActivation(carte).startsWith(`${carte.activation.nom} — `));
     assert.doesNotMatch(texteActivation(carte), /Active son effet/u);
   }
   assert.equal(cardById('maitre-des-corbeaux').cost, 7, 'la destruction totale est confiée à une grosse créature');
@@ -1030,7 +1016,7 @@ test('Neige noire et Ressac ne sont pas disponibles en Conquête sans choix de v
 });
 
 test('le texte explique qu’une nouvelle présence peut utiliser sa capacité', () => {
-  assert.match(texteActivation(cardById('valkyrie-des-neuf-nuits')), /^1\/présence/u);
+  assert.match(texteActivation(cardById('valkyrie-des-neuf-nuits')), /^Neige noire — /u);
 });
 
 test('la zone automatique de Ressac ignore les Vampires et évite de renvoyer les alliés', () => {

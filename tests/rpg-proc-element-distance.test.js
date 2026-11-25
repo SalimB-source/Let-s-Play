@@ -193,13 +193,13 @@ test('un effet activé dépensé grise la créature et ferme le bouton', () => {
   assert.equal(rpgPeutActiverCapacite(d, 'joueur', eirik.id), false);
 });
 
-test('la table grise la peinture et ouvre le rognage le temps du menu d’effet', () => {
+test('la table grise la peinture et détache le menu d’effet du rognage', () => {
   const jsx = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-  // Le menu s'ouvre au-dessus de la carte : le cadre qui rogne doit s'ouvrir
-  // pour lui (10px d'écart + 52px de bouton + 1px de levée + l'ombre).
-  assert.match(css, /\.rpg-card\.is-effet-menu,\s*\.rpg-card:is\([^)]*\)\.is-effet-menu\s*\{[^}]*overflow-clip-margin:\s*78px/u);
-  assert.match(jsx, /boutonEffetVisible \? 'is-effet-menu' : ''/u);
+  // La table accueille le menu hors du cadre et des piles rognées.
+  assert.match(jsx, /closest\('\.card-table'\)/u);
+  assert.match(jsx, /createPortal\(/u);
+  assert.match(css, /\.rpg-card__effet-menu\s*\{[^}]*z-index:\s*44/u);
   // L'éclair a sa propre boîte dans le bouton : il ne peut plus être rogné.
   assert.match(jsx, /className="rpg-card__effet-btn rpg-card__effet-btn--effet"/u);
   assert.match(jsx, /<span className="rpg-activation-bolt" aria-hidden="true">⚡<\/span>/u);

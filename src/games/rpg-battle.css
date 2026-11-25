@@ -16609,51 +16609,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: .85em; height: .85em; flex-basis: .85em;
 }
 
-/* Fenêtre d'effet activé style Duel Links, AU-DESSUS de la carte.
-   Les deux commandes (⚔ attaquer, ⚡ activer l'effet) flottent au-dessus du
-   cadre, centrées sur la carte : les cartes qui rognent leur débordement
-   (`.rpg-card--img` et `.has-arme` à 24 px, `.has-garde` et les résonances à
-   58 px) coupaient le menu quand il pendait sous le cadre, et il tombait dans
-   le dock de la main. Tant que le menu est ouvert, la carte ouvre son rognage
-   de quoi loger les boutons entiers — 10 px d'écart, 52 px de hauteur (58 au
-   doigt), 1 px de levée au survol, plus l'ombre. Refermé, le cadre reprend sa
-   marge d'origine.
-
-   Un bouton rogné n'est pas seulement coupé : ce qui dépasse du rognage ne
-   reçoit plus aucun clic. D'où la marge large, et la seconde ligne de
-   sélecteurs — `.rpg-card.has-arme.has-garde` et
-   `.rpg-card.has-arme:is(.has-resonance, …)` pèsent trois classes et
-   repassaient à 58 px sur les créatures équipées. */
-.rpg-card.is-effet-menu,
-.rpg-card:is(.has-arme, .has-garde, .has-resonance, .has-aura, .has-malediction).is-effet-menu {
-  overflow-clip-margin: 78px;
-  /* La fenêtre passe AU-DESSUS de toutes les cartes. Les rangées sont des
-     contextes d'empilement (z-index 4, puis 5 en large) : les boutons, même à
-     z-index 90 dans leur carte, restaient sous les terrains (41) et sous le
-     dock de la main (42). Le menu ouvert soulève donc la carte et sa rangée
-     ensemble ; les annonces (46 et plus) et les calques de combat (54 et plus)
-     gardent la priorité.
-
-     Le `!important` n'est pas décoratif : en mode mana d'essai, TOUTES les
-     cartes de la rangée portent `z-index: 1` par une règle à quatre classes
-     (`.rpg-battle[data-mode-mana="essai"] .card-row > .rpg-card`), qui pèse
-     plus lourd que les deux classes du menu ouvert. À égalité de plan, c'est
-     l'ordre du DOM qui peignait : une créature jouée après Salem, posée juste
-     au-dessus de lui, recouvrait la fenêtre. Même combat pour les wrappers de
-     pile et de prison, que la même règle d'essai hisse à 1. */
-  z-index: 44 !important;
-}
-
-/* La rangée suit sa carte : c'est le CSS qui la lit (`:has`, comme les
-   repères d'éventail de la version tactile), aucune prop n'est ajoutée au JSX
-   — les rangées gardent leur `className` littéral. Les wrappers de pile et de
-   prison suivent aussi : sans eux, leur `z-index: 1` d'essai refermerait le
-   contexte d'empilement sur la carte soulevée. */
-.card-row:has(.rpg-card.is-effet-menu),
-.card-row > :is(.rpg-card-stack, .rpg-card-prison):has(.rpg-card.is-effet-menu) {
-  z-index: 44 !important;
-}
-
+/* Les commandes sont portées par la table, hors des cartes et rangées :
+   les annonces et effets de combat restent au-dessus du menu. */
 .rpg-card__effet-btn {
   /* Le bouton ne se place plus tout seul : c'est le menu qui flotte au-dessus
      de la carte et centre ses deux cases. Un `transform` ici serait repris —
@@ -16794,25 +16751,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   height: 208px !important;
 }
 
-/* Les deux commandes côte à côte (Attaquer / Activer l'effet) AU-DESSUS de la
-   carte, centrées sur elle : `left: 50%` + `translateX(-50%)` place la paire
-   sur l'axe de la carte, `bottom: calc(100% + 10px)` la pose au-dessus du
-   cadre, sans jamais mordre sur le dock de la main. */
-/* Le menu est la seule boîte placée : au-dessus de la carte, centrée sur elle
-   (`left: 50%` + `translateX(-50%)`), ses deux cases côte à côte. Il n'existe
-   qu'une définition — la seconde, plus bas dans le fichier, la contredisait
-   silencieusement. */
 .rpg-card__effet-menu {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 10px);
-  top: auto;
-  transform: translateX(-50%);
-  z-index: 90;
+  z-index: 44;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  visibility: hidden; /* jusqu'à la première mesure */
 }
 
 /* Animation époustouflante multi-couches pour la tempête de sable */
@@ -17033,6 +16979,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   left: 50%;
   right: auto;
   transform: translate(-50%, 50%);
+  width: 30px;
+  height: 27px;
+  padding-top: 3px;
+  font-size: 16px;
+}
+
+/* Aperçu et mulligan utilisent le même repère, gardé dans leur cadre pour ne
+   pas être coupé par les conteneurs de ces deux écrans. */
+.rpg-hover-card-preview__face .rpg-card__effet-badge,
+.rpg-mulligan__card .rpg-card__effet-badge {
+  top: auto;
+  bottom: 2px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   width: 30px;
   height: 27px;
   padding-top: 3px;

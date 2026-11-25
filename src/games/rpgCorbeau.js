@@ -76,7 +76,7 @@ export const RPG_CORBEAU_CREATURES = [
   }),
   carte({
     id: 'valkyrie-des-neuf-nuits',
-    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'neige-noire', prixPv: 3, couleur: ['neige', 'tenebres'], effet: { type: 'destruction-coutmax', coutMax: 3, cible: 'toutes-creatures', inclutAllies: true, gel: true } },
+    activation: { nom: 'Neige noire', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'neige-noire', prixPv: 3, couleur: ['neige', 'tenebres'], effet: { type: 'destruction-coutmax', coutMax: 3, cible: 'toutes-creatures', inclutAllies: true, gel: true } },
     name: 'Valkyrie des neuf nuits',
     cost: 5,
     atk: 3,
@@ -119,7 +119,7 @@ export const RPG_CORBEAU_MAGIES = [
 export const RPG_CORBEAU_FIGURES = [
   carte({
     id: 'maitre-des-corbeaux',
-    activation: { cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'la-derniere-pesee', effet: { type: 'destruction-totale' } },
+    activation: { nom: 'La Dernière Pesée', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'la-derniere-pesee', effet: { type: 'destruction-totale' } },
     name: 'LE MAÎTRE DES CORBEAUX',
     role: 'Celui qui voit dans la nuit',
     cost: 7,
