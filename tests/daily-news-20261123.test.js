@@ -55,11 +55,11 @@ test('traductions EN et AR complètes, listées et rattachées aux médias',()=>
 });
 
 test('édition du 23 en une, archives du 21 conservées',()=>{
-  for(const p of ['Home','News']) assert.ok(read(`src/pages/${p}.jsx`).includes("from '../news/daily/2026-11-23'"),p);
+  for(const p of ['Home','News']) assert.ok(read(`src/pages/${p}.jsx`).includes("from '../news/daily/2026-11-25'"),p);
   for(const f of ['src/pages/CurrentNews.jsx','src/pages/AllNews.jsx','src/pages/GamingNews.jsx','src/pages/CinemaNews.jsx','src/pages/TechNews.jsx','src/search/searchIndex.js']){
     const text=read(f);
     for(const day of [23,21,20,19]) assert.ok(text.includes(`daily/2026-11-${day}'`),`${f} : édition du ${day}`);
-    assert.ok(text.indexOf("daily/2026-11-23'")<text.indexOf("daily/2026-11-21'"),`${f} : ordre`);
+    assert.ok(text.indexOf("daily/2026-11-25'")<text.indexOf("daily/2026-11-23'"),`${f} : ordre`);
   }
   assert.ok(!read('src/pages/News.jsx').includes('Édition précédente'));
 });

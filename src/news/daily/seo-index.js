@@ -775,5 +775,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-23",
     "section": "Actualités cinéma"
+  },
+  "/news/playstation-plus-decembre-2026-jeux-mensuels": {
+    "title": "PS PLUS DÉCEMBRE SE DÉVOILE. — Let’s Play",
+    "description": "PlayStation annonce les jeux mensuels de décembre 2026 : Tony Hawk’s Pro Skater 3+4, Dragon Ball Xenoverse 2 et Amnesia: The Bunker, réclamables du 1er décembre au 4 janvier.",
+    "image": "https://blog.playstation.com/tachyon/2026/11/bc4af3b9af7eabe20204f2228edee81050b007ef.jpg?resize=1088%2C612&crop_strategy=smart",
+    "type": "article",
+    "published": "2026-11-25",
+    "section": "Actualités gaming"
+  },
+  "/news/tech/openai-gpt-6-conception-proteines": {
+    "title": "GPT-6 PROTÉINES SUR MESURE. — Let’s Play",
+    "description": "OpenAI publie une prépublication dans laquelle sa famille de modèles GPT-6 conçoit des protéines par raisonnement et par code, avec des tests de liaison en laboratoire chez son partenaire Onava.",
+    "image": "https://images.ctfassets.net/kftzwdyauwt9/Eg5mCwwaA3KqnznOVCh0n/8e6deaef25fd508d9853ff86a95187c1/gpt-6-models-demonstrate-intrinsic-protein-design-capabilities-social.png?w=1600&h=900&fit=fill",
+    "type": "article",
+    "published": "2026-11-25",
+    "section": "Actualités tech"
+  },
+  "/news/cinema/the-mosquito-bowl-netflix-25-novembre": {
+    "title": "MOSQUITO BOWL ARRIVE SUR NETFLIX. — Let’s Play",
+    "description": "Le drame de guerre de Peter Berg, adapté du livre de Buzz Bissinger, arrive sur Netflix ce 25 novembre après une sortie limitée en salles américaines le 30 octobre.",
+    "image": "https://i.ytimg.com/vi/CPFkLjHfKoc/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-25",
+    "section": "Actualités cinéma"
   }
 };

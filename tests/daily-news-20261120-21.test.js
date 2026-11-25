@@ -27,7 +27,7 @@ for(const [day,edition] of [[20,nov20],[21,nov21]])test(`${day} novembre : trois
 });
 test('six nouvelles routes, édition du 21 à la une et archives préservées',()=>{
  assert.equal(Object.keys(all).length,6);
- for(const p of ['Home','News'])assert.ok(read(`src/pages/${p}.jsx`).includes("daily/2026-11-23'"));
+ for(const p of ['Home','News'])assert.ok(read(`src/pages/${p}.jsx`).includes("daily/2026-11-25'"));
  for(const f of ['src/pages/CurrentNews.jsx','src/pages/AllNews.jsx','src/pages/GamingNews.jsx','src/pages/CinemaNews.jsx','src/pages/TechNews.jsx','src/search/searchIndex.js']){
   const text=read(f);
   for(const day of [21,20,19])assert.ok(text.includes(`daily/2026-11-${day}'`));

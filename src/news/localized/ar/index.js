@@ -83,6 +83,14 @@ export const listings = {
     "category": "سينما / مسلسلات · نتفليكس",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/cinema/the-mosquito-bowl-netflix-25-novembre": {
+    "title": "موستيكيتو بول",
+    "accent": "على نتفليكس الآن.",
+    "dek": "فيلم الحرب الذي أخرجه بيتر بيرغ عن كتاب باز بيسينغر يصل إلى نتفليكس في 25 نوفمبر، بعد عرض محدود في صالات أمريكية يوم 30 أكتوبر.",
+    "imageAlt": "صورة رسمية من فيلم The Mosquito Bowl نشرها Netflix Tudum. التصوير: كين سكينار. © نتفليكس / أصحاب الحقوق. صورة ترويجية، لا صورة من موقع التصوير التقطتها غرفتنا التحريرية.",
+    "category": "سينما ومسلسلات · نتفليكس",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/doom-dark-ages-revelations-slaughter-mode-16-novembre": {
     "title": "DOOM: THE DARK AGES",
     "accent": "البقاء بلا نهاية.",
@@ -179,6 +187,14 @@ export const listings = {
     "category": "ألعاب · استكشاف وزراعة",
     "readTime": "قراءة دقيقتين"
   },
+  "/news/playstation-plus-decembre-2026-jeux-mensuels": {
+    "title": "بلايستيشن بلس",
+    "accent": "ديسمبر يكشف أوراقه.",
+    "dek": "تعلن بلايستيشن ألعاب شهر ديسمبر 2026: Tony Hawk’s Pro Skater 3+4 وDragon Ball Xenoverse 2 وAmnesia: The Bunker، ويمكن الحصول عليها من 1 ديسمبر إلى 4 جانفي.",
+    "imageAlt": "صورة رسمية لإعلان PlayStation Plus لشهر ديسمبر 2026، نُشرت على مدونة بلايستيشن في 25 نوفمبر 2026. © Sony Interactive Entertainment. صورة ترويجية، لا لقطة من إعداد غرفتنا التحريرية.",
+    "category": "ألعاب · بلايستيشن بلس",
+    "readTime": "قراءة في 3 دقائق"
+  },
   "/news/tech/app-store-connect-descripteurs-age-16-novembre": {
     "title": "APP STORE CONNECT",
     "accent": "تصنيفات عمرية أدق.",
@@ -226,6 +242,14 @@ export const listings = {
     "imageAlt": "رسم رسمي لتحديثات Google Home نُشر في 17 نوفمبر 2026. © Google. صورة ترويجية، لا اختبار أجراه فريقنا.",
     "category": "تقنية · GOOGLE NEST",
     "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/openai-gpt-6-conception-proteines": {
+    "title": "GPT-6",
+    "accent": "بروتينات على المقاس.",
+    "dek": "تنشر OpenAI دراسة أولية تصمّم فيها عائلة نماذج GPT-6 بروتينات بالاستدلال والبرمجة، مع اختبارات ارتباط في المختبر عند شريكها Onava.",
+    "imageAlt": "صورة المشاركة الرسمية لمنشور «GPT-6 models demonstrate intrinsic protein-design capabilities» الذي نشرته OpenAI في 24 نوفمبر 2026. © OpenAI. رسم تعريفي، لا نتيجة من إعداد غرفتنا التحريرية.",
+    "category": "تقنية · أبحاث الذكاء الاصطناعي",
+    "readTime": "قراءة في 4 دقائق"
   },
   "/news/tech/openai-perplexite-intelligence-22-novembre": {
     "title": "الحيرة",

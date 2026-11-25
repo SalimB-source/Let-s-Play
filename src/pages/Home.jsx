@@ -11,7 +11,7 @@ import '../home-live.css';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-23';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-25';
 import { HERO_SLIDE_MS, heroFallbackImage, heroSlides } from '../theme/homeHero';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :

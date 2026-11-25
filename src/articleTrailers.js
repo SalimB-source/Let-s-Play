@@ -1340,6 +1340,30 @@ export const articleTrailers = {
     "pending": "Aucune bande-annonce officielle dédiée à ces trois sorties du 23 novembre n’a été vérifiée pour intégration. La page officielle de chaque titre reste la référence ; un extrait d’une autre production ne remplacerait pas ces images."
   },
 
+  // ---- Édition du 25 novembre 2026 ----------------------------------------
+  "playstation-plus-decembre-2026-jeux-mensuels": {
+    "label": "PS PLUS",
+    "meta": "PLAYSTATION.BLOG",
+    "items": [],
+    "credit": "Visuel officiel de l’annonce PlayStation Plus de décembre 2026, publié par le PlayStation Blog le 25 novembre 2026. © Sony Interactive Entertainment. Illustration promotionnelle, pas une capture de notre rédaction.",
+    "pending": "L’annonce officielle s’appuie sur des visuels et des fiches de jeu, sans vidéo dédiée à la sélection de décembre. Aucune bande-annonce ancienne d’un des trois titres n’est présentée comme celle de cette annonce."
+  },
+  "tech/openai-gpt-6-conception-proteines": {
+    "label": "GPT-6",
+    "meta": "OPENAI",
+    "items": [],
+    "credit": "Visuel de partage officiel de la note « GPT-6 models demonstrate intrinsic protein-design capabilities » publiée par OpenAI le 24 novembre 2026. © OpenAI. Illustration de marque, pas un résultat de notre rédaction.",
+    "pending": "Aucune vidéo officielle n’accompagne cette note et sa prépublication. Les figures et les tableaux de résultats sont visibles dans la note liée en source ; ils ne sont pas reproduits ici."
+  },
+  "cinema/the-mosquito-bowl-netflix-25-novembre": {
+    "label": "THE MOSQUITO BOWL",
+    "meta": "NETFLIX · FILM",
+    "items": [
+      { id: 'CPFkLjHfKoc', kind: 'trailer', title: 'The Mosquito Bowl | Official Trailer | Netflix', channel: 'Netflix', verified: '25.11.2026', note: 'Bande-annonce officielle publiée par Netflix le 12 octobre 2026, avant la sortie en salles puis la mise en ligne du 25 novembre. Elle contient des images de combat et n’est pas une vidéo publiée le jour de la mise en ligne.' },
+    ],
+    credit: 'Vidéo et miniature officielles : Netflix, bande-annonce du 12 octobre 2026.',
+  },
+
 };
 
 /**
