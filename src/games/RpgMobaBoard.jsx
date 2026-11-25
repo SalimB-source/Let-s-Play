@@ -1836,7 +1836,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     {etape === 'tour' && actif === 'joueur' && !fini && !defausse && !destruction && !site && !recherche && !carte && !selectionAscension.rituel && <section className="moba__controls" aria-label="Capacités des créatures">
       <div className="moba__buttons">
         {!activationSource ? duel.joueur.creatures.filter(e => rpgMobaChoixActivation(duel, 'joueur', e.id).length > 0).map(e =>
-          <button type="button" key={e.id} onClick={() => { setActivationSource(e.id); setAttaquants([]); setCible(null); }}>Activer {e.name}</button>)
+          <button type="button" key={e.id} onClick={() => { setActivationSource(e.id); setAttaquants([]); setCible(null); }}>Activer {cardById(e.carteId)?.activation?.nom ?? 'l’effet'} · {e.name}</button>)
           : <><strong>Choisissez les cibles de {duel.joueur.creatures.find(e => e.id === activationSource)?.name} :</strong>
             {rpgMobaChoixActivation(duel, 'joueur', activationSource).map(choix => {
               const cible = [...duel.joueur.creatures, ...duel.sorcier.creatures].find(e => e.id === choix.cibleId);
@@ -1984,7 +1984,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
           <IconesCarte carte={rpgMobaCartePourApercu(card)} className="rpg-card-icones--colonne rpg-card-icones--mulligan-moba" />
         </div>;
       }
-      return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><RpgCadreCarte carte={card} /><b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : card.cost != null ? `COÛT ${card.cost}` : cardTypeLine(card)}</small></button>;
+      return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><RpgCadreCarte carte={card} />{card.activation && <span className="rpg-card__effet-badge" title={card.activation.nom} aria-label={`Effet activé : ${card.activation.nom}`}>⚡</span>}<b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : card.cost != null ? `COÛT ${card.cost}` : cardTypeLine(card)}</small></button>;
     })}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}<button type="button" className="moba__primary" onClick={confirmerMulligan}>{mulliganIndices.length ? `Échanger ${mulliganIndices.length} carte(s)` : 'Garder ma main'} →</button></div></div>}
 
     {apercuAnnonceOuvert && <section className={`rpg-annonce-sort moba__card-announcement${carteAnnonce.kind === 'magie' ? ' rpg-annonce-sort--magie' : ''}`} role="dialog" aria-modal="true" aria-label={`L’IA annonce ${carteAnnonce.name}. Cible : ${cibleAnnonce}.`} onKeyDown={clavierAnnonce}>

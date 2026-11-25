@@ -137,27 +137,26 @@ export function texteEffetActivation(effet = {}) {
   }
 }
 
-/** La ligne entière : la fréquence d'abord, puis la règle. C'est ce qu'imprime
- *  l'aperçu au survol, après l'éclair ⚡. */
+/** La ligne entière : le nom, le prix éventuel, puis la règle. */
 export function texteActivation(carte) {
   const activation = carte?.activation;
   if (!activation) return null;
-  const frequence = '1/présence — ';
+  const nom = `${activation.nom ?? 'Effet activé'} — `;
   const prix = activation.prixPv > 0 ? `Payez ${activation.prixPv} PV : ` : '';
   const forme = zoneFormeCarte(activation.sortAssocie);
   const effet = activation.effet;
   if (forme && effet?.type === 'retour-main' && effet.exclutType === 'Vampire') {
-    return `${frequence}${prix}Dans une rangée choisie, renvoyez les créatures sauf les Vampires dans la main de leur propriétaire.`;
+    return `${nom}${prix}Dans une rangée choisie, renvoyez les créatures sauf les Vampires dans la main de leur propriétaire.`;
   }
   if (forme && effet?.type === 'destruction-coutmax' && effet.gel) {
-    return `${frequence}${prix}Dans un carré, détruisez les créatures de coût ${effet.coutMax} ou moins, puis gelez les survivantes de ce carré.`;
+    return `${nom}${prix}Dans un carré, détruisez les créatures de coût ${effet.coutMax} ou moins, puis gelez les survivantes de ce carré.`;
   }
   if (forme && effet?.type === 'degats') {
     const zone = forme === 'rangee' ? 'une rangée' : forme === 'colonne' ? 'une colonne' : 'un carré';
     const cibles = effet.cible === 'toutes-autres' || effet.inclutAllies ? 'toutes les créatures' : 'les créatures adverses';
     const gel = effet.gel ? ' et les gèle' : effet.gelChance ? `, avec ${Math.round(effet.gelChance * 100)} % de chances de geler chacune` : '';
     const echo = effet.echo ? ` ; ${effet.echo.amount} dégât supplémentaire aux créatures adverses au début de votre prochain tour` : '';
-    return `${frequence}${prix}Inflige ${effet.amount} ${degats(effet.amount)} à ${cibles} dans ${zone}${gel}${echo}.`;
+    return `${nom}${prix}Inflige ${effet.amount} ${degats(effet.amount)} à ${cibles} dans ${zone}${gel}${echo}.`;
   }
-  return `${frequence}${prix}${texteEffetActivation(effet)}`;
+  return `${nom}${prix}${texteEffetActivation(effet)}`;
 }

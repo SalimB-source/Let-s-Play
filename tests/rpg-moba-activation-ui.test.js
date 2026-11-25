@@ -27,11 +27,11 @@ test('Conquête : le joueur sélectionne la Chercheuse, son arme et son porteur'
     assert.ok(source); source.malInvocation = false; duel.joueur.cimetiere.push('javelot-du-beffroi');
     await act(async () => root.render(React.createElement(Board, props)));
     const buttons = () => [...document.querySelectorAll('[aria-label="Capacités des créatures"] button')];
-    await click(buttons().find(b => b.textContent.includes('Activer Chercheuse')));
+    await click(buttons().find(b => b.textContent.includes('Activer Mémoire de l’armurerie')));
     await click(buttons().find(b => b.textContent.includes('Javelot du beffroi') && b.textContent.includes('Chercheuse')));
     assert.equal(source.arme?.carteId, 'javelot-du-beffroi');
     assert.equal(source.activationUtiliseeMatch, true); assert.ok(engine.rpgMobaPlacementCoherent(duel));
-    assert.ok(!buttons().some(b => b.textContent.includes('Activer Chercheuse')));
+    assert.ok(!buttons().some(b => b.textContent.includes('Activer Mémoire de l’armurerie')));
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
@@ -64,7 +64,7 @@ test('Conquête : le joueur désigne le champion et la cible du Jarl', async () 
     assert.ok(cible); cible.pv = cible.def = 1; duel.tour = 'joueur'; duel.sorcier.main = [];
     await act(async () => root.render(React.createElement(Board, props)));
     const buttons = () => [...document.querySelectorAll('[aria-label="Capacités des créatures"] button')];
-    await click(buttons().find(b => b.textContent.includes('Activer Jarl')));
+    await click(buttons().find(b => b.textContent.includes('Activer Défi du Jarl')));
     await click(buttons().find(b => b.textContent.includes('Jarl') && b.textContent.includes('Chien du guet')));
     assert.ok(!duel.sorcier.creatures.some(e => e.id === cible.id));
     assert.equal(jarl.activationUtiliseeMatch, true); assert.ok(engine.rpgMobaPlacementCoherent(duel));
