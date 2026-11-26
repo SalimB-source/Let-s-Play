@@ -1364,6 +1364,29 @@ export const articleTrailers = {
     credit: 'Vidéo et miniature officielles : Netflix, bande-annonce du 12 octobre 2026.',
   },
 
+  // ---- Édition du 28 novembre 2026 ----------------------------------------
+  "subnautica-2-leap-forward-showcase-28-novembre": {
+    "label": "SUBNAUTICA 2",
+    "meta": "UNKNOWN WORLDS",
+    "items": [],
+    "credit": "Visuel officiel du showcase « Leap Forward » publié par Unknown Worlds le 23 novembre 2026. © Unknown Worlds Entertainment. Illustration promotionnelle, pas une capture de notre rédaction.",
+    "pending": "Le trailer de l’extension Tar Trek est annoncé pour la première fois pendant le showcase du 28 novembre à 8 h PST, sur les chaînes Subnautica de YouTube et Twitch : aucune vidéo n’était publiée au moment de la rédaction, et nous n’intégrons pas de capture de diffusion. Le billet officiel lié en source donne l’heure et le programme."
+  },
+  "tech/claude-api-rust-anthropic-25-novembre": {
+    "label": "CLAUDE API",
+    "meta": "ANTHROPIC",
+    "items": [],
+    "credit": "Visuel de partage officiel de la note « Migrating our Messages API to Rust » publiée par Anthropic le 25 novembre 2026. © Anthropic. Illustration de marque, pas un résultat de notre rédaction.",
+    "pending": "Aucune vidéo officielle n’accompagne cette note d’ingénierie. Les graphiques de production cités dans l’article sont visibles dans la note liée en source ; ils ne sont pas reproduits ici."
+  },
+  "cinema/salish-12-games-of-christmas-netflix-28-novembre": {
+    "label": "SALISH",
+    "meta": "NETFLIX · COMPÉTITION",
+    "items": [],
+    "credit": "Photographie officielle de Salish’s 12 Games of Christmas publiée par Netflix Tudum. Photographie : Kit Karzen/Netflix. © Netflix / ayants droit. Image promotionnelle, pas une photographie prise par notre rédaction.",
+    "pending": "La bande-annonce du programme circule sur YouTube par des chaînes de reprise, et la chaîne Netflix n’a pas publié de lecteur que nous puissions certifier pour cette page. Nous n’intégrons donc aucune vidéo et renvoyons à la fiche officielle liée en source."
+  },
+
 };
 
 /**
