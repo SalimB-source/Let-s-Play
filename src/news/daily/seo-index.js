@@ -799,5 +799,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-25",
     "section": "Actualités cinéma"
+  },
+  "/news/subnautica-2-leap-forward-showcase-28-novembre": {
+    "title": "SUBNAUTICA 2 LE GRAND PLONGEON. — Let’s Play",
+    "description": "Unknown Worlds diffuse ce 28 novembre le showcase « Leap Forward », centré sur Tar Trek, la première grande extension de Subnautica 2, attendue le 1er décembre sur PC et Xbox Series X|S.",
+    "image": "https://d17c72h1ypygg7.cloudfront.net/SN_2_Leap_Forward_EA_2_1920x1080_9f159d1b2b.jpg",
+    "type": "article",
+    "published": "2026-11-28",
+    "section": "Actualités gaming"
+  },
+  "/news/tech/claude-api-rust-anthropic-25-novembre": {
+    "title": "CLAUDE API RÉÉCRITE EN RUST. — Let’s Play",
+    "description": "Anthropic publie le récit technique de la migration de son Messages API de Python vers Rust : environ 70 % de CPU en moins par requête et 20 % de temps de premier token gagné, sans coupure de service.",
+    "image": "https://assets.claude.com/faac348155bf01d5c59ab38cbd05294eb2fa8197.jpg",
+    "type": "article",
+    "published": "2026-11-28",
+    "section": "Actualités tech"
+  },
+  "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
+    "title": "SALISH DOUZE JEUX POUR NOËL. — Let’s Play",
+    "description": "Salish Matter invite sept amis dans un chalet pour douze épreuves de Noël, avec un imposteur caché parmi eux : la compétition arrive sur Netflix ce 28 novembre.",
+    "image": "https://dnm.nflximg.net/api/v6/a01MIaQTUgSJoLaS_OCn68Eg3hU/AAAAQdvMjvosAgMq4blF68dB4RwuEvYpiPLQa7R7HWNN49qDrRmLQIKEEJRtzqx4VG2dr4f7yCWX13twqACBW5y8sMJyQV1LsFscXzeP3Jk5ivXCZsedlFbU1dZS-wvO_2jqFRJ580gTLXgwbE0CDc6NZ1Oc.jpg?r=c57",
+    "type": "article",
+    "published": "2026-11-28",
+    "section": "Actualités cinéma"
   }
 };

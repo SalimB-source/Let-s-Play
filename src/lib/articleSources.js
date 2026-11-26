@@ -23,6 +23,10 @@ const officialDomains = [
   // Official The Game Awards site, verified for the 18 November 2026 edition
   // (nominees announced 17 November, ceremony 10 December).
   'thegameawards.com',
+  // Unknown Worlds (Subnautica 2) and Anthropic engineering news, both reviewed
+  // for the 28 November 2026 edition: studio post of 23 November, API migration
+  // note of 25 November.
+  'unknownworlds.com', 'anthropic.com',
 ];
 
 export function officialSourceUrl(value) {

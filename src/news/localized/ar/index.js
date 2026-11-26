@@ -67,6 +67,14 @@ export const listings = {
     "category": "سينما · نتفليكس",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
+    "title": "SALISH",
+    "accent": "اثنتا عشرة لعبة لعيد الميلاد.",
+    "dek": "تدعو Salish Matter سبعة من أصدقائها إلى كوخ من أجل اثني عشر تحدّياً احتفالياً، وبينهم متسلّل مخفي: المسابقة تصل إلى Netflix في 28 نوفمبر.",
+    "imageAlt": "المشاركون الثمانية في Salish’s 12 Games of Christmas بأزياء نوم احتفالية على ديكور كوخ عيد الميلاد. صورة رسمية من Netflix.",
+    "category": "سينما ومسلسلات · NETFLIX",
+    "readTime": "3 دقائق قراءة"
+  },
   "/news/cinema/steps-netflix-sortie-20-novembre": {
     "title": "STEPS",
     "accent": "الأختان تغيّران الحكاية.",
@@ -195,6 +203,14 @@ export const listings = {
     "category": "ألعاب · بلايستيشن بلس",
     "readTime": "قراءة في 3 دقائق"
   },
+  "/news/subnautica-2-leap-forward-showcase-28-novembre": {
+    "title": "SUBNAUTICA 2",
+    "accent": "الغطسة الكبرى.",
+    "dek": "تبثّ Unknown Worlds عرض «Leap Forward» في 28 نوفمبر، ويتناول التوسعة الأولى الكبيرة للعبة Subnautica 2، المسمّاة Tar Trek، والمقرّرة في 1 ديسمبر على الحاسوب وXbox Series X|S.",
+    "imageAlt": "صورة رسمية لعرض «Leap Forward» في Subnautica 2، تحمل اسم العرض وتوسعة Tar Trek. © Unknown Worlds Entertainment.",
+    "category": "ألعاب · SUBNAUTICA 2",
+    "readTime": "4 دقائق قراءة"
+  },
   "/news/tech/app-store-connect-descripteurs-age-16-novembre": {
     "title": "APP STORE CONNECT",
     "accent": "تصنيفات عمرية أدق.",
@@ -202,6 +218,14 @@ export const listings = {
     "imageAlt": "رسم تقديمي رسمي لـ App Store Connect على Apple Developer. صورة عامة للخدمة، لا لقطة لحقول التصنيف الجديدة. © Apple.",
     "category": "تقنية · APPLE DEVELOPER",
     "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/claude-api-rust-anthropic-25-novembre": {
+    "title": "CLAUDE API",
+    "accent": "إعادة كتابة بـRust.",
+    "dek": "تنشر Anthropic الحكاية التقنية لانتقال Messages API من Python إلى Rust: قرابة 70% استهلاكاً أقل للمعالج في كل طلب، و20% تحسّناً في زمن أول رمز، من دون انقطاع الخدمة.",
+    "imageAlt": "صورة المشاركة الرسمية للمنشور الهندسي من Anthropic عن انتقال Messages API إلى Rust. © Anthropic.",
+    "category": "تقنية · هندسة الذكاء الاصطناعي",
+    "readTime": "4 دقائق قراءة"
   },
   "/news/tech/figma-images-multiples-modeles-18-novembre": {
     "title": "FIGMA AI",

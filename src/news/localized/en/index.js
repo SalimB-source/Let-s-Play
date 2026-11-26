@@ -67,6 +67,14 @@ export const listings = {
     "category": "CINEMA · NETFLIX",
     "readTime": "3 MIN READ"
   },
+  "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
+    "title": "SALISH",
+    "accent": "TWELVE GAMES FOR CHRISTMAS.",
+    "dek": "Salish Matter invites seven friends to a cabin for twelve Christmas challenges, with an impostor hidden among them: the competition lands on Netflix on 28 November.",
+    "imageAlt": "The eight contestants of Salish’s 12 Games of Christmas in festive pyjamas on a Christmas cabin set. Official Netflix photograph.",
+    "category": "FILM & TV · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
   "/news/cinema/steps-netflix-sortie-20-novembre": {
     "title": "STEPS",
     "accent": "THE SISTERS CHANGE THE TALE.",
@@ -195,6 +203,14 @@ export const listings = {
     "category": "GAMING · PLAYSTATION PLUS",
     "readTime": "3 MIN READ"
   },
+  "/news/subnautica-2-leap-forward-showcase-28-novembre": {
+    "title": "SUBNAUTICA 2",
+    "accent": "THE BIG DIVE.",
+    "dek": "Unknown Worlds streams its “Leap Forward” showcase on 28 November, focused on Tar Trek, the first major expansion for Subnautica 2, due on 1 December on PC and Xbox Series X|S.",
+    "imageAlt": "Official visual for the Subnautica 2 “Leap Forward” showcase, with the name of the presentation and the Tar Trek expansion. © Unknown Worlds Entertainment.",
+    "category": "GAMING · SUBNAUTICA 2",
+    "readTime": "4 MIN READ"
+  },
   "/news/tech/app-store-connect-descripteurs-age-16-novembre": {
     "title": "APP STORE CONNECT",
     "accent": "AGE RATINGS GET MORE PRECISE.",
@@ -202,6 +218,14 @@ export const listings = {
     "imageAlt": "Official App Store Connect presentation illustration on Apple Developer. General service visual, not a screenshot of the new rating fields. © Apple.",
     "category": "TECH · APPLE DEVELOPER",
     "readTime": "3 MIN READ"
+  },
+  "/news/tech/claude-api-rust-anthropic-25-novembre": {
+    "title": "CLAUDE API",
+    "accent": "REWRITTEN IN RUST.",
+    "dek": "Anthropic publishes the technical story of moving its Messages API from Python to Rust: about 70% less CPU per request and 20% faster median time to first token, with no service outage.",
+    "imageAlt": "Official share image for Anthropic’s engineering note on moving its Messages API to Rust. © Anthropic.",
+    "category": "TECH · AI ENGINEERING",
+    "readTime": "4 MIN READ"
   },
   "/news/tech/figma-images-multiples-modeles-18-novembre": {
     "title": "FIGMA AI",
