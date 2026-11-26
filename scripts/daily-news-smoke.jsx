@@ -1,3 +1,4 @@
+import { dailyStories as dailyStories20261125 } from '../src/news/daily/2026-11-25';
 import { dailyStories as dailyStories20261123 } from '../src/news/daily/2026-11-23';
 import { dailyStories as dailyStories20261121 } from '../src/news/daily/2026-11-21';
 import { dailyStories as dailyStories20261120 } from '../src/news/daily/2026-11-20';
@@ -53,6 +54,7 @@ export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
 // Toutes les clés d'article des éditions quotidiennes, du plus récent au plus
 // ancien — l'ordre de l'archive et des hubs en dépend.
 export const editionKeys = {
+  '2026-11-25': Object.keys(dailyStories20261125),
   '2026-11-23': Object.keys(dailyStories20261123),
   '2026-11-21': Object.keys(dailyStories20261121),
   '2026-11-20': Object.keys(dailyStories20261120),

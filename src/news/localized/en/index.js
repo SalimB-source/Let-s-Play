@@ -83,6 +83,14 @@ export const listings = {
     "category": "CINEMA / SERIES · NETFLIX",
     "readTime": "3 MIN READ"
   },
+  "/news/cinema/the-mosquito-bowl-netflix-25-novembre": {
+    "title": "MOSQUITO BOWL",
+    "accent": "NOW ON NETFLIX.",
+    "dek": "Peter Berg’s war drama, adapted from Buzz Bissinger’s book, reaches Netflix on 25 November after a limited US theatrical release on 30 October.",
+    "imageAlt": "Official photograph from The Mosquito Bowl published by Netflix Tudum. Photography: Kane Skennar. © Netflix / rights holders. Promotional image, not a set photograph taken by our newsroom.",
+    "category": "CINEMA & SERIES · NETFLIX",
+    "readTime": "3 MIN READ"
+  },
   "/news/doom-dark-ages-revelations-slaughter-mode-16-novembre": {
     "title": "DOOM: THE DARK AGES",
     "accent": "SURVIVAL HAS NO END.",
@@ -179,6 +187,14 @@ export const listings = {
     "category": "GAMING · EXPLORATION & FARMING",
     "readTime": "2 MIN READ"
   },
+  "/news/playstation-plus-decembre-2026-jeux-mensuels": {
+    "title": "PS PLUS",
+    "accent": "DECEMBER REVEALED.",
+    "dek": "PlayStation announces the December 2026 Monthly Games: Tony Hawk’s Pro Skater 3+4, Dragon Ball Xenoverse 2 and Amnesia: The Bunker, claimable from 1 December to 4 January.",
+    "imageAlt": "Official artwork for the December 2026 PlayStation Plus announcement, published on the PlayStation Blog on 25 November 2026. © Sony Interactive Entertainment. Promotional illustration, not a capture from our newsroom.",
+    "category": "GAMING · PLAYSTATION PLUS",
+    "readTime": "3 MIN READ"
+  },
   "/news/tech/app-store-connect-descripteurs-age-16-novembre": {
     "title": "APP STORE CONNECT",
     "accent": "AGE RATINGS GET MORE PRECISE.",
@@ -226,6 +242,14 @@ export const listings = {
     "imageAlt": "Official Google Home updates illustration published on 17 November 2026. © Google. Promotional visual, not an editorial test.",
     "category": "TECH · GOOGLE NEST",
     "readTime": "3 MIN READ"
+  },
+  "/news/tech/openai-gpt-6-conception-proteines": {
+    "title": "GPT-6",
+    "accent": "TAILOR-MADE PROTEINS.",
+    "dek": "OpenAI publishes a preprint in which its GPT-6 family designs proteins through reasoning and code, with binding tests run in the lab of its partner Onava.",
+    "imageAlt": "Official share image for the note “GPT-6 models demonstrate intrinsic protein-design capabilities”, published by OpenAI on 24 November 2026. © OpenAI. Brand illustration, not a result from our newsroom.",
+    "category": "TECH · AI RESEARCH",
+    "readTime": "4 MIN READ"
   },
   "/news/tech/openai-perplexite-intelligence-22-novembre": {
     "title": "PERPLEXITY",

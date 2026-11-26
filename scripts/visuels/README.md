@@ -89,3 +89,170 @@ de point de départ pour toute carte en arabe de l’atelier.
 Le key art utilisé est `instagram/assets/mw4-keyart.png` (voir le fichier
 `CREDITS.txt` du même dossier). Le visuel est recadré, le panneau se dimensionne
 sur les cinq lignes de texte, et la carte laisse une marge basse constante.
+
+## Trevor (GTA V) vs Jason (GTA VI) — carte Instagram 4:5, en arabe
+
+`make_gta_trevor_jason_45.py` compose une comparaison entre Trevor Philips
+(*GTA V*, 2013) et Jason Duval (*GTA VI*, 19 novembre 2026) : décor de Vice City
+(clé d'art officielle — ponton, palmiers, skyline au coucher de soleil), Trevor
+détouré au premier plan, quatre axes de comparaison en vis-à-vis. Tout le texte
+est en **arabe** (sens droite → gauche), composé avec HarfBuzz via
+`arabic_text.py` ; seuls les nombres et « GTA VI » restent en caractères latins.
+
+```bash
+python3 -m pip install -r scripts/visuels/requirements.txt
+python3 scripts/visuels/make_gta_trevor_jason_45.py            # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_trevor_jason_45.py --out /tmp  # autre dossier
+```
+
+Sorties : PNG **1080 × 1350** et JPEG qualité 92, dans
+`instagram/gta-trevor-jason/`. Les matières premières (rendu détouré de Trevor,
+clé d'art du ponton) vivent dans `instagram/assets/`, exclu du dépôt : le script
+seul suffit à régénérer la carte sur une machine qui a ces deux fichiers.
+
+## Fiches personnages — Trevor / Jason, en arabe
+
+`make_gta_fiches_45.py` produit **deux** cartes 4:5 de la même série (même
+gabarit, même charte) : un « ملف شخصي » par héros, avec rôle, ville, passé,
+activité et trait dominant — cinq lignes, en arabe, composées avec HarfBuzz.
+
+Gabarit des visuels maison, repris tel quel : fond violet avec triangles et
+étincelles, **logo Let's Play** en haut à gauche, **logo officiel du jeu** en
+haut à droite (`instagram/assets/gta5-logo.png`, `gta6-logo.webp`), **bandeau
+arrondi** pour le titre en crème,
+**fenêtre photo** à coins coupés qui occupe le centre, lignes de données sur le
+violet avec étiquettes jaunes, et **bandeau jaune** pleine largeur
+« شاركنا رأيك في التعليقات » en pied.
+
+Illustrations : artwork officiel de Trevor à Sandy Shores
+(`instagram/assets/gta5-trevor-artwork.jpg`) et capture officielle de Jason sur
+sa moto à Vice City (`instagram/assets/gta6-jason-artwork.jpg`), recadrées sur
+le visage. Les fichiers sont exclus du dépôt, le script seul suffit à régénérer
+les cartes.
+
+```bash
+python3 scripts/visuels/make_gta_fiches_45.py             # → instagram/fiches-personnages/
+python3 scripts/visuels/make_gta_fiches_45.py --out /tmp  # autre dossier
+```
+
+Sorties : `fiche-trevor-ar-1080x1350.png/.jpg` et
+`fiche-jason-ar-1080x1350.png/.jpg`.
+
+## Visuel duo — Trevor et Jason côte à côte, en arabe
+
+`make_gta_duo_45.py` réunit les deux héros sur **une seule** carte 4:5, dans le
+même gabarit promo : deux fenêtres photo à coins coupés (Trevor à gauche, 2013 ;
+Jason à droite, 2026) recadrées sur le visage, bas de photo fondu dans l'encre,
+nom et jeu posés dans chaque fenêtre, deux colonnes
+de données séparées par un filet, bandeau-titre « من هو الأقرب إليك؟ » et pied
+jaune « شاركنا اختيارك في التعليقات ».
+
+```bash
+python3 scripts/visuels/make_gta_duo_45.py             # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_duo_45.py --out /tmp  # autre dossier
+```
+
+Sortie : `gta-trevor-jason-duo-ar-1080x1350.png/.jpg`.
+
+## Affiche Trevor + Jason, en arabe
+
+`make_gta_vs_45.py` compose **une** affiche 4:5 réunissant les deux héros : deux
+portraits plein cadre reliés par une couture en biais (sans badge ni éclair),
+nom et millésime de chaque héros posés sur sa moitié, **tableau comparatif** à
+trois colonnes (étiquette centrale, valeur de Trevor, valeur de Jason) et pied
+jaune « أيهما تختار؟ اكتب في التعليقات ». En-tête : logo Let's Play à gauche,
+**logo GTA VI** en grand à droite.
+
+```bash
+python3 scripts/visuels/make_gta_vs_45.py             # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_vs_45.py --out /tmp  # autre dossier
+```
+
+Sortie : `gta-trevor-jason-poster-ar-1080x1350.png/.jpg`.
+
+## Affiche « changement de météo » — Jason et Lucia, en arabe
+
+`make_gta_storm_45.py` compose une affiche 4:5 : illustration de Jason et Lucia
+sur une moto, **en plein jour**, un cyclone soudain dans leur dos à Vice City.
+L'image est montrée **entière** dans une fenêtre 16:9 à coins coupés (aucun
+recadrage ne coupe les visages), suivie de la question arabe
+« ما أكثر تغيّر مفاجئ في الطقس أذهلك؟ », d'une ligne de contexte, de trois
+repères factuels et du pied jaune « شاركنا تجربتك في التعليقات ». En-tête :
+logo Let's Play + logo GTA VI.
+
+L'illustration (`instagram/assets/gta6-fuite-tempete-3d.jpg`, rendu 3D) est **originale**,
+dans l'esprit des key arts du jeu : elle est créditée comme telle dans l'affiche
+(« رسم توضيحي مستوحى من عالم اللعبة »), pas comme une capture officielle.
+
+```bash
+python3 scripts/visuels/make_gta_storm_45.py             # → instagram/gta-trevor-jason/
+python3 scripts/visuels/make_gta_storm_45.py --out /tmp  # autre dossier
+```
+
+Sortie : `gta6-jason-lucia-tempete-ar-1080x1350.png/.jpg`.
+
+## Couverture 4:5 — Jason et Lucia devant la tempête (sans layout)
+
+`make_gta_cover_45.py` exporte l'illustration **seule**, en 4:5 plein cadre :
+aucun logo, aucun texte, aucun bandeau. Utile comme cover de carrousel ou comme
+base pour un habillage ultérieur.
+
+```bash
+python3 scripts/visuels/make_gta_cover_45.py --src dessin   # version dessinée (par défaut : 3d)
+python3 scripts/visuels/make_gta_cover_45.py --src 3d
+python3 scripts/visuels/make_gta_cover_45.py --focus 0.4    # recadrage plus bas
+```
+
+Sorties : `cover-jason-lucia-tempete-1080x1350.png/.jpg` (dessinée) et
+`cover-jason-lucia-tempete-3d-1080x1350.png/.jpg` (rendu 3D).
+
+## Montée en 4K d'une cover
+
+`upscale_cover.py` agrandit une cover 4:5 en **2160 × 2700** (sans la déformer),
+lisse les grains de compression et renforce les détails (netteté locale, léger
+contraste). C'est un agrandissement, pas une régénération : rien n'est ajouté.
+
+```bash
+python3 scripts/visuels/upscale_cover.py chemin/vers/cover.jpg --focus 0.30
+```
+
+Sortie : `instagram/gta-trevor-jason/cover-4k-2160x2700.png/.jpg`.
+
+## Titre arabe sur une cover
+
+`add_cover_title.py` pose le titre arabe et les deux logos sur une cover, sans
+layout complet : Tajawal Black, dégradé jaune chaud, contour et relief en encre,
+halo sombre et dégradé de lisibilité en bas de l'image ; logo **Let's Play** en
+haut à gauche et logo **GTA VI** en haut à droite, sur un dégradé sombre discret
+(`--no-logos` pour les retirer, `--logo-h` / `--game-h` pour les tailles). Le logo GTA VI utilisé est
+`instagram/assets/gta6-logo.png` (emblème « VI » dégradé, fond transparent).
+
+```bash
+python3 scripts/visuels/add_cover_title.py instagram/gta-trevor-jason/cover-jason-lucia-tempete-3d-4k-2160x2700.png
+python3 scripts/visuels/add_cover_title.py cover.png --text "…" --size 190 --bottom 300
+```
+
+Sortie : `instagram/gta-trevor-jason/cover-titre-4k-2160x2700.png/.jpg`.
+
+## Cover question — « jouer sans la map ? »
+
+Deuxième visuel du même gabarit : question `هل يمكنكم اللعب بدون الخريطة؟`
+(« Pouvez-vous jouer sans la carte ? ») sur une illustration 3D originale
+(Jason à moto, Lucia carte en main, plein jour à Vice City). Lucia porte un
+pull en maille côtelée ivoire (manches retroussées) plutôt que le crop top.
+Cadrage serré poitrine, face caméra : Lucia à droite (visage frontal de
+référence, queue-de-cheval haute, crêpes dorées, pull maille ivoire), Jason à
+gauche, carte dépliée tenue à hauteur de poitrine et inclinée vers l'objectif
+pour rester lisible. Le titre est remonté (`--bottom 150 --size 166`) pour ne
+pas masquer la carte.
+
+```bash
+python3 scripts/visuels/upscale_cover.py instagram/assets/gta6-cover-map-3d.jpg \
+    --out instagram/gta-trevor-jason/cover-map-4k-2160x2700 --focus 0.0
+python3 scripts/visuels/add_cover_title.py instagram/gta-trevor-jason/cover-map-4k-2160x2700.png \
+    --out instagram/gta-trevor-jason/cover-map-titre-4k-2160x2700 \
+    --text "هل يمكنكم اللعب بدون الخريطة؟" --bottom 150 --size 166
+```
+
+Sorties : `cover-map-4k-2160x2700` (image seule) et `cover-map-titre-4k-2160x2700`
+(titre + logos), en PNG et JPEG.
