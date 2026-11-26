@@ -69,7 +69,7 @@ export const listings = {
   },
   "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
     "title": "SALISH",
-    "accent": "TWELVE GAMES FOR CHRISTMAS.",
+    "accent": "TWELVE GAMES.",
     "dek": "Salish Matter invites seven friends to a cabin for twelve Christmas challenges, with an impostor hidden among them: the competition lands on Netflix on 28 November.",
     "imageAlt": "The eight contestants of Salish’s 12 Games of Christmas in festive pyjamas on a Christmas cabin set. Official Netflix photograph.",
     "category": "FILM & TV · NETFLIX",

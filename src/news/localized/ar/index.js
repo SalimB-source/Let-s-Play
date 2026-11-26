@@ -69,7 +69,7 @@ export const listings = {
   },
   "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
     "title": "SALISH",
-    "accent": "اثنتا عشرة لعبة لعيد الميلاد.",
+    "accent": "اثنتا عشرة لعبة.",
     "dek": "تدعو Salish Matter سبعة من أصدقائها إلى كوخ من أجل اثني عشر تحدّياً احتفالياً، وبينهم متسلّل مخفي: المسابقة تصل إلى Netflix في 28 نوفمبر.",
     "imageAlt": "المشاركون الثمانية في Salish’s 12 Games of Christmas بأزياء نوم احتفالية على ديكور كوخ عيد الميلاد. صورة رسمية من Netflix.",
     "category": "سينما ومسلسلات · NETFLIX",
