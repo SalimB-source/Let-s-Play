@@ -5739,14 +5739,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       entite.pv = Math.max(plancher, entite.pv + bonusDefense);
       const duree = dureeJusquAuProchainTour(duel, entite);
       if (Number(effet.tours) > 0) {
-        if (effet.empecheAttaque || effet.empecheBlocage) {
-          // Le venin de la Vipère : la morsure (-2/-0) vit aussi longtemps que
-          // l'interdit d'attaquer — jusqu'à la fin du prochain tour de la
-          // victime. Elle s'efface donc AVEC lui, et non à la fin du tour qui
-          // l'a vue naître (le carnet des renforts, lui, s'évapore à ce
-          // moment-là : la bouchée serait déjà partie avant le tour de la
-          // victime, et le venin ne rongerait plus rien).
-          entite.venin = { atk: effet.atk ?? 0, def: bonusDefense, toursRestants: duree };
+        if (effet.empecheAttaque || effet.empecheBlocage || effet.jusquaFinTourAdverse) {
+          // Le venin de la Vipère (ou Appât de la meute) : le malus vit
+          // jusqu'à la fin du prochain tour de la victime. Il s'efface donc
+          // à la fin du tour de son contrôleur, et non à la fin du tour qui
+          // l'a vu naître.
+          entite.venin = { atk: variationAttaque, def: bonusDefense, toursRestants: duree };
         } else {
           const carnet = (duel[adv].bonusTemporaires ??= []);
           carnet.push({ entiteId: entite.id, atk: variationAttaque, def: bonusDefense, tour: duel.tour });
