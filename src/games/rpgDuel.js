@@ -7091,6 +7091,27 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
+/** Effet-réponse automatique d'une créature en jeu : contre la prochaine carte
+ * adverse correspondant à son filtre (`creature`, `sort`, `carte`) dès qu'elle est jouée. */
+function contreAutomatiqueEnJeu(duel, coteLanceur, carteJouee) {
+  if (!duel || !carteJouee) return null;
+  const adv = autre(coteLanceur);
+  const gardien = (duel[adv]?.creatures ?? []).find((entite) => {
+    if (!entite || entite.pv <= 0 || entite.activationUtilisee) return false;
+    const def = cardById(entite.carteId);
+    const effet = def?.activation?.effet;
+    return effet?.type === 'contresort' && contreCorrespond(effet, carteJouee);
+  });
+  if (!gardien) return null;
+  const defGardien = cardById(gardien.carteId);
+  const effet = defGardien.activation.effet;
+  gardien.activationUtilisee = true;
+  if (carteJouee.id) duel[coteLanceur].cimetiere.push(carteJouee.id);
+  duel.log.push(`Effet-réponse (${gardien.name} — ${defGardien.activation.nom}) : ${carteJouee.name} est contrée automatiquement !`);
+  if (effet.pioche > 0) piocher(duel, adv, effet.pioche);
+  return { ok: true, contree: true, par: gardien.name };
+}
+
 export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false, retourIds = null, defausseIds = null } = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
@@ -7488,6 +7509,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     camp.prochaineArriveeAbordage = false;
     camp.prochaineArriveeAbordageSeuilPlein = false;
   }
+  const contreAuto = contreAutomatiqueEnJeu(duel, cote, carte);
+  if (contreAuto) return contreAuto;
   const entite = creerEntiteCreature(carte, duel);
   if (carte.kind === 'site') {
     entite.heures = {
@@ -8687,6 +8710,8 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     camp.main.splice(camp.main.indexOf(carteId), 1);
     if (carte.renfortUneFois) marquerRenfort(camp, carteId);
   }
+  const contreAuto = contreAutomatiqueEnJeu(duel, cote, carte);
+  if (contreAuto) return contreAuto;
   if (!dejaPayee && options?.annoncerSortMoba && duel.moba) {
     const cibleVoie = cibleId === 'sorcier' || options.cibleVoieMoba;
     const cibleCote = (options.reanimationMoba ? cote : null) ?? options.ciblePiocheMoba ?? options.cibleMainMoba ?? options.cibleZoneMoba ?? (options.cibleCombatMoba ? 'tous' : null) ?? (options.cibleVoieAllieeMoba || camp.creatures.some((entite) => entite.id === cibleId) ? cote : adv);

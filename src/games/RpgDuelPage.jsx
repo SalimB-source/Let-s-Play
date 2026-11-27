@@ -3794,7 +3794,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const mentionsEffetsEpuises = [
     effetsEpuisesActifs.includes('tenacite') && 'Tenacité déjà utilisée',
     effetsEpuisesActifs.includes('bouclier') && 'Bouclier tombé',
-    activationApercuEpuisee && 'Effet activé déjà utilisé pendant cette présence',
+    activationApercuEpuisee && (carte?.activation?.effet?.type === 'contresort' ? 'Effet-réponse déjà utilisé pendant cette présence' : 'Effet activé déjà utilisé pendant cette présence'),
   ].filter(Boolean);
   // La modification chiffrée que la carte inflige (-2/-2 pour la Lame de mer).
   const modifCarte = modificationStats(carte);
@@ -3953,7 +3953,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         effetsInactifs={effetsInactifsActifs}
       />
       {estCreature && carte.activation && !activationApercuEpuisee && (
-        <span className="rpg-card__effet-badge" title={carte.activation.nom} aria-hidden="true">⚡</span>
+        <span className={`rpg-card__effet-badge${carte.activation?.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`} title={carte.activation.nom} aria-hidden="true">{carte.activation?.effet?.type === 'contresort' ? '🌀' : '⚡'}</span>
       )}
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
@@ -4314,7 +4314,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
       {afficherIcones && <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />}
 
-      {estCreature && carte.activation && <span className="rpg-card__effet-badge" title={carte.activation.nom} aria-hidden="true">⚡</span>}
+      {estCreature && carte.activation && <span className={`rpg-card__effet-badge${carte.activation?.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`} title={carte.activation.nom} aria-hidden="true">{carte.activation?.effet?.type === 'contresort' ? '🌀' : '⚡'}</span>}
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>
