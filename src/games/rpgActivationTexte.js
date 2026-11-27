@@ -150,6 +150,11 @@ export function texteActivation(carte) {
   const prix = activation.prixPv > 0 ? `Payez ${activation.prixPv} PV : ` : '';
   const forme = zoneFormeCarte(activation.sortAssocie);
   const effet = activation.effet;
+  if (effet?.type === 'contresort') {
+    const quoi = effet.cible === 'creature' ? 'la prochaine créature adverse' : effet.cible === 'sort' ? 'le prochain sort adverse' : 'la prochaine carte adverse';
+    const bonus = effet.pioche > 0 ? `, puis piochez ${effet.pioche} carte${effet.pioche > 1 ? 's' : ''}` : '';
+    return `Effet-réponse (${activation.nom}) — Tant que cette créature est en jeu, ${quoi} est contrée automatiquement${bonus} (1 fois par présence).`;
+  }
   if (forme && effet?.type === 'retour-main' && effet.exclutType === 'Vampire') {
     return `${nom}${prix}Dans une rangée choisie, renvoyez les créatures sauf les Vampires dans la main de leur propriétaire.`;
   }

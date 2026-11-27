@@ -16971,6 +16971,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
 }
 
+.rpg-card__effet-badge--reponse {
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  padding-top: 0;
+  border-radius: 50%;
+  clip-path: none;
+  color: #38bdf8;
+  border: 1.5px solid rgba(56, 189, 248, 0.85);
+  background: radial-gradient(circle at 50% 50%, #0f172a 0%, #082f49 100%);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
+}
+
 /* Sur la table, le badge chevauche le milieu du bord inférieur. Il reste
    décoratif : la carte et son menu conservent leurs propres zones de clic. */
 .rpg-battle .rpg-card--img .rpg-card__effet-badge {

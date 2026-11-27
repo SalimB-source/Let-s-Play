@@ -16,7 +16,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('guetteur-du-beffroi'), ...deux('scalde-des-runes'),
       'salem', 'faucon-du-zenith', 'jarl-au-marteau-de-guerre',
       ...deux('javelot-du-beffroi'), ...deux('cuirasse-de-sel'), ...deux('sandales-de-tislit'), 'hache-de-la-banquise',
-      ...deux('poigne-de-givre'), ...deux('grand-voile-blanc'), 'appat-de-la-meute', 'appat-de-la-meute',
+      ...deux('garde-du-trone-givre'), ...deux('scalde-des-runes'), 'archere-viking-du-givre', 'archere-viking-du-givre',
     ]),
   }),
   Object.freeze({
@@ -28,8 +28,8 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('veilleuse-des-citernes'), ...deux('sonneur-fele'),
       'jarl-au-marteau-de-guerre', 'tour-des-flots', 'geant-des-banquises',
       'lance-de-givre', 'baton-des-citernes',
-      ...deux('brisure-de-verre'), ...deux('ressac'), ...deux('parade-du-verre'),
-      ...deux('appat-de-la-meute'), 'poigne-de-givre',
+      ...deux('le-cavalier-sans-nom'), ...deux('sonneur-fele'), ...deux('guerrier-au-bouclier-rond'),
+      ...deux('archere-viking-du-givre'), 'garde-du-trone-givre',
     ]),
   }),
   Object.freeze({
@@ -40,7 +40,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('djinn-de-foudre'), ...deux('djinn-des-braises-voilees'), ...deux('fennec-des-decombres'),
       'sahir-des-braises', 'djinn-du-dernier-brasier', ...deux('djinn-de-la-flamme-mourante'), 'tarek', 'ifrit-des-ergs',
       ...deux('javelot-du-beffroi'), ...deux('dune-marchante'), 'lame-des-ergs',
-      ...deux('frappe-iaijutsu'), ...deux('brise-lame'), ...deux('trait-de-braise'), 'rempart-de-dunes',
+      ...deux('vampire-des-braises'), ...deux('gardien-de-la-porte-ardente'), ...deux('chasseuse-de-braise'), 'gardienne-des-portes-de-sable',
     ]),
   }),
   Object.freeze({
@@ -52,11 +52,11 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('samourai-du-torii'), 'tengu-du-mont-ardent', 'daimyo-du-soleil-rouge',
       'lionne-du-midi-ardent', 'cavalier-des-deux-sabres', 'tojiro-le-pourfendeur',
       ...deux('hache-de-la-banquise'), 'armure-de-cendres', 'lance-de-givre',
-      'brise-lame', 'trait-de-braise', ...deux('frappe-iaijutsu'), 'grand-voile-blanc', ...deux('onna-musha-des-cendres'),
+      'gardien-de-la-porte-ardente', 'chasseuse-de-braise', ...deux('vampire-des-braises'), 'scalde-des-runes', ...deux('onna-musha-des-cendres'),
     ]),
   }),
   Object.freeze({
-    id: 'papyrus', name: 'Pesée des tombes', elements: Object.freeze(['neige', 'tenebres']),
+    id: 'rodeuse-des-tombes', name: 'Pesée des tombes', elements: Object.freeze(['neige', 'tenebres']),
     description: 'Morts utiles, Tribut et pioche : convertir les petites pertes en Shabtis, protéger les survivants et peser les voies.',
     cardIds: Object.freeze([
       ...deux('garde-du-voile'), ...deux('ouvrier-du-natron'), ...deux('viking-des-neiges'),
@@ -64,7 +64,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('veuve-des-urnes'), ...deux('corbeau-de-givre'), ...deux('garde-du-trone-givre'),
       'celle-qui-pese', 'maitre-des-hieroglyphes', 'celui-qui-juge',
       ...deux('khopesh-d-or'), 'lance-de-la-lune-givree',
-      ...deux('le-poids'), ...deux('papyrus'), 'appat-de-la-meute', 'poigne-de-givre',
+      ...deux('pretre-de-la-bouche'), ...deux('rodeuse-des-tombes'), 'archere-viking-du-givre', 'garde-du-trone-givre',
     ]),
   }),
   Object.freeze({
@@ -77,7 +77,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('pilote-de-la-carreira'), 'jarl-au-marteau-de-guerre', 'drakkar-a-tete-de-dragon',
       'le-cavalier-du-ressac-gele',
       ...deux('hache-de-la-banquise'), 'lance-de-givre',
-      ...deux('contresort-des-abimes'), ...deux('brisure-de-verre'), ...deux('ressac'), 'ecueil',
+      ...deux('kraken'), ...deux('le-cavalier-sans-nom'), ...deux('sonneur-fele'), 'garde-du-voile',
     ]),
   }),
   Object.freeze({
@@ -90,7 +90,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       'veilleur-du-dernier-crepuscule', 'porte-etendard-de-leclipse',
       ...deux('gardienne-du-croissant'), 'archonte-du-sablier-noir', 'souverain-de-la-lune-noire',
       ...deux('sabre-du-croissant-noir'), 'khopesh-d-or',
-      ...deux('voile-de-la-lune-noire'), ...deux('rempart-de-dunes'), ...deux('le-poids'), 'papyrus',
+      ...deux('sentinelle-des-sables'), ...deux('gardienne-des-portes-de-sable'), ...deux('pretre-de-la-bouche'), 'rodeuse-des-tombes',
     ]),
   }),
   Object.freeze({
@@ -102,7 +102,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('guetteuse-des-marees'), ...deux('galion-de-la-flotte'),
       ...deux('la-vengeance-de-la-reine-anne'), 'la-barbe-rousse', 'le-chasseur-d-ocracoke',
       ...deux('grappin-d-abordage'), 'sphere-de-rotation',
-      ...deux('contresort-des-abimes'), ...deux('parade-du-verre'), 'brisure-de-verre', 'brisure-de-verre', 'ressac',
+      ...deux('kraken'), ...deux('guerrier-au-bouclier-rond'), 'le-cavalier-sans-nom', 'le-cavalier-sans-nom', 'sonneur-fele',
     ]),
   }),
   Object.freeze({
@@ -113,10 +113,10 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('scorpion-du-seuil'), ...deux('convoi-des-dunes'),
       ...deux('garde-du-voile'), ...deux('porteur-de-la-plume'),
       ...deux('ureus-du-seuil'), ...deux('momie-de-lin'), ...deux('veuve-des-urnes'),
-      ...deux('rempart-de-dunes'), 'gardienne-des-sables-ensevelis',
-      ...deux('voile-de-la-lune-noire'), 'javelot-du-beffroi', ...deux('gardien-des-sept-sceaux'),
+      ...deux('gardienne-des-portes-de-sable'), 'gardienne-des-sables-ensevelis',
+      ...deux('sentinelle-des-sables'), 'javelot-du-beffroi', ...deux('gardien-des-sept-sceaux'),
       'lecteur-du-dernier-nom', 'celle-qui-pese',
-      ...deux('le-poids'), ...deux('khopesh-d-or'), ...deux('papyrus'),
+      ...deux('pretre-de-la-bouche'), ...deux('khopesh-d-or'), ...deux('rodeuse-des-tombes'),
     ]),
   }),
   Object.freeze({
@@ -126,10 +126,10 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
     cardIds: Object.freeze([
       ...deux('djinn-de-la-premiere-etincelle'), ...deux('ghul-des-cendres'),
       ...deux('djinn-de-la-flamme-mourante'), ...deux('djinn-de-la-fleche-ardente'),
-      ...deux('dune-marchante'), ...deux('sabre-maudit'), ...deux('brise-lame'),
+      ...deux('dune-marchante'), ...deux('sabre-maudit'), ...deux('gardien-de-la-porte-ardente'),
       ...deux('fennec-des-decombres'), ...deux('djinn-de-foudre'),
       'sahir-des-braises', 'djinn-des-cendres-vengeresses', 'tarek', 'ifrit-des-ergs',
-      ...deux('trait-de-braise'), 'ashigaru-des-braises', 'rempart-de-dunes', ...deux('frappe-iaijutsu'), 'armure-de-cendres', 'braise-et-sable',
+      ...deux('chasseuse-de-braise'), 'ashigaru-des-braises', 'gardienne-des-portes-de-sable', ...deux('vampire-des-braises'), 'armure-de-cendres', 'braise-et-sable',
     ]),
   }),
   Object.freeze({
@@ -142,8 +142,8 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('onna-musha-des-cendres'), ...deux('samourai-du-torii'),
       ...deux('convoi-des-dunes'), 'scarabee-des-sceaux', 'gardienne-des-sables-ensevelis', ...deux('tiziri-du-djurdjura'),
       'daimyo-du-soleil-rouge', 'tojiro-le-pourfendeur',
-      ...deux('sabre-maudit'), ...deux('brise-lame'), ...deux('frappe-iaijutsu'),
-      ...deux('rempart-de-dunes'), 'trait-de-braise', 'armure-de-cendres',
+      ...deux('sabre-maudit'), ...deux('gardien-de-la-porte-ardente'), ...deux('vampire-des-braises'),
+      ...deux('gardienne-des-portes-de-sable'), 'chasseuse-de-braise', 'armure-de-cendres',
     ]),
   }),
   Object.freeze({
@@ -155,8 +155,8 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('gardien-viking-du-fjord'), ...deux('garde-du-trone-givre'), ...deux('veilleuse-de-la-lune-givree'),
       ...deux('berserk-des-trois-hivers'), 'volva-soigneuse', ...deux('valkyrie-au-corbeau'),
       ...deux('jarl-au-marteau-de-guerre'), ...deux('valkyrie-des-neuf-nuits'),
-      ...deux('le-poids'), ...deux('papyrus'), ...deux('poigne-de-givre'),
-      ...deux('appat-de-la-meute'), 'lance-de-la-lune-givree', 'grand-voile-blanc', 'eclair-du-marteau',
+      ...deux('pretre-de-la-bouche'), ...deux('rodeuse-des-tombes'), ...deux('garde-du-trone-givre'),
+      ...deux('archere-viking-du-givre'), 'lance-de-la-lune-givree', 'scalde-des-runes', 'berserk-des-trois-hivers',
     ]),
   }),
 ]);
