@@ -60,11 +60,11 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Sa tempête emporte jusqu’au souvenir de ses adversaires.',
   }),
   carte({
-    id: 'orochi', name: 'Orochi', honneur: 0,
+    id: 'orochi', name: 'Orochi', honneur: 0, overkill: true,
     cost: 8, atk: 7, def: 8, rarity: 'mythique',
     typeLine: 'Créature légendaire — Serpent',
     destruction: { type: 'jetons', jeton: 'petit-orochi', nombre: 2 },
-    text: 'Quand Orochi meurt, créez deux créatures-jetons « Petit Orochi » 4/4 sous votre contrôle.',
+    text: 'Overkill — L’excédent des dégâts de combat traverse les bloqueurs vaincus et atteint le sorcier adverse. Quand Orochi meurt, créez deux créatures-jetons « Petit Orochi » 4/4 sous votre contrôle.',
     flavor: 'La fin du serpent n’est que le commencement de ses héritiers.',
   }),
   carte({
@@ -203,7 +203,6 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   // ne fait que lui épargner les dégâts (voir `riposteDeContreAttaque`).
   carte({
     id: 'tojiro-le-pourfendeur', name: 'Tojiro, le pourfendeur',
-    activation: { nom: 'Lame du pourfendeur', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 2 } },
     cost: 6, atk: 5, def: 5, rarity: 'mythique',
     // Son prix accepte une créature **ou une arme** de la main remise dans le
     // deck (`rpgInvocation.js`).
@@ -222,11 +221,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     activation: { nom: 'Serment de la forge', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'serment-de-la-forge', effet: { type: 'buff', atk: 2, def: 1, coupCritique: 0.25, tours: 1 } },
     cost: 5, atk: 3, def: 4, rarity: 'mythique',
     typeLine: 'Créature — Humain · Samouraï',
-    // Il lève un Samouraï en arrivant, puis grandit chaque attaque de son
-    // camp : la bannière ne se lit que sur les créatures de type Samouraï.
-    arrivee: { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 1 },
-    banniere: { tribu: 'samourai', atk: 1, def: 1 },
-    text: 'Quand le Daimyō arrive en jeu, il crée une créature-jeton « Samouraï » 1/1. Tant qu’il est en jeu, chaque fois qu’un Samouraï de votre camp attaque, ce Samouraï gagne +1/+1.',
+    arrivee: { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 },
+    text: 'Quand le Daimyō arrive en jeu, il crée deux créatures-jetons « Samouraï » 1/1.',
     flavor: 'Sous son étendard, le soleil rouge ne se couche pas.',
   }),
 ];

@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { cardById } from '../src/games/rpgCards.js';
+import { texteActivation } from '../src/games/rpgActivationTexte.js';
+
+const c = cardById;
+test('les fiches actualisées gardent les effets demandés et retirent les anciens', () => {
+  assert.equal(c('tojiro-le-pourfendeur').activation, undefined);
+  assert.equal(c('vampire-des-braises').activation.effet.amount, 2);
+  assert.equal(c('veilleur-des-cendres').activation, undefined);
+  assert.deepEqual(c('veilleur-des-cendres').destruction.elements, ['tenebres', 'neige', 'braise']);
+  assert.equal(c('veilleur-des-cendres').destruction.ephemere, undefined);
+  assert.equal(c('sentinelle-des-sables').cost, 4);
+  assert.equal(c('orochi').overkill, true);
+  assert.deepEqual(c('daimyo-du-soleil-rouge').arrivee, { type: 'jetons', jeton: 'samourai-du-daimyo', nombre: 2 });
+  assert.equal(c('daimyo-du-soleil-rouge').banniere, undefined);
+  assert.ok(c('ureus-du-seuil').poison); assert.equal(c('ureus-du-seuil').coupCritique, undefined);
+  assert.ok(c('celui-qui-juge').blocage); assert.equal(c('celui-qui-juge').arrivee, undefined);
+  assert.ok(c('lionne-du-midi-ardent').bouclierInitial); assert.equal(c('lionne-du-midi-ardent').protection, undefined);
+  assert.equal(c('lionne-du-midi-ardent').arrivee, undefined);
+  assert.match(texteActivation(c('lionne-du-midi-ardent')), /4 dégâts à une créature adverse ciblée/);
+  assert.ok(c('la-barbe-noire').bouclierInitial); assert.equal(c('la-barbe-noire').dedoublement, undefined);
+  assert.equal(c('manticore-des-dunes').defenseur, true);
+  assert.equal(c('guetteur-du-beffroi').activation.effet.amount, 1);
+  assert.equal(c('dune-marchante').activation.effet.type, 'combat');
+  assert.ok(c('veilleuse-des-citernes').activation); assert.equal(c('veilleuse-des-citernes').arrivee, undefined);
+  assert.equal(c('sahir-des-braises').combat.amount, 1);
+  assert.equal(c('djinn-des-cendres-vengeresses').activation.effet.typeImprime, 'Djinn');
+  assert.equal(c('djinn-des-cendres-vengeresses').activation.effet.coutMax, 3);
+  assert.equal(c('braisier-du-souk').arrivee, undefined); assert.ok(c('braisier-du-souk').activation);
+  assert.equal(c('djinn-de-foudre').furtif, undefined); assert.equal(c('djinn-de-foudre').ephemere, true);
+  assert.equal(c('archere-viking-du-givre').coupCritique, undefined); assert.equal(c('archere-viking-du-givre').gelCombatChance, .25);
+  assert.equal(c('eirik-du-premier-serment').activation, undefined);
+  assert.equal(c('scalde-des-runes').activation.sortAssocie, 'festin-des-vaillants');
+  assert.equal(c('guerrier-au-bouclier-rond').contreAttaque, undefined);
+  assert.match(texteActivation(c('tengu-du-mont-ardent')), /dégâts aux créatures adverses/);
+  assert.match(texteActivation(c('faucon-du-zenith')), /dégâts aux créatures adverses/);
+});

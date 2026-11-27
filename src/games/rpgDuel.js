@@ -1055,7 +1055,7 @@ export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   if (!activation || duel.tour !== cote) return false;
   // Ces familles nécessitent encore un adaptateur Conquête : ne jamais
   // débiter le sorcier ni appliquer la géométrie classique aux voies.
-  if (duel.moba && (activation.prixPv > 0 || zoneFormeCarte(activation.sortAssocie) || ['renfort-choisi', 'renfort-ascension', 'reanimation'].includes(activation.effet?.type))) return false;
+  if (duel.moba && (activation.prixPv > 0 || (zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie) && entite.carteId !== 'braisier-du-souk') || (['renfort-choisi', 'renfort-ascension', 'reanimation'].includes(activation.effet?.type) && !['djinn-des-cendres-vengeresses', 'veilleuse-des-citernes'].includes(entite.carteId)))) return false;
   // Le mal d'invocation tient la créature entière, pas seulement son attaque :
   // celle qui vient d'arriver n'active rien avant le prochain tour de son camp.
   // La Rapidité l'en dispense, comme pour l'attaque.
@@ -1068,7 +1068,7 @@ export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   // L'effet reste dépensé pour cette présence jusqu'à sa sortie du jeu.
   if (entite.activationUtiliseeMatch || entite.activationUtiliseeCeTour) return false;
   if (activation.effet?.type === 'equiper-cimetiere' && (!duel[cote].cimetiere.some((id) => carteEstArme(cardById(id))) || !rpgCiblesActivationLegales(duel, cote, entiteId)?.length)) return false;
-  if (activation.effet?.type === 'combat' && (!rpgChampionsActivationLegales(duel, cote, entiteId).length || !rpgCiblesActivationLegales(duel, cote, entiteId)?.length)) return false;
+  if (activation.effet?.type === 'combat' && ((activation.effet.sourceCible === 'creature-amie' && !rpgChampionsActivationLegales(duel, cote, entiteId).length) || !rpgCiblesActivationLegales(duel, cote, entiteId)?.length)) return false;
   if (activation.effet?.type === 'reanimation' && (!candidatsReanimation(duel, cote, activation.effet).length || !emplacementRenfort(duel, cote))) return false;
   if (activation.effet?.type === 'renfort-ascension' && (!planRenfortAscension(duel[cote], activation.effet).length || !emplacementRenfort(duel, cote))) return false;
   return rpgPeutPayer(duel[cote], coutActivation(activation));
@@ -1096,7 +1096,7 @@ export function rpgCiblesActivationLegales(duel, cote, entiteId) {
     : activation.effet?.type === 'combat' && activation.effet.sourceCible === 'creature-amie' ? [autre(cote)] : ['joueur', 'sorcier'];
   const cibles = [];
   for (const camp of camps) {
-    if ((['lame-de-mer', 'courant-de-retour'].includes(activation.sortAssocie) || activation.effet?.choixDegats) && camp === cote) continue;
+    if ((['lame-de-mer', 'courant-de-retour'].includes(activation.sortAssocie) || activation.effet?.choixDegats || activation.effet?.adversaireSeulement) && camp === cote) continue;
     for (const candidate of duel[camp].creatures) {
       if (rpgEstProtegee(candidate, couleur)) continue;
       if (!cibleRespecteCoutMax({ effet }, candidate)) continue;
@@ -1137,24 +1137,25 @@ function attendreEffetCreature(duel, cote, carteId, entiteId, cibleId, type, zon
  *  puis elle inflige ses blessures à la créature choisie, alliée ou adverse
  *  (« une créature au choix »). Les blessures ne sont ni une attaque ni une
  *  magie : Esquive n'y fait rien. */
-export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreReponse = false, zone = null, armeCarteId = null, championId = null, cibleSecondaireId = null, optionsMobaValide = false } = {}) {
+export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreReponse = false, zone = null, armeCarteId = null, championId = null, cibleSecondaireId = null, optionsMobaValide = false, voieSoin = null } = {}) {
   if (duel?.renfortChoixEnAttente) return { ok: false, raison: 'renfort-en-attente' };
   const camp = duel[cote];
   const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
   if (!entite || !activation) return { ok: false, raison: 'capacite' };
   if (duel.moba && activation.effet?.choixDegats && !optionsMobaValide) return { ok: false, raison: 'adaptateur-voie' };
+  if (duel.moba && ['vampire-des-braises', 'lionne-du-midi-ardent', 'scalde-des-runes'].includes(entite.carteId) && !optionsMobaValide) return { ok: false, raison: 'adaptateur-voie' };
   if (duel.moba && activation.prixPv > 0) return { ok: false, raison: 'prix-voie-non-pris-en-charge' };
-  if (duel.moba && zoneFormeCarte(activation.sortAssocie)) return { ok: false, raison: 'zone-voie-non-pris-en-charge' };
+  if (duel.moba && zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie) && entite.carteId !== 'braisier-du-souk') return { ok: false, raison: 'zone-voie-non-pris-en-charge' };
   if (duel.moba && ['combat', 'equiper-cimetiere'].includes(activation.effet?.type) && !optionsMobaValide) return { ok: false, raison: 'adaptateur-voie' };
-  if (duel.moba && ['renfort-choisi', 'renfort-ascension', 'reanimation'].includes(activation.effet?.type)) return { ok: false, raison: 'renfort-voie-non-pris-en-charge' };
+  if (duel.moba && ['renfort-choisi', 'renfort-ascension', 'reanimation'].includes(activation.effet?.type) && !['djinn-des-cendres-vengeresses', 'veilleuse-des-citernes'].includes(entite.carteId)) return { ok: false, raison: 'renfort-voie-non-pris-en-charge' };
   if (duel.tour !== cote) return { ok: false, raison: 'tour' };
   if (entite.activationUtiliseeMatch || entite.activationUtiliseeCeTour) return { ok: false, raison: 'deja-activee' };
   if (entite.attaquee) return { ok: false, raison: 'deja-attaquee' };
   // Le mal d'invocation tient toute la créature : celle qui vient d'arriver
   // n'active rien avant le prochain tour de son camp (la Rapidité l'en dispense).
   if (rpgSouffreMalInvocation(entite)) return { ok: false, raison: 'mal-invocation' };
-  const formeZone = zoneFormeCarte(activation.sortAssocie);
+  const formeZone = duel.moba ? null : zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie);
   if (zone !== null && (!formeZone || !zoneValide(zone) || zone.forme !== formeZone
     || (activation.sortAssocie === 'embuscade' && zone.camp !== autre(cote)))) return { ok: false, raison: 'zone' };
   let zoneChoisie = formeZone ? (zone ?? meilleureZone(duel, cote, formeZone, (candidate, camp) => {
@@ -1187,7 +1188,7 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   }
   if (cibleSecondaireId && (!activation.effet?.choixDegats || cibleSecondaireId === cibleId
     || !rpgCiblesActivationLegales(duel, cote, entiteId)?.includes(cibleSecondaireId))) return { ok: false, raison: 'cible' };
-  if (activation.effet?.type === 'combat' && !rpgChampionsActivationLegales(duel, cote, entiteId).includes(championId)) return { ok: false, raison: 'champion' };
+  if (activation.effet?.type === 'combat' && activation.effet.sourceCible === 'creature-amie' && !rpgChampionsActivationLegales(duel, cote, entiteId).includes(championId)) return { ok: false, raison: 'champion' };
   if (activation.effet?.type === 'equiper-cimetiere' && (!camp.cimetiere.includes(armeCarteId) || !carteEstArme(cardById(armeCarteId)))) return { ok: false, raison: 'arme-cimetiere' };
   if (activation.effet?.type === 'reanimation' && (!candidatsReanimation(duel, cote, activation.effet).length || !emplacementRenfort(duel, cote))) return { ok: false, raison: 'cible' };
   if (activation.effet?.type === 'renfort-ascension' && (!planRenfortAscension(camp, activation.effet).length || !emplacementRenfort(duel, cote))) return { ok: false, raison: 'cible' };
@@ -1204,13 +1205,13 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
     && attendreEffetCreature(duel, cote, carte.id, entiteId, cibleId, 'activation', zoneChoisie, championId, cibleSecondaireId)) {
     return { ok: true, effetEnAttente: true, cibleId };
   }
-  return resoudreActivationPayee(duel, cote, carte.id, entiteId, cibleId, zoneChoisie, armeCarteId, championId, cibleSecondaireId);
+  return resoudreActivationPayee(duel, cote, carte.id, entiteId, cibleId, zoneChoisie, armeCarteId, championId, cibleSecondaireId, null, voieSoin);
 }
 
 
 /** Résout une capacité déjà payée ; retirer sa source pendant la réponse ne
  * contre pas l'effet, mais retirer sa cible le dissipe. */
-function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = null, armeCarteId = null, championId = null, cibleSecondaireId = null, montantOverride = null) {
+function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = null, armeCarteId = null, championId = null, cibleSecondaireId = null, montantOverride = null, voieSoin = null) {
   const carte = duelCardById(carteId);
   const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
   const activation = carte.activation;
@@ -1227,6 +1228,13 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
   const cibleCamp = sansCible ? null : ['joueur', 'sorcier'].find((camp) => duel[camp].creatures.some((candidate) => candidate.id === cibleId));
   const cible = (!sansCible && cibleCamp) && duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId);
   if (!sansCible && !cible) { duel.log.push(`La cible de ${carte.name} a disparu : l'effet se dissipe.`); return { ok: true, dissipe: true }; }
+  // La Dune est elle-même combattante : si elle a quitté le jeu pendant la
+  // réponse, ou si les combattants ne partagent plus une voie, le duel échoue.
+  if (activation.effet?.type === 'combat' && activation.effet.sourceCible !== 'creature-amie'
+    && (!entite || (duel.moba && !mobaPartageVoie(duel.moba, entite.mobaLane, cible?.mobaLane)))) {
+    duel.log.push(`Le combat de ${carte.name} se dissipe : les combattants ne peuvent plus se rencontrer.`);
+    return { ok: true, dissipe: true };
+  }
   presenterEffet(duel, cote, carte.id);
   if (entite) {
     entite.activationUtiliseeCeTour = true;
@@ -1365,8 +1373,20 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
     const effet = activation.sortAssocie && activation.effet?.type === 'buff'
       ? { ...activation.effet, inclutSource: true } : activation.effet;
     appliquer(duel, cote, effet, sansCible ? null : cibleId, entiteId, couleur, 'capacite', carte.id,
-      cibleCamp, { ...(duel.moba ? { mobaLane: entite?.mobaLane } : {}), activationAssociee: Boolean(activation.sortAssocie),
-        ...(zone ? { zone, zoneCarteId: activation.sortAssocie } : {}) });
+      cibleCamp, { ...(duel.moba ? { mobaLane: entite?.mobaLane,
+        ...(activation.effet?.etJoueur ? { resoudreSoinSorcier: ({ amount }) => {
+          const events = soinsCreatureMoba.get(duel) ?? [];
+          for (const laneId of (voieSoin ? [voieSoin] : mobaVoiesCombat(duel.moba, entite?.mobaLane))) {
+            const soin = mobaSoigner(duel.moba, cote, laneId, amount);
+            if (soin.ok && soin.healing > 0) events.push({ side: cote, laneId, cardId: carte.id, ...soin });
+          }
+          soinsCreatureMoba.set(duel, events);
+        } } : {}),
+        ...(activation.effet?.etSorcier ? { resoudreDegatsSorcier: ({ amount }) => {
+          const damage = mobaPerdreVieAdverse(duel, cote, entite?.mobaLane, amount);
+          if (damage.ok) journaliserDegatsCapaciteMoba(duel, { cote, cardId: carte.id, laneId: entite?.mobaLane, ...damage });
+        } } : {}) } : {}), activationAssociee: Boolean(activation.sortAssocie || activation.effet?.type === 'reanimation' || activation.effet?.type === 'renfort-choisi'),
+        ...(zone ? { zone, zoneCarteId: activation.zoneCarteId ?? activation.sortAssocie } : {}) });
     if (soinsAvant) {
       ciblesFx = duel[cote].creatures.filter(e => e.id !== entiteId && e.pv > (soinsAvant.creatures.get(e.id) ?? e.pv))
         .map(e => ({ type: 'creature', cote, entiteId: e.id }));
@@ -4444,7 +4464,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
   // A creature owns its lane; a spell uses the lane chosen at cast time.
-  const voieEffet = duel.moba && sourceCarteId !== 'porte-etendard-de-leclipse' ? (sourceType === 'capacite'
+  const voieEffet = duel.moba && !['porte-etendard-de-leclipse', 'scalde-des-runes'].includes(sourceCarteId) ? (sourceType === 'capacite'
     ? (options?.mobaLane ?? duel[cote].creatures.find((e) => e.id === sauf)?.mobaLane)
     : sourceType === 'magie' ? options?.mobaLane : null) : null;
   const dansVoie = (entite) => !voieEffet || mobaPartageVoie(duel.moba, entite.mobaLane, voieEffet);

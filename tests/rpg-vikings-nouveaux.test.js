@@ -7,7 +7,7 @@ import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque } from '../src/games
 test('deux Vikings neige disponibles en collection avec leurs caractéristiques', () => {
   const v = cardById('viking-des-neiges'), a = cardById('archere-viking-du-givre');
   assert.deepEqual([v.cost, v.atk, v.def, v.element, v.text], [1, 2, 1, 'neige', '']);
-  assert.deepEqual([a.cost, a.atk, a.def, a.element, a.gelCombatChance, a.coupRapide], [4, 2, 5, 'neige', 0.15, true]);
+  assert.deepEqual([a.cost, a.atk, a.def, a.element, a.gelCombatChance, a.coupRapide], [4, 2, 5, 'neige', 0.25, true]);
   for (const c of [v, a]) { assert.ok(cardHasPrintedType(c, 'viking')); assert.ok(COLLECTION_DEPART.includes(c.id)); }
   for (const prop of ['arrivee', 'combat', 'destruction', 'rapidite', 'coupRapide', 'gelCombatChance']) assert.equal(v[prop], undefined);
 });
@@ -22,10 +22,10 @@ function scene(rng, archerSide = 'joueur', bouclier = false) {
   assert.ok(rpgLancerAttaque(d, other, [b.id], { [b.id]: [a.id] }).ok);
   return {a,b};
 }
-test('gel de combat : seuil strict à 15 % pour les deux camps', () => {
+test('gel de combat : seuil strict à 25 % pour les deux camps', () => {
   for (const side of ['joueur', 'sorcier']) {
-    assert.ok(scene(0.149, side).b.gelToursRestants > 0);
-    assert.equal(scene(0.15, side).b.gelToursRestants, 0);
+    assert.ok(scene(0.249, side).b.gelToursRestants > 0);
+    assert.equal(scene(0.25, side).b.gelToursRestants, 0);
   }
 });
 test('le bouclier adverse bloque le gel de l’archère', () => {

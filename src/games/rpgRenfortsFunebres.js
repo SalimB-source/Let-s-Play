@@ -11,11 +11,10 @@ export const RPG_RENFORTS_FUNEBRES = Object.freeze([
   }),
   Object.freeze({
     id: 'veilleur-des-cendres', name: 'Veilleur des cendres', kind: 'creature',
-    activation: { nom: 'Veille des braises', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'veille-des-braises', effet: { type: 'renfort-choisi', zone: 'main', element: 'braise', coutExact: 3, ephemere: true } },
     element: 'braise', set: 'serment-du-soleil-rouge', art: 'veilleur-des-cendres',
     cost: 3, atk: 3, def: 2, rarity: 'rare', typeLine: 'Créature — Humain · Samouraï',
-    destruction: { type: 'renfort-choisi', zone: 'cimetiere', elements: ['tenebres', 'neige'], coutMax: 3, ephemere: true, uneFoisParNom: true },
-    text: 'À sa mort : invoquez spécialement une créature Ténèbres ou Neige de coût imprimé 3 ou moins choisie dans votre cimetière. Détruisez-la à la fin du tour.',
+    destruction: { type: 'renfort-choisi', zone: 'cimetiere', elements: ['tenebres', 'neige', 'braise'], coutMax: 3, uneFoisParNom: true },
+    text: 'À sa mort : invoquez spécialement une créature Ténèbres, Neige ou Braise de coût imprimé 3 ou moins choisie dans votre cimetière.',
     flavor: 'Une braise demeure quand la dernière lame est tombée.',
   }),
 ]);

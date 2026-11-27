@@ -127,9 +127,9 @@ test('Sable — Salem endurcit une alliée jusqu’à la fin du tour', () => {
   assert.equal(dune.def, 4, 'le renfort tombe avec le tour');
 });
 
-test('Neige — Eirik soigne : un éclat par allié soigné et pour le sorcier', () => {
+test('Neige — Scalde soigne : un éclat par allié soigné et pour le sorcier', () => {
   const d = duel();
-  const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
+  const eirik = poser(d, 'joueur', 'scalde-des-runes');
   const dune = poser(d, 'joueur', 'dune-marchante');
   dune.pv = 2; // une blessure que le soin de zone va remonter
   d.joueur.pv -= 2;
@@ -167,7 +167,7 @@ test('Braise — le Daimyō renforce le camp : la braise du renfort', () => {
 
 test('une créature déjà pleine ne gagne rien : aucun éclat fantôme', () => {
   const d = duel();
-  const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
+  const eirik = poser(d, 'joueur', 'scalde-des-runes');
   poser(d, 'joueur', 'dune-marchante'); // pleine : 4/4
   d.joueur.pv -= 2;
   const tirs = activer(d, eirik.id);
@@ -181,7 +181,7 @@ test('le renfort ne se défait pas au soin suivant : le plafond relevé tient', 
   const d = duel();
   const daimyo = poser(d, 'joueur', 'daimyo-du-soleil-rouge');
   const dune = poser(d, 'joueur', 'dune-marchante');
-  const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
+  const eirik = poser(d, 'joueur', 'scalde-des-runes');
   activer(d, daimyo.id);                 // +2/+1 : 4/5 PV, plafond 5
   assert.equal(dune.pv, 5);
   d.joueur.pv -= 2;

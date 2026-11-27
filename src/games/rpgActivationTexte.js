@@ -50,7 +50,7 @@ export function texteEffetActivation(effet = {}) {
         ? `, avec ${Math.round(Number(effet.gelChance) * 100)} % de chances de ${zone ? 'les geler' : 'la geler'}`
         : '';
       if (zone) return `Inflige ${montant} ${degats(montant)} à ${zone}${gelProbable}${gel}.`;
-      return `Inflige ${montant} ${degats(montant)} à une créature ciblée${gelProbable}${gel}.`;
+      return `Inflige ${montant} ${degats(montant)} à une créature${effet.adversaireSeulement ? ' adverse' : ''} ciblée${gelProbable}${gel}.`;
     }
     case 'bouclier-tour':
       return 'La créature alliée ciblée gagne un bouclier jusqu’à la fin du tour.';
@@ -116,6 +116,7 @@ export function texteEffetActivation(effet = {}) {
       if (effet.ephemere) return 'Invoquez spécialement une créature Braise de coût 3 choisie dans votre main ; détruisez-la à la fin du tour.';
       return 'Invoquez spécialement une créature de coût 5 choisie dans votre main.';
     case 'reanimation':
+      if (effet.typeImprime === 'Djinn') return `Invoquez spécialement un Djinn de coût ${effet.coutMax} ou moins choisi dans votre cimetière.`;
       return effet.sansAscension ? 'Réanimez une créature Ténèbres non-Ascension de coût 3 ou moins choisie dans votre cimetière.' : 'Réanimez une créature choisie dans votre cimetière.';
     case 'destruction-totale':
       return 'Détruisez toutes les créatures des deux camps.';
@@ -126,7 +127,7 @@ export function texteEffetActivation(effet = {}) {
       if (Number.isFinite(effet.coutMin)) return `Détruisez une créature ciblée de coût ${effet.coutMin} ou plus.`;
       return 'Détruisez une créature ciblée.';
     case 'combat':
-      return 'Une créature alliée choisie se bat avec une créature adverse choisie : chacune subit des dégâts égaux à l’attaque de l’autre.';
+      return effet.sourceCible === 'creature-amie' ? 'Une créature alliée choisie se bat avec une créature adverse choisie : chacune subit des dégâts égaux à l’attaque de l’autre.' : 'Cette créature se bat contre une créature adverse ciblée : chacune inflige à l’autre des dégâts égaux à son attaque.';
     case 'equiper-cimetiere':
       return 'Équipez une créature alliée ciblée avec une arme choisie dans votre cimetière.';
     case 'destruction-arme':
@@ -148,7 +149,7 @@ export function texteActivation(carte) {
   if (!activation) return null;
   const nom = `${activation.nom ?? 'Effet activé'} — `;
   const prix = activation.prixPv > 0 ? `Payez ${activation.prixPv} PV : ` : '';
-  const forme = zoneFormeCarte(activation.sortAssocie);
+  const forme = zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie);
   const effet = activation.effet;
   if (effet?.type === 'contresort') {
     const quoi = effet.cible === 'creature' ? 'la prochaine créature adverse' : effet.cible === 'sort' ? 'le prochain sort adverse' : 'la prochaine carte adverse';
@@ -166,10 +167,10 @@ export function texteActivation(carte) {
   }
   if (forme && effet?.type === 'degats') {
     const zone = forme === 'rangee' ? 'une rangée' : forme === 'colonne' ? 'une colonne' : 'un carré';
-    const cibles = effet.cible === 'toutes-autres' || effet.inclutAllies ? 'toutes les créatures' : 'les créatures adverses';
+    const cibles = effet.cible === 'toutes-autres' || effet.inclutAllies ? 'à toutes les créatures' : 'aux créatures adverses';
     const gel = effet.gel ? ' et les gèle' : effet.gelChance ? `, avec ${Math.round(effet.gelChance * 100)} % de chances de geler chacune` : '';
     const echo = effet.echo ? ` ; ${effet.echo.amount} dégât supplémentaire aux créatures adverses au début de votre prochain tour` : '';
-    return `${nom}${prix}Inflige ${effet.amount} ${degats(effet.amount)} à ${cibles} dans ${zone}${gel}${echo}.`;
+    return `${nom}${prix}Inflige ${effet.amount} ${degats(effet.amount)} ${cibles} dans ${zone}${gel}${effet.etSorcier ? ` et ${effet.etSorcier} dégât au sorcier adverse` : ''}${echo}.`;
   }
   return `${nom}${prix}${texteEffetActivation(effet)}`;
 }

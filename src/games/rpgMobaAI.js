@@ -1,3 +1,4 @@
+import { candidatsRenfortChoisi } from './rpgRenforts.js';
 import { sortTransfere } from './rpgSortsTransferes.js';
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
@@ -25,15 +26,36 @@ export function rpgMobaChoisirActivationIA(duel, side = 'sorcier') {
       if (choix.cibleId === null) {
         const type = cardById(source.carteId)?.activation?.effet?.type;
         if (['pioche', 'pioche-defausse'].includes(type)) score = duel[side].deck.length && duel[side].main.length <= 5 ? 3 : 0;
+        else if (type === 'reanimation') score = 4;
+        else if (type === 'renfort-choisi') {
+          const effet = cardById(source.carteId)?.activation?.effet;
+          score = candidatsRenfortChoisi(duel[side], effet).length ? 4 : 0;
+        }
+        else if (type === 'soin-creatures') {
+          score = duel[side].creatures
+            .reduce((n, e) => n + Math.max(0, Math.min(2, e.pvMax - e.pv)), 0);
+          score += (choix.voieSoin ? [choix.voieSoin] : mobaVoiesCombat(duel.moba, source.mobaLane)).reduce((n, id) => {
+            const voie = duel.moba.lanes.find(v => v.id === id);
+            return n + Math.max(0, Math.min(2, mobaVieMaxPourCamp(duel.moba, side, id) - voie.hp[side]));
+          }, 0);
+        } else if (type === 'degats') {
+          score = mobaVoiesCombat(duel.moba, source.mobaLane).length + duel[autre(side)].creatures
+            .filter(e => mobaPartageVoie(duel.moba, source.mobaLane, e.mobaLane) && !e.bouclier && !e.bouclierLumiere)
+            .reduce((n, e) => n + 1 + (e.pv <= 1 ? valeurCreature(e) : 0), 0);
+        }
         else if (type === 'defaussePaquet') score = duel[autre(side)].deck.length ? 2 : 0;
         else if (type === 'prochaine-arrivee-abordage') score = !duel[side].prochaineArriveeAbordage && (duel[side].deck.length || duel[side].main.some(id => ['creature', 'hero'].includes(cardById(id)?.kind))) ? 3 : 0;
-      } else if (choix.championId) {
-        const champion = duel[side].creatures.find(e => e.id === choix.championId);
+      } else if (choix.championId || cardById(source.carteId)?.activation?.effet?.type === 'combat') {
+        const champion = choix.championId ? duel[side].creatures.find(e => e.id === choix.championId) : source;
         if (!champion || !cible || cible.bouclier || cible.bouclierLumiere) continue;
         const donne = champion.gelToursRestants > 0 ? 0 : Math.max(0, champion.atk || 0);
         const recoit = cible.gelToursRestants > 0 ? 0 : Math.max(0, cible.atk || 0);
         score = Math.min(donne, cible.pv) + (donne >= cible.pv ? valeurCreature(cible) : 0)
           - Math.min(recoit, champion.pv) - (recoit >= champion.pv ? valeurCreature(champion) : 0);
+      } else if (cardById(source.carteId)?.activation?.effet?.type === 'degats' && !cardById(source.carteId)?.activation?.effet?.choixDegats) {
+        const amount = cardById(source.carteId).activation.effet.amount ?? 0;
+        if (!cible || duel[side].creatures.includes(cible) || cible.bouclier || cible.bouclierLumiere) continue;
+        score = Math.min(amount, cible.pv) + (cible.pv <= amount ? valeurCreature(cible) : 0);
       } else if (cardById(source.carteId)?.activation?.effet?.choixDegats) {
         const seconde = duel[autre(side)].creatures.find(e => e.id === choix.cibleSecondaireId);
         const montant = seconde ? 2 : 4;

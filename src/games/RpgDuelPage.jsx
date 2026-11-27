@@ -6,7 +6,7 @@ import { texteActivation } from './rpgActivationTexte.js';
 import { RpgAmbiancePlateau, RpgDangerVie } from './RpgAmbiancePlateau.jsx';
 import { rpgVieCritique, rpgElementParticule } from './rpgAmbianceVisuelle.js';
 import { rpgLumiereElementaire, rpgSurvolRelief, rpgEffacerRelief } from './rpgReliefVisuel.js';
-import RpgCadreCarte from './RpgCadreCarte.jsx';
+import RpgCadreCarte, { RpgBadgeActivation } from './RpgCadreCarte.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
@@ -1586,7 +1586,7 @@ export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null 
           <aside className="rpg-graveyard-carousel__details" aria-live="polite">
             {choisie ? <>
               <div className="rpg-graveyard-carousel__detail-heading">
-                <span className="rpg-graveyard-carousel__detail-art" aria-hidden="true"><img key={choisie.id} src={cardArt(choisie)} alt="" onError={(event) => { event.currentTarget.hidden = true; }} /></span>
+                <span className="rpg-graveyard-carousel__detail-art" aria-hidden="true"><img key={choisie.id} src={cardArt(choisie)} alt="" onError={(event) => { event.currentTarget.hidden = true; }} /><RpgBadgeActivation carte={choisie} /></span>
                 <div><span className="rpg-graveyard-carousel__detail-eyebrow">Carte sélectionnée</span><h2>{choisie.name}</h2><p className="rpg-graveyard-carousel__type">{choisie.typeLine}</p></div>
               </div>
               <div className="rpg-graveyard-carousel__rule"><span>Effet de la carte</span><p>{choisie.text || 'Aucun effet particulier.'}</p></div>
@@ -3387,7 +3387,7 @@ export function TableCard({
         alt=""
         aria-hidden="true"
       />
-      <RpgCadreCarte carte={carte} />
+      <RpgCadreCarte carte={carte} afficherActivation={false} />
       {malInvocation && (
         <span className="rpg-card__zzz" aria-hidden="true">
           <span>z</span><span>Z</span><span>Z</span><span>Z</span>
@@ -3468,11 +3468,11 @@ export function TableCard({
       )}
       {activation && !estSite && !activationEpuisee && (
         <span
-          className="rpg-card__effet-badge"
+          className={`rpg-card__effet-badge${activation.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`}
           title={activation.nom}
           aria-hidden="true"
         >
-          ⚡
+          {activation.effet?.type === 'contresort' ? '🌀' : '⚡'}
         </span>
       )}
         {!estSite && (
@@ -3531,7 +3531,7 @@ export function TableCard({
     >
       {prisonniereCarte && <span className="rpg-card__prisonniere" aria-hidden="true">
         <span className="rpg-card__prisonniere-nom">{entite.enCale.name}</span>
-        <img className="rpg-card__prisonniere-art" src={cardArt(prisonniereCarte)} alt="" />
+        <img className="rpg-card__prisonniere-art" src={cardArt(prisonniereCarte)} alt="" /><RpgBadgeActivation carte={prisonniereCarte} />
         <span className="rpg-card__prisonniere-chaine">⛓</span>
       </span>}
       {armes.map((id, index) => {
@@ -3883,7 +3883,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
             data-creature-en-cale={prisonniereCarte.id}
           >
             <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
-              <img src={cardArt(prisonniereCarte)} alt="" />
+              <img src={cardArt(prisonniereCarte)} alt="" /><RpgBadgeActivation carte={prisonniereCarte} />
               <span className="rpg-hover-card-preview__weapon-cost">{prisonniereCarte.cost}</span>
             </span>
             <figcaption>
@@ -3923,7 +3923,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden="true"
     >
       <img src={estEnFurie ? cardArtFurie(carte) : (entite?.art ?? cardArt(carte))} alt="" />
-      <RpgCadreCarte carte={carte} />
+      <RpgCadreCarte carte={carte} afficherActivation={false} />
       {estEnFurie && <VignetteFurie />}
       {entite && ((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />}
       {entite?.protection && <EgideBouclier couleurs={[entite.protection.contre].flat(Infinity).filter(Boolean)} />}
@@ -4308,7 +4308,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
       aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' || carte.cost == null ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${texteCombatIndividuel(carte)}` : ''}${carte.activation ? ` — effet activé : ${texteActivation(carte)}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : estArme ? ` — bonus d’arme ${bonusArmeTexte(carte)}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      <RpgCadreCarte carte={carte} />
+      <RpgCadreCarte carte={carte} afficherActivation={false} />
 
       <ManaCost carte={carte} showElement={false} />
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
@@ -12794,13 +12794,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     const activation = cardById(entite.carteId)?.activation;
-    const formeZone = !duel.moba && zoneFormeCarte(activation?.sortAssocie);
+    const formeZone = !duel.moba && zoneFormeCarte(activation?.zoneCarteId ?? activation?.sortAssocie);
     if (formeZone) {
       if (!rpgPeutActiverCapacite(duel, 'joueur', entite.id) || zoneSortEnCours) {
         jouerSfx('erreur'); force(); return;
       }
       setActivationZoneSource(entite.id);
-      setZoneSortEnCours(activation.sortAssocie);
+      setZoneSortEnCours(activation.zoneCarteId ?? activation.sortAssocie);
       setZoneAncre(null);
       jouerSfx('select'); force(); return;
     }
@@ -12885,7 +12885,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       executerActivation(sourceId, premiereId, null, null, entite.id === premiereId ? null : entite.id);
       return;
     }
-    if (cardById(source?.carteId)?.activation?.effet?.type === 'combat') {
+    if (cardById(source?.carteId)?.activation?.effet?.type === 'combat'
+      && cardById(source?.carteId)?.activation?.effet?.sourceCible === 'creature-amie') {
       if (!idsCiblesActivation?.has(entite.id)) { jouerSfx('erreur'); force(); return; }
       if (!championActivationId) {
         setChampionActivationId(entite.id);
@@ -14506,7 +14507,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const cartes = rpgCartesRenfortChoisi(duel, 'joueur');
         const disponibles = cartes.filter((c) => c.admissible);
         const source = cardById(duel.renfortChoixEnAttente.sourceCarteId);
-        const idConsigne = duel.renfortChoixEnAttente.origine === 'activation' ? source?.activation?.sortAssocie : source?.id;
+        const idConsigne = duel.renfortChoixEnAttente.origine === 'activation' ? (source?.activation?.sortAssocie ?? source?.id) : source?.id;
         const choisir = (index) => {
           if (modePvp && pvpEnVolCountRef.current > 0) return;
           if (modePvp) void envoyerIntentionPvp({ type: 'choisir-renfort', index });
@@ -14522,7 +14523,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <header className="rpg-renfort-choix__header">
             <span className="rpg-renfort-choix__eyebrow" aria-hidden="true">✦ Choix de carte</span>
             <h2 id="rpg-renfort-choix-titre">{source?.name} · Choisissez {duel.renfortChoixEnAttente.recherche ? 'une carte' : 'une créature'}</h2>
-            <p id="rpg-renfort-choix-consigne">{idConsigne === 'porteur-de-la-plume' ? 'Choisissez une créature de coût 2 ou 3 dans votre deck pour la mettre dans votre cimetière.' : idConsigne === 'convoi-des-dunes' ? 'Choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière pour la renvoyer en main.' : duel.renfortChoixEnAttente.recherche ? 'Choisissez une Magie Rapide ou une Sorcellerie dans votre deck pour l’ajouter à votre main.' : idConsigne === 'appel-des-marees' ? 'Voici les trois cartes du dessus. Choisissez une créature Eau de coût 3 ou moins ; les autres vont sous le deck.' : idConsigne === 'ralliement-des-neiges' ? 'Choisissez une créature de coût 5 dans votre main.' : idConsigne === 'veilleur-des-cendres' ? 'Choisissez une créature Ténèbres ou Neige de coût 3 ou moins dans votre cimetière. Elle sera détruite à la fin du tour.' : ['reanimation', 'reveil-de-la-horde', 'passeur-au-masque-de-chacal', 'retour-des-ensevelis'].includes(idConsigne) ? 'Choisissez une créature admissible dans votre cimetière.' : idConsigne === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : idConsigne === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : idConsigne === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez une créature Braise de coût 3 dans votre main. Elle sera détruite à la fin du tour.'}</p>
+            <p id="rpg-renfort-choix-consigne">{idConsigne === 'porteur-de-la-plume' ? 'Choisissez une créature de coût 2 ou 3 dans votre deck pour la mettre dans votre cimetière.' : idConsigne === 'convoi-des-dunes' ? 'Choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière pour la renvoyer en main.' : duel.renfortChoixEnAttente.recherche ? 'Choisissez une Magie Rapide ou une Sorcellerie dans votre deck pour l’ajouter à votre main.' : idConsigne === 'appel-des-marees' ? 'Voici les trois cartes du dessus. Choisissez une créature Eau de coût 3 ou moins ; les autres vont sous le deck.' : idConsigne === 'ralliement-des-neiges' ? 'Choisissez une créature de coût 5 dans votre main.' : idConsigne === 'veilleur-des-cendres' ? 'Choisissez une créature Ténèbres, Neige ou Braise de coût 3 ou moins dans votre cimetière.' : ['reanimation', 'reveil-de-la-horde', 'passeur-au-masque-de-chacal', 'retour-des-ensevelis'].includes(idConsigne) ? 'Choisissez une créature admissible dans votre cimetière.' : idConsigne === 'djinn-des-cendres-vengeresses' ? 'Choisissez un Djinn de coût 3 ou moins dans votre cimetière.' : idConsigne === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : idConsigne === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : idConsigne === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez une créature Braise de coût 3 dans votre main. Elle sera détruite à la fin du tour.'}</p>
             </header>
             <div className="rpg-renfort-choix__cartes" role="region" aria-label="Cartes proposées" tabIndex={cartes.length ? 0 : undefined}>{cartes.map((c) => <button key={c.index} type="button" className="rpg-renfort-choix__carte" autoFocus={c.index === disponibles[0]?.index} disabled={!c.admissible} onClick={() => choisir(c.index)}>
               <span className="rpg-cadre-vignette"><img src={cardArt(c.id)} alt="" /><RpgCadreCarte carte={cardById(c.id)} /></span><strong>{cardById(c.id)?.name}</strong>{(cardById(c.id)?.cost != null || !c.admissible) && <small>{cardById(c.id)?.cost != null ? `Coût ${cardById(c.id).cost}` : ''}{c.admissible ? '' : `${cardById(c.id)?.cost != null ? ' · ' : ''}Non admissible`}</small>}

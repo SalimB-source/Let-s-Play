@@ -36,6 +36,10 @@ export function rpgMobaCartePourApercu(carte) {
 export function rpgMobaNotesCarte(carte) {
   if (!carte) return [];
   const notes = [];
+  if (['vampire-des-braises', 'lionne-du-midi-ardent', 'dune-marchante', 'braisier-du-souk'].includes(carte.id)) notes.push('Effet activé : en Conquête, il agit dans la voie de sa source ; le centre conquis partage les deux voies latérales.');
+  if (carte.id === 'scalde-des-runes') notes.push('Effet activé : soigne toutes les créatures alliées et une voie alliée active au choix.');
+  if (carte.id === 'veilleuse-des-citernes') notes.push('Effet activé : choisissez une créature Eau admissible parmi les trois cartes du dessus ; elle entre dans une case libre d’une voie active.');
+  if (carte.id === 'djinn-des-cendres-vengeresses') notes.push('Effet activé : choisissez un Djinn admissible du cimetière ; il entre dans une case libre d’une voie active.');
   if (carte.rapidite) notes.push('Rapidité : cette créature peut attaquer dès son arrivée, sous réserve des autres restrictions.');
   if (carte.id === 'sandales-de-tislit') notes.push('En MOBA, les Sandales donnent +1/+1 au porteur et ne se jouent que pendant votre tour. Dans le duel classique, elles donnent +0/+1 et Rapidité.');
   if (['chien-de-sable', 'guepard'].includes(carte.id)) notes.push('Jeton : ne se joue pas depuis la main. En MOBA, son invocateur (Tarek ou Kusayla) peut être invoqué spécialement sous condition.');

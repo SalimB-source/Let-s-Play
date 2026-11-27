@@ -21,7 +21,7 @@ function choisir(d, side, id) {
 function poser(d, side, id, slot = 0) {
   d.tour = side; d[side].invocationNormaleJouee = false; if (d.moba) d.moba.creaturesJouees[side] = false;
   d[side].main.push(id);
-  const r = d.moba ? rpgMobaJouerCreature(d, side, id, slot < 2 ? 'left' : 'right', slot < 2 ? slot : slot - 2) : rpgJouerCreature(d, side, id);
+  const r = d.moba ? rpgMobaJouerCreature(d, side, id, slot < 2 ? 'left' : slot === 2 ? 'center' : 'right', slot < 2 ? slot : 0) : rpgJouerCreature(d, side, id);
   assert.ok(r.ok, JSON.stringify(r)); return r.entite;
 }
 
@@ -53,22 +53,22 @@ for (const moba of [false, true]) for (const side of ['joueur','sorcier']) {
     assert.equal(d[side].creatures.length, 0); assert.ok(d[side].cimetiere.includes('chacal-du-seuil'));
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
-  test(`Veilleur : réanime Ténèbres ou Neige, détruit à la fin du tour adverse (${mode})`, () => {
+  test(`Veilleur : réanime Ténèbres ou Neige sans destruction différée (${mode})`, () => {
     const d = partie(moba, side), e = poser(d, side, 'veilleur-des-cendres');
     d[side].cimetiere = ['ureus-du-seuil', 'gardien-viking-du-fjord', 'djinn-des-braises-voilees'];
     d.tour = side === 'joueur' ? 'sorcier' : 'joueur';
     rpgBlesserCreature(d, side, e.id, 10); choisir(d, side, 'gardien-viking-du-fjord');
     assert.deepEqual(d[side].creatures.map(c => c.carteId), ['gardien-viking-du-fjord']);
-    assert.equal(d[side].creatures[0].detruireFinDuTourActuel, true);
+    assert.notEqual(d[side].creatures[0].detruireFinDuTourActuel, true);
     rpgFinDeTour(d);
-    assert.equal(d[side].creatures.length, 0); assert.ok(d[side].cimetiere.includes('gardien-viking-du-fjord'));
+    assert.ok(d[side].creatures.some(c => c.carteId === 'gardien-viking-du-fjord'));
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
-  test(`Veilleur : Ténèbres coût 3, Braise et coût 4 exclus (${mode})`, () => {
+  test(`Veilleur : Braise coût 3 admissible et coût 4 exclu (${mode})`, () => {
     const d = partie(moba, side), e = poser(d, side, 'veilleur-des-cendres');
     d[side].cimetiere = ['ureus-du-seuil', 'djinn-des-braises-voilees', 'souverain-de-la-lune-noire'];
-    rpgBlesserCreature(d, side, e.id, 10); choisir(d, side, 'ureus-du-seuil');
-    assert.deepEqual(d[side].creatures.map(c => c.carteId), ['ureus-du-seuil']);
+    rpgBlesserCreature(d, side, e.id, 10); choisir(d, side, 'djinn-des-braises-voilees');
+    assert.deepEqual(d[side].creatures.map(c => c.carteId), ['djinn-des-braises-voilees']);
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
   test(`Convoi : choix parmi les créatures Braise, Sable ou Ténèbres (${mode})`, () => {
@@ -98,16 +98,16 @@ for (const moba of [false, true]) {
     const d = partie(moba); d.joueur.cimetiere = ['convoi-des-dunes']; poser(d, 'joueur', 'convoi-des-dunes'); choisir(d, 'joueur', 'convoi-des-dunes');
     assert.deepEqual(d.joueur.main, ['convoi-des-dunes']); assert.deepEqual(d.joueur.cimetiere, []);
   });
-  test(`Veilleur mourant à la fin du tour détruit aussi son renfort (${moba ? 'MOBA' : 'Duel'})`, () => {
+  test(`Veilleur mourant à la fin du tour laisse son renfort en jeu (${moba ? 'MOBA' : 'Duel'})`, () => {
     const d = partie(moba), e = poser(d, 'joueur', 'veilleur-des-cendres');
     d.joueur.cimetiere = ['viking-des-neiges']; e.detruireFinDuTour = true;
     rpgFinDeTour(d); choisir(d, 'joueur', 'viking-des-neiges');
-    assert.equal(d.joueur.creatures.length, 0); assert.ok(d.joueur.cimetiere.includes('viking-des-neiges'));
+    assert.ok(d.joueur.creatures.some(c => c.carteId === 'viking-des-neiges'));
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
   });
   test(`Veilleur sans cible admissible ne sort aucune carte (${moba ? 'MOBA' : 'Duel'})`, () => {
     const d = partie(moba), e = poser(d, 'joueur', 'veilleur-des-cendres');
-    d.joueur.cimetiere = ['djinn-des-braises-voilees', 'souverain-de-la-lune-noire', 'papyrus'];
+    d.joueur.cimetiere = ['souverain-de-la-lune-noire', 'papyrus'];
     rpgBlesserCreature(d, 'joueur', e.id, 10);
     assert.equal(d.joueur.creatures.length, 0); assert.ok(d.joueur.cimetiere.includes('souverain-de-la-lune-noire'));
     if (moba) assert.ok(rpgMobaPlacementCoherent(d));
@@ -116,7 +116,8 @@ for (const moba of [false, true]) {
 
 for (const moba of [false, true]) test(`La place libérée par la mort accueille le renfort sur un terrain plein (${moba ? 'MOBA' : 'Duel'})`, () => {
   const d = partie(moba), e = poser(d, 'joueur', 'gardienne-des-derniers-noms', 0);
-  const places = moba ? 4 : 5;
+  d.joueur.deck = [];
+  const places = 4;
   for (let i = 1; i < places; i++) poser(d, 'joueur', 'chien-du-guet', i);
   d.joueur.deck = ['ouvrier-du-natron']; rpgBlesserCreature(d, 'joueur', e.id, 10);
   assert.equal(d.joueur.creatures.length, places); assert.ok(d.joueur.creatures.some(c => c.carteId === 'ouvrier-du-natron'));

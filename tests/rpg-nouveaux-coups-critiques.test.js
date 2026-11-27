@@ -11,7 +11,9 @@ import { rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelle
 import { rpgMobaNouveauDuel, rpgMobaJouerCreature, rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle } from '../src/games/rpgMobaLocal.js';
 import { mobaVoie } from '../src/games/rpgMoba.js';
 
-const ids = ['ureus-du-seuil', 'tislit-des-aures', 'archere-viking-du-givre'];
+// L’Uræus et l’Archère n’ont plus Coup critique ; leurs nouvelles fiches
+// sont vérifiées dans rpg-reequilibrage-effets.test.js.
+const ids = ['tislit-des-aures'];
 function classique(id, side = 'joueur') {
   const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => .5 });
   for (const cote of ['joueur', 'sorcier']) duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 40]));

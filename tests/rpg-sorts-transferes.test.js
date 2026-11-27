@@ -21,12 +21,13 @@ import { prixCarteDirecte } from '../src/games/rpgSoukDirect.js';
 const ids = new Set(RPG_SORTS_TRANSFERES);
 test('les 38 cartes transférées correspondent exactement aux capacités associées, sans magie rapide ni contresort', () => {
   const associes = new Set(RPG_DUEL_CARDS.map(c => c.activation?.sortAssocie).filter(Boolean));
-  assert.equal(ids.size, 38); assert.deepEqual([...ids].sort(), [...associes].sort());
+  assert.equal(ids.size, 38); assert.deepEqual([...associes].sort(), [...ids].filter(id => !['eveil-des-dunes', 'veille-des-braises'].includes(id)).sort());
   assert.ok(RPG_DUEL_CARDS.filter(c => c.kind === 'magie' && c.effet?.type !== 'arme').every(c => c.instant), 'aucune sorcellerie ne reste jouable');
   for (const id of ids) {
     const fiche = magieById(id);
     const porteur = RPG_DUEL_CARDS.find(c => c.activation?.sortAssocie === id);
-    assert.deepEqual(porteur.activation.effet, fiche.effet, `${id} : effet complet sans Lien`);
+    if (porteur && id !== 'rapport-du-greffier') assert.deepEqual(porteur.activation.effet, fiche.effet, `${id} : effet complet sans Lien`);
+    if (id === 'rapport-du-greffier') assert.equal(porteur.activation.effet.amount, 1);
     assert.ok(fiche && cardById(id), `${id} reste lisible dans les archives`);
     assert.ok(!fiche.instant && fiche.effet.type !== 'contresort', id);
     assert.ok(!RPG_MAGIE_CARDS.some(c => c.id === id)); assert.ok(!RPG_DUEL_CARDS.some(c => c.id === id));

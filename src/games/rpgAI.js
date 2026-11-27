@@ -2789,11 +2789,11 @@ export function choisirActivationIA(duel, cote, options = {}) {
     const effet = activation.effet;
     const montant = Math.max(0, Number(effet.amount) || 0);
     if (activation.cible === 'aucune') {
-      const forme = zoneFormeCarte(activation.sortAssocie);
+      const forme = zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie);
       if (forme && ['degats', 'retour-main', 'destruction-coutmax'].includes(effet.type)) {
         let meilleur = null; let scoreMax = Math.max(0, Number(activation.prixPv) || 0) * 0.75;
         for (const zone of zonesPossibles(forme, cote)) {
-          let score = 0;
+          let score = Math.max(0, Number(effet.etSorcier) || 0);
           for (const camp of [cote, adv]) {
             if (camp === cote && effet.cible !== 'toutes-autres' && !effet.inclutAllies) continue;
             for (const [index, cible] of duel[camp].creatures.entries()) {
@@ -2821,9 +2821,9 @@ export function choisirActivationIA(duel, cote, options = {}) {
       if (activationSansCibleVaut(duel, cote, entite, effet)) return { entiteId: entite.id, cibleId: null };
       continue;
     }
-    if (effet.type === 'combat' && effet.sourceCible === 'creature-amie') {
+    if (effet.type === 'combat') {
       const cibles = new Set(moteur.rpgCiblesActivationLegales(duel, cote, entite.id) ?? []);
-      const champions = new Set(moteur.rpgChampionsActivationLegales(duel, cote, entite.id));
+      const champions = new Set(effet.sourceCible === 'creature-amie' ? moteur.rpgChampionsActivationLegales(duel, cote, entite.id) : [entite.id]);
       let meilleur = null; let scoreMax = 0;
       for (const adversaire of duel[adv].creatures) {
         if (!cibles.has(adversaire.id) || moteur.rpgBouclierEstActif(adversaire)) continue;

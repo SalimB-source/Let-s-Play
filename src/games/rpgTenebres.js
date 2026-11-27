@@ -113,9 +113,9 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 2,
     def: 1,
     rarity: 'inhabituelle',
-    coupCritique: { chance: 0.25, fois: 2 },
+    poison: { degats: 1, tours: 2 },
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Coup critique — 25 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire ; contre une créature déjà blessée, il est garanti.',
+    text: 'Poison — Quand il blesse une créature, elle perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -183,9 +183,9 @@ export const RPG_TENEBRES_CREATURES = [
     def: 5,
     rarity: 'rare',
     tribut: 2,
-    arrivee: { type: 'destruction-coutmax', coutMax: 3, cible: 'toutes-autres' },
+    blocage: { chance: 0.25, def: 2 },
     typeLine: 'Créature légendaire — Celui qui juge',
-    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il détruit toutes les créatures qui coûtent 3 mana ou moins.',
+    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Il ne regarde pas le sable. Il regarde le poids.',
   }),
   // Renforts mono-Ténèbres : une créature à chaque coût de 1 à 5.
@@ -292,12 +292,10 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'mythique',
     rapidite: true,
     coupCritique: { chance: 0.25, fois: 2 },
-    // Un seul bouclier bicolore bloque un sort adverse d'Eau ou de Neige.
-    protection: { contre: ['eau', 'neige'] },
-    // Son souffle ne balaie plus la plaine : il désigne une seule proie.
-    arrivee: { type: 'degats', amount: 4, cible: 'creature' },
+    bouclierInitial: true,
+    activation: { nom: 'Souffle de la Lionne', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 4, cible: 'creature', adversaireSeulement: true } },
     typeLine: 'Créature légendaire — Lionne solaire',
-    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Bouclier d’Eau et de Neige — Bloque le prochain sort adverse d’Eau ou de Neige, puis se brise. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({

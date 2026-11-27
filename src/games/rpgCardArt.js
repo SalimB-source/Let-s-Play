@@ -138,7 +138,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'ninja-samourai-des-ombres': 'ninja-samourai-ombres-v2',
   // Le second ninja : debout face au lecteur, six shuriken figés au ralenti,
   // écharpe rouge et tour de guet en feu — une peinture distincte de l'autre.
-  'ninja-samourai-des-toits': 'ninja-samourai-des-toits-v2',
+  'ninja-samourai-des-toits': 'ninja-sur-les-toits-sans-cadre-v4',
   'ashigaru-des-braises': 'braise-souls-cendres-v4',
   'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
   'samourai-du-torii': 'braise-souls-cendres-v4',
@@ -363,11 +363,11 @@ const CARD_ART_CACHE_VERSIONS = {
   // Deuxième lot : les figures du seuil, les masques et les magies du livre.
   // La Dévoreuse garde son identité — la gueule énorme qui avale, sans visage
   // humain — mais perd l'or, le bleu de feu et le masque de pharaon.
-  'momie-de-lin': SANS_TEINTE,
+  'momie-de-lin': 'sarcophage-v2',
   'ibis-des-comptes': SANS_TEINTE,
   'celle-qui-pese': SANS_TEINTE,
   'la-devoreuse': SANS_TEINTE,
-  'celui-qui-juge': SANS_TEINTE,
+  'celui-qui-juge': 'dieu-centre-v2',
   'passeur-au-masque-de-chacal': SANS_TEINTE,
   'maitre-des-hieroglyphes': SANS_TEINTE,
   'papyrus': SANS_TEINTE,

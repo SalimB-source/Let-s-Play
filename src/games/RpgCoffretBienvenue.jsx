@@ -21,6 +21,7 @@
  */
 
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { RpgBadgeActivation } from './RpgCadreCarte.jsx';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
 import { ElementEmblem } from './rpgEmblemes.jsx';
@@ -147,7 +148,7 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
         <div className="rpg-coffret__carte-corps">
           <div className="rpg-coffret__carte-face">
             <div className="rpg-coffret__carte-art">
-              <IllustrationCarte carte={carte} />
+              <IllustrationCarte carte={carte} /><RpgBadgeActivation carte={carte} />
             </div>
             <div className="rpg-coffret__carte-texte">
               <p className="rpg-coffret__carte-nom">{carte.name}</p>
