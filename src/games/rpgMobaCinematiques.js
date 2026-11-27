@@ -1,3 +1,5 @@
+import { mobaVoiesCombat } from './rpgMoba.js';
+
 /** Présentation issue des événements résolus, sans lire ni modifier les règles.
  * Toutes les cases sont mesurées avant l'action : même une carte détruite
  * pendant celle-ci conserve son point d'impact. */
@@ -17,18 +19,26 @@ const centre = (rect) => rect && ({ x: rect.left + rect.width / 2, y: rect.top +
 export function rpgMobaProjectiles(avant, duel, combat = null, resultat = null) {
   const animations = (duel.combatAnimations ?? []).filter((e) => e.id > avant.animationSeq && e.type === 'projectile-combat' && e.variante !== 'ciblee');
   const tirs = animations.map((e) => ({ id: `animation-${e.id}`, variante: e.variante,
-    source: e.source?.entiteId, cible: e.cible?.entiteId }));
+    source: e.source?.entiteId, cible: e.cible?.entiteId, cibleSorcier: e.cible?.type === 'sorcier' ? e.cible.cote : null, cibleVoies: e.cible?.mobaVoies }));
   if (combat?.cibleIndividuelle?.ciblee && resultat?.ok && !resultat.annule) {
     const shot = resultat.resume?.coupsRapides?.find((e) => !e.annule);
     if (shot && (shot.rate || shot.degats > 0)) tirs.push({ id: 'attaque-ciblee', variante: 'ciblee', source: shot.attaquantId, cible: shot.cibleId, rate: Boolean(shot.rate) });
   }
   return tirs.flatMap((tir) => {
     const source = centre(caseEntite(tir.source, avant, duel));
-    const cible = centre(caseEntite(tir.cible, avant, duel));
-    if (!source || !cible) return [];
-    const facteur = tir.rate ? .8 : 1;
-    const dx = (cible.x - source.x) * facteur, dy = (cible.y - source.y) * facteur;
-    return [{ ...tir, x: source.x, y: source.y, dx, dy, angle: Math.atan2(dy, dx) * 180 / Math.PI }];
+    if (!source) return [];
+    const sourceCarte = avant.cartes.find((item) => item.entityId === tir.source);
+    const sourceLane = sourceCarte?.laneId ?? duel.moba.lanes.find((lane) =>
+      ['joueur', 'sorcier'].some((side) => lane.slots?.[side]?.includes(tir.source)))?.id;
+    const cibles = tir.cibleSorcier
+      ? (tir.cibleVoies ?? mobaVoiesCombat(duel.moba, sourceLane)).map((lane) => avant.positions?.voies?.[`@moba:${lane}:${tir.cibleSorcier}`])
+      : [caseEntite(tir.cible, avant, duel)];
+    return cibles.map(centre).filter(Boolean).map((cible, index) => {
+      const facteur = tir.rate ? .8 : 1;
+      const dx = (cible.x - source.x) * facteur, dy = (cible.y - source.y) * facteur;
+      return { ...tir, id: cibles.length > 1 ? `${tir.id}-${index}` : tir.id,
+        x: source.x, y: source.y, dx, dy, angle: Math.atan2(dy, dx) * 180 / Math.PI };
+    });
   });
 }
 
@@ -47,7 +57,7 @@ export function rpgMobaSignatures(avant, duel, blessures) {
     if (['eclair-du-marteau', 'maitre-du-marteau'].includes(blessure.sourceCarteId)) ajouter('foudre', blessure.entityId);
   }
   for (const animation of duel.combatAnimations ?? []) {
-    if (animation.id <= avant.animationSeq || animation.type !== 'tempete-foudre') continue;
+    if (animation.id <= avant.animationSeq || !['tempete-foudre', 'foudre-activation'].includes(animation.type)) continue;
     for (const id of animation.cibles ?? []) ajouter('foudre', id);
   }
   return [...effets.values()];

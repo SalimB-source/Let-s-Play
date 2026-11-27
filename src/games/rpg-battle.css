@@ -16301,6 +16301,29 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: drop-shadow(0 0 7px rgba(87, 200, 245, .8));
   animation: rpg-projectile-tourbillon calc(.55s * var(--rpg-anim-scale, 1)) linear both;
 }
+/* L'exil ne ressemble ni à une destruction ni à un renvoi en main. */
+.rpg-projectile-combat--exil .rpg-projectile-combat__tete {
+  width: 24px;
+  height: 24px;
+  top: -12px;
+  left: -12px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, #d1e8ff, #fff, #b5c9f1, transparent);
+  filter: drop-shadow(0 0 8px rgba(226, 241, 255, .95));
+  animation: rpg-projectile-tourbillon calc(.55s * var(--rpg-anim-scale, 1)) linear both;
+}
+/* La réponse dessine un sceau d'eau et de vide vers l'effet contré. */
+.rpg-projectile-combat--contre .rpg-projectile-combat__tete {
+  width: 24px;
+  height: 24px;
+  top: -12px;
+  left: -12px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, #65dafa, #f1fcff, #7265d8, transparent);
+  box-shadow: inset 0 0 0 5px rgba(16, 32, 63, .7);
+  filter: drop-shadow(0 0 7px rgba(96, 193, 255, .85));
+  animation: rpg-projectile-tourbillon calc(.55s * var(--rpg-anim-scale, 1)) linear both;
+}
 .rpg-projectile-combat--soin .rpg-projectile-combat__tete {
   width: 18px;
   height: 18px;
@@ -16321,7 +16344,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* Les sorts confiés à des créatures gardent la signature du sort d'origine :
    la plume de ce qui se pioche ou se défausse, la ruine de ce qui tombe
-   (détruit, exilé, brisé). */
+   (détruit ou brisé). L’exil garde son tourbillon blanc. */
 .rpg-projectile-combat--plume .rpg-projectile-combat__tete {
   width: 22px;
   height: 9px;
