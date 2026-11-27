@@ -80,7 +80,6 @@ STORIES = [
 ]
 
 SOURCES = "SOURCES OFFICIELLES · TEAMCHERRY.COM.AU · NEURALINK.COM · NETFLIX.COM"
-SITE = "SALIMB-SOURCE.GITHUB.IO/LET-S-PLAY"
 
 # Blocs d'actus : un bandeau illustré de 216 px par actu.
 BLOCK_TOP = 516
@@ -208,10 +207,9 @@ def main() -> None:
             spacing=8,
         )
 
-    # Pied : sources et adresse du site.
+    # Pied : sources officielles uniquement (pas d'adresse de site).
     draw.rectangle([64, 1216, W - 64, 1217], fill=RULE)
-    draw.text((64, 1244), SOURCES, font=font("Inter-600.ttf", 20), fill=MUTED)
-    draw.text((64, 1278), SITE, font=font("Inter-700.ttf", 22), fill=BAR)
+    draw.text((64, 1246), SOURCES, font=font("Inter-600.ttf", 20), fill=MUTED)
 
     target = out_dir / args.name
     img.save(target, optimize=True)
