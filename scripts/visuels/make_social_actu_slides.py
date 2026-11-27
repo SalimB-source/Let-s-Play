@@ -292,7 +292,6 @@ def rendre(slide: dict, lang: str) -> Image.Image:
         f_source = latin("Inter-600.ttf", 20)
         f_pied = latin("Inter-700.ttf", 22)
     f_date = latin("Anton.ttf", 44)
-    f_num = latin("Anton.ttf", 34)
 
     img = Image.new("RGB", (W, H), INK)
 
@@ -347,30 +346,34 @@ def rendre(slide: dict, lang: str) -> Image.Image:
             draw.text((texte_x, y), ligne, font=f_accroche, fill=WHITE)
             y += 46
 
-    # 4. Trois points clés, numérotés.
+    # 4. Trois points clés, précédés d'un losange (pas de numérotation).
     y += 34
-    for n, point in enumerate(data["points"], start=1):
-        # Pastille (chiffre latin dans toutes les langues).
-        if rtl:
-            x0, x1, xc = W - 96, W - 40, W - 68
-        else:
-            x0, x1, xc = 40, 96, 68
-        draw.rounded_rectangle([x0, y + 2, x1, y + 58], radius=9, fill=BAR)
-        draw.text((xc, y + 30), str(n), font=latin("Anton.ttf", 34),
-                  fill=NUMBER_INK, anchor="mm")
+    for point in data["points"]:
+        # Losange : deux triangles qui se rejoignent, en jaune.
+        cx = W - 68 if rtl else 68
+        cy = y + 26
+        r = 15
+        draw.polygon(
+            [(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)], fill=BAR
+        )
+        # Petit creux intérieur : le losange se lit comme une puce, pas comme
+        # une forme pleine.
+        draw.polygon(
+            [(cx, cy - 5), (cx + 5, cy), (cx, cy + 5), (cx - 5, cy)], fill=INK
+        )
 
         # Texte.
         if rtl:
             px = W - 116
             for ligne in f_point.wrap(point, px - 48):
-                f_point.draw(img, (px, y + 8), ligne, WHITE, anchor="ra")
+                f_point.draw(img, (px, y + 6), ligne, WHITE, anchor="ra")
                 y += 42
         else:
             px = 116
             for ligne in wrap_latin(point, f_point, W - px - 64, draw):
-                draw.text((px, y + 8), ligne, font=f_point, fill=WHITE)
+                draw.text((px, y + 6), ligne, font=f_point, fill=WHITE)
                 y += 40
-        y += 26
+        y += 28
 
     # 5. Pied : source, puis rappel du site.
     draw.rectangle([64, 1204, W - 64, 1205], fill=RULE)
