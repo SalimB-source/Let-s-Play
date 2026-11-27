@@ -56,7 +56,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
     ]),
   }),
   Object.freeze({
-    id: 'rodeuse-des-tombes', name: 'Pesée des tombes', elements: Object.freeze(['neige', 'tenebres']),
+    id: 'papyrus', name: 'Pesée des tombes', elements: Object.freeze(['neige', 'tenebres']),
     description: 'Morts utiles, Tribut et pioche : convertir les petites pertes en Shabtis, protéger les survivants et peser les voies.',
     cardIds: Object.freeze([
       ...deux('garde-du-voile'), ...deux('ouvrier-du-natron'), ...deux('viking-des-neiges'),
