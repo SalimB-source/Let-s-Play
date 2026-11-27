@@ -39,12 +39,12 @@ ASSETS = HERE / "assets"
 LOGO = ROOT / "public" / "lets-play-logo.png"
 
 W, H = 1080, 1350
-INK = (16, 23, 32)          # #101720 — fond des cartes d'actus
+INK = (79, 52, 148)         # #4F3494 — violet Let's Play (fond)
 BAR = (247, 217, 0)         # #f7d900 — barre d'accent
 TITLE = (231, 253, 82)      # #e7fd52 — titres
 WHITE = (255, 255, 255)
-MUTED = (159, 176, 192)     # #9fb0c0 — texte secondaire
-RULE = (38, 48, 60)
+MUTED = (196, 184, 230)     # violet très clair — texte secondaire
+RULE = (140, 118, 208)      # filet violet clair
 
 EDITION = "27.11.2026"
 
@@ -120,9 +120,9 @@ def vignette(nom: str, box: tuple[int, int], focus: float) -> Image.Image | None
 
     tile = recadre(src, box, focus, zoom=1.04)
 
-    # Effacement : assombrissement, voile vers le fond, léger flou.
-    tile = Image.blend(tile, Image.new("RGB", tile.size, (0, 0, 0)), 0.62)
-    tile = Image.blend(tile, Image.new("RGB", tile.size, INK), 0.34)
+    # Effacement : assombrissement, voile vers le violet du fond, léger flou.
+    tile = Image.blend(tile, Image.new("RGB", tile.size, (0, 0, 0)), 0.60)
+    tile = Image.blend(tile, Image.new("RGB", tile.size, INK), 0.30)
     return tile.filter(ImageFilter.GaussianBlur(1.4))
 
 
@@ -195,7 +195,8 @@ def main() -> None:
         y = BLOCK_TOP + index * (BLOCK_H + BLOCK_GAP)
         draw.rounded_rectangle([64, y + 50, 132, y + 118], radius=10, fill=BAR)
         draw.text(
-            (98, y + 84), number, font=font("Anton.ttf", 40), fill=INK, anchor="mm"
+            (98, y + 84), number, font=font("Anton.ttf", 40),
+            fill=(36, 22, 72), anchor="mm"
         )
         draw.text((TEXT_X, y + 38), category, font=font("Inter-700.ttf", 23), fill=MUTED)
         draw.text((TEXT_X, y + 64), title, font=font("Anton.ttf", 46), fill=TITLE)
