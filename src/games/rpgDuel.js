@@ -381,6 +381,9 @@ function journaliserRenvoiEnMain(duel, cote, entite) {
   const journal = renvoisParDuel.get(duel) ?? [];
   journal.push({ entityId: entite.id, carteId: entite.carteId, cote });
   renvoisParDuel.set(duel, journal);
+  // Le journal local ne traverse pas le réseau : conserver aussi un signal
+  // visuel sérialisable pour la table PvP du joueur distant.
+  journaliserAnimationCombat(duel, { type: 'renvoi-main', entiteId: entite.id });
 }
 
 /** Combien de transferts de vie (Tribut, pesée) le duel a vus depuis son début. */
@@ -1345,6 +1348,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
     if (idx !== -1) {
       duel[cibleCamp].creatures.splice(idx, 1);
       duel[cibleCamp].main.push(cible.carteId);
+      journaliserRenvoiEnMain(duel, cibleCamp, cible);
       duel.log.push(`${carte.name} renvoie ${cible.name} dans la main de son propriétaire.`);
     }
     rpgActionsEtat(duel);
@@ -1358,6 +1362,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
   const typeEffet = activation.effet?.type ?? 'degats';
   if (typeEffet !== 'degats' || FX_ACTIVATION_ZONE.has(activation.effet?.cible)) {
     let ciblesFx = ciblesFxActivationEffet(duel, cote, entiteId, activation.effet, cible, cibleCamp);
+    const voiesSoignees = [];
     const soinsAvant = activation.effet?.type === 'soin-creatures'
       ? { pv: duel[cote].pv, creatures: new Map(duel[cote].creatures.map(e => [e.id, e.pv])) } : null;
     if (zone) {
@@ -1375,6 +1380,12 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
           && entiteDansZone(zone, fx.cote, cibleFx, index);
       });
     }
+    // La tempête activée reprend la foudre du sort associé, sur les cases
+    // réellement couvertes (même si une parade intercepte ensuite l'impact).
+    if (activationFoudre(carte) && ciblesFx.length) {
+      journaliserAnimationCombat(duel, { type: 'foudre-activation', sourceCarteId: carte.id,
+        cibles: ciblesFx.filter((fx) => fx.type === 'creature').map((fx) => fx.entiteId) });
+    }
     // L'annonce ouvre le journal : ce que l'effet raconte vient après.
     duel.log.push(`${(entite?.name ?? carte.name)} active son effet${cible ? ` sur ${cible.name}` : ''}.`);
     // Les buffs de sort touchent aussi leur porteur, contrairement aux
@@ -1387,7 +1398,10 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
           const events = soinsCreatureMoba.get(duel) ?? [];
           for (const laneId of (voieSoin ? [voieSoin] : mobaVoiesCombat(duel.moba, entite?.mobaLane))) {
             const soin = mobaSoigner(duel.moba, cote, laneId, amount);
-            if (soin.ok && soin.healing > 0) events.push({ side: cote, laneId, cardId: carte.id, ...soin });
+            if (soin.ok && soin.healing > 0) {
+              events.push({ side: cote, laneId, cardId: carte.id, ...soin });
+              voiesSoignees.push(laneId);
+            }
           }
           soinsCreatureMoba.set(duel, events);
         } } : {}),
@@ -1400,6 +1414,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
       ciblesFx = duel[cote].creatures.filter(e => e.id !== entiteId && e.pv > (soinsAvant.creatures.get(e.id) ?? e.pv))
         .map(e => ({ type: 'creature', cote, entiteId: e.id }));
       if (duel[cote].pv > soinsAvant.pv) ciblesFx.push({ type: 'sorcier', cote });
+      for (const laneId of voiesSoignees) ciblesFx.push({ type: 'sorcier', cote, mobaVoies: [laneId] });
     } else if (activation.effet?.type === 'buff' && activation.effet.cible !== 'creatures-adverses') {
       ciblesFx = ciblesFx.filter(fx => !estSite(duel[cote].creatures.find(e => e.id === fx.entiteId)));
     }
@@ -1450,6 +1465,9 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
     duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cibleFinale.name}.`);
   }
   if ((activation.effet?.type ?? 'degats') === 'degats') {
+    if (activationFoudre(carte)) journaliserAnimationCombat(duel, {
+      type: 'foudre-activation', sourceCarteId: carte.id, cibles: [cibleFinale.id],
+    });
     projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
       [{ type: 'creature', cote: campFinal, entiteId: cibleFinale.id }]);
     if (!paradeZoneBloque(duel, cibleFinale, 'effet-creature', campFinal, cote, couleur)) {
@@ -2956,6 +2974,12 @@ const FX_ACTIVATION_EFFET = Object.freeze({
   'renvoi-main': 'renvoi',
   'soin-tout': 'soin',
   'buff-allies-tour': 'renfort',
+  'renfort-choisi': 'renfort',
+  'renfort-ascension': 'renfort',
+  reanimation: 'renfort',
+  'equiper-cimetiere': 'renfort',
+  'prochaine-arrivee-abordage': 'plume',
+  combat: 'ruine',
   bouclier: 'egide',
   'bouclier-lumiere': 'egide',
   soin: 'soin',
@@ -2997,6 +3021,12 @@ const FX_ACTIVATION_PORTEE = Object.freeze({
   'buff-allies-tour': 'allies',
   buff: 'allies',
 });
+
+function activationFoudre(carte) {
+  const activation = carte?.activation;
+  return activation?.nom === 'Éclair du marteau'
+    || activation?.sortAssocie === 'tempete-de-foudre-et-de-givre';
+}
 
 function varianteFxActivation(carte, effet) {
   // Le renfort retourné contre la table adverse (l'Embuscade) est un
@@ -7253,6 +7283,9 @@ export function rpgActiverEffetReponse(duel, cote, entiteId, { reprendre = true 
   if (!entite) return { ok: false, raison: 'reponse-indisponible' };
   const annonce = duel.effetCreatureEnAttente ?? (duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce);
   const activation = duelCardById(entite.carteId).activation;
+  const cibleReponse = annonce.entiteId && duel[annonce.cote]?.creatures.some((candidate) => candidate.id === annonce.entiteId)
+    ? { type: 'creature', cote: annonce.cote, entiteId: annonce.entiteId }
+    : { type: 'sorcier', cote: annonce.cote };
   if (annonce === duel.effetCreatureEnAttente) {
     payer(duel, cote, coutActivation(activation));
     entite.activationUtiliseeMatch = true;
@@ -7262,12 +7295,15 @@ export function rpgActiverEffetReponse(duel, cote, entiteId, { reprendre = true 
     entite.ready = false;
     duel.effetCreatureEnAttente = null;
     duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente);
+    projectilesActivation(duel, cote, entiteId, 'contre', [cibleReponse]);
     for (let i = 0; i < (activation.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
     duel.log.push(`${entite.name} contre l’effet de ${cardById(annonce.carteId)?.name ?? 'la créature'} ; cet effet ne se résout pas.`);
     if (reprendre) { traiterEffetsMortEnFile(duel); reprendreTransitionRetours(duel); }
     return { ok: true, contre: true, effetContre: true };
   }
-  return contrerAnnonce(duel, cote, { id: entite.carteId, name: entite.name, effet: activation.effet }, annonce, entite);
+  const resultat = contrerAnnonce(duel, cote, { id: entite.carteId, name: entite.name, effet: activation.effet }, annonce, entite);
+  if (resultat.ok) projectilesActivation(duel, cote, entiteId, 'contre', [cibleReponse]);
+  return resultat;
 }
 
 // En duel solo, l'IA choisit elle-même une réponse face à la carte du joueur.

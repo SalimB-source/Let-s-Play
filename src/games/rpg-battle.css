@@ -16301,6 +16301,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: drop-shadow(0 0 7px rgba(87, 200, 245, .8));
   animation: rpg-projectile-tourbillon calc(.55s * var(--rpg-anim-scale, 1)) linear both;
 }
+/* La réponse dessine un sceau d'eau et de vide vers l'effet contré. */
+.rpg-projectile-combat--contre .rpg-projectile-combat__tete {
+  width: 24px;
+  height: 24px;
+  top: -12px;
+  left: -12px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, #65dafa, #f1fcff, #7265d8, transparent);
+  box-shadow: inset 0 0 0 5px rgba(16, 32, 63, .7);
+  filter: drop-shadow(0 0 7px rgba(96, 193, 255, .85));
+  animation: rpg-projectile-tourbillon calc(.55s * var(--rpg-anim-scale, 1)) linear both;
+}
 .rpg-projectile-combat--soin .rpg-projectile-combat__tete {
   width: 18px;
   height: 18px;

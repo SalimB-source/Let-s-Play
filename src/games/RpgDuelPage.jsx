@@ -7521,6 +7521,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Même garde pour le tonnerre du marteau : le lancement du sort et son
   // impact peuvent être relevés par le même geste, sans double lecture.
   const dernierSonFoudreRef = useRef(0);
+  const dernierSonRenvoiRef = useRef(0);
   const dernierSonFroidRef = useRef(0);
   // La position du journal des blessures déjà animée : une brûlure ancienne ne
   // rallume jamais la roue de feu sur une action qui ne la concerne pas.
@@ -7535,6 +7536,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const maintenant = Date.now();
       if (maintenant - dernierSonFoudreRef.current < 700) return;
       dernierSonFoudreRef.current = maintenant;
+    }
+    if (nom === 'creature_return') {
+      const maintenant = Date.now();
+      if (maintenant - dernierSonRenvoiRef.current < 700) return;
+      dernierSonRenvoiRef.current = maintenant;
     }
     if (nom === 'cold_wind') {
       const maintenant = Date.now();
@@ -11069,10 +11075,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // seules entités qui comptent sont celles de l'instantané : une créature
     // déjà rentrée en main n'est plus sur la table, elle ne peut donc pas
     // disparaître deux fois.
+    const animationsCombatNouvelles = (duel.combatAnimations ?? [])
+      .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
     const renvoyees = new Set([
       ...entitesRenvoyees.filter(Boolean),
       ...rpgRenvoisEnMain(duel).map((evenement) => evenement.entityId),
+      ...animationsCombatNouvelles.filter((animation) => animation.type === 'renvoi-main').map((animation) => animation.entiteId),
     ]);
+    if (animationsCombatNouvelles.some((animation) => animation.type === 'foudre-activation')) jouerSfx('foudre_marteau');
+    if (animationsCombatNouvelles.some((animation) => animation.type === 'renvoi-main')) jouerSfx('creature_return');
     // Une créature exilée quitte elle aussi la table sans mourir : son adieu
     // blanc remplace le fantôme et le coup de destruction ordinaires.
     const exiles = new Set(rpgExils(duel).map((evenement) => evenement.entityId));
@@ -11083,8 +11094,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // rejoignent leur capteur. Une ancienne captive peut revenir puis mourir.
     const prises = prisesPourAnimation(duel, avant.prisesAnimation, rpgPrisesEnCale(duel));
     const mouvementReduit = animationsReduites();
-    const animationsCombatNouvelles = (duel.combatAnimations ?? [])
-      .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
     declencherCritiques(animationsCombatNouvelles.filter((animation) => animation.type === 'coup-critique'), avant);
     if (!mouvementReduit && animationsCombatNouvelles.some((a) => a.type === 'projectile-combat')) {
       // Attendre le rendu pour mesurer une source qui vient d’arriver. Les
@@ -11202,7 +11211,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // règle de fraîcheur que la Braise : seule la blessure qui vient de tomber
     // allume l'éclair, et la créature tuée le voit sur son emplacement.
     const idsTempeteFoudre = new Set(animationsCombatNouvelles
-      .filter((animation) => animation.type === 'tempete-foudre')
+      .filter((animation) => animation.type === 'tempete-foudre' || animation.type === 'foudre-activation')
       .flatMap((animation) => animation.cibles ?? []));
     const idsFoudroyees = new Set([
       ...blessuresNouvelles.filter((blessure) => blessureDuMarteau(blessure)).map((blessure) => blessure.entityId),
@@ -11387,7 +11396,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // comme pour l'adieu d'une carte détruite — et respecte le mouvement réduit.
     const renvoyeesSurTable = mouvementReduit
       ? []
-      : avant.filter((entite) => renvoyees.has(entite.entityId) && !entite.isTerrain);
+      : avant.filter((entite) => renvoyees.has(entite.entityId) && !vivants.has(entite.entityId) && !entite.isTerrain);
     if (renvoyeesSurTable.length) {
       const token = ++sequenceAnimationRef.current;
       const duree = 950;
@@ -13849,8 +13858,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const passerEffetCreature = () => {
     if (!duel.effetCreatureEnAttente || duel.arriveeEnAttente || sacrificeFx) return;
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgResoudreEffetCreatureEnAttente(duel, 'joueur');
     if (!res.ok) { jouerSfx('erreur'); return; }
+    animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
     jouerSfx('pass');
     if (modePvp) void envoyerIntentionPvp({ type: 'passer-effet' });
     const reprendre = repriseSorcierRef.current;
@@ -13860,8 +13872,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const contrerEffetCreature = (id) => {
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
     const res = rpgActiverEffetReponse(duel, 'joueur', id);
     if (!res.ok) { jouerSfx('erreur'); return; }
+    animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
     jouerSfx('card_countered');
     if (modePvp) void envoyerIntentionPvp({ type: 'activer-reponse', entiteId: id });
     const reprendre = repriseSorcierRef.current;
@@ -14001,8 +14016,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const activerEffetReponseAnnonce = (id) => {
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
     const resultat = rpgActiverEffetReponse(duel, 'joueur', id);
     if (!resultat.ok) { jouerSfx('erreur'); force(); return; }
+    animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
     jouerSfx('card_countered');
     setApercuSurvol(null);
     force();

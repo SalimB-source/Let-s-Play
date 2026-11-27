@@ -325,6 +325,13 @@ function retournerPartie(vue) {
       }
     }
   }
+  // Les signaux visuels suivent la même inversion que le plateau : en
+  // particulier un projectile vers un sorcier doit viser le bon portrait.
+  if (Array.isArray(vue.combatAnimations)) vue.combatAnimations = vue.combatAnimations.map((item) => ({
+    ...item,
+    ...Object.fromEntries(['source', 'depuis', 'cible'].flatMap((cle) =>
+      item?.[cle]?.cote ? [[cle, { ...item[cle], cote: remplace(item[cle].cote) }]] : [])),
+  }));
   if (Array.isArray(vue.combatFeed)) {
     vue.combatFeed = vue.combatFeed.map((item) => ({
       ...item,

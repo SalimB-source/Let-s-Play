@@ -285,3 +285,26 @@ test('Scalde : choix obligatoire, une autre voie peut être soignée et l’IA l
   assert.ok(rpgMobaActiverCapacite(d, 'sorcier', source.id, choix.choix).ok);
   assert.equal(droite.hp.sorcier, 19);
 });
+
+test('cinématique : le Scalde vise la voie choisie et non sa propre voie', async () => {
+  const { rpgMobaProjectiles } = await import('../src/games/rpgMobaCinematiques.js');
+  const d = partie(); const source = poser(d, 'joueur', 'scalde-des-runes', 'left');
+  d.tour = 'joueur'; d.sorcier.main = [];
+  d.moba.lanes.find(v => v.id === 'right').hp.joueur -= 3;
+  const seq = d.combatAnimationSeq ?? 0;
+  const rect = (left, top) => ({ left, top, width: 20, height: 20 });
+  const avant = { animationSeq: seq, cartes: [{ entityId: source.id, laneId: 'left', side: 'joueur', slot: 0 }],
+    positions: { cases: { 'left:joueur:0': rect(0, 0) }, voies: { '@moba:left:joueur': rect(100, 0), '@moba:right:joueur': rect(200, 0) } } };
+  assert.ok(rpgMobaActiverCapacite(d, 'joueur', source.id, { cibleId: null, voieSoin: 'right' }).ok);
+  const soin = rpgMobaProjectiles(avant, d).find(e => e.variante === 'soin' && e.cibleSorcier);
+  assert.ok(soin); assert.equal(soin.dx, 200);
+});
+
+test('cinématique : un projectile de dégâts suit la cible en Conquête', () => {
+  const d = partie(); const source = poser(d, 'joueur', 'vampire-des-braises', 'left');
+  const cible = poser(d, 'sorcier', 'chien-du-guet', 'left'); d.tour = 'joueur'; d.sorcier.main = [];
+  const seq = d.combatAnimationSeq ?? 0;
+  const res = rpgMobaActiverCapacite(d, 'joueur', source.id, { cibleId: cible.id });
+  assert.ok(res.ok, JSON.stringify(res));
+  assert.ok(d.combatAnimations.some(e => e.id > seq && e.type === 'projectile-combat' && e.cible?.entiteId === cible.id));
+});

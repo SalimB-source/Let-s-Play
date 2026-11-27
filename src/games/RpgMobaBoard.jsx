@@ -694,6 +694,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       }))),
   });
   const montrerDestructions = (avant, impactCombat = false, sacrificeIds = [], entiteArriveeId = null, sacrificesDejaAnimes = false) => {
+    if ((duel.combatAnimations ?? []).some((event) => event.id > avant.animationSeq && event.type === 'foudre-activation')) onPlaySfx?.('foudre_marteau');
     if (!rpgAnimationsReduites()) {
       const ripostes = rpgMobaCiblesContreAttaque(avant, duel);
       ajouterRipostes(Object.fromEntries(ripostes.map((effet) => [`${++sequenceFx.current}-${effet.id}`, effet])));
@@ -1424,8 +1425,10 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     ? `${voies[attenteAnnonce.laneId]} · ${noms[attenteAnnonce.cote]} · emplacement ${(attenteAnnonce.slot ?? 0) + 1}`
     : attenteAnnonce ? cibleSortEnAttente(duel, attenteAnnonce) : '';
   const activerReponse = (side, id) => {
+    const avant = instantaneDestructions();
     const result = rpgMobaActiverEffetReponse(duel, side, id);
     if (!afficherResultat(result)) return;
+    montrerDestructions(avant);
     onPlaySfx?.('card_countered');
     setCarte(null);
     setEtape(duel.mobaCreatureEnAttente ? 'reponse-creature' : duel.mobaSortEnAttente ? 'reponse-sort'
