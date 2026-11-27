@@ -1,22 +1,27 @@
 # Visuels éditoriaux Let’s Play
 
-## Récapitulatif social — les trois actus du 27.11.2026
+## Récapitulatif social — les trois actus du 27.11.2026 (FR / EN / AR)
 
-`make_social_3_actus.py` produit `visuels/social/2026-11-27-trois-actus.png` :
-une image **1080 × 1350 (4:5)** qui reprend les trois actus de l’édition du
-27 novembre 2026 (Cherry Time / Neuralink / *Quasimodo*), dans la charte des
-cartes d’actus du site (fond `#101720`, barre `#f7d900`, titres `#e7fd52`,
-logo `public/lets-play-logo.png`).
+`make_social_3_actus.py` produit **trois images 1080 × 1350 (4:5)** des trois
+actus de l’édition du 27 novembre 2026 (Cherry Time / Neuralink / *Quasimodo*),
+dans la charte violette de Let’s Play (`#4F3494`, jaune `#f7d900`, vert acide
+`#e7fd52`) :
 
-Chaque actu porte un **bandeau illustré** derrière son texte : la vignette est
-recadrée, assombrie, voilée vers la couleur du fond et légèrement floutée, puis
-effacée en dégradé vers la gauche pour laisser les titres nets. Les trois
-vignettes sont dans `scripts/visuels/assets/` (© Team Cherry, © Neuralink,
-© Netflix) ; si l’une manque, le bloc retombe sur le fond uni.
+- `visuels/social/2026-11-27-trois-actus-fr.png` — français
+- `visuels/social/2026-11-27-trois-actus-en.png` — anglais
+- `visuels/social/2026-11-27-trois-actus-ar.png` — arabe, mise en page de droite
+  à gauche (logo à droite, barre jaune à droite, texte composé via HarfBuzz)
+
+Chaque actu porte un **bandeau illustré** derrière son texte : vignette
+recadrée, assombrie, voilée vers le violet du fond et légèrement floutée, puis
+effacée en dégradé du côté du texte pour laisser les titres nets. Les vignettes
+sont dans `scripts/visuels/assets/` (© Team Cherry, © Neuralink, © Netflix) ;
+si l’une manque, le bloc retombe sur le fond uni.
 
 ```bash
 python3 -m pip install -r scripts/visuels/requirements.txt
-python3 scripts/visuels/make_social_3_actus.py          # → visuels/social/
+python3 scripts/visuels/make_social_3_actus.py              # les trois langues
+python3 scripts/visuels/make_social_3_actus.py --lang ar    # une seule
 python3 scripts/visuels/make_social_3_actus.py --out /tmp
 ```
 
