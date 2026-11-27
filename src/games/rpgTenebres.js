@@ -163,7 +163,7 @@ export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'la-devoreuse',
     // Effet activé (1/match) — l'Effacement des faibles : une petite proie, avalée.
-    activation: { nom: 'Effacement des faibles', cible: 'creature', uneFoisParMatch: true, effet: { type: 'destruction-cible', cible: 'creature', coutMax: 2 } },
+    activation: { nom: 'Effacement des faibles', cible: 'creature', uneFoisParMatch: true, sortAssocie: 'effacement-des-faibles', effet: { type: 'destruction-cible', cible: 'creature', coutMax: 3 } },
     name: 'La Dévoreuse',
     cost: 6,
     atk: 4,
@@ -228,7 +228,7 @@ export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'lecteur-du-dernier-nom', distance: true, name: 'Lecteur du dernier nom',
     // Effet activé (1/match) — le Nom effacé : une carte de la main adverse part au cimetière.
-    activation: { nom: 'Nom effacé', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'defausse-adverse' } },
+    activation: { nom: 'Nom effacé', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'nom-efface', effet: { type: 'defausse-adverse' } },
     cost: 5, atk: 3, def: 4, rarity: 'rare',
     arrivee: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
     typeLine: 'Créature — Humain · Scribe',

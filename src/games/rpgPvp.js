@@ -543,7 +543,7 @@ function executerIntention(duel, cote, intention) {
       if (intention.arme || (!intention.capacite && (entite.armeId || (entite.arme && intention.options)))) {
         return rpgActiverArme(duel, cote, intention.entiteId, intention.options ?? {});
       }
-      return rpgActiverCapacite(duel, cote, intention.entiteId, intention.cibleId ?? null, { zone: intention.zone ?? null, armeCarteId: intention.armeCarteId ?? null, championId: intention.championId ?? null }) ?? { ok: true };
+      return rpgActiverCapacite(duel, cote, intention.entiteId, intention.cibleId ?? null, { zone: intention.zone ?? null, armeCarteId: intention.armeCarteId ?? null, championId: intention.championId ?? null, cibleSecondaireId: intention.cibleSecondaireId ?? null }) ?? { ok: true };
     }
     case 'attaquer': {
       // Une intention ne peut déclarer qu'une seule attaque, jamais la

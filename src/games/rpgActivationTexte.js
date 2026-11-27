@@ -44,6 +44,7 @@ export function texteEffetActivation(effet = {}) {
   const zone = CIBLES_ZONE[effet.cible];
   switch (effet.type) {
     case 'degats': {
+      if (effet.choixDegats) return `Inflige ${montant} dégâts à une créature adverse ou ${effet.secondAmount ?? 2} dégâts à chacune de deux créatures adverses ciblées.`;
       const gel = effet.gel ? (zone ? ' et les gèle' : ' et la gèle') : '';
       const gelProbable = !effet.gel && Number(effet.gelChance) > 0
         ? `, avec ${Math.round(Number(effet.gelChance) * 100)} % de chances de ${zone ? 'les geler' : 'la geler'}`
@@ -61,6 +62,7 @@ export function texteEffetActivation(effet = {}) {
     case 'renvoi-main':
       return 'Renvoie une créature ciblée dans la main de son propriétaire.';
     case 'retour-main':
+      return `Renvoyez une créature adverse ciblée dans la main de son propriétaire${effet.pioche ? `, puis piochez ${nombreCartes(Number(effet.pioche))}` : ''}.`;
     case 'retour-apres-tours':
     case 'exil-temporaire':
       return 'Renvoyez une créature ciblée dans la main de son propriétaire.';
@@ -84,7 +86,7 @@ export function texteEffetActivation(effet = {}) {
       const duree = Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : '';
       const stats = `${signe(effet.atk)}/${signe(effet.def)}`;
       if (effet.caleOccupeeSeulement) return `Vos créatures dont la cale est occupée gagnent ${stats} et Overkill${duree}.`;
-      const motsCles = `${effet.tribut ? ` et Tribut ${effet.tribut}` : ''}${effet.overkill ? ' et Overkill' : ''}`;
+      const motsCles = `${effet.coupCritique ? ` et Coup critique (${Math.round(effet.coupCritique * 100)} %)` : ''}${effet.tribut ? ` et Tribut ${effet.tribut}` : ''}${effet.overkill ? ' et Overkill' : ''}`;
       const plancher = Number.isFinite(effet.minimum) ? `, aucune ne tombe sous ${effet.minimum}` : '';
       if (!sujet) return `Elle gagne ${stats}${duree}.`;
       return `${sujet} gagne${sujet.startsWith('Une') ? '' : 'nt'} ${stats}${motsCles}${duree}${plancher}.`;
@@ -153,6 +155,9 @@ export function texteActivation(carte) {
   }
   if (forme && effet?.type === 'destruction-coutmax' && effet.gel) {
     return `${nom}${prix}Dans un carré, détruisez les créatures de coût ${effet.coutMax} ou moins, puis gelez les survivantes de ce carré.`;
+  }
+  if (forme && effet?.type === 'buff' && effet.cible === 'creatures-adverses') {
+    return `${nom}${prix}Dans un carré adverse, les créatures gagnent ${signe(effet.atk)}/${signe(effet.def)} jusqu’à la fin du tour, sans descendre sous ${effet.minimum}/1.`;
   }
   if (forme && effet?.type === 'degats') {
     const zone = forme === 'rangee' ? 'une rangée' : forme === 'colonne' ? 'une colonne' : 'un carré';

@@ -74,3 +74,42 @@ test('Conquête : le joueur désigne le champion et la cible du Jarl', async () 
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('Conquête : Feux de kitsune propose une ou deux cibles depuis l’Oni', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel;
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('chien-du-guet'), sorcierDeck: Array(30).fill('chien-du-guet'), rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => {}, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async button => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    duel.joueur.main = ['oni-de-la-fournaise', 'chien-du-guet'];
+    for (const color of Object.keys(duel.joueur.mana)) duel.joueur.mana[color] = 20;
+    const oni = engine.rpgMobaJouerCreature(duel, 'joueur', 'oni-de-la-fournaise', 'left', 0, { retourIds: ['chien-du-guet'] }).entite;
+    assert.ok(oni); oni.malInvocation = false;
+    duel.tour = 'sorcier'; duel.sorcier.manaChoixEnAttente = false; duel.sorcier.main = ['chien-du-guet', 'chien-du-guet'];
+    const a = engine.rpgMobaJouerCreature(duel, 'sorcier', 'chien-du-guet', 'left', 0).entite;
+    duel.moba.creaturesJouees.sorcier = false;
+    const b = engine.rpgMobaJouerCreature(duel, 'sorcier', 'chien-du-guet', 'left', 1).entite;
+    assert.ok(a && b); duel.tour = 'joueur'; duel.sorcier.main = [];
+    await act(async () => root.render(React.createElement(Board, props)));
+    const buttons = () => [...document.querySelectorAll('[aria-label="Capacités des créatures"] button')];
+    await click(buttons().find(button => button.textContent.includes('Activer Feux de kitsune')));
+    assert.ok(buttons().some(button => button.textContent.includes('4 dégâts')));
+    await click(buttons().find(button => button.textContent.includes('2 dégâts')));
+    assert.ok(!duel.sorcier.creatures.some(e => e.id === a.id || e.id === b.id));
+    assert.ok(oni.activationUtiliseeMatch && engine.rpgMobaPlacementCoherent(duel));
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

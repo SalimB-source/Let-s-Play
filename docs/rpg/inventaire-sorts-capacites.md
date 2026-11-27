@@ -9,10 +9,10 @@ sur les sorts.
 Une créature qui quitte le jeu puis revient est une nouvelle présence et peut
 réutiliser son effet. Les créatures de même nom ont chacune leur propre usage.
 
-**État d'implémentation :** 29 associations sont ajoutées au catalogue et
+**État d'implémentation :** 38 associations sont ajoutées au catalogue et
 au moteur classique/PvP, sans appliquer les Liens des sorts. Les sept magies
 rapides proposées initialement restent exclues ; aucune proposition ne reste à
-associer. Ces 29 sorts ne sont plus des cartes jouables : leur effet est
+associer. Ces 38 sorts ne sont plus des cartes jouables : leur effet est
 conservé comme capacité de créature. Leurs anciennes fiches restent uniquement
 en archive pour les sauvegardes et effets existants. Dans les decks maison,
 leurs exemplaires sont remplacés automatiquement après fusion de la sauvegarde
@@ -22,7 +22,7 @@ stock compatible est insuffisant, une place reste à compléter dans l'atelier.
 Aucune acquisition n'est effacée. En cas de lecture du compte indisponible,
 la migration attend la synchronisation afin de ne pas utiliser un stock partiel.
 Les recettes et leçons ne distribuent plus ces sorts. En Conquête, la page et l'IA proposent le Défi du Jarl,
-la récupération d'équipement de la Chercheuse, ainsi que Rapport du greffier,
+la récupération d'équipement de la Chercheuse, Feux de kitsune, ainsi que Rapport du greffier,
 Les feuillets, Le routier et Lettre de marque. Le Bâton des citernes reste exclu
 de cette récupération : son jeton exige un placement adapté. Les prix en PV,
 invocations, zones et autres activations n'ont pas encore de parcours Conquête
@@ -45,7 +45,7 @@ s'équipe comme une arme. Les 24 cartes de type arme ne sont pas incluses.
   officielle ; les différences importantes sont indiquées. Il faut les vérifier
   avant de considérer le sort comme entièrement couvert.
 
-L'inventaire initial contenait **36 propositions nouvelles** : 29 implémentées et 7 exclues
+L'inventaire initial contenait **36 propositions nouvelles** : 29 implémentées initialement et 7 exclues
 comme magies rapides. Il contenait aussi **17 rapprochements existants**,
 dont 8 concernent des magies rapides et ne sont pas des associations. La
 frontière entre les deux repose sur cette lecture des effets, pas sur un
@@ -60,8 +60,8 @@ compter à tort comme des équivalences parfaites.
 | Confluence des étincelles | Ifrit al-Ahmar, seigneur des braises | Implémenté — les premiers Djinns Braise de coût 1 et 3 depuis la main. |
 | Veille des braises | Veilleur des cendres | Implémenté — choix en main d’une créature Braise de coût 3, éphémère. |
 | Frappe d’iaijutsu | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Tojiro, le pourfendeur conservée, sans association. |
-| Feux de kitsune | Oni de la fournaise | Proche existant — dégâts ciblés, mais son activation inflige seulement 2 dégâts à une cible ; le sort offre 4 à une ou 2 à deux. |
-| Serment de la forge | Daimyō du Soleil rouge | Proche existant — renfort allié +2/+1 ; son activation actuelle ne donne pas le Coup critique imprimé sur le sort. |
+| Feux de kitsune | Oni de la fournaise | Implémenté — 4 dégâts à une créature adverse ou 2 à chacune de deux cibles, sans Lien. |
+| Serment de la forge | Daimyō du Soleil rouge | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Trait de braise | — | Exclu — Magie rapide : exclue des associations. |
 | Brise-lame | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Ifrit furtif conservée, sans association. |
 | Nuage de cendres | Susanoo | Implémenté — carré adverse et écho différé, sans Lien. |
@@ -88,12 +88,12 @@ compter à tort comme des équivalences parfaites.
 | Appel des marées | Veilleuse des citernes | Implémenté — choix parmi les trois cartes du dessus et placement des autres dessous. |
 | Haut-fond | — | Exclu — Magie rapide : exclue des associations. |
 | Le Routier | Bakunawa | Implémenté — pioche de deux puis choix d'une défausse, sans Lien. |
-| Eau de la source | Völva soigneuse | Proche existant — elle soigne son sorcier de 2 PV ; le sort en soigne 4 et son ancre est le Site Source de Bimini. |
+| Eau de la source | Völva soigneuse | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Lame de mer | Le Seigneur des mâchoires | Implémenté — −3/−3 à une cible adverse ; exil si sa défense tombe sous 1, sans Lien. |
 | Parade de verre | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Guetteuse des marées conservée, sans association. |
 | Brisure de verre | — | Exclu — Magie rapide : exclue des associations. |
 | Ressac | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Sorcier du ressac noir conservée, sans association. |
-| Courant de retour | Léviathan | Proche existant — renvoi en main ; l'activation actuelle ne pioche pas, contrairement au sort. |
+| Courant de retour | Léviathan | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Ressac de la lune noire | Traqueur des nuits sans lune | Implémenté — renvoi dans une rangée choisie, Vampires épargnés. |
 
 ## Neige — 14 sorts
@@ -103,7 +103,7 @@ compter à tort comme des équivalences parfaites.
 | Ralliement des neiges | Valkyrie au corbeau | Implémenté — choix en main d’une créature de coût 5. |
 | Éclair du marteau | — | Exclu — Magie rapide : exclue des associations. |
 | Mur de boucliers | Drakkar à tête de dragon | Implémenté — +2/+0 et Overkill pour le tour ; créature de coût 5. |
-| Festin des vaillants | Eirik du Premier Serment | Proche existant — soin de 2 aux alliés et au sorcier ; Eirik est aussi l'ancre du Lien. |
+| Festin des vaillants | Eirik du Premier Serment | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Brume du fjord | Veilleuse de la lune givrée | Implémenté — rangée adverse et 15 % de chances de gel, sans Lien. |
 | Hurlement du blizzard | Géant des banquises | Implémenté — colonne adverse et 15 % de chances de gel, sans Lien. |
 | Poigne de givre | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Valkyrie des glaces conservée, sans association. |
@@ -111,8 +111,8 @@ compter à tort comme des équivalences parfaites.
 | Appât de la meute | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Archère viking du givre conservée, sans association. |
 | Verglas | Le cavalier du ressac gelé | Implémenté — carré adverse, dégâts et gel, sans Lien. |
 | Défi du Jarl | Jarl au marteau de guerre | Implémenté — deux cibles choisies, une créature alliée et une adverse, se combattent. |
-| Embuscade | Gardien viking du fjord | Proche existant — −2/−2 aux adversaires pour le tour, sans descendre sous 1. |
-| Le Grand Hiver | Kagutsuchi, Flamme originelle | Proche existant, **inter-éléments** — dégâts aux autres créatures des deux camps ; son activation inflige 2 au lieu de 1 et épargne la source. À revoir si l'on impose la même couleur. |
+| Embuscade | Gardien viking du fjord | Transféré — effet complet sans Lien ; carte retirée du jeu. |
+| Le Grand Hiver | Kagutsuchi, Flamme originelle | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Tempête de foudre et de givre | Le Père des corbeaux | Implémenté — colonne des deux camps, source comprise, sans Lien. |
 
 ## Ténèbres — 11 sorts
@@ -121,11 +121,11 @@ compter à tort comme des équivalences parfaites.
 | --- | --- | --- |
 | Retour des ensevelis | Gardienne des derniers noms | Implémenté — choix au cimetière d’une créature Ténèbres non-Ascension de coût 3 ou moins. |
 | Neige noire | Valkyrie des neuf nuits | Implémenté — prix de 3 PV ; dans un carré choisi, destruction des créatures de coût 3 ou moins, puis gel des survivantes. Créature de coût 5, plutôt que le Corbeau de coût 2 proposé initialement. |
-| Effacement des faibles | La Dévoreuse | Proche existant — détruit une cible de coût 2 ou moins ; le sort accepte jusqu'à 3. |
+| Effacement des faibles | La Dévoreuse | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Le Jugement des colosses | Celui qui juge | Implémenté — thème du jugement ; destruction ciblée des créatures de coût 4 ou plus. |
 | La Dernière Pesée | Le Maître des corbeaux | Implémenté — destruction des deux camps ; coût imprimé de la créature : 7. |
 | Papyrus | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Scribe de la Liste conservée, sans association. |
-| Nom effacé | Lecteur du dernier nom | Proche existant — défausse adverse d'une carte. |
+| Nom effacé | Lecteur du dernier nom | Transféré — effet complet sans Lien ; carte retirée du jeu. |
 | Offrande de lin | Momie de lin | Implémenté — prix de 1 PV, +1/+0 et Tribut 1 pour le tour. |
 | Le Poids | — | Exclu — Magie rapide : exclue des associations. Capacité préexistante de Celle qui pèse conservée, sans association. |
 | Les feuillets | Scribe des feuillets | Implémenté — il envoie déjà une carte du deck adverse au cimetière à sa mort ; le sort en envoie trois. |

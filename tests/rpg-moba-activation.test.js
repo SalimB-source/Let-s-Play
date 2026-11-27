@@ -127,3 +127,38 @@ test('Lettre de marque : prépare la prochaine arrivée et pioche une carte', ()
   assert.equal(d.joueur.deck.length, avant - 1); assert.equal(d.joueur.prochaineArriveeAbordage, true);
   assert.ok(rpgMobaPlacementCoherent(d));
 });
+
+test('Oni : Feux de kitsune offre une cible ou deux dans une même voie, sans Lien', () => {
+  const d = partie(); const oni = poser(d, 'joueur', 'oni-de-la-fournaise', 'left');
+  const a = poser(d, 'sorcier', 'chien-du-guet', 'left', 0);
+  const b = poser(d, 'sorcier', 'chien-du-guet', 'left', 1);
+  const autre = poser(d, 'sorcier', 'chien-du-guet', 'right', 0);
+  for (const e of [a, b, autre]) { e.pv = 8; e.pvMax = 8; e.def = 8; }
+  d.tour = 'joueur'; d.sorcier.main = [];
+  const choix = rpgMobaChoixActivation(d, 'joueur', oni.id);
+  assert.ok(choix.some(x => x.cibleId === a.id && !x.cibleSecondaireId));
+  assert.ok(choix.some(x => x.cibleId === a.id && x.cibleSecondaireId === b.id));
+  assert.ok(!choix.some(x => x.cibleId === a.id && x.cibleSecondaireId === autre.id));
+  const avant = JSON.stringify(d);
+  assert.equal(rpgMobaActiverCapacite(d, 'joueur', oni.id, { cibleId: a.id, cibleSecondaireId: autre.id }).ok, false);
+  assert.equal(JSON.stringify(d), avant);
+  assert.ok(rpgMobaActiverCapacite(d, 'joueur', oni.id, { cibleId: a.id, cibleSecondaireId: b.id }).ok);
+  assert.equal(a.pv, 6); assert.equal(b.pv, 6); assert.equal(autre.pv, 8);
+  assert.equal(oni.activationUtiliseeMatch, true); assert.ok(rpgMobaPlacementCoherent(d));
+});
+
+test('Oni Conquête : les deux cibles survivent à l’annonce et l’IA peut choisir les feux', () => {
+  const d = partie(); const oni = poser(d, 'sorcier', 'oni-de-la-fournaise', 'left');
+  const a = poser(d, 'joueur', 'chien-du-guet', 'left', 0);
+  const b = poser(d, 'joueur', 'chien-du-guet', 'left', 1);
+  d.tour = 'sorcier'; d.joueur.main = ['parade-du-verre'];
+  for (const color of Object.keys(d.joueur.mana)) d.joueur.mana[color] = 20;
+  a.pv = 2; a.def = 2; b.pv = 2; b.def = 2;
+  const choix = rpgMobaChoisirActivationIA(d);
+  assert.equal(choix?.sourceId, oni.id); assert.ok(choix.choix.cibleSecondaireId);
+  const res = rpgMobaActiverCapacite(d, 'sorcier', oni.id, choix.choix);
+  assert.ok(res.ok, JSON.stringify(res)); assert.ok(res.effetEnAttente);
+  assert.ok(rpgMobaPasserEffetCreature(d, 'joueur').ok);
+  assert.ok(!d.joueur.creatures.some(e => e.id === a.id || e.id === b.id));
+  assert.ok(rpgMobaPlacementCoherent(d));
+});

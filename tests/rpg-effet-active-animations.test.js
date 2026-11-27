@@ -77,7 +77,18 @@ test('Braise — l’Oni de la fournaise crache le feu sur sa cible', () => {
   assert.equal(tirs[0].variante, 'feu');
   assert.deepEqual(tirs[0].source, { type: 'creature', cote: 'joueur', entiteId: oni.id });
   assert.deepEqual(tirs[0].cible, { type: 'creature', cote: 'sorcier', entiteId: dune.id });
-  assert.equal(dune.pv, 2, 'les 2 blessures tombent sur la 2/4');
+  assert.equal(dune.pv, 0, 'les 4 blessures détruisent la 2/4');
+  assert.ok(!d.sorcier.creatures.some((c) => c.id === dune.id));
+});
+
+test('Braise — Feux de kitsune répartit les projectiles sur deux cibles', () => {
+  const d = duel(); const oni = poser(d, 'joueur', 'oni-de-la-fournaise');
+  const a = poser(d, 'sorcier', 'dune-marchante');
+  const b = poser(d, 'sorcier', 'dune-marchante');
+  const avant = Number(d.combatAnimationSeq) || 0;
+  assert.ok(rpgActiverCapacite(d, 'joueur', oni.id, a.id, { cibleSecondaireId: b.id }).ok);
+  assert.deepEqual(tirsDeActivation(d, avant, oni.id).map((tir) => [tir.variante, tir.cible.entiteId]), [['feu', a.id], ['feu', b.id]]);
+  assert.equal(a.pv, 2); assert.equal(b.pv, 2);
 });
 
 test('Neige — la Valkyrie des glaces tire la tempête et gèle la cible', () => {
@@ -121,6 +132,7 @@ test('Neige — Eirik soigne : un éclat par allié soigné et pour le sorcier',
   const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
   const dune = poser(d, 'joueur', 'dune-marchante');
   dune.pv = 2; // une blessure que le soin de zone va remonter
+  d.joueur.pv -= 2;
   const tirs = activer(d, eirik.id);
   assert.deepEqual(tirs.map((tir) => tir.variante), ['soin', 'soin']);
   assert.deepEqual(tirs.map((tir) => tir.cible), [
@@ -129,7 +141,7 @@ test('Neige — Eirik soigne : un éclat par allié soigné et pour le sorcier',
   ], 'l’alliée soignée puis la plaque du sorcier — jamais la source elle-même');
   assert.equal(dune.pv, 4, 'soignée de 2');
   const soins = rpgConsommerSoins(d).map((soin) => [soin.entityId ?? 'sorcier', soin.montant]);
-  assert.deepEqual(soins, [['sorcier', 2], [dune.id, 2]], 'le journal des soins allume les éclats');
+  assert.deepEqual(soins, [[dune.id, 2], ['sorcier', 2]], 'le journal des soins allume les éclats');
   assert.equal(d.joueur.pvMax, d.joueur.pv, 'la réserve du sorcier suit sa vie : la barre ne déborde pas');
 });
 
@@ -157,6 +169,7 @@ test('une créature déjà pleine ne gagne rien : aucun éclat fantôme', () => 
   const d = duel();
   const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
   poser(d, 'joueur', 'dune-marchante'); // pleine : 4/4
+  d.joueur.pv -= 2;
   const tirs = activer(d, eirik.id);
   assert.deepEqual(tirs.map((tir) => tir.cible), [{ type: 'sorcier', cote: 'joueur' }],
     'seule la plaque du sorcier est visée — pas de « +2 » sur une alliée intacte');
@@ -168,10 +181,10 @@ test('le renfort ne se défait pas au soin suivant : le plafond relevé tient', 
   const d = duel();
   const daimyo = poser(d, 'joueur', 'daimyo-du-soleil-rouge');
   const dune = poser(d, 'joueur', 'dune-marchante');
+  const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
   activer(d, daimyo.id);                 // +2/+1 : 4/5 PV, plafond 5
   assert.equal(dune.pv, 5);
-  rpgFinDeTour(d); rpgFinDeTour(d);      // le tour revient au joueur, l'effet se recharge
-  const eirik = poser(d, 'joueur', 'eirik-du-premier-serment');
+  d.joueur.pv -= 2;
   dune.pv = 3;                           // une blessure à remonter
   const tirs = activer(d, eirik.id);
   assert.deepEqual(tirs.map((tir) => tir.cible.entiteId ?? tir.cible.type), [dune.id, 'sorcier']);

@@ -176,19 +176,19 @@ test('l’Ifrit brise une arme équipée, puis pioche', () => {
   assert.ok(nu, 'le porteur reste en jeu, son arme non');
 });
 
-test('Kagutsuchi brûle toutes les autres créatures, les deux camps compris', () => {
+test('Kagutsuchi déclenche le Grand Hiver dans une colonne, source comprise', () => {
   const d = duel();
   d.tour = 'joueur';
   const kagutsuchi = poser(d, 'joueur', 'kagutsuchi-flamme-originelle');
-  const allie = poser(d, 'joueur', 'dune-marchante');
-  const adverse = poser(d, 'sorcier', 'dune-marchante');
-  const pvAllie = allie.pv; const pvAdverse = adverse.pv;
-  const { res, tirs } = activer(d, kagutsuchi.id);
-  assert.equal(res.ok, true);
-  assert.equal(allie.pv, pvAllie - 2);
-  assert.equal(adverse.pv, pvAdverse - 2);
-  assert.equal(kagutsuchi.pv, kagutsuchi.pvMax, 'elle s’épargne');
-  assert.ok(tirs.every((t) => t.v === 'feu'), 'la braise de l’élément');
+  const allie = poser(d, 'joueur', 'porteuse-de-cruches');
+  const adverse = poser(d, 'sorcier', 'porteuse-de-cruches');
+  kagutsuchi.emplacement = 0; allie.emplacement = 4; adverse.emplacement = 0;
+  const pvAllie = allie.pv; const pvAdverse = adverse.pv; const pvKagutsuchi = kagutsuchi.pv;
+  const res = rpgActiverCapacite(d, 'joueur', kagutsuchi.id, null, { zone: { forme: 'colonne', colonne: 0 } });
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(allie.pv, pvAllie - 1);
+  assert.equal(adverse.pv, pvAdverse - 1);
+  assert.equal(kagutsuchi.pv, pvKagutsuchi - 1, 'la source est dans la zone');
 });
 
 test('l’annonce de l’effet précède son résultat dans le journal', () => {
@@ -1338,4 +1338,130 @@ test('PvP : un champion adverse est refusé avant l’annonce du défi', () => {
   const res = rpgPvpAppliquer(d, 'joueur', { type: 'activer', capacite: true, entiteId: jarl.id, cibleId: cible.id, championId: cible.id });
   assert.equal(res.raison, 'champion'); const source = d.joueur.creatures.find(e => e.id === jarl.id);
   assert.ok(!source.activationUtiliseeMatch); assert.ok(source.ready); assert.ok(!d.effetCreatureEnAttente);
+});
+
+test('Feux de kitsune appartient à l’Oni et conserve les deux choix sans Lien', () => {
+  const carte = cardById('oni-de-la-fournaise');
+  assert.equal(carte.activation.sortAssocie, 'feux-de-kitsune');
+  assert.deepEqual(carte.activation.effet, magieById('feux-de-kitsune').effet);
+  assert.match(texteActivation(carte), /4 dégâts.*2 dégâts.*deux créatures/);
+  for (const partage of [false, true]) {
+    const d = duel(); const oni = poser(d, 'joueur', 'oni-de-la-fournaise');
+    const a = poser(d, 'sorcier', 'seigneur-des-machoires');
+    const b = poser(d, 'sorcier', 'manticore-des-dunes');
+    const vieA = a.pv, vieB = b.pv;
+    const result = rpgActiverCapacite(d, 'joueur', oni.id, a.id, { cibleSecondaireId: partage ? b.id : null });
+    assert.ok(result.ok, JSON.stringify(result));
+    assert.equal(a.pv, vieA - (partage ? 2 : 4));
+    assert.equal(b.pv, vieB - (partage ? 2 : 0));
+    assert.equal(oni.activationUtiliseeMatch, true);
+    assert.equal(rpgActiverCapacite(d, 'joueur', oni.id, a.id).raison, 'deja-activee');
+  }
+});
+
+test('Feux de kitsune refuse des cibles invalides sans engager l’Oni', () => {
+  const d = duel(); const oni = poser(d, 'joueur', 'oni-de-la-fournaise');
+  const a = poser(d, 'sorcier', 'seigneur-des-machoires');
+  const ami = poser(d, 'joueur', 'chien-du-guet');
+  for (const options of [{ cibleSecondaireId: a.id }, { cibleSecondaireId: ami.id }, { cibleSecondaireId: 'absente' }]) {
+    assert.equal(rpgActiverCapacite(d, 'joueur', oni.id, a.id, options).raison, 'cible');
+    assert.ok(!oni.activationUtiliseeMatch);
+  }
+  assert.equal(rpgActiverCapacite(d, 'joueur', oni.id, ami.id).raison, 'cible');
+});
+
+test('Feux de kitsune réparti conserve 2 dégâts si une cible disparaît pendant la réponse', () => {
+  const d = duel(); const oni = poser(d, 'joueur', 'oni-de-la-fournaise');
+  const a = poser(d, 'sorcier', 'seigneur-des-machoires');
+  const b = poser(d, 'sorcier', 'manticore-des-dunes');
+  const avant = b.pv;
+  d.sorcier.main.push('trait-de-braise');
+  const res = rpgActiverCapacite(d, 'joueur', oni.id, a.id, { attendreReponse: true, cibleSecondaireId: b.id });
+  assert.ok(res.effetEnAttente); assert.equal(d.effetCreatureEnAttente.cibleSecondaireId, b.id);
+  d.sorcier.creatures = d.sorcier.creatures.filter(c => c.id !== a.id);
+  assert.ok(rpgResoudreEffetCreatureEnAttente(d, 'sorcier').ok);
+  assert.equal(b.pv, avant - 2);
+  assert.ok(oni.activationUtiliseeMatch);
+});
+
+test('PvP transporte les deux cibles de Feux de kitsune', () => {
+  const d = duel(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  const oni = poser(d, 'joueur', 'oni-de-la-fournaise');
+  const a = poser(d, 'sorcier', 'seigneur-des-machoires');
+  const b = poser(d, 'sorcier', 'manticore-des-dunes');
+  const avants = [a.pv, b.pv];
+  const res = rpgPvpAppliquer(d, 'joueur', { type: 'activer', capacite: true, entiteId: oni.id, cibleId: a.id, cibleSecondaireId: b.id });
+  assert.ok(res.ok, JSON.stringify(res));
+  assert.deepEqual([a.pv, b.pv], avants.map(pv => pv - 2));
+});
+
+test('Eau de la source : la Völva rend 4 PV, sans le Lien de Bimini', () => {
+  const d = duel(); const volva = poser(d, 'joueur', 'volva-soigneuse');
+  d.joueur.pv = 10; const avant = d.joueur.pv;
+  assert.ok(rpgActiverCapacite(d, 'joueur', volva.id).ok);
+  assert.equal(d.joueur.pv, avant + 4);
+  assert.equal(rpgActiverCapacite(d, 'joueur', volva.id).raison, 'deja-activee');
+});
+
+test('Courant de retour : cible adverse et une seule pioche, même avec son ancre', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'leviathan');
+  const allie = poser(d, 'joueur', 'porteuse-de-cruches');
+  const cible = poser(d, 'sorcier', 'porteuse-de-cruches');
+  const main = d.joueur.main.length;
+  assert.equal(rpgActiverCapacite(d, 'joueur', source.id, allie.id).raison, 'cible');
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id, cible.id).ok);
+  assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id));
+  assert.ok(d.sorcier.main.includes(cible.carteId));
+  assert.equal(d.joueur.main.length, main + 1);
+});
+
+test('Festin des vaillants soigne Eirik, ses alliés et leur sorcier de 2 sans Lien', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'eirik-du-premier-serment');
+  const ami = poser(d, 'joueur', 'porteuse-de-cruches');
+  source.pv = source.pvMax - 2; ami.pv = ami.pvMax - 2; d.joueur.pv = 10;
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id).ok);
+  assert.equal(source.pv, source.pvMax); assert.equal(ami.pv, ami.pvMax); assert.equal(d.joueur.pv, 12);
+});
+
+test('Embuscade affaiblit seulement les adversaires dans le carré et respecte le plancher', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'gardien-viking-du-fjord');
+  const cible = poser(d, 'sorcier', 'porteuse-de-cruches');
+  const loin = poser(d, 'sorcier', 'porteuse-de-cruches');
+  cible.emplacement = 0; loin.emplacement = 3;
+  const avant = { atk: cible.atk, pv: cible.pv }, hors = { atk: loin.atk, pv: loin.pv };
+  assert.equal(rpgActiverCapacite(d, 'joueur', source.id, null, { zone: { forme: 'carre', camp: 'joueur', colonne: 0 } }).raison, 'zone');
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id, null, { zone: { forme: 'carre', camp: 'sorcier', colonne: 0 } }).ok);
+  assert.equal(cible.atk, Math.max(1, avant.atk - 2)); assert.equal(cible.pv, Math.max(1, avant.pv - 2));
+  assert.deepEqual({ atk: loin.atk, pv: loin.pv }, hors);
+  rpgFinDeTour(d); assert.equal(cible.atk, avant.atk); assert.equal(cible.pv, avant.pv);
+});
+
+test('Effacement des faibles accepte un coût 3 et refuse un coût supérieur', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'la-devoreuse');
+  const cout3 = poser(d, 'sorcier', 'momie-de-lin'); const cout4 = poser(d, 'sorcier', 'kraken');
+  assert.equal(rpgActiverCapacite(d, 'joueur', source.id, cout4.id).raison, 'cible');
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id, cout3.id).ok);
+  assert.ok(!d.sorcier.creatures.some(e => e.id === cout3.id));
+});
+
+test('Nom effacé fait défausser exactement une carte adverse', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'lecteur-du-dernier-nom');
+  d.sorcier.main = ['porteuse-de-cruches', 'trait-de-braise']; const avant = d.sorcier.cimetiere.length;
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id).ok);
+  assert.equal(d.sorcier.main.length, 1); assert.equal(d.sorcier.cimetiere.length, avant + 1);
+});
+
+test('Serment de la forge donne +2/+1 et 25 % critique aux alliés, source incluse, pour un tour', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'daimyo-du-soleil-rouge');
+  const ami = poser(d, 'joueur', 'porteuse-de-cruches');
+  const avant = [source, ami].map(e => ({ atk: e.atk, pv: e.pv, critique: e.coupCritiqueTemporaire }));
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id).ok);
+  for (const [i, e] of [source, ami].entries()) {
+    assert.equal(e.atk, avant[i].atk + 2); assert.equal(e.pv, avant[i].pv + 1);
+    assert.equal(e.coupCritiqueTemporaire, avant[i].critique + .25);
+  }
+  rpgFinDeTour(d);
+  for (const [i, e] of [source, ami].entries()) {
+    assert.equal(e.atk, avant[i].atk); assert.equal(e.pv, avant[i].pv); assert.equal(e.coupCritiqueTemporaire, avant[i].critique);
+  }
 });
