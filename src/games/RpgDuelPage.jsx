@@ -9798,20 +9798,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [ecran, apercuAppui, apercuCatalogue, reserveAscensionOuverte, navMenuOuvert, navParametresOuvert, messagerieVoletOuvert, monteeNiveau]);
 
   const demarrerEtage = (etageId, { campagne = false } = {}) => {
-    if (!etageEstDebloque(progressionHistoireRef.current, etageId)) return;
-    if (campagne) {
-      const curseur = progressionHistoireRef.current.recit?.curseur;
-      if (curseur?.type !== 'duel' || curseur.etageId !== etageId) return;
+    try {
+      if (!etageEstDebloque(progressionHistoireRef.current, etageId)) {
+        window.alert?.(`Étage verrouillé : ${etageId}`);
+        return;
+      }
+      if (campagne) {
+        const curseur = progressionHistoireRef.current.recit?.curseur;
+        if (curseur?.type !== 'duel' || curseur.etageId !== etageId) return;
+      }
+      unlockSfx();
+      jouerSfx('select');
+      setHistoireEtageId(etageId);
+      nouvellePartie({ etageId, campagne });
+      reprendrePartie();
+      // Le contexte audio naît dans le geste qui lance l'étage : les navigateurs
+      // n'accordent le son qu'à un tel geste, l'effet ci-dessus ne sert qu'aux
+      // reprises (retour au duel, préférence rendue).
+      sfxRef.current?.unlock();
+    } catch (err) {
+      window.alert?.(`Erreur au lancement de l'étage ${etageId} : ${err?.message || err}`);
+      console.error(err);
     }
-    unlockSfx();
-    jouerSfx('select');
-    setHistoireEtageId(etageId);
-    nouvellePartie({ etageId, campagne });
-    reprendrePartie();
-    // Le contexte audio naît dans le geste qui lance l'étage : les navigateurs
-    // n'accordent le son qu'à un tel geste, l'effet ci-dessus ne sert qu'aux
-    // reprises (retour au duel, préférence rendue).
-    sfxRef.current?.unlock();
   };
 
   const demarrerPartie = (deckId) => {
