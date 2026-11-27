@@ -1,5 +1,55 @@
 # Visuels éditoriaux Let’s Play
 
+## Récapitulatif social — les trois actus du 27.11.2026 (FR / EN / AR)
+
+`make_social_3_actus.py` produit **trois images 1080 × 1350 (4:5)** des trois
+actus de l’édition du 27 novembre 2026 (Cherry Time / Neuralink / *Quasimodo*),
+dans la charte violette de Let’s Play (`#4F3494`, jaune `#f7d900`, vert acide
+`#e7fd52`) :
+
+- `visuels/social/2026-11-27-trois-actus-fr.png` — français
+- `visuels/social/2026-11-27-trois-actus-en.png` — anglais
+- `visuels/social/2026-11-27-trois-actus-ar.png` — arabe, mise en page de droite
+  à gauche (logo à droite, barre jaune à droite, texte composé via HarfBuzz)
+
+Chaque actu porte un **bandeau illustré** derrière son texte : vignette
+recadrée, assombrie, voilée vers le violet du fond et légèrement floutée, puis
+effacée en dégradé du côté du texte pour laisser les titres nets. Les vignettes
+sont dans `scripts/visuels/assets/` (© Team Cherry, © Neuralink, © Netflix) ;
+si l’une manque, le bloc retombe sur le fond uni.
+
+```bash
+python3 -m pip install -r scripts/visuels/requirements.txt
+python3 scripts/visuels/make_social_3_actus.py              # les trois langues
+python3 scripts/visuels/make_social_3_actus.py --lang ar    # une seule
+python3 scripts/visuels/make_social_3_actus.py --out /tmp
+```
+
+Les textes sont figés dans le script : une image datée ne se régénère pas
+depuis les données du site.
+
+## Slides « une actu, une image » — 27.11.2026
+
+`make_social_actu_slides.py` produit **neuf slides 1080 × 1350 (4:5)**, trois
+actus × trois langues, pour accompagner (ou remplacer) le récapitulatif :
+
+- `visuels/social/2026-11-27-slide-1-gaming-{fr,en,ar}.png` — Cherry Time
+- `visuels/social/2026-11-27-slide-2-tech-{fr,en,ar}.png` — Neuralink
+- `visuels/social/2026-11-27-slide-3-cinema-{fr,en,ar}.png` — Quasimodo
+
+Chaque slide : vignette de l’actu en haut (assombrie, fondue vers le violet),
+rubrique + titre, une accroche, **trois points clés numérotés** et la source
+officielle en pied. Les faits reprennent l’édition publiée et ses traductions.
+La version arabe est en RTL (texte composé en Tajawal via HarfBuzz).
+
+```bash
+python3 scripts/visuels/make_social_actu_slides.py                # les neuf
+python3 scripts/visuels/make_social_actu_slides.py --lang fr      # trois
+python3 scripts/visuels/make_social_actu_slides.py --slug tech    # une actu
+```
+
+Ordre de carrousel conseillé : récapitulatif, puis slide 1 → 2 → 3.
+
 ## The Game Awards 2026 — les nommés au jeu de l’année
 
 Les six PNG **1080 × 1350 px (4:5)** et leur archive ZIP se trouvent dans
