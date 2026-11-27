@@ -3,6 +3,14 @@
 // éditer à la main. Le corps complet de chaque article vit dans ./<slug>.js et
 // n’est chargé qu’à son ouverture.
 export const listings = {
+  "/news/cherry-time-team-cherry-27-novembre": {
+    "title": "تشيري تايم",
+    "accent": "بحر الأحزان.",
+    "dek": "تعرض فريق تشيري تقديمها «تشيري تايم» في 27 نوفمبر، مع «مستجدّات» حول بحر الأحزان، أول توسعة مجانية لهولوك نايت: سيلكسونغ — ولا يزال تاريخ الإصدار غير معلن.",
+    "imageAlt": "المرئي الرسمي لعرض تشيري تايم من فريق تشيري في 27 نوفمبر 2026، حول هولوك نايت: سيلكسونغ. © فريق تشيري.",
+    "category": "ألعاب · هولوك نايت: سيلكسونغ",
+    "readTime": "3 دقائق قراءة"
+  },
   "/news/cinema/black-doves-saison-2-netflix-5-novembre": {
     "title": "بلاك دوفز",
     "accent": "الجواسيس يعودون.",
@@ -66,6 +74,14 @@ export const listings = {
     "imageAlt": "صورة رسمية لفيلم On Behalf of My Son في تقويم Netflix Tudum ليوم 20 نوفمبر 2026. © Netflix / أصحاب الحقوق.",
     "category": "سينما · نتفليكس",
     "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/cinema/quasimodo-hunchback-soul-of-paris-netflix-27-novembre": {
+    "title": "كازيمودو",
+    "accent": "باريس 1830.",
+    "dek": "يصل The Hunchback, Soul of Paris للمخرج جان فرانسوا ريشيه، بفينسان كاسل في دور كازيمودو، إلى نتفليكس في 27 نوفمبر: باريس 1830 يضربها الكوليرا، بين اضطراب سياسي وحبّ مستحيل.",
+    "imageAlt": "فينسان كاسل في دور كازيمودو في الإعلان الرسمي لفيلم The Hunchback, Soul of Paris من نتفليكس. © نتفليكس.",
+    "category": "سينما ومسلسلات · نتفليكس",
+    "readTime": "4 دقائق قراءة"
   },
   "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
     "title": "SALISH",
@@ -266,6 +282,14 @@ export const listings = {
     "imageAlt": "رسم رسمي لتحديثات Google Home نُشر في 17 نوفمبر 2026. © Google. صورة ترويجية، لا اختبار أجراه فريقنا.",
     "category": "تقنية · GOOGLE NEST",
     "readTime": "قراءة في 3 دقائق"
+  },
+  "/news/tech/neuralink-link-essai-pivotal-fda": {
+    "title": "نيورالينك",
+    "accent": "تجربة مُجازة.",
+    "dek": "تسمح إدارة الغذاء والدواء الأمريكية لنيورالينك ببدء تجربة LINK المحورية، أول تجربة حاسمة لشريحة دماغية في الولايات المتحدة، لدى أشخاص مشلولين بسبب التصلّب الجانبي الضموري: التسجيل مفتوح.",
+    "imageAlt": "المرئي الرسمي لنيورالينك حول إعلان تجربة LINK المحورية التي أجازتها إدارة الغذاء والدواء. © نيورالينك.",
+    "category": "تقنية · شرائح دماغية",
+    "readTime": "3 دقائق قراءة"
   },
   "/news/tech/openai-gpt-6-conception-proteines": {
     "title": "GPT-6",

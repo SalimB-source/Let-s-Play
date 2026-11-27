@@ -27,6 +27,10 @@ const officialDomains = [
   // for the 28 November 2026 edition: studio post of 23 November, API migration
   // note of 25 November.
   'unknownworlds.com', 'anthropic.com',
+  // Team Cherry (Hollow Knight: Silksong) et Neuralink, vérifiés pour l'édition
+  // du 27 novembre 2026 : billet Cherry Time du 25 novembre, annonce de l'essai
+  // LINK autorisé par la FDA le 25 novembre.
+  'teamcherry.com.au', 'neuralink.com',
 ];
 
 export function officialSourceUrl(value) {

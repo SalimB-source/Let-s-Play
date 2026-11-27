@@ -24,7 +24,7 @@ test('19 novembre : trois articles officiels, GTA en tête et SEO synchronisé',
  }
 });
 test('une du 19 et conservation des archives du 18',()=>{
- for(const p of ['Home','News'])assert.ok(read(`src/pages/${p}.jsx`).includes("daily/2026-11-28'"));
+ for(const p of ['Home','News'])assert.ok(read(`src/pages/${p}.jsx`).includes("daily/2026-11-27'"));
  for(const f of ['src/pages/CurrentNews.jsx','src/pages/AllNews.jsx','src/pages/GamingNews.jsx','src/pages/CinemaNews.jsx','src/pages/TechNews.jsx','src/search/searchIndex.js']){
   const text=read(f);assert.ok(text.includes("daily/2026-11-19'"));assert.ok(text.includes("daily/2026-11-18'"));
  }
