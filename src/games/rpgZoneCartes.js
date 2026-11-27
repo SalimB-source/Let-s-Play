@@ -47,7 +47,6 @@ export const RPG_ZONE_CARTES = Object.freeze({
   leviathan: { forme: 'colonne' },
   'celui-qui-juge': { forme: 'carre' },
   'tour-des-tenebres': { forme: 'carre' },
-  'rempart-des-sables-eternels': { forme: 'carre' },
   'tin-hinan': { forme: 'carre' },
   'le-cavalier-des-dunes-gelees': { forme: 'carre' },
 });
