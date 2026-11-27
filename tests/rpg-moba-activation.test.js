@@ -260,18 +260,17 @@ for (const [jet, gele] of [[.249, true], [.25, false]]) test(`Archère Conquête
   assert.equal(cible.gelToursRestants > 0, gele);
 });
 
-test('Vampire : deux dégâts dans sa voie, choix invalide sans paiement et réponse différée', () => {
+test('Vampire : deux dégâts dans sa voie et choix invalide sans paiement', () => {
   const d = partie(); const vampire = poser(d, 'joueur', 'vampire-des-braises', 'left');
   const cible = poser(d, 'sorcier', 'chien-du-guet', 'left'); cible.pv = 8; cible.pvMax = 8; cible.def = 8;
   const loin = poser(d, 'sorcier', 'chien-du-guet', 'right');
-  d.tour = 'joueur'; d.sorcier.main = ['parade-du-verre'];
+  d.tour = 'joueur'; d.sorcier.main = [];
   const avant = JSON.stringify(d);
   assert.equal(rpgMobaActiverCapacite(d, 'joueur', vampire.id, { cibleId: loin.id }).ok, false);
   assert.equal(JSON.stringify(d), avant);
   const res = rpgMobaActiverCapacite(d, 'joueur', vampire.id, { cibleId: cible.id });
-  assert.ok(res.ok && res.effetEnAttente); assert.equal(cible.pv, 8);
-  assert.equal(vampire.activationUtiliseeMatch, true);
-  assert.ok(rpgMobaPasserEffetCreature(d, 'sorcier').ok); assert.equal(cible.pv, 6);
+  assert.ok(res.ok); assert.equal(vampire.activationUtiliseeMatch, true);
+  assert.equal(cible.pv, 6);
   assert.ok(rpgMobaPlacementCoherent(d));
 });
 

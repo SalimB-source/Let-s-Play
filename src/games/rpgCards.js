@@ -437,6 +437,7 @@ export const RPG_CREATURE_CARDS = [
   ...RPG_RENFORTS_FUNEBRES,
   {
     id: 'gardien-de-la-porte-ardente', name: 'Gardien de la porte ardente',
+    activation: { nom: 'Brise-lame', cible: 'creature', uneFoisParMatch: true, effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 } },
     element: 'braise', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain · Gardien', defenseur: true,
     riposteAttaqueCiblee: 1,
@@ -446,6 +447,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'gardienne-des-portes-de-sable', name: 'Gardienne des portes de sable',
+    activation: { nom: 'Rempart de dunes', cible: 'creature', uneFoisParMatch: true, effet: { type: 'buff', atk: 0, def: 3, tours: 1 } },
     element: 'sable', cost: 2, atk: 1, def: 3, rarity: 'commune',
     typeLine: 'Créature — Humaine · Gardienne', defenseur: true,
     blocage: { chance: 0.25, def: 2 },
@@ -480,6 +482,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'chasseuse-de-braise', name: 'Chasseuse de braise',
+    activation: { nom: 'Trait de braise', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 3, cible: 'creature' } },
     element: 'braise', cost: 2, atk: 2, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine et Vampire', art: 'chasseuse-de-braise',
     volDeVie: true,
@@ -496,6 +499,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'garde-du-voile', name: 'Garde du voile',
+    activation: { nom: 'Écueil', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'creature' } },
     element: 'tenebres', cost: 1, atk: 1, def: 2, rarity: 'commune',
     typeLine: 'Créature — Humain et Vampire', art: 'garde-du-voile',
     defenseur: true,
@@ -504,6 +508,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'rodeuse-des-tombes', name: 'Rôdeuse des tombes',
+    activation: { nom: 'Papyrus', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'pioche', amount: 1 } },
     element: 'tenebres', cost: 2, atk: 2, def: 1, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine et Vampire', art: 'rodeuse-des-tombes',
     infiltration: true,
@@ -538,6 +543,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
+    activation: { nom: 'Voile de la lune noire', cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' } },
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true, conditionEmbuscade: 'attaque-directe',
@@ -609,6 +615,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'porteuse-de-cruches',
+    activation: { nom: 'Haut-fond', cible: 'creature', uneFoisParMatch: true, effet: { type: 'debuff', atk: -1, def: -2, tours: 1 } },
     name: 'Porteuse de cruches',
     element: 'eau',
     cost: 2,
@@ -635,6 +642,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'vipere-de-verre',
+    activation: { nom: 'Silence d’écume', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'sort' } },
     name: 'Vipère de verre',
     element: 'eau',
     cost: 3,
@@ -689,8 +697,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'inhabituelle',
     typeLine: 'Créature — Sonneur',
     art: 'sonneur-fele',
-    arrivee: { type: 'retour-main', cible: 'creature' },
-    text: 'Rebond — Quand le Sonneur arrive : il renvoie la créature ciblée dans la main de son propriétaire.',
+    activation: { nom: 'Ressac', cible: 'creature', uneFoisParMatch: true, effet: { type: 'retour-main', cible: 'creature' } },
+    text: '',
     flavor: 'Un seul coup de bâton sur le bronze fêlé, et l’écho chasse l’intrus.',
   },
   {
@@ -1056,6 +1064,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'guerrier-au-bouclier-rond',
+    activation: { nom: 'Parade de verre', cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' } },
     name: 'Guerrier au bouclier rond',
     element: 'neige',
     cost: 2,
@@ -1135,6 +1144,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'berserk-des-trois-hivers',
+    activation: { nom: 'Éclair du marteau', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 3, cible: 'creature' } },
     name: 'Berserk des trois hivers',
     element: 'neige',
     cost: 3,
@@ -1218,6 +1228,7 @@ export const RPG_CREATURE_CARDS = [
   // ── Bêtes marines mythiques (deck Marée des abysses) ───────────────────
   {
     id: 'kraken',
+    activation: { nom: 'Contresort des abîmes', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'carte' } },
     name: 'Le Kraken',
     element: 'eau',
     cost: 8,
@@ -1259,6 +1270,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'jormungandr',
+    activation: { nom: 'Déflection', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'sort', pioche: 1 } },
     name: 'Jörmungandr',
     element: 'eau',
     cost: 8,
@@ -1275,6 +1287,7 @@ export const RPG_CREATURE_CARDS = [
   ...RPG_CORBEAU_CREATURES,
   {
     id: 'garde-du-trone-givre', set: 'soldats-de-la-lune', name: 'Garde du trône givré',
+    activation: { nom: 'Poigne de givre', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 2, cible: 'creature', gel: true } },
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'attaquant', defenseur: true, furie: 1,
@@ -1399,6 +1412,7 @@ export const RPG_CREATURE_CARDS = [
     // `cibleRespecteCoutMax` (pose, désignation différée, IA) ; la pioche part
     // même sans cible légale, comme le Courant de retour.
     id: 'le-cavalier-sans-nom', name: 'Le cavalier sans nom',
+    activation: { nom: 'Brisure de verre', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'degats', amount: 1, cible: 'toutes-creatures' } },
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
     cost: 6, atk: 5, def: 5, rarity: 'mythique',
     typeLine: 'Créature légendaire — Cavalier · Spectre',

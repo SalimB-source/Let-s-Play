@@ -1454,7 +1454,8 @@ test('Djinn des cendres choisit un Djinn de coût 3 ou moins au cimetière', () 
 });
 
 test('Braisier : la zone et le sorcier ne sont touchés qu’à son activation', () => {
-  const d = duel(); const cible = poser(d, 'sorcier', 'kraken');
+  const d = duel(); const cible = poser(d, 'sorcier', 'chien-du-guet');
+  cible.pv = 8; cible.pvMax = 8; cible.def = 8;
   const pv = cible.pv, sorcier = d.sorcier.pv;
   const source = poser(d, 'joueur', 'braisier-du-souk');
   assert.equal(cible.pv, pv); assert.equal(d.sorcier.pv, sorcier);
@@ -1493,9 +1494,10 @@ test('IA : la Dune combat un adversaire lorsque l’échange est favorable', () 
 test('Dune : sa disparition en réponse dissipe son combat payé', () => {
   const d = duel(); const source = poser(d, 'joueur', 'dune-marchante');
   const cible = poser(d, 'sorcier', 'chien-du-guet'); const pv = cible.pv;
-  d.sorcier.main.push('trait-de-braise');
-  const annonce = rpgActiverCapacite(d, 'joueur', source.id, cible.id, { attendreReponse: true });
-  assert.ok(annonce.ok && annonce.effetEnAttente); assert.equal(source.activationUtiliseeMatch, true);
+  // État différé restauré : les anciennes magies rapides ne sont plus jouables.
+  source.activationUtiliseeMatch = true; source.activationUtiliseeCeTour = true;
+  d.effetCreatureEnAttente = { cote: 'joueur', carteId: 'dune-marchante', entiteId: source.id, cibleId: cible.id, type: 'activation' };
+  d.fenetreReponse = true;
   d.joueur.creatures = d.joueur.creatures.filter(e => e.id !== source.id);
   const resultat = rpgResoudreEffetCreatureEnAttente(d, 'sorcier');
   assert.ok(resultat.ok && resultat.dissipe); assert.equal(cible.pv, pv);

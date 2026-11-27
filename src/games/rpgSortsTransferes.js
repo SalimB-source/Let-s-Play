@@ -9,6 +9,10 @@ export const RPG_SORTS_TRANSFERES = Object.freeze([
   'neige-noire', 'nom-efface', 'nuage-de-cendres', 'offrande-de-lin', 'ralliement-des-neiges',
   'rapport-du-greffier', 'reanimation', 'serment-de-la-forge', 'ressac-de-la-lune-noire', 'retour-des-ensevelis',
   'tempete-de-foudre-et-de-givre', 'tempete-de-sable', 'veille-des-braises', 'vent-rouge', 'verglas',
+  'frappe-iaijutsu', 'papyrus', 'le-poids', 'haut-fond', 'trait-de-braise', 'brise-lame',
+  'rempart-de-dunes', 'parade-du-verre', 'brisure-de-verre', 'ecueil', 'eclair-du-marteau',
+  'poigne-de-givre', 'grand-voile-blanc', 'appat-de-la-meute', 'contresort-des-abimes',
+  'silence-decume', 'maree-contraire', 'ressac', 'voile-de-la-lune-noire',
 ]);
 const RETIRES = new Set(RPG_SORTS_TRANSFERES);
 export const sortTransfere = (id) => RETIRES.has(id);
