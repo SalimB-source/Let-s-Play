@@ -359,7 +359,7 @@ export function rpgDerniereBlessure(duel, entityId) {
 
 function journaliserBlessure(duel, cote, entite, blessure) {
   const journal = blessuresParDuel.get(duel) ?? [];
-  journal.push({
+  const evenement = {
     entityId: entite.id,
     cote,
     elements: normaliserCouleurs(blessure.elements),
@@ -373,8 +373,15 @@ function journaliserBlessure(duel, cote, entite, blessure) {
     // `mortelle` : la créature a **quitté la table** sous ce coup. Une
     // Tenacité programmée ne change rien ici : la mort a bien eu lieu.
     mortelle: Boolean(blessure.mortelle),
-  });
+  };
+  journal.push(evenement);
   blessuresParDuel.set(duel, journal);
+  // Le journal local est perdu à la sérialisation PvP. Répercuter les
+  // blessures de feu, sable et marteau pour la table distante seulement.
+  if (duel.pvp && !duel.moba && (evenement.elements.some(e => e === 'braise' || e === 'sable')
+    || ['eclair-du-marteau', 'maitre-du-marteau'].includes(evenement.sourceCarteId))) {
+    journaliserAnimationCombat(duel, { type: 'blessure-elementaire', ...evenement });
+  }
 }
 
 function journaliserRenvoiEnMain(duel, cote, entite) {
@@ -442,6 +449,9 @@ function journaliserExil(duel, cote, entite, sourceCarteId = null, conqueteMoba 
     ...(conqueteMoba ? { conqueteMoba: true } : {}),
   });
   exilsParDuel.set(duel, journal);
+  if (duel.pvp && !duel.moba && !conqueteMoba) {
+    journaliserAnimationCombat(duel, { type: 'exil', entiteId: entite.id, cote });
+  }
 }
 
 function journaliserDestruction(duel, entite, sourceElements = []) {
@@ -2651,6 +2661,9 @@ function armeDePorteurMort(duel, cote, entite) {
   // leurs cases. Le Khopesh ramène son propre porteur, pas le dernier mort.
   return () => {
     if (carteArme.porteurMeurt.type === 'reanimation-porteur') {
+      // Une carte exilée à sa mort n'est pas au cimetière. Ne pas ramener
+      // par erreur un autre exemplaire portant le même identifiant.
+      if (duelCardById(entite.carteId)?.exileeALaMort) return;
       const camp = duel[cote];
       const index = camp.cimetiere.lastIndexOf(entite.carteId);
       const carte = duelCardById(entite.carteId);
@@ -2987,7 +3000,7 @@ const FX_ACTIVATION_EFFET = Object.freeze({
   buff: 'renfort',
   'retour-main': 'renvoi',
   'retour-apres-tours': 'renvoi',
-  'exil-temporaire': 'renvoi',
+  'exil-temporaire': 'exil',
   pioche: 'plume',
   'pioche-defausse': 'plume',
   'defausse-adverse': 'plume',
@@ -2996,7 +3009,7 @@ const FX_ACTIVATION_EFFET = Object.freeze({
   'destruction-arme': 'ruine',
   'destruction-coutmax': 'ruine',
   'destruction-totale': 'ruine',
-  exil: 'ruine',
+  exil: 'exil',
   debuff: 'ombre',
   malediction: 'ombre',
   transfert: 'ombre',
@@ -3112,7 +3125,9 @@ function journaliserAnimationCombat(duel, animation) {
     if (lane) animation = { ...animation, cible: { ...animation.cible,
       mobaLane: lane.id, mobaSlot: lane.slots[cote].indexOf(entiteId) } };
   }
-  duel.combatAnimations = [...(duel.combatAnimations ?? []).slice(-31), { id: seq, ...animation }];
+  // Une résolution de zone peut produire plusieurs impacts et projectiles :
+  // conserver assez d'événements pour une action complète, avec une borne.
+  duel.combatAnimations = [...(duel.combatAnimations ?? []).slice(-95), { id: seq, ...animation }];
   return seq;
 }
 
@@ -3382,6 +3397,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
         : `coup:${indexCoup}`,
     });
     blessure.sourceElements.push(...normaliserCouleurs(coup.sourceElement));
+    if (['magie', 'capacite', 'effet-creature'].includes(coup.sourceType)) {
+      (blessure.effetsVisuels ??= []).push({ elements: normaliserCouleurs(coup.sourceElement),
+        sourceCarteId: coup.sourceCarteId ?? null, recus: degats });
+    }
     const source = coup.sourceCote && coup.sourceId
       ? duel[coup.sourceCote]?.creatures.find((candidate) => candidate.id === coup.sourceId)
       : null;
@@ -3435,6 +3454,11 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
     absorberDegatsArmure(entite, recus);
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+    // Les vagues simultanées empruntent le moteur du combat : enregistrer
+    // leurs impacts d'effet, mais pas les attaques ordinaires.
+    for (const effet of blessure.effetsVisuels ?? []) {
+      journaliserBlessure(duel, cote, entite, { ...effet, absorbes: 0, mortelle: entite.pv <= 0 });
+    }
     if (entite.pv > 0 && blessure.poison) {
       // Une seconde piqûre renouvelle les deux tours, sans créer deux doses.
       entite.poison = blessure.poison;
@@ -3504,9 +3528,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
     journaliserDestruction(duel, mort.entite, mort.sourceElements);
     mort.declencherArme = armeDePorteurMort(duel, mort.cote, mort.entite);
     camp.creatures = camp.creatures.filter((candidate) => candidate.id !== mort.entite.id);
-    if (!duel.moba || !mort.entite.jeton) camp.cimetiere.push(mort.entite.carteId);
+    const exilee = placerCarteMorte(duel, mort.cote, mort.entite);
     detacherArmes(duel, mort.cote, mort.entite);
-    duel.log.push(duel.moba && mort.entite.jeton ? `${mort.entite.name} est détruite et cesse d’exister.` : `${mort.entite.name} est détruite et rejoint le cimetière.`);
+    duel.log.push(duel.moba && mort.entite.jeton ? `${mort.entite.name} est détruite et cesse d’exister.` : `${mort.entite.name} ${exilee ? 'meurt et est exilée.' : 'est détruite et rejoint le cimetière.'}`);
     // Une créature tenace tombe comme les autres : sa renaissance est promise
     // au prochain tour de son camp, comme pour une blessure isolée.
     programmerRetourTenacite(duel, mort.cote, mort.entite);
@@ -5505,7 +5529,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             amount: entite.pv < (entite.pvMax ?? entite.def) ? effet.amountSiBlessee : effet.amount,
           }));
         appliquerDegatsDeCombatSimultanes(duel, atteintes.map(({ entiteId, amount }) => ({
-          cote: adv, entiteId, amount, sourceElement, sourceType, sourceCote: cote,
+          cote: adv, entiteId, amount, sourceElement, sourceType, sourceCarteId, sourceCote: cote,
           sourceId: sauf, effetSourceCote: cote,
         })));
         ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, atteintes.map(({ entiteId, dernierEtat }) => ({ camp: adv, entiteId, dernierEtat })));
@@ -5533,7 +5557,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             && !paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement))
           .map((entite) => ({ camp, entiteId: entite.id, dernierEtat: { ...entite } })));
         const coups = atteintes.map(({ camp, entiteId }) => ({
-          cote: camp, entiteId, amount: effet.amount ?? 0, sourceElement, sourceType, effetSourceCote: cote,
+          cote: camp, entiteId, amount: effet.amount ?? 0, sourceElement, sourceType, sourceCarteId, effetSourceCote: cote,
         }));
         appliquerDegatsDeCombatSimultanes(duel, coups);
         // Les Contre-attaques des créatures atteintes frappent le lanceur : un sort
@@ -6252,7 +6276,7 @@ export function rpgSacrifierCreature(duel, cote, entiteId) {
 function programmerRetourTenacite(duel, cote, entite) {
   // Seule une vraie carte le peut : un jeton n'a pas de Tenacité, et sa mort
   // ne laisse aucune carte au cimetière où la retrouver.
-  if (!entite?.tenaciteDisponible || entite.jeton) return;
+  if (!entite?.tenaciteDisponible || entite.jeton || duelCardById(entite.carteId)?.exileeALaMort) return;
   const camp = duel[cote];
   camp.retoursProgrammes ??= [];
   camp.retoursProgrammes.push({
@@ -6554,6 +6578,19 @@ function declencherMortAlliee(duel, cote, victime) {
   }
 }
 
+/** Une mort reste une mort même si sa carte est exilée : ses déclencheurs
+ * partent normalement, mais ne peuvent pas reprendre cette carte du cimetière. */
+function placerCarteMorte(duel, cote, entite) {
+  if (entite.jeton && duel.moba) return false;
+  if (!entite.jeton && duelCardById(entite.carteId)?.exileeALaMort) {
+    (duel[cote].exil ??= []).push(entite.carteId);
+    journaliserExil(duel, cote, entite, entite.carteId);
+    return true;
+  }
+  duel[cote].cimetiere.push(entite.carteId);
+  return false;
+}
+
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
 function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null, tueur = null) {
   if (estSite(entite)) return false;
@@ -6566,9 +6603,10 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
   const declencherArme = armeDePorteurMort(duel, cote, entite);
   const camp = duel[cote];
   camp.creatures = camp.creatures.filter((e) => e.id !== entite.id);
-  if (!duel.moba || !entite.jeton) camp.cimetiere.push(entite.carteId);
+  const exilee = placerCarteMorte(duel, cote, entite);
   detacherArmes(duel, cote, entite);
-  duel.log.push(duel.moba && entite.jeton ? `${entite.name} est détruite et cesse d’exister.` : `${entite.name} ${libelle}`);
+  duel.log.push(duel.moba && entite.jeton ? `${entite.name} est détruite et cesse d’exister.`
+    : `${entite.name} ${exilee ? 'meurt et est exilée.' : libelle}`);
   // Tenacité : la mort est réelle, mais la carte est promise à un retour au
   // prochain tour de son camp. Programmée avant les déclenchements de mort :
   // une réanimation immédiate (le Khopesh) retirera la carte du cimetière et

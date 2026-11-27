@@ -703,7 +703,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       const signatures = rpgMobaSignatures(avant, duel, rpgBlessuresDepuis(duel, avant.blessures));
       ajouterSignatures(Object.fromEntries(signatures.map((effet) => [`${++sequenceFx.current}-${effet.type}-${effet.entityId}`, effet])));
     }
-    const sorties = rpgMobaSorties(avant, rpgRenvoisEnMain(duel), rpgExils(duel), duel);
+    const sorties = rpgMobaSorties(avant, rpgRenvoisEnMain(duel), rpgExils(duel), duel)
+      .filter((item) => !sacrificeIds.includes(item.entityId)
+        || (!sacrificesDejaAnimes && (rpgAnimationsReduites() || !rendu?.CercleMagique)));
     if (sorties.length) {
       if (sorties.some((item) => item.variante === 'eau')) onPlaySfx?.('creature_return');
       if (sorties.some((item) => item.variante === 'exil')) onPlaySfx?.('cold_wind');
@@ -735,7 +737,8 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     const evenements = rpgDestructionsDepuis(duel, avant.position);
     const disparues = evenements.flatMap((event) => {
       const carteAvant = avant.cartes.find((item) => item.entityId === event.entityId);
-      if (!carteAvant || idsAnimes.has(event.entityId) || duel[carteAvant.side].creatures.some((item) => item.id === event.entityId)) return [];
+      if (!carteAvant || idsAnimes.has(event.entityId) || sorties.some((sortie) => sortie.entityId === event.entityId)
+        || duel[carteAvant.side].creatures.some((item) => item.id === event.entityId)) return [];
       return [{ ...carteAvant, pleinEmplacement: true, impactCombat, bruleeParBraise: event.sourceElements.includes('braise'), effectId: `${++sequenceFx.current}-${event.entityId}` }];
     });
     if (!disparues.length && !victimes.length) return;

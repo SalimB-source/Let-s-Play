@@ -168,6 +168,7 @@ import { rpgBouclierVientDeRompre } from './rpgShieldAudio.js';
 import { rpgApercuBlocages, rpgCiblesFlechesAttaque, rpgSortBloqueParBouclier } from './rpgCombatIndications.js';
 import { rpgBilanDuel } from './rpgBilanDuel.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
+import { blessuresVisuelles } from './rpgAnimationsElementaires.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckCreation from './RpgDeckCreation.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
@@ -11045,7 +11046,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const positionBlessures = journalBlessuresRef.current.duel === duel
       ? journalBlessuresRef.current.position
       : 0;
-    const blessuresNouvelles = rpgBlessuresDepuis(duel, positionBlessures);
+    const blessuresNouvelles = blessuresVisuelles(rpgBlessuresDepuis(duel, positionBlessures),
+      duel.combatAnimations, avant?.combatAnimationIds);
     journalBlessuresRef.current = { duel, position: rpgNombreBlessures(duel) };
     // Les sacrifices ont déjà joué leur sceau : ce ne sont ni des renvois,
     // ni des exils, et ils ne doivent pas recevoir un deuxième effet de sortie.
@@ -11084,9 +11086,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ]);
     if (animationsCombatNouvelles.some((animation) => animation.type === 'foudre-activation')) jouerSfx('foudre_marteau');
     if (animationsCombatNouvelles.some((animation) => animation.type === 'renvoi-main')) jouerSfx('creature_return');
-    // Une créature exilée quitte elle aussi la table sans mourir : son adieu
-    // blanc remplace le fantôme et le coup de destruction ordinaires.
-    const exiles = new Set(rpgExils(duel).map((evenement) => evenement.entityId));
+    // La sortie d'exil, y compris après une mort, utilise son tourbillon blanc
+    // à la place du fantôme ordinaire ; les règles de mort restent inchangées.
+    const exiles = new Set([
+      ...rpgExils(duel).map((evenement) => evenement.entityId),
+      ...animationsCombatNouvelles.filter((animation) => animation.type === 'exil').map((animation) => animation.entiteId),
+    ]);
     const cartesDisparues = avant.filter((entite) => !vivants.has(entite.entityId)
       && !renvoyees.has(entite.entityId)
       && !exiles.has(entite.entityId));
@@ -11417,7 +11422,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Exil : exactement le même tourbillon que le renvoi, mais blanc. Le vent
     // accompagne la sortie même en mouvement réduit ; seule la chorégraphie
     // visuelle est alors supprimée, comme pour les autres effets de table.
-    const exileesSurTable = avant.filter((entite) => exiles.has(entite.entityId) && !entite.isTerrain);
+    const exileesSurTable = avant.filter((entite) => exiles.has(entite.entityId) && !vivants.has(entite.entityId) && !entite.isTerrain);
     if (exileesSurTable.length) {
       jouerSfx('cold_wind');
       if (!mouvementReduit) {

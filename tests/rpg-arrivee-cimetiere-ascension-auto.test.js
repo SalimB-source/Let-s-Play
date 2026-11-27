@@ -186,10 +186,10 @@ for (const moba of [false,true]) for (const side of ['joueur','sorcier']) test(`
  d[side].cimetiere.push('chien-du-guet');valk.pv=0;rpgActionsEtat(d);
  assert.equal(attenteRenfort(d)?.sourceCarteId,valk.carteId);assert.equal(attenteRenfort(d)?.origine,'destruction');
  const possibles=rpgCartesRenfortChoisi(d,side).map(c=>c.id);
- assert.ok(possibles.includes('gardien-viking-du-fjord'));assert.ok(possibles.includes('valkyrie-de-la-derniere-aurore'));assert.ok(!possibles.includes('chien-du-guet'));
+ assert.ok(possibles.includes('gardien-viking-du-fjord'));assert.ok(!possibles.includes('valkyrie-de-la-derniere-aurore'));assert.ok(!possibles.includes('chien-du-guet'));
  choisirCimetiere(d,side,'gardien-viking-du-fjord');
  assert.ok(d[side].creatures.some(e=>e.carteId==='gardien-viking-du-fjord'));
- assert.ok(d[side].cimetiere.includes('valkyrie-de-la-derniere-aurore'));assert.equal(attenteRenfort(d),null);
+ assert.ok(!d[side].cimetiere.includes('valkyrie-de-la-derniere-aurore'));assert.ok(d[side].exil.includes('valkyrie-de-la-derniere-aurore'));assert.equal(attenteRenfort(d),null);
  if(moba) assert.ok(rpgMobaPlacementCoherent(d));
 });
 

@@ -329,6 +329,7 @@ function retournerPartie(vue) {
   // particulier un projectile vers un sorcier doit viser le bon portrait.
   if (Array.isArray(vue.combatAnimations)) vue.combatAnimations = vue.combatAnimations.map((item) => ({
     ...item,
+    ...(item.cote ? { cote: remplace(item.cote) } : {}),
     ...Object.fromEntries(['source', 'depuis', 'cible'].flatMap((cle) =>
       item?.[cle]?.cote ? [[cle, { ...item[cle], cote: remplace(item[cle].cote) }]] : [])),
   }));
