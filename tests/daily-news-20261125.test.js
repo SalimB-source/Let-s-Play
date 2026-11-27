@@ -59,11 +59,11 @@ test('traductions EN et AR complètes, listées et rattachées aux médias',()=>
 test('édition du 25 en une, archives du 23 conservées',()=>{
   // L’édition du 25 a depuis cédé la une au 28 : elle reste publiée dans tous
   // les points d’entrée, à sa place dans l’ordre des éditions.
-  for(const p of ['Home','News']) assert.ok(read(`src/pages/${p}.jsx`).includes("from '../news/daily/2026-11-28'"),p);
+  for(const p of ['Home','News']) assert.ok(read(`src/pages/${p}.jsx`).includes("from '../news/daily/2026-11-27'"),p);
   for(const f of ['src/pages/CurrentNews.jsx','src/pages/AllNews.jsx','src/pages/GamingNews.jsx','src/pages/CinemaNews.jsx','src/pages/TechNews.jsx','src/search/searchIndex.js']){
     const text=read(f);
     for(const day of ['25','23','21','20']) assert.ok(text.includes(`daily/2026-11-${day}'`),`${f} : édition du ${day}`);
-    assert.ok(text.indexOf("daily/2026-11-28'")<text.indexOf("daily/2026-11-25'"),`${f} : ordre`);
+    assert.ok(text.indexOf("daily/2026-11-27'")<text.indexOf("daily/2026-11-28'"),`${f} : ordre`);
   }
   assert.ok(!read('src/pages/News.jsx').includes('Édition précédente'));
 });

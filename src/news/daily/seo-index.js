@@ -800,6 +800,30 @@ export const dailySeoEntries = {
     "published": "2026-11-25",
     "section": "Actualités cinéma"
   },
+  "/news/cherry-time-team-cherry-27-novembre": {
+    "title": "CHERRY TIME SEA OF SORROW. — Let’s Play",
+    "description": "Team Cherry diffuse ce 27 novembre sa présentation Cherry Time, avec « une mise à jour » sur Sea of Sorrow, la première extension gratuite de Hollow Knight: Silksong — toujours sans date de sortie annoncée.",
+    "image": "https://images.squarespace-cdn.com/content/v1/606d4deb4db8c15ea53b3624/c3455303-325a-48ef-9d20-306e24fafe69/cherry+time+wide.jpg",
+    "type": "article",
+    "published": "2026-11-27",
+    "section": "Actualités gaming"
+  },
+  "/news/tech/neuralink-link-essai-pivotal-fda": {
+    "title": "NEURALINK ESSAI AUTORISÉ. — Let’s Play",
+    "description": "La FDA autorise Neuralink à lancer la LINK Pivotal Study, premier essai pivot d’un implant cérébral aux États-Unis, chez des personnes paralysées par la SLA : les inscriptions sont ouvertes.",
+    "image": "https://content.neuralink.com/images/updates/neuralink-receives-fda-approval-to-launch-link-pivotal-study/preview.jpg",
+    "type": "article",
+    "published": "2026-11-27",
+    "section": "Actualités tech"
+  },
+  "/news/cinema/quasimodo-hunchback-soul-of-paris-netflix-27-novembre": {
+    "title": "QUASIMODO PARIS EN 1830. — Let’s Play",
+    "description": "The Hunchback, Soul of Paris, de Jean-François Richet, avec Vincent Cassel en Quasimodo, arrive ce 27 novembre sur Netflix : un Paris de 1830 ravagé par le choléra, entre troubles politiques et amour impossible.",
+    "image": "https://i.ytimg.com/vi/eBfPTW1YaAQ/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-27",
+    "section": "Actualités cinéma"
+  },
   "/news/subnautica-2-leap-forward-showcase-28-novembre": {
     "title": "SUBNAUTICA 2 LE GRAND PLONGEON. — Let’s Play",
     "description": "Unknown Worlds diffuse ce 28 novembre le showcase « Leap Forward », centré sur Tar Trek, la première grande extension de Subnautica 2, attendue le 1er décembre sur PC et Xbox Series X|S.",

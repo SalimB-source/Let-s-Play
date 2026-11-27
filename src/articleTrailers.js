@@ -1386,6 +1386,35 @@ export const articleTrailers = {
     "credit": "Photographie officielle de Salish’s 12 Games of Christmas publiée par Netflix Tudum. Photographie : Kit Karzen/Netflix. © Netflix / ayants droit. Image promotionnelle, pas une photographie prise par notre rédaction.",
     "pending": "La bande-annonce du programme circule sur YouTube par des chaînes de reprise, et la chaîne Netflix n’a pas publié de lecteur que nous puissions certifier pour cette page. Nous n’intégrons donc aucune vidéo et renvoyons à la fiche officielle liée en source."
   },
+  "cherry-time-team-cherry-27-novembre": {
+    "label": "CHERRY TIME",
+    "meta": "TEAM CHERRY",
+    "credit": "Visuel officiel de l’annonce Cherry Time publié par Team Cherry le 25 novembre 2026. © Team Cherry. Illustration promotionnelle, pas une capture de notre rédaction.",
+    "items": [],
+    "pending": "La présentation Cherry Time est programmée en direct sur la chaîne YouTube de Team Cherry à 15 h UTC le 27 novembre 2026 : nous n’intégrons pas de lecteur avant sa diffusion, et aucune rediffusion non officielle ne la remplace. Le lien de la première figure dans le billet lié en source."
+  },
+  "tech/neuralink-link-essai-pivotal-fda": {
+    "label": "NEURALINK",
+    "meta": "NEURALINK",
+    "credit": "Visuel officiel de l’annonce LINK Pivotal Study publié par Neuralink le 25 novembre 2026. © Neuralink. Illustration de l’entreprise, pas une image de notre rédaction.",
+    "items": [],
+    "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée pour intégration. Le billet de Neuralink, lié en source, décrit l’essai ; les vidéos de démonstration publiées plus tôt concernent d’autres études et ne sont pas présentées ici comme celles du LINK Pivotal Study."
+  },
+  "cinema/quasimodo-hunchback-soul-of-paris-netflix-27-novembre": {
+    "label": "QUASIMODO",
+    "meta": "NETFLIX · FILM",
+    "credit": "Miniature et bande-annonce officielles : Netflix, trailer publié le 30 octobre 2026 sur la chaîne du diffuseur. © Netflix. Illustration promotionnelle, pas une image de notre rédaction.",
+    "items": [
+      {
+        "id": "eBfPTW1YaAQ",
+        "kind": "trailer",
+        "title": "The Hunchback, Soul of Paris | Official Trailer | Netflix",
+        "channel": "Netflix",
+        "note": "Bande-annonce officielle publiée par Netflix le 30 octobre 2026, soit près d’un mois avant la mise en ligne du film le 27 novembre : elle montre Paris sous le choléra et la traque de Quasimodo, pas une scène tournée le jour de la sortie.",
+        "verified": "27.11.2026"
+      }
+    ]
+  },
 
 };
 

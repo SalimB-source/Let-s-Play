@@ -3,6 +3,14 @@
 // éditer à la main. Le corps complet de chaque article vit dans ./<slug>.js et
 // n’est chargé qu’à son ouverture.
 export const listings = {
+  "/news/cherry-time-team-cherry-27-novembre": {
+    "title": "CHERRY TIME",
+    "accent": "SEA OF SORROW.",
+    "dek": "Team Cherry airs its Cherry Time presentation on 27 November, with “an update” on Sea of Sorrow, the first free expansion for Hollow Knight: Silksong — still with no announced release date.",
+    "imageAlt": "Official visual for Cherry Time, Team Cherry’s presentation of 27 November 2026, about Hollow Knight: Silksong. © Team Cherry.",
+    "category": "GAMING · HOLLOW KNIGHT: SILKSONG",
+    "readTime": "3 MIN READ"
+  },
   "/news/cinema/black-doves-saison-2-netflix-5-novembre": {
     "title": "BLACK DOVES",
     "accent": "THE SPIES ARE BACK.",
@@ -66,6 +74,14 @@ export const listings = {
     "imageAlt": "Official On Behalf of My Son visual in Netflix Tudum’s 20 November 2026 calendar. © Netflix / rights holders.",
     "category": "CINEMA · NETFLIX",
     "readTime": "3 MIN READ"
+  },
+  "/news/cinema/quasimodo-hunchback-soul-of-paris-netflix-27-novembre": {
+    "title": "QUASIMODO",
+    "accent": "PARIS, 1830.",
+    "dek": "The Hunchback, Soul of Paris, by Jean-François Richet, with Vincent Cassel as Quasimodo, reaches Netflix on 27 November: an 1830 Paris ravaged by cholera, caught between political unrest and an impossible love.",
+    "imageAlt": "Vincent Cassel as Quasimodo in Netflix’s official trailer for The Hunchback, Soul of Paris. © Netflix.",
+    "category": "CINEMA & SERIES · NETFLIX",
+    "readTime": "4 MIN READ"
   },
   "/news/cinema/salish-12-games-of-christmas-netflix-28-novembre": {
     "title": "SALISH",
@@ -265,6 +281,14 @@ export const listings = {
     "dek": "Google details its 17 November Home updates: digital keys, audio descriptions of camera events and Gemini improvements. The features do not all have the same access conditions.",
     "imageAlt": "Official Google Home updates illustration published on 17 November 2026. © Google. Promotional visual, not an editorial test.",
     "category": "TECH · GOOGLE NEST",
+    "readTime": "3 MIN READ"
+  },
+  "/news/tech/neuralink-link-essai-pivotal-fda": {
+    "title": "NEURALINK",
+    "accent": "TRIAL CLEARED.",
+    "dek": "The FDA lets Neuralink launch the LINK Pivotal Study, the first pivotal trial of a brain implant in the United States, in people paralysed by ALS: enrolment is open.",
+    "imageAlt": "Official Neuralink visual announcing the LINK Pivotal Study cleared by the FDA. © Neuralink.",
+    "category": "TECH · BRAIN IMPLANTS",
     "readTime": "3 MIN READ"
   },
   "/news/tech/openai-gpt-6-conception-proteines": {
