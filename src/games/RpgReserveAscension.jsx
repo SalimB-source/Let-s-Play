@@ -1,3 +1,4 @@
+import { RpgActivationDescription, RpgActivationNote } from './RpgActivationDescription.jsx';
 import RpgCadreCarte from './RpgCadreCarte.jsx';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { cardById } from './rpgCards.js';
@@ -153,8 +154,8 @@ function ApercuAscension({ carte, selection, consultation, disponible, duel, Hov
     <div className="rpg-card-peek__backdrop" aria-hidden="true" />
     <div className="rpg-card-peek__panel">
       {HoverCardPreview ? <HoverCardPreview carte={cartePourApercu?.(carte) ?? carte} variante="catalogue" surface="RÉSERVE D’ASCENSION" />
-        : <figure className="rpg-ascension-preview-fallback"><span className="rpg-ascension-preview-fallback-art"><img src={cardArt(carte.id)} alt={carte.name} /><RpgCadreCarte carte={carte} /></span><figcaption><h2>{carte.name}</h2><p>{carte.text}</p></figcaption></figure>}
-      {(notesPourApercu?.(carte) ?? []).map((note) => <p key={note} className="rpg-ascension-note">{note}</p>)}
+        : <figure className="rpg-ascension-preview-fallback"><span className="rpg-ascension-preview-fallback-art"><img src={cardArt(carte.id)} alt={carte.name} /><RpgCadreCarte carte={carte} /></span><figcaption><h2>{carte.name}</h2>{carte.text && <p>{carte.text}</p>}<RpgActivationDescription carte={carte} /></figcaption></figure>}
+      {(notesPourApercu?.(carte) ?? []).map((note) => note.startsWith('Effet activé :') ? <RpgActivationNote key={note} className="rpg-ascension-note" note={note} /> : <p key={note} className="rpg-ascension-note">{note}</p>)}
     </div>
     <div className="rpg-card-peek__bar">
       {!consultation && <button type="button" className="rpg-btn rpg-btn--primary rpg-ascension-prepare" disabled={!preparable} onClick={() => selection.preparer(carte.id)}>Préparer l’Ascension</button>}

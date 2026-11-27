@@ -1,3 +1,4 @@
+import { RpgActivationDescription } from './RpgActivationDescription.jsx';
 import RpgCadreCarte from './RpgCadreCarte.jsx';
 import { useEffect, useRef, useState } from 'react';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
@@ -21,7 +22,7 @@ const ELEMENT_LABELS = {
 /** Un bonus signé pour l'affichage : « +2 », ou « -2 » pour le malus du Sabre maudit. */
 const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
 
-function GuideCard({ carte, cardArt }) {
+export function GuideCard({ carte, cardArt }) {
   const colors = cardColors(carte);
   const degradeCout = cardHybridGradient(carte);
   const exigencesCout = Object.entries(cardColorCost(carte))
@@ -67,7 +68,8 @@ function GuideCard({ carte, cardArt }) {
             Statistiques : ⚔ {modifAtk} · 🛡 {modifDef}
           </p>
         )}
-        <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>
+        {(carte.text && carte.text !== '—' || !carte.activation) && <p className="rpg-card-guide__rules"><RpgCardRules carte={carte} /></p>}
+        <RpgActivationDescription carte={carte} />
       </div>
     </article>
   );
