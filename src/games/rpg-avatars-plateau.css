@@ -758,3 +758,16 @@
   box-shadow: 0 5px 8px 1px #000c;
   transition: none;
 }
+
+/* Effet 3D léger sur les cartes du plateau (desktop) */
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-creature-slot {
+  perspective: 720px;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-creature-slot > .rpg-card {
+  transform: rotateX(6deg);
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.rpg-battle[data-scene="duel"]:not(.rpg-battle--touch) .rpg-creature-slot:hover > .rpg-card:not(.is-attaquee) {
+  transform: rotateX(0deg) translateY(-6px) scale(1.04);
+}
