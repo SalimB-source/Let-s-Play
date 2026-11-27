@@ -140,7 +140,7 @@ export function texteApercuSansDoublons(lecture) {
     // La cible et le déclencheur de ce Bouclier restent utiles, mais sa
     // mécanique (« le prochain sort… ») est déjà dans la pastille jaune.
     if (pastilles.some((pastille) => pastille.cle === 'bouclier' && pastille.description)) {
-      return phrase.replace(/(\breçoit un bouclier)\s*(?:—|:|qui bloque)\s*le prochain sort ou effet de créature adverse\b.*$/iu, '$1.');
+      return phrase.replace(/(\breçoit un bouclier)\s*(?:—|:|qui bloque)\s*le prochain (?:sort ou )?effet de créature adverse\b.*$/iu, '$1.');
     }
     // Les deux gains sont déjà identifiés comme « (furie) » sur les pastilles.
     if (/^Tant que sa Furie est active, il gagne aussi Overkill et Envol\.$/u.test(phrase)

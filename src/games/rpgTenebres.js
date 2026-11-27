@@ -279,7 +279,7 @@ export const RPG_TENEBRES_CREATURES = [
     // La déesse entre avec une parade à usage unique. Son tribut vaut 3.
     bouclierInitial: true,
     typeLine: 'Créature légendaire — Déesse solaire',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Bouclier — Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe.',
     flavor: 'Son œil droit est le midi sur les dunes ; son œil gauche est la lampe dans la tombe.',
   }),
   carte({
@@ -295,7 +295,7 @@ export const RPG_TENEBRES_CREATURES = [
     bouclierInitial: true,
     activation: { nom: 'Souffle de la Lionne', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 4, cible: 'creature', adversaireSeulement: true } },
     typeLine: 'Créature légendaire — Lionne solaire',
-    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Bouclier — Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({
@@ -311,7 +311,7 @@ export const RPG_TENEBRES_CREATURES = [
     arrivee: { type: 'bouclier-lumiere' },
     destruction: { type: 'soin', amount: 5 },
     typeLine: 'Créature légendaire — Souveraine ailée',
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Vol de vie. Quand La Dame aux ailes d’or arrive : elle reçoit un Bouclier parfait. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, elle ne peut pas subir de dégâts. Quand elle meurt, vous gagnez 5 PV.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Vol de vie. Quand La Dame aux ailes d’or arrive : elle reçoit un Bouclier parfait. Tant que ce bouclier n’est pas touché par une attaque ou des dégâts d’un effet d’arrivée, de mort ou activé adverse, elle ne peut pas subir de dégâts. Quand elle meurt, vous gagnez 5 PV.',
     flavor: 'Ses deux ailes refermées sur le trône suffisent à retenir le souffle qui s’en va.',
   }),
   carte({

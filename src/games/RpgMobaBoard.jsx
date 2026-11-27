@@ -791,6 +791,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     if (result.healingEvents?.length) { setSoinsVoies(result.healingEvents); if (result.healingEvents.some((event) => event.healing > 0)) jouerSonSoin(); }
     if (result.drawEvents?.length) onPlaySfx?.('card_draw');
     if (duel.arriveeEnAttente?.retour) setEtape('arrivee');
+    if (result.effetEnAttente) setEtape('reponse-arrivee');
     const reponseImbriquee = Boolean(duel.mobaCreatureEnAttente?.embuscadeCombat || duel.mobaCreatureEnAttente?.embuscadeSuspendue || duel.mobaEmbuscadeArrivee);
     if (etape === 'blocage' || reponseImbriquee) {
       const survivants = duel.combatDeclare?.attaquants ?? [];
@@ -799,7 +800,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       setCible((old) => survivants.includes(old) ? old : survivants[0] ?? null);
       setBlocages((old) => Object.fromEntries(Object.entries(old).filter(([attaquant]) => survivants.includes(attaquant))
         .map(([attaquant, ids]) => [attaquant, ids.filter((bloqueur) => duel[defenseur].creatures.some((entity) => entity.id === bloqueur))])));
-      if (result.combatTermine && !reponseImbriquee) setEtape('tour');
+      if (result.combatTermine && !reponseImbriquee && !result.effetEnAttente) setEtape('tour');
     }
   };
   const passerFinTour = () => {
@@ -964,6 +965,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     setCarte(null); setSacrificesChoisis([]); setInvocationNormale(null);
     if (result.creatureEnAttente) setEtape('reponse-creature');
     else if (result.arriveeEnAttente) setEtape('arrivee');
+    else if (result.effetEnAttente) setEtape('reponse-arrivee');
   };
   const actualiserCombatApresArrivee = () => {
     const survivants = duel.combatDeclare?.attaquants ?? [];
@@ -1328,7 +1330,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     setSoinsVoies(res.healingEvents ?? []);
     if (res.healingEvents?.some((event) => event.healing > 0)) jouerSonSoin();
     setEvents(res.damageEvents ?? []);
-    setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setBlocages({}); setCible(null); setEtape('tour'); setCarte(null);
+    setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setBlocages({}); setCible(null); setEtape(duel.effetCreatureEnAttente ? 'reponse-arrivee' : 'tour'); setCarte(null);
   };
   const declarer = (attaquantId, cibleId, voie = null) => {
     if (!afficherResultat(rpgMobaDeclarerAttaqueIndividuelle(duel, actif, attaquantId, cibleId, voie))) return;
@@ -1398,6 +1400,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
     const chapitre = MOBA_HISTOIRE[chapitreIndex];
     nouvellePartie(creerPartie(deckCampagneRef.current, chapitre.deck));
   };
+  // Une mort peut se produire pendant un combat ou une autre capacité :
+  // présenter sa réponse même si l'action appelante n'a pas changé d'étape.
+  useEffect(() => {
+    if (duel.effetCreatureEnAttente && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
+      && !duel.mobaRechercheEnAttente && !duel.defausseEnAttente && !duel.siteEnAttente && !fini) {
+      setEtape('reponse-arrivee');
+    }
+  }, [duel, version, fini]);
   // Let the opponent's ritual finish before its next move or arrival choice.
   const iaAgit = !fini && !cerclesSacrifice.length && !confirmerSortie && !parametresOuverts && !cimetiere && !apercu && (destruction ? destruction.cote === 'sorcier' : recherche ? recherche.cote === 'sorcier' : defausse ? mainSide === 'sorcier' : site ? site.cote === 'sorcier' : ((etape === 'tour' && actif === 'sorcier') || (etape === 'arrivee' && arriveeSide === 'sorcier')
     || (['blocage', 'fin', 'reponse-arrivee', 'reponse-sort', 'reponse-creature'].includes(etape) && repondant === 'sorcier')));
@@ -1469,7 +1479,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             const choixCreature = creature;
             const avant = instantaneDestructions();
             const result = rpgMobaJouerCreature(duel, 'sorcier', choixCreature.id, choixCreature.lane, choixCreature.slot, { ouvrirReponse: true, sacrificeIds: choixCreature.sacrificeIds, choixCoutAuto: true });
-            if (afficherResultat(result)) { montrerDestructions(avant, false, result.sacrificeIds, result.entite?.id); if (result.damageEvents?.length) setEvents(result.damageEvents); if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier'); if (result.creatureEnAttente) setEtape('reponse-creature'); else if (result.arriveeEnAttente) setEtape('arrivee'); }
+            if (afficherResultat(result)) { montrerDestructions(avant, false, result.sacrificeIds, result.entite?.id); if (result.damageEvents?.length) setEvents(result.damageEvents); if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier'); if (result.creatureEnAttente) setEtape('reponse-creature'); else if (result.arriveeEnAttente) setEtape('arrivee'); else if (result.effetEnAttente) setEtape('reponse-arrivee'); }
           } else {
             const choix = rpgMobaChoisirAttaqueIndividuelleIA(duel, 'sorcier');
             if (choix) {
@@ -1860,6 +1870,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       </div>
     </section>}
     <div className="moba__controls" inert={selectionAscension.rituel ? true : undefined}><div className="moba__phase"><span>✦</span><div><small>VOTRE STRATÉGIE</small><strong>{etape === 'arrivee' ? 'Choix de la cible' : etape === 'reponse-creature' ? 'Réponse à la créature' : etape === 'reponse-sort' ? 'Réponse au sort' : etape === 'reponse-arrivee' ? 'Réponse à la capacité' : etape === 'fin' ? 'Réponse de fin de tour' : etape === 'blocage' ? 'Réponse à l’attaque' : defausse ? 'Défausse' : duel.attaqueJouee === actif ? 'Après le combat' : 'Phase principale'}</strong></div></div>{duel.brouillardCombat && <abbr className="moba__fog" title="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour." aria-label="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour">☁<span> Voile</span></abbr>}{camp.prochaineArriveeAbordage && <abbr className="moba__boarding" title="La prochaine créature jouée ce tour a Abordage." aria-label="La prochaine créature jouée ce tour a Abordage">⚓<span> Abordage</span></abbr>}{rendu?.PhaseTrack && <div className="moba__phase-track"><rendu.PhaseTrack current={phaseVisuelle} jouees={[]} steps={MOBA_PHASE_STEPS} ariaLabel="Repères du tour MOBA" currentSuffix="repère actuel" /></div>}<div className="moba__buttons">
+      {etape === 'reponse-arrivee' && repondant === 'joueur' && rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => <button key={entite.id} type="button" onClick={() => activerReponse('joueur', entite.id)}>Contrer l’effet avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}</button>)}
       {annonceRepondable && !apercuAnnonceOuvert && rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => <button key={entite.id} type="button" onClick={() => activerReponse('joueur', entite.id)}>Contrer avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}</button>)}
       {annonceRepondable && !apercuAnnonceOuvert && <button type="button" ref={boutonRevoirAnnonce} aria-label={`Voir l’annonce de ${carteAnnonce.name}`} onClick={() => setAnnoncesApercues((anciennes) => anciennes.filter((item) => item !== attenteAnnonce))}>Voir l’annonce</button>}
       {destruction || site ? null : etape === 'tour' ? <>{attaqueTousDisponible && <button type="button" className="moba__attack-all" data-attaque-directe="tous" onClick={lancerAttaqueTous}>Attaquer avec tous ({vagueAttaqueTous.length})</button>}{cibleRapideEnCours && cibleVoieEnCours && <div role="group" aria-label="Choisir la voie de l’attaque"><span>Choisissez la voie de cette attaque :</span>{mobaVoiesCombat(duel.moba, getEntity(actif, cibleRapideEnCours)?.mobaLane).filter((voie) => rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, voie).cibles.includes(cibleVoieEnCours)).map((voie) => <button key={voie} type="button" onClick={() => declarer(cibleRapideEnCours, cibleVoieEnCours, voie)}>{voies[voie]}</button>)}<button type="button" onClick={() => setCibleVoieEnCours(null)}>Changer de cible</button></div>}

@@ -41,10 +41,6 @@ export function rpgPayerCoutInvocationSpeciale(duel, cote, id, choix) {
   duel.log.push(`${cote === 'joueur' ? 'Vous' : 'Le sorcier'} ${cout.destination === 'exil' ? (cote === 'joueur' ? 'exilez' : 'exile') : (cote === 'joueur' ? 'défaussez' : 'défausse')} ${cardById(carteId)?.name ?? carteId} pour invoquer ${cardById(id)?.name ?? id}.`);
   return true;
 }
-const magiesRapidesCimetiere = (d, s) => (d[s]?.cimetiere ?? [])
-  .filter((id) => { const c = cardById(id); return c?.kind === 'magie' && c.instant; }).length;
-const exilerMagieRapide = Object.freeze({ zone: 'cimetiere', destination: 'exil',
-  admissible: (id) => { const c = cardById(id); return c?.kind === 'magie' && Boolean(c.instant); } });
 const defausserSabreMaudit = Object.freeze({ zone: 'main', destination: 'cimetiere',
   admissible: (id) => id === 'sabre-maudit' });
 const exilerCreature = Object.freeze({ zone: 'cimetiere', destination: 'exil', admissible: estCreature });
@@ -59,7 +55,7 @@ export const MOBA_EMBUSCADES_IMPRIMEES = Object.freeze({
   'sanguinaire-des-dunes': entree('L’adversaire contrôle au moins deux créatures blessées.', (d, s) => creatures(d, autre(s)).filter(blessee).length >= 2),
   'gardienne-du-croissant': entree('Vous contrôlez une créature blessée.', (d, s) => creatures(d, s).some(blessee)),
   'porte-etendard-de-leclipse': entree('Vous contrôlez au moins trois créatures.', (d, s) => creatures(d, s).length >= 3),
-  'sorcier-du-ressac-noir': entree('Exilez une Magie Rapide de votre cimetière, au choix.', (d, s) => magiesRapidesCimetiere(d, s) > 0, exilerMagieRapide),
+  'sorcier-du-ressac-noir': entree('Exilez une carte de créature de votre cimetière, au choix.', (d, s) => creaturesCimetiere(d, s).length > 0, exilerCreature),
   'tojiro-le-pourfendeur': entree('Défaussez une carte Sabre maudit de votre main, au choix.', (d, s) => autreCarteEnMain(d, s, 'tojiro-le-pourfendeur', (id) => id === 'sabre-maudit'), defausserSabreMaudit),
 });
 

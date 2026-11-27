@@ -442,7 +442,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Humain · Gardien', defenseur: true,
     riposteAttaqueCiblee: 1,
     contreAttaque: true,
-    text: 'Défenseur. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Gardien de la porte ardente lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Défenseur. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Derrière lui, le brasier veille sur les derniers vivants.',
   },
   {
@@ -642,7 +642,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'vipere-de-verre',
-    activation: { nom: 'Silence d’écume', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'sort' } },
+    activation: { nom: 'Silence d’écume', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'effet-creature' } },
     name: 'Vipère de verre',
     element: 'eau',
     cost: 3,
@@ -663,7 +663,7 @@ export const RPG_CREATURE_CARDS = [
     def: 4,
     rarity: 'commune',
     defenseur: true,
-    typeLine: 'Créature — Élémental', arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] }, text: 'Défenseur. Quand la Dune arrive : cherchez une Magie Rapide ou une Sorcellerie dans votre deck et ajoutez-la à votre main.',
+    typeLine: 'Créature — Élémental', arrivee: { type: 'recherche-deck-categories', effetCreature: true }, text: 'Défenseur. Quand la Dune arrive : cherchez dans votre deck une créature ayant un effet d’arrivée, de mort ou activé et ajoutez-la à votre main.',
     flavor: 'Le vent la déplace. Elle revient toujours devant la porte.',
   },
     {
@@ -754,8 +754,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Amazighe kabyle',
     art: 'tiziri-du-djurdjura',
-    arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] },
-    text: 'À distance — Son chant porte au-dessus de la mêlée. Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main.',
+    arrivee: { type: 'recherche-deck-categories', effetCreature: true },
+    text: 'À distance — Son chant porte au-dessus de la mêlée. Quand Tiziri arrive en jeu : cherchez dans votre deck une créature ayant un effet d’arrivée, de mort ou activé et ajoutez-la à votre main.',
     flavor: 'Son chant rassemble les villages avant la tempête — et fait descendre l’eau des crêtes.',
   },
   {
@@ -780,7 +780,7 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true,
     distance: true,
     esquive: true,
-    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse.',
+    text: 'Rapidité — Peut se déplacer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque ou un effet de créature adverse, notamment d’arrivée, de mort ou activé.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -979,7 +979,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Guerrier amazigh',
     art: 'cavalier-amazigh-du-desert', arrivee: { type: 'combat', cible: 'creature' },
     contreAttaque: true,
-    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Cavalier amazigh du Désert lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Quand le Cavalier arrive : il se bat contre une créature adverse ciblée. Chacun inflige à l’autre un nombre de dégâts égal à son attaque. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Sa monture blanche fend la poussière ; le sabre ouvre la route au milieu du tumulte.',
   },
   {
@@ -1050,7 +1050,7 @@ export const RPG_CREATURE_CARDS = [
     // Le type se lit sur la ligne de type imprimée, comme la Résonance — un
     // Viking adverse ne le nourrit pas.
     compagnie: { tribu: 'viking', atk: 1, def: 1 },
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
   },
   {
@@ -1188,7 +1188,7 @@ export const RPG_CREATURE_CARDS = [
     // Valkyrie compris — mais `exclutSoi` l'épargne elle-même : son propre
     // souffle ne la blesse ni ne la gèle, contrairement à l'Ifrit al-Ahmar.
     arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.15 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 15 % de chances de geler chacune d’elles.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Bouclier — Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 15 % de chances de geler chacune d’elles.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -1270,7 +1270,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'jormungandr',
-    activation: { nom: 'Déflection', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'sort', pioche: 1 } },
+    activation: { nom: 'Déflection', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'contresort', cible: 'effet-creature', pioche: 1 } },
     name: 'Jörmungandr',
     element: 'eau',
     cost: 8,
@@ -1280,7 +1280,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature légendaire — Serpent du monde',
     bouclierInitial: true,
     arrivee: { type: 'pioche-defausse', pioche: 3, defausse: 1 },
-    text: 'Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand Jörmungandr arrive : piochez 3 cartes et défaussez une carte.',
+    text: 'Bouclier — Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand Jörmungandr arrive : piochez 3 cartes et défaussez une carte.',
     flavor: 'Il tient le monde dans sa queue. Il lâche prise pour frapper.',
   },
   // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
@@ -1325,7 +1325,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 3, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, conditionEmbuscade: 'allie-cible',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true, bonusDef: 2 },
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez une créature blessée. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Vous contrôlez une créature blessée. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain effet de créature adverse qui l’atteint.',
     flavor: 'Son croissant veille sur ceux qui n’ont plus de soleil.',
   },
   {
@@ -1345,7 +1345,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 2, rarity: 'rare', typeLine: 'Créature — Vampire et Sorcier',
     reactionTourAdverse: true, conditionEmbuscade: 'creature-jouee-main',
     contreAnnonceCreature: true,
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Exilez une Magie Rapide de votre cimetière, au choix. À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire.',
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Exilez une carte de créature de votre cimetière, au choix. À son arrivée : renvoyez la première créature adverse admissible non-jeton de coût 3 ou moins dans la main de son propriétaire.',
     flavor: 'Il noie l’invocation avant qu’elle ne touche la rive.',
   },
   {
@@ -1400,7 +1400,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 3, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
     defenseur: true, contreAttaque: true,
-    text: 'Défenseur. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
+    text: 'Défenseur. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
   },
   {
@@ -1525,7 +1525,7 @@ export const RPG_CREATURE_CARDS = [
     volDeVie: true,
     coupCritique: { chance: 0.25, fois: 2 },
     contreAttaque: true,
-    text: 'Rapidité — Il peut attaquer dès son arrivée. Vol de vie — Quand il inflige des dégâts, son camp récupère la moitié de ces dégâts en PV, arrondie à l’entier supérieur. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Chevalier sacré des braises lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Rapidité — Il peut attaquer dès son arrivée. Vol de vie — Quand il inflige des dégâts, son camp récupère la moitié de ces dégâts en PV, arrondie à l’entier supérieur. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Sa lame embrase les ténèbres, et chaque victoire ranime les siens.',
   },
   {
@@ -1639,8 +1639,8 @@ export const RPG_TOUR_CARDS = [
     prioriteAttaqueRapide: true,
     defenseur: true,
     arrivee: { type: 'degats', amount: 1, cible: 'creature' },
-    combat: { type: 'degats-creature-combattue', amount: 1, quand: 'blocage', sourceType: 'magie' },
-    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : infligez 1 dégât à une créature adverse. Quand la Tour bloque une créature, elle lui inflige 1 dégât de sort avant les blessures de combat.',
+    combat: { type: 'degats-creature-combattue', amount: 1, quand: 'blocage', sourceType: 'capacite' },
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : infligez 1 dégât à une créature adverse. Quand la Tour bloque une créature, elle lui inflige 1 dégât avant les blessures de combat.',
     flavor: 'Elle brûle ceux qui osent s’en approcher.',
   },
   {
@@ -1678,7 +1678,7 @@ export const RPG_TOUR_CARDS = [
     prioriteAttaqueRapide: true,
     defenseur: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
-    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain effet de créature adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'Le désert lui-même se dresse en rempart.',
   },
   {
@@ -1807,7 +1807,7 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    text: 'Une fois par partie, quand un sort ou effet adverse cible Boualem, il le contre : l’effet n’est pas annulé, il est relancé sur une nouvelle cible légale. C’est celui qui joue Boualem — jamais le lanceur du sort — qui la choisit, parmi toutes les créatures de la table, y compris celles du lanceur. Sans cible légale, l’effet se dissipe.',
+    text: 'Une fois par partie, quand un effet adverse cible Boualem, il le contre : l’effet n’est pas annulé, il est relancé sur une nouvelle cible légale. C’est celui qui joue Boualem — jamais le contrôleur de l’effet — qui la choisit, parmi toutes les créatures de la table, y compris celles du lanceur. Sans cible légale, l’effet se dissipe.',
     flavor: 'Moi je fais monter ce qui aide.',
   },
   {
@@ -1882,7 +1882,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité de coût 1 entre en jeu sans payer de mana. Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité de coût 1 entre en jeu sans payer de mana. Esquive — 25 % de chances d’esquiver une attaque ou un effet de créature adverse, notamment d’arrivée, de mort ou activé. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -1905,7 +1905,7 @@ export const RPG_HERO_CARDS = [
     distance: true,
     coupCritique: { chance: 0.25, fois: 2 },
     resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
-    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Bouclier d’Eau — Bloque le prochain effet adverse d’arrivée, de mort ou activé d’Eau, puis se brise. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1953,7 +1953,7 @@ export const RPG_HERO_CARDS = [
     // adverse. La cible se désigne sur la table, comme pour un Trait de braise.
     arrivee: { type: 'degats', amount: 3, cible: 'creature', cibles: ['creature', 'sorcier'] },
     contreAttaque: true,
-    text: 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix. Furie 3. Tant que sa Furie est active, il gagne aussi Overkill et Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, il lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix. Furie 3. Tant que sa Furie est active, il gagne aussi Overkill et Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense ; son effet d’arrivée se déclenche alors de nouveau. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Le tonnerre n’est pas un bruit : c’est un rendez-vous — et son marteau, lui, retrouve toujours sa main.',
   },
   {
@@ -1992,7 +1992,7 @@ export const RPG_HERO_CARDS = [
     // La mue du monde : chaque camp vide sa main au cimetière, puis pioche
     // trois cartes neuves (moteur : case 'mue-mondiale').
     arrivee: { type: 'mue-mondiale', pioche: 3 },
-    text: 'Quand le Serpent du monde arrive : chaque joueur défausse toute sa main, puis pioche 3 cartes. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
+    text: 'Quand le Serpent du monde arrive : chaque joueur défausse toute sa main, puis pioche 3 cartes. Bouclier — Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
     flavor: 'Il mord sa propre queue dans la glace, et le monde tient debout.',
   },
   // Le Père des corbeaux retourné : la figure hybride de la Tour du Corbeau.
@@ -3061,6 +3061,13 @@ const CATALOG = new Map(
     ...RPG_TOUR_OUBLIEE_JETONS,
   ].map((card) => [card.id, card]),
 );
+
+/** Créature portant un effet d'arrivée, de mort ou activé. */
+export function carteAvecEffetCreature(carteOuId) {
+  const carte = typeof carteOuId === 'string' ? cardById(carteOuId) : carteOuId;
+  return Boolean(carte && ['creature', 'hero'].includes(carte.kind ?? 'creature') && !carte.jeton
+    && (carte.arrivee || carte.destruction || carte.activation || carte.honneur || carte.cargaison || carte.tenacite));
+}
 
 /** Retrouve une carte du catalogue par son id. */
 export function cardById(id) {

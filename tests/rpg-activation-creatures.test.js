@@ -1034,13 +1034,13 @@ test('Mémoire de la Chercheuse : choix explicite du porteur et de l’arme, san
   assert.match(texteActivation(cardById(source.carteId)), /arme choisie.*cimetière/u);
 });
 
-test('Mémoire : le Sabre maudit, arme-magie, s’équipe avec ses effets normaux', () => {
+test('Mémoire : le Sabre maudit, arme, s’équipe avec ses effets normaux', () => {
   const d = duel(); const source = poser(d, 'joueur', 'chercheuse-des-armes-ensevelies');
   const porteur = poser(d, 'joueur', 'kraken'); d.joueur.cimetiere.push('sabre-maudit');
   const avant = { atk: porteur.atk, def: porteur.def };
   assert.ok(rpgActiverCapacite(d, 'joueur', source.id, porteur.id, { armeCarteId: 'sabre-maudit' }).ok);
   assert.equal(porteur.atk, avant.atk + 2); assert.equal(porteur.def, avant.def - 1);
-  assert.ok(porteur.volDeVie); assert.ok(porteur.armes.includes('sabre-maudit'));
+  assert.ok(porteur.volDeVie); assert.equal(porteur.arme?.carteId, 'sabre-maudit'); assert.equal(porteur.arme?.durabilite, 2);
 });
 
 test('Mémoire : arme absente ou illégale et cible adverse ne consomment rien', () => {
@@ -1060,7 +1060,7 @@ for (const cote of ['joueur', 'sorcier']) test(`PvP : Mémoire de la Chercheuse 
   const source = poser(d, cote, 'chercheuse-des-armes-ensevelies');
   const porteur = poser(d, cote, 'kraken'); d[cote].cimetiere.push('sabre-maudit'); d.tour = cote;
   const res = rpgPvpAppliquer(d, cote, { type: 'activer', capacite: true, entiteId: source.id, cibleId: porteur.id, armeCarteId: 'sabre-maudit' });
-  assert.ok(res.ok, JSON.stringify(res)); assert.ok(porteur.armes.includes('sabre-maudit')); assert.ok(!d[cote].cimetiere.includes('sabre-maudit'));
+  assert.ok(res.ok, JSON.stringify(res)); assert.equal(porteur.arme?.carteId, 'sabre-maudit'); assert.ok(!d[cote].cimetiere.includes('sabre-maudit'));
 });
 
 test('PvP : une arme choisie dans le cimetière adverse est refusée', () => {

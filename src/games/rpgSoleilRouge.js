@@ -56,7 +56,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Kami · Tempête',
     esquive: true,
     arrivee: { type: 'exil', cible: 'creature', coutMin: 5 },
-    text: 'Esquive — 25 % de chances d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse. Quand Susanoo arrive en jeu, retirez de la partie une créature de coût 5 ou plus de votre choix.',
+    text: 'Esquive — 25 % de chances d’esquiver une attaque ou un effet de créature adverse, notamment d’arrivée, de mort ou activé. Quand Susanoo arrive en jeu, retirez de la partie une créature de coût 5 ou plus de votre choix.',
     flavor: 'Sa tempête emporte jusqu’au souvenir de ses adversaires.',
   }),
   carte({
@@ -141,7 +141,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     // La Contre-attaque est retirée : la naginata garde l'Esquive et le
     // Blocage, mais ne rend plus les coups. Tojiro, le pourfendeur, reste le
     // samouraï qui riposte.
-    text: 'Défenseur. Esquive — 25 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    text: 'Défenseur. Esquive — 25 % de chances d’esquiver une attaque ou un effet de créature adverse, notamment d’arrivée, de mort ou activé : son effet sur elle ne porte pas du tout. Blocage — Quand une attaque adverse la cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -213,7 +213,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     esquive: true,
     contreAttaque: true,
     coupCritique: { chance: 0.25, fois: 2 },
-    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Défaussez une carte Sabre maudit de votre main, au choix. Esquive — 25 % de chance d’esquiver une attaque, une Magie, une Sorcellerie ou un effet de créature adverse : son effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque, un sort ou une capacité, il contre-attaque quand même. Il riposte aussi si le coup le détruit. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Invocation spéciale — Pendant votre phase principale, sans sacrifice ni invocation normale, si la condition est remplie : Défaussez une carte Sabre maudit de votre main, au choix. Esquive — 25 % de chances d’esquiver une attaque ou un effet de créature adverse, notamment d’arrivée, de mort ou activé : son effet sur lui ne porte pas du tout. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Ses trois lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({
@@ -231,6 +231,15 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
  * un compteur de durabilité comme les autres armes à Attaque ciblée. */
 export const RPG_SOLEIL_ROUGE_ARMES = [
   carte({
+    id: 'sabre-maudit', name: 'Sabre maudit',
+    kind: 'arme',  rarity: 'rare',
+    porteeArme: 'melee',
+    typeLine: 'Arme — Sabre maudit',
+    bonus: { atk: 2, def: -1 }, donne: { coupCritique: 0.25, volDeVie: true },
+    text: 'Arme (Mêlée) — Le porteur gagne +2/-1, Coup critique (25 %) et Vol de vie. Endurance 2 : détruite après deux attaques ou défenses. Le sabre tombe avec son porteur.',
+    flavor: 'La lame prend la force. La main en paie le prix.',
+  }),
+  carte({
     id: 'braise-et-sable', name: 'Braise et sable',
     kind: 'arme',  rarity: 'rare',
     colors: ['braise', 'sable'],
@@ -246,18 +255,8 @@ export const RPG_SOLEIL_ROUGE_ARMES = [
   }),
 ];
 
-/** Le Sabre maudit reste une arme-sort ; les autres cartes sont des magies. */
+/** Les anciennes magies du Soleil rouge, conservées dans les archives. */
 export const RPG_SOLEIL_ROUGE_MAGIES = [
-  carte({
-    id: 'sabre-maudit', name: 'Sabre maudit',
-    kind: 'magie',  rarity: 'rare',
-    porteeArme: 'melee',
-    typeLine: 'Arme — Sabre maudit',
-    cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -1, coupCritique: 0.25, volDeVie: true },
-    text: 'Arme (Mêlée) — Le porteur gagne +2/-1, Coup critique (25 %) et Vol de vie. Le sabre tombe avec son porteur.',
-    flavor: 'La lame prend la force. La main en paie le prix.',
-  }),
   carte({
     id: 'frappe-iaijutsu', name: 'Frappe d’iaijutsu',
     kind: 'magie',  rarity: 'rare', instant: true,

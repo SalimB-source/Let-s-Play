@@ -329,7 +329,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     coupCritique: { chance: 0.25, fois: 2 },
     arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 1 },
     typeLine: 'Créature légendaire — Amiral des deux mers',
-    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez un jeton Corsaire 2/1. Contre-attaque — Elle riposte aux attaques ciblées, aux capacités qui la ciblent et aux sorts qui l’atteignent, même si le coup la détruit. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
+    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez un jeton Corsaire 2/1. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
   }),
   // La Barbe Noire est une carte 100 % Ténèbres : née dans le set Piraterie
@@ -355,7 +355,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     malediction: { atk: 2, def: 0 },
     typeLine: 'Créature légendaire — Pirate · Terreur',
     contreAttaque: true,
-    text: 'Défenseur. Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Contre-attaque — Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui la atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
+    text: 'Défenseur. Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0. Bouclier — Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Contre-attaque — Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
     flavor: 'Thatch comptait les rançons au sou près ; la chose qui brûlait dans sa barbe n’a jamais rien compté.',
   }),
 ];

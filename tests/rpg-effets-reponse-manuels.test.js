@@ -46,7 +46,8 @@ test('filtres, état et timing sont validés sans modifier la partie au refus', 
   d.tour = 'sorcier'; annonce(d, 'chien-du-guet');
   let avant = JSON.stringify(d);
   assert.equal(rpgActiverEffetReponse(d, 'joueur', e.id).ok, false); assert.equal(JSON.stringify(d), avant);
-  d.annonce.carteId = 'poigne-de-givre'; d.sorcier.main = ['poigne-de-givre'];
+  d.annonce = null; d.sorcier.main = [];
+  d.effetCreatureEnAttente = { cote: 'sorcier', carteId: 'vampire-des-braises', entiteId: 'source', cibleId: e.id, type: 'activation' };
   for (const key of ['malInvocation', 'attaquee', 'activationUtiliseeMatch', 'activationUtiliseeCeTour']) {
     e[key] = true; avant = JSON.stringify(d);
     assert.equal(rpgActiverEffetReponse(d, 'joueur', e.id).ok, false, key);
@@ -57,9 +58,10 @@ test('filtres, état et timing sont validés sans modifier la partie au refus', 
   assert.equal(rpgActiverEffetReponse(d, 'joueur', e.id).ok, true);
 });
 
-test('Jörmungandr pioche seulement quand il contre un sort', () => {
+test('Jörmungandr pioche quand il contre un effet de créature', () => {
   const d = duel(), e = source(d, 'jormungandr'); d.joueur.deck = ['chien-du-guet'];
-  d.tour = 'sorcier'; annonce(d, 'poigne-de-givre');
+  d.tour = 'sorcier'; d.fenetreReponse = true;
+  d.effetCreatureEnAttente = { cote: 'sorcier', carteId: 'vampire-des-braises', entiteId: 'source', cibleId: e.id, type: 'activation' };
   assert.equal(rpgActiverEffetReponse(d, 'joueur', e.id).ok, true);
   assert.deepEqual(d.joueur.main, ['chien-du-guet']);
 });
