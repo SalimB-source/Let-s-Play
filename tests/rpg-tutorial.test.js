@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  rpgActiverCapacite,
   rpgConditionEmbuscadeRemplie,
   rpgDemarrerManaEssai,
   rpgFinDeTour,
@@ -130,13 +131,14 @@ test('les tours guidés ne demandent ni ne produisent de mana', () => {
   }
 });
 
-test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () => {
+test('la leçon Eau active une capacité, joue une magie rapide puis un contre', () => {
   const tutoriel = tutorielParId('maree-des-abysses');
   const duel = duelDeLecon(tutoriel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').ok, true);
   assert.equal(duel.joueur.pv, 28, 'la Porteuse rend 3 PV');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'eau-de-la-source').ok, true);
-  assert.equal(duel.joueur.pv, 32, 'la sorcellerie rend 4 PV');
+  const volva = duel.joueur.creatures.find((entite) => entite.carteId === 'volva-soigneuse');
+  assert.equal(rpgActiverCapacite(duel, 'joueur', volva.id).ok, true);
+  assert.equal(duel.joueur.pv, 32, 'la capacité rend 4 PV');
   const vipere = duel.sorcier.creatures[0];
   assert.equal(rpgLancerMagie(duel, 'joueur', 'ressac', vipere.id).ok, true);
   assert.equal(duel.sorcier.creatures.length, 0, 'Ressac renvoie la Vipère en main');
@@ -172,15 +174,16 @@ test('la leçon Ténèbres montre le Tribut, le Prix et les jetons de mort', () 
   assert.equal(rpgLancerMagie(duel, 'joueur', 'papyrus').ok, true);
   assert.equal(duel.joueur.pv, pvAvantPapyrus - 2, 'le Prix du Papyrus se paie en PV');
   rpgFinDeTour(duel); rpgFinDeTour(duel);
-  const momie = rpgJouerCreature(duel, 'joueur', 'momie-de-lin');
+  const momie = rpgJouerCreature(duel, 'joueur', 'scarabee-du-natron');
   assert.equal(momie.ok, true);
 
   rpgFinDeTour(duel);
-  duel.annonce = { cote: 'sorcier', carteId: 'feux-de-kitsune', cibleId: momie.entite.id, cibleAllieeId: null };
+  duel.annonce = { cote: 'sorcier', carteId: 'trait-de-braise', cibleId: momie.entite.id, cibleAllieeId: null };
   duel.fenetreReponse = true;
-  assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true);
+  const resAnnonce = rpgSorcierResoudreAnnonce(duel);
+  assert.equal(resAnnonce.ok, true, JSON.stringify(resAnnonce));
   assert.equal(duel.joueur.creatures.filter((entite) => entite.carteId === 'shabti').length, 1,
-    'la Momie laisse un Shabti');
+    'le Scarabée laisse un Shabti');
 });
 
 test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', () => {

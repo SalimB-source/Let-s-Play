@@ -156,7 +156,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'oni-de-la-fournaise', name: 'Oni de la fournaise', honneur: 0,
-    activation: { nom: 'Frappe de la fournaise', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 2 } },
+    activation: { nom: 'Feux de kitsune', cible: 'creature', uneFoisParMatch: true, sortAssocie: 'feux-de-kitsune', effet: { type: 'degats', amount: 4, cible: 'creature', choixDegats: true } },
     cost: 5, atk: 4, def: 5, rarity: 'mythique',
     typeLine: 'Créature — Yōkai · Oni',
     arrivee: { type: 'degats', amount: 3, cible: 'creature', nombre: 2 },
@@ -165,8 +165,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'kagutsuchi-flamme-originelle', distance: true, name: 'Kagutsuchi, Flamme originelle', honneur: 0,
-    // Effet activé (1/match) — le Grand Hiver devenu brasier : 2 dégâts à toutes les autres créatures.
-    activation: { nom: 'Brasier originel', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'degats', amount: 2, cible: 'toutes-autres' } },
+    // Le Grand Hiver : colonne des deux camps, source comprise.
+    activation: { nom: 'Le Grand Hiver', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'grand-hiver', effet: { type: 'degats', amount: 1, cible: 'toutes-autres' } },
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     // Son prix accepte aussi un sort de la main remis dans le deck.
     retourDeck: { types: ['creature', 'magie'] },
@@ -219,7 +219,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   carte({
     id: 'daimyo-du-soleil-rouge', name: 'Daimyō du Soleil rouge',
-    activation: { nom: 'Ordre du Soleil rouge', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'buff-allies-tour', atk: 2, pv: 1 } },
+    activation: { nom: 'Serment de la forge', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'serment-de-la-forge', effet: { type: 'buff', atk: 2, def: 1, coupCritique: 0.25, tours: 1 } },
     cost: 5, atk: 3, def: 4, rarity: 'mythique',
     typeLine: 'Créature — Humain · Samouraï',
     // Il lève un Samouraï en arrivant, puis grandit chaque attaque de son

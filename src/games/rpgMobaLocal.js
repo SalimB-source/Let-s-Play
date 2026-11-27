@@ -931,11 +931,21 @@ export function rpgMobaChoixActivation(duel, side, sourceId) {
   const source = duel[side].creatures.find(e => e.id === sourceId);
   const effet = duelCardById(source?.carteId)?.activation?.effet;
   const sansCible = ['rapport-du-greffier', 'les-feuillets', 'le-routier', 'lettre-de-marque'].includes(duelCardById(source?.carteId)?.activation?.sortAssocie);
-  if (!source || (!sansCible && !['combat', 'equiper-cimetiere'].includes(effet?.type)) || !rpgPeutActiverCapacite(duel, side, sourceId)) return [];
+  if (!source || (!sansCible && !effet?.choixDegats && !['combat', 'equiper-cimetiere'].includes(effet?.type)) || !rpgPeutActiverCapacite(duel, side, sourceId)) return [];
   if (MOBA_SIDES.some(c => duel[c].creatures.some(e => !combatAudite(e) || !equipementAudite(e) || !caleAuditee(duel, c, e)))) return [];
   if (sansCible) return [{ cibleId: null }];
   const enJeu = (c, e) => duel.moba.lanes.some(l => mobaVoieJouable(duel.moba, c, l.id) && l.slots[c].includes(e.id));
   const cibles = new Set(rpgCiblesActivationLegales(duel, side, sourceId) ?? []);
+  if (effet.choixDegats) {
+    const adv = side === 'joueur' ? 'sorcier' : 'joueur';
+    const ennemis = duel[adv].creatures.filter(e => cibles.has(e.id) && enJeu(adv, e)
+      && mobaPartageVoie(duel.moba, source.mobaLane, e.mobaLane));
+    return ennemis.flatMap((cible, index) => [
+      { cibleId: cible.id },
+      ...ennemis.slice(index + 1).filter(secondaire => mobaPartageVoie(duel.moba, cible.mobaLane, secondaire.mobaLane))
+        .map(secondaire => ({ cibleId: cible.id, cibleSecondaireId: secondaire.id })),
+    ]);
+  }
   if (effet.type === 'combat') {
     const champions = new Set(rpgChampionsActivationLegales(duel, side, sourceId));
     const adv = side === 'joueur' ? 'sorcier' : 'joueur';
@@ -954,11 +964,12 @@ export function rpgMobaChoixActivation(duel, side, sourceId) {
 /** Annonce payée uniquement après validation de tous les choix. */
 export function rpgMobaActiverCapacite(duel, side, sourceId, choix = {}) {
   const legal = rpgMobaChoixActivation(duel, side, sourceId).some(c => c.cibleId === choix.cibleId
-    && (c.championId ?? null) === (choix.championId ?? null) && (c.armeCarteId ?? null) === (choix.armeCarteId ?? null));
+    && (c.championId ?? null) === (choix.championId ?? null) && (c.armeCarteId ?? null) === (choix.armeCarteId ?? null)
+    && (c.cibleSecondaireId ?? null) === (choix.cibleSecondaireId ?? null));
   if (!legal) return fail('cible');
   rpgConsommerSoinsCreatureMoba(duel); rpgConsommerDegatsCapaciteMoba(duel);
   const result = rpgActiverCapacite(duel, side, sourceId, choix.cibleId,
-    { championId: choix.championId ?? null, armeCarteId: choix.armeCarteId ?? null, attendreReponse: true, optionsMobaValide: true });
+    { championId: choix.championId ?? null, armeCarteId: choix.armeCarteId ?? null, cibleSecondaireId: choix.cibleSecondaireId ?? null, attendreReponse: true, optionsMobaValide: true });
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
   if (result.ok) synchroniserSorties(duel);

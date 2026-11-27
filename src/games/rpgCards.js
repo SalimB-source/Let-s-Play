@@ -1000,7 +1000,7 @@ export const RPG_CREATURE_CARDS = [
     // 2 de moins jusqu'à la fin du tour. Le voile blanc, lui, ne se joue qu'au
     // tour de l'adversaire : activé à son propre tour, il n'éteindrait que ses
     // propres attaques — le gardien tend donc l'embuscade, pas le brouillard.
-    activation: { nom: 'Embuscade du fjord', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'buff', cible: 'creatures-adverses', atk: -2, def: -2, minimum: 1, tours: 1 } },
+    activation: { nom: 'Embuscade', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'embuscade', effet: { type: 'buff', atk: -2, def: -2, minimum: 1, cible: 'creatures-adverses', tours: 1 } },
     element: 'neige', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Guerrier viking', defenseur: true, furie: 1,
     text: 'Défenseur. Furie 1 — Tant qu’il est blessé, il gagne +1/+0.',
@@ -1025,7 +1025,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'eirik-du-premier-serment',
-    activation: { nom: 'Serment des vaillants', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'soin-tout', amount: 2 } },
+    activation: { nom: 'Festin des vaillants', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'festin-des-vaillants', effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 } },
     name: 'Eirik du Premier Serment',
     element: 'neige',
     cost: 1,
@@ -1088,7 +1088,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'volva-soigneuse',
     // Effet activé (1/match) — l'Eau de la source : elle panse son maître, pas ses alliés.
-    activation: { nom: 'Eau de la source', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'soin', amount: 2 } },
+    activation: { nom: 'Eau de la source', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'eau-de-la-source', effet: { type: 'soin', amount: 4 } },
     distance: true,
     name: 'Völva soigneuse',
     set: 'serment-des-neuf-hivers',
@@ -1234,7 +1234,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'leviathan',
-    activation: { nom: 'Ressac du Léviathan', cible: 'creature', uneFoisParMatch: true, effet: { type: 'renvoi-main' } },
+    activation: { nom: 'Courant de retour', cible: 'creature', uneFoisParMatch: true, sortAssocie: 'courant-de-retour', effet: { type: 'retour-main', cible: 'creature', pioche: 1 } },
     name: 'Léviathan',
     element: 'eau',
     cost: 8,

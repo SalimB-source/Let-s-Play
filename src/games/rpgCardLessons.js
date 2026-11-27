@@ -41,9 +41,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'rituel-ephemere',
     section: 'Magies',
-    cardIds: ['serment-de-la-forge', 'rempart-de-dunes', 'parade-du-verre'],
-    title: 'Rituel ou éphémère ?',
-    text: 'Un rituel se lance pendant votre tour, hors réponse. Un éphémère peut aussi être joué pendant la fenêtre de réponse à une annonce ou à un combat. Le type est indiqué sur la ligne de la carte.',
+    cardIds: ['daimyo-du-soleil-rouge', 'rempart-de-dunes', 'parade-du-verre'],
+    title: 'Capacité ou magie rapide ?',
+    text: 'Une capacité activée de créature s’utilise pendant votre tour, une fois par présence. Une Magie Rapide peut aussi être jouée pendant la fenêtre de réponse à une annonce ou à un combat.',
   },
   {
     id: 'cible-ou-zone',
@@ -55,9 +55,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'soin-et-pioche',
     section: 'Magies',
-    cardIds: ['eau-de-la-source', 'yamina', 'guetteur-du-beffroi'],
+    cardIds: ['volva-soigneuse', 'yamina', 'guetteur-du-beffroi'],
     title: 'Soigner ou renouveler ses ressources',
-    text: 'Eau de la source soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. La capacité activée du Guetteur du beffroi fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
+    text: 'La capacité Eau de la source de la Völva soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. La capacité activée du Guetteur du beffroi fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
   },
   {
     id: 'bonus-temporaires-et-durables',
@@ -85,14 +85,14 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['contresort-des-abimes', 'silence-decume', 'maree-contraire'],
     title: 'Annuler une annonce adverse',
-    text: 'Un contresort se joue en réponse à la carte annoncée par le sorcier, avant qu’elle ne se résolve. Vérifiez sa cible : Silence d’écume contre la magie rapide ou la sorcellerie annoncée ; Déflection contre un sort et fait aussi piocher une carte.',
+    text: 'Un contresort se joue en réponse à la carte annoncée par le sorcier, avant qu’elle ne se résolve. Vérifiez sa cible : Silence d’écume contre la magie rapide annoncée ; Déflection contre un sort et fait aussi piocher une carte.',
   },
   {
     id: 'renvoi-en-main',
     section: 'Magies',
-    cardIds: ['ressac', 'courant-de-retour'],
+    cardIds: ['ressac', 'leviathan'],
     title: 'Renvoyer n’est pas détruire',
-    text: 'Ressac renvoie une créature dans la main de son propriétaire : elle ne va pas au cimetière, et pourra être rejouée en payant de nouveau son coût. Courant de retour ajoute une pioche après le renvoi.',
+    text: 'Ressac renvoie une créature dans la main de son propriétaire : elle ne va pas au cimetière, et pourra être rejouée en payant de nouveau son coût. La capacité Courant de retour du Léviathan ajoute une pioche après le renvoi.',
   },
   {
     id: 'effet-differe',
@@ -267,13 +267,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['kraken'],
     title: 'Une arrivée peut offrir un sort gratuit',
-    text: 'Quand le Kraken émerge, vous pouvez lancer depuis votre main une magie rapide ou une sorcellerie pendant cette fenêtre. Un éventuel Prix en PV reste dû, et un contresort — qui ne vit qu’en réponse — n’entre pas dans la faveur. La fenêtre se referme dès le sort lancé, ou à la fin du tour si vous y renoncez.',
+    text: 'Quand le Kraken émerge, vous pouvez lancer depuis votre main une magie rapide pendant cette fenêtre. Un éventuel Prix en PV reste dû, et un contresort — qui ne vit qu’en réponse — n’entre pas dans la faveur. La fenêtre se referme dès le sort lancé, ou à la fin du tour si vous y renoncez.',
   },
   {
     id: 'embuscade',
     section: 'Capacités des créatures',
-    cardIds: ['sentinelle-des-sables', 'eclipse-silencieuse', 'embuscade'],
+    cardIds: ['sentinelle-des-sables', 'eclipse-silencieuse', 'gardien-viking-du-fjord'],
     title: 'Invocation spéciale : jouer pendant son tour',
-    text: 'Si sa condition est remplie, Invocation spéciale permet de poser la créature pendant votre phase principale, sans sacrifice ni consommation de l’invocation normale. Elle ne peut pas être jouée pendant le tour adverse. Si la condition manque, vous pouvez toujours invoquer la créature normalement avec les sacrifices et le quota habituels. La fiche affiche la condition dans un cadre doré. La Sorcellerie Neige « Embuscade » reste un sort distinct.',
+    text: 'Si sa condition est remplie, Invocation spéciale permet de poser la créature pendant votre phase principale, sans sacrifice ni consommation de l’invocation normale. Elle ne peut pas être jouée pendant le tour adverse. Si la condition manque, vous pouvez toujours invoquer la créature normalement avec les sacrifices et le quota habituels. La fiche affiche la condition dans un cadre doré. La capacité « Embuscade » du Gardien viking du fjord est distincte de cette invocation spéciale.',
   },
 ]);

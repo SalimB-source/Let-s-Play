@@ -12465,7 +12465,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    */
   const choisirZoneSort = (camp, index) => {
     const forme = zoneFormeCarte(zoneSortEnCours);
-    if (!forme) return;
+    if (!forme || (activationZoneSource && zoneSortEnCours === 'embuscade' && camp !== 'sorcier')) return;
     const zone = zoneDepuisCase(forme, camp, index);
     if (!zone) return;
     const dejaLa = zoneAncre
@@ -12820,6 +12820,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (modePvp) void envoyerIntentionPvp({ type: 'activer', capacite: true, entiteId: entite.id, cibleId: null });
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      signalerTutoriel('capacite-activee', { cardId: entite.carteId, entiteId: entite.id });
       jouerSfx('sort');
       force();
       return;
@@ -12850,15 +12851,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
-  const executerActivation = (sourceId, cibleId, armeCarteId = null, championId = null) => {
+  const executerActivation = (sourceId, cibleId, armeCarteId = null, championId = null, cibleSecondaireId = null) => {
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     if (modePvp) rpgSyncCompteurEntites(duel);
-    const res = rpgActiverCapacite(duel, 'joueur', sourceId, cibleId, { armeCarteId, championId });
+    const res = rpgActiverCapacite(duel, 'joueur', sourceId, cibleId, { armeCarteId, championId, cibleSecondaireId });
     if (modePvp && res.ok) {
       void envoyerIntentionPvp({ type: 'activer', capacite: true, entiteId: sourceId, cibleId,
-        ...(armeCarteId ? { armeCarteId } : {}), ...(championId ? { championId } : {}) });
+        ...(armeCarteId ? { armeCarteId } : {}), ...(championId ? { championId } : {}),
+        ...(cibleSecondaireId ? { cibleSecondaireId } : {}) });
     }
     if (res.ok) {
       conserverAnnulation(etatAvantAction);
@@ -12871,6 +12873,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const resoudreActivation = (entite) => {
     const sourceId = activationEnCours;
     const source = duel.joueur.creatures.find((candidate) => candidate.id === sourceId);
+    if (cardById(source?.carteId)?.activation?.effet?.choixDegats) {
+      if (!idsCiblesActivation?.has(entite.id)) { jouerSfx('erreur'); force(); return; }
+      if (!championActivationId) {
+        setChampionActivationId(entite.id);
+        jouerSfx('select'); force(); return;
+      }
+      const premiereId = championActivationId;
+      setChampionActivationId(null);
+      setActivationEnCours(null);
+      executerActivation(sourceId, premiereId, null, null, entite.id === premiereId ? null : entite.id);
+      return;
+    }
     if (cardById(source?.carteId)?.activation?.effet?.type === 'combat') {
       if (!idsCiblesActivation?.has(entite.id)) { jouerSfx('erreur'); force(); return; }
       if (!championActivationId) {
@@ -14422,7 +14436,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 classe: 'rpg-target-prompt',
                 texte: activationDuel
                   ? (championActivationId ? 'Choisissez la créature adverse à affronter' : 'Choisissez votre champion pour le défi')
-                  : `Choisissez une cible pour ${sourceActivationCarte?.name ?? 'la capacité activée'}`,
+                  : sourceActivationCarte?.activation?.effet?.choixDegats
+                    ? (championActivationId ? 'Choisissez une seconde cible pour 2 dégâts chacune, ou retouchez la première pour 4 dégâts' : 'Choisissez une créature adverse pour Feux de kitsune')
+                    : `Choisissez une cible pour ${sourceActivationCarte?.name ?? 'la capacité activée'}`,
+
               }
               : terrainManaChoix
                 ? {

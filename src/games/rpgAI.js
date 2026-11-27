@@ -2718,7 +2718,8 @@ function activationSansCibleVaut(duel, cote, entite, effet) {
       return duel[cote].pvMax - duel[cote].pv >= montant;
     case 'soin-tout':
     case 'soin-creatures':
-      return allies.reduce((total, allie) => total + pvManquants(allie), 0) >= montant;
+      return allies.reduce((total, allie) => total + pvManquants(allie), 0)
+        + (effet.etJoueur ? Math.min(effet.etJoueur, Math.max(0, duel[cote].pvMax - duel[cote].pv)) : 0) >= montant;
     case 'buff-allies-tour':
       // Le renfort du camp se paie d'une attaque : il faut du monde à grandir.
       return allies.length >= 2;
@@ -2735,7 +2736,7 @@ function activationSansCibleVaut(duel, cote, entite, effet) {
     case 'degats': {
       // La vague ne part que si elle rapporte plus qu'elle ne coûte : ce
       // qu'elle abat chez l'adversaire contre ce qu'elle abat chez nous.
-      const tombe = (liste) => liste.filter((creature) => creature.id !== entite.id
+      const tombe = (liste) => liste.filter((creature) => (creature.id !== entite.id || Boolean(duelCardById(entite.carteId)?.activation?.sortAssocie))
         && (Number(creature.pv) || 0) <= montant);
       const victimes = tombe(duel[adv].creatures);
       if (!victimes.length) return false;
@@ -2839,6 +2840,12 @@ export function choisirActivationIA(duel, cote, options = {}) {
       }
       if (meilleur) return meilleur;
       continue;
+    }
+    if (effet.choixDegats) {
+      const legales = new Set(moteur.rpgCiblesActivationLegales(duel, cote, entite.id) ?? []);
+      const faibles = duel[adv].creatures.filter(c => legales.has(c.id) && c.pv > 0 && c.pv <= 2
+        && !moteur.rpgBouclierEstActif(c)).sort((a, b) => valeurEntite(b) - valeurEntite(a));
+      if (faibles.length >= 2) return { entiteId: entite.id, cibleId: faibles[0].id, cibleSecondaireId: faibles[1].id };
     }
     if (effet.type === 'equiper-cimetiere') {
       const armes = [...duel[cote].cimetiere].reverse().filter((id) => carteEstArme(cardById(id)));

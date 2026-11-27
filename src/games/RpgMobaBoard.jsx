@@ -1841,8 +1841,9 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
             {rpgMobaChoixActivation(duel, 'joueur', activationSource).map(choix => {
               const cible = [...duel.joueur.creatures, ...duel.sorcier.creatures].find(e => e.id === choix.cibleId);
               const champion = duel.joueur.creatures.find(e => e.id === choix.championId);
+              const cibleSecondaire = duel.sorcier.creatures.find(e => e.id === choix.cibleSecondaireId);
               const nomVoie = e => { const cote = duel.joueur.creatures.includes(e) ? 'joueur' : 'sorcier'; const voie = duel.moba.lanes.find(l => l.slots[cote].includes(e?.id)); return voie ? `${voies[voie.id]}, case ${voie.slots[cote].indexOf(e.id) + 1}` : ''; };
-              return <button type="button" key={`${choix.cibleId}:${choix.championId ?? choix.armeCarteId}`} onClick={() => activerCapacite('joueur', activationSource, choix)}>{choix.cibleId === null ? 'Résoudre la capacité' : champion ? `${champion.name} (${nomVoie(champion)}) contre ${cible?.name} (${nomVoie(cible)})` : `${cardById(choix.armeCarteId)?.name} → ${cible?.name} (${nomVoie(cible)})`}</button>;
+              return <button type="button" key={`${choix.cibleId}:${choix.championId ?? choix.armeCarteId ?? choix.cibleSecondaireId ?? 'seule'}`} onClick={() => activerCapacite('joueur', activationSource, choix)}>{choix.cibleId === null ? 'Résoudre la capacité' : champion ? `${champion.name} (${nomVoie(champion)}) contre ${cible?.name} (${nomVoie(cible)})` : choix.armeCarteId ? `${cardById(choix.armeCarteId)?.name} → ${cible?.name} (${nomVoie(cible)})` : cibleSecondaire ? `2 dégâts : ${cible?.name} (${nomVoie(cible)}) et ${cibleSecondaire.name} (${nomVoie(cibleSecondaire)})` : `4 dégâts : ${cible?.name} (${nomVoie(cible)})`}</button>;
             })}
             <button type="button" onClick={() => setActivationSource(null)}>Annuler</button></>}
       </div>

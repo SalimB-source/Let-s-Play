@@ -34,6 +34,11 @@ export function rpgMobaChoisirActivationIA(duel, side = 'sorcier') {
         const recoit = cible.gelToursRestants > 0 ? 0 : Math.max(0, cible.atk || 0);
         score = Math.min(donne, cible.pv) + (donne >= cible.pv ? valeurCreature(cible) : 0)
           - Math.min(recoit, champion.pv) - (recoit >= champion.pv ? valeurCreature(champion) : 0);
+      } else if (cardById(source.carteId)?.activation?.effet?.choixDegats) {
+        const seconde = duel[autre(side)].creatures.find(e => e.id === choix.cibleSecondaireId);
+        const montant = seconde ? 2 : 4;
+        score = [cible, seconde].filter(Boolean).reduce((total, victime) => total
+          + (victime.bouclier || victime.bouclierLumiere ? 0 : Math.min(montant, victime.pv) + (victime.pv <= montant ? valeurCreature(victime) : 0)), 0);
       } else {
         const arme = cardById(choix.armeCarteId);
         const prix = Math.max(0, Number(arme?.blessurePorteur) || 0) + Math.max(0, -(Number(arme?.effet?.def) || 0));
