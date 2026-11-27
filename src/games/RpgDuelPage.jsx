@@ -7573,7 +7573,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // relevé, décalées de 140 ms : deux créatures posées d'un même geste ne se
   // coupent pas la parole au même instant.
   const VOIX_ARRIVEE_MAX = 3;
+  const RPG_MYTHIQUE_VIDEOS = {
+    'rempart-des-sables-eternels': '/c3962090-ea5d-11f1-a274-a3e216f7a513.mp4',
+    'bouchra-guerriere-des-cretes': '/2acb09c0-ea62-11f1-a274-a3e216f7a513.mp4',
+  };
+  const [videoMythique, setVideoMythique] = useState(null);
   const jouerVoixArrivee = (carteId, rang = 0) => {
+    if (RPG_MYTHIQUE_VIDEOS[carteId]) {
+      setVideoMythique({ src: RPG_MYTHIQUE_VIDEOS[carteId], carteId });
+    }
     const url = rpgArrivalVoiceUrl(carteId);
     if (!url) return false;
     try {
@@ -16369,6 +16377,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onAnnulerSelection={viderSelectionMulligan}
           onContinuer={terminerMulligan}
         />
+      )}
+      {videoMythique && (
+        <div className="rpg-mythique-video-overlay" aria-hidden="true" onClick={() => setVideoMythique(null)}>
+          <video
+            key={videoMythique.src}
+            src={videoMythique.src}
+            autoPlay
+            muted
+            playsInline
+            className="rpg-mythique-video"
+            onEnded={() => setVideoMythique(null)}
+            onError={() => setVideoMythique(null)}
+          />
+        </div>
       )}
     </div>
   );
