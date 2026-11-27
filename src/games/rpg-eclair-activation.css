@@ -1,0 +1,12 @@
+/* Les facettes sont dessinées dans le SVG ; l'ombre suit leur silhouette,
+   sans ajouter de fond derrière l'éclair ni gêner les clics sur la carte. */
+.rpg-eclair-activation {
+  display: block;
+  flex: none;
+  width: 1.05em;
+  height: 1.2em;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1px rgba(29, 15, 2, .95))
+    drop-shadow(0 0 2px rgba(255, 194, 46, .45));
+  pointer-events: none;
+}

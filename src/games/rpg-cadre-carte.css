@@ -56,8 +56,8 @@
 /* Éclair et spirale restent visibles sans fond sur toutes les vignettes. */
 .rpg-card__effet-badge {
   position: absolute; bottom: 4px; left: 50%; right: auto; transform: translateX(-50%);
-  z-index: 8; width: 22px; height: 20px; display: flex; align-items: flex-start;
-  justify-content: center; padding-top: 2px; font-size: 11px; line-height: 1;
+  z-index: 8; width: 28px; height: 26px; display: flex; align-items: flex-start;
+  justify-content: center; padding-top: 2px; font-size: 18px; line-height: 1;
   color: #fde047; background: transparent; border: 0; box-shadow: none;
   clip-path: none; filter: none; pointer-events: none;
 }

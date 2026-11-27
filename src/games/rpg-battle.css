@@ -16956,13 +16956,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   bottom: 4px;
   right: 4px;
   z-index: 8;
-  width: 22px;
-  height: 20px;
+  width: 28px;
+  height: 26px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding-top: 2px;
-  font-size: 11px;
+  font-size: 18px;
   line-height: 1;
   color: #fde047;
   background: transparent;
@@ -16994,10 +16994,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   left: 50%;
   right: auto;
   transform: translate(-50%, 50%);
-  width: 30px;
-  height: 27px;
+  width: 36px;
+  height: 34px;
   padding-top: 3px;
-  font-size: 16px;
+  font-size: 22px;
 }
 
 /* Aperçu et mulligan utilisent le même repère, gardé dans leur cadre pour ne
@@ -17009,16 +17009,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   left: 50%;
   right: auto;
   transform: translateX(-50%);
-  width: 30px;
-  height: 27px;
+  width: 36px;
+  height: 34px;
   padding-top: 3px;
-  font-size: 16px;
+  font-size: 22px;
 }
 
 /* La spirale reste plus petite que l’éclair sur les grandes faces aussi. */
 .rpg-battle .rpg-card--img .rpg-card__effet-badge--reponse,
 .rpg-hover-card-preview__face .rpg-card__effet-badge--reponse,
 .rpg-mulligan__card .rpg-card__effet-badge.rpg-card__effet-badge--reponse {
+  width: 30px;
+  height: 27px;
   align-items: center;
   padding-top: 0;
   font-size: 12px;

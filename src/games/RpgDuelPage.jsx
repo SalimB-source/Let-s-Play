@@ -8,6 +8,7 @@ import { RpgAmbiancePlateau, RpgDangerVie } from './RpgAmbiancePlateau.jsx';
 import { rpgVieCritique, rpgElementParticule } from './rpgAmbianceVisuelle.js';
 import { rpgLumiereElementaire, rpgSurvolRelief, rpgEffacerRelief } from './rpgReliefVisuel.js';
 import RpgCadreCarte, { RpgBadgeActivation } from './RpgCadreCarte.jsx';
+import RpgEclairActivation from './RpgEclairActivation.jsx';
 import RpgChoixCoutInvocation from './RpgChoixCoutInvocation.jsx';
 import { MOBA_EMBUSCADES_IMPRIMEES } from './rpgMobaEmbuscadesImprimees.js';
 import ReserveAscension, { ZoneReserveAscension, useReserveAscension } from './RpgReserveAscension.jsx';
@@ -3073,7 +3074,7 @@ function MenuActionsCreature({ cardRef, onAttaquer, onActiver, onFermer }) {
         aria-label="Attaquer" onClick={(event) => { event.stopPropagation(); onAttaquer?.(); }}>⚔</button>
       <button type="button" className="rpg-card__effet-btn rpg-card__effet-btn--effet"
         aria-label="Activer l’effet" onClick={(event) => { event.stopPropagation(); onActiver(); }}>
-        <span className="rpg-activation-bolt" aria-hidden="true">⚡</span>
+        <span className="rpg-activation-bolt" aria-hidden="true"><RpgEclairActivation /></span>
       </button>
     </div>, hote,
   );
@@ -3469,13 +3470,7 @@ export function TableCard({
         />
       )}
       {activation && !estSite && !activationEpuisee && (
-        <span
-          className={`rpg-card__effet-badge${activation.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`}
-          title={activation.nom}
-          aria-hidden="true"
-        >
-          {activation.effet?.type === 'contresort' ? '🌀' : '⚡'}
-        </span>
+        <RpgBadgeActivation carte={carte} decoratif />
       )}
         {!estSite && (
           <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${entite.poison?.toursRestants > 0 ? `, empoisonnée : perd 1 PV au début de ${entite.poison.toursRestants === 1 ? 'son prochain tour' : `ses ${entite.poison.toursRestants} prochains tours`}` : ''}${entite.brulure ? ', brûlée : perd 1 PV au début de chacun de ses tours et ne peut plus être soignée' : ''}${blessee ? ', blessée' : ''}`}>
@@ -3947,7 +3942,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         effetsInactifs={effetsInactifsActifs}
       />
       {estCreature && carte.activation && !activationApercuEpuisee && (
-        <span className={`rpg-card__effet-badge${carte.activation?.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`} title={carte.activation.nom} aria-hidden="true">{carte.activation?.effet?.type === 'contresort' ? '🌀' : '⚡'}</span>
+        <RpgBadgeActivation carte={carte} decoratif />
       )}
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
@@ -4308,7 +4303,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer, affic
       {magieFamille(carte) && <SortSceau carte={carte} className="rpg-mulligan__sceau" />}
       {afficherIcones && <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--main" />}
 
-      {estCreature && carte.activation && <span className={`rpg-card__effet-badge${carte.activation?.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`} title={carte.activation.nom} aria-hidden="true">{carte.activation?.effet?.type === 'contresort' ? '🌀' : '⚡'}</span>}
+      {estCreature && carte.activation && <RpgBadgeActivation carte={carte} decoratif />}
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} distance={carte.distance} iconeType={iconeTypeDe(carte)} /><span className="rpg-stat-value">{carte.atk}</span></span>

@@ -271,8 +271,8 @@ test('le badge d’effet activé chevauche le milieu du bord inférieur', () => 
   assert.match(bloc, /bottom:\s*0/u);
   assert.match(bloc, /left:\s*50%/u);
   assert.match(bloc, /transform:\s*translate\(-50%,\s*50%\)/u);
-  assert.match(bloc, /width:\s*30px/u);
-  assert.match(bloc, /height:\s*27px/u);
+  assert.match(bloc, /width:\s*36px/u);
+  assert.match(bloc, /height:\s*34px/u);
 });
 
 test('la colonne des effets de Salem ne descend plus à cause du badge d’activation', () => {

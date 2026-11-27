@@ -1,5 +1,6 @@
 import { CARD_FRAME_COLORS, RPG_ELEMENTS, cardColors } from './rpgCards.js';
 import svgCadre from './assets/cadre-le-sablier.svg?raw';
+import RpgEclairActivation from './RpgEclairActivation.jsx';
 import './rpg-cadre-carte.css';
 
 // La géométrie reste celle du SVG fourni. Les couleurs sont injectées dans
@@ -30,10 +31,10 @@ function fondCadre(carte) {
 }
 
 /** Le cadre Le Sablier reste sur les sorts, armes et autres non-créatures. */
-export function RpgBadgeActivation({ carte }) {
+export function RpgBadgeActivation({ carte, decoratif = false }) {
   if (!carte?.activation) return null;
   const reponse = carte.activation.effet?.type === 'contresort';
-  return <span className={`rpg-card__effet-badge${reponse ? ' rpg-card__effet-badge--reponse' : ''}`} title={carte.activation.nom} aria-label={`${reponse ? 'Effet-réponse' : 'Effet activé'} : ${carte.activation.nom}`}>{reponse ? '🌀' : '⚡'}</span>;
+  return <span className={`rpg-card__effet-badge${reponse ? ' rpg-card__effet-badge--reponse' : ''}`} title={carte.activation.nom} aria-hidden={decoratif || undefined} aria-label={decoratif ? undefined : `${reponse ? 'Effet-réponse' : 'Effet activé'} : ${carte.activation.nom}`}>{reponse ? '🌀' : <RpgEclairActivation />}</span>;
 }
 
 export default function RpgCadreCarte({ carte, afficherActivation = true }) {
