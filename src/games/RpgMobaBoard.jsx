@@ -6,7 +6,7 @@ import { rpgTempsForts } from './rpgTempsForts.js';
 import { RpgAdieuAutonome } from './RpgAdieuAutonome.jsx';
 import { RpgAmbiancePlateau, RpgDangerVie } from './RpgAmbiancePlateau.jsx';
 import { rpgVieCritique } from './rpgAmbianceVisuelle.js';
-import RpgCadreCarte from './RpgCadreCarte.jsx';
+import RpgCadreCarte, { RpgBadgeActivation } from './RpgCadreCarte.jsx';
 import { rpgLumiereElementaire } from './rpgReliefVisuel.js';
 import './rpg-relief-visuel.css';
 import RpgCritiqueVisuel from './RpgCritiqueVisuel.jsx';
@@ -2008,7 +2008,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
           <IconesCarte carte={rpgMobaCartePourApercu(card)} className="rpg-card-icones--colonne rpg-card-icones--mulligan-moba" />
         </div>;
       }
-      return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><RpgCadreCarte carte={card} afficherActivation={false} />{card.activation && <span className={`rpg-card__effet-badge${card.activation?.effet?.type === 'contresort' ? ' rpg-card__effet-badge--reponse' : ''}`} title={card.activation.nom} aria-label={`${card.activation?.effet?.type === 'contresort' ? 'Effet-réponse' : 'Effet activé'} : ${card.activation.nom}`}>{card.activation?.effet?.type === 'contresort' ? '🌀' : '⚡'}</span>}<b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : card.cost != null ? `COÛT ${card.cost}` : cardTypeLine(card)}</small></button>;
+      return <button type="button" autoFocus={index === 0} key={`${id}-${index}`} aria-pressed={choisi} className={`moba__mulligan-card${choisi ? ' is-selected' : ''}`} onClick={toggle}><img src={cardArt(id)} alt="" /><RpgCadreCarte carte={card} afficherActivation={false} /><RpgBadgeActivation carte={card} /><b>{card.name}</b><small>{choisi ? 'À ÉCHANGER' : card.cost != null ? `COÛT ${card.cost}` : cardTypeLine(card)}</small></button>;
     })}</div>{erreur && <p className="moba__error" role="alert">{erreur}</p>}<button type="button" className="moba__primary" onClick={confirmerMulligan}>{mulliganIndices.length ? `Échanger ${mulliganIndices.length} carte(s)` : 'Garder ma main'} →</button></div></div>}
 
     {apercuAnnonceOuvert && <section className={`rpg-annonce-sort moba__card-announcement${carteAnnonce.kind === 'magie' ? ' rpg-annonce-sort--magie' : ''}`} role="dialog" aria-modal="true" aria-label={`L’IA annonce ${carteAnnonce.name}. Cible : ${cibleAnnonce}.`} onKeyDown={clavierAnnonce}>
