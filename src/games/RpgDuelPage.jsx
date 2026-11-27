@@ -16432,7 +16432,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             autoPlay
             muted
             playsInline
+            preload="auto"
+            disablePictureInPicture
             className="rpg-mythique-video"
+            onLoadedData={(event) => {
+              event.currentTarget.play().catch(() => {});
+            }}
             onTimeUpdate={(event) => {
               if (event.currentTarget.currentTime >= 1.5) setVideoMythique(null);
             }}
