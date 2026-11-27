@@ -34,3 +34,6 @@ demo-coffret/bundle.css
 # Aperçu du plateau figé (artefact généré, pas livré) — se régénère avec
 # `node scripts/apercu-plateau-deux-lignes.mjs`
 docs/plateau-deux-lignes.html
+
+# Visuels éditoriaux téléchargés à la main (postés hors du dépôt)
+visuels/
