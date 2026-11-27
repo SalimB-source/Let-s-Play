@@ -1015,7 +1015,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'archere-viking-du-givre', distance: true, name: 'Archère viking du givre', element: 'neige',
     // Effet activé (1/match) — l'Appât de la meute : la proie visée frappe 2 de moins.
-    activation: { nom: 'Appât de la meute', cible: 'creature', uneFoisParMatch: true, effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1 } },
+    activation: { nom: 'Appât de la meute', cible: 'creature', uneFoisParMatch: true, effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1, jusquaFinTourAdverse: true } },
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,

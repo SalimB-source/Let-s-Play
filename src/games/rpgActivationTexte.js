@@ -91,7 +91,10 @@ export function texteEffetActivation(effet = {}) {
     }
     case 'debuff': {
       const plancher = Number.isFinite(effet.minimum) ? `, son attaque ne descend pas sous ${effet.minimum}` : '';
-      return `La créature ciblée gagne ${signe(effet.atk)}/${signe(effet.def)}${Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : ''}${plancher}${effet.exilEnMourant ? ' ; si sa défense tombe sous 1, elle est exilée' : ''}.`;
+      const duree = effet.jusquaFinTourAdverse
+        ? ' jusqu’à la fin du tour de l’adversaire'
+        : (Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : '');
+      return `La créature ciblée gagne ${signe(effet.atk)}/${signe(effet.def)}${duree}${plancher}${effet.exilEnMourant ? ' ; si sa défense tombe sous 1, elle est exilée' : ''}.`;
     }
     case 'pioche':
       return `Piochez ${nombreCartes(montant)}.`;

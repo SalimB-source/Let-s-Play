@@ -7586,7 +7586,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const [videoMythique, setVideoMythique] = useState(null);
   const jouerVoixArrivee = (carteId, rang = 0) => {
-    if (RPG_MYTHIQUE_VIDEOS[carteId]) {
+    if (!mulligan && RPG_MYTHIQUE_VIDEOS[carteId]) {
       setVideoMythique({ src: RPG_MYTHIQUE_VIDEOS[carteId], carteId });
     }
     const url = rpgArrivalVoiceUrl(carteId);
