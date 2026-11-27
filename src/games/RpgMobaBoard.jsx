@@ -49,10 +49,10 @@ import { rpgMobaMouvementsCartes, rpgMobaTrajetCarte } from './rpgMobaCartesFx.j
 import { TourbillonEau } from './TourbillonEau.jsx';
 import { rpgMobaArrowTarget, rpgMobaCombatIndicators } from './rpgMobaCombatIndicators.js';
 import { rpgAttaqueTousMobaDisponible, rpgVagueDirecteMoba } from './rpgAttaqueTous.js';
-import { rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgSouffreMalInvocation, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgNombreBlessures, rpgBlessuresDepuis, rpgRenvoisEnMain, rpgExils, rpgConsommerSoins, rpgConsommerPresentations, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
+import { rpgEffetsReponseDisponibles, rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgSouffreMalInvocation, rpgPeutBloquerAttaquant, rpgCibleEmbuscadeLegale, cibleRespecteCoutMax, rpgNombreDestructions, rpgDestructionsDepuis, rpgNombreBlessures, rpgBlessuresDepuis, rpgRenvoisEnMain, rpgExils, rpgConsommerSoins, rpgConsommerPresentations, rpgConsommerArriveesCreature, rpgConsommerArriveesPirate, rpgConsommerArriveesNavire, rpgConsommerArriveesDwarf } from './rpgDuel.js';
 import {
   rpgMobaDeclarerAttaqueIndividuelle, rpgMobaResoudreAttaqueIndividuelle, MOBA_DECKS, rpgMobaValiderDeck, MOBA_ARMES, MOBA_CONTRESORTS, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_HOSTILES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ESSAI, MOBA_MAGIES_SPATIALES, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_NEUTRES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_VOIES, MOBA_MAGIES_SOINS, MOBA_MAGIES_PRIX, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_ZONE_REPONSE, MOBA_MAGIES_ZONE_TOTALE_REPONSE, MOBA_MAGIES_RENFORT_REPONSE, rpgMobaCreerPartie, rpgMobaCiblesDestruction, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCiblesPrise, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaCiblesAttaque, rpgMobaDeclarerAttaque, rpgMobaDeclarerBlocages, rpgMobaDefausser, rpgMobaPeutEmbuscade, rpgMobaInvocationSpecialeDisponible, rpgMobaJouerCreature, rpgMobaJouerArme,
-  rpgMobaActiverCapacite, rpgMobaChoixActivation, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan,
+  rpgMobaActiverEffetReponse, rpgMobaActiverCapacite, rpgMobaChoixActivation, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan,
   rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserFinDeTour, rpgMobaPeutPayer, rpgMobaSacrificesInvocation, rpgMobaResoudreArrivee, rpgMobaTerminerTour,
 } from './rpgMobaLocal.js';
 import RpgMobaDeckEditor from './RpgMobaDeckEditor.jsx';
@@ -1413,6 +1413,14 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
   const cibleAnnonce = attenteAnnonce && etape === 'reponse-creature'
     ? `${voies[attenteAnnonce.laneId]} · ${noms[attenteAnnonce.cote]} · emplacement ${(attenteAnnonce.slot ?? 0) + 1}`
     : attenteAnnonce ? cibleSortEnAttente(duel, attenteAnnonce) : '';
+  const activerReponse = (side, id) => {
+    const result = rpgMobaActiverEffetReponse(duel, side, id);
+    if (!afficherResultat(result)) return;
+    onPlaySfx?.('card_countered');
+    setCarte(null);
+    setEtape(duel.mobaCreatureEnAttente ? 'reponse-creature' : duel.mobaSortEnAttente ? 'reponse-sort'
+      : duel.effetCreatureEnAttente ? 'reponse-arrivee' : duel.finDeTour ? 'fin' : duel.combatDeclare ? 'blocage' : 'tour');
+  };
   const repondreAnnonce = () => {
     if (!attenteAnnonce) return;
     setAnnoncesApercues((anciennes) => anciennes.includes(attenteAnnonce) ? anciennes : [...anciennes, attenteAnnonce]);
@@ -1476,9 +1484,11 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
         if (cibleIA) choisirCibleArrivee(cibleIA);
         else { setErreur("L’IA ne trouve pas de cible pour sa capacité."); setIaBloquee(true); }
       } else {
+        const effetReponse = rpgEffetsReponseDisponibles(duel, 'sorcier')[0];
         const embuscade = rpgMobaChoisirEmbuscadeIA(duel, 'sorcier');
         const magie = rpgMobaChoisirMagieIA(duel, 'sorcier', true);
-        if (embuscade && (!magie || embuscade.score >= magie.score)) {
+        if (effetReponse) activerReponse('sorcier', effetReponse.id);
+        else if (embuscade && (!magie || embuscade.score >= magie.score)) {
           const result = rpgMobaJouerCreature(duel, 'sorcier', embuscade.id, embuscade.lane, embuscade.slot, { ouvrirReponse: true, sacrificeIds: [] });
           if (afficherResultat(result)) { if (result.creatureEnAttente) setEtape('reponse-creature'); else if (result.arriveeEnAttente) setEtape('arrivee'); }
         } else if (magie) lancerMagie(magie.id, magie.cible, magie.lane, magie.prixLane, magie.cibleSecondaire ?? null, magie.emplacementArme ?? magie.emplacementReanimation ?? null);
@@ -1850,6 +1860,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       </div>
     </section>}
     <div className="moba__controls" inert={selectionAscension.rituel ? true : undefined}><div className="moba__phase"><span>✦</span><div><small>VOTRE STRATÉGIE</small><strong>{etape === 'arrivee' ? 'Choix de la cible' : etape === 'reponse-creature' ? 'Réponse à la créature' : etape === 'reponse-sort' ? 'Réponse au sort' : etape === 'reponse-arrivee' ? 'Réponse à la capacité' : etape === 'fin' ? 'Réponse de fin de tour' : etape === 'blocage' ? 'Réponse à l’attaque' : defausse ? 'Défausse' : duel.attaqueJouee === actif ? 'Après le combat' : 'Phase principale'}</strong></div></div>{duel.brouillardCombat && <abbr className="moba__fog" title="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour." aria-label="Voile actif : les créatures ne peuvent pas infliger de dégâts de combat ce tour">☁<span> Voile</span></abbr>}{camp.prochaineArriveeAbordage && <abbr className="moba__boarding" title="La prochaine créature jouée ce tour a Abordage." aria-label="La prochaine créature jouée ce tour a Abordage">⚓<span> Abordage</span></abbr>}{rendu?.PhaseTrack && <div className="moba__phase-track"><rendu.PhaseTrack current={phaseVisuelle} jouees={[]} steps={MOBA_PHASE_STEPS} ariaLabel="Repères du tour MOBA" currentSuffix="repère actuel" /></div>}<div className="moba__buttons">
+      {annonceRepondable && !apercuAnnonceOuvert && rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => <button key={entite.id} type="button" onClick={() => activerReponse('joueur', entite.id)}>Contrer avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}</button>)}
       {annonceRepondable && !apercuAnnonceOuvert && <button type="button" ref={boutonRevoirAnnonce} aria-label={`Voir l’annonce de ${carteAnnonce.name}`} onClick={() => setAnnoncesApercues((anciennes) => anciennes.filter((item) => item !== attenteAnnonce))}>Voir l’annonce</button>}
       {destruction || site ? null : etape === 'tour' ? <>{attaqueTousDisponible && <button type="button" className="moba__attack-all" data-attaque-directe="tous" onClick={lancerAttaqueTous}>Attaquer avec tous ({vagueAttaqueTous.length})</button>}{cibleRapideEnCours && cibleVoieEnCours && <div role="group" aria-label="Choisir la voie de l’attaque"><span>Choisissez la voie de cette attaque :</span>{mobaVoiesCombat(duel.moba, getEntity(actif, cibleRapideEnCours)?.mobaLane).filter((voie) => rpgMobaCiblesIndividuelles(duel, actif, cibleRapideEnCours, voie).cibles.includes(cibleVoieEnCours)).map((voie) => <button key={voie} type="button" onClick={() => declarer(cibleRapideEnCours, cibleVoieEnCours, voie)}>{voies[voie]}</button>)}<button type="button" onClick={() => setCibleVoieEnCours(null)}>Changer de cible</button></div>}
       {cibleRapideEnCours && !cibleVoieEnCours && (() => {
@@ -1993,6 +2004,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
       <div className="rpg-annonce-sort__panel">
         {(() => {
           const commandes = <div className="rpg-annonce-sort__controls">
+            {rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => <button key={entite.id} type="button" className="rpg-btn rpg-annonce-sort__respond" onClick={() => activerReponse('joueur', entite.id)}>Contrer avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}</button>)}
             <button type="button" autoFocus className="rpg-btn rpg-annonce-sort__respond" aria-label={`Répondre à ${carteAnnonce.name}`} onClick={repondreAnnonce}><span aria-hidden="true">✦</span><span>Répondre</span></button>
             <button type="button" className="rpg-btn rpg-annonce-sort__pass" aria-label={`Laisser passer ${carteAnnonce.name}`} onClick={() => { onPlaySfx?.('pass'); if (etape === 'reponse-creature') passerCreature(); else passerSort(); }}><span aria-hidden="true">➜</span><span>Laisser passer</span></button>
           </div>;

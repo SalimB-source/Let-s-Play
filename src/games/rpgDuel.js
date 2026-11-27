@@ -1052,7 +1052,7 @@ function coutActivation(activation) {
 export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
-  if (!activation || duel.tour !== cote) return false;
+  if (!activation || activation.effet?.type === 'contresort' || duel.tour !== cote) return false;
   // Ces familles nécessitent encore un adaptateur Conquête : ne jamais
   // débiter le sorcier ni appliquer la géométrie classique aux voies.
   if (duel.moba && (activation.prixPv > 0 || (zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie) && entite.carteId !== 'braisier-du-souk') || (['renfort-choisi', 'renfort-ascension', 'reanimation'].includes(activation.effet?.type) && !['djinn-des-cendres-vengeresses', 'veilleuse-des-citernes'].includes(entite.carteId)))) return false;
@@ -1142,7 +1142,7 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   const camp = duel[cote];
   const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
-  if (!entite || !activation) return { ok: false, raison: 'capacite' };
+  if (!entite || !activation || activation.effet?.type === 'contresort') return { ok: false, raison: 'capacite' };
   if (duel.moba && activation.effet?.choixDegats && !optionsMobaValide) return { ok: false, raison: 'adaptateur-voie' };
   if (duel.moba && ['vampire-des-braises', 'lionne-du-midi-ardent', 'scalde-des-runes'].includes(entite.carteId) && !optionsMobaValide) return { ok: false, raison: 'adaptateur-voie' };
   if (duel.moba && activation.prixPv > 0) return { ok: false, raison: 'prix-voie-non-pris-en-charge' };
@@ -4132,6 +4132,7 @@ function ouvrirCale(duel, cote, entite, { enJeu = false } = {}) {
     prisonniere.activationUtiliseeMatch = false;
     prisonniere.activationUtiliseeCeTour = false;
     prisonniere.aActiveEffetCeTour = false;
+    prisonniere.reponseEngagee = false;
     camp.creatures.push(prisonniere);
     const prefere = duel.moba ? offset + slotMoba : prisonniere.emplacement;
     placerDansEmplacement(duel, coteProprietaire, prisonniere, Number.isInteger(prefere) ? prefere : null);
@@ -7111,25 +7112,45 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-/** Effet-réponse automatique d'une créature en jeu : contre la prochaine carte
- * adverse correspondant à son filtre (`creature`, `sort`, `carte`) dès qu'elle est jouée. */
-function contreAutomatiqueEnJeu(duel, coteLanceur, carteJouee) {
-  if (!duel || !carteJouee) return null;
-  const adv = autre(coteLanceur);
-  const gardien = (duel[adv]?.creatures ?? []).find((entite) => {
-    if (!entite || entite.pv <= 0 || entite.activationUtilisee) return false;
-    const def = cardById(entite.carteId);
-    const effet = def?.activation?.effet;
-    return effet?.type === 'contresort' && contreCorrespond(effet, carteJouee);
+/** Les effets-réponse ne sont disponibles que pendant une annonce adverse. */
+export function rpgEffetsReponseDisponibles(duel, cote) {
+  if (!duel?.fenetreReponse || !duel[cote] || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+    || duel.renfortChoixEnAttente || duel.defausseEnAttente || duel.destructionsEnAttente?.length
+    || duel.mobaRechercheEnAttente || duel.siteEnAttente || duel.boualemEnAttente
+    || duel.moba?.centerChoice || duel.moba?.winner || duel.fin?.gagnant || duel.fin?.nul) return [];
+  const annonce = duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce;
+  if (!annonce || annonce.cote === cote) return [];
+  const carte = cardById(annonce.carteId);
+  if (!carte) return [];
+  return duel[cote].creatures.filter((entite) => {
+    const activation = duelCardById(entite.carteId)?.activation;
+    return entite.pv > 0 && activation?.effet?.type === 'contresort'
+      && !entite.activationUtilisee && !entite.activationUtiliseeMatch && !entite.activationUtiliseeCeTour
+      && entite.ready !== false && !entite.attaquee && !rpgSouffreMalInvocation(entite)
+      && rpgPeutPayer(duel[cote], coutActivation(activation))
+      && contreCorrespond(activation.effet, carte);
   });
-  if (!gardien) return null;
-  const defGardien = cardById(gardien.carteId);
-  const effet = defGardien.activation.effet;
-  gardien.activationUtilisee = true;
-  if (carteJouee.id) duel[coteLanceur].cimetiere.push(carteJouee.id);
-  duel.log.push(`Effet-réponse (${gardien.name} — ${defGardien.activation.nom}) : ${carteJouee.name} est contrée automatiquement !`);
-  if (effet.pioche > 0) piocher(duel, adv, effet.pioche);
-  return { ok: true, contree: true, par: gardien.name };
+}
+
+/** Active la créature explicitement : une annonce courante est indispensable. */
+export function rpgActiverEffetReponse(duel, cote, entiteId) {
+  const entite = rpgEffetsReponseDisponibles(duel, cote).find((e) => e.id === entiteId);
+  if (!entite) return { ok: false, raison: 'reponse-indisponible' };
+  const annonce = duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce;
+  const activation = duelCardById(entite.carteId).activation;
+  return contrerAnnonce(duel, cote, { id: entite.carteId, name: entite.name, effet: activation.effet }, annonce, entite);
+}
+
+// En duel solo, l'IA choisit elle-même une réponse face à la carte du joueur.
+function choisirEffetReponseIA(duel, annonce) {
+  if (duel.pvp || duel.moba || duel.annonce || duel.fenetreReponse) return null;
+  duel.annonce = annonce;
+  duel.fenetreReponse = true;
+  const source = rpgEffetsReponseDisponibles(duel, 'sorcier')[0];
+  const resultat = source ? rpgActiverEffetReponse(duel, 'sorcier', source.id) : null;
+  duel.annonce = null;
+  duel.fenetreReponse = false;
+  return resultat?.ok ? resultat : null;
 }
 
 export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, peutPlacerApresSacrifices = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, invocationSpecialeMoba = false, annonceContree = null, annonceCreatureMobaOrigine = null, choixCoutInvocation = null, choixCoutAuto = false, invocationNormale = false, retourIds = null, defausseIds = null } = {}) {
@@ -7432,6 +7453,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // gère ses annonces et réponses séparément, même si pvp est absent.
   // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
   if (!dejaPayee && cote === 'joueur' && !duel.annonce && !duel.pvp && !duel.moba) {
+    const effetIA = choisirEffetReponseIA(duel, { cote, carteId, invocationSpeciale, choixCoutInvocation: choixCout, retourIds: retours, sacrificeIds: sacrifices.map((e) => e.id) });
+    if (effetIA) return effetIA;
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) {
       if (contreIA.contreAnnonceCreature) {
@@ -7529,8 +7552,6 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     camp.prochaineArriveeAbordage = false;
     camp.prochaineArriveeAbordageSeuilPlein = false;
   }
-  const contreAuto = contreAutomatiqueEnJeu(duel, cote, carte);
-  if (contreAuto) return contreAuto;
   const entite = creerEntiteCreature(carte, duel);
   if (carte.kind === 'site') {
     entite.heures = {
@@ -7973,6 +7994,8 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null, options = {}) 
     return { ok: true, sortEnAttente: true };
   }
   if (!dejaPayee && cote === 'joueur' && !duel.annonce && !duel.pvp) {
+    const effetIA = choisirEffetReponseIA(duel, { cote, carteId });
+    if (effetIA) return effetIA;
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
@@ -8128,7 +8151,7 @@ const pret = rpgPeutAttaquer;
 // Toute créature qui n'a pas attaqué peut bloquer dès son arrivée.
 // Le gel, lui, ferme aussi la défense.
 const peutBloquer = (entite) => entite && !estSite(entite)
-  && !entite.attaquee && !estGelee(entite)
+  && !entite.reponseEngagee && !entite.attaquee && !estGelee(entite)
   && !(entite.empecheBlocageToursRestants > 0);
 // Pour la résolution d'un combat déjà déclaré : un bloqueur gelé après sa
 // déclaration reste bloquant (comme un attaquant gelé reste attaquant avec
@@ -8146,7 +8169,7 @@ const peutBloquerPourResolution = (entite) => entite && !estSite(entite) && !ent
  * — Envol : un attaquant volant ne peut être bloqué que par une créature volante.
  */
 export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = false) {
-  if (!bloqueur || !attaquant || estSite(bloqueur) || estSite(attaquant)) return false;
+  if (!bloqueur || !attaquant || bloqueur.reponseEngagee || estSite(bloqueur) || estSite(attaquant)) return false;
   // Seul MOBA attribue une voie aux entités : les blocages obligatoires
   // utilisent eux aussi ce prédicat et restent dans leur voie.
   if ((bloqueur.mobaLane || attaquant.mobaLane) && bloqueur.mobaLane !== attaquant.mobaLane) return false;
@@ -8441,17 +8464,48 @@ export function rpgSortACibleValide(duel, cote, carte) {
  * La carte visée et le contre paient tous deux leur coût, puis vont au cimetière
  * sans résoudre l'effet de la carte visée (Déflection fait aussi piocher).
  * `annonce` : { cote, carteId } ; par défaut l'annonce en cours du sorcier. */
-function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
+function contrerAnnonce(duel, cote, carte, annonce = duel.annonce, source = null) {
   const camp = duel[cote];
   if (!annonce || annonce.cote === cote) return { ok: false, raison: 'rien-a-contrer' };
   const cible = duelCardById(annonce.carteId) ?? magieById(annonce.carteId) ?? armeById(annonce.carteId);
   if (!cible || !contreCorrespond(carte.effet, cible)) return { ok: false, raison: 'cible' };
-  if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
+  const cout = source ? coutActivation(duelCardById(source.carteId).activation) : carte;
+  if (!rpgPeutPayer(camp, cout)) return { ok: false, raison: 'mana' };
   const campAnnonce = duel[annonce.cote];
   // MOBA reserves its announced spell and pays all costs before responses.
   const reserveMoba = Boolean(duel.moba && (annonce === duel.mobaSortEnAttente || annonce === duel.mobaCreatureEnAttente));
+  if (source && !reserveMoba && !(estCarteAscension(cible) ? (campAnnonce.reserveAscension ?? []) : campAnnonce.main).includes(cible.id)) return { ok: false, raison: 'pas-en-main' };
   if (!reserveMoba && !rpgPeutPayer(campAnnonce, cible)) return { ok: false, raison: 'mana' };
   if (!reserveMoba && annonce.invocationSpeciale && MOBA_EMBUSCADES_IMPRIMEES[cible.id]?.cout && (annonce.choixCoutInvocation == null || !rpgCoutInvocationSpecialeDisponible(duel, annonce.cote, cible.id, annonce.choixCoutInvocation))) return { ok: false, raison: 'condition-embuscade' };
+
+  // Les retours au deck et les matériaux d'Ascension sont des prix de pose,
+  // dus même quand cette annonce est contrée. En Conquête ils ont été choisis
+  // lors de la réservation, mais ne sont normalement déplacés qu'à la pose.
+  let retoursReponse = [];
+  let materiauxReponse = [];
+  if (source && duelCardById(cible.id)) {
+    if (estCarteAscension(cible)) {
+      const ids = annonce.sacrificeIds ?? (annonce.cote === 'sorcier' && !duel.pvp
+        ? (combinaisonsAscension(campAnnonce, cible)[0] ?? []).map((e) => e.id) : []);
+      materiauxReponse = ids.map((id) => campAnnonce.creatures.find((e) => e.id === id));
+      if (materiauxReponse.some((e) => !e || e.attaquee) || !validerMateriauxAscension(campAnnonce, cible, ids).ok)
+        return { ok: false, raison: 'sacrifice' };
+    } else {
+      const nombre = reserveMoba ? (annonce.retourIds?.length ?? 0)
+        : retoursAuDeckInvocation(cible, duel, annonce.cote, false, Boolean(annonce.invocationSpeciale));
+      retoursReponse = annonce.retourIds ?? (nombre && annonce.cote === 'sorcier' && !duel.pvp
+        ? choisirSacrificesInvocationIA({ ...duel, annonce: null, fenetreReponse: false }, annonce.cote, cible, annonce.cibleId) : []);
+      if (!Array.isArray(retoursReponse) || retoursReponse.length !== nombre || new Set(retoursReponse).size !== nombre)
+        return { ok: false, raison: 'retour-impossible' };
+      const mainRestante = [...campAnnonce.main];
+      if (!reserveMoba) mainRestante.splice(mainRestante.indexOf(cible.id), 1);
+      for (const id of retoursReponse) {
+        const index = mainRestante.indexOf(id);
+        if (index < 0 || !retourDeckAdmissible(id, cible)) return { ok: false, raison: 'retour-impossible' };
+        mainRestante.splice(index, 1);
+      }
+    }
+  }
 
   // Payer la carte lancée, même si elle est immédiatement contrecarrée, puis
   // payer le contresort. Les cartes du joueur restent en main jusque-là ; les
@@ -8461,12 +8515,33 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
     marquerInvocationMoba(duel, annonce.cote, cible, Boolean(annonce.invocationSpeciale));
     if (annonce.invocationSpeciale) rpgPayerCoutInvocationSpeciale(duel, annonce.cote, cible.id, annonce.choixCoutInvocation);
   }
-  payer(duel, cote, carte);
+  payer(duel, cote, cout);
+  if (materiauxReponse.length) {
+    const declenchements = [];
+    for (const victime of materiauxReponse) {
+      duel.log.push(`${annonce.cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${victime.name} pour invoquer ${cible.name}.`);
+      sacrifierCreature(duel, annonce.cote, victime, declenchements);
+    }
+    for (const declencher of declenchements) declencher();
+  }
+  if (retoursReponse.length) {
+    for (const id of retoursReponse) campAnnonce.main.splice(campAnnonce.main.indexOf(id), 1);
+    campAnnonce.deck = melangerDeck([...campAnnonce.deck, ...retoursReponse], hasardParDuel.get(duel) ?? Math.random);
+    duel.log.push(`${retoursReponse.map((id) => cardById(id)?.name ?? id).join(' et ')} retourne dans le deck pour invoquer ${cible.name}.`);
+  }
   const main = estCarteAscension(cible) ? (campAnnonce.reserveAscension ?? []) : campAnnonce.main;
   if (!reserveMoba && main.includes(annonce.carteId)) main.splice(main.indexOf(annonce.carteId), 1);
   duel[annonce.cote].cimetiere.push(annonce.carteId);
-  camp.main.splice(camp.main.indexOf(carte.id), 1);
-  camp.cimetiere.push(carte.id);
+  if (source) {
+    source.activationUtiliseeMatch = true;
+    source.activationUtiliseeCeTour = true;
+    source.aActiveEffetCeTour = true;
+    source.reponseEngagee = true;
+    source.ready = false;
+  } else {
+    camp.main.splice(camp.main.indexOf(carte.id), 1);
+    camp.cimetiere.push(carte.id);
+  }
   if (annonce === duel.annonce) {
     duel.annonce = null;
     duel.fenetreReponse = false;
@@ -8479,8 +8554,8 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
   // résolution ordinaire des magies (elle rend la main tout de suite), donc
   // c'est `contrerAnnonce` qui applique son renfort — la Déflection du Serpent
   // du monde pioche deux cartes au lieu d'une.
-  const lienActif = lienSatisfait(carte, camp.creatures);
-  const effetContre = effetLie(carte, lienActif);
+  const lienActif = !source && lienSatisfait(carte, camp.creatures);
+  const effetContre = source ? carte.effet : effetLie(carte, lienActif);
   if (lienActif) {
     duel.log.push(`Lien — ${duelCardById(carte.lien.ancre)?.name ?? 'l’ancre'} renforce ${carte.name}.`);
   }
@@ -8702,6 +8777,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   const optionsSort = zoneSort ? { ...(options ?? {}), zone: zoneSort } : options;
 
   if (!dejaPayee && cote === 'joueur' && !duel.annonce && !duel.pvp) {
+    const effetIA = choisirEffetReponseIA(duel, { cote, carteId });
+    if (effetIA) {
+      if (lancementGratuit) duel.magieGratuite = null;
+      if (carte.renfortUneFois) marquerRenfort(camp, carteId);
+      return effetIA;
+    }
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) {
       // Même contrecarré, le sort gratuit a été lancé : la faveur du Kraken
@@ -8730,8 +8811,6 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     camp.main.splice(camp.main.indexOf(carteId), 1);
     if (carte.renfortUneFois) marquerRenfort(camp, carteId);
   }
-  const contreAuto = contreAutomatiqueEnJeu(duel, cote, carte);
-  if (contreAuto) return contreAuto;
   if (!dejaPayee && options?.annoncerSortMoba && duel.moba) {
     const cibleVoie = cibleId === 'sorcier' || options.cibleVoieMoba;
     const cibleCote = (options.reanimationMoba ? cote : null) ?? options.ciblePiocheMoba ?? options.cibleMainMoba ?? options.cibleZoneMoba ?? (options.cibleCombatMoba ? 'tous' : null) ?? (options.cibleVoieAllieeMoba || camp.creatures.some((entite) => entite.id === cibleId) ? cote : adv);
@@ -10765,6 +10844,7 @@ function commencerNouveauTour(duel) {
     entite.malInvocation = false;
     entite.activationUtiliseeCeTour = false;
     entite.aActiveEffetCeTour = false;
+    entite.reponseEngagee = false;
     if (entite.bouclierTemporaire) {
       entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - entite.bouclierTemporaire);
       entite.bouclierTemporaire = 0;

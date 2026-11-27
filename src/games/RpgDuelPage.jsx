@@ -263,6 +263,7 @@ import {
   rpgCibleAuto,
   rpgChoisirAttaquants,
   rpgContreJouable,
+  rpgEffetsReponseDisponibles, rpgActiverEffetReponse,
   rpgSortACibleValide,
   rpgChampionsActivationLegales,
   rpgCartesRenfortChoisi,
@@ -13977,6 +13978,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setAnnonceApercueFermeePour(null);
   };
 
+  const activerEffetReponseAnnonce = (id) => {
+    const resultat = rpgActiverEffetReponse(duel, 'joueur', id);
+    if (!resultat.ok) { jouerSfx('erreur'); force(); return; }
+    jouerSfx('card_countered');
+    setApercuSurvol(null);
+    force();
+    later(annoncerSuivantSorcier, delaiReflexionSorcier());
+  };
+
   // « Laisser passer » : la carte annoncée se résout (un contre du joueur peut la défaire).
   const laisserPasser = () => {
     if (duel.arriveeEnAttente || sacrificeEnCoursRef.current) return;
@@ -15729,6 +15739,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 >
                   Voir l’aperçu
                 </button>
+                {!repondreAnnonceDesactive && rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => (
+                  <button key={entite.id} type="button" className="rpg-btn rpg-annonce-sort__respond" onClick={() => activerEffetReponseAnnonce(entite.id)}>
+                    Contrer avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}
+                  </button>
+                ))}
                 <button
                   type="button"
                   className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
@@ -15794,6 +15809,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 variante="annonce"
                 controls={(
                   <div className="rpg-annonce-sort__controls">
+                    {!repondreAnnonceDesactive && rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => (
+                      <button key={entite.id} type="button" className="rpg-btn rpg-annonce-sort__respond" onClick={() => activerEffetReponseAnnonce(entite.id)}>
+                        Contrer avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}
+                      </button>
+                    ))}
                     <button
                       type="button"
                       className={`rpg-btn rpg-annonce-sort__respond${aReponseJouableEnMain ? ' is-response-available' : ''}`}

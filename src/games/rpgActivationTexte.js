@@ -152,9 +152,9 @@ export function texteActivation(carte) {
   const forme = zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie);
   const effet = activation.effet;
   if (effet?.type === 'contresort') {
-    const quoi = effet.cible === 'creature' ? 'la prochaine créature adverse' : effet.cible === 'sort' ? 'le prochain sort adverse' : 'la prochaine carte adverse';
+    const quoi = effet.cible === 'creature' ? 'une créature adverse annoncée' : effet.cible === 'sort' ? 'un sort adverse annoncé' : 'une carte adverse annoncée';
     const bonus = effet.pioche > 0 ? `, puis piochez ${effet.pioche} carte${effet.pioche > 1 ? 's' : ''}` : '';
-    return `Effet-réponse (${activation.nom}) — Tant que cette créature est en jeu, ${quoi} est contrée automatiquement${bonus} (1 fois par présence).`;
+    return `Effet-réponse (${activation.nom}) — Contrez ${quoi}${bonus}. Activez en réponse : la créature s’engage (1 fois par présence, pas à son arrivée ni après avoir attaqué).`;
   }
   if (forme && effet?.type === 'retour-main' && effet.exclutType === 'Vampire') {
     return `${nom}${prix}Dans une rangée choisie, renvoyez les créatures sauf les Vampires dans la main de leur propriétaire.`;
