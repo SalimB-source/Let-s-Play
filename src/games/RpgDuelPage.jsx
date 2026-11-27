@@ -1,3 +1,4 @@
+import { RpgActivationDescription, RpgActivationNote } from './RpgActivationDescription.jsx';
 import { RpgBordurePlateau, RpgPortailInvocation, RpgBrumeCimetiere, RpgLueurArme, useArmesAjoutees } from './RpgOrnements.jsx';
 import { RpgFissureImpact, RpgVagueTour } from './RpgEffetsComplementaires.jsx';
 import { RpgEntreeLegendaire, rpgEstLegendaire, RpgGuideCibles, RpgTempsForts, RpgVerdictScene } from './RpgMiseEnScene.jsx';
@@ -1589,7 +1590,7 @@ export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null 
                 <span className="rpg-graveyard-carousel__detail-art" aria-hidden="true"><img key={choisie.id} src={cardArt(choisie)} alt="" onError={(event) => { event.currentTarget.hidden = true; }} /><RpgBadgeActivation carte={choisie} /></span>
                 <div><span className="rpg-graveyard-carousel__detail-eyebrow">Carte sélectionnée</span><h2>{choisie.name}</h2><p className="rpg-graveyard-carousel__type">{choisie.typeLine}</p></div>
               </div>
-              <div className="rpg-graveyard-carousel__rule"><span>Effet de la carte</span><p>{choisie.text || 'Aucun effet particulier.'}</p></div>
+              <div className="rpg-graveyard-carousel__rule"><span className="rpg-graveyard-carousel__rule-label">Effet de la carte</span>{choisie.text && choisie.text !== '—' ? <p>{choisie.text}</p> : !choisie.activation && <p>Aucun effet particulier.</p>}<RpgActivationDescription carte={choisie} /></div>
               {onChoose && carteEstArme(choisie) && <button type="button" className="rpg-btn rpg-graveyard-carousel__choose" onClick={() => onChoose(choisie.id)}>Choisir cette arme</button>}
             </> : <div className="rpg-graveyard-carousel__detail-empty"><span aria-hidden="true">◇</span><p>Sélectionnez une carte pour lire son effet.</p></div>}
           </aside>
@@ -3889,20 +3890,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
             <figcaption>
               <small className="rpg-hover-card-preview__prisonniere-label">En cale</small>
               <strong>{prisonniereCarte.name}</strong>
-              {prisonniereCarte.text && prisonniereCarte.text !== '—' && <small>{prisonniereCarte.text}</small>}
+              {prisonniereCarte.text && prisonniereCarte.text !== '—' && <small>{prisonniereCarte.text}</small>}<RpgActivationDescription carte={prisonniereCarte} />
             </figcaption>
           </figure>
         </div>
       )}
-      {carte.activation && (
-        <p className="rpg-hover-card-preview__activation">
-          <span className="rpg-activation-bolt" aria-hidden="true">⚡</span>
-          {/* La règle vient du module partagé : la même phrase pour l'aperçu,
-              la carte posée (aria-label) et le journal. */}
-          {texteActivation(carte)}
-          {activationApercuEpuisee && <small> — Déjà utilisé pendant cette présence</small>}
-        </p>
-      )}
+      <RpgActivationDescription carte={carte} epuisee={activationApercuEpuisee} className="rpg-hover-card-preview__activation" />
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
       {modifCarte && !carteEstArme(carte) && !statsDejaExpliquees && (
         <p className={`rpg-hover-card-preview__stats rpg-hover-card-preview__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}>
@@ -4034,7 +4027,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, stat
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__panel">
         <HoverCardPreview carte={carte} armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} entite={entite} effetsEpuises={effetsEpuises} variante="appui-long" />
-        {notesMoba.length > 0 && <aside className="moba__rule-note" aria-label="Adaptations MOBA"><strong>Règles MOBA — remplacent le texte imprimé si différent</strong>{notesMoba.map((note) => <p key={note}>{note}</p>)}</aside>}
+        {notesMoba.length > 0 && <aside className="moba__rule-note" aria-label="Adaptations MOBA"><strong>Règles MOBA — remplacent le texte imprimé si différent</strong>{notesMoba.map((note) => note.startsWith('Effet activé :') ? <RpgActivationNote key={note} note={note} /> : <p key={note}>{note}</p>)}</aside>}
       </div>
       <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onFermer}>
         Fermer l’aperçu

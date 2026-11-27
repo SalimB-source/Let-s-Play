@@ -3388,7 +3388,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-graveyard-carousel__detail-heading > div { min-width: 0; }
 .rpg-graveyard-carousel__detail-art { display: block; position: relative; flex: 0 0 58px; height: 74px; overflow: hidden; border: 1px solid #aa8d64; border-radius: var(--rpg-card-radius-sm, 0px); background: linear-gradient(145deg, #594531, #24202a); }
 .rpg-graveyard-carousel__detail-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.rpg-graveyard-carousel__detail-eyebrow, .rpg-graveyard-carousel__rule > span { display: block; color: #d3b787; font: 700 10px/1.3 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.rpg-graveyard-carousel__detail-eyebrow, .rpg-graveyard-carousel__rule-label { display: block; color: #d3b787; font: 700 10px/1.3 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
 .rpg-graveyard-carousel__details h2 { margin: 5px 0; color: #fff0d8; font: 700 20px/1.15 Georgia, serif; overflow-wrap: anywhere; }
 .rpg-graveyard-carousel__type { margin: 0; color: #c9bba9; font: 12px/1.4 system-ui, sans-serif; }
 .rpg-graveyard-carousel__rule { margin-top: 17px; padding-top: 14px; border-top: 1px solid #caa67438; }
