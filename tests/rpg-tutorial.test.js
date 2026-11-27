@@ -143,15 +143,15 @@ test('la leçon Eau joue une sorcellerie, une magie rapide puis un contre', () =
   assert.equal(duel.joueur.mana.eau, 0, 'les cartes ne consomment ni ne produisent de mana');
 
   rpgFinDeTour(duel);
-  duel.annonce = { cote: 'sorcier', carteId: 'lame-de-mer', cibleId: duel.joueur.creatures[0].id, cibleAllieeId: null };
+  duel.annonce = { cote: 'sorcier', carteId: 'haut-fond', cibleId: duel.joueur.creatures[0].id, cibleAllieeId: null };
   duel.fenetreReponse = true;
   const contre = rpgLancerMagie(duel, 'joueur', 'contresort-des-abimes');
   assert.equal(contre.ok, true);
   assert.equal(contre.contre, true, 'le Contresort défait l’annonce');
   assert.equal(duel.annonce, null);
-  assert.ok(duel.sorcier.cimetiere.includes('lame-de-mer'), 'la carte contredite paie puis va au cimetière');
+  assert.ok(duel.sorcier.cimetiere.includes('haut-fond'), 'la carte contredite paie puis va au cimetière');
   assert.equal(duel.sorcier.mana.eau, 0, 'aucun mana adverse n’a été dépensé');
-  assert.equal(duel.joueur.creatures[0].pv, 3, 'la Lame de mer n’a pas résolu son effet');
+  assert.equal(duel.joueur.creatures[0].pv, 3, 'le Haut-fond n’a pas résolu son effet');
 });
 
 test('la leçon Ténèbres montre le Tribut, le Prix et les jetons de mort', () => {

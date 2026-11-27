@@ -14,9 +14,14 @@ au moteur classique/PvP, sans appliquer les Liens des sorts. Les sept magies
 rapides proposées initialement restent exclues ; aucune proposition ne reste à
 associer. Ces 29 sorts ne sont plus des cartes jouables : leur effet est
 conservé comme capacité de créature. Leurs anciennes fiches restent uniquement
-en archive pour les sauvegardes et effets existants. Les anciens decks qui les
-contiennent doivent être modifiés dans l'atelier ; aucune acquisition n'est
-effacée automatiquement. En Conquête, la page et l'IA proposent le Défi du Jarl,
+en archive pour les sauvegardes et effets existants. Dans les decks maison,
+leurs exemplaires sont remplacés automatiquement après fusion de la sauvegarde
+et du stock, par des cartes possédées dans les couleurs d'origine et dans les
+limites d'exemplaires. Le détail du deck indique chaque remplacement ; si le
+stock compatible est insuffisant, une place reste à compléter dans l'atelier.
+Aucune acquisition n'est effacée. En cas de lecture du compte indisponible,
+la migration attend la synchronisation afin de ne pas utiliser un stock partiel.
+Les recettes et leçons ne distribuent plus ces sorts. En Conquête, la page et l'IA proposent le Défi du Jarl,
 la récupération d'équipement de la Chercheuse, ainsi que Rapport du greffier,
 Les feuillets, Le routier et Lettre de marque. Le Bâton des citernes reste exclu
 de cette récupération : son jeton exige un placement adapté. Les prix en PV,

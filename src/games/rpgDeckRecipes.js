@@ -86,7 +86,7 @@ export const RPG_RECETTES_DECKS = {
       ['tiziri-du-djurdjura', 2], ['faiseur-de-passage', 2], ['rempart-de-dunes', 2],
       ['chien-du-guet', 2], ['fennec-des-decombres', 2], ['tislit-des-aures', 2],
       ['amani-des-ksour', 1], ['cavalier-amazigh-du-desert', 1],
-      ['rapport-du-greffier', 1], ['tempete-de-sable', 1],
+      ['convoi-des-dunes', 1], ['guetteur-du-beffroi', 1],
       ['sandales-de-tislit', 1], ['licou-du-chien-de-sable', 1],
       ['jitte-d-amayas', 1], ['takouba-de-tin-hinan', 1],
     ],
@@ -112,7 +112,7 @@ export const RPG_RECETTES_DECKS = {
       ['ashigaru-des-braises', 2], ['ronin-du-soleil-rouge', 2],
       ['samourai-du-torii', 1], ['anqa-des-braises', 1],
       ['hatamoto-des-cendres', 2],
-      ['trait-de-braise', 2], ['nuage-de-cendres', 2], ['frappe-iaijutsu', 1],
+      ['trait-de-braise', 2], ['brise-lame', 2], ['frappe-iaijutsu', 1],
     ],
   },
   /**
@@ -133,7 +133,7 @@ export const RPG_RECETTES_DECKS = {
       ['tislit-des-aures', 2], ['ashigaru-des-braises', 2], ['hatamoto-des-cendres', 2],
       ['ghul-des-cendres', 2], ['fennec-des-decombres', 1],
       ['djinn-de-foudre', 2], ['cavalier-amazigh-du-desert', 1], ['feriel', 1],
-      ['rempart-de-dunes', 1], ['vent-rouge', 2], ['trait-de-braise', 1],
+      ['rempart-de-dunes', 1], ['feux-de-kitsune', 2], ['trait-de-braise', 1],
       ['takouba-des-pistes', 1], ['harnais-du-mehari', 1],
       ['jitte-d-amayas', 1], ['masque-du-guetteur', 1],
     ],
@@ -152,7 +152,7 @@ export const RPG_RECETTES_DECKS = {
     raresTotalMax: 7,
     mythiquesTotalMax: 1,
     signature: [
-      ['lame-de-mer', 2], ['ecueil', 2],
+      ['haut-fond', 2], ['ecueil', 2],
       ['porteuse-de-cruches', 2], ['veilleuse-des-citernes', 2],
       ['sonneur-fele', 2], ['vipere-de-verre', 1], ['leviathan', 1],
       ['contresort-des-abimes', 2], ['silence-decume', 2], ['ressac', 2],
@@ -181,7 +181,7 @@ export const RPG_RECETTES_DECKS = {
       ['jarl-au-marteau-de-guerre', 1], ['valkyrie-des-glaces', 1], ['maitre-du-marteau', 1],
       ['drakkar-a-tete-de-dragon', 1],
       ['poigne-de-givre', 1], ['appat-de-la-meute', 1],
-      ['grand-voile-blanc', 1], ['mur-de-boucliers', 1], ['lance-de-givre', 1],
+      ['grand-voile-blanc', 1], ['embuscade', 1], ['lance-de-givre', 1],
     ],
   },
   /**
@@ -199,7 +199,7 @@ export const RPG_RECETTES_DECKS = {
     raresTotalMax: 10,
     mythiquesTotalMax: 2,
     signature: [
-      ['ghul-des-cendres', 2], ['nuage-de-cendres', 2], ['sabre-maudit', 2],
+      ['ghul-des-cendres', 2], ['brise-lame', 2], ['sabre-maudit', 2],
       ['ashigaru-des-braises', 2], ['hatamoto-des-cendres', 2],
       ['ronin-du-soleil-rouge', 2], ['samourai-du-torii', 2],
       ['daimyo-du-soleil-rouge', 1], ['kenshi-de-la-forge', 2],
@@ -231,7 +231,7 @@ export const RPG_RECETTES_DECKS = {
     signature: [
       ['la-devoreuse', 1], ['chacal-du-seuil', 2], ['celui-qui-juge', 1],
       ['khopesh-d-or', 1], ['momie-de-lin', 2],
-      ['papyrus', 2], ['la-grande-pesee', 1], ['le-poids', 2],
+      ['papyrus', 2], ['effacement-des-faibles', 1], ['le-poids', 2],
       ['nom-efface', 1], ['celle-qui-pese', 1], ['ouvrier-du-natron', 1],
     ],
   },
@@ -266,8 +266,8 @@ export const RPG_RECETTES_DECKS = {
       ['negociant-des-ranscons', 1], ['galion-de-la-flotte', 1],
       ['la-vengeance-de-la-reine-anne', 1], ['la-barbe-rousse', 1],
       ['sonneur-fele', 1],
-      ['lettre-de-marque', 2], ['haut-fond', 2], ['le-routier', 1],
-      ['le-grand-debarquement', 1], ['ressac', 1], ['lame-de-mer', 1],
+      ['parade-du-verre', 2], ['haut-fond', 2], ['courant-de-retour', 1],
+      ['eau-de-la-source', 1], ['ressac', 1], ['brisure-de-verre', 1],
       ['grappin-d-abordage', 1], ['baton-des-citernes', 1],
     ],
   },
@@ -297,7 +297,7 @@ export const RPG_RECETTES_HISTOIRE = {
       ['feriel', 1],
       ['trait-de-braise', 2],
       ['fennec-des-decombres', 2],
-      ['vent-rouge', 2],
+      ['feux-de-kitsune', 2],
       ['djinn-de-foudre', 1],
     ],
   },
@@ -316,8 +316,8 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(1, 4),
     signature: [
       ['dame-des-neuf-mondes', 1],
-      ['mur-de-boucliers', 2],
-      ['brume-du-fjord', 2],
+      ['eclair-du-marteau', 2],
+      ['poigne-de-givre', 2],
       ['festin-des-vaillants', 2],
       ['scalde-des-runes', 1],
       ['guerrier-au-bouclier-rond', 1],
@@ -339,7 +339,7 @@ export const RPG_RECETTES_HISTOIRE = {
       ['loup-des-neiges', 2],
       ['berserk-des-trois-hivers', 2],
       ['guerrier-au-bouclier-rond', 1],
-      ['hurlement-du-blizzard', 1],
+      ['eclair-du-marteau', 1],
     ],
   },
   /**
@@ -399,7 +399,7 @@ export const RPG_RECETTES_HISTOIRE = {
       ['hatamoto-des-cendres', 2],
       ['ronin-du-soleil-rouge', 2],
       ['samourai-du-torii', 2],
-      ['nuage-de-cendres', 2],
+      ['feux-de-kitsune', 2],
     ],
   },
   /**
@@ -495,7 +495,7 @@ export const RPG_RECETTES_HISTOIRE = {
       ['celui-qui-juge', 1],
       ['celle-qui-pese', 2],
       ['khopesh-d-or', 1],
-      ['la-derniere-pesee', 1],
+      ['effacement-des-faibles', 1],
     ],
   },
   /**
@@ -617,7 +617,7 @@ export const RPG_RECETTES_HISTOIRE = {
       ['mousse-des-galiotes', 2],
       ['rais-de-la-galiote', 2],
       ['cotre-de-course', 2],
-      ['lettre-de-marque', 2],
+      ['parade-du-verre', 2],
     ],
   },
   /**
@@ -683,7 +683,7 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(3, 4),
     signature: [
       ['valkyrie-des-neuf-nuits', 2],
-      ['neige-noire', 2],
+      ['nom-efface', 2],
       ['berserk-du-crepuscule', 2],
       ['celle-qui-pese', 1],
       ['maitre-du-marteau', 1],
@@ -709,7 +709,7 @@ export const RPG_RECETTES_HISTOIRE = {
       ['maitre-des-corbeaux', 1],
       ['pere-des-corbeaux', 1],
       ['valkyrie-des-neuf-nuits', 2],
-      ['neige-noire', 2],
+      ['nom-efface', 2],
       ['berserk-du-crepuscule', 2],
       ['maitre-du-marteau', 1],
       ['dame-des-neuf-mondes', 1],
@@ -772,7 +772,7 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(1, 4),
     signature: [
       ['tislit-des-aures', 2], ['fennec-des-decombres', 2],
-      ['tempete-de-sable', 2], ['ashigaru-des-braises', 2],
+      ['rempart-de-dunes', 2], ['ashigaru-des-braises', 2],
     ],
   },
   /** Souk 2 — la Gardienne des ksour : l'égide d'Amani et les équipements. */
@@ -798,7 +798,7 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(3, 4),
     signature: [
       ['djinn-de-foudre', 2], ['braisier-du-souk', 2],
-      ['ghul-des-cendres', 2], ['vent-rouge', 2],
+      ['ghul-des-cendres', 2], ['trait-de-braise', 2],
     ],
   },
   /** Souk 4 — la Reine des étals : le sommet du Souk, toutes les figures. */
@@ -837,7 +837,7 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(2, 3),
     signature: [
       ['ifrit-des-ergs', 1], ['djinn-de-foudre', 2],
-      ['vent-rouge', 2], ['ghul-des-cendres', 2],
+      ['trait-de-braise', 2], ['ghul-des-cendres', 2],
     ],
   },
   /** Sables 3 — l'Horloger du Zénith : le sommet du Sable et de la Braise. */
@@ -862,7 +862,7 @@ export const RPG_RECETTES_HISTOIRE = {
     armes: 2,
     ...rampeEtage(1, 4),
     signature: [
-      ['porteuse-de-cruches', 2], ['lame-de-mer', 2], ['ecueil', 2],
+      ['porteuse-de-cruches', 2], ['haut-fond', 2], ['ecueil', 2],
     ],
   },
   /** Abysses 2 — la Nageuse des puits : la Vipère et les citernes. */
@@ -939,7 +939,7 @@ export const RPG_RECETTES_HISTOIRE = {
     ...rampeEtage(3, 4),
     signature: [
       ['rais-de-la-galiote', 2], ['galion-de-la-flotte', 2],
-      ['le-grand-debarquement', 2], ['grappin-d-abordage', 1],
+      ['eau-de-la-source', 2], ['grappin-d-abordage', 1],
     ],
   },
   /** Corsaires 4 — l'Amiral des deux mers : le sommet de la course. */
