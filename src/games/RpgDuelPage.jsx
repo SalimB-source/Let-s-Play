@@ -10454,7 +10454,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const carteAttenteDestruction = attenteDestruction ? cardById(attenteDestruction.carteId) : null;
   const idsCiblesDestruction = new Set(attenteDestruction
     ? (carteAttenteDestruction?.destruction?.type === 'exil-temporaire' ? duel.joueur.creatures : duel.sorcier.creatures)
-      .filter((entite) => carteAttenteDestruction?.destruction?.type === 'exil-temporaire' ? cardById(entite.carteId)?.kind !== 'site' : !rpgEstProtegee(entite, cardColors(carteAttenteDestruction)))
+      .filter((entite) => carteAttenteDestruction?.destruction?.type === 'exil-temporaire' ? cardById(entite.carteId)?.kind !== 'site' : !rpgEstProtegee(entite, cardColors(carteAttenteDestruction))
+        && !rpgEstProtegeeDesSorts(entite, cardColors(carteAttenteDestruction), 'effet-creature'))
       .map((entite) => entite.id)
     : []);
   // Sans cible légale, l'effet se dissipe (l'effet ci-dessus s'en charge) : le
@@ -12681,7 +12682,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       || ((['renvoi-ou-destruction', 'exil-temporaire'].includes(carteSource?.arrivee?.type) || carteSource?.arrivee?.donneDefenseur)
         && cardById(entite.carteId)?.kind === 'site')
       // Le Serpent du monde : aucun sort ne peut le viser.
-      || (carteSource?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteSource)))
+      || (carteSource?.arrivee && rpgEstProtegeeDesSorts(entite, cardColors(carteSource), 'effet-creature'))
       // Le Père des corbeaux (coût 3 ou moins) et Susanoo (coût 5 ou plus) :
       // l'exil vérifie le seuil de coût de la cible.
       || !cibleRespecteCoutMax(carteSource, entite)) {
@@ -13856,6 +13857,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!modePvp && reprendre) later(reprendre, delaiReflexionSorcier());
   };
 
+  const contrerEffetCreature = (id) => {
+    const res = rpgActiverEffetReponse(duel, 'joueur', id);
+    if (!res.ok) { jouerSfx('erreur'); return; }
+    jouerSfx('card_countered');
+    if (modePvp) void envoyerIntentionPvp({ type: 'activer-reponse', entiteId: id });
+    const reprendre = repriseSorcierRef.current;
+    repriseSorcierRef.current = null;
+    force();
+    if (!modePvp && reprendre) later(reprendre, delaiReflexionSorcier());
+  };
+
   const finirTourSorcier = () => {
     if (pauseSiAttenteJoueur(finirTourSorcier)) return;
     sorcierApresCombatRef.current = false;
@@ -14288,7 +14300,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       if (cibleEnCours && ['allie', 'tous'].includes(modeCible)) {
         const cible = liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee))
-          && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee))));
+          && !(carteCiblee?.arrivee && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee), 'effet-creature')));
         if (cible) return cible;
       }
       const prete = liste.find((entite) => rpgPeutAttaquer(entite) && !attaquants.includes(entite.id));
@@ -14298,7 +14310,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (cibleEnCours && ['ennemi', 'tous'].includes(modeCible)) {
       return liste.find((entite) => !rpgEstProtegee(entite, cardColors(carteCiblee))
-        && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))) ?? liste[0];
+        && !(carteCiblee?.arrivee && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee), 'effet-creature'))) ?? liste[0];
     }
     if (cibleAttaqueEnCours && !combatCollectif) return liste.find((entite) => choixIndividuel.cibles.includes(entite.id)) ?? liste[0];
     if (cibleAttaqueEnCours) {
@@ -14534,7 +14546,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             <header className="rpg-renfort-choix__header">
             <span className="rpg-renfort-choix__eyebrow" aria-hidden="true">✦ Choix de carte</span>
             <h2 id="rpg-renfort-choix-titre">{source?.name} · Choisissez {duel.renfortChoixEnAttente.recherche ? 'une carte' : 'une créature'}</h2>
-            <p id="rpg-renfort-choix-consigne">{idConsigne === 'porteur-de-la-plume' ? 'Choisissez une créature de coût 2 ou 3 dans votre deck pour la mettre dans votre cimetière.' : idConsigne === 'convoi-des-dunes' ? 'Choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière pour la renvoyer en main.' : duel.renfortChoixEnAttente.recherche ? 'Choisissez une Magie Rapide ou une Sorcellerie dans votre deck pour l’ajouter à votre main.' : idConsigne === 'appel-des-marees' ? 'Voici les trois cartes du dessus. Choisissez une créature Eau de coût 3 ou moins ; les autres vont sous le deck.' : idConsigne === 'ralliement-des-neiges' ? 'Choisissez une créature de coût 5 dans votre main.' : idConsigne === 'veilleur-des-cendres' ? 'Choisissez une créature Ténèbres, Neige ou Braise de coût 3 ou moins dans votre cimetière.' : ['reanimation', 'reveil-de-la-horde', 'passeur-au-masque-de-chacal', 'retour-des-ensevelis'].includes(idConsigne) ? 'Choisissez une créature admissible dans votre cimetière.' : idConsigne === 'djinn-des-cendres-vengeresses' ? 'Choisissez un Djinn de coût 3 ou moins dans votre cimetière.' : idConsigne === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : idConsigne === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : idConsigne === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez une créature Braise de coût 3 dans votre main. Elle sera détruite à la fin du tour.'}</p>
+            <p id="rpg-renfort-choix-consigne">{idConsigne === 'porteur-de-la-plume' ? 'Choisissez une créature de coût 2 ou 3 dans votre deck pour la mettre dans votre cimetière.' : idConsigne === 'convoi-des-dunes' ? 'Choisissez une créature Braise, Sable ou Ténèbres dans votre cimetière pour la renvoyer en main.' : duel.renfortChoixEnAttente.recherche ? 'Choisissez une créature ayant un effet d’arrivée, de mort ou activé dans votre deck pour l’ajouter à votre main.' : idConsigne === 'appel-des-marees' ? 'Voici les trois cartes du dessus. Choisissez une créature Eau de coût 3 ou moins ; les autres vont sous le deck.' : idConsigne === 'ralliement-des-neiges' ? 'Choisissez une créature de coût 5 dans votre main.' : idConsigne === 'veilleur-des-cendres' ? 'Choisissez une créature Ténèbres, Neige ou Braise de coût 3 ou moins dans votre cimetière.' : ['reanimation', 'reveil-de-la-horde', 'passeur-au-masque-de-chacal', 'retour-des-ensevelis'].includes(idConsigne) ? 'Choisissez une créature admissible dans votre cimetière.' : idConsigne === 'djinn-des-cendres-vengeresses' ? 'Choisissez un Djinn de coût 3 ou moins dans votre cimetière.' : idConsigne === 'gardienne-des-sables-ensevelis' ? 'Choisissez une créature de coût 3 ou moins dans votre cimetière.' : idConsigne === 'valkyrie-de-la-derniere-aurore' ? 'Choisissez une créature Viking dans votre cimetière.' : idConsigne === 'colosse-du-verre-ardent' ? `Choisissez jusqu’à ${duel.renfortChoixEnAttente.restant} Djinn${duel.renfortChoixEnAttente.restant > 1 ? 's' : ''} de coût 3 ou moins dans votre cimetière.` : 'Choisissez une créature Braise de coût 3 dans votre main. Elle sera détruite à la fin du tour.'}</p>
             </header>
             <div className="rpg-renfort-choix__cartes" role="region" aria-label="Cartes proposées" tabIndex={cartes.length ? 0 : undefined}>{cartes.map((c) => <button key={c.index} type="button" className="rpg-renfort-choix__carte" autoFocus={c.index === disponibles[0]?.index} disabled={!c.admissible} onClick={() => choisir(c.index)}>
               <span className="rpg-cadre-vignette"><img src={cardArt(c.id)} alt="" /><RpgCadreCarte carte={cardById(c.id)} /></span><strong>{cardById(c.id)?.name}</strong>{(cardById(c.id)?.cost != null || !c.admissible) && <small>{cardById(c.id)?.cost != null ? `Coût ${cardById(c.id).cost}` : ''}{c.admissible ? '' : `${cardById(c.id)?.cost != null ? ' · ' : ''}Non admissible`}</small>}
@@ -15048,7 +15060,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && !(carteCiblee?.effet?.type === 'destruction-arme' && !armesPortees(entite).length)
                           && (duel.arriveeEnAttente?.interceptionAttaque || !rpgEstProtegee(entite, cardColors(carteCiblee)))
                           && rpgCibleEmbuscadeLegale(duel, 'joueur', carteCiblee, entite)
-                          && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
+                          && !(carteCiblee?.arrivee && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee), 'effet-creature'))
                           && cibleRespecteCoutMax(carteCiblee, entite)
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (attenteAbordage && cibleAbordageLegale(entite))
@@ -15196,7 +15208,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && (carteCiblee?.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carteCiblee)))
                           && (!(carteCiblee?.arrivee?.type === 'exil-temporaire' || carteCiblee?.arrivee?.donneDefenseur) || cardById(entite.carteId)?.kind !== 'site')
                           && (!carteEstArme(carteCiblee) || rpgArmeCompatible(carteCiblee, entite))
-                          && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
+                          && !(carteCiblee?.arrivee && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee), 'effet-creature'))
                           && cibleRespecteCoutMax(carteCiblee, entite)
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || Boolean(idsCiblesActivation?.has(entite.id)))}
@@ -15767,11 +15779,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             )}
             {fenetreEffetCreature && (
               <div className="rpg-annonce-sort__compact rpg-effet-creature" role="group"
-                aria-label={`Effet ciblé de ${cardById(duel.effetCreatureEnAttente.carteId)?.name ?? 'créature'} : jouez une réponse ou passez`}>
+                aria-label={`Effet de ${cardById(duel.effetCreatureEnAttente.carteId)?.name ?? 'créature'} : jouez une réponse ou passez`}>
                 <span className="rpg-annonce-sort__compact-label">
                   <span>Effet de créature ciblé</span>
-                  <b>{cardById(duel.effetCreatureEnAttente.carteId)?.name} → {duel.joueur.creatures.find((entite) => entite.id === duel.effetCreatureEnAttente.cibleId)?.name ?? 'votre créature'}</b>
+                  <b>{cardById(duel.effetCreatureEnAttente.carteId)?.name}{duel.effetCreatureEnAttente.cibleId ? ` → ${[...duel.joueur.creatures, ...duel.sorcier.creatures].find((entite) => entite.id === duel.effetCreatureEnAttente.cibleId)?.name ?? 'cible'}` : ''}</b>
                 </span>
+                {rpgEffetsReponseDisponibles(duel, 'joueur').map((entite) => (
+                  <button key={entite.id} type="button" className="rpg-btn rpg-annonce-sort__respond"
+                    onClick={() => contrerEffetCreature(entite.id)}>Contrer avec {entite.name} — {cardById(entite.carteId)?.activation?.nom}</button>
+                ))}
                 <button type="button" className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
                   aria-label="Laisser passer l’effet de créature ciblé" disabled={Boolean(duel.arriveeEnAttente)}
                   onClick={passerEffetCreature}>

@@ -57,7 +57,7 @@ export function texteEffetActivation(effet = {}) {
     case 'bouclier':
     case 'bouclier-lumiere':
       return effet.cible === 'creature-amie'
-        ? 'Une créature alliée ciblée reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint est bloqué.'
+        ? 'Une créature alliée ciblée reçoit un bouclier : le prochain effet de créature adverse qui l’atteint est bloqué.'
         : 'Vous recevez un bouclier : les prochains dégâts qui vous atteignent sont bloqués.';
     case 'renvoi-main':
       return 'Renvoie une créature ciblée dans la main de son propriétaire.';
@@ -152,7 +152,7 @@ export function texteActivation(carte) {
   const forme = zoneFormeCarte(activation.zoneCarteId ?? activation.sortAssocie);
   const effet = activation.effet;
   if (effet?.type === 'contresort') {
-    const quoi = effet.cible === 'creature' ? 'une créature adverse annoncée' : effet.cible === 'sort' ? 'un sort adverse annoncé' : 'une carte adverse annoncée';
+    const quoi = effet.cible === 'creature' ? 'une créature adverse annoncée' : effet.cible === 'sort' ? 'un sort adverse annoncé' : effet.cible === 'effet-creature' ? 'un effet d’arrivée, de mort ou activé adverse annoncé' : 'une carte adverse annoncée';
     const bonus = effet.pioche > 0 ? `, puis piochez ${effet.pioche} carte${effet.pioche > 1 ? 's' : ''}` : '';
     return `Effet-réponse (${activation.nom}) — Contrez ${quoi}${bonus}. Activez en réponse : la créature s’engage (1 fois par présence, pas à son arrivée ni après avoir attaqué).`;
   }

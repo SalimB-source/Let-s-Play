@@ -35,7 +35,7 @@ import {
   RPG_ELEMENTS,
   armeById,
   cardById,
-  carteEstArme,
+  carteEstArme, carteAvecEffetCreature,
   cardColors,
   cardHasPrintedType,
   cardResonanceGroup,
@@ -1098,7 +1098,7 @@ export function rpgCiblesActivationLegales(duel, cote, entiteId) {
   for (const camp of camps) {
     if ((['lame-de-mer', 'courant-de-retour'].includes(activation.sortAssocie) || activation.effet?.choixDegats || activation.effet?.adversaireSeulement) && camp === cote) continue;
     for (const candidate of duel[camp].creatures) {
-      if (rpgEstProtegee(candidate, couleur)) continue;
+      if (rpgEstProtegee(candidate, couleur) || rpgEstProtegeeDesSorts(candidate, couleur, 'effet-creature')) continue;
       if (!cibleRespecteCoutMax({ effet }, candidate)) continue;
       if (estSite(candidate) && (effet.choixDegats || ['destruction-cible', 'exil', 'retour-main', 'renvoi-main', 'debuff'].includes(effet.type))) continue;
       if (effet.type === 'destruction-arme' && !armesPortees(candidate).length) continue;
@@ -1121,15 +1121,18 @@ export function rpgChampionsActivationLegales(duel, cote, entiteId) {
 
 /** Réserve l'effet ciblé jusqu'au choix « répondre ou passer » du défenseur.
  * Une fenêtre inutile (aucune carte jouable) ne ralentit pas la partie. */
-function attendreEffetCreature(duel, cote, carteId, entiteId, cibleId, type, zone = null, championId = null, cibleSecondaireId = null) {
-  if (duel.effetCreatureEnAttente || !duel[autre(cote)].creatures.some((entite) => entite.id === cibleId)) return false;
-  duel.effetCreatureEnAttente = { cote, carteId, entiteId, cibleId, type, ...(zone ? { zone } : {}), ...(championId ? { championId } : {}), ...(cibleSecondaireId ? { cibleSecondaireId } : {}) };
-  if (!rpgPeutRepondre(duel, autre(cote))) {
+function attendreEffetCreature(duel, cote, carteId, entiteId, cibleId, type, zone = null, championId = null, cibleSecondaireId = null, choix = {}) {
+  const cibleAdverse = duel[autre(cote)].creatures.some((entite) => entite.id === cibleId);
+  if (duel.effetCreatureEnAttente || (!cibleAdverse && !['activation', 'arrivee', 'destruction'].includes(type))) return false;
+  duel.effetCreatureEnAttente = { cote, carteId, entiteId, cibleId, type, ...(zone ? { zone } : {}), ...(championId ? { championId } : {}), ...(cibleSecondaireId ? { cibleSecondaireId } : {}), ...choix };
+  const ancienneFenetre = duel.fenetreReponse;
+  duel.fenetreReponse = true;
+  if (!(cibleAdverse ? rpgPeutRepondre(duel, autre(cote)) : rpgEffetsReponseDisponibles(duel, autre(cote)).length)) {
     duel.effetCreatureEnAttente = null;
+    duel.fenetreReponse = ancienneFenetre;
     return false;
   }
-  duel.fenetreReponse = true;
-  duel.log.push(`${cardById(carteId)?.name ?? 'Une créature'} cible une créature adverse : réponse ou passage avant l’effet.`);
+  duel.log.push(`${cardById(carteId)?.name ?? 'Une créature'} annonce un effet : réponse ou passage avant sa résolution.`);
   return true;
 }
 
@@ -1201,9 +1204,15 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreRepo
   entite.activationUtiliseeCeTour = true;
   entite.aActiveEffetCeTour = true;
   entite.ready = false;
-  if (!sansCible && cibleCamp !== cote && (duel.pvp || attendreReponse)
-    && attendreEffetCreature(duel, cote, carte.id, entiteId, cibleId, 'activation', zoneChoisie, championId, cibleSecondaireId)) {
-    return { ok: true, effetEnAttente: true, cibleId };
+  const reponseIA = !duel.pvp && !duel.moba && cote === 'joueur';
+  if ((duel.pvp || attendreReponse || reponseIA)
+    && attendreEffetCreature(duel, cote, carte.id, entiteId, cibleId, 'activation', zoneChoisie, championId, cibleSecondaireId, { armeCarteId, voieSoin })) {
+    if (reponseIA) {
+      const repondante = rpgEffetsReponseDisponibles(duel, 'sorcier')[0];
+      if (repondante) return rpgActiverEffetReponse(duel, 'sorcier', repondante.id, { reprendre: false });
+      duel.effetCreatureEnAttente = null;
+      duel.fenetreReponse = false;
+    } else return { ok: true, effetEnAttente: true, cibleId };
   }
   return resoudreActivationPayee(duel, cote, carte.id, entiteId, cibleId, zoneChoisie, armeCarteId, championId, cibleSecondaireId, null, voieSoin);
 }
@@ -1249,7 +1258,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
       return { ok: true, dissipe: true };
     }
     duel.log.push(`${entite?.name ?? carte.name} déclenche le défi.`);
-    appliquer(duel, cote, activation.effet, cibleId, championId, couleur, 'capacite', carte.id,
+    appliquer(duel, cote, activation.effet, cibleId, championId, couleur, 'effet-creature', carte.id,
       cibleCamp, { activationAssociee: true, activationSourceId: entiteId });
     projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
       [{ type: 'creature', cote: cibleCamp, entiteId: cibleId }]);
@@ -1331,7 +1340,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
   if (activation.effet?.type === 'renvoi-main') {
     projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
       [{ type: 'creature', cote: cibleCamp, entiteId: cible.id }]);
-    if (paradeZoneBloque(duel, cible, 'capacite', cibleCamp, cote)) return { ok: true, cibleId: cible.id, bouclier: true };
+    if (paradeZoneBloque(duel, cible, 'effet-creature', cibleCamp, cote, couleur)) return { ok: true, cibleId: cible.id, bouclier: true };
     const idx = duel[cibleCamp].creatures.findIndex((c) => c.id === cible.id);
     if (idx !== -1) {
       duel[cibleCamp].creatures.splice(idx, 1);
@@ -1372,7 +1381,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
     // anciens effets de créature qui excluent souvent leur source.
     const effet = activation.sortAssocie && activation.effet?.type === 'buff'
       ? { ...activation.effet, inclutSource: true } : activation.effet;
-    appliquer(duel, cote, effet, sansCible ? null : cibleId, entiteId, couleur, 'capacite', carte.id,
+    appliquer(duel, cote, effet, sansCible ? null : cibleId, entiteId, couleur, 'effet-creature', carte.id,
       cibleCamp, { ...(duel.moba ? { mobaLane: entite?.mobaLane,
         ...(activation.effet?.etJoueur ? { resoudreSoinSorcier: ({ amount }) => {
           const events = soinsCreatureMoba.get(duel) ?? [];
@@ -1403,10 +1412,10 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
   const montant = montantOverride ?? Math.max(0, Number(activation.effet?.amount) || 0);
   let cibleFinale = cible;
   let campFinal = cibleCamp;
-  if (paradeZoneBloque(duel, cible, 'capacite', cibleCamp, cote)) return { ok: true, cibleId: cible.id, bouclier: true };
+  if (paradeZoneBloque(duel, cible, 'effet-creature', cibleCamp, cote, couleur)) return { ok: true, cibleId: cible.id, bouclier: true };
   if (cible.carteId === 'boualem' && cible.boualemContresortDisponible) {
     cible.boualemContresortDisponible = false;
-    const legales = ciblesContresortBoualem(duel, cibleCamp, cible.id, couleur);
+    const legales = ciblesContresortBoualem(duel, cibleCamp, cible.id, couleur, 'effet-creature');
     if (!legales.length) {
       duel.log.push('Boualem contre l’effet adverse qui le ciblait ; aucune nouvelle cible légale.');
       rpgActionsEtat(duel);
@@ -1422,7 +1431,7 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
         effet: null,
         sauf: null,
         sourceElement: couleur,
-        sourceType: 'capacite',
+        sourceType: 'effet-creature',
         sourceCarteId: carte.id,
         montant,
         couleur,
@@ -1443,12 +1452,15 @@ function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId, zone = 
   if ((activation.effet?.type ?? 'degats') === 'degats') {
     projectilesActivation(duel, cote, entiteId, varianteFxActivation(carte, activation.effet),
       [{ type: 'creature', cote: campFinal, entiteId: cibleFinale.id }]);
-    if (!paradeZoneBloque(duel, cibleFinale, 'capacite', campFinal, cote)) {
-      rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'capacite', carte.id, null, cote);
+    if (!paradeZoneBloque(duel, cibleFinale, 'effet-creature', campFinal, cote, couleur)) {
+      const dernierEtat = { ...cibleFinale };
+      const blessure = rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'effet-creature', carte.id, null, cote);
+      if (campFinal === autre(cote) && blessure.ok && !blessure.protegee && !blessure.bouclierLumiere && !blessure.degatsPrevenus)
+        riposterSurEffet(duel, cote, { cible: 'creature' }, cibleFinale.id, entiteId, 'effet-creature', dernierEtat);
       // La Valkyrie des glaces imprime le gel sur son effet activé : la
       // tempête prend la cible qui survit, comme le ferait le sort de givre.
       const vivante = duel[campFinal].creatures.find((candidate) => candidate.id === cibleFinale.id);
-      if (activation.effet?.gel && vivante && vivante.pv > 0 && (vivante.gelToursRestants ?? 0) <= 0) {
+      if (!blessure.esquive && !blessure.protegee && !blessure.bouclierLumiere && !blessure.degatsPrevenus && activation.effet?.gel && vivante && vivante.pv > 0 && (vivante.gelToursRestants ?? 0) <= 0) {
         gelerEntite(duel, vivante);
       }
     }
@@ -1464,23 +1476,40 @@ export function rpgResoudreEffetCreatureEnAttente(duel, cote) {
   const attente = duel.effetCreatureEnAttente;
   if (!attente || autre(attente.cote) !== cote) return { ok: false, raison: 'aucun-effet' };
   duel.effetCreatureEnAttente = null;
-  duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce);
+  duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente);
   if (attente.type === 'activation') {
-    return resoudreActivationPayee(duel, attente.cote, attente.carteId, attente.entiteId, attente.cibleId, attente.zone ?? null, null, attente.championId ?? null, attente.cibleSecondaireId ?? null);
+    return resoudreActivationPayee(duel, attente.cote, attente.carteId, attente.entiteId, attente.cibleId, attente.zone ?? null, attente.armeCarteId ?? null, attente.championId ?? null, attente.cibleSecondaireId ?? null, null, attente.voieSoin ?? null);
   }
   const carte = duelCardById(attente.carteId);
-  const cible = duel[autre(attente.cote)].creatures.find((entite) => entite.id === attente.cibleId);
-  if (!carte || !cible) {
+  const cible = ['joueur', 'sorcier'].flatMap((camp) => duel[camp].creatures).find((entite) => entite.id === attente.cibleId);
+  const ciblesOniRestantes = attente.ciblesOniMoba?.filter((id) => duel[autre(attente.cote)].creatures.some((entite) => entite.id === id));
+  if (!carte || (attente.cibleId && attente.cibleId !== 'sorcier' && !cible && !ciblesOniRestantes?.length)) {
     duel.log.push(`La cible de ${carte?.name ?? 'la créature'} a disparu : l'effet se dissipe.`);
     reprendreTransitionRetours(duel);
     return { ok: true, dissipe: true };
   }
-  appliquer(duel, attente.cote, carte.arrivee.attaquanteSeulement
-    ? { ...carte.arrivee, amount: duel[attente.cote].creatures.find((entite) => entite.id === attente.entiteId)?.atk ?? carte.atk }
-    : effetArriveePourCible(carte, cible.id), cible.id, attente.entiteId, cardColors(carte), 'capacite', carte.id);
-  journaliserArriveeAuSorcier(duel, carte, cible.id);
+  if (attente.type === 'arrivee' && attente.retourAutomatique) {
+    const presence = duel[attente.cote].creatures.find((entite) => entite.id === attente.entiteId)
+      ?? { id: attente.entiteId, mobaLane: attente.mobaLane, atk: carte.atk };
+    appliquerArriveeDeRetour(duel, attente.cote, carte, presence, { ignorerReponse: true });
+  } else if (attente.type === 'destruction' && attente.mortSansCible) {
+    declencherCapaciteDestruction(duel, attente.cote, carte, attente.carteId,
+      { id: attente.entiteId, mobaLane: attente.mobaLane }, true, attente.tueur ?? null, true);
+  } else if (attente.type === 'destruction') {
+    appliquer(duel, attente.cote, carte.destruction, cible.id, null, cardColors(carte), 'effet-creature', carte.id, null,
+      { mobaLane: attente.mobaLane, projectileSource: { cote: attente.cote, id: attente.entiteId } });
+  } else {
+    const cibleArrivee = attente.cibleId === 'sorcier' ? 'sorcier' : cible?.id ?? ciblesOniRestantes?.[0] ?? null;
+    appliquer(duel, attente.cote, carte.arrivee.attaquanteSeulement
+      ? { ...carte.arrivee, amount: duel[attente.cote].creatures.find((entite) => entite.id === attente.entiteId)?.atk ?? carte.atk }
+      : effetArriveePourCible(carte, cibleArrivee), cibleArrivee, attente.entiteId, cardColors(carte), 'effet-creature', carte.id, null,
+      { ...optionsArriveeMoba(duel, attente.cote, carte, { id: attente.entiteId, mobaLane: attente.mobaLane }),
+        ...(ciblesOniRestantes ? { ciblesOniMoba: ciblesOniRestantes } : {}) });
+    journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
+  }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
+  traiterEffetsMortEnFile(duel);
   reprendreTransitionRetours(duel);
   return { ok: true, cible };
 }
@@ -1948,16 +1977,12 @@ export function rpgEstProtegee(entite, element) {
   return Boolean(immunite && couleursSources.includes(immunite));
 }
 
-/**
- * Protection limitée aux sorts d'une couleur. Elle ne remplace pas la
- * protection générale ci-dessus : une créature de Braise peut toujours
- * attaquer, bloquer ou utiliser une capacité contre la Valkyrie des glaces ;
- * seules les Magies Rapides et Sorcelleries de Braise sont arrêtées.
- * `sourceType` reste explicite pour ne jamais transformer une capacité en
- * sort par simple présence d'une couleur.
- */
+/** Les protections anti-effets ne couvrent que les effets imprimés d'arrivée,
+ * de mort ou activés, pas les ripostes, capacités d'arme ou de combat. */
+const estCapacite = (type) => type === 'capacite' || type === 'effet-creature';
+
 export function rpgEstProtegeeDesSorts(entite, element, sourceType = 'magie') {
-  if (!entite || sourceType !== 'magie') return false;
+  if (!entite || sourceType !== 'effet-creature') return false;
   if (entite.protectionSorts) return true;
   const couleursSources = normaliserCouleurs(element);
   const couleursProtegees = normaliserCouleurs(entite.protectionSortsContre);
@@ -2188,6 +2213,14 @@ function armeCarteDe(entite) {
  * changement d'équipement (attachement, bris d'arme, retrait) : une arme
  * détruite rend sa part de chance, pas celle de ses voisines.
  */
+// Les parties sauvegardées avant le changement peuvent encore porter un
+// Sabre dans l'ancien tableau d'armes-magies. Ne pas en faire une magie jouable.
+function ancienneArmeAttachee(id) {
+  if (id !== 'sabre-maudit') return magieById(id);
+  const carte = armeById(id);
+  return carte && { ...carte, effet: { type: 'arme', ...carte.bonus, ...carte.donne } };
+}
+
 function calculerCoupCritique(entite) {
   const fiche = duelCardById(entite?.carteId)?.coupCritique ?? null;
   let chance = 0;
@@ -2201,7 +2234,7 @@ function calculerCoupCritique(entite) {
   if (fiche) ajouter(fiche.chance ?? RPG_COUP_CRITIQUE_CHANCE, fiche.fois ?? RPG_COUP_CRITIQUE_FOIS);
   ajouter(entite?.coupCritiqueTemporaire, 2);
   for (const id of entite?.armes ?? []) {
-    const arme = magieById(id);
+    const arme = ancienneArmeAttachee(id);
     if (arme?.effet?.type === 'arme' && arme.effet.coupCritique) ajouter(arme.effet.coupCritique, 2);
   }
   // Les armes du prototype contribuent elles aussi au cumul des critiques.
@@ -2313,7 +2346,7 @@ function briserBouclier(entite) {
 /** Bloque une composante hostile sur une créature ; les autres cibles
  * d'une zone restent affectées. Le camp de la source doit être connu. */
 function paradeZoneBloque(duel, entite, sourceType, campCible, campLanceur, sourceElement = null) {
-  if (!entite || !['magie', 'capacite'].includes(sourceType)) return false;
+  if (!entite || !['capacite', 'effet-creature'].includes(sourceType)) return false;
   if (!campCible || !campLanceur || campCible === campLanceur) return false;
   // Le bouclier général intercepte en premier si les deux sont présents.
   if (rpgBouclierEstActif(entite)) {
@@ -2321,7 +2354,7 @@ function paradeZoneBloque(duel, entite, sourceType, campCible, campLanceur, sour
     duel.log.push(`Le bouclier de ${entite.name} encaisse la vague et tombe.`);
     return true;
   }
-  if (sourceType === 'magie' && bouclierColoreCorrespond(entite, sourceElement)) {
+  if (sourceType === 'effet-creature' && bouclierColoreCorrespond(entite, sourceElement)) {
     briserBouclierColore(duel, entite);
     return true;
   }
@@ -2336,7 +2369,7 @@ function bouclierColoreCorrespond(entite, couleurs) {
 function briserBouclierColore(duel, entite) {
   const couleurs = labelCouleursProtection(entite.protection.contre);
   entite.protection = null;
-  duel.log.push(`Le bouclier de ${couleurs} de ${entite.name} bloque le sort et se brise.`);
+  duel.log.push(`Le bouclier de ${couleurs} de ${entite.name} bloque l’effet et se brise.`);
 }
 
 /**
@@ -2388,7 +2421,7 @@ function retirerArmeSort(duel, cote, porteur, index) {
   const occurrence = porteur.armes.slice(0, index).filter(armeId => armeId === id).length;
   porteur.armes.splice(index, 1);
   porteur.durabilitesArmes.splice(index, 1);
-  const effet = magieById(id)?.effet ?? {};
+  const effet = ancienneArmeAttachee(id)?.effet ?? {};
   let vue = 0;
   const indexArmure = (porteur.armuresMagiques ?? []).findIndex(a => a.carteId === id && vue++ === occurrence);
   const armure = indexArmure < 0 ? null : porteur.armuresMagiques.splice(indexArmure, 1)[0];
@@ -2419,7 +2452,7 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
   porteur.durabilitesArmes ??= [];
   // Ordre inverse pour garder les index alignés lorsqu'une arme est détruite.
   for (let i = porteur.armes.length - 1; i >= 0; i--) {
-    const carte = magieById(porteur.armes[i]);
+    const carte = ancienneArmeAttachee(porteur.armes[i]);
     if (carte?.effet?.type !== 'arme' || (carte.durabiliteAttaqueSeulement && action !== 'attaque')) continue;
     const avant = porteur.durabilitesArmes[i] ?? compteursDurabiliteArme(carte);
     const restant = Math.max(0, avant - 1);
@@ -2435,7 +2468,7 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
 function recalculerVolDeVie(entite) {
   entite.volDeVie = Boolean(duelCardById(entite.carteId)?.volDeVie)
     || Boolean(armeCarteDe(entite)?.donne?.volDeVie)
-    || (entite.armes ?? []).some((id) => Boolean(magieById(id)?.effet?.volDeVie));
+    || (entite.armes ?? []).some((id) => Boolean(ancienneArmeAttachee(id)?.effet?.volDeVie));
 }
 
 // Les Sandales n'accordent plus Rapidité en MOBA : elles renforcent plutôt
@@ -2891,8 +2924,13 @@ function declencherHarakiri(duel, cote, entite) {
   const cible = cibles[index];
   flammecheCreature(duel, cote, entite.id, { type: 'creature', cote: adversaire, entiteId: cible.id });
   duel.log.push(`Harakiri${honneur > 1 ? ` ${honneur}` : ''} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
-  if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
-    rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite', carte.id, null, cote);
+  if (!rpgEstProtegee(cible, cardColors(carte)) && !rpgEstProtegeeDesSorts(cible, cardColors(carte), 'effet-creature')
+    && !paradeZoneBloque(duel, cible, 'effet-creature', adversaire, cote, cardColors(carte))) {
+    const dernierEtat = { ...cible };
+    const blessure = rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'effet-creature', carte.id, null, cote);
+    if (blessure.ok && !blessure.protegee && !blessure.bouclierLumiere && !blessure.degatsPrevenus)
+      riposterSurEffet(duel, cote, { cible: 'creature' }, cible.id, entite.id, 'effet-creature', dernierEtat);
+  }
 }
 
 /** Projectile décoratif commun aux capacités de créature, sans règle ajoutée. */
@@ -3055,13 +3093,13 @@ function journaliserAnimationCombat(duel, animation) {
  * portent « capacite ». Une capacité alliée ne déclenche aucun jet.
  */
 function tenterEsquive(duel, entite, sourceType, hostile = true) {
-  if (!['attaque', 'magie', 'capacite'].includes(sourceType) || !entite?.esquive
-    || (sourceType === 'capacite' && !hostile)) return false;
+  if (!['attaque', 'capacite', 'effet-creature'].includes(sourceType) || !entite?.esquive
+    || (estCapacite(sourceType) && !hostile)) return false;
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const chance = Number.isFinite(entite.esquiveChance) ? entite.esquiveChance : RPG_ESQUIVE_CHANCE;
   const reussie = rng() < chance;
   if (reussie) {
-    duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : sourceType === 'capacite' ? 'la capacité' : 'l’attaque'}.`);
+    duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : estCapacite(sourceType) ? 'la capacité' : 'l’attaque'}.`);
     const cote = duel.joueur.creatures.some((candidate) => candidate.id === entite.id) ? 'joueur' : 'sorcier';
     journaliserAnimationCombat(duel, {
       type: 'esquive',
@@ -3185,14 +3223,18 @@ function riposteSurAttaqueCiblee(duel, defenseur, coteAttaquant, attaquantId) {
  * l'a lancé. Les effets de zone passent par `ripostesDeZone`, qui réveille
  * chaque Contre-attaque atteinte par la vague.
  */
+function sourceRiposteEffet(duel, cote, sourceType, entiteId) {
+  if (sourceType === 'magie' || (sourceType === 'effet-creature'
+    && !duel[cote]?.creatures.some((entite) => entite.id === entiteId))) return { type: 'sorcier', cote };
+  return { type: 'creature', cote, entiteId };
+}
+
 function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType, dernierEtat = null) {
   if (!cibleId || effet?.cible !== 'creature') return false;
-  if (sourceType !== 'capacite' && sourceType !== 'magie') return false;
+  if (!estCapacite(sourceType)) return false;
   const defenseur = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId) ?? dernierEtat;
   if (!defenseur?.contreAttaque) return false;
-  return riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
-    ? { type: 'sorcier', cote }
-    : { type: 'creature', cote, entiteId: sauf });
+  return riposteDeContreAttaque(duel, defenseur, sourceRiposteEffet(duel, cote, sourceType, sauf));
 }
 
 /**
@@ -3210,6 +3252,7 @@ function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType, dernierE
  *   vague a réellement atteintes, tous camps confondus.
  */
 function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
+  if (!estCapacite(sourceType)) return;
   for (const { camp, entiteId, dernierEtat } of touchees) {
     if (duel.moba?.winner) break;
     // Seul le camp adverse du lanceur riposte : une zone qui balaie aussi
@@ -3218,9 +3261,7 @@ function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
     if (camp !== autre(coteLanceur)) continue;
     const defenseur = duel[camp].creatures.find((entite) => entite.id === entiteId) ?? dernierEtat;
     if (!defenseur?.contreAttaque) continue;
-    riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
-      ? { type: 'sorcier', cote: coteLanceur }
-      : { type: 'creature', cote: coteLanceur, entiteId: sauf });
+    riposteDeContreAttaque(duel, defenseur, sourceRiposteEffet(duel, coteLanceur, sourceType, sauf));
   }
 }
 
@@ -3252,8 +3293,8 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
     // de zone le contourne, les attaques et capacités passent.
     if (rpgEstProtegeeDesSorts(entite, coup.sourceElement, coup.sourceType)) continue;
-    if (coup.sourceType === 'capacite' && coup.sourceCreature !== false
-      && paradeZoneBloque(duel, entite, 'capacite', coup.cote, coup.effetSourceCote ?? coup.sourceCote)) continue;
+    if (estCapacite(coup.sourceType) && coup.sourceCreature !== false
+      && paradeZoneBloque(duel, entite, coup.sourceType, coup.cote, coup.effetSourceCote ?? coup.sourceCote, coup.sourceElement)) continue;
     // Le Grand Voile blanc : les dégâts de combat s’égarent dans le blanc —
     // les dégâts de capacité et de magie, eux, traversent le voile.
     if (coup.sourceType === 'attaque' && (duel.brouillardCombat || (duel.moba && duel.brouillardCombatVoies?.includes(coup.voieCombat ?? duel[coup.sourceCote]?.creatures.find((e) => e.id === coup.sourceId)?.mobaLane)))) continue;
@@ -3262,7 +3303,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
       // dégâts alliés, sans se briser. Seule une attaque ou magie ennemie
       // l'épuise. Le comportement historique hors MOBA reste inchangé.
       const sourceCote = coup.effetSourceCote ?? coup.sourceCote;
-      const brise = (coup.sourceType === 'attaque' || coup.sourceType === 'magie')
+      const brise = (coup.sourceType === 'attaque' || coup.sourceType === 'effet-creature')
         && (!duel.moba || !sourceCote || sourceCote !== coup.cote);
       if (brise) {
         entite.bouclierLumiere = false;
@@ -3456,7 +3497,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
     if (duel.moba?.winner) break;
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
-      declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId, mort.entite);
+      const tueur = carte.destruction.type === 'degats-tueur'
+        ? (mort.sources ?? []).find((source) => !mortsIds.has(source.id) && duel[source.cote]?.creatures.some((e) => e.id === source.id))
+        : null;
+      mort.effetTueurSuspendu = Boolean(declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId, mort.entite, false, tueur)?.interrompu);
     }
     if (!duel.moba?.winner) declencherHarakiri(duel, mort.cote, mort.entite);
   }
@@ -3476,7 +3520,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBle
   for (const mort of mortes) {
     if (duel.moba?.winner) break;
     const carte = duelCardById(mort.entite.carteId);
-    if (carte?.destruction?.type !== 'degats-tueur') continue;
+    if (carte?.destruction?.type !== 'degats-tueur' || mort.effetTueurSuspendu) continue;
     const source = (mort.sources ?? []).find((s) => !mortsIds.has(s.id)
       && duel[s.cote]?.creatures.some((e) => e.id === s.id));
     if (source) embraserTueur(duel, mort.cote, carte, source);
@@ -3489,9 +3533,13 @@ function embraserTueur(duel, cote, carte, source) {
   const cible = duel[source.cote]?.creatures.find((e) => e.id === source.id);
   const amount = Math.max(0, Number(carte?.destruction?.amount) || 0);
   if (!cible || !amount || rpgEstProtegee(cible, cardColors(carte))
-    || paradeZoneBloque(duel, cible, 'capacite', source.cote, cote)) return;
+    || rpgEstProtegeeDesSorts(cible, cardColors(carte), 'effet-creature')
+    || paradeZoneBloque(duel, cible, 'effet-creature', source.cote, cote, cardColors(carte))) return;
+  const dernierEtat = { ...cible };
   duel.log.push(`${carte.name} embrase ${cible.name} : ${amount} dégâts.`);
-  rpgBlesserCreature(duel, source.cote, cible.id, amount, cardColors(carte), null, 'capacite', carte.id, null, cote);
+  const blessure = rpgBlesserCreature(duel, source.cote, cible.id, amount, cardColors(carte), null, 'effet-creature', carte.id, null, cote);
+  if (source.cote === autre(cote) && blessure.ok && !blessure.protegee && !blessure.bouclierLumiere && !blessure.degatsPrevenus)
+    riposterSurEffet(duel, cote, { cible: 'creature' }, cible.id, null, 'effet-creature', dernierEtat);
 }
 
 /** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
@@ -4003,7 +4051,7 @@ function meilleurePriseAbordage(duel, coteVictime, couleurs, seuil) {
 function retirerBonusArmesPourCaleMoba(entite) {
   let atk = 0, def = 0;
   for (const id of entite.armes ?? []) {
-    const effet = magieById(id)?.effet;
+    const effet = ancienneArmeAttachee(id)?.effet;
     atk += Number(effet?.atk) || 0;
     def += Number(effet?.def) || 0;
     const lien = entite.lienArmesBonus?.[id];
@@ -4293,7 +4341,7 @@ export function rpgCartesRenfortChoisi(duel, cote) {
   if (!effet || !camp) return [];
   if (effet.type === 'choix-zone') return candidatsChoixZone(camp, effet);
   if (attente.recherche) return camp.deck.flatMap((id, index) =>
-    effet.categories?.some(categorie => (cardById(id)?.typeLine ?? '').includes(categorie))
+    (effet.effetCreature ? carteAvecEffetCreature(id) : effet.categories?.some(categorie => (cardById(id)?.typeLine ?? '').includes(categorie)))
       ? [{ id, index, admissible: true }] : []);
   const candidats = new Set((placeChoixRenfort(duel, cote, attente) ? candidatsRenfortChoisi(camp, effet) : [])
     .filter(c => !duel.moba || CARTES_COMBAT_AUDITEES.has(c.id)).map(c => c.index));
@@ -4465,7 +4513,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
   // A creature owns its lane; a spell uses the lane chosen at cast time.
-  const voieEffet = duel.moba && !['porte-etendard-de-leclipse', 'scalde-des-runes'].includes(sourceCarteId) ? (sourceType === 'capacite'
+  const voieEffet = duel.moba && !['porte-etendard-de-leclipse', 'scalde-des-runes'].includes(sourceCarteId) ? (estCapacite(sourceType)
     ? (options?.mobaLane ?? duel[cote].creatures.find((e) => e.id === sauf)?.mobaLane)
     : sourceType === 'magie' ? options?.mobaLane : null) : null;
   const dansVoie = (entite) => !voieEffet || mobaPartageVoie(duel.moba, entite.mobaLane, voieEffet);
@@ -4502,18 +4550,19 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
   // atteinte — pas de dégât, pas de gel, pas d'exil à l'autre bout du plateau.
   // Les effets sans portée inscrite (masses, sorciers, pioches) passent sans
   // mesure, comme avant.
-  const porteeEffet = sourceType === 'capacite' && !options?.activationAssociee ? porteeEffetCarte(sourceCarteId) : null;
+  const porteeEffet = estCapacite(sourceType) && !options?.activationAssociee ? porteeEffetCarte(sourceCarteId) : null;
   if (porteeEffet && cibleDirecte
     && !cibleDeLEffetAPortee(duel, cote, sauf, cibleDirecte, campCible, porteeEffet)) {
     duel.log.push(`${cibleDirecte.name ?? 'La créature'} est hors de portée de ${cardById(sourceCarteId)?.name ?? 'l’effet'}.`);
     return;
   }
   // Targeted creature abilities cannot jump from their source lane.
-  if (duel.moba && sourceType === 'capacite' && voieEffet && cibleDirecte && !dansVoie(cibleDirecte)) return;
+  if (duel.moba && estCapacite(sourceType) && voieEffet && cibleDirecte && !dansVoie(cibleDirecte)) return;
   const effetCible = Boolean(cibleId && (effet.cible === 'creature' || ['debuff', 'empeche-blocage', 'blocage-force'].includes(effet.type)));
-  if (sourceType === 'capacite' && effetCible && effet.type !== 'degats' && cibleDirecte
+  if (estCapacite(sourceType) && effetCible && effet.type !== 'degats' && cibleDirecte
     && !rpgEstProtegee(cibleDirecte, sourceElement)
-    && paradeZoneBloque(duel, cibleDirecte, sourceType, campCible, cote)) {
+    && !rpgEstProtegeeDesSorts(cibleDirecte, sourceElement, sourceType)
+    && paradeZoneBloque(duel, cibleDirecte, sourceType, campCible, cote, sourceElement)) {
     for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
     return 'bloque';
   }
@@ -4521,7 +4570,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
   // un renfort de camp ou une arrivée qui crée des jetons n'a pas de cible et
   // ne doit donc jamais déclencher son contresort (le moteur ne transmet un
   // `cibleId` qu'aux effets qui en désignent une).
-  if (cibleId && effet.cible && !(sourceType === 'capacite' && effet.type === 'degats'
+  if (sourceType !== 'magie' && cibleId && effet.cible && !(estCapacite(sourceType) && effet.type === 'degats'
     && campCible !== cote && rpgBouclierEstActif(cibleDirecte))) {
     const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
@@ -4573,9 +4622,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     // Certaines fiches de malus portent leur cible dans `cibles`, sans la
     // répéter dans l'effet ; leur cible reste toujours une créature adverse.
     || ['debuff', 'empeche-blocage'].includes(effet.type));
-  if (['magie', 'capacite'].includes(sourceType) && effet.type !== 'degats'
+  if (['magie', 'capacite', 'effet-creature'].includes(sourceType) && effet.type !== 'degats'
     && !(effet.type === 'gel' && effet.degats > 0) && viseUneCreatureAdverse
-    && (sourceType !== 'capacite' || campCible !== cote)
+    && (!estCapacite(sourceType) || campCible !== cote)
     && (effet.type !== 'destruction-cible' || campCible !== cote)) {
     const cibleEffet = duel[campCible].creatures.find((entite) => entite.id === cibleId);
     if (cibleEffet && tenterEsquive(duel, cibleEffet, sourceType)) {
@@ -4610,7 +4659,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!victime || estSite(victime) || !cibleRespecteCoutMax({ effet }, victime)
         || rpgEstProtegee(victime, sourceElement) || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
       const nom = victime.name;
-      enterrer(duel, campCible, victime, sourceElement, null, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null);
+      enterrer(duel, campCible, victime, sourceElement, null, estCapacite(sourceType) && sauf ? { cote, id: sauf } : null);
       duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le sort'} détruit ${nom}.`);
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
@@ -4650,7 +4699,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (duel.moba?.winner) return;
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      ripostesDeZone(duel, cote, sauf, sourceType, touchees);
+      ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, touchees);
       return;
     }
     case 'destruction-coutmax': {
@@ -4713,7 +4762,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       }
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      ripostesDeZone(duel, cote, sauf, sourceType, touchees);
+      ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, touchees);
       return;
     }
     case 'exil': {
@@ -4797,14 +4846,14 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!montant) return;
       if (duel.moba) {
         const laneId = options?.mobaLane ?? duel[cote].creatures.find((entite) => entite.id === sauf)?.mobaLane;
-        const voies = sourceType === 'capacite' ? mobaVoiesCombat(duel.moba, laneId) : [laneId];
+        const voies = estCapacite(sourceType) ? mobaVoiesCombat(duel.moba, laneId) : [laneId];
         let effectue = false;
         for (const voie of voies) {
           const transfert = transfertVieMoba(duel, cote, voie, montant);
           if (!transfert.ok) continue;
           effectue = true;
           if (options?.surTransfertMoba) options.surTransfertMoba(transfert);
-          else if (sourceType === 'capacite') {
+          else if (estCapacite(sourceType)) {
             journaliserDegatsCapaciteMoba(duel, { ...transfert, targetSide: adv, cardId: sourceCarteId, entityId: sauf, transfert: true });
             const events = soinsCreatureMoba.get(duel) ?? [];
             events.push({ side: cote, laneId: voie, healing: transfert.healing, cardId: sourceCarteId, entityId: sauf, transfert: true });
@@ -4920,7 +4969,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             renvoyerEnMain(duel, campCible, entite, sourceElement, sourceType);
           }
         }
-        ripostesDeZone(duel, cote, sauf, sourceType, touchees);
+        ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, touchees);
       } else if (effet.cible === 'creature-amie') {
         const cibles = duel[cote].creatures.filter((entite) => entite.id === cibleId);
         for (const cible of cibles) {
@@ -5225,7 +5274,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           // créature sans prise à bord ne débarque personne.
           if (effet.caleOccupeeSeulement && !entite.enCale) return false;
           if (horsSort(entite)) return false;
-          if (contreAdversaire && ['magie', 'capacite'].includes(sourceType)
+          if (contreAdversaire && ['magie', 'capacite', 'effet-creature'].includes(sourceType)
             && tenterEsquive(duel, entite, sourceType)) {
             esquivees.add(entite.id);
             return false;
@@ -5304,12 +5353,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       }
       // Le malus de zone adverse (l'Embuscade) réveille les Contre-attaques
       // des créatures atteintes, celles qui ont esquivé comprises.
-      if (contreAdversaire && ['magie', 'capacite'].includes(sourceType)) {
+      if (contreAdversaire && ['magie', 'capacite', 'effet-creature'].includes(sourceType)) {
         const touchees = [
           ...ciblesBuff.map((entite) => ({ camp: adv, entiteId: entite.id })),
           ...[...esquivees].map((entiteId) => ({ camp: adv, entiteId })),
         ];
-        ripostesDeZone(duel, cote, sauf, sourceType, touchees);
+        ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, touchees);
       }
       return;
     }
@@ -5375,7 +5424,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entiteId: cible.id,
           amount: estGelee(combattant) ? 0 : combattant.atk,
           sourceElement,
-          sourceType: 'capacite', sourceCreature: sourceType === 'capacite', effetSourceCote: cote,
+          sourceType: sourceType === 'effet-creature' ? sourceType : 'capacite', sourceCreature: estCapacite(sourceType), effetSourceCote: cote,
           // Le duel de créatures nomme ses deux combattants : le mort sait
           // laquelle l'a détruit (le Brûlot embrase son tueur).
           sourceCote: cote,
@@ -5386,7 +5435,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entiteId: combattant.id,
           amount: estGelee(cible) ? 0 : cible.atk,
           sourceElement: cardColors(duelCardById(cible.carteId)),
-          sourceType: 'capacite', sourceCreature: sourceType === 'capacite', effetSourceCote: cote,
+          sourceType: 'capacite', sourceCreature: estCapacite(sourceType), effetSourceCote: cote,
           sourceCote: campCible,
           sourceId: cible.id,
         },
@@ -5411,7 +5460,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     case 'degats': {
       // Remember the source lane before the wave: deaths and retaliation may
       // remove the source before its separate damage to the opposing lane.
-      const voieSourceMoba = duel.moba && sourceType === 'capacite'
+      const voieSourceMoba = duel.moba && estCapacite(sourceType)
         ? duel[cote].creatures.find((entite) => entite.id === sauf)?.mobaLane : null;
       if (effet.cible === 'toutes-creatures' && Number.isFinite(effet.amountSiBlessee)) {
         // Photographier les PV avant la vague : les blessures de cette même
@@ -5429,7 +5478,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           cote: adv, entiteId, amount, sourceElement, sourceType, sourceCote: cote,
           sourceId: sauf, effetSourceCote: cote,
         })));
-        ripostesDeZone(duel, cote, sauf, sourceType, atteintes.map(({ entiteId, dernierEtat }) => ({ camp: adv, entiteId, dernierEtat })));
+        ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, atteintes.map(({ entiteId, dernierEtat }) => ({ camp: adv, entiteId, dernierEtat })));
         return;
       }
       if (effet.cible === 'toutes-autres') {
@@ -5459,8 +5508,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         appliquerDegatsDeCombatSimultanes(duel, coups);
         // Les Contre-attaques des créatures atteintes frappent le lanceur : un sort
         // va au visage du sorcier, une capacité à sa créature source.
-        ripostesDeZone(duel, cote, sauf, sourceType, atteintes.filter(({ dernierEtat }) =>
-          !(sourceType === 'magie' && dernierEtat.bouclierLumiere)));
+        ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, atteintes.filter(({ dernierEtat }) =>
+          !(sourceType === 'effet-creature' && dernierEtat.bouclierLumiere)));
         return;
       }
       if (effet.cible === 'sorcier') {
@@ -5543,19 +5592,17 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const dernierEtat = { ...cible };
         // Une vague qui blesse aussi les alliés est hostile à ses victimes ;
         // seul le prix d'un équipement allié échappe volontairement au jet.
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null,
-          sourceType === 'capacite' && campCible === cote ? null : cote, options?.projectileSource ?? null);
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, estCapacite(sourceType) && sauf ? { cote, id: sauf } : null,
+          estCapacite(sourceType) && campCible === cote ? null : cote, options?.projectileSource ?? null);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
         if (estUneZone) toucheesParLaVague.push({ camp: campCible, entiteId: cible.id, dernierEtat });
         // Les cibles supplémentaires d'un effet ciblé (Oni, Feux de kitsune)
         // ripostent aussi. La première est déjà traitée par `appliquer`.
-        else if (cible.id !== cibleId && campCible === adv && ['magie', 'capacite'].includes(sourceType)) {
+        else if (cible.id !== cibleId && campCible === adv && ['magie', 'capacite', 'effet-creature'].includes(sourceType)) {
           const defenseur = duel[campCible].creatures.find((entite) => entite.id === cible.id) ?? dernierEtat;
-          riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
-            ? { type: 'sorcier', cote }
-            : { type: 'creature', cote, entiteId: sauf });
+          riposteDeContreAttaque(duel, defenseur, sourceRiposteEffet(duel, cote, sourceType, sauf ?? options?.projectileSource?.id));
         }
         // Un effet esquivé est annulé en entier sur cette créature : ni dégât,
         // ni gel associé. Les autres cibles font leur propre jet — mais
@@ -5592,7 +5639,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Une zone qui atteint des Contre-attaques les réveille : les sorts
       // ciblés, eux, ripostent déjà via `riposterSurEffet` dans `appliquer`.
       if (estUneZone) {
-        ripostesDeZone(duel, cote, sauf, sourceType, toucheesParLaVague);
+        ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType, toucheesParLaVague);
       }
       if (duel.moba?.winner) return;
       differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
@@ -5669,7 +5716,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Le gel de zone réveille les Contre-attaques des créatures atteintes,
       // y compris celles qui sont tombées sous les dégâts. Le gel ciblé passe par `riposterSurEffet`.
       if (zoneGel) {
-        ripostesDeZone(duel, cote, sauf, sourceType,
+        ripostesDeZone(duel, cote, sauf ?? options?.projectileSource?.id, sourceType,
           touchees.map((entite) => ({ camp: adv, entiteId: entite.id, dernierEtat: entite })));
       }
       return;
@@ -5957,19 +6004,19 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const index = camp.deck.findIndex((id) => {
         const fiche = cardById(id) ?? magieById(id) ?? armeById(id);
         const ligne = fiche?.typeLine ?? '';
-        return categories.some((categorie) => ligne.includes(categorie));
+        return effet.effetCreature ? carteAvecEffetCreature(fiche) : categories.some((categorie) => ligne.includes(categorie));
       });
       const source = cardById(sourceCarteId)?.name ?? 'La capacité';
       if (duel.moba && ['tiziri-du-djurdjura', 'dune-marchante'].includes(sourceCarteId) && index >= 0) {
         duel.mobaRechercheEnAttente = { cote, sourceCarteId };
         return;
       }
-      if (!duel.moba && sourceCarteId === 'dune-marchante' && index >= 0) {
+      if (!duel.moba && ['dune-marchante', 'tiziri-du-djurdjura'].includes(sourceCarteId) && index >= 0) {
         preparerRenfortChoisi(duel, cote, sourceCarteId);
         return;
       }
       if (index < 0) {
-        duel.log.push(`${source} ne trouve aucune Magie Rapide ni Sorcellerie dans le deck.`);
+        duel.log.push(effet.effetCreature ? `${source} ne trouve aucune créature avec un effet admissible dans le deck.` : `${source} ne trouve aucune carte admissible dans le deck.`);
       } else {
         const [id] = camp.deck.splice(index, 1);
         camp.main.push(id);
@@ -6034,11 +6081,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null, cibleCamp = null, options = null) {
   const cibleAvant = duel[autre(cote)]?.creatures.find((entite) => entite.id === cibleId);
   const dernierEtat = cibleAvant ? { ...cibleAvant } : null;
-  const paradeCapacite = sourceType === 'capacite' && (!cibleCamp || cibleCamp !== cote)
-    && rpgBouclierEstActif(cibleAvant) && (effet?.cible === 'creature' || ['debuff', 'empeche-blocage', 'blocage-force'].includes(effet?.type));
+  const paradeCapacite = estCapacite(sourceType) && (!cibleCamp || cibleCamp !== cote)
+    && (rpgBouclierEstActif(cibleAvant) || (sourceType === 'effet-creature' && bouclierColoreCorrespond(cibleAvant, sourceElement))) && (effet?.cible === 'creature' || ['debuff', 'empeche-blocage', 'blocage-force'].includes(effet?.type));
   const cibleProtegee = cibleAvant && (rpgEstProtegee(cibleAvant, sourceElement)
     || rpgEstProtegeeDesSorts(cibleAvant, sourceElement, sourceType)
-    || (sourceType === 'magie' && effet?.type === 'degats' && cibleAvant.bouclierLumiere));
+    || (sourceType === 'effet-creature' && effet?.type === 'degats' && cibleAvant.bouclierLumiere));
   const destructionsAvant = rpgNombreDestructions(duel);
   // Un effet confié à l'attente de Boualem n'a rien frappé : pas de riposte
   // tant que son contrôleur n'a pas désigné la nouvelle cible.
@@ -6048,7 +6095,7 @@ function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null
   // contre son propre camp.
   if ((cibleCamp && cibleCamp !== autre(cote)) || cibleProtegee) return;
   const detruite = rpgDestructionsDepuis(duel, destructionsAvant).some((evenement) => evenement.entityId === cibleId);
-  riposterSurEffet(duel, cote, effet, cibleId, options?.activationSourceId ?? sauf, sourceType, detruite ? dernierEtat : null);
+  riposterSurEffet(duel, cote, effet, cibleId, options?.activationSourceId ?? sauf ?? options?.projectileSource?.id, sourceType, detruite ? dernierEtat : null);
 }
 
 /** Une arme attachée quitte le jeu avec son porteur, sans revenir en main. */
@@ -6107,9 +6154,9 @@ export function rpgRessacMobaArrivee(duel, cote) {
   const couleurs = cardColors(cardById('sorcier-du-ressac-noir'));
   const cible = duel[ennemi].creatures.find((e) => !e.jeton && !estSite(e)
     && rpgCoutEntite(e) <= 3 && !rpgEstProtegee(e, couleurs)
-    && !rpgEstProtegeeDesSorts(e, couleurs, 'capacite'));
+    && !rpgEstProtegeeDesSorts(e, couleurs, 'effet-creature'));
   if (!cible) return false;
-  const renvoi = renvoyerEnMain(duel, ennemi, cible, couleurs, 'capacite');
+  const renvoi = renvoyerEnMain(duel, ennemi, cible, couleurs, 'effet-creature');
   if (renvoi) rpgActionsEtat(duel);
   return renvoi;
 }
@@ -6295,7 +6342,7 @@ function resoudreExilsFinTour(duel, retours) {
       }
     }
     rpgDissiperDestructionsSansCible(duel);
-    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -6323,8 +6370,47 @@ function sacrifierCreature(duel, cote, entite, declenchements = null) {
  * seule créature est légale — le jeu attend son clic —, et sans cible légale
  * l'effet se dissipe.
  */
-function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null) {
+// Les morts simultanées ne peuvent pas écraser la réponse déjà ouverte. La
+// file ne contient que des données sérialisables, y compris pour l'arbitre PvP.
+const traitementMortEnCours = new WeakSet();
+function traiterEffetsMortEnFile(duel) {
+  if (traitementMortEnCours.has(duel)) return;
+  traitementMortEnCours.add(duel);
+  try {
+    while (duel.effetsMortEnFile?.length && !duel.effetCreatureEnAttente
+      && !duel.destructionsEnAttente?.length && !duel.arriveeEnAttente
+      && !duel.renfortChoixEnAttente && !duel.mobaRechercheEnAttente
+      && !duel.boualemEnAttente && !duel.defausseEnAttente && !duel.siteEnAttente
+      && !rpgVainqueur(duel)) {
+      const suivant = duel.effetsMortEnFile.shift();
+      const carte = duelCardById(suivant.carteId);
+      if (carte?.destruction) declencherCapaciteDestruction(duel, suivant.cote, carte, suivant.carteId, suivant.entite, false, suivant.tueur ?? null, true);
+    }
+  } finally { traitementMortEnCours.delete(duel); }
+}
+
+function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null, reprisePayee = false, tueur = null, depuisFile = false) {
   const effet = carte.destruction;
+  if (!reprisePayee) {
+    if (duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length
+      || duel.arriveeEnAttente || duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente
+      || duel.boualemEnAttente || duel.defausseEnAttente || duel.siteEnAttente) {
+      (duel.effetsMortEnFile ??= []).push({ cote, carteId, entite: { id: entite?.id ?? null, mobaLane: entite?.mobaLane ?? null }, ...(tueur ? { tueur: { cote: tueur.cote, id: tueur.id } } : {}) });
+      return { interrompu: true };
+    }
+    const ciblee = effet?.type === 'degats' && effet.cible === 'creature';
+    if (!ciblee && attendreEffetCreature(duel, cote, carteId, entite?.id ?? null, null, 'destruction', null, null, null,
+      { mortSansCible: true, ...(tueur ? { tueur: { cote: tueur.cote, id: tueur.id } } : {}), ...(entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}) })) {
+      if (!duel.pvp && !duel.moba && cote === 'joueur') {
+        const repondante = rpgEffetsReponseDisponibles(duel, 'sorcier')[0];
+        if (repondante) rpgActiverEffetReponse(duel, 'sorcier', repondante.id, { reprendre: false });
+        else { duel.effetCreatureEnAttente = null; duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce); }
+        if (!repondante) declencherCapaciteDestruction(duel, cote, carte, carteId, entite, true, tueur, true);
+      }
+      return { interrompu: true };
+    }
+  }
+
   // Le souffle frappe toujours à la mort ; seul l'embrasement nécessite
   // une créature tueuse encore présente, retrouvée par le chemin de dégâts.
   if (effet?.type === 'degats-tueur') {
@@ -6341,6 +6427,7 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
         duel.log.push(`${carte.name} inflige ${degats} dégâts au sorcier adverse en mourant.`);
       }
     }
+    if ((reprisePayee || depuisFile) && tueur && !duel.moba?.winner) embraserTueur(duel, cote, carte, tueur);
     return;
   }
   if (effet?.type === 'exil-temporaire') {
@@ -6382,27 +6469,31 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
   }
   if (!(effet?.type === 'degats' && effet.cible === 'creature')) {
     const sourceRetour = duel.moba && effet?.type === 'retour-apres-tours' ? entite?.id ?? null : null;
-    appliquer(duel, cote, effet, null, sourceRetour, cardColors(carte), 'capacite', carteId, null,
+    appliquer(duel, cote, effet, null, sourceRetour, cardColors(carte), 'effet-creature', carteId, null,
       { ...(duel.moba && entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}),
         projectileSource: { cote, id: entite?.id } });
     return;
   }
   const adv = autre(cote);
   const legales = duel[adv].creatures.filter((cible) => !rpgEstProtegee(cible, cardColors(carte))
+    && !rpgEstProtegeeDesSorts(cible, cardColors(carte), 'effet-creature')
     && (!duel.moba || !entite?.mobaLane || mobaPartageVoie(duel.moba, cible.mobaLane, entite.mobaLane))
     && (!duel.moba || duel.moba.lanes.some((voie) => mobaVoieJouable(duel.moba, adv, voie.id) && voie.slots[adv].includes(cible.id))));
   if (!legales.length) {
     duel.log.push(`${carte.name} se dissipe : aucune créature adverse à frapper.`);
     return;
   }
-  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'capacite', carteId, null,
+  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'effet-creature', carteId, null,
     { projectileSource: { cote, id: entite?.id } });
-  if (cote === 'sorcier') {
+  if (cote === 'sorcier' && !duel.pvp) {
     // La politique classique évalue toute la table : ne lui présenter en
     // MOBA que les créatures effectivement légales dans la voie du mort.
     const vue = duel.moba ? { ...duel, [adv]: { ...duel[adv], creatures: legales } } : duel;
     const choix = choisirCibleAutoIA(vue, cote, { ...carte, arrivee: effet });
-    resoudre(legales.some((candidate) => candidate.id === choix) ? choix : legales[0].id);
+    const cibleId = legales.some((candidate) => candidate.id === choix) ? choix : legales[0].id;
+    if (attendreEffetCreature(duel, cote, carteId, entite?.id ?? null, cibleId, 'destruction', null, null, null,
+      { ...(entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}) })) return;
+    resoudre(cibleId);
     return;
   }
   duel.destructionsEnAttente = duel.destructionsEnAttente ?? [];
@@ -6460,8 +6551,8 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
     if (duel.moba?.winner) return;
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {
-      declencherCapaciteDestruction(duel, cote, carte, entite.carteId, entite);
-      if (!duel.moba?.winner && carte.destruction.type === 'degats-tueur' && tueur) embraserTueur(duel, cote, carte, tueur);
+      const resultatMort = declencherCapaciteDestruction(duel, cote, carte, entite.carteId, entite, false, tueur);
+      if (!resultatMort?.interrompu && !duel.moba?.winner && carte.destruction.type === 'degats-tueur' && tueur) embraserTueur(duel, cote, carte, tueur);
     }
     if (!duel.moba?.winner) declencherHarakiri(duel, cote, entite);
   };
@@ -6647,7 +6738,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
   const origineVisuelle = projectileSource ?? sourceCreature;
-  if (amount > 0 && sourceType === 'capacite' && origineVisuelle
+  if (amount > 0 && estCapacite(sourceType) && origineVisuelle
     && normaliserCouleurs(sourceElements ?? sourceElement).includes('braise')) {
     flammecheCreature(duel, origineVisuelle.cote, origineVisuelle.id,
       { type: 'creature', cote, entiteId });
@@ -6660,7 +6751,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
   if (entite.bouclierLumiere) {
-    const brise = (sourceType === 'attaque' || sourceType === 'magie')
+    const brise = (sourceType === 'attaque' || sourceType === 'effet-creature')
       && (!duel.moba || !sourceCote || sourceCote !== cote);
     if (brise) {
       entite.bouclierLumiere = false;
@@ -6923,33 +7014,9 @@ function preparerArriveeDeRetour(duel, cote, carte, entite) {
  * désignée par le contrôleur lorsque la transition l'attend ; les retours
  * immédiats et l'IA classique utilisent ici une cible automatique.
  */
-function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
-  if (!carte?.arrivee) return false;
-  let cible = rpgCibleAuto(duel, cote, carte, entite.id);
-  // Un retour sans cible légale ne doit pas viser une autre voie par défaut.
-  if (duel.moba && arriveeCiblePortee(carte) && !arriveeACibleLegale(duel, cote, carte, entite.id)) cible = null;
-  // Les retours automatiques de ces Embuscades ne doivent jamais choisir une
-  // cible hors voie, ni contourner la restriction aux attaquants.
-  if (duel.moba && ['eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune'].includes(carte.id)) {
-    const enemy = autre(cote);
-    cible = duel[enemy].creatures.find((target) => mobaPartageVoie(duel.moba, target.mobaLane, entite.mobaLane)
-      && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, enemy, lane.id) && lane.slots[enemy].includes(target.id))
-      && !rpgEstProtegee(target, cardColors(carte)) && cibleRespecteCoutMax(carte, target)
-      && (carte.arrivee.type !== 'renvoi-ou-destruction' || !estSite(target))
-      && rpgCibleEmbuscadeLegale(duel, cote, carte, target)
-      && (!rpgArriveeExigeAttaquant(duel, carte) || (duel.combatDeclare?.cote === enemy && duel.combatDeclare.attaquants.includes(target.id))))?.id ?? null;
-    if (!cible) return false;
-  }
-  if (duel.moba && carte.id === 'gardienne-du-croissant') {
-    cible = duel[cote].creatures.find((target) => !estSite(target) && mobaPartageVoie(duel.moba, target.mobaLane, entite.mobaLane)
-      && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, cote, lane.id) && lane.slots[cote].includes(target.id))
-      && !rpgEstProtegee(target, cardColors(carte)))?.id ?? null;
-    if (!cible) return false;
-  }
-  if (duel.moba && carte.id === 'la-devoreuse' && !duel[autre(cote)].creatures.some((candidate) => candidate.id === cible)) cible = null;
-  if (duel.moba && ['faiseur-de-passage', 'veilleuse-des-citernes'].includes(carte.id) && cible === entite.id) {
-    cible = duel[cote].creatures.find((candidate) => candidate.id !== entite.id && (!carte.arrivee?.donneDefenseur || !estSite(candidate)) && !rpgEstProtegee(candidate, cardColors(carte)))?.id ?? null;
-  }
+// Reconstruit les callbacks de voie après une suspension sérialisable : les
+// fonctions elles-mêmes ne doivent jamais être stockées dans l'état PvP.
+function optionsArriveeMoba(duel, cote, carte, entite, options = null) {
   const signalerRetourMoba = (event) => {
     if (options?.surEvenementRetourMoba) { options.surEvenementRetourMoba(event); return; }
     if (event.type === 'degats' || event.type === 'transfert') journaliserDegatsCapaciteMoba(duel, {
@@ -6990,6 +7057,50 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
           ? { mobaLane: entite.mobaLane, surTransfertMoba: (event) => signalerRetourMoba({ type: 'transfert', cote, carteId: carte.id, ...event }) }
           : duel.moba && carte.id === 'passeur-au-masque-de-chacal'
             ? { surEvenementRetourMoba: signalerRetourMoba } : {};
+  return { ...(entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}), ...optionsMoba };
+}
+
+function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
+  if (!carte?.arrivee) return false;
+  // Les retours programmés ont déjà une continuation sérialisable ; la
+  // suspendre avant une arrivée sans cible, sans rejouer la présence créée.
+  if (duel.transitionRetours && !options?.ignorerReponse && !arriveeCiblePortee(carte)
+    && !Number.isFinite(carte.abordage)
+    && attendreEffetCreature(duel, cote, carte.id, entite.id, null, 'arrivee', null, null, null,
+      { retourAutomatique: true, ...(entite.mobaLane ? { mobaLane: entite.mobaLane } : {}) })) {
+    if (!duel.pvp && !duel.moba && cote === 'joueur') {
+      const repondante = rpgEffetsReponseDisponibles(duel, 'sorcier')[0];
+      if (repondante) { rpgActiverEffetReponse(duel, 'sorcier', repondante.id, { reprendre: false }); return true; }
+      duel.effetCreatureEnAttente = null;
+      duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce);
+    } else return true;
+  }
+  let cible = rpgCibleAuto(duel, cote, carte, entite.id);
+  // Un retour sans cible légale ne doit pas viser une autre voie par défaut.
+  if (duel.moba && arriveeCiblePortee(carte) && !arriveeACibleLegale(duel, cote, carte, entite.id)) cible = null;
+  // Les retours automatiques de ces Embuscades ne doivent jamais choisir une
+  // cible hors voie, ni contourner la restriction aux attaquants.
+  if (duel.moba && ['eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune'].includes(carte.id)) {
+    const enemy = autre(cote);
+    cible = duel[enemy].creatures.find((target) => mobaPartageVoie(duel.moba, target.mobaLane, entite.mobaLane)
+      && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, enemy, lane.id) && lane.slots[enemy].includes(target.id))
+      && !rpgEstProtegee(target, cardColors(carte)) && cibleRespecteCoutMax(carte, target)
+      && (carte.arrivee.type !== 'renvoi-ou-destruction' || !estSite(target))
+      && rpgCibleEmbuscadeLegale(duel, cote, carte, target)
+      && (!rpgArriveeExigeAttaquant(duel, carte) || (duel.combatDeclare?.cote === enemy && duel.combatDeclare.attaquants.includes(target.id))))?.id ?? null;
+    if (!cible) return false;
+  }
+  if (duel.moba && carte.id === 'gardienne-du-croissant') {
+    cible = duel[cote].creatures.find((target) => !estSite(target) && mobaPartageVoie(duel.moba, target.mobaLane, entite.mobaLane)
+      && duel.moba.lanes.some((lane) => mobaVoieJouable(duel.moba, cote, lane.id) && lane.slots[cote].includes(target.id))
+      && !rpgEstProtegee(target, cardColors(carte)))?.id ?? null;
+    if (!cible) return false;
+  }
+  if (duel.moba && carte.id === 'la-devoreuse' && !duel[autre(cote)].creatures.some((candidate) => candidate.id === cible)) cible = null;
+  if (duel.moba && ['faiseur-de-passage', 'veilleuse-des-citernes'].includes(carte.id) && cible === entite.id) {
+    cible = duel[cote].creatures.find((candidate) => candidate.id !== entite.id && (!carte.arrivee?.donneDefenseur || !estSite(candidate)) && !rpgEstProtegee(candidate, cardColors(carte)))?.id ?? null;
+  }
+  const optionsMoba = optionsArriveeMoba(duel, cote, carte, entite, options);
   if (duel.moba && carte.id === 'oni-de-la-fournaise') {
     const adversaire = autre(cote);
     const cibles = duel[adversaire].creatures.filter((candidate) => !rpgEstProtegee(candidate, cardColors(carte))
@@ -7001,7 +7112,7 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
   const effetRetour = duel.moba && carte.arrivee.attaquanteSeulement
     ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cible);
   appliquer(duel, cote, effetRetour, cible,
-    entite.id, cardColors(carte), 'capacite', carte.id, null, optionsMoba);
+    entite.id, cardColors(carte), 'effet-creature', carte.id, null, optionsMoba);
   // L'Amiral réanimé rejoue aussi son Abordage, après sa pioche. Comme les
   // autres arrivées automatiques de Réanimation, la prise est choisie par le
   // moteur ; en MOBA elle reste dans la voie de l'Amiral.
@@ -7042,7 +7153,8 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
   // créature pouvant se cibler dès qu’elle est seule.
   if (entiteId && carte?.arrivee?.cibleSoi) {
     const source = duel[cote].creatures.find((entite) => entite.id === entiteId);
-    if (source && (carte.arrivee.type === 'exil-temporaire' || !rpgEstProtegee(source, cardColors(carte)))) return true;
+    if (source && (carte.arrivee.type === 'exil-temporaire' || !rpgEstProtegee(source, cardColors(carte)))
+      && !rpgEstProtegeeDesSorts(source, cardColors(carte), 'effet-creature')) return true;
   }
   const sourceLane = duel.moba && duel[cote].creatures.find((e) => e.id === entiteId)?.mobaLane;
   return campsDePortee(cote, portee)
@@ -7052,6 +7164,7 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
       && (!carte?.arrivee?.donneDefenseur || !estSite(entite))
       && (!['renvoi-ou-destruction', 'exil-temporaire'].includes(carte.arrivee?.type) || !estSite(entite))
       && (carte.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carte)))
+      && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'effet-creature')
       && cibleRespecteCoutMax(carte, entite)
       && rpgCibleEmbuscadeLegale(duel, cote, carte, entite)
       && (!rpgArriveeExigeAttaquant(duel, carte) || (attaquants ?? (duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : [])).includes(entite.id))
@@ -7114,11 +7227,11 @@ function attaquesInterceptables(duel, cote, veilleur) {
 
 /** Les effets-réponse ne sont disponibles que pendant une annonce adverse. */
 export function rpgEffetsReponseDisponibles(duel, cote) {
-  if (!duel?.fenetreReponse || !duel[cote] || duel.arriveeEnAttente || duel.effetCreatureEnAttente
+  if (!duel?.fenetreReponse || !duel[cote] || duel.arriveeEnAttente
     || duel.renfortChoixEnAttente || duel.defausseEnAttente || duel.destructionsEnAttente?.length
     || duel.mobaRechercheEnAttente || duel.siteEnAttente || duel.boualemEnAttente
     || duel.moba?.centerChoice || duel.moba?.winner || duel.fin?.gagnant || duel.fin?.nul) return [];
-  const annonce = duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce;
+  const annonce = duel.effetCreatureEnAttente ?? (duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce);
   if (!annonce || annonce.cote === cote) return [];
   const carte = cardById(annonce.carteId);
   if (!carte) return [];
@@ -7128,16 +7241,32 @@ export function rpgEffetsReponseDisponibles(duel, cote) {
       && !entite.activationUtilisee && !entite.activationUtiliseeMatch && !entite.activationUtiliseeCeTour
       && entite.ready !== false && !entite.attaquee && !rpgSouffreMalInvocation(entite)
       && rpgPeutPayer(duel[cote], coutActivation(activation))
-      && contreCorrespond(activation.effet, carte);
+      && (annonce === duel.effetCreatureEnAttente
+        ? activation.effet.cible === 'effet-creature' && ['arrivee', 'activation', 'destruction'].includes(annonce.type)
+        : activation.effet.cible !== 'effet-creature' && contreCorrespond(activation.effet, carte));
   });
 }
 
 /** Active la créature explicitement : une annonce courante est indispensable. */
-export function rpgActiverEffetReponse(duel, cote, entiteId) {
+export function rpgActiverEffetReponse(duel, cote, entiteId, { reprendre = true } = {}) {
   const entite = rpgEffetsReponseDisponibles(duel, cote).find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'reponse-indisponible' };
-  const annonce = duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce;
+  const annonce = duel.effetCreatureEnAttente ?? (duel.moba ? (duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente) : duel.annonce);
   const activation = duelCardById(entite.carteId).activation;
+  if (annonce === duel.effetCreatureEnAttente) {
+    payer(duel, cote, coutActivation(activation));
+    entite.activationUtiliseeMatch = true;
+    entite.activationUtiliseeCeTour = true;
+    entite.aActiveEffetCeTour = true;
+    entite.reponseEngagee = true;
+    entite.ready = false;
+    duel.effetCreatureEnAttente = null;
+    duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce || duel.mobaCreatureEnAttente || duel.mobaSortEnAttente);
+    for (let i = 0; i < (activation.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+    duel.log.push(`${entite.name} contre l’effet de ${cardById(annonce.carteId)?.name ?? 'la créature'} ; cet effet ne se résout pas.`);
+    if (reprendre) { traiterEffetsMortEnFile(duel); reprendreTransitionRetours(duel); }
+    return { ok: true, contre: true, effetContre: true };
+  }
   return contrerAnnonce(duel, cote, { id: entite.carteId, name: entite.name, effet: activation.effet }, annonce, entite);
 }
 
@@ -7305,6 +7434,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       return { ok: false, raison: 'emplacement' };
     }
   }
+  if (cibleId && arriveeCiblePortee(carte)) {
+    const cibleArrivee = [...duel.joueur.creatures, ...duel.sorcier.creatures].find((candidate) => candidate.id === cibleId);
+    if (cibleArrivee && rpgEstProtegeeDesSorts(cibleArrivee, cardColors(carte), 'effet-creature')) return { ok: false, raison: 'protection' };
+  }
   if (carte.arrivee?.type === 'combat' || (carte.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature')) {
     // Une arrivée qui désigne une créature (duel du Cavalier, lance de givre de
     // la Valkyrie, gueule du Bakunawa) exige sa cible tant qu'il reste une
@@ -7364,7 +7497,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
     if (cible && !cibleRespecteTypeImprime(carte, cible)) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (cible && rpgEstProtegeeDesSorts(cible, cardColors(carte), 'capacite')) return { ok: false, raison: 'protection' };
+    if (cible && rpgEstProtegeeDesSorts(cible, cardColors(carte), 'effet-creature')) return { ok: false, raison: 'protection' };
     if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
       return { ok: false, raison: 'cible' };
     }
@@ -7646,10 +7779,23 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     let cibleArrivee = null;
     if (carte.arrivee.cible === 'creature-amie') cibleArrivee = cibleId ?? entite.id;
     else if (carte.arrivee.cible && carte.arrivee.cible !== 'soi') cibleArrivee = cibleId;
-    if (!((duel.pvp || attendreReponseEffet)
-      && attendreEffetCreature(duel, cote, carte.id, entite.id, cibleArrivee, 'arrivee'))) {
+    const reponseIA = !duel.pvp && !duel.moba && cote === 'joueur';
+    // Une prise en cale séparée ou des callbacks de voie exigent encore leur
+    // propre continuation : ne pas décaler ces effets dans la fenêtre simple.
+    const peutSuspendre = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein) === null;
+    let effetReserve = peutSuspendre && (duel.pvp || attendreReponseEffet || reponseIA)
+      && attendreEffetCreature(duel, cote, carte.id, entite.id, cibleArrivee, 'arrivee', null, null, null,
+        { ...(entite.mobaLane ? { mobaLane: entite.mobaLane } : {}) });
+    let effetContreIA = false;
+    if (effetReserve && reponseIA) {
+      const repondante = rpgEffetsReponseDisponibles(duel, 'sorcier')[0];
+      if (repondante) effetContreIA = rpgActiverEffetReponse(duel, 'sorcier', repondante.id).ok;
+      else { duel.effetCreatureEnAttente = null; duel.fenetreReponse = false; }
+      effetReserve = false;
+    }
+    if (!effetReserve && !effetContreIA) {
       appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
-        entite.id, cardColors(carte), 'capacite', carte.id, null, { resoudreSoinSorcier, resoudreDegatsSorcier });
+        entite.id, cardColors(carte), 'effet-creature', carte.id, null, { resoudreSoinSorcier, resoudreDegatsSorcier });
       journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
     }
   }
@@ -7684,6 +7830,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), retourIds: retours, emplacement: entite.emplacement ?? null,
+    ...(duel.effetCreatureEnAttente ? { effetEnAttente: true } : {}),
     ...(carteContree ? { contre: true, parIA: cote === 'sorcier', carteContree, carteContre: carte.id } : {}) };
 }
 
@@ -7781,13 +7928,26 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
       ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
       : null;
     duel.arriveeEnAttente = arriveeSuivante;
-    appliquer(duel, cote, effetArriveePourCible(carte, 'sorcier'), 'sorcier',
-      entite.id, cardColors(carte), 'capacite', carte.id, null, options);
-    journaliserArriveeAuSorcier(duel, carte, 'sorcier');
+    const reponseIA = !duel.pvp && !duel.moba && cote === 'joueur';
+    let effetEnAttente = !arriveeSuivante && (duel.pvp || duel.moba || reponseIA)
+      && attendreEffetCreature(duel, cote, carte.id, entite.id, 'sorcier', 'arrivee', null, null, null,
+        { ...(entite.mobaLane ? { mobaLane: entite.mobaLane } : {}) });
+    let contreIA = false;
+    if (effetEnAttente && reponseIA) {
+      const repondante = rpgEffetsReponseDisponibles(duel, autre(cote))[0];
+      if (repondante) contreIA = rpgActiverEffetReponse(duel, autre(cote), repondante.id, { reprendre: false }).ok;
+      else { duel.effetCreatureEnAttente = null; duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce); }
+      effetEnAttente = false;
+    }
+    if (!effetEnAttente && !contreIA) {
+      appliquer(duel, cote, effetArriveePourCible(carte, 'sorcier'), 'sorcier',
+        entite.id, cardColors(carte), 'effet-creature', carte.id, null, options);
+      journaliserArriveeAuSorcier(duel, carte, 'sorcier');
+    }
     rafraichirAuras(duel);
     rpgActionsEtat(duel);
     reprendreTransitionRetours(duel);
-    return { ok: true, cible: null, sorcier: true };
+    return { ok: true, cible: null, sorcier: true, effetEnAttente };
   }
   const cible = campsDePortee(cote, portee)
     .flatMap((camp) => duel[camp].creatures)
@@ -7810,7 +7970,8 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
   if (!cibleRespecteTypeImprime(carte, cible)) {
     return { ok: false, raison: 'cible' };
   }
-  if (carte?.arrivee?.type !== 'exil-temporaire' && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  if ((carte?.arrivee?.type !== 'exil-temporaire' && rpgEstProtegee(cible, cardColors(carte)))
+    || rpgEstProtegeeDesSorts(cible, cardColors(carte), 'effet-creature')) return { ok: false, raison: 'protection' };
   if (duel.moba && carte?.id === 'oni-de-la-fournaise' && !hasAbordage) {
     const ids = options?.ciblesOniMoba;
     if (!Array.isArray(ids) || ids.length < 1 || ids.length > 2 || ids[0] !== cibleId
@@ -7825,11 +7986,21 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId, options = null) {
     ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
     : null;
   duel.arriveeEnAttente = arriveeSuivante;
-  const effetEnAttente = duel.pvp
-    && attendreEffetCreature(duel, cote, carte.id, entite.id, cible.id, 'arrivee');
-  if (!effetEnAttente) {
+  const reponseIA = !duel.pvp && !duel.moba && cote === 'joueur';
+  let effetEnAttente = !arriveeSuivante && (duel.pvp || duel.moba || reponseIA)
+    && attendreEffetCreature(duel, cote, carte.id, entite.id, cible.id, 'arrivee', null, null, null,
+      { ...(entite.mobaLane ? { mobaLane: entite.mobaLane } : {}),
+        ...(options?.ciblesOniMoba ? { ciblesOniMoba: [...options.ciblesOniMoba] } : {}) });
+  let contreIA = false;
+  if (effetEnAttente && reponseIA) {
+    const repondante = rpgEffetsReponseDisponibles(duel, autre(cote))[0];
+    if (repondante) contreIA = rpgActiverEffetReponse(duel, autre(cote), repondante.id, { reprendre: false }).ok;
+    else { duel.effetCreatureEnAttente = null; duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce); }
+    effetEnAttente = false;
+  }
+  if (!effetEnAttente && !contreIA) {
     appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cible.id), cible.id,
-      entite.id, cardColors(carte), 'capacite', carte.id, null, options);
+      entite.id, cardColors(carte), 'effet-creature', carte.id, null, options);
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -7854,7 +8025,8 @@ export function rpgDissiperDestructionsSansCible(duel) {
     const allie = carte?.destruction?.type === 'exil-temporaire';
     const legales = duel[allie ? attente.cote : autre(attente.cote)].creatures
       .filter((entite) => (!duel.moba || !attente.mobaLane || mobaPartageVoie(duel.moba, entite.mobaLane, attente.mobaLane))
-        && (allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte))));
+        && (allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte))
+      && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'effet-creature')));
     if (legales.length) {
       restantes.push(attente);
       continue;
@@ -7881,7 +8053,8 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   const adv = autre(cote);
   const allie = carte?.destruction?.type === 'exil-temporaire';
   const legales = duel[allie ? cote : adv].creatures.filter((entite) => (!duel.moba || !attente.mobaLane || mobaPartageVoie(duel.moba, entite.mobaLane, attente.mobaLane))
-    && (allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte))));
+    && (allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte))
+      && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'effet-creature')));
   if (!legales.length) {
     duel.destructionsEnAttente.shift();
     return { ok: false, raison: 'aucune-cible' };
@@ -7889,10 +8062,21 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   const cible = legales.find((entite) => entite.id === cibleId);
   if (!cible) return { ok: false, raison: 'cible' };
   duel.destructionsEnAttente.shift();
+  if (!allie && !duel.destructionsEnAttente.length && (duel.pvp || duel.moba || cote === 'joueur')
+    && attendreEffetCreature(duel, cote, attente.carteId, attente.sourceEntiteId, cible.id, 'destruction')) {
+    if (attente.mobaLane) duel.effetCreatureEnAttente.mobaLane = attente.mobaLane;
+    if (!duel.pvp && !duel.moba) {
+      const repondante = rpgEffetsReponseDisponibles(duel, autre(cote))[0];
+      if (repondante) return rpgActiverEffetReponse(duel, autre(cote), repondante.id, { reprendre: false });
+      duel.effetCreatureEnAttente = null;
+      duel.fenetreReponse = false;
+    } else return { ok: true, cible, effetEnAttente: true };
+  }
   if (allie) exilerPourFinDeTour(duel, cote, cible, attente.carteId);
-  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId, null,
+  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'effet-creature', attente.carteId, null,
     { mobaLane: attente.mobaLane, projectileSource: { cote, id: attente.sourceEntiteId } });
   rpgActionsEtat(duel);
+  traiterEffetsMortEnFile(duel);
   reprendreTransitionRetours(duel);
   return { ok: true, cible };
 }
@@ -7922,8 +8106,8 @@ export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
       attente.sauf ?? null, attente.sourceElement, attente.sourceType, attente.sourceCarteId,
       cible.camp, attente.optionsActivation ?? null);
   } else if (attente.montant !== null && attente.montant !== undefined) {
-    if (!paradeZoneBloque(duel, cible.entite, 'capacite', cible.camp, attente.sourceCote))
-      rpgBlesserCreature(duel, cible.camp, cible.entite.id, attente.montant, attente.couleur, null, 'capacite', attente.sourceCarteId, null, attente.sourceCote);
+    if (!paradeZoneBloque(duel, cible.entite, attente.sourceType, cible.camp, attente.sourceCote, attente.couleur))
+      rpgBlesserCreature(duel, cible.camp, cible.entite.id, attente.montant, attente.couleur, null, attente.sourceType, attente.sourceCarteId, null, attente.sourceCote);
     duel.log.push(`${attente.sourceNom ?? 'La capacité'} inflige ${attente.montant} blessures à ${cible.entite.name}.`);
   }
   rpgActionsEtat(duel);
@@ -8321,6 +8505,7 @@ export function rpgCibleAuto(duel, cote, carte, sourceId = null) {
 /** Un contre ne vise que la carte que le sorcier vient d'annoncer. `cible` : 'carte'
  *  (n'importe quelle carte) ou 'sort' (magies seulement) ; `contre` : couleurs visées. */
 function contreCorrespond(effet, carte) {
+  if (effet.cible === 'effet-creature') return false;
   if (effet.cible === 'sort' && !magieById(carte.id)) return false;
   // Écueil : ne contre que les créatures (héros et jetons compris) — jamais
   // un sort, jamais une arme. Le cas `carte` (le Contresort des abîmes)
@@ -8941,7 +9126,7 @@ export function rpgOuvrirFenetreReponse(duel, cote = 'sorcier') {
 }
 
 export function rpgFermerFenetreReponse(duel) {
-  duel.fenetreReponse = false;
+  duel.fenetreReponse = Boolean(duel.effetCreatureEnAttente);
 }
 
 /** L’IA assigne ses bloqueurs avant que le joueur attaquant ne reçoive la priorité.
@@ -10507,7 +10692,7 @@ function resoudreRetoursProgrammes(duel, retours) {
     // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
     const attente = preparerArriveeDeRetour(duel, cote, carte, entite);
     if (!attente) appliquerArriveeDeRetour(duel, cote, carte, entite);
-    if (attente || duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente) {
+    if (attente || duel.effetCreatureEnAttente || duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente) {
       duel.transitionRetours.declenche = carte.retourDeclenche ? { cote, carteId: carte.id } : null;
       return;
     }
@@ -10569,7 +10754,7 @@ export function rpgOuvrirFinDeTour(duel) {
  *  (Un contre n'a rien à contrer en fin de tour : il ne compte pas — et un
  *  sort sans cible valide non plus.) */
 export function rpgPeutRepondre(duel, cote) {
-  return duel[cote].main.some((id) => {
+  return rpgEffetsReponseDisponibles(duel, cote).length > 0 || duel[cote].main.some((id) => {
     if (sortTransfere(id)) return false;
     const carte = magieById(id) ?? duelCardById(id);
     // Les créatures avec Invocation spéciale ne sont jamais des réponses.
@@ -10764,6 +10949,7 @@ function terminerFinDeTour(duel) {
 // L'état est sérialisable : sauvegardes et arbitre PvP reprennent la même
 // file sans redécompter les tours ni rejouer les étapes déjà exécutées.
 function reprendreTransitionRetours(duel) {
+  traiterEffetsMortEnFile(duel);
   activerProchainRenfortChoisi(duel);
   const transition = duel.transitionRetours;
   if (!transition || duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente
@@ -10778,7 +10964,7 @@ function reprendreTransitionRetours(duel) {
     terminerFinDeTour(duel);
   } else if (transition.etape === 'exil') {
     resoudreExilsFinTour(duel, transition.file);
-    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
     if (rpgVainqueur(duel)) { duel.transitionRetours = null; return; }
     commencerNouveauTour(duel);
   } else if (transition.etape === 'programmes') {
@@ -10790,7 +10976,7 @@ function reprendreTransitionRetours(duel) {
       if (duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
     }
     resoudreRetoursProgrammes(duel, transition.file);
-    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
+    if (duel.renfortChoixEnAttente || duel.mobaRechercheEnAttente || duel.arriveeEnAttente || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.boualemEnAttente) return;
     duel.transitionRetours = null;
     if (!rpgVainqueur(duel)) terminerTransitionRetours(duel);
   }

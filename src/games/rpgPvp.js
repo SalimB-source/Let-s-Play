@@ -30,6 +30,7 @@ import { cardById, cardColors, duelCardById } from './rpgCards.js';
 import { rpgDeclarerAttaqueIndividuelleClassique, rpgResoudreAttaqueIndividuelleClassique } from './rpgCombatIndividuelClassique.js';
 import {
   rpgActiverArme,
+  rpgActiverEffetReponse,
   rpgActiverCapacite,
   rpgChoisirCouleurMana,
   rpgDefausserCarte,
@@ -93,6 +94,7 @@ export const RPG_PVP_INTENTIONS = [
   'resoudre-arrivee',
   'renoncer-arrivee',
   'passer-effet',
+  'activer-reponse',
   'resoudre-destruction',
   'resoudre-boualem',
   'preparer-defausse-fin-tour',
@@ -225,7 +227,7 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
   if (duel.effetCreatureEnAttente && !duel.arriveeEnAttente) {
     const carte = cardById(intention.carteId);
     if (cote !== rpgPvpAutreCote(duel.effetCreatureEnAttente.cote)
-      || (intention.type !== 'passer-effet'
+      || (!['passer-effet', 'activer-reponse'].includes(intention.type)
         && !(intention.type === 'jouer-carte' && carte?.instant))) {
       return { ok: false, raison: 'effet-en-attente' };
     }
@@ -298,6 +300,7 @@ function retournerPartie(vue) {
   if (vue.magieGratuite?.cote) {
     vue.magieGratuite = { ...vue.magieGratuite, cote: remplace(vue.magieGratuite.cote) };
   }
+  if (Array.isArray(vue.effetsMortEnFile)) vue.effetsMortEnFile = vue.effetsMortEnFile.map((item) => ({ ...item, cote: remplace(item.cote), ...(item.tueur?.cote ? { tueur: { ...item.tueur, cote: remplace(item.tueur.cote) } } : {}) }));
   if (Array.isArray(vue.destructionsEnAttente)) {
     vue.destructionsEnAttente = vue.destructionsEnAttente.map((item) => (
       item?.cote ? { ...item, cote: remplace(item.cote) } : item
@@ -308,7 +311,8 @@ function retournerPartie(vue) {
   }
   if (vue.annonce?.cote) vue.annonce = { ...vue.annonce, cote: remplace(vue.annonce.cote) };
   if (vue.effetCreatureEnAttente?.cote) {
-    vue.effetCreatureEnAttente = { ...vue.effetCreatureEnAttente, cote: remplace(vue.effetCreatureEnAttente.cote) };
+    vue.effetCreatureEnAttente = { ...vue.effetCreatureEnAttente, cote: remplace(vue.effetCreatureEnAttente.cote),
+      ...(vue.effetCreatureEnAttente.tueur?.cote ? { tueur: { ...vue.effetCreatureEnAttente.tueur, cote: remplace(vue.effetCreatureEnAttente.tueur.cote) } } : {}) };
   }
   if (vue.combatDeclare?.cote) {
     vue.combatDeclare = { ...vue.combatDeclare, cote: remplace(vue.combatDeclare.cote) };
@@ -500,6 +504,8 @@ function executerIntention(duel, cote, intention) {
     }
     case 'passer-effet':
       return rpgResoudreEffetCreatureEnAttente(duel, cote);
+    case 'activer-reponse':
+      return rpgActiverEffetReponse(duel, cote, intention.entiteId);
     case 'preparer-blocage':
       return preparerAncienBlocage(duel, cote, intention.blocages ?? {});
     case 'resoudre-arrivee': {

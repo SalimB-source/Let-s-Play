@@ -244,8 +244,8 @@ export const EFFET_LIBELLES = {
   infiltration: 'Infiltration',
   volDeVie: 'Vol de vie',
   protection: 'Bouclier',
-  protectionSorts: 'Protection anti-magie',
-  protectionSortsContre: 'Protection contre les sorts',
+  protectionSorts: 'Protection contre les effets de créature',
+  protectionSortsContre: 'Protection contre les effets de créature',
   overkill: 'Overkill',
   bouclier: 'Bouclier',
   aura: 'Aura',
@@ -363,13 +363,13 @@ export function pastillesPourCarte(carte) {
     ajouter('protection', `Bouclier ${contre}`, null, { contres });
   }
   if (carte.protectionSorts) {
-    ajouter('protectionSorts', 'Protection contre les magies et les sorcelleries');
+    ajouter('protectionSorts', 'Protection contre les effets de créature');
   }
   if (carte.protectionSortsContre) {
     const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
     const contres = [carte.protectionSortsContre].flat(Infinity).filter(Boolean);
     const contre = contres.map((couleur) => labels[couleur] ?? capitaliser(couleur)).join(' et ');
-    ajouter('protectionSortsContre', `Protection contre les sorts de ${contre}`, null, { contres });
+    ajouter('protectionSortsContre', `Protection contre les effets de créature de ${contre}`, null, { contres });
   }
   if (carte.aura) ajouter('aura', 'Aura');
   if (carte.banniere) ajouter('banniere', 'Bannière');
@@ -670,15 +670,16 @@ export const EFFET_DEFINITIONS = {
   defenseur: 'Une attaque adverse sans Infiltration doit la viser en priorité si elle est accessible. Elle empêche aussi les attaques directes, sauf si elle est la seule créature adverse, possède Infiltration et n’a pas Envol. Si plusieurs Défenseurs sont prioritaires, l’attaquant choisit. Défenseur ne force pas à attaquer. Un Défenseur ne se déplace que dans son propre camp : il peut monter au front ou revenir au fond, mais ne franchit jamais la ligne médiane.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle touche une créature, les dégâts qui dépassent la défense de celle-ci atteignent aussi l’adversaire.',
-  esquive: () => '25 % de chance d’esquiver une attaque, un sort ou un effet de créature adverse : son effet sur elle ne porte pas du tout. Elle peut aussi esquiver la réplique lorsqu’elle attaque. Les effets alliés ne sont pas esquivés. Deux sources d’Esquive se cumulent : 25 % + 25 % = 50 %.',
+  esquive: () => '25 % de chances d’esquiver une attaque ou un effet de créature adverse, notamment d’arrivée, de mort ou activé : son effet sur elle ou sur lui ne porte pas du tout. Elle peut aussi esquiver la réplique lorsqu’elle attaque. Les effets alliés ne sont pas esquivés. Deux sources d’Esquive se cumulent : 25 % + 25 % = 50 %.',
   frappeSansRiposte: 'Quand elle attaque une créature, celle-ci encaisse sans rendre le coup : ni riposte de mêlée, ni capacité « au blocage » ne la touche, et une Contre-attaque ne part pas non plus. Ses propres déclencheurs d’attaque, eux, restent entiers.',
-  contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
+  contreAttaque: 'Elle riposte à l’Attaque ciblée et aux effets de créature adverses sur leur source ; si la source de l’effet a quitté le jeu, elle frappe le sorcier adverse. Elle riposte même si elle esquive ou est détruite.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent le bonus indiqué sur la carte.',
   compagnie: (n) => `Tant qu’elle est en jeu, elle gagne +${n ?? 1}/+${n ?? 1} pour chaque AUTRE créature de sa tribu dans son camp. Elle ne se compte pas elle-même, et une créature de la même tribu dans le camp adverse ne compte pas non plus : perdre un frère d’armes fait redescendre le bonus, jamais sous 1 PV.`,
-  protection: (couleur) => `Bouclier de ${couleur ?? 'cette couleur'} : bloque le prochain sort adverse de cette couleur, puis se brise. Les attaques, capacités et sorts alliés passent.`,
-  protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
-  bouclier: () => 'Bloque le premier sort ou effet de créature adverse qui atteint cette créature, même en zone : elle seule est épargnée, puis le bouclier tombe. Les attaques et les effets alliés passent normalement.',
+  protection: (couleur) => `Bouclier ${couleur ?? 'de cette couleur'} : bloque le prochain effet adverse d’arrivée, de mort ou activé de cette couleur, puis se brise. Les attaques, les autres capacités et les effets alliés passent.`,
+  protectionSorts: 'Les effets d’arrivée, de mort et activés des créatures ne peuvent ni la cibler ni la toucher.',
+  protectionSortsContre: (couleur) => `Les effets d’arrivée, de mort et activés de créatures de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la toucher. Les attaques et autres capacités passent.`,
+  bouclier: () => 'Le premier effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Cela couvre aussi les effets d’arrivée, de mort ou activés en zone : elle seule est épargnée. Les attaques et les effets alliés passent normalement.',
   aura: () => 'Tant qu’elle est en jeu, seules les créatures adjacentes de son camp reçoivent son renfort : celles des deux cases qui entourent la sienne. Une case vide coupe le voisinage, et la source ne se renforce jamais elle-même. Si elle quitte la table, le bonus disparaît.',
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
@@ -800,8 +801,8 @@ function texteCapacitesCombat(carte) {
     texte = texte.replace('Quand il attaque ou bloque : avant les blessures de combat et leur répartition, il inflige 2 dégâts à la créature qui le bloque ou qu’il bloque.',
       'Quand il attaque une créature ou est visé par une attaque normale, il inflige 2 dégâts à l’autre créature avant les blessures de combat.');
   } else if (carte?.id === 'tour-de-braise') {
-    texte = texte.replace('Quand la Tour bloque une créature, elle lui inflige 1 dégât de sort avant les blessures de combat.',
-      'Quand la Tour est visée par une attaque normale, elle inflige 1 dégât de sort à l’attaquant avant les blessures de combat.');
+    texte = texte.replace('Quand la Tour bloque une créature, elle lui inflige 1 dégât avant les blessures de combat.',
+      'Quand la Tour est visée par une attaque normale, elle inflige 1 dégât à l’attaquant avant les blessures de combat.');
   } else if (carte?.id === 'tour-des-flots') {
     texte = texte.replace('Quand elle bloque : après l’assignation des blessures de combat, elle renvoie l’attaquant dans la main de son propriétaire.',
       `Quand elle est visée par une attaque normale, elle renvoie l’attaquant dans la main de son propriétaire ${carte.presentationCombatMoba ? 'après' : 'avant'} les blessures de combat.`);
@@ -846,7 +847,7 @@ export function texteCombatIndividuel(carte) {
 
 /** La définition générique d’une pastille (valeur et couleur comprises). */
 export function definitionPastille(pastille) {
-  if (pastille?.cle === 'bouclier' && pastille.parfait) return 'Bloque la première attaque ou magie ennemie qui touche cette créature, puis se brise. En MOBA, il prévient aussi les dégâts de capacités sans se briser.';
+  if (pastille?.cle === 'bouclier' && pastille.parfait) return 'Bloque la première attaque ou les premiers dégâts d’un effet d’arrivée, de mort ou activé adverse qui la touche, puis se brise. En Conquête, il prévient aussi les dégâts d’autres capacités sans se briser.';
   if (pastille.cle === 'debuff' || pastille.cle === 'buff') {
     // Un malus se lit par ce qu'il retire, statistique par statistique : la
     // vipère (-2/0) ne touche pas la défense, et la bulle ne doit pas le dire.
@@ -925,7 +926,7 @@ export function effetsDetailles(carte) {
   });
 
   for (const pastille of pastilles) {
-    if (MOTS_COMBAT_INDIVIDUEL.has(pastille.cle) || !pastille.description) pastille.description = definitionPastille(pastille);
+    if (MOTS_COMBAT_INDIVIDUEL.has(pastille.cle) || ['esquive', 'contreAttaque', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier'].includes(pastille.cle) || !pastille.description) pastille.description = definitionPastille(pastille);
     // Pour les sorts de réanimation sans restriction, la phrase imprimée dit
     // aussi que le joueur choisit la créature. La conserver dans la bulle évite
     // de la répéter sur la fiche sans perdre ce choix. Les autres variantes
