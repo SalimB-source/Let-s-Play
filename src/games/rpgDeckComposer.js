@@ -154,6 +154,24 @@ export function composerDeck(recette, catalogue) {
     }
   }
 
+  // Une famille peut manquer de cartes depuis le retrait de certains sorts.
+  // Les places non pourvues passent aux autres familles de la même identité,
+  // sans assouplir les plafonds globaux, les copies ou la courbe de mana.
+  let manquantes = Object.keys(quotas).reduce((n, seau) => n + quotas[seau] - choisis[seau].length, 0);
+  if (manquantes > 0) {
+    for (const seau of Object.keys(quotas)) quotas[seau] = choisis[seau].length;
+    for (const carte of classees) {
+      if (!manquantes) break;
+      const seau = seauDe(carte);
+      quotas[seau] += manquantes;
+      const avant = choisis[seau].length;
+      poser(carte, limiteDe(carte));
+      const ajoutees = choisis[seau].length - avant;
+      manquantes -= ajoutees;
+      quotas[seau] = choisis[seau].length;
+    }
+  }
+
   return [
     ...terrains.flatMap(([id, nombre]) => Array(nombre).fill(id)),
     ...choisis.creature,

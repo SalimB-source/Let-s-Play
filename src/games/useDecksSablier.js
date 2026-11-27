@@ -37,6 +37,7 @@ import { coffretChoisiDeLAppareil, joueurSablierDejaActif } from './rpgCoffretBi
 import { useStatutSyncSablier } from './useStatutSyncSablier.js';
 import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
+import { sortTransfere } from './rpgSortsTransferes.js';
 import { chargerPortefeuille, exemplairesDuPortefeuille, sauverPortefeuille } from './rpgCredits.js';
 import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
 import { chargerProfil, sauverProfil } from './rpgProfil.js';
@@ -127,9 +128,10 @@ function etatDeDepart(acquis, { attenteCompte = false, reparer = true } = {}) {
     // choix ; un deck personnel, lui, témoigne d'un joueur déjà installé.
     aDeckPersonnel: lu.casier.decks.some((deck) => deck.id !== RPG_DECK_DEPART_ID),
   });
-  const rattrapage = !attenteCompte && (dejaActif || coffretChoisiDeLAppareil())
+  let rattrapage = !attenteCompte && (dejaActif || coffretChoisiDeLAppareil())
     ? garantirDeckDeDepart({ casier: lu.casier, collection })
     : { casier: lu.casier, cree: null };
+  if (reparer) rattrapage = migrerDeckRestaure(rattrapage, collection, exemplaires);
   if (rattrapage.cree || lu.modifie) sauverCasierMaison(rattrapage.casier);
   return {
     ...rattrapage.casier,
@@ -137,6 +139,17 @@ function etatDeDepart(acquis, { attenteCompte = false, reparer = true } = {}) {
     exemplaires,
     reparation: lu.modifie ? { retires: lu.retires, ajoutes: lu.ajoutes } : null,
   };
+}
+
+/** Un ancien coffret restauré peut lui aussi contenir des sorts retirés.
+ * Ne réparer que le deck recréé, et seulement avec un stock déjà chargé. */
+function migrerDeckRestaure(rattrapage, collection, exemplaires) {
+  if (!rattrapage.cree?.cardIds.some(sortTransfere)) return rattrapage;
+  const reparation = reparerCasierHorsStock({ decks: [rattrapage.cree], supprimes: [] }, collection, exemplaires);
+  if (!reparation.modifie) return rattrapage;
+  const deck = reparation.casier.decks[0];
+  return { ...rattrapage, cree: deck, casier: { ...rattrapage.casier,
+    decks: rattrapage.casier.decks.map((ancien) => ancien.id === deck.id ? deck : ancien) } };
 }
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
@@ -191,10 +204,11 @@ export function useDecksSablier() {
       const { state, source } = await chargerEtatSablier(compteId);
       if (!vivant) return;
       if (!state) {
-        // Hors ligne ou sans copie distante : garder les decks locaux intacts.
-        // Un stock absent ne prouve pas qu'une carte a été perdue ; on peut
-        // néanmoins compléter un casier vide à partir des données locales.
-        const depart = etatDeDepart(acquisRef.current, { reparer: false });
+        // Hors ligne : garder les decks locaux intacts ; sans copie distante,
+        // la collection locale est la seule disponible et peut servir à réparer.
+        // Sans lecture du compte, on diffère aussi la restauration d'un coffret.
+        const indisponible = source === 'unavailable';
+        const depart = etatDeDepart(acquisRef.current, { attenteCompte: indisponible, reparer: !indisponible });
         supprimesRef.current = depart.supprimes;
         setDecksMaison(depart.decks);
         setCollection(depart.collection);
@@ -236,9 +250,10 @@ export function useDecksSablier() {
         profil: etatFusionne.profil,
         aDeckPersonnel: casier.casier.decks.some((deck) => deck.id !== RPG_DECK_DEPART_ID),
       });
-      const rattrapage = dejaActif || coffretChoisiDeLAppareil()
+      let rattrapage = dejaActif || coffretChoisiDeLAppareil()
         ? garantirDeckDeDepart({ casier: casier.casier, collection: collectionFusionnee })
         : { casier: casier.casier, cree: null };
+      rattrapage = migrerDeckRestaure(rattrapage, collectionFusionnee, exemplairesFusionnes);
       sauverCasierMaison(rattrapage.casier);
       supprimesRef.current = rattrapage.casier.supprimes;
       setDecksMaison(rattrapage.casier.decks);

@@ -1,4 +1,5 @@
 import { sortTransfere } from './rpgSortsTransferes.js';
+import { RPG_DECKS_THEMATIQUES } from './rpgDecksThematiques.js';
 /**
  * Les decks maison — les decks créés par le joueur dans l'atelier.
  *
@@ -26,6 +27,7 @@ import {
   carteJouableSansTerrain,
   convertirDeckSansTerrain,
   RPG_ELEMENTS,
+  RPG_DUEL_CARDS,
   cardById,
   cardColorCost,
   cardColors,
@@ -110,9 +112,8 @@ export function maintenantIso() {
 /**
  * Un enregistrement de deck maison, ou `null`. Les identifiants de cartes
  * inconnus et hors format (terrains, effets liés aux terrains) sont retirés ;
- * les anciens sorts transférés restent visibles pour que le joueur les remplace : le
- * deck devient « incomplet », jamais cassé. Aucune carte supplémentaire n’est
- * ajoutée ni acquise automatiquement : le joueur complète son deck dans l’atelier. L'état civil chromatique est
+ * les anciens sorts transférés restent intacts jusqu’à la fusion du stock, puis
+ * sont remplacés par `reparerCasierHorsStock` avec les cartes possédées. L'état civil chromatique est
  * recalculé à chaque lecture — l'affichage ne dépend jamais d'une donnée
  * périmée.
  */
@@ -134,6 +135,7 @@ export function normaliserDeckMaison(value) {
     name: nomBrut || 'Deck maison',
     boxArt,
     cardIds,
+    ...(Array.isArray(value.migrationSorts) ? { migrationSorts: value.migrationSorts.filter((entree) => sortTransfere(entree?.retire) && (entree.ajoute === null || carteJouableSansTerrain(cardById(entree.ajoute)))).map(({ retire, ajoute }) => ({ retire, ajoute })).slice(0, 30) } : {}),
     ...(couleurs.length > 1
       ? { elements: couleurs }
       : couleurs.length === 1 ? { element: couleurs[0] } : {}),
@@ -305,6 +307,45 @@ export function peutAjouterCarte(cardId, cardIds, collection = null, comptes = n
   return { ok: true, raison: null };
 }
 
+/** Remplace uniquement les sorts retirés, sans toucher aux autres cartes ni
+ * inventer des acquisitions. Une place reste vide si le stock et l'identité
+ * chromatique ne permettent aucun remplacement ; l'atelier indique alors que
+ * le deck est incomplet. Ne rien déduire d'une collection absente ou partielle. */
+const CARTES_DECKS_COMMUNS = new Set(RPG_DECKS_THEMATIQUES.flatMap((deck) => deck.cardIds));
+
+export function remplacerSortsDansDeck(cardIds, collection = null, comptes = null) {
+  const bruts = Array.isArray(cardIds) ? cardIds : [];
+  const resultat = { cardIds: [...bruts], retires: 0, ajoutes: 0, modifie: false };
+  if (!bruts.some(sortTransfere) || !Array.isArray(collection)) return resultat;
+  const couleurs = new Set(bruts.flatMap((id) => cardColors(id)));
+  const deja = compteExemplaires(bruts.filter((id) => !sortTransfere(id)));
+  const disponibles = RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)
+    && collection.includes(carte.id)
+    && cardColors(carte).length > 0
+    && cardColors(carte).every((couleur) => couleurs.has(couleur)));
+  let retires = 0, ajoutes = 0;
+  const remplacements = [];
+  const listes = bruts.flatMap((id) => {
+    if (!sortTransfere(id)) return [id];
+    retires += 1;
+    const ancienne = cardById(id);
+    const choix = disponibles.filter((carte) => (deja.get(carte.id) ?? 0) < exemplairesPossedables(collection, carte.id, comptes))
+      .sort((a, b) => {
+        const score = (carte) => (CARTES_DECKS_COMMUNS.has(carte.id) ? 0 : 1000)
+          + (carte.kind === ancienne?.kind ? 0 : 100)
+          + (cardColors(carte).some((couleur) => cardColors(ancienne).includes(couleur)) ? 0 : 10)
+          + Math.abs((carte.cost ?? 0) - (ancienne?.cost ?? 0));
+        return score(a) - score(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      })[0];
+    remplacements.push({ retire: id, ajoute: choix?.id ?? null });
+    if (!choix) return [];
+    deja.set(choix.id, (deja.get(choix.id) ?? 0) + 1);
+    ajoutes += 1;
+    return [choix.id];
+  });
+  return { cardIds: listes, retires, ajoutes, modifie: true, remplacements };
+}
+
 /**
  * Répare un deck maison construit sous la règle du playset : les copies qui
  * dépassent le stock **tombent**, et la place libérée est reprise par des
@@ -321,9 +362,9 @@ export function peutAjouterCarte(cardId, cardIds, collection = null, comptes = n
 export function reparerDeckHorsStock(cardIds, collection = null, comptes = null) {
   const bruts = Array.isArray(cardIds) ? cardIds : [];
   const rendu = { cardIds: [...bruts], retires: 0, ajoutes: 0, modifie: false };
-  // Garder les listes sauvegardées intactes : le joueur choisit lui-même
-  // leurs remplacements dans l'atelier, sans perte silencieuse ni achat.
-  if (bruts.some(sortTransfere)) return rendu;
+  // Les sorts ne sont remplacés qu'après lecture du stock complet : aucune
+  // autre carte du deck n'est retirée pendant cette migration.
+  if (bruts.some(sortTransfere)) return remplacerSortsDansDeck(bruts, collection, comptes);
   if (!Array.isArray(collection) || collection.length === 0) return rendu;
   const limiteDe = (carte) => (carte ? exemplairesPossedables(collection, carte.id, comptes) : 0);
   const bornes = convertirDeckSansTerrain(bruts, collection, limiteDe);
@@ -360,7 +401,8 @@ export function reparerCasierHorsStock(casier, collection = null, comptes = null
     modifie = true;
     retires += repare.retires;
     ajoutes += repare.ajoutes;
-    return { ...deck, cardIds: repare.cardIds, majLe: maintenantIso() };
+    return normaliserDeckMaison({ ...deck, cardIds: repare.cardIds, majLe: new Date(Math.max(Date.now(), Date.parse(deck.majLe) + 1)).toISOString(),
+      ...(repare.remplacements ? { migrationSorts: [...(deck.migrationSorts ?? []), ...repare.remplacements] } : {}) });
   });
   if (!modifie) return conforme;
   return { casier: { decks: repares, supprimes }, modifie: true, retires, ajoutes };

@@ -6058,6 +6058,13 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     </button>
                   )}
                 </div>
+                {openDeck.migrationSorts?.length > 0 && (
+                  <p className="rpg-deck-detail__note">
+                    Sorts devenus capacités : {openDeck.migrationSorts.map(({ retire, ajoute }, index) => (
+                      <span key={`${retire}-${index}`}>{index ? ' · ' : ''}{cardById(retire)?.name ?? retire} → {ajoute ? (cardById(ajoute)?.name ?? ajoute) : 'place à compléter dans l’atelier'}</span>
+                    ))}. Les remplacements utilisent uniquement votre collection.
+                  </p>
+                )}
                 {openJouable ? (
                   <button type="button" className="rpg-menu-button rpg-menu-button--primary rpg-deck-detail__play" onClick={() => { play('select'); jouerAvec(openDeck); }}>
                     ⚔ Jouer avec ce deck <span aria-hidden="true">→</span>
