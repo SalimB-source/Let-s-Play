@@ -177,7 +177,7 @@ export function frontTient(creatures = []) {
 export function ligneProtege(attaquant, cible, creaturesCible = []) {
   if (ligneDe(cible) !== RPG_LIGNE_FOND) return false;
   if (attaquant?.coupRapide) return false;
-  return frontTient(creaturesCible);
+  return creaturesCible.some((entite) => ligneDe(entite) === RPG_LIGNE_FRONT && (attaquant?.envol || !entite?.envol));
 }
 
 /** Les cibles que cet attaquant peut réellement désigner, une fois le fond
