@@ -16412,7 +16412,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             playsInline
             className="rpg-mythique-video"
             onTimeUpdate={(event) => {
-              if (event.currentTarget.currentTime >= 2) setVideoMythique(null);
+              if (event.currentTarget.currentTime >= 1.5) setVideoMythique(null);
             }}
             onEnded={() => setVideoMythique(null)}
             onError={() => setVideoMythique(null)}

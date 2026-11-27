@@ -17056,7 +17056,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: auto;
 }
 .rpg-mythique-video {
-  width: min(560px, 82vw);
+  width: min(820px, 90vw);
   aspect-ratio: 16 / 9;
   height: auto;
   border-radius: 16px;
