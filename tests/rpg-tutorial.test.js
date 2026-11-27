@@ -186,7 +186,7 @@ test('la leçon Ténèbres montre le Tribut, le Prix et les jetons de mort', () 
     'le Scarabée laisse un Shabti');
 });
 
-test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', () => {
+test('la leçon Samouraï installe la Résonance et les deux jetons', () => {
   const tutoriel = tutorielParId('serment-du-soleil-rouge');
   const duel = duelDeLecon(tutoriel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'ashigaru-des-braises').ok, true);
@@ -195,13 +195,11 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   const ashigaru = duel.joueur.creatures.find((entite) => entite.carteId === 'ashigaru-des-braises');
   assert.equal(ashigaru.atk, 2);
   assert.equal(ashigaru.pv, 2, 'la Résonance du torii renforce l’Ashigaru');
-  const viking = duel.joueur.creatures.find((entite) => entite.carteId === 'viking-des-neiges');
-  assert.ok(viking, 'la leçon prête un Viking à sacrifier, sans toucher au deck');
   rpgFinDeTour(duel); rpgFinDeTour(duel);
   assert.equal(rpgJouerCreature(duel, 'joueur', 'daimyo-du-soleil-rouge', null,
-    { sacrificeIds: [viking.id] }).ok, true);
-  assert.equal(duel.joueur.creatures.length, 4, 'le Daimyō remplace le Viking et crée un jeton');
-  assert.equal(duel.joueur.mana.braise, 0, 'les poses ne dépensent aucun mana');
+    { retourIds: ['ronin-du-soleil-rouge'] }).ok, true);
+  assert.equal(duel.joueur.creatures.filter(e => e.carteId === 'samourai-du-daimyo').length, 1);
+  assert.equal(duel.joueur.creatures.length, 4);
 
   rpgFinDeTour(duel);
   rpgFinDeTour(duel);
@@ -211,8 +209,8 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
   rpgOuvrirFenetreReponse(duel, 'joueur');
   assert.equal(rpgLancerAttaque(duel, 'joueur', ids, null, null, null, {}, { attaqueDeclaree: true }).ok, true);
   assert.ok(duel.sorcier.pv < pvAvant);
-  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk).sort((a, b) => a - b), [3, 3, 4, 5],
-    'la Bannière grandit chaque Samouraï qui attaque');
+  assert.deepEqual(duel.joueur.creatures.map((entite) => entite.atk).sort((a, b) => a - b), [2, 2, 3, 4],
+    'seule la Résonance renforce les Samouraïs');
 });
 
 test('la leçon Neige appelle un Viking, bloque un sort et active la Furie', () => {

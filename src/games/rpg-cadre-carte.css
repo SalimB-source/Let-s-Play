@@ -52,3 +52,12 @@
 .moba__mulligan-overlay .moba__mulligan-card > :is(b, small) { z-index: 2; }
 .rpg-cadre-vignette { position: relative; display: block; }
 .rpg-cadre-vignette > img { display: block; width: 100%; }
+
+/* Même insigne triangulaire que sur la table pour toutes les vignettes. */
+.rpg-card__effet-badge {
+  position: absolute; bottom: 4px; left: 50%; right: auto; transform: translateX(-50%);
+  z-index: 8; width: 22px; height: 20px; display: flex; align-items: flex-start;
+  justify-content: center; padding-top: 2px; font-size: 11px; line-height: 1;
+  color: #fde047; background: linear-gradient(180deg, #1e293b, #0f172a);
+  clip-path: polygon(0% 0%, 100% 0%, 50% 100%); pointer-events: none;
+}

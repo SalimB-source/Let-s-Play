@@ -464,6 +464,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
+    activation: { nom: 'Lame du pourfendeur', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 2 } },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     combat: { type: 'degats-creature-combattue', amount: 1, quand: ['attaque-bloquee', 'blocage'] },
     text: 'Quand elle est bloquée, elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat. Quand elle bloque une créature, elle lui inflige aussi 1 dégât avant les blessures de combat.',
@@ -538,7 +539,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    cost: 3, atk: 3, def: 2, rarity: 'inhabituelle',
+    cost: 4, atk: 3, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true, conditionEmbuscade: 'attaque-directe',
     arrivee: { type: 'degats', amount: 3, cible: 'creature', attaquanteSeulement: true },
     text: 'Invocation spéciale — Vous pouvez jouer cette créature pendant le tour adverse seulement si vous ne contrôlez aucune créature et qu’une créature adverse vous attaque directement. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature adverse ciblée.',
@@ -589,8 +590,9 @@ export const RPG_CREATURE_CARDS = [
     id: 'manticore-des-dunes', distance: true, name: 'Manticore des dunes',
     element: 'sable', cost: 6, atk: 3, def: 6, rarity: 'rare',
     typeLine: 'Créature — Manticore', art: 'manticore-des-dunes',
+    defenseur: true,
     poison: { degats: 1, tours: 2 },
-    text: 'Poison — Quand la Manticore blesse une créature, la victime perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
+    text: 'Défenseur. Poison — Quand la Manticore blesse une créature, la victime perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
     flavor: 'Sous la pierre, son dard attend que le sable cesse de bouger.',
   },
   {
@@ -620,7 +622,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'guetteur-du-beffroi', distance: true,
-    activation: { nom: 'Rapport du greffier', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'rapport-du-greffier', effet: { type: 'pioche', amount: 2 } },
+    activation: { nom: 'Rapport du greffier', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'rapport-du-greffier', effet: { type: 'pioche', amount: 1 } },
     name: 'Guetteur du beffroi',
     element: 'sable',
     cost: 3,
@@ -645,7 +647,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'dune-marchante',
-    activation: { nom: 'Éveil des dunes', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'eveil-des-dunes', effet: { type: 'renfort-ascension', zone: 'deck', roles: [{ type: 'elemental', element: 'sable', cout: 4 }] } },
+    activation: { nom: 'Combat des dunes', cible: 'creature', uneFoisParMatch: true, effet: { type: 'combat', cible: 'creature', adversaireSeulement: true } },
     name: 'Dune marchante',
     element: 'sable',
     cost: 4,
@@ -702,8 +704,7 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Gardienne',
     art: 'veilleuse-des-citernes',
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, donneDefenseur: true },
-    text: 'Quand la Veilleuse arrive : une autre créature alliée ciblée gagne Défenseur tant qu’elle reste en jeu et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint. Sans autre cible légale, la Veilleuse reçoit les deux effets.',
+    text: '',
     flavor: 'Elle garde les réserves, et la dernière porte.',
   },
   {
@@ -837,8 +838,8 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Sahir',
     art: 'sahir-des-braises',
     arrivee: { type: 'pioche', amount: 1 },
-    combat: { type: 'degats-creature-combattue', amount: 2 },
-    text: 'Quand le Sahir arrive : piochez une carte. Quand il attaque ou bloque : avant les blessures de combat et leur répartition, il inflige 2 dégâts à la créature qui le bloque ou qu’il bloque.',
+    combat: { type: 'degats-creature-combattue', amount: 1 },
+    text: 'Quand le Sahir arrive : piochez une carte. Quand il attaque ou bloque : avant les blessures de combat et leur répartition, il inflige 1 dégât à la créature qui le bloque ou qu’il bloque.',
     flavor: 'Il trace un cercle dans la poussière et écoute le vent répondre.'
   },
   {
@@ -901,6 +902,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'djinn-des-cendres-vengeresses', distance: true,
+    activation: { nom: 'Retour des cendres', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'reanimation', typeImprime: 'Djinn', coutMax: 3, renfortAscension: true } },
     name: 'Djinn des cendres vengeresses',
     element: 'braise', cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-des-cendres-vengeresses',
@@ -953,8 +955,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'rare',
     typeLine: 'Créature — Souffleur',
     art: 'braisier-du-souk',
-    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', etSorcier: 1 },
-    text: 'Quand le Braisier arrive : 1 dégât à toutes les créatures adverses et 1 dégât au sorcier adverse.',
+    activation: { nom: 'Braises du souk', cible: 'aucune', uneFoisParMatch: true, zoneCarteId: 'braisier-du-souk', effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', etSorcier: 1 } },
+    text: '',
     flavor: 'Une seule braise, et le marché se vide.',
   },
   {
@@ -985,9 +987,8 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Djinn',
     art: 'djinn-de-foudre',
     rapidite: true,
-    furtif: true,
     ephemere: true,
-    text: 'Rapidité. Furtivité — Détruit à la fin du tour.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Détruit à la fin du tour.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -1018,14 +1019,12 @@ export const RPG_CREATURE_CARDS = [
     activation: { nom: 'Appât de la meute', cible: 'creature', uneFoisParMatch: true, effet: { type: 'debuff', cible: 'creature', atk: -2, def: 0, minimum: 0, tours: 1, jusquaFinTourAdverse: true } },
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
-    coupRapide: true, gelCombatChance: 0.15,
-    coupCritique: { chance: 0.25, fois: 2 },
-    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Coup critique — 25 % de chances de doubler les dégâts de son attaque contre une créature ou l’adversaire ; contre une créature déjà blessée, il est garanti. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
+    coupRapide: true, gelCombatChance: 0.25,
+    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Avant les dégâts de combat : 25 % de chances de geler chaque créature adverse qu’elle combat.',
     flavor: 'Ses flèches portent le froid des longs hivers.',
   },
   {
     id: 'eirik-du-premier-serment',
-    activation: { nom: 'Festin des vaillants', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'festin-des-vaillants', effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 } },
     name: 'Eirik du Premier Serment',
     element: 'neige',
     cost: 1,
@@ -1067,8 +1066,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'guerrier-au-bouclier-rond',
     defenseur: true,
     blocage: { chance: 0.25, def: 2 },
-    contreAttaque: true,
-    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Guerrier au bouclier rond lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui le atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit ou s’il l’esquive.',
+    text: 'Défenseur. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -1106,6 +1104,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'scalde-des-runes', distance: true,
+    activation: { nom: 'Festin des vaillants', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'festin-des-vaillants', effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 } },
     name: 'Scalde des runes',
     element: 'neige',
     cost: 3,

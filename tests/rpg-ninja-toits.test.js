@@ -103,5 +103,5 @@ test('sa peinture est livrée en 768 × 960 et reste légère', () => {
   const jpg = readFileSync(chemin);
   assert.deepEqual(dimensionsJpeg(jpg), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR]);
   assert.ok(statSync(chemin).size <= 260 * 1024);
-  assert.match(cardArt(ID), new RegExp(`cards/${ID}\\.jpg\\?v=ninja-samourai-des-toits-v2$`));
+  assert.match(cardArt(ID), new RegExp(`cards/${ID}\\.jpg\\?v=ninja-sur-les-toits-sans-cadre-v4$`));
 });

@@ -90,10 +90,10 @@
 .moba__editor-filters input, .moba__editor-filters select { min-width: 0; width: 100%; padding: 8px; border: 1px solid #a28257; background: #171619; color: #f2e8d5; font: 14px system-ui,sans-serif; }
 .moba__editor-list { flex: 1 1 auto; min-height: 130px; overflow-y: auto; border: 1px solid #554733; background: #100f10; }
 .moba__editor-card { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px; border-bottom: 1px solid #44392f; font: 12px/1.35 system-ui,sans-serif; }
-.moba__editor-card > img { width: 48px; height: 60px; object-fit: cover; }.moba__editor-card > div:nth-child(2) { display: grid; gap: 3px; }.moba__editor-card small { color: #c8b99f; }
+.moba__editor-card-art { position: relative; display: block; width: 48px; height: 60px; }.moba__editor-card-art > img { width: 100%; height: 100%; object-fit: cover; }.moba__editor-card > div:nth-child(2) { display: grid; gap: 3px; }.moba__editor-card small { color: #c8b99f; }
 .moba__editor-count { display: flex; align-items: center; gap: 5px; white-space: nowrap; }.moba__editor-count button { width: 30px; height: 30px; padding: 0; border: 1px solid #a28257; background: #3c3022; color: #fff2d5; font-size: 18px!important; }.moba__editor-count button:disabled { opacity: .35; }.moba__editor-count span { min-width: 27px; text-align: center; }
 .moba__editor-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }.moba__editor-actions button:disabled { opacity: .4; }
-@media(max-width: 500px) { .moba__editor { max-height: 96vh; padding: 14px; }.moba__editor-filters { grid-template-columns: 1fr 1fr; }.moba__editor-card { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 6px; }.moba__editor-card > img { width: 36px; height: 48px; }.moba__editor-card small:last-child { display: none; } }
+@media(max-width: 500px) { .moba__editor { max-height: 96vh; padding: 14px; }.moba__editor-filters { grid-template-columns: 1fr 1fr; }.moba__editor-card { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 6px; }.moba__editor-card-art { width: 36px; height: 48px; }.moba__editor-card small:last-child { display: none; } }
 
 /* The local board hosts the classic duel's real full-art faces and badges. */
 .moba__sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }

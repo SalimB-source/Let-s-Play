@@ -47,8 +47,8 @@ const caleAuditee = (duel, cote, entite) => {
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
-export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['serpent-des-deux-rivages', 'gardienne-du-croissant', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
-export const MOBA_ARRIVEES_HOSTILES = Object.freeze([ 'lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
+export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['serpent-des-deux-rivages', 'gardienne-du-croissant', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
+export const MOBA_ARRIVEES_HOSTILES = Object.freeze([ 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'eclipse-silencieuse', 'veilleuse-de-la-lune-givree', 'sentinelle-des-sables', 'traqueur-des-nuits-sans-lune', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo', 'empereur-du-colisee']);
 // Chercheuse keeps the classic random search for kind === 'arme'.
 // Sabre maudit is a magic, not a candidate; only audited printed weapons are.
@@ -930,12 +930,16 @@ export function rpgMobaChoixActivation(duel, side, sourceId) {
     || duel.annonce || duel.boualemEnAttente || duel[side].manaChoixEnAttente) return [];
   const source = duel[side].creatures.find(e => e.id === sourceId);
   const effet = duelCardById(source?.carteId)?.activation?.effet;
-  const sansCible = ['rapport-du-greffier', 'les-feuillets', 'le-routier', 'lettre-de-marque'].includes(duelCardById(source?.carteId)?.activation?.sortAssocie);
-  if (!source || (!sansCible && !effet?.choixDegats && !['combat', 'equiper-cimetiere'].includes(effet?.type)) || !rpgPeutActiverCapacite(duel, side, sourceId)) return [];
+  const sansCible = ['rapport-du-greffier', 'les-feuillets', 'le-routier', 'lettre-de-marque'].includes(duelCardById(source?.carteId)?.activation?.sortAssocie) || ['djinn-des-cendres-vengeresses', 'veilleuse-des-citernes', 'braisier-du-souk', 'scalde-des-runes'].includes(source?.carteId);
+  const degatsCibles = ['vampire-des-braises', 'lionne-du-midi-ardent'].includes(source?.carteId);
+  if (!source || (!sansCible && !degatsCibles && !effet?.choixDegats && !['combat', 'equiper-cimetiere'].includes(effet?.type)) || !rpgPeutActiverCapacite(duel, side, sourceId)) return [];
   if (MOBA_SIDES.some(c => duel[c].creatures.some(e => !combatAudite(e) || !equipementAudite(e) || !caleAuditee(duel, c, e)))) return [];
+  if (source.carteId === 'scalde-des-runes') return duel.moba.lanes.filter(lane => mobaVoieJouable(duel.moba, side, lane.id)).map(lane => ({ cibleId: null, voieSoin: lane.id }));
   if (sansCible) return [{ cibleId: null }];
   const enJeu = (c, e) => duel.moba.lanes.some(l => mobaVoieJouable(duel.moba, c, l.id) && l.slots[c].includes(e.id));
   const cibles = new Set(rpgCiblesActivationLegales(duel, side, sourceId) ?? []);
+  if (degatsCibles) return [...duel.joueur.creatures, ...duel.sorcier.creatures].filter(e => cibles.has(e.id)
+    && enJeu(duel.joueur.creatures.includes(e) ? 'joueur' : 'sorcier', e) && mobaPartageVoie(duel.moba, source.mobaLane, e.mobaLane)).map(c => ({ cibleId: c.id }));
   if (effet.choixDegats) {
     const adv = side === 'joueur' ? 'sorcier' : 'joueur';
     const ennemis = duel[adv].creatures.filter(e => cibles.has(e.id) && enJeu(adv, e)
@@ -947,6 +951,10 @@ export function rpgMobaChoixActivation(duel, side, sourceId) {
     ]);
   }
   if (effet.type === 'combat') {
+    if (effet.sourceCible !== 'creature-amie') {
+      const adv = side === 'joueur' ? 'sorcier' : 'joueur';
+      return duel[adv].creatures.filter(e => cibles.has(e.id) && enJeu(adv, e) && mobaPartageVoie(duel.moba, source.mobaLane, e.mobaLane)).map(cible => ({ cibleId: cible.id }));
+    }
     const champions = new Set(rpgChampionsActivationLegales(duel, side, sourceId));
     const adv = side === 'joueur' ? 'sorcier' : 'joueur';
     return duel[side].creatures.filter(e => champions.has(e.id) && enJeu(side, e)).flatMap(champion =>
@@ -965,11 +973,12 @@ export function rpgMobaChoixActivation(duel, side, sourceId) {
 export function rpgMobaActiverCapacite(duel, side, sourceId, choix = {}) {
   const legal = rpgMobaChoixActivation(duel, side, sourceId).some(c => c.cibleId === choix.cibleId
     && (c.championId ?? null) === (choix.championId ?? null) && (c.armeCarteId ?? null) === (choix.armeCarteId ?? null)
-    && (c.cibleSecondaireId ?? null) === (choix.cibleSecondaireId ?? null));
+    && (c.cibleSecondaireId ?? null) === (choix.cibleSecondaireId ?? null)
+    && (c.voieSoin ?? null) === (choix.voieSoin ?? null));
   if (!legal) return fail('cible');
   rpgConsommerSoinsCreatureMoba(duel); rpgConsommerDegatsCapaciteMoba(duel);
   const result = rpgActiverCapacite(duel, side, sourceId, choix.cibleId,
-    { championId: choix.championId ?? null, armeCarteId: choix.armeCarteId ?? null, cibleSecondaireId: choix.cibleSecondaireId ?? null, attendreReponse: true, optionsMobaValide: true });
+    { championId: choix.championId ?? null, armeCarteId: choix.armeCarteId ?? null, cibleSecondaireId: choix.cibleSecondaireId ?? null, attendreReponse: true, optionsMobaValide: true, voieSoin: choix.voieSoin ?? null });
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
   if (result.ok) synchroniserSorties(duel);

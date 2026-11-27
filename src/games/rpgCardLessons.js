@@ -57,7 +57,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['volva-soigneuse', 'yamina', 'guetteur-du-beffroi'],
     title: 'Soigner ou renouveler ses ressources',
-    text: 'La capacité Eau de la source de la Völva soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. La capacité activée du Guetteur du beffroi fait piocher deux cartes : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
+    text: 'La capacité Eau de la source de la Völva soigne le joueur ; Yamina soigne chacune de vos créatures de 2 et vous rend 5 PV en prime. La capacité activée du Guetteur du beffroi fait piocher une carte : ces effets agissent sur des ressources différentes et ne se remplacent pas.',
   },
   {
     id: 'bonus-temporaires-et-durables',
@@ -196,8 +196,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'protection',
     section: 'Capacités des créatures',
     cardIds: ['tiziri-du-djurdjura', 'amayas-du-hoggar', 'lionne-du-midi-ardent', 'faucon-du-zenith'],
-    title: 'Le bouclier coloré bloque un sort adverse',
-    text: 'La Lionne du midi ardent porte un bouclier d’Eau et de Neige : le premier sort adverse de l’une de ces couleurs qui l’atteint est bloqué et brise tout le bouclier. Les attaques, capacités de créatures et sorts alliés passent. Le bouclier reste en jeu jusqu’à sa rupture.',
+    title: 'Le bouclier bloque un effet adverse',
+    text: 'La Lionne du midi ardent porte un bouclier : le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Les attaques et les effets alliés passent.',
   },
   {
     id: 'capacite-de-boualem',
@@ -231,8 +231,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'banniere-samourai',
     section: 'Capacités des créatures',
     cardIds: ['daimyo-du-soleil-rouge', 'samourai-du-torii'],
-    title: 'La bannière grandit ceux qui attaquent',
-    text: 'Le Daimyō du Soleil rouge arrive avec une créature-jeton « Samouraï » 1/1, puis chaque Samouraï de son camp qui attaque gagne +1/+1 — pour de bon. Le renfort tombe à la déclaration de l’attaque, donc la frappe du tour en profite déjà ; il reste acquis, même si le Daimyō quitte la table ensuite. Seul le camp du Daimyō en profite, et le Daimyō lui-même est un Samouraï : sa propre attaque le grandit aussi.',
+    title: 'Le Daimyō lève deux Samouraïs',
+    text: 'À son arrivée, le Daimyō du Soleil rouge crée deux créatures-jetons Samouraï 1/1. Comme les autres Samouraïs, elles bénéficient de la Résonance du Shogun promu tant qu’il est en jeu.',
   },
   {
     id: 'coup-rapide',
@@ -246,7 +246,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['sahir-des-braises'],
     title: 'Une capacité peut agir avant les dégâts de combat',
-    text: 'Quand le Sahir attaque ou bloque, il inflige d’abord 2 dégâts à la créature qui le bloque ou qu’il bloque, avant les blessures de combat. Une capacité de combat peut donc changer l’issue de l’échange qui suit.',
+    text: 'Quand le Sahir attaque ou bloque, il inflige d’abord 1 dégât à la créature qui le bloque ou qu’il bloque, avant les blessures de combat. Une capacité de combat peut donc changer l’issue de l’échange qui suit.',
   },
   {
     id: 'exil-des-corbeaux',

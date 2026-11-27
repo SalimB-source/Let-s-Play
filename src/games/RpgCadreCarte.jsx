@@ -30,8 +30,17 @@ function fondCadre(carte) {
 }
 
 /** Le cadre Le Sablier reste sur les sorts, armes et autres non-créatures. */
-export default function RpgCadreCarte({ carte }) {
-  if (!carte?.kind || carte.kind === 'creature' || carte.kind === 'hero') return null;
+export function RpgBadgeActivation({ carte }) {
+  return carte?.activation
+    ? <span className="rpg-card__effet-badge" title={carte.activation.nom} aria-label={`Effet activé : ${carte.activation.nom}`}>⚡</span>
+    : null;
+}
+
+export default function RpgCadreCarte({ carte, afficherActivation = true }) {
+  if (!carte?.kind) return null;
+  if (carte.kind === 'creature' || carte.kind === 'hero') {
+    return afficherActivation ? <RpgBadgeActivation carte={carte} /> : null;
+  }
   const backgroundImage = fondCadre(carte);
   return <span className="rpg-cadre-carte rpg-cadre-carte--sablier" style={backgroundImage ? { backgroundImage } : undefined} aria-hidden="true" />;
 }

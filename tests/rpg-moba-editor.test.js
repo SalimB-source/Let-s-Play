@@ -31,6 +31,9 @@ test('atelier MOBA : recherche, filtres combinés, tri et édition du deck', asy
     await setSearch('une carte introuvable');
     assert.equal(list().length, 0);
     assert.match(document.querySelector('.moba__editor-empty').textContent, /Aucune carte/);
+    await setSearch('scalde des runes');
+    assert.equal(list().length, 1);
+    assert.ok(list()[0].querySelector('.moba__editor-card-art .rpg-card__effet-badge'));
     await setSearch('');
     await change(type, 'arme');
     assert.ok(list().length > 0);
@@ -41,7 +44,7 @@ test('atelier MOBA : recherche, filtres combinés, tri et édition du deck', asy
     await change(element, 'tous'); await change(type, 'magie');
     assert.ok(list().length > 0);
     await change(type, 'tous'); await change(sort, 'cout');
-    const costs = list().map((el) => Number(el.querySelector('.moba__editor-meta').textContent.match(/(\d+) mana/)[1]));
+    const costs = list().map((el) => { const match = el.querySelector('.moba__editor-meta').textContent.match(/coût (\d+)/); return match ? Number(match[1]) : Infinity; });
     assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
     const owned = document.querySelector('.moba__editor-owned input');
     await click(owned);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RpgBadgeActivation } from './RpgCadreCarte.jsx';
 import { cardById } from './rpgCards.js';
 import { cardArt } from './rpgCardArt.js';
 import { MOBA_EMBUSCADES_IMPRIMEES, rpgCandidatsCoutInvocationSpeciale } from './rpgMobaEmbuscadesImprimees.js';
@@ -45,7 +46,7 @@ export default function RpgChoixCoutInvocation({ duel, cote, carteId, onChoisir,
           const selectionnee = choixValide && choix === id;
           return <button autoFocus={index === 0} key={id} type="button" className={`rpg-choix-cout__carte${selectionnee ? ' is-selected' : ''}`} aria-pressed={selectionnee} onClick={() => setChoix(id)}>
             <span className="rpg-choix-cout__portrait" aria-hidden="true">
-              <img src={cardArt(id)} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
+              <img src={cardArt(id)} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} /><RpgBadgeActivation carte={carte} />
             </span>
             <span className="rpg-choix-cout__carte-texte">
               <strong>{carte?.name ?? id}</strong>

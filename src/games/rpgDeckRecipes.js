@@ -186,7 +186,7 @@ export const RPG_RECETTES_DECKS = {
   },
   /**
    * Le Soleil rouge donne sa place aux trois mécaniques du set : Harakiri à la
-   * mort, Résonance samouraï et Bannière du Daimyō. Le Daimyō et Kagutsuchi
+   * mort, Résonance samouraï et jetons du Daimyō. Le Daimyō et Kagutsuchi
    * sont les deux mythiques du deck ; Orochi, Susanoo et les autres figures
    * s'ouvrent dans les boosters.
    */

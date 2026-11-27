@@ -78,7 +78,7 @@ test('l’attaque et l’effet sont le même geste : ni l’un après l’autre'
   assert.equal(rpgPeutAttaquer(oni), false, 'et donc l’attaque du tour');
 
   // L'attaque d'abord : le bouton ⚡ ne doit pas rester allumé.
-  const tojiro = poser(d, 'joueur', 'tojiro-le-pourfendeur');
+  const tojiro = poser(d, 'joueur', 'vampire-des-braises');
   const coup = rpgLancerAttaque(d, 'joueur', [tojiro.id]);
   assert.equal(coup.ok, true, `attaque : ${coup.raison}`);
   assert.equal(tojiro.attaquee, true);
@@ -317,7 +317,6 @@ test('l’aperçu au survol s’efface devant la fenêtre d’effet ouverte', ()
 
 test('trois associations reprennent l’effet de base du sort, sans Lien ni contresort', () => {
   for (const [id, sort] of [
-    ['guetteur-du-beffroi', 'rapport-du-greffier'],
     ['scribe-des-feuillets', 'les-feuillets'],
     ['celui-qui-juge', 'le-jugement-des-colosses'],
   ]) {
@@ -329,13 +328,13 @@ test('trois associations reprennent l’effet de base du sort, sans Lien ni cont
   }
 });
 
-test('Rapport du greffier et Les feuillets font bien piocher deux et meuler trois', () => {
+test('Rapport du greffier et Les feuillets font bien piocher une et meuler trois', () => {
   const d = duel();
   const guetteur = poser(d, 'joueur', 'guetteur-du-beffroi');
   const scribe = poser(d, 'joueur', 'scribe-des-feuillets');
   const main = d.joueur.main.length, deck = d.sorcier.deck.length, cimetiere = d.sorcier.cimetiere.length;
   assert.ok(rpgActiverCapacite(d, 'joueur', guetteur.id).ok);
-  assert.equal(d.joueur.main.length, main + 2);
+  assert.equal(d.joueur.main.length, main + 1);
   assert.ok(rpgActiverCapacite(d, 'joueur', scribe.id).ok);
   assert.equal(d.sorcier.deck.length, deck - 3);
   assert.equal(d.sorcier.cimetiere.length, cimetiere + 3);
@@ -650,8 +649,6 @@ test('les neuf nouvelles associations reprennent les effets imprimés hors Lien'
     ['drakkar-a-tete-de-dragon', 'mur-de-boucliers'],
     ['seigneur-des-machoires', 'lame-de-mer'],
     ['ifrit-al-ahmar', 'confluence-des-etincelles'],
-    ['dune-marchante', 'eveil-des-dunes'],
-    ['veilleur-des-cendres', 'veille-des-braises'],
     ['veilleuse-des-citernes', 'appel-des-marees'],
     ['valkyrie-au-corbeau', 'ralliement-des-neiges'],
     ['souverain-de-la-lune-noire', 'reanimation'],
@@ -694,29 +691,18 @@ test('Confluence invoque les premiers Djinns admissibles et ne retire pas la sou
   assert.ok(d.joueur.creatures.includes(ifrit));
 });
 
-test('Éveil invoque le premier Élémental admissible du dessus et refuse sans candidat', () => {
+test('Dune marchante combat une cible adverse, sans choisir de champion', () => {
   const d = duel(); const dune = poser(d, 'joueur', 'dune-marchante');
-  d.renfortChoixEnAttente = null; d.joueur.deck = ['le-cavalier-des-dunes-gelees', 'chien-du-guet', 'dune-marchante'];
-  assert.ok(rpgActiverCapacite(d, 'joueur', dune.id).ok);
-  assert.equal(d.joueur.creatures.filter(e => e.carteId === 'dune-marchante').length, 2);
-  assert.ok(d.joueur.deck.includes('le-cavalier-des-dunes-gelees'));
-  const d2 = duel(); const autreDune = poser(d2, 'joueur', 'dune-marchante'); d2.renfortChoixEnAttente = null;
-  d2.joueur.deck = ['chien-du-guet'];
-  assert.equal(rpgActiverCapacite(d2, 'joueur', autreDune.id).raison, 'cible');
-  assert.ok(!autreDune.activationUtiliseeMatch);
+  const ami = poser(d, 'joueur', 'chien-du-guet'); const cible = poser(d, 'sorcier', 'kraken');
+  const avant = [dune.pv, cible.pv];
+  assert.equal(rpgActiverCapacite(d, 'joueur', dune.id, ami.id).ok, false);
+  assert.ok(rpgActiverCapacite(d, 'joueur', dune.id, cible.id).ok);
+  assert.equal(cible.pv, avant[1] - dune.atk);
+  assert.ok(!d.joueur.creatures.includes(dune) || dune.pv === avant[0] - cible.atk);
 });
 
-test('Veille des braises propose le choix et détruit le renfort à la fin du tour', () => {
-  const d = duel(); const veilleur = poser(d, 'joueur', 'veilleur-des-cendres');
-  d.joueur.main.push('ronin-du-soleil-rouge', 'chien-du-guet');
-  assert.ok(rpgActiverCapacite(d, 'joueur', veilleur.id).ok);
-  assert.equal(d.renfortChoixEnAttente?.origine, 'activation');
-  const choix = rpgCartesRenfortChoisi(d, 'joueur');
-  assert.ok(choix.some(c => c.id === 'ronin-du-soleil-rouge' && c.admissible));
-  assert.ok(!choix.some(c => c.id === 'chien-du-guet' && c.admissible));
-  assert.ok(rpgResoudreRenfortChoisi(d, 'joueur', choix.find(c => c.id === 'ronin-du-soleil-rouge').index).ok);
-  assert.ok(d.joueur.creatures.some(e => e.carteId === 'ronin-du-soleil-rouge'));
-  rpgFinDeTour(d); assert.ok(!d.joueur.creatures.some(e => e.carteId === 'ronin-du-soleil-rouge'));
+test('Veilleur ne possède plus de capacité activée', () => {
+  assert.equal(cardById('veilleur-des-cendres').activation, undefined);
 });
 
 test('Appel des marées respecte le choix, les trois cartes et leur ordre sous le deck', () => {
@@ -775,17 +761,6 @@ test('l’IA invoque un renfort choisi, mais ne dépense rien sans candidat', ()
   assert.ok(rpgActiverCapacite(d, 'sorcier', valkyrie.id).ok);
   assert.ok(d.sorcier.creatures.some(e => e.carteId === 'ifrit-des-ergs'));
   assert.ok(!d.renfortChoixEnAttente, 'l’IA résout son propre choix');
-});
-
-test('deux exemplaires d’Éveil ont chacun leur usage même au même tour', () => {
-  const d = duel();
-  const a = poser(d, 'joueur', 'dune-marchante'); d.renfortChoixEnAttente = null;
-  const b = poser(d, 'joueur', 'dune-marchante'); d.renfortChoixEnAttente = null;
-  d.joueur.deck = ['le-cavalier-des-dunes-gelees', 'le-cavalier-des-dunes-gelees'];
-  assert.ok(rpgActiverCapacite(d, 'joueur', a.id).ok);
-  d.arriveeEnAttente = null; d.effetCreatureEnAttente = null;
-  assert.ok(rpgActiverCapacite(d, 'joueur', b.id).ok);
-  assert.equal(d.joueur.creatures.filter(e => e.carteId === 'le-cavalier-des-dunes-gelees').length, 2);
 });
 
 for (const [id, sort, forme, montant] of [
@@ -1416,7 +1391,7 @@ test('Courant de retour : cible adverse et une seule pioche, même avec son ancr
 });
 
 test('Festin des vaillants soigne Eirik, ses alliés et leur sorcier de 2 sans Lien', () => {
-  const d = duel(); const source = poser(d, 'joueur', 'eirik-du-premier-serment');
+  const d = duel(); const source = poser(d, 'joueur', 'scalde-des-runes');
   const ami = poser(d, 'joueur', 'porteuse-de-cruches');
   source.pv = source.pvMax - 2; ami.pv = ami.pvMax - 2; d.joueur.pv = 10;
   assert.ok(rpgActiverCapacite(d, 'joueur', source.id).ok);
@@ -1464,4 +1439,64 @@ test('Serment de la forge donne +2/+1 et 25 % critique aux alliés, source inclu
   for (const [i, e] of [source, ami].entries()) {
     assert.equal(e.atk, avant[i].atk); assert.equal(e.pv, avant[i].pv); assert.equal(e.coupCritiqueTemporaire, avant[i].critique);
   }
+});
+
+test('Djinn des cendres choisit un Djinn de coût 3 ou moins au cimetière', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'djinn-des-cendres-vengeresses');
+  d.joueur.cimetiere = ['djinn-des-braises-voilees', 'chien-du-guet', 'ifrit-al-ahmar'];
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id).ok);
+  const choix = rpgCartesRenfortChoisi(d, 'joueur');
+  assert.ok(choix.some(c => c.id === 'djinn-des-braises-voilees' && c.admissible));
+  assert.ok(!choix.some(c => c.id === 'chien-du-guet' && c.admissible));
+  assert.ok(!choix.some(c => c.id === 'ifrit-al-ahmar' && c.admissible));
+  assert.ok(rpgResoudreRenfortChoisi(d, 'joueur', choix.find(c => c.id === 'djinn-des-braises-voilees').index).ok);
+  assert.ok(d.joueur.creatures.some(c => c.carteId === 'djinn-des-braises-voilees'));
+});
+
+test('Braisier : la zone et le sorcier ne sont touchés qu’à son activation', () => {
+  const d = duel(); const cible = poser(d, 'sorcier', 'kraken');
+  const pv = cible.pv, sorcier = d.sorcier.pv;
+  const source = poser(d, 'joueur', 'braisier-du-souk');
+  assert.equal(cible.pv, pv); assert.equal(d.sorcier.pv, sorcier);
+  cible.emplacement = 0;
+  assert.ok(rpgActiverCapacite(d, 'joueur', source.id, null, { zone: { forme: 'carre', camp: 'sorcier', colonne: 0 } }).ok);
+  assert.equal(cible.pv, pv - 1); assert.equal(d.sorcier.pv, sorcier - 1);
+});
+
+test('Daimyō crée deux Samouraïs lorsque deux places sont libres', () => {
+  const d = duel(); poser(d, 'joueur', 'daimyo-du-soleil-rouge');
+  assert.equal(d.joueur.creatures.filter(e => e.carteId === 'samourai-du-daimyo').length, 2);
+});
+
+for (const cote of ['joueur', 'sorcier']) test(`PvP ${cote} : le Djinn choisit au cimetière puis ne peut pas réactiver sa présence`, () => {
+  const d = duel(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  const source = poser(d, cote, 'djinn-des-cendres-vengeresses'); d.tour = cote;
+  d[cote].cimetiere = ['chien-du-guet', 'djinn-des-braises-voilees'];
+  assert.ok(rpgPvpAppliquer(d, cote, { type: 'activer', capacite: true, entiteId: source.id }).ok);
+  const choix = rpgCartesRenfortChoisi(d, cote).find(c => c.id === 'djinn-des-braises-voilees');
+  assert.ok(choix?.admissible);
+  assert.ok(rpgPvpAppliquer(d, cote, { type: 'choisir-renfort', index: choix.index }).ok);
+  assert.ok(d[cote].creatures.some(e => e.carteId === 'djinn-des-braises-voilees'));
+  assert.equal(rpgActiverCapacite(d, cote, source.id).raison, 'deja-activee');
+});
+
+test('IA : la Dune combat un adversaire lorsque l’échange est favorable', () => {
+  const d = duel(); const dune = poser(d, 'sorcier', 'dune-marchante');
+  d.renfortChoixEnAttente = null; d.arriveeEnAttente = null;
+  const cible = poser(d, 'joueur', 'chien-du-guet'); d.tour = 'sorcier';
+  cible.pv = 1; cible.def = 1; cible.atk = 0;
+  const choix = choisirActivationIA(d, 'sorcier');
+  assert.equal(choix?.entiteId, dune.id); assert.equal(choix?.cibleId, cible.id);
+  assert.ok(rpgActiverCapacite(d, 'sorcier', dune.id, cible.id).ok);
+});
+
+test('Dune : sa disparition en réponse dissipe son combat payé', () => {
+  const d = duel(); const source = poser(d, 'joueur', 'dune-marchante');
+  const cible = poser(d, 'sorcier', 'chien-du-guet'); const pv = cible.pv;
+  d.sorcier.main.push('trait-de-braise');
+  const annonce = rpgActiverCapacite(d, 'joueur', source.id, cible.id, { attendreReponse: true });
+  assert.ok(annonce.ok && annonce.effetEnAttente); assert.equal(source.activationUtiliseeMatch, true);
+  d.joueur.creatures = d.joueur.creatures.filter(e => e.id !== source.id);
+  const resultat = rpgResoudreEffetCreatureEnAttente(d, 'sorcier');
+  assert.ok(resultat.ok && resultat.dissipe); assert.equal(cible.pv, pv);
 });
