@@ -17042,3 +17042,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   mix-blend-mode: screen;
   z-index: 4;
 }
+
+/* Vidéo plein écran à l’invocation d’une créature mythique */
+.rpg-mythique-video-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+.rpg-mythique-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
