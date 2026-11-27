@@ -7579,6 +7579,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     'bouchra-guerriere-des-cretes': '/2acb09c0-ea62-11f1-a274-a3e216f7a513.mp4',
   };
   const [videoMythique, setVideoMythique] = useState(null);
+  const [videoMythiquePrete, setVideoMythiquePrete] = useState(false);
+  useEffect(() => {
+    setVideoMythiquePrete(false);
+    if (!videoMythique) return undefined;
+    const timer = window.setTimeout(() => setVideoMythique(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [videoMythique]);
   const jouerVoixArrivee = (carteId, rang = 0) => {
     if (!mulligan && RPG_MYTHIQUE_VIDEOS[carteId]) {
       setVideoMythique({ src: RPG_MYTHIQUE_VIDEOS[carteId], carteId });
