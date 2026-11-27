@@ -10,7 +10,7 @@ import { rpgMobaCiblesIndividuelles, rpgMobaCibleIndividuelleEncoreLegale } from
 import { MOBA_ABORDAGE_IMPRIME, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import { candidatsRenfortChoisi } from './rpgRenforts.js';
 import {
-  rpgPeutActiverCapacite, rpgCiblesActivationLegales, rpgChampionsActivationLegales, rpgActiverCapacite, rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
+  rpgActiverEffetReponse, rpgPeutActiverCapacite, rpgCiblesActivationLegales, rpgChampionsActivationLegales, rpgActiverCapacite, rpgCartesRenfortChoisi, rpgResoudreRenfortChoisi, rpgAppliquerBannieresAttaque, rpgDeclencherBlocage, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme, rpgSortACibleValide,
   rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConditionEmbuscadeRemplie, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgResoudreEchangeIndividuelMoba, rpgRessacMobaArrivee, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher, rpgPresenterRechercheMoba,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
@@ -554,6 +554,19 @@ function reprendreReponseSuspendue(duel) {
   else if (suspendue.type === 'fin') duel.finDeTour = suspendue.attente;
   else duel.effetCreatureEnAttente = suspendue.attente;
   duel.fenetreReponse = true;
+}
+
+/** Contre l'annonce prépayée et rend la priorité à une éventuelle embuscade suspendue. */
+export function rpgMobaActiverEffetReponse(duel, cote, entiteId) {
+  if (!duel?.moba || !rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
+  const attente = duel.mobaCreatureEnAttente ?? duel.mobaSortEnAttente;
+  const result = rpgActiverEffetReponse(duel, cote, entiteId);
+  if (!result.ok) return result;
+  synchroniserSorties(duel);
+  if (attente?.embuscadeSuspendue) reprendreReponseSuspendue(duel);
+  else if (attente?.origineCreature) { duel.mobaCreatureEnAttente = attente.origineCreature; duel.fenetreReponse = true; }
+  else if (attente?.embuscadeCombat && duel.combatDeclare) duel.fenetreReponse = true;
+  return result;
 }
 
 /** Resolve a paid creature announcement without reopening a response to the

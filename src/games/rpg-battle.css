@@ -16950,7 +16950,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-weight: 700;
 }
 
-/* Badge triangulaire avec éclair jaune pour les créatures ayant un effet activé */
+/* Éclair d’effet activé, sans fond derrière le pictogramme. */
 .rpg-card__effet-badge {
   position: absolute;
   bottom: 4px;
@@ -16965,23 +16965,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 11px;
   line-height: 1;
   color: #fde047;
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85));
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  clip-path: none;
+  filter: none;
   pointer-events: none;
 }
 
-.rpg-card__effet-badge--reponse {
+.rpg-card__effet-badge.rpg-card__effet-badge--reponse {
   width: 22px;
   height: 22px;
   align-items: center;
   padding-top: 0;
-  border-radius: 50%;
-  clip-path: none;
   color: #38bdf8;
-  border: 1.5px solid rgba(56, 189, 248, 0.85);
-  background: radial-gradient(circle at 50% 50%, #0f172a 0%, #082f49 100%);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
+  font-size: 9px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  clip-path: none;
 }
 
 /* Sur la table, le badge chevauche le milieu du bord inférieur. Il reste
@@ -17011,6 +17013,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   height: 27px;
   padding-top: 3px;
   font-size: 16px;
+}
+
+/* La spirale reste plus petite que l’éclair sur les grandes faces aussi. */
+.rpg-battle .rpg-card--img .rpg-card__effet-badge--reponse,
+.rpg-hover-card-preview__face .rpg-card__effet-badge--reponse,
+.rpg-mulligan__card .rpg-card__effet-badge.rpg-card__effet-badge--reponse {
+  align-items: center;
+  padding-top: 0;
+  font-size: 12px;
 }
 
 /* Forcer l'affichage de la liste dans l'invite de commandes (même sur desktop) */
