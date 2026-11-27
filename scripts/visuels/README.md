@@ -1,5 +1,28 @@
 # Visuels éditoriaux Let’s Play
 
+## Récapitulatif social — les trois actus du 27.11.2026
+
+`make_social_3_actus.py` produit `visuels/social/2026-11-27-trois-actus.png` :
+une image **1080 × 1350 (4:5)** qui reprend les trois actus de l’édition du
+27 novembre 2026 (Cherry Time / Neuralink / *Quasimodo*), dans la charte des
+cartes d’actus du site (fond `#101720`, barre `#f7d900`, titres `#e7fd52`,
+logo `public/lets-play-logo.png`).
+
+Chaque actu porte un **bandeau illustré** derrière son texte : la vignette est
+recadrée, assombrie, voilée vers la couleur du fond et légèrement floutée, puis
+effacée en dégradé vers la gauche pour laisser les titres nets. Les trois
+vignettes sont dans `scripts/visuels/assets/` (© Team Cherry, © Neuralink,
+© Netflix) ; si l’une manque, le bloc retombe sur le fond uni.
+
+```bash
+python3 -m pip install -r scripts/visuels/requirements.txt
+python3 scripts/visuels/make_social_3_actus.py          # → visuels/social/
+python3 scripts/visuels/make_social_3_actus.py --out /tmp
+```
+
+Les textes sont figés dans le script : une image datée ne se régénère pas
+depuis les données du site.
+
 ## The Game Awards 2026 — les nommés au jeu de l’année
 
 Les six PNG **1080 × 1350 px (4:5)** et leur archive ZIP se trouvent dans

@@ -1,0 +1,22 @@
+Crédits des vignettes — récapitulatif social du 27.11.2026
+=========================================================
+
+Ces images ne sont pas libres de droits : elles illustrent trois actualités
+précises et restent la propriété de leurs auteurs. Elles ne servent qu'à
+régénérer `visuels/social/2026-11-27-trois-actus.png` avec
+`scripts/visuels/make_social_3_actus.py`.
+
+gaming-sea-of-sorrow.webp
+    Visuel promotionnel de Hollow Knight: Silksong — Sea of Sorrow.
+    © Team Cherry. Source : teamcherry.com.au
+
+tech-neuralink-n1.jpg
+    Implant Neuralink N1 (détouré sur fond clair, inversé en négatif par le
+    script pour se fondre dans les bandeaux sombres).
+    © Neuralink. Source : neuralink.com
+
+cinema-quasimodo.jpg
+    Vincent Cassel dans The Hunchback, Soul of Paris.
+    © Netflix. Source : netflix.com
+
+Les textes de l'image (titres, résumés, sources) sont figés dans le script.
