@@ -16,7 +16,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('guetteur-du-beffroi'), ...deux('scalde-des-runes'),
       'salem', 'faucon-du-zenith', 'jarl-au-marteau-de-guerre',
       ...deux('javelot-du-beffroi'), ...deux('cuirasse-de-sel'), ...deux('sandales-de-tislit'), 'hache-de-la-banquise',
-      ...deux('garde-du-trone-givre'), ...deux('scalde-des-runes'), 'archere-viking-du-givre', 'archere-viking-du-givre',
+      ...deux('gardien-des-sables'), ...deux('scalde-des-runes'), 'archere-viking-du-givre', 'archere-viking-du-givre',
     ]),
   }),
   Object.freeze({
@@ -28,8 +28,8 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('veilleuse-des-citernes'), ...deux('sonneur-fele'),
       'jarl-au-marteau-de-guerre', 'tour-des-flots', 'geant-des-banquises',
       'lance-de-givre', 'baton-des-citernes',
-      ...deux('le-cavalier-sans-nom'), ...deux('sonneur-fele'), ...deux('guerrier-au-bouclier-rond'),
-      ...deux('archere-viking-du-givre'), 'garde-du-trone-givre',
+      ...deux('veilleur-des-flots'), ...deux('sonneur-fele'), ...deux('guerrier-au-bouclier-rond'),
+      ...deux('archere-viking-du-givre'), 'veilleur-des-flots',
     ]),
   }),
   Object.freeze({
@@ -77,7 +77,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('pilote-de-la-carreira'), 'jarl-au-marteau-de-guerre', 'drakkar-a-tete-de-dragon',
       'le-cavalier-du-ressac-gele',
       ...deux('hache-de-la-banquise'), 'lance-de-givre',
-      ...deux('kraken'), ...deux('le-cavalier-sans-nom'), ...deux('sonneur-fele'), 'garde-du-voile',
+      ...deux('kraken'), ...deux('louveteau-des-glaces'), ...deux('sonneur-fele'), 'louveteau-des-glaces',
     ]),
   }),
   Object.freeze({
@@ -102,7 +102,7 @@ export const RPG_DECKS_THEMATIQUES = Object.freeze([
       ...deux('guetteuse-des-marees'), ...deux('galion-de-la-flotte'),
       ...deux('la-vengeance-de-la-reine-anne'), 'la-barbe-rousse', 'le-chasseur-d-ocracoke',
       ...deux('grappin-d-abordage'), 'sphere-de-rotation',
-      ...deux('kraken'), ...deux('guerrier-au-bouclier-rond'), 'le-cavalier-sans-nom', 'le-cavalier-sans-nom', 'sonneur-fele',
+      ...deux('kraken'), ...deux('veilleur-des-flots'), 'veilleur-des-flots', 'veilleur-des-flots', 'sonneur-fele',
     ]),
   }),
   Object.freeze({
