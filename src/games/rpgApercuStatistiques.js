@@ -10,5 +10,8 @@ export function actualiserStatsApercu(visuel, duel) {
   if (!entite) return visuel;
   const carte = cardById(entite.carteId);
   return { ...visuel, atk: entite.atk, pv: entite.pv,
+    poison: entite.poison, brulure: entite.brulure, gelToursRestants: entite.gelToursRestants,
+    empecheAttaqueToursRestants: entite.empecheAttaqueToursRestants,
+    empecheBlocageToursRestants: entite.empecheBlocageToursRestants,
     blessee: carte?.kind !== 'site' && entite.pv < plafondSoinCreature(entite, entite.pvMax ?? carte?.def ?? entite.pv) };
 }
