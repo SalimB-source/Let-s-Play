@@ -674,13 +674,9 @@
   }
 
   /* ── 8. Le plateau se lit d'un coup d'œil ────────────────────────────────
-     Les cases libres se perdaient dans les plateaux clairs : même filet doré
-     pour les vingt cases, numéros minuscules, aucune frontière entre les deux
-     camps. On garde la grille et la peinture, mais on rend les repères plus
-     francs : bande rouge en haut, bande bleue en bas, ligne médiane lumineuse,
-     cases vides cerclées et numéros lisibles. Les états interactifs (pose,
-     déplacement, zone de sort) gardent leurs propres couleurs — seules les
-     cases réellement libres et neutres sont retouchées. */
+     Les camps et la ligne médiane restent lisibles, mais les emplacements
+     vides au repos sont transparents comme sur PC. Les repères de pose, de
+     déplacement et de zone ne sont pas masqués : ils restent interactifs. */
 
   .rpg-battle[class][data-scene="duel"].rpg-battle--touch .card-table > .card-row {
     isolation: isolate;
@@ -718,24 +714,6 @@
     box-shadow: 0 0 10px rgba(246, 194, 91, .45);
     pointer-events: none;
     z-index: 2;
-  }
-  .rpg-battle[class][data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement):not(.rpg-creature-slot--zone-sort):not(.is-survole):not(.is-touch-drop-target):not(.is-dans-zone-sort) {
-    border: 2px dashed rgba(255, 230, 171, .78);
-    border-radius: 8px;
-    background:
-      linear-gradient(145deg, rgba(8, 7, 12, .42), rgba(8, 7, 12, .16)),
-      radial-gradient(circle at 50% 45%, rgba(255, 222, 145, .09), transparent 68%);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 236, 190, .16),
-      inset 0 0 20px rgba(0, 0, 0, .52),
-      0 1px 0 rgba(255, 236, 190, .09);
-  }
-  .rpg-battle[class][data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement):not(.rpg-creature-slot--zone-sort):not(.is-survole):not(.is-touch-drop-target):not(.is-dans-zone-sort)::before,
-  .rpg-battle[class][data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slot.is-empty:not(.rpg-creature-slot--choix):not(.rpg-creature-slot--deplacement):not(.rpg-creature-slot--survol-deplacement):not(.rpg-creature-slot--zone-sort):not(.is-survole):not(.is-touch-drop-target):not(.is-dans-zone-sort)::after {
-    width: 10px;
-    height: 10px;
-    border-color: #ffe4a3;
-    opacity: .9;
   }
   .rpg-battle[class][data-scene="duel"].rpg-battle--touch .card-row[data-lignes="true"] .rpg-creature-slot.is-empty .rpg-creature-slot__numero {
     color: rgba(255, 239, 202, .88);

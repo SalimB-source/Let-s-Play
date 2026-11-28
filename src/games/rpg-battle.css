@@ -17121,3 +17121,203 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: 12px 26px !important;
   line-height: 1.35;
 }
+
+/* Afflictions persistantes : un éclat à l'application, puis une fine teinte
+   périphérique. Les deux calques coexistent sans couvrir les chiffres ni les
+   emblèmes et n'agrandissent jamais la zone interactive de la carte. */
+.rpg-affliction {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-affliction--poison {
+  box-shadow: inset 5px 0 9px -5px rgba(143, 210, 74, .7), inset -3px 0 8px -5px rgba(89, 156, 45, .6);
+  animation: rpg-affliction-apparition calc(1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-affliction--brulure {
+  box-shadow: inset 0 -7px 12px -6px rgba(255, 111, 30, .85), inset 0 3px 8px -5px rgba(255, 140, 42, .5);
+  animation: rpg-affliction-apparition calc(.85s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-affliction > i {
+  position: absolute;
+  display: block;
+  bottom: 19%;
+  width: 5%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  opacity: 0;
+  animation: rpg-affliction-particule calc(1.35s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-affliction > i:nth-child(1) { left: 8%; }
+.rpg-affliction > i:nth-child(2) { right: 9%; bottom: 31%; animation-delay: calc(.13s * var(--rpg-anim-scale, 1)); }
+.rpg-affliction > i:nth-child(3) { left: 18%; bottom: 14%; animation-delay: calc(.25s * var(--rpg-anim-scale, 1)); }
+.rpg-affliction--poison > i {
+  border: 1px solid rgba(192, 239, 115, .9);
+  border-radius: 50%;
+  background: rgba(128, 194, 54, .3);
+  box-shadow: 0 0 5px rgba(150, 219, 70, .7);
+}
+.rpg-affliction--brulure > i {
+  width: 3%;
+  border-radius: 60% 0 60% 60%;
+  background: #ffc16a;
+  box-shadow: 0 0 6px #ef692c;
+  rotate: -45deg;
+}
+@keyframes rpg-affliction-apparition {
+  0% { opacity: 0; }
+  35% { opacity: 1; }
+  100% { opacity: .72; }
+}
+@keyframes rpg-affliction-particule {
+  0% { opacity: 0; transform: translateY(0) scale(.5); }
+  30% { opacity: .85; }
+  100% { opacity: 0; transform: translateY(-210%) scale(1.2); }
+}
+/* La préférence du jeu et celle du système gardent un repère fixe. */
+.rpg-battle.is-reduced .rpg-affliction { animation: none; opacity: .72; }
+.rpg-battle.is-reduced .rpg-affliction > i { animation: none; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-affliction { animation: none; opacity: .72; }
+  .rpg-affliction > i { animation: none; opacity: 0; }
+}
+
+/* Entraves de combat : le signe barré distingue la défense de l'attaque ;
+   il n'occupe ni la zone des statistiques ni celle des badges de capacité. */
+.rpg-affliction--entrave-attaque,
+.rpg-affliction--entrave-blocage {
+  animation: rpg-affliction-apparition calc(.8s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-affliction--entrave-attaque > i,
+.rpg-affliction--entrave-blocage > i { display: none; }
+.rpg-affliction--entrave-attaque::before,
+.rpg-affliction--entrave-blocage::before {
+  position: absolute;
+  top: 42%;
+  left: 5%;
+  color: #eac1ff;
+  font: 700 clamp(12px, 16cqw, 24px)/1 sans-serif;
+  text-shadow: 0 1px 3px #1b0c24, 0 0 6px #713ba1;
+}
+.rpg-affliction--entrave-attaque::before { content: '⚔'; }
+.rpg-affliction--entrave-blocage::before { content: '◆'; color: #b8e7fa; text-shadow: 0 1px 3px #101a28, 0 0 6px #3b8ca1; }
+.rpg-affliction--entrave-blocage::before { top: 58%; }
+.rpg-affliction--entrave-attaque::after,
+.rpg-affliction--entrave-blocage::after {
+  content: '';
+  position: absolute;
+  left: 3%;
+  top: 49%;
+  width: 20%;
+  height: 2px;
+  background: #ffb7a5;
+  box-shadow: 0 0 4px #7b2742;
+  transform: rotate(-45deg);
+}
+.rpg-affliction--entrave-blocage::after { top: 65%; }
+
+/* Débris de glace au moment où la même créature se libère du gel. */
+.rpg-degel {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: rpg-degel-lueur calc(.85s * var(--rpg-anim-scale, 1)) ease-out both;
+  box-shadow: inset 0 0 12px 2px rgba(168, 231, 255, .75);
+}
+.rpg-degel > i {
+  position: absolute;
+  width: 7%;
+  height: 13%;
+  background: linear-gradient(135deg, #e6fbff, #77c4e9 70%, transparent);
+  clip-path: polygon(50% 0, 100% 75%, 18% 100%, 0 35%);
+  animation: rpg-degel-eclat calc(.85s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-degel > i:nth-child(1) { left: 7%; top: 25%; --degel-x: -12px; --degel-y: 18px; }
+.rpg-degel > i:nth-child(2) { right: 8%; top: 20%; --degel-x: 14px; --degel-y: 23px; }
+.rpg-degel > i:nth-child(3) { left: 16%; bottom: 22%; --degel-x: -10px; --degel-y: 18px; }
+.rpg-degel > i:nth-child(4) { right: 17%; bottom: 24%; --degel-x: 9px; --degel-y: 20px; }
+@keyframes rpg-degel-lueur { 0% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes rpg-degel-eclat {
+  0% { transform: translate(0, 0) rotate(0); }
+  100% { transform: translate(var(--degel-x), var(--degel-y)) rotate(45deg); }
+}
+.rpg-battle.is-reduced .rpg-affliction--entrave-attaque,
+.rpg-battle.is-reduced .rpg-affliction--entrave-blocage { animation: none; }
+.rpg-battle.is-reduced .rpg-degel { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-affliction--entrave-attaque, .rpg-affliction--entrave-blocage { animation: none; }
+  .rpg-degel { display: none; }
+}
+
+/* La carte se dégage : un anneau doré s'efface sans bouger ni recolorer la
+   face. Il signale uniquement le dégagement, pas une attaque garantie. */
+.rpg-degagement {
+  position: absolute;
+  inset: 6%;
+  z-index: 3;
+  border: 1px solid rgba(255, 223, 153, .9);
+  border-radius: inherit;
+  box-shadow: inset 0 0 8px rgba(255, 206, 108, .6), 0 0 8px rgba(255, 206, 108, .5);
+  pointer-events: none;
+  animation: rpg-degagement-onde calc(.75s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-degagement > i {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff0bc;
+  box-shadow: 0 0 5px #ffc761;
+  pointer-events: none;
+  animation: rpg-degagement-etincelle calc(.75s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-degagement > i:nth-child(1) { top: 28%; left: 0; --degagement-x: -6px; }
+.rpg-degagement > i:nth-child(2) { top: 46%; right: 0; --degagement-x: 6px; }
+.rpg-degagement > i:nth-child(3) { bottom: 24%; left: 12%; --degagement-x: -4px; }
+@keyframes rpg-degagement-onde {
+  0% { opacity: 0; transform: scale(.94); }
+  25% { opacity: .85; }
+  100% { opacity: 0; transform: scale(1.03); }
+}
+@keyframes rpg-degagement-etincelle {
+  from { transform: translate(0, 0); }
+  to { transform: translate(var(--degagement-x), -12px); }
+}
+.rpg-battle.is-reduced .rpg-degagement { display: none; }
+@media (prefers-reduced-motion: reduce) { .rpg-degagement { display: none; } }
+
+/* La dernière dose de poison s'est dissipée : trois petites vapeurs quittent
+   le bord de la carte, sans masquer sa défense ni ses commandes. */
+.rpg-fin-poison {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 3;
+  pointer-events: none;
+}
+.rpg-fin-poison > i {
+  position: absolute;
+  bottom: 23%;
+  width: 8%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(180, 231, 109, .8), rgba(118, 171, 65, .3) 45%, transparent 72%);
+  pointer-events: none;
+  animation: rpg-fin-poison-vapeur calc(.9s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-fin-poison > i:nth-child(1) { left: 7%; --vapeur-x: -6px; }
+.rpg-fin-poison > i:nth-child(2) { right: 7%; bottom: 33%; --vapeur-x: 6px; animation-delay: calc(.08s * var(--rpg-anim-scale, 1)); }
+.rpg-fin-poison > i:nth-child(3) { left: 15%; bottom: 45%; --vapeur-x: -4px; }
+@keyframes rpg-fin-poison-vapeur {
+  from { opacity: .8; transform: translate(0, 0) scale(.6); }
+  to { opacity: 0; transform: translate(var(--vapeur-x), -20px) scale(1.7); }
+}
+.rpg-battle.is-reduced .rpg-fin-poison { display: none; }
+@media (prefers-reduced-motion: reduce) { .rpg-fin-poison { display: none; } }

@@ -144,10 +144,10 @@ test('le HUD debout ne reprend aucune piste du paysage', () => {
 });
 
 test('le plateau debout garde ses repères et son rail dans l’écran', () => {
-  // Les cases libres, la ligne médiane et le rail du tour : trois repères qui
-  // se perdaient sur les plateaux clairs ou sortaient de l'écran étroit.
-  assert.match(bloc, /border:\s*2px dashed rgba\(255, 230, 171, \.78\)/,
-    'les cases libres gardent un filet doré lisible');
+  // Les cases au repos ne dessinent plus de rectangle sur mobile : la grille
+  // demeure pour la pose, les déplacements et les ancres de zone.
+  assert.doesNotMatch(bloc, /border:\s*2px dashed rgba\(255, 230, 171, \.78\)/,
+    'les cases libres ne sont plus cerclées au repos');
   assert.match(bloc, /\.card-row--ennemi::after[\s\S]*?background:\s*linear-gradient\(90deg, transparent/,
     'la ligne médiane reste visible sur la peinture');
   assert.match(bloc, /\.rpg-turn-rail\s*\{[\s\S]*?box-sizing:\s*border-box/,

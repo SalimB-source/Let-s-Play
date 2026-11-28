@@ -1,6 +1,10 @@
 import { RpgActivationDescription } from './RpgActivationDescription.jsx';
 import { RpgBordurePlateau, RpgPortailInvocation, RpgBrumeCimetiere, RpgLueurArme, useArmesAjoutees } from './RpgOrnements.jsx';
 import { RpgEclatsBouclier, RpgFissureImpact, RpgVagueTour } from './RpgEffetsComplementaires.jsx';
+import RpgAfflictionsVisuelles from './RpgAfflictionsVisuelles.jsx';
+import RpgDegelVisuel from './RpgDegelVisuel.jsx';
+import RpgDegagementVisuel from './RpgDegagementVisuel.jsx';
+import RpgFinPoisonVisuel from './RpgFinPoisonVisuel.jsx';
 import { RpgEntreeLegendaire, rpgEstLegendaire, RpgGuideCibles, RpgTempsForts, RpgVerdictScene } from './RpgMiseEnScene.jsx';
 import { rpgTempsForts } from './rpgTempsForts.js';
 import { RpgAdieuAutonome } from './RpgAdieuAutonome.jsx';
@@ -195,6 +199,10 @@ function etatsCreature(entity) {
   if (entity.site) etats.push('Site indestructible : ne peut ni attaquer ni bloquer');
   if (rpgSouffreMalInvocation(entity)) etats.push('Vient d’arriver : elle attaque déjà de sa case, mais ne se déplace pas avant le prochain tour de son camp');
   if (entity.gelToursRestants > 0) etats.push('Gelée');
+  if (entity.empecheAttaqueToursRestants > 0) etats.push('Ne peut pas attaquer jusqu’à la fin de son prochain tour');
+  if (entity.empecheBlocageToursRestants > 0) etats.push('Ne peut pas bloquer jusqu’à la fin de son prochain tour');
+  if (entity.poison?.toursRestants > 0) etats.push(`Empoisonnée : ${entity.poison.toursRestants} tour${entity.poison.toursRestants > 1 ? 's' : ''} restant${entity.poison.toursRestants > 1 ? 's' : ''}`);
+  if (entity.brulure) etats.push('Brûlée : perd 1 PV au début de son tour et ne peut pas être soignée');
   if (entity.attaquee) etats.push('Engagée : ne peut pas être sacrifiée');
   else if (!entity.ready) etats.push('Non prête');
   if (entity.coupRapide) etats.push('Attaque ciblée');
@@ -1852,6 +1860,7 @@ export default function RpgMobaBoard({ onQuitter, onBackRef = null, initialiser 
                     : carteSite ? ['INSTALLER', 'SITE'] : ['INVOQUER', 'POSER'];
             const slot = <button type="button" data-ascension-material={ascensionSelection?.eligible ? entity.id : undefined} data-ascension-order={ascensionSelection?.numero || undefined} aria-pressed={ascensionSelection ? Boolean(ascensionSelection.numero) : undefined} aria-label={ascensionSelection?.label ?? label} title={entity ? cardById(entity.carteId)?.text || entity.name : undefined} className={`moba__slot${entity ? ' has-creature' : ' is-empty'}${entity && classeBouclier(cardById(entity.carteId), entity) ? ' rpg-carte-bouclier' : ''}${entity?.envol ? ' is-envol' : ''}${rpgSouffreMalInvocation(entity) ? ' is-summoning-sick' : ''}${entity?.attaquee ? ' is-attacked' : ''}${invocationEnCours ? ' is-invoking' : ''}${isAttacker ? ' is-attacking' : ''}${isBlocked ? ' is-blocking' : ''}${(cible === id || isRapidTarget || cibleSortPrimaire === id || (etape === 'arrivee' && duel.arriveeEnAttente?.cibleOni === id)) && id ? ' is-target' : ''}`} disabled={selectionAscension.rituel ? !ascensionSelection?.cliquable : destruction ? !mayDeathTarget : site ? !maySiteTarget : !(maySacrifice || mayPlace || mayAttack || mayTarget || mayBlock || maySpellTarget || mayArrivalTarget || mayTargetRapide || peutGlisserBloqueur)} draggable={Boolean(!destruction && peutGlisserBloqueur)} onPointerDown={!destruction && peutGlisserBloqueur ? (event) => glisserTactile(event, { type: 'bloqueur', id }) : undefined} onDragStart={!destruction && peutGlisserBloqueur ? (event) => glisserSouris(event, { type: 'bloqueur', id }) : undefined} onDragEnd={finGlissement} onClick={action}>
               {entity ? <><RpgLueurArme key={entity.id} armes={armesPortees(entity)} token={armesAjoutees[`${side}:${entity.id}`]} autonome /><img src={cardArtEntite(entity)} alt="" /><RpgCadreCarte carte={cardById(entity.carteId)} afficherActivation={!entity.activationUtiliseeMatch && !entity.activationUtiliseeCeTour} /><span className="moba__slot-label"><b>{entity.name}</b><small>{!carteSite && <em>⚔ {entity.atk}</em>}<em>◆ {entity.pv}/{entity.pvMax}</em></small>{etats.length > 0 && <span className="moba__slot-states">{etats.join(' · ')}</span>}</span>{isAttacker && <span className="moba__slot-tag">ATTAQUE</span>}{isBlocked && <span className="moba__slot-tag">BLOQUE</span>}{isRapidTarget && <span className="moba__slot-tag">CIBLÉE</span>}</> : <span className="moba__empty-label" aria-hidden="true"><i>{mayPlace ? '+' : '◇'}</i><span className="moba__empty-label-long">{libelleCase[0]}</span><span className="moba__empty-label-short">{libelleCase[1]}</span></span>}
+              {entity && !carteSite && <><RpgAfflictionsVisuelles entite={entity} /><RpgDegelVisuel entite={entity} /><RpgDegagementVisuel entite={entity} /><RpgFinPoisonVisuel entite={entity} /></>}
               {entity && combatFeedback?.critiques[id] && <RpgCritiqueVisuel key={combatFeedback.critiques[id].token} fois={combatFeedback.critiques[id].fois} />}
             </button>;
             return adieux.length ? <div className={`moba__ghost-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}<div className="moba__ghost-zone moba__ghost-zone--empty" aria-hidden="true">{adieux}</div>{sacrifice}{critiquesDisparues}{soutien}{tourbillons}</div> : <div className={`moba__plain-slot${cibleGlisser ? ' is-moba-drop' : ''}`} key={i} {...positionProps}>{slot}{sacrifice}{critiquesDisparues}{soutien}{tourbillons}</div>;
