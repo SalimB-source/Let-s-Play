@@ -220,6 +220,37 @@ LANG_NAMES = {"fr": "fr", "en": "en", "ar": "ar"}
 # --------------------------------------------------------------------------
 # Outils de dessin
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Fond : motif discret de losanges, écho des puces des slides
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Fond : motif discret de losanges, écho des puces des slides
+# --------------------------------------------------------------------------
+def fond(graine: int = 0) -> Image.Image:
+    """Fond violet de la charte, semé de petits losanges creux très discrets.
+
+    Le motif se fond dans le violet (à peine plus clair) et reste sous le
+    texte : il donne de la matière au fond uni sans gêner la lecture.
+    `graine` décale la trame d’un visuel à l’autre pour que les douze images
+    n’aient pas exactement le même fond.
+    """
+    img = Image.new("RGB", (W, H), INK)
+    motif = Image.new("RGB", (W, H), INK)
+    d = ImageDraw.Draw(motif)
+    pas = 96
+    r = 13
+    decalage = (graine % 4) * 24
+    teinte = (96, 70, 170)          # violet plus clair : lisible, jamais criard
+    for ligne, y in enumerate(range(-pas + decalage, H + pas, pas)):
+        for x in range(-pas + (pas // 2 if ligne % 2 else 0), W + pas, pas):
+            d.polygon([(x, y - r), (x + r, y), (x, y + r), (x - r, y)],
+                      outline=teinte, width=3)
+            # Un point au centre de chaque losange : la trame respire.
+            d.ellipse([x - 1, y - 1, x + 1, y + 1], fill=teinte)
+    img = Image.blend(img, motif, 0.9)
+    return img.filter(ImageFilter.GaussianBlur(0.4))
+
+
 def latin(name: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(FONTS / name), size)
 
@@ -290,7 +321,7 @@ def rendre(slide: dict, lang: str) -> Image.Image:
         f_pied = latin("Inter-700.ttf", 22)
     f_date = latin("Anton.ttf", 44)
 
-    img = Image.new("RGB", (W, H), INK)
+    img = fond(slide["index"])
 
     # 1. Bande illustrée du haut.
     tile = bandeau(slide["asset"], (W, PHOTO_H), slide["focus"])

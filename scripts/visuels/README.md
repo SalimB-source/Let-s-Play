@@ -69,6 +69,11 @@ gratuit), l’introduction en bourse d’Anthropic (clôture du 20 novembre) et
 *14TH* d’Ava DuVernay (salles le 27 novembre, Netflix le 4 décembre). Chaque
 bandeau porte une image en rapport direct avec le sujet :
 
+Le fond violet n’est plus uni : un semis de petits losanges creux, à peine plus
+clairs que le violet de la charte, donne de la matière sans jamais passer
+derrière un texte gênant. Le pas de la trame change d’un visuel à l’autre
+(`fond()`, fonction `graine`).
+
 - gaming — visuel promotionnel officiel de Sea of Sorrow (© Team Cherry) ;
 - tech — la tour du Nasdaq MarketSite au nom d’Anthropic le 19 novembre
   (photo Andres Kudacki / AP) ;
