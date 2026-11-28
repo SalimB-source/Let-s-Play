@@ -1,5 +1,6 @@
-import { dailyStories as stories20261127 } from '../news/daily/2026-11-27';
+import { dailyStories as stories20261129 } from '../news/daily/2026-11-29';
 import { dailyStories as stories20261128 } from '../news/daily/2026-11-28';
+import { dailyStories as stories20261127 } from '../news/daily/2026-11-27';
 import { dailyStories as stories20261125 } from '../news/daily/2026-11-25';
 import { dailyStories as stories20261123 } from '../news/daily/2026-11-23';
 import { dailyStories as stories20261121 } from '../news/daily/2026-11-21';
@@ -70,8 +71,9 @@ const stories = {
   // communes aux articles, aux cartes des hubs, à la une de l'accueil, à la
   // recherche et au SEO. Chaque édition vit dans son fichier
   // (src/news/daily/<date>.js) ; l'import nu désigne l'édition du jour.
-  ...stories20261127,
+  ...stories20261129,
   ...stories20261128,
+  ...stories20261127,
   ...stories20261125,
   ...stories20261123,
   ...stories20261121,

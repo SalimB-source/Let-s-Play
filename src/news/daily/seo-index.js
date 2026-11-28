@@ -847,5 +847,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-28",
     "section": "Actualités cinéma"
+  },
+  "/news/silksong-sea-of-sorrow-11-decembre-29-novembre": {
+    "title": "SILKSONG LE 11 DÉCEMBRE. — Let’s Play",
+    "description": "Team Cherry a daté Sea of Sorrow : la première extension de Hollow Knight: Silksong sortira le 11 décembre 2026, gratuitement, sur toutes les plateformes du jeu.",
+    "image": "https://i.ytimg.com/vi/7hj4g173FhM/hqdefault.jpg",
+    "type": "article",
+    "published": "2026-11-29",
+    "section": "Actualités gaming"
+  },
+  "/news/tech/anthropic-ipo-cloture-20-novembre": {
+    "title": "ANTHROPIC L’ENTRÉE EN BOURSE. — Let’s Play",
+    "description": "Anthropic a clôturé son introduction en bourse : 1,127 milliard d’actions Class A à 83 dollars, option des banques exercée en totalité, soit environ 93,5 milliards de dollars levés.",
+    "image": "https://assets.claude.com/eed596be48a4b322690a6175794cdbd970ec4df4.jpg?w=3840&q=75&fm=webp&fit=max",
+    "type": "article",
+    "published": "2026-11-29",
+    "section": "Actualités tech"
+  },
+  "/news/cinema/14th-ava-duvernay-sortie-netflix-4-decembre": {
+    "title": "14TH QUI A SA PLACE. — Let’s Play",
+    "description": "Le documentaire 14TH d’Ava DuVernay sort en salles aux États-Unis et au Royaume-Uni le 27 novembre, avant une mise en ligne mondiale sur Netflix le 4 décembre.",
+    "image": "https://i.ytimg.com/vi/xO92LnyDxQg/hqdefault.jpg",
+    "type": "article",
+    "published": "2026-11-29",
+    "section": "Actualités cinéma"
   }
 };

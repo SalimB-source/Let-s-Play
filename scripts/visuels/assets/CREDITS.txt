@@ -20,3 +20,22 @@ cinema-quasimodo.jpg
     © Netflix. Source : netflix.com
 
 Les textes de l'image (titres, résumés, sources) sont figés dans le script.
+
+--- Édition du 29.11.2026 -------------------------------------------------
+
+gaming-sea-of-sorrow.webp
+    Visuel promotionnel de Hollow Knight: Silksong — Sea of Sorrow.
+    © Team Cherry. Source : teamcherry.com.au
+    (réutilisé pour l'actu Sea of Sorrow du 29.11.2026)
+
+tech-anthropic-bourse.png
+    Fond éditorial produit par la rédaction (dégradé violet, losanges creux),
+    sans image tierce : Anthropic n'a pas publié de visuel de presse dédié à
+    la clôture de son introduction en bourse que nous puissions reproduire.
+    Charte Let's Play (#4F3494, #f7d900, #e7fd52).
+
+cinema-14th-duvernay.png
+    Fond éditorial produit par la rédaction (dégradé violet, losanges creux),
+    sans image tierce : le visuel officiel de 14TH reste la miniature du
+    trailer Netflix intégré à l'article (/vi/xO92LnyDxQg/), pas un fichier
+    local. Charte Let's Play (#4F3494, #f7d900, #e7fd52).

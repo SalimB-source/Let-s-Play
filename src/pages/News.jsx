@@ -4,7 +4,7 @@ import '../news-carousel.css';
 import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-27';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-29';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';

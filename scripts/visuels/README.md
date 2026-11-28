@@ -50,6 +50,26 @@ python3 scripts/visuels/make_social_actu_slides.py --slug tech    # une actu
 
 Ordre de carrousel conseillé : récapitulatif, puis slide 1 → 2 → 3.
 
+## Édition du 29.11.2026 — Sea of Sorrow, Anthropic, *14TH*
+
+Deux scripts datés reprennent le gabarit du 27.11 (aucun numéro, puces en
+losanges, fond violet `#4F3494`, sources officielles seules en pied) :
+
+- `make_social_3_actus_1129.py` → `visuels/social/2026-11-29-trois-actus-{fr,en,ar}.png`
+- `make_social_actu_slides_1129.py` → `visuels/social/2026-11-29-slide-{1-gaming,2-tech,3-cinema}-{fr,en,ar}.png`
+
+```bash
+python3 scripts/visuels/make_social_3_actus_1129.py
+python3 scripts/visuels/make_social_actu_slides_1129.py
+python3 scripts/visuels/make_social_actu_slides_1129.py --lang ar --slug cinema
+```
+
+Les trois actus : *Hollow Knight: Silksong — Sea of Sorrow* (11 décembre,
+gratuit), l’introduction en bourse d’Anthropic (clôture du 20 novembre) et
+*14TH* d’Ava DuVernay (salles le 27 novembre, Netflix le 4 décembre). Les fonds
+des deux dernières sont des visuels éditoriaux (dégradé violet, losanges
+creux), faute d’image de presse reproduisible : voir `assets/CREDITS.txt`.
+
 ## The Game Awards 2026 — les nommés au jeu de l’année
 
 Les six PNG **1080 × 1350 px (4:5)** et leur archive ZIP se trouvent dans

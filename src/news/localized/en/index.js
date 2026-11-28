@@ -3,6 +3,30 @@
 // éditer à la main. Le corps complet de chaque article vit dans ./<slug>.js et
 // n’est chargé qu’à son ouverture.
 export const listings = {
+  "/news/silksong-sea-of-sorrow-11-decembre-29-novembre": {
+    "title": "SILKSONG",
+    "accent": "DECEMBER 11.",
+    "dek": "Team Cherry has dated Sea of Sorrow: the first Hollow Knight: Silksong expansion lands on 11 December 2026, free, on every platform the game runs on.",
+    "imageAlt": "Thumbnail of the Hollow Knight: Silksong – Sea of Sorrow launch trailer, published by Team Cherry on 27 November 2026. © Team Cherry.",
+    "category": "GAMING · HOLLOW KNIGHT: SILKSONG",
+    "readTime": "3 MIN READ"
+},
+  "/news/tech/anthropic-ipo-cloture-20-novembre": {
+    "title": "ANTHROPIC",
+    "accent": "NOW ON NASDAQ.",
+    "dek": "Anthropic has closed its initial public offering: 1.127 billion Class A shares at $83, the banks’ option exercised in full — roughly $93.5 billion raised.",
+    "imageAlt": "Official illustration published by Anthropic on its newsroom for its November 2026 initial public offering. © Anthropic.",
+    "category": "TECH · ARTIFICIAL INTELLIGENCE",
+    "readTime": "3 MIN READ"
+},
+  "/news/cinema/14th-ava-duvernay-sortie-netflix-4-decembre": {
+    "title": "14TH",
+    "accent": "WHO BELONGS.",
+    "dek": "Ava DuVernay’s documentary 14TH opens in US and UK cinemas on 27 November, before a global Netflix release on 4 December.",
+    "imageAlt": "Thumbnail of the official trailer for Ava DuVernay’s documentary 14TH, published by Netflix on 16 November 2026. © Netflix.",
+    "category": "CINEMA & SERIES · NETFLIX",
+    "readTime": "3 MIN READ"
+},
   "/news/cherry-time-team-cherry-27-novembre": {
     "title": "CHERRY TIME",
     "accent": "SEA OF SORROW.",

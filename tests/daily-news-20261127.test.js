@@ -56,16 +56,16 @@ test('traductions EN et AR complètes, listées et rattachées aux médias',()=>
   }
 });
 
-test('édition du 27 en une, archives du 28 conservées',()=>{
-  for(const p of ['Home','News']) assert.ok(read(`src/pages/${p}.jsx`).includes("from '../news/daily/2026-11-27'"),p);
+test('édition du 27 archivée, toujours rendue par le site',()=>{
+  // Le 27 n'est plus l'édition en une (le 29 lui a succédé) : il reste dans les
+  // archives, derrière l'édition courante et la précédente.
   for(const f of ['src/pages/CurrentNews.jsx','src/pages/AllNews.jsx','src/pages/GamingNews.jsx','src/pages/CinemaNews.jsx','src/pages/TechNews.jsx','src/search/searchIndex.js']){
     const text=read(f);
     for(const day of ['27','28','25','23','21']) assert.ok(text.includes(`daily/2026-11-${day}'`),`${f} : édition du ${day}`);
-    assert.ok(text.indexOf("daily/2026-11-27'")<text.indexOf("daily/2026-11-28'"),`${f} : ordre`);
+    assert.ok(text.indexOf("daily/2026-11-28'")<text.indexOf("daily/2026-11-27'"),`${f} : ordre`);
   }
   assert.ok(!read('src/pages/News.jsx').includes('Édition précédente'));
-  assert.ok(read('scripts/daily-news-check.mjs').includes("daily/2026-11-27.js'"),'contrôle : édition courante');
-  assert.ok(read('scripts/daily-news-check.mjs').includes("daily/2026-11-28.js'"),'contrôle : édition précédente');
+  assert.ok(read('scripts/daily-news-check.mjs').includes("daily/2026-11-27.js'"),'contrôle : édition archivée');
   assert.ok(read('scripts/daily-news-smoke.jsx').includes("'2026-11-27'"),'smoke : clés de l’édition');
 });
 

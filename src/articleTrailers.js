@@ -1416,6 +1416,44 @@ export const articleTrailers = {
     ]
   },
 
+  "silksong-sea-of-sorrow-11-decembre-29-novembre": {
+      "label": "SILKSONG",
+      "meta": "TEAM CHERRY · EXTENSION",
+      "kind": "trailer",
+      "credit": "Miniature et bande-annonce de lancement officielles : Team Cherry, trailer « Hollow Knight: Silksong - Sea of Sorrow - Launch Trailer » publié le 27 novembre 2026. © Team Cherry. Illustration promotionnelle, pas une capture de notre rédaction.",
+      "items": [
+          {
+              "id": "7hj4g173FhM",
+              "kind": "trailer",
+              "title": "Hollow Knight: Silksong - Sea of Sorrow - Launch Trailer",
+              "channel": "Team Cherry",
+              "note": "Bande-annonce de lancement diffusée par Team Cherry le 27 novembre 2026, à la fin de la présentation Cherry Time : elle annonce la sortie du 11 décembre à l’écran et montre le voyage au-dessus et sous l’océan de Pharloom.",
+              "verified": "29.11.2026"
+          }
+      ]
+  },
+  "tech/anthropic-ipo-cloture-20-novembre": {
+      "label": "ANTHROPIC",
+      "meta": "ANTHROPIC",
+      "credit": "Visuel de la salle de presse d’Anthropic, illustration de l’entreprise publiée avec le communiqué. © Anthropic. Image promotionnelle, pas une photographie de notre rédaction.",
+      "items": [],
+      "pending": "Aucune vidéo officielle dédiée à ce communiqué n’a été vérifiée pour intégration. Le communiqué de clôture, lié en source, décrit l’opération, et le prospectus S-1 fait foi ; les interviews et vidéos de marché qui circulent ailleurs ne sont pas des documents de l’entreprise et ne sont pas présentées ici."
+  },
+  "cinema/14th-ava-duvernay-sortie-netflix-4-decembre": {
+      "label": "14TH",
+      "meta": "NETFLIX · DOCUMENTAIRE",
+      "credit": "Miniature et bande-annonce officielles : Netflix, trailer « 14TH | Official Trailer | Netflix » publié le 16 novembre 2026 sur la chaîne du diffuseur. © Netflix. Illustration promotionnelle, pas une image de notre rédaction.",
+      "items": [
+          {
+              "id": "xO92LnyDxQg",
+              "kind": "trailer",
+              "title": "14TH | Official Trailer | Netflix",
+              "channel": "Netflix",
+              "note": "Bande-annonce officielle publiée par Netflix le 16 novembre 2026, avant la sortie en salles du 27 novembre : elle présente l’argument du film, pas des images du jour de la mise en ligne.",
+              "verified": "29.11.2026"
+          }
+      ]
+  },
 };
 
 /**
