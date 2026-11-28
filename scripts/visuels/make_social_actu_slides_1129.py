@@ -221,34 +221,30 @@ LANG_NAMES = {"fr": "fr", "en": "en", "ar": "ar"}
 # Outils de dessin
 # --------------------------------------------------------------------------
 # --------------------------------------------------------------------------
-# Fond : motif discret de losanges, écho des puces des slides
-# --------------------------------------------------------------------------
-# --------------------------------------------------------------------------
-# Fond : motif discret de losanges, écho des puces des slides
+# Fond : hachures diagonales discrètes
 # --------------------------------------------------------------------------
 def fond(graine: int = 0) -> Image.Image:
-    """Fond violet de la charte, semé de petits losanges creux très discrets.
+    """Fond violet de la charte, hachuré de fines diagonales à 45°.
 
-    Le motif se fond dans le violet (à peine plus clair) et reste sous le
-    texte : il donne de la matière au fond uni sans gêner la lecture.
-    `graine` décale la trame d’un visuel à l’autre pour que les douze images
-    n’aient pas exactement le même fond.
+    Deux trames de traits inclinés, très peu contrastées par rapport au violet
+    `#4F3494`, donnent de la matière au fond sans jamais gêner la lecture :
+    une trame principale (trait de 3 px tous les 44 px) et une trame plus
+    espacée, à peine plus claire, pour éviter l’effet « papier peint ».
+    `graine` décale les hachures d’un visuel à l’autre.
     """
     img = Image.new("RGB", (W, H), INK)
     motif = Image.new("RGB", (W, H), INK)
     d = ImageDraw.Draw(motif)
-    pas = 96
-    r = 13
-    decalage = (graine % 4) * 24
-    teinte = (96, 70, 170)          # violet plus clair : lisible, jamais criard
-    for ligne, y in enumerate(range(-pas + decalage, H + pas, pas)):
-        for x in range(-pas + (pas // 2 if ligne % 2 else 0), W + pas, pas):
-            d.polygon([(x, y - r), (x + r, y), (x, y + r), (x - r, y)],
-                      outline=teinte, width=3)
-            # Un point au centre de chaque losange : la trame respire.
-            d.ellipse([x - 1, y - 1, x + 1, y + 1], fill=teinte)
-    img = Image.blend(img, motif, 0.9)
-    return img.filter(ImageFilter.GaussianBlur(0.4))
+    # Une seule direction : bas-gauche → haut-droite, comme la barre jaune.
+    decalage = (graine % 5) * 9
+    teinte = (88, 62, 160)          # violet un peu plus clair, à peine visible
+    for x in range(-H + decalage, W + H, 44):
+        d.line([(x, H), (x + H, 0)], fill=teinte, width=3)
+    # Trame large : un trait plus net tous les cinq traits, léger rythme.
+    for x in range(-H + decalage, W + H, 220):
+        d.line([(x, H), (x + H, 0)], fill=(102, 74, 176), width=2)
+    img = Image.blend(img, motif, 0.85)
+    return img.filter(ImageFilter.GaussianBlur(0.5))
 
 
 def latin(name: str, size: int) -> ImageFont.FreeTypeFont:
