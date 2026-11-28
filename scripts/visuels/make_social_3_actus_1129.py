@@ -74,11 +74,11 @@ LANGUES = {
             ("TECH", "ANTHROPIC",
              "Introduction en bourse clôturée : 1,127 milliard\n"
              "d’actions à 83 dollars, option exercée en entier.",
-             "tech-anthropic-bourse.png", 0.45),
+             "tech-anthropic-nasdaq.jpg", 0.50),
             ("CINÉMA", "14TH",
              "Ava DuVernay interroge le 14e amendement :\n"
              "salles le 27 novembre, Netflix le 4 décembre.",
-             "cinema-14th-duvernay.png", 0.45),
+             "cinema-14th-still.jpg", 0.40),
         ],
         "sources": ("SOURCES OFFICIELLES · TEAMCHERRY.COM.AU · "
                     "ANTHROPIC.COM · NETFLIX.COM"),
@@ -95,11 +95,11 @@ LANGUES = {
             ("TECH", "ANTHROPIC",
              "Initial public offering closed: 1.127 billion\n"
              "shares at $83, the option exercised in full.",
-             "tech-anthropic-bourse.png", 0.45),
+             "tech-anthropic-nasdaq.jpg", 0.50),
             ("CINEMA", "14TH",
              "Ava DuVernay questions the 14th Amendment:\n"
              "cinemas on 27 November, Netflix on 4 December.",
-             "cinema-14th-duvernay.png", 0.45),
+             "cinema-14th-still.jpg", 0.40),
         ],
         "sources": ("OFFICIAL SOURCES · TEAMCHERRY.COM.AU · "
                     "ANTHROPIC.COM · NETFLIX.COM"),
@@ -116,11 +116,11 @@ LANGUES = {
             ("تقنية", "أنثروبيك",
              "إغلاق الطرح العام الأولي: 1.127 مليار سهم بسعر 83 دولارًا، "
              "مع تنفيذ الخيار بالكامل.",
-             "tech-anthropic-bourse.png", 0.45),
+             "tech-anthropic-nasdaq.jpg", 0.50),
             ("سينما", "14TH",
              "أفا دوفيرني تسأل عن التعديل الرابع عشر: صالات في 27 نوفمبر، "
              "نتفليكس في 4 ديسمبر.",
-             "cinema-14th-duvernay.png", 0.45),
+             "cinema-14th-still.jpg", 0.40),
         ],
         "sources": ("مصادر رسمية · TEAMCHERRY.COM.AU · ANTHROPIC.COM · "
                     "NETFLIX.COM"),
@@ -156,8 +156,10 @@ def vignette(nom: str, box: tuple[int, int], focus: float) -> Image.Image | None
     src = Image.open(chemin).convert("RGB")
     tile = recadre(src, box, focus, zoom=1.04)
     # Effacement : assombrissement, voile vers le violet du fond, léger flou.
-    tile = Image.blend(tile, Image.new("RGB", tile.size, (0, 0, 0)), 0.55)
-    tile = Image.blend(tile, Image.new("RGB", tile.size, INK), 0.34)
+    # Les photographies gardent plus de matière que les fonds éditoriaux.
+    sombre, voile = (0.50, 0.26) if nom.endswith(".jpg") else (0.55, 0.34)
+    tile = Image.blend(tile, Image.new("RGB", tile.size, (0, 0, 0)), sombre)
+    tile = Image.blend(tile, Image.new("RGB", tile.size, INK), voile)
     return tile.filter(ImageFilter.GaussianBlur(1.4))
 
 
@@ -178,6 +180,33 @@ def degrade(tile: Image.Image, fin: float = 0.46, rtl: bool = False) -> Image.Im
 # --------------------------------------------------------------------------
 # Composition du visuel
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Fond : hachures diagonales discrètes
+# --------------------------------------------------------------------------
+def fond(graine: int = 0) -> Image.Image:
+    """Fond violet de la charte, hachuré de fines diagonales à 45°.
+
+    Deux trames de traits inclinés, très peu contrastées par rapport au violet
+    `#4F3494`, donnent de la matière au fond sans jamais gêner la lecture :
+    une trame principale (trait de 3 px tous les 44 px) et une trame plus
+    espacée, à peine plus claire, pour éviter l’effet « papier peint ».
+    `graine` décale les hachures d’un visuel à l’autre.
+    """
+    img = Image.new("RGB", (W, H), INK)
+    motif = Image.new("RGB", (W, H), INK)
+    d = ImageDraw.Draw(motif)
+    # Une seule direction : bas-gauche → haut-droite, comme la barre jaune.
+    decalage = (graine % 5) * 9
+    teinte = (88, 62, 160)          # violet un peu plus clair, à peine visible
+    for x in range(-H + decalage, W + H, 44):
+        d.line([(x, H), (x + H, 0)], fill=teinte, width=3)
+    # Trame large : un trait plus net tous les cinq traits, léger rythme.
+    for x in range(-H + decalage, W + H, 220):
+        d.line([(x, H), (x + H, 0)], fill=(102, 74, 176), width=2)
+    img = Image.blend(img, motif, 0.85)
+    return img.filter(ImageFilter.GaussianBlur(0.5))
+
+
 def latin(name: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(FONTS / name), size)
 
@@ -203,7 +232,7 @@ def rendre(lang: str) -> Image.Image:
         f_sources = latin("Inter-600.ttf", 20)
     f_date = latin("Anton.ttf", 92)
 
-    img = Image.new("RGB", (W, H), INK)
+    img = fond(sum(map(ord, lang)))
 
     # 1. Les trois bandeaux illustrés, posés avant tout le texte.
     bw = BLOCK_RIGHT - BLOCK_LEFT

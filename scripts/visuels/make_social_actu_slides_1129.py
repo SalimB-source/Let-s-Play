@@ -114,8 +114,8 @@ SLIDES = [
     {
         "slug": "tech",
         "index": 2,
-        "asset": "tech-anthropic-bourse.png",
-        "focus": 0.45,
+        "asset": "tech-anthropic-nasdaq.jpg",
+        "focus": 0.50,
         "langues": {
             "fr": {
                 "rubrique": "TECH",
@@ -166,8 +166,8 @@ SLIDES = [
     {
         "slug": "cinema",
         "index": 3,
-        "asset": "cinema-14th-duvernay.png",
-        "focus": 0.45,
+        "asset": "cinema-14th-still.jpg",
+        "focus": 0.40,
         "langues": {
             "fr": {
                 "rubrique": "CINÉMA",
@@ -220,6 +220,33 @@ LANG_NAMES = {"fr": "fr", "en": "en", "ar": "ar"}
 # --------------------------------------------------------------------------
 # Outils de dessin
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Fond : hachures diagonales discrètes
+# --------------------------------------------------------------------------
+def fond(graine: int = 0) -> Image.Image:
+    """Fond violet de la charte, hachuré de fines diagonales à 45°.
+
+    Deux trames de traits inclinés, très peu contrastées par rapport au violet
+    `#4F3494`, donnent de la matière au fond sans jamais gêner la lecture :
+    une trame principale (trait de 3 px tous les 44 px) et une trame plus
+    espacée, à peine plus claire, pour éviter l’effet « papier peint ».
+    `graine` décale les hachures d’un visuel à l’autre.
+    """
+    img = Image.new("RGB", (W, H), INK)
+    motif = Image.new("RGB", (W, H), INK)
+    d = ImageDraw.Draw(motif)
+    # Une seule direction : bas-gauche → haut-droite, comme la barre jaune.
+    decalage = (graine % 5) * 9
+    teinte = (88, 62, 160)          # violet un peu plus clair, à peine visible
+    for x in range(-H + decalage, W + H, 44):
+        d.line([(x, H), (x + H, 0)], fill=teinte, width=3)
+    # Trame large : un trait plus net tous les cinq traits, léger rythme.
+    for x in range(-H + decalage, W + H, 220):
+        d.line([(x, H), (x + H, 0)], fill=(102, 74, 176), width=2)
+    img = Image.blend(img, motif, 0.85)
+    return img.filter(ImageFilter.GaussianBlur(0.5))
+
+
 def latin(name: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(FONTS / name), size)
 
@@ -290,7 +317,7 @@ def rendre(slide: dict, lang: str) -> Image.Image:
         f_pied = latin("Inter-700.ttf", 22)
     f_date = latin("Anton.ttf", 44)
 
-    img = Image.new("RGB", (W, H), INK)
+    img = fond(slide["index"])
 
     # 1. Bande illustrée du haut.
     tile = bandeau(slide["asset"], (W, PHOTO_H), slide["focus"])
