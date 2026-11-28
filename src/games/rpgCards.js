@@ -466,7 +466,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
-    activation: { nom: 'Lame du pourfendeur', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 2 } },
+    activation: { nom: 'Trait de braise', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 3, cible: 'creature' } },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     combat: { type: 'degats-creature-combattue', amount: 1, quand: ['attaque-bloquee', 'blocage'] },
     text: 'Quand elle est bloquée, elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat. Quand elle bloque une créature, elle lui inflige aussi 1 dégât avant les blessures de combat.',
@@ -482,7 +482,6 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'chasseuse-de-braise', name: 'Chasseuse de braise',
-    activation: { nom: 'Trait de braise', cible: 'creature', uneFoisParMatch: true, effet: { type: 'degats', amount: 3, cible: 'creature' } },
     element: 'braise', cost: 2, atk: 2, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine et Vampire', art: 'chasseuse-de-braise',
     volDeVie: true,
@@ -508,7 +507,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'rodeuse-des-tombes', name: 'Rôdeuse des tombes',
-    activation: { nom: 'Papyrus', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'pioche', amount: 1 } },
+    activation: { nom: 'Pillage des tombes', cible: 'aucune', uneFoisParMatch: true, effet: { type: 'exil-cimetiere-adverse' } },
     element: 'tenebres', cost: 2, atk: 2, def: 1, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine et Vampire', art: 'rodeuse-des-tombes',
     infiltration: true,
@@ -543,7 +542,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
-    activation: { nom: 'Voile de la lune noire', cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' } },
+    activation: { nom: 'Défi des sables', cible: 'creature-adverse', uneFoisParMatch: true, effet: { type: 'combat-cible' } },
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true, conditionEmbuscade: 'attaque-directe',
