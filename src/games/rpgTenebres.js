@@ -301,6 +301,7 @@ export const RPG_TENEBRES_CREATURES = [
   carte({
     id: 'dame-aux-ailes-d-or', distance: true,
     name: 'La Dame aux ailes d’or',
+    activation: { nom: 'Ailes bienfaisantes', cible: 'creature-amie', uneFoisParMatch: true, effet: { type: 'soin', amount: 2, cible: 'creature-amie' } },
     element: 'sable',
     cost: 5,
     atk: 3,

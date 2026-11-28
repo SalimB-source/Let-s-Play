@@ -5546,6 +5546,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'degats': {
+      if (effet.peutCritique) {
+        const sourceEntite = duel[cote].creatures.find((entite) => entite.id === sauf);
+        const crit = sourceEntite?.coupCritique ?? cardById(sourceCarteId)?.coupCritique;
+        if (crit && (duel.rng?.() ?? Math.random()) < (crit.chance ?? 0.25)) {
+          const fois = crit.fois ?? 2;
+          effet = { ...effet, amount: (effet.amount ?? 0) * fois };
+          duel.log.push(`Coup critique ! Les dégâts sont multipliés par ${fois}.`);
+        }
+      }
       // Remember the source lane before the wave: deaths and retaliation may
       // remove the source before its separate damage to the opposing lane.
       const voieSourceMoba = duel.moba && estCapacite(sourceType)
