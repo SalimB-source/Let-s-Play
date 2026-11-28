@@ -1508,11 +1508,10 @@ export const RPG_CREATURE_CARDS = [
     cost: 6, atk: 4, def: 7, rarity: 'rare',
     typeLine: 'Créature — Humain · Archer',
     coupRapide: true,
-    coupCritique: { chance: 0.25, fois: 2 },
     // Le Blocage reste : c'est l'identité de la carte (un archer qui se
     // protège au corps à corps). Le privilège du tir se paie par le coût.
     blocage: { chance: 0.25, def: 2 },
-    text: 'Attaque ciblée — Il peut viser une créature adverse : il lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Coup critique — En combat, 25 % de chances de doubler les dégâts de son attaque ou de son blocage ; contre une créature déjà blessée, il est garanti. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
+    text: 'Attaque ciblée — Il peut viser une créature adverse : il lui inflige ses dégâts sans riposte ordinaire, avec 15 % de chances de rater. Blocage — Quand une attaque adverse le cible, 25 % de chances de gagner +2 DEF jusqu’à la fin du tour.',
     flavor: 'Sous ses flèches, le désert avance à pas de géant.',
   },
   {
