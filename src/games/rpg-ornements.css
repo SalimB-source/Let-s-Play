@@ -36,3 +36,18 @@
 .is-reduced .rpg-brume-cimetiere__voile { animation: none; }
 /* Le rendu autonome rogne la case : garder la vignette à l'intérieur. */
 .rpg-arme-eclat--autonome { top: 3%; transform: translateX(-50%); }
+
+/* Départ d'équipement : un souvenir de la vignette glisse et s'éteint,
+   distinct de l'éclat d'attachement. C'est décoratif même en remplacement. */
+.rpg-arme-depart { position: absolute; z-index: 14; top: 4%; left: 50%; width: 27%; aspect-ratio: 1; transform: translateX(-50%); pointer-events: none; }
+.rpg-arme-depart__piece { position: absolute; inset: 0; overflow: hidden; border: 1px solid #e8c98b; border-radius: 3px; box-shadow: 0 0 8px #ffc66a99; animation: rpg-arme-depart calc(.9s * var(--rpg-anim-scale, 1)) ease-in both; animation-delay: calc(var(--arme-depart-index) * .06s * var(--rpg-anim-scale, 1)); }
+.rpg-arme-depart__piece img { width: 100%; height: 100%; object-fit: cover; }
+.rpg-arme-depart__piece > i { position: absolute; inset: 0; background: linear-gradient(135deg, transparent 44%, #fff2c4 49%, transparent 53%); }
+.rpg-arme-depart__etincelles { position: absolute; inset: 0; }
+.rpg-arme-depart__etincelles i { position: absolute; top: 50%; left: 50%; width: 3px; height: 3px; border-radius: 50%; background: #ffe6a0; box-shadow: 0 0 5px #ffbb5a; animation: rpg-arme-etincelle calc(.65s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-arme-depart__etincelles i:nth-child(2) { --etincelle-x: 15px; --etincelle-y: -13px; }
+.rpg-arme-depart__etincelles i:nth-child(3) { --etincelle-x: -13px; --etincelle-y: 10px; }
+@keyframes rpg-arme-depart { 0% { opacity: .95; transform: translateY(0) rotate(0); } 28% { opacity: .9; } 100% { opacity: 0; transform: translateY(45%) rotate(-18deg) scale(.65); } }
+@keyframes rpg-arme-etincelle { from { opacity: .9; transform: translate(0, 0); } to { opacity: 0; transform: translate(var(--etincelle-x, -12px), var(--etincelle-y, -15px)); } }
+@media (prefers-reduced-motion: reduce) { .rpg-arme-depart { display: none; } }
+.is-reduced .rpg-arme-depart { display: none; }

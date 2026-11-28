@@ -1,7 +1,12 @@
 import { RpgActivationDescription, RpgActivationNote } from './RpgActivationDescription.jsx';
-import { RpgBordurePlateau, RpgPortailInvocation, RpgBrumeCimetiere, RpgLueurArme, useArmesAjoutees } from './RpgOrnements.jsx';
+import { RpgBordurePlateau, RpgPortailInvocation, RpgBrumeCimetiere, RpgLueurArme, RpgDepartArme, useArmesAjoutees, useArmesRetirees } from './RpgOrnements.jsx';
 import { RpgFissureImpact, RpgVagueTour } from './RpgEffetsComplementaires.jsx';
 import RpgAfflictionsVisuelles from './RpgAfflictionsVisuelles.jsx';
+import { RpgPrioriteDefenseur, descriptionPrioriteDefenseur } from './RpgPrioriteDefenseur.jsx';
+import { prioriteDefenseurVisuelle, prioriteDefenseurCollective, textePrioriteDefenseur } from './rpgPrioriteDefenseurVisuelle.js';
+import { RpgTicsAfflictions, useTicsAfflictions } from './RpgTicsAfflictions.jsx';
+import { ticsPourPile } from './rpgTicsAfflictions.js';
+import { RpgEnvolTransition, useEnvolTransitions } from './RpgEnvolTransition.jsx';
 import RpgDegelVisuel from './RpgDegelVisuel.jsx';
 import RpgDegagementVisuel from './RpgDegagementVisuel.jsx';
 import RpgFinPoisonVisuel from './RpgFinPoisonVisuel.jsx';
@@ -3133,6 +3138,10 @@ export function TableCard({
   // vient de bloquer un sort (`ImpactBouclier`), sinon null.
   bouclierFx = null,
   armeFx = null,
+  armeDepartFx = null,
+  envolTransitionFx = null,
+  ticsAfflictionsFx = null,
+  statutDefenseur = null,
   playerTurn = false,
   // `true` : la carte a une action **légale** ce tour-ci (frapper une cible,
   // toucher le sorcier, ou avancer). `null` : pas de calcul fourni, on retombe
@@ -3346,6 +3355,8 @@ export function TableCard({
       data-ascension-material={ascensionSelection?.eligible ? entite.id : undefined}
       data-ascension-order={ascensionSelection?.numero || undefined}
       data-card-id={carte?.id}
+      data-defenseur-ciblage={statutDefenseur ?? undefined}
+      aria-description={descriptionPrioriteDefenseur(statutDefenseur)}
       data-soin={soin ? soin.montant : undefined}
       data-miss={miss ? 'true' : undefined}
       data-sort-bloque-bouclier={sortBloqueParBouclier ? 'true' : undefined}
@@ -3386,6 +3397,8 @@ export function TableCard({
       <span className="rpg-relief-ombre" aria-hidden="true" />
       {lumiereEntree && !entreeDifferee && !reserveAscension && <><span className="rpg-lumiere-invocation" aria-hidden="true" />{!estSite && !armeFx && <RpgPortailInvocation carte={carte} />}</>}
       <RpgLueurArme armes={armes} token={armeFx} />
+      <RpgDepartArme effet={armeDepartFx} />
+      <RpgPrioriteDefenseur statut={statutDefenseur} />
       {lumiereEntree && !entreeDifferee && !reserveAscension && rpgEstLegendaire(carte) && <RpgEntreeLegendaire />}
       {actionFx?.impactVerifie && <RpgFissureImpact key={actionFx.token ?? actionFx.type} />}
       <img
@@ -3440,6 +3453,8 @@ export function TableCard({
       )}
       {blessee && <span className="rpg-card__blood" aria-hidden="true" />}
       {!estSite && <RpgAfflictionsVisuelles entite={entite} />}
+      {!estSite && <RpgTicsAfflictions effets={ticsAfflictionsFx} />}
+      {!estSite && <RpgEnvolTransition effet={envolTransitionFx} />}
       {!estSite && <RpgDegelVisuel entite={entite} />}
       {!estSite && <RpgDegagementVisuel entite={entite} />}
       {!estSite && <RpgFinPoisonVisuel entite={entite} />}
@@ -9052,6 +9067,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   const duel = duelRef.current;
   const armesAjoutees = useArmesAjoutees(duel, modePvp ? `pvp:${pvp?.code ?? ''}` : duel);
+  const armesRetirees = useArmesRetirees(duel, modePvp ? `pvp:${pvp?.code ?? ''}` : duel);
+  const effetsEnvol = useEnvolTransitions(duel, modePvp ? `pvp:${pvp?.code ?? ''}` : duel);
+  const ticsAfflictions = useTicsAfflictions(duel, modePvp ? `pvp:${pvp?.code ?? ''}` : duel);
   const volsCimetiere = useCimetiereVols({ duel, session: modePvp ? `pvp:${pvp?.code ?? ''}` : duel,
     rootRef: tableRef, actif: ecran === 'partie', pvp: modePvp });
   const vainqueurPvp = modePvp && (pvp?.statut === 'terminee' || duel?.fin?.gagnant)
@@ -10613,6 +10631,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }) ?? null;
   const cibleAttaqueEnCours = phase ? (combatCollectif ? prochainCoupRapideSansCible(attaquants) : (attaquants[0] && !ciblesAttaque[attaquants[0]] ? attaquants[0] : null)) : null;
   const choixIndividuel = !combatCollectif && phase && attaquants[0] ? rpgCiblesIndividuellesClassique(duel, 'joueur', attaquants[0]) : { cibles: [], directe: false };
+  const prioriteDefenseur = cibleAttaqueEnCours && !cibleEnCours && !activationEnCours && !cibleArmeEnCours
+    && !attenteBoualem && !attenteDestruction && !attenteSiteBimini
+    ? (combatCollectif
+      ? (() => {
+        // Un clic peut aussi modifier la cible d'un autre attaquant ciblé.
+        // Avec plusieurs attaquants ne pas qualifier de protégée une cible
+        // qui reste légale pour l'un d'eux.
+        if (attaquants.filter((id) => duel.joueur.creatures.find((e) => e.id === id)?.coupRapide).length !== 1) return null;
+        const attaquant = duel.joueur.creatures.find((e) => e.id === cibleAttaqueEnCours);
+        const couleurs = cardColors(cardById(attaquant?.carteId));
+        return prioriteDefenseurCollective(attaquant, duel.sorcier.creatures.filter((e) => !rpgEstProtegee(e, couleurs)));
+      })()
+      : prioriteDefenseurVisuelle(duel, 'joueur', cibleAttaqueEnCours)) : null;
   // Survol façon Fire Emblem : `apercuSurvol.entiteId` dit quelle créature est
   // sous le curseur (ou sous le doigt). Quand c'est une des nôtres, on lit son
   // attaque réelle — `rpgCiblesIndividuellesClassique`, la même règle que le
@@ -10646,6 +10677,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // réponse complète, et le jeu le dit.
   const inviteAttaqueIndividuelle = (() => {
     if (!attaquants.length) return 'Choisissez une créature attaquante';
+    if (prioriteDefenseur) return textePrioriteDefenseur(prioriteDefenseur);
     const nom = nomAttaquantMobile ?? 'Cette créature';
     const peutFrapper = choixIndividuel.directe || choixIndividuel.cibles.length > 0;
     const peutMarcher = deplacementsAttaquant.length > 0;
@@ -14531,7 +14563,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         : attaqueCibleeSansCibleLegale
                         ? 'Attaque ciblée — aucune créature adverse ne peut être visée ; retirez cet attaquant'
                         : cibleAttaqueEnCours
-                          ? 'Attaque ciblée — choisissez une créature adverse avant de confirmer'
+                          ? (textePrioriteDefenseur(prioriteDefenseur) ?? 'Attaque ciblée — choisissez une créature adverse avant de confirmer')
                           : attaquants.length > 0
                           ? `${attaquants.length} attaquant${attaquants.length > 1 ? 's' : ''} choisi${attaquants.length > 1 ? 's' : ''}${Object.keys(ciblesAttaque).length ? ` · ${Object.keys(ciblesAttaque).length} cible${Object.keys(ciblesAttaque).length > 1 ? 's' : ''} désignée${Object.keys(ciblesAttaque).length > 1 ? 's' : ''}` : ''} — confirmez l’attaque`
                           : 'Choisissez vos créatures attaquantes',
@@ -15064,7 +15096,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       armeFx={armesAjoutees[`${proprietaire}:${entite.id}`]}
+                      armeDepartFx={armesRetirees[`${proprietaire}:${entite.id}`] ?? (!deployee ? pile.entites.map((membre) => armesRetirees[`${campDeLaCreature(duel, membre) ?? proprietaire}:${membre.id}`]).find(Boolean) : null)}
+                      envolTransitionFx={effetsEnvol[`${proprietaire}:${entite.id}`] ?? (!deployee ? pile.entites.map((membre) => effetsEnvol[`${campDeLaCreature(duel, membre) ?? proprietaire}:${membre.id}`]).find(Boolean) : null)}
+                      ticsAfflictionsFx={deployee ? ticsAfflictions[`${proprietaire}:${entite.id}`] : ticsPourPile(ticsAfflictions, pile.entites.map((membre) => `${campDeLaCreature(duel, membre) ?? proprietaire}:${membre.id}`))}
                       cote={coteCarte}
+                      statutDefenseur={proprietaire === 'sorcier' ? (prioriteDefenseur?.prioritaires.has(entite.id) ? 'prioritaire' : prioriteDefenseur?.protegees.has(entite.id) ? 'protegee' : null) : null}
                       lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       pretAAgir={pretAAgir(entite, proprietaire)}
@@ -15215,6 +15251,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       armeFx={armesAjoutees[`${proprietaire}:${entite.id}`]}
+                      armeDepartFx={armesRetirees[`${proprietaire}:${entite.id}`] ?? (!deployee ? pile.entites.map((membre) => armesRetirees[`${campDeLaCreature(duel, membre) ?? proprietaire}:${membre.id}`]).find(Boolean) : null)}
+                      envolTransitionFx={effetsEnvol[`${proprietaire}:${entite.id}`] ?? (!deployee ? pile.entites.map((membre) => effetsEnvol[`${campDeLaCreature(duel, membre) ?? proprietaire}:${membre.id}`]).find(Boolean) : null)}
+                      ticsAfflictionsFx={deployee ? ticsAfflictions[`${proprietaire}:${entite.id}`] : ticsPourPile(ticsAfflictions, pile.entites.map((membre) => `${campDeLaCreature(duel, membre) ?? proprietaire}:${membre.id}`))}
                       cote={coteCarte}
                       lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
