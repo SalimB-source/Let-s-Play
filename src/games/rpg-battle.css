@@ -17130,10 +17130,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
-/* Agrandir les indications au milieu du plateau (hors début/fin de tour) */
-.rpg-discard-prompt,
-.rpg-target-prompt {
-  font-size: clamp(1rem, 1.35vw, 1.28rem) !important;
-  padding: 12px 26px !important;
-  line-height: 1.35;
+/* Agrandir les indications au milieu du plateau (hors début/fin de tour) sur desktop */
+@media (min-width: 769px) {
+  .rpg-discard-prompt,
+  .rpg-target-prompt {
+    font-size: clamp(1rem, 1.35vw, 1.28rem) !important;
+    padding: 12px 26px !important;
+    line-height: 1.35;
+  }
 }
