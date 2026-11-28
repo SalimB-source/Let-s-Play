@@ -1,0 +1,18 @@
+/* Chaque dose a sa signature : bulles toxiques sur les flancs ou braises
+   qui remontent du bas. Le centre et les chiffres restent lisibles. */
+.rpg-tic-affliction { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; animation: rpg-tic-bord calc(.9s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-tic-affliction--poison { box-shadow: inset 5px 0 8px -4px #a5e86a, inset -5px 0 8px -4px #a5e86a; }
+.rpg-tic-affliction--brulure { box-shadow: inset 0 -7px 10px -4px #ff9148; }
+.rpg-tic-affliction > i { position: absolute; width: 6%; aspect-ratio: 1; opacity: 0; pointer-events: none; animation: rpg-tic-particule calc(.9s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-tic-affliction > i:nth-child(1) { left: 6%; bottom: 34%; --tic-x: 3px; }
+.rpg-tic-affliction > i:nth-child(2) { right: 7%; bottom: 41%; --tic-x: -4px; animation-delay: calc(.09s * var(--rpg-anim-scale, 1)); }
+.rpg-tic-affliction > i:nth-child(3) { left: 13%; bottom: 23%; --tic-x: -3px; animation-delay: calc(.18s * var(--rpg-anim-scale, 1)); }
+.rpg-tic-affliction--poison > i { border: 1px solid #d9ff9f; border-radius: 50%; background: #83bd5355; box-shadow: 0 0 5px #8dd85a; --tic-y: -13px; }
+.rpg-tic-affliction--brulure > i { width: 3%; border-radius: 50% 0 50% 50%; background: #ffd388; box-shadow: 0 0 6px #ff6c21; --tic-y: -20px; }
+.rpg-tic-affliction--brulure > i:nth-child(1) { bottom: 8%; left: 16%; }
+.rpg-tic-affliction--brulure > i:nth-child(2) { bottom: 10%; right: 17%; }
+.rpg-tic-affliction--brulure > i:nth-child(3) { bottom: 14%; left: 28%; }
+@keyframes rpg-tic-bord { 0% { opacity: 0; } 20% { opacity: .95; } 100% { opacity: 0; } }
+@keyframes rpg-tic-particule { 0% { opacity: 0; transform: translate(0, 0) scale(.7); } 25% { opacity: .95; } 100% { opacity: 0; transform: translate(var(--tic-x), var(--tic-y)) scale(1.15); } }
+.is-reduced .rpg-tic-affliction { display: none; }
+@media (prefers-reduced-motion: reduce) { .rpg-tic-affliction { display: none; } }

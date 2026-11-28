@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { dureeAnimation, rpgAnimationsReduites } from './rpgAnimations.js';
-import { nombreAjouts, elementPortail, matiereBordure } from './rpgOrnements.js';
+import { nombreAjouts, retraitsArmesVue, elementPortail, matiereBordure } from './rpgOrnements.js';
 import { cardArt } from './rpgCardArt.js';
 import { armesPortees } from './rpgCardStacks.js';
 import './rpg-ornements.css';
@@ -72,6 +72,62 @@ export function useArmesAjoutees(duel, session) {
     timers.current.add(timer);
   });
   return effets;
+}
+
+/** Le relevé vit sur le plateau, pas sur la carte : après une perte, une pile
+ * tactile peut se recomposer et remonter son porteur sous un nouveau parent. */
+export function useArmesRetirees(duel, session) {
+  const precedent = useRef(null);
+  const sequence = useRef(0);
+  const timers = useRef(new Set());
+  const [effets, setEffets] = useState({});
+  useLayoutEffect(() => () => { timers.current.forEach(clearTimeout); timers.current.clear(); }, []);
+  useLayoutEffect(() => {
+    const vue = new Map();
+    for (const cote of ['joueur', 'sorcier']) {
+      for (const entite of duel?.[cote]?.creatures ?? []) vue.set(`${cote}:${entite.id}`, [...armesPortees(entite)]);
+    }
+    const ancien = precedent.current;
+    precedent.current = { session, vue };
+    if (!ancien || ancien.session !== session) {
+      timers.current.forEach(clearTimeout); timers.current.clear();
+      setEffets((courants) => Object.keys(courants).length ? {} : courants);
+      return;
+    }
+    const disparus = [...ancien.vue.keys()].filter((cle) => !vue.has(cle));
+    if (disparus.length) setEffets((courants) => {
+      if (!disparus.some((cle) => cle in courants)) return courants;
+      const suivants = { ...courants };
+      for (const cle of disparus) delete suivants[cle];
+      return suivants;
+    });
+    if (rpgAnimationsReduites()) return;
+    const retraits = retraitsArmesVue(ancien.vue, vue).map(({ cle, armes }) => [cle, { armes, token: ++sequence.current }]);
+    if (!retraits.length) return;
+    setEffets((courants) => ({ ...courants, ...Object.fromEntries(retraits) }));
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      setEffets((courants) => {
+        const suivants = { ...courants };
+        for (const [cle, effet] of retraits) if (suivants[cle]?.token === effet.token) delete suivants[cle];
+        return suivants;
+      });
+    }, dureeAnimation(1100));
+    timers.current.add(timer);
+  });
+  return effets;
+}
+
+/** Fantôme de l'ancienne arme, même lors d'un remplacement : le décor ne dit
+ * pas qu'elle est détruite et ne capture jamais le geste sur la créature. */
+export function RpgDepartArme({ effet }) {
+  if (!effet?.armes?.length) return null;
+  return <span key={effet.token} className="rpg-arme-depart" data-arme-depart={effet.armes.join(' ')} aria-hidden="true">
+    {effet.armes.slice(0, 3).map((id, index) => <span key={`${id}-${index}`} className="rpg-arme-depart__piece" style={{ '--arme-depart-index': index }}>
+      <img src={cardArt(id)} alt="" /><i />
+    </span>)}
+    <span className="rpg-arme-depart__etincelles"><i /><i /><i /></span>
+  </span>;
 }
 
 /** Dans le rendu autonome Conquête la vignette est dessinée ici aussi. */

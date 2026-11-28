@@ -1,0 +1,8 @@
+/* Un filet et une étiquette, distincts des badges d'effets : aucune nouvelle
+   zone tactile, aucune opacité appliquée à la carte ni à ses statistiques. */
+.rpg-priorite-defenseur { position: absolute; inset: 2px; z-index: 7; border-radius: inherit; pointer-events: none; }
+.rpg-priorite-defenseur--prioritaire { border: 2px solid #ffd77d; box-shadow: inset 0 0 8px #e2a94977, 0 0 9px #f4bd5b88; }
+.rpg-priorite-defenseur > span { position: absolute; top: 35%; left: 50%; transform: translateX(-50%); max-width: 96%; padding: 2px 4px; border-radius: 3px; background: rgba(28, 20, 12, .88); color: #ffe5a5; font: 800 clamp(7px, .7vw, 10px)/1.15 system-ui, sans-serif; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.rpg-priorite-defenseur--protegee > span { color: #e5e1d8; background: rgba(20, 20, 23, .8); font-weight: 700; }
+.moba__priorite-defenseur { flex: 1 1 160px; min-width: 0; margin: 0; color: #ffe5a5; font: 700 12px/1.3 system-ui, sans-serif; }
+@media (max-width: 650px) { .moba__priorite-defenseur { font-size: 10px; line-height: 1.2; } }

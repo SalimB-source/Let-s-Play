@@ -13,6 +13,31 @@ export function nombreAjouts(avant = [], apres = []) {
   return ajouts;
 }
 
+/** Multiensemble des armes effectivement retirées, y compris les doublons.
+ * L'ordre suit l'ancien équipement ; un simple réordonnancement ne compte pas. */
+export function armesRetirees(avant = [], apres = []) {
+  const restants = new Map();
+  for (const id of apres) restants.set(id, (restants.get(id) ?? 0) + 1);
+  return avant.filter((id) => {
+    const nombre = restants.get(id) ?? 0;
+    if (!nombre) return true;
+    restants.set(id, nombre - 1);
+    return false;
+  });
+}
+
+/** Comparer deux relevés du plateau : seuls les porteurs encore en jeu
+ * reçoivent un départ d'arme ; une créature sortie a déjà sa propre animation. */
+export function retraitsArmesVue(avant, apres) {
+  const retraits = [];
+  for (const [cle, armes] of apres) {
+    if (!avant.has(cle)) continue;
+    const perdues = armesRetirees(avant.get(cle), armes);
+    if (perdues.length) retraits.push({ cle, armes: perdues });
+  }
+  return retraits;
+}
+
 export function elementPortail(carte) {
   const couleurs = cardColors(carte);
   if (couleurs.includes('braise')) return 'braise';

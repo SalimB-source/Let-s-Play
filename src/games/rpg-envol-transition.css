@@ -1,0 +1,17 @@
+/* Des plumes de lumière restent sur les bords pour ne pas masquer les
+   statistiques ; le décollage monte, la perte d'Envol descend doucement. */
+.rpg-envol-transition { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.rpg-envol-transition > i { position: absolute; width: 5%; height: 13%; border-radius: 100% 0 100% 0; background: linear-gradient(110deg, rgba(153, 205, 230, .45), #f0f8ff 50%, rgba(185, 221, 239, .6)); box-shadow: 0 0 5px rgba(185, 230, 255, .7); opacity: 0; animation: rpg-envol-plume calc(1s * var(--rpg-anim-scale, 1)) ease-out both; }
+.rpg-envol-transition > i:nth-child(1) { left: 6%; top: 59%; --plume-x: -5px; --plume-rotation: -35deg; }
+.rpg-envol-transition > i:nth-child(2) { right: 7%; top: 51%; --plume-x: 6px; --plume-rotation: 35deg; animation-delay: calc(.08s * var(--rpg-anim-scale, 1)); }
+.rpg-envol-transition > i:nth-child(3) { left: 12%; top: 35%; --plume-x: 4px; --plume-rotation: 28deg; animation-delay: calc(.14s * var(--rpg-anim-scale, 1)); }
+.rpg-envol-transition > i:nth-child(4) { right: 13%; top: 31%; --plume-x: -4px; --plume-rotation: -25deg; animation-delay: calc(.06s * var(--rpg-anim-scale, 1)); }
+.rpg-envol-transition--envol { --plume-y: -24px; }
+.rpg-envol-transition--atterrissage { --plume-y: 24px; }
+@keyframes rpg-envol-plume {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(.6); }
+  22% { opacity: .85; }
+  100% { opacity: 0; transform: translate(var(--plume-x), var(--plume-y)) rotate(var(--plume-rotation)) scale(.85); }
+}
+.is-reduced .rpg-envol-transition { display: none; }
+@media (prefers-reduced-motion: reduce) { .rpg-envol-transition { display: none; } }

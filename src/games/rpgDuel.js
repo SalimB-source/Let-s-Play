@@ -10889,7 +10889,10 @@ function resoudreBrulures(duel, cote) {
     duel.log.push(`Brûlure : ${entite.name} perd 1 PV.`);
     // Perte différée, comme le Poison : ni Esquive, ni bouclier, ni immunité
     // élémentaire ne l'arrêtent une fois la braise prise.
-    rpgBlesserCreature(duel, cote, entite.id, 1, null, null, 'brulure', entite.carteId);
+    const blessure = rpgBlesserCreature(duel, cote, entite.id, 1, null, null, 'brulure', entite.carteId);
+    if (blessure.recus > 0) journaliserAnimationCombat(duel, {
+      type: 'affliction-tic', affliction: 'brulure', cote, entiteId: entite.id, montant: blessure.recus,
+    });
   }
 }
 
@@ -10909,7 +10912,10 @@ function resoudrePoisons(duel, cote) {
     duel.log.push(`Poison : ${entite.name} perd ${poison.degats} PV.`);
     // Perte différée de PV, pas une nouvelle attaque : ni Esquive ni bouclier
     // ni immunité élémentaire ne l'arrêtent une fois la piqûre reçue.
-    rpgBlesserCreature(duel, cote, entite.id, poison.degats, null, null, 'poison', poison.sourceCarteId);
+    const blessure = rpgBlesserCreature(duel, cote, entite.id, poison.degats, null, null, 'poison', poison.sourceCarteId);
+    if (blessure.recus > 0) journaliserAnimationCombat(duel, {
+      type: 'affliction-tic', affliction: 'poison', cote, entiteId: entite.id, montant: blessure.recus,
+    });
   }
 }
 
