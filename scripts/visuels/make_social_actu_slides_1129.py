@@ -114,8 +114,8 @@ SLIDES = [
     {
         "slug": "tech",
         "index": 2,
-        "asset": "tech-anthropic-bourse.png",
-        "focus": 0.45,
+        "asset": "tech-anthropic-nasdaq.jpg",
+        "focus": 0.50,
         "langues": {
             "fr": {
                 "rubrique": "TECH",
@@ -166,8 +166,8 @@ SLIDES = [
     {
         "slug": "cinema",
         "index": 3,
-        "asset": "cinema-14th-duvernay.png",
-        "focus": 0.45,
+        "asset": "cinema-14th-still.jpg",
+        "focus": 0.40,
         "langues": {
             "fr": {
                 "rubrique": "CINÉMA",

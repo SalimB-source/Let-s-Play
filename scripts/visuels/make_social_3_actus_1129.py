@@ -74,11 +74,11 @@ LANGUES = {
             ("TECH", "ANTHROPIC",
              "Introduction en bourse clôturée : 1,127 milliard\n"
              "d’actions à 83 dollars, option exercée en entier.",
-             "tech-anthropic-bourse.png", 0.45),
+             "tech-anthropic-nasdaq.jpg", 0.50),
             ("CINÉMA", "14TH",
              "Ava DuVernay interroge le 14e amendement :\n"
              "salles le 27 novembre, Netflix le 4 décembre.",
-             "cinema-14th-duvernay.png", 0.45),
+             "cinema-14th-still.jpg", 0.40),
         ],
         "sources": ("SOURCES OFFICIELLES · TEAMCHERRY.COM.AU · "
                     "ANTHROPIC.COM · NETFLIX.COM"),
@@ -95,11 +95,11 @@ LANGUES = {
             ("TECH", "ANTHROPIC",
              "Initial public offering closed: 1.127 billion\n"
              "shares at $83, the option exercised in full.",
-             "tech-anthropic-bourse.png", 0.45),
+             "tech-anthropic-nasdaq.jpg", 0.50),
             ("CINEMA", "14TH",
              "Ava DuVernay questions the 14th Amendment:\n"
              "cinemas on 27 November, Netflix on 4 December.",
-             "cinema-14th-duvernay.png", 0.45),
+             "cinema-14th-still.jpg", 0.40),
         ],
         "sources": ("OFFICIAL SOURCES · TEAMCHERRY.COM.AU · "
                     "ANTHROPIC.COM · NETFLIX.COM"),
@@ -116,11 +116,11 @@ LANGUES = {
             ("تقنية", "أنثروبيك",
              "إغلاق الطرح العام الأولي: 1.127 مليار سهم بسعر 83 دولارًا، "
              "مع تنفيذ الخيار بالكامل.",
-             "tech-anthropic-bourse.png", 0.45),
+             "tech-anthropic-nasdaq.jpg", 0.50),
             ("سينما", "14TH",
              "أفا دوفيرني تسأل عن التعديل الرابع عشر: صالات في 27 نوفمبر، "
              "نتفليكس في 4 ديسمبر.",
-             "cinema-14th-duvernay.png", 0.45),
+             "cinema-14th-still.jpg", 0.40),
         ],
         "sources": ("مصادر رسمية · TEAMCHERRY.COM.AU · ANTHROPIC.COM · "
                     "NETFLIX.COM"),
@@ -156,8 +156,10 @@ def vignette(nom: str, box: tuple[int, int], focus: float) -> Image.Image | None
     src = Image.open(chemin).convert("RGB")
     tile = recadre(src, box, focus, zoom=1.04)
     # Effacement : assombrissement, voile vers le violet du fond, léger flou.
-    tile = Image.blend(tile, Image.new("RGB", tile.size, (0, 0, 0)), 0.55)
-    tile = Image.blend(tile, Image.new("RGB", tile.size, INK), 0.34)
+    # Les photographies gardent plus de matière que les fonds éditoriaux.
+    sombre, voile = (0.50, 0.26) if nom.endswith(".jpg") else (0.55, 0.34)
+    tile = Image.blend(tile, Image.new("RGB", tile.size, (0, 0, 0)), sombre)
+    tile = Image.blend(tile, Image.new("RGB", tile.size, INK), voile)
     return tile.filter(ImageFilter.GaussianBlur(1.4))
 
 

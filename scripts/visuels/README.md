@@ -66,9 +66,17 @@ python3 scripts/visuels/make_social_actu_slides_1129.py --lang ar --slug cinema
 
 Les trois actus : *Hollow Knight: Silksong — Sea of Sorrow* (11 décembre,
 gratuit), l’introduction en bourse d’Anthropic (clôture du 20 novembre) et
-*14TH* d’Ava DuVernay (salles le 27 novembre, Netflix le 4 décembre). Les fonds
-des deux dernières sont des visuels éditoriaux (dégradé violet, losanges
-creux), faute d’image de presse reproduisible : voir `assets/CREDITS.txt`.
+*14TH* d’Ava DuVernay (salles le 27 novembre, Netflix le 4 décembre). Chaque
+bandeau porte une image en rapport direct avec le sujet :
+
+- gaming — visuel promotionnel officiel de Sea of Sorrow (© Team Cherry) ;
+- tech — la tour du Nasdaq MarketSite au nom d’Anthropic le 19 novembre
+  (photo Andres Kudacki / AP) ;
+- cinéma — Ava DuVernay et Stacey Abrams dans *14TH* (photo Ryan Postas /
+  Netflix).
+
+Les deux photographies sont reprises avec crédit dans `assets/CREDITS.txt` ;
+elles ne sont pas publiées sur le site.
 
 ## The Game Awards 2026 — les nommés au jeu de l’année
 
