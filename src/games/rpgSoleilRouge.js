@@ -166,7 +166,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   carte({
     id: 'kagutsuchi-flamme-originelle', distance: true, name: 'Kagutsuchi, Flamme originelle', honneur: 0,
     // Le Grand Hiver : colonne des deux camps, source comprise.
-    activation: { nom: 'Le Grand Hiver', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'grand-hiver', effet: { type: 'degats', amount: 1, cible: 'toutes-autres' } },
+    activation: { nom: 'Le Grand Hiver', cible: 'aucune', uneFoisParMatch: true, sortAssocie: 'grand-hiver', effet: { type: 'degats', amount: 2, cible: 'toutes-autres', peutCritique: true } },
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     // Son prix accepte aussi un sort de la main remis dans le deck.
     retourDeck: { types: ['creature', 'magie'] },

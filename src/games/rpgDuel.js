@@ -4952,6 +4952,40 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       duel.log.push(`${partie.length} carte${partie.length > 1 ? 's' : ''} du paquet adverse au cimetière : ${noms}.`);
       return;
     }
+    case 'exil-cimetiere-adverse': {
+      const cimetiereAdv = duel[adv].cimetiere ?? [];
+      const indicesCreatures = [];
+      for (let i = 0; i < cimetiereAdv.length; i += 1) {
+        const carte = cardById(cimetiereAdv[i]);
+        if (carte && carte.type === 'creature') indicesCreatures.push(i);
+      }
+      if (indicesCreatures.length === 0) {
+        duel.log.push(`Aucune créature dans le cimetière adverse à exiler.`);
+        return;
+      }
+      const choixIdx = indicesCreatures[Math.floor((duel.rng?.() ?? Math.random()) * indicesCreatures.length)];
+      const [exileeId] = cimetiereAdv.splice(choixIdx, 1);
+      duel[adv].exil ??= [];
+      duel[adv].exil.push(exileeId);
+      const nomExilee = cardById(exileeId)?.name ?? exileeId;
+      duel.log.push(`${nomExilee} est exilée du cimetière adverse.`);
+      return;
+    }
+    case 'combat-cible': {
+      const sourceEntite = duel[cote].creatures.find((e) => e.id === sauf);
+      const cibleEntite = duel[adv].creatures.find((e) => e.id === cibleId);
+      if (!sourceEntite || !cibleEntite) return;
+      if (rpgEstProtegee(cibleEntite, sourceElement) || rpgEstProtegeeDesSorts(cibleEntite, sourceElement, sourceType)) return;
+      const degatsSource = Math.max(0, sourceEntite.atk ?? 0);
+      const degatsCible = Math.max(0, cibleEntite.atk ?? 0);
+      cibleEntite.def = Math.max(0, (cibleEntite.def ?? 0) - degatsSource);
+      sourceEntite.def = Math.max(0, (sourceEntite.def ?? 0) - degatsCible);
+      duel.log.push(`${sourceEntite.name} affronte ${cibleEntite.name} (${degatsSource} vs ${degatsCible} dégâts).`);
+      if (cibleEntite.def <= 0) detruireCreature(duel, adv, cibleEntite, sourceCarteId);
+      if (sourceEntite.def <= 0) detruireCreature(duel, cote, sourceEntite, cibleEntite.carteId);
+      rafraichirAuras(duel);
+      return;
+    }
     case 'pioche': {
       const nombre = Math.max(0, Math.floor(Number(effet.amount ?? 1) || 0));
       if (!effet.tribu) {
@@ -5512,6 +5546,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'degats': {
+      if (effet.peutCritique) {
+        const sourceEntite = duel[cote].creatures.find((entite) => entite.id === sauf);
+        const crit = sourceEntite?.coupCritique ?? cardById(sourceCarteId)?.coupCritique;
+        if (crit && (duel.rng?.() ?? Math.random()) < (crit.chance ?? 0.25)) {
+          const fois = crit.fois ?? 2;
+          effet = { ...effet, amount: (effet.amount ?? 0) * fois };
+          duel.log.push(`Coup critique ! Les dégâts sont multipliés par ${fois}.`);
+        }
+      }
       // Remember the source lane before the wave: deaths and retaliation may
       // remove the source before its separate damage to the opposing lane.
       const voieSourceMoba = duel.moba && estCapacite(sourceType)

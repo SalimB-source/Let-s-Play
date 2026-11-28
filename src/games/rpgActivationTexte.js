@@ -98,6 +98,10 @@ export function texteEffetActivation(effet = {}) {
         : (Number(effet.tours) > 0 ? ' jusqu’à la fin du tour' : '');
       return `La créature ciblée gagne ${signe(effet.atk)}/${signe(effet.def)}${duree}${plancher}${effet.exilEnMourant ? ' ; si sa défense tombe sous 1, elle est exilée' : ''}.`;
     }
+    case 'exil-cimetiere-adverse':
+      return 'Exile une créature au hasard du cimetière adverse.';
+    case 'combat-cible':
+      return 'Affronte une créature adverse ciblée.';
     case 'pioche':
       return `Piochez ${nombreCartes(montant)}.`;
     case 'pioche-defausse':
